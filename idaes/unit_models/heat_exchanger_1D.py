@@ -13,13 +13,17 @@
 """
 Basic IDAES 1D Heat Exchanger Model.
 
-1D Single pass shell and tube HX model with 0D/1D/2D wall conduction model
+1D Single pass shell and tube HX model with 0D wall conduction model
 """
 from __future__ import division
 
+# Import Python libraries
+import math
+import logging
+
 # Import Pyomo libraries
-from pyomo.environ import (SolverFactory, Var, Param, Constraint, Expression,
-                           value, TransformationFactory)
+from pyomo.environ import (SolverFactory, Var, Param, Constraint,
+                           value, TerminationCondition)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -28,13 +32,17 @@ from idaes.core import (ControlVolume1D,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
+                        FlowDirection,
                         UnitBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
-                                    list_of_floats)
+                                    list_of_strings)
 from idaes.core.util.misc import add_object_reference
 
 __author__ = "Jaffer Ghouse"
+
+# Set up logger
+_log = logging.getLogger(__name__)
 
 
 @declare_process_block_class("HeatExchanger1D")
@@ -98,6 +106,25 @@ Must be True if dynamic = True,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+    CONFIG.declare("has_heat_transfer", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Heat transfer term construction flag",
+        doc="""Indicates whether terms for heat transfer should be constructed,
+**default** - False.
+**Valid values:** {
+**True** - include heat transfer terms,
+**False** - exclude heat transfer terms.}"""))
+    CONFIG.declare("has_pressure_change", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Pressure change term construction flag",
+        doc="""Indicates whether terms for pressure change should be
+constructed,
+**default** - False.
+**Valid values:** {
+**True** - include pressure change terms,
+**False** - exclude pressure change terms.}"""))
     CONFIG.declare("shell_has_phase_equilibrium", ConfigValue(
         default=True,
         domain=In([True, False]),
@@ -112,30 +139,6 @@ Must be True if dynamic = True,
         doc="""Argument to enable phase equilibrium on the tube side.
 - True - include phase equilibrium term
 - False - do not include phase equilinrium term"""))
-    CONFIG.declare("shell_has_mass_diffusion", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Mass diffusion flag",
-        doc="""Flag indicating  whether mass diffusion/dispersion should be
-included in material balance equations (default=False)"""))
-    CONFIG.declare("shell_has_energy_diffusion", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Energy diffusion flag",
-        doc="""Flag indicating  whether energy diffusion/dispersion should be
-included in energy balance equations (default=False)"""))
-    CONFIG.declare("tube_has_mass_diffusion", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Mass diffusion flag",
-        doc="""Flag indicating  whether mass diffusion/dispersion should be
-included in material balance equations (default=False)"""))
-    CONFIG.declare("tube_has_energy_diffusion", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Energy diffusion flag",
-        doc="""Flag indicating  whether energy diffusion/dispersion should be
-included in energy balance equations (default=False)"""))
     CONFIG.declare("shell_property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
@@ -230,26 +233,30 @@ and used when constructing these
             to num_outlets"""))
     # TODO : We should probably think about adding a consistency check for the
     # TODO : discretisation methdos as well.
-    CONFIG.declare("shell_discretization_method", ConfigValue(
-        default="OCLR",
-        domain=In(['OCLR', 'OCLL', 'BFD', 'FFD']),
-        description="Discretization method to apply for length domain",
-        doc="""Method to be used by DAE transformation when discretizing length
-domain on shell side (default = `OCLR`).
-- 'OCLR' - orthogonal collocation (Radau roots)
-- 'OCLL' - orthogonal collocation (Legendre roots)
-- 'BFD' - backwards finite difference (1st order)
-- 'FFD' - forwards finite difference (1st order)"""))
-    CONFIG.declare("tube_discretization_method", ConfigValue(
-        default="OCLR",
-        domain=In(['OCLR', 'OCLL', 'BFD', 'FFD']),
-        description="Discretization method to apply for length domain",
-        doc="""Method to be used by DAE transformation when discretizing
-length domain on tube side (default = `OCLR`).
-- 'OCLR' - orthogonal collocation (Radau roots)
-- 'OCLL' - orthogonal collocation (Legendre roots)
-- 'BFD' - backwards finite difference (1st order)
-- 'FFD' - forwards finite difference (1st order)"""))
+    CONFIG.declare("shell_transformation_method", ConfigValue(
+        default="dae.finite_difference",
+        description="Method to use for DAE transformation",
+        doc="""Method to use to transform domain. Must be a method recognised
+by the Pyomo TransformationFactory,
+**default** - "dae.finite_difference"."""))
+    CONFIG.declare("shell_transformation_scheme", ConfigValue(
+        default="BACKWARD",
+        description="Scheme to use for DAE transformation",
+        doc="""Scheme to use when transformating domain. See Pyomo
+documentation for supported schemes,
+**default** - "BACKWARD"."""))
+    CONFIG.declare("tube_transformation_method", ConfigValue(
+        default="dae.finite_difference",
+        description="Method to use for DAE transformation",
+        doc="""Method to use to transform domain. Must be a method recognised
+by the Pyomo TransformationFactory,
+**default** - "dae.finite_difference"."""))
+    CONFIG.declare("tube_transformation_scheme", ConfigValue(
+        default="BACKWARD",
+        description="Scheme to use for DAE transformation",
+        doc="""Scheme to use when transformating domain. See Pyomo
+documentation for supported schemes,
+**default** - "BACKWARD"."""))
     CONFIG.declare("finite_elements", ConfigValue(
         default=20,
         domain=int,
@@ -280,6 +287,7 @@ tube side flows from 1 to 0"""))
 - 2D - 2D wall model along the lenghth and thickness of the tube"""))
 
 
+
     def build(self):
         """
         Begin building model (pre-DAE transformation).
@@ -295,43 +303,32 @@ tube side flows from 1 to 0"""))
 
         # Set flow directions for the control volume blocks
         if self.config.flow_type == "co_current":
-            set_direction_shell = "forward"
-            set_direction_tube = "forward"
+            set_direction_shell = FlowDirection.forward
+            set_direction_tube = FlowDirection.forward
         else:
-            set_direction_shell = "forward"
-            set_direction_tube = "backward"
+            set_direction_shell = FlowDirection.forward
+            set_direction_tube = FlowDirection.backward
 
         # Control volume 1D for shell
         self.shell = ControlVolume1D(default={
-            "has_phase_equilibrium": self.config.shell_has_phase_equilibrium,
-            "has_mass_diffusion": self.config.shell_has_mass_diffusion,
-            "has_energy_diffusion": self.config.shell_has_energy_diffusion,
             "property_package": self.config.shell_property_package,
-            "property_package_args": self.config.shell_property_package_args,
-            "flow_direction": set_direction_shell,
-            "discretization_method": self.config.shell_discretization_method,
-            "finite_elements": self.config.finite_elements,
-            "collocation_points": self.config.collocation_points})
+            "property_package_args": self.config.shell_property_package_args})
 
         self.tube = ControlVolume1D(default={
-            "has_phase_equilibrium": self.config.tube_has_phase_equilibrium,
-            "has_mass_diffusion": self.config.tube_has_mass_diffusion,
-            "has_energy_diffusion": self.config.tube_has_energy_diffusion,
             "property_package": self.config.tube_property_package,
-            "property_package_args": self.config.tube_property_package_args,
-            "flow_direction": set_direction_tube,
-            "discretization_method": self.config.tube_discretization_method,
-            "finite_elements": self.config.finite_elements,
-            "collocation_points": self.config.collocation_points})
+            "property_package_args": self.config.tube_property_package_args})
 
-        self.shell.add_geometry(
-            length_domain_set=self.config.length_domain_set)
-        self.tube.add_geometry(
-            length_domain_set=self.config.length_domain_set)
+        self.shell.add_geometry(flow_direction=set_direction_shell)
+        self.tube.add_geometry(flow_direction=set_direction_tube)
 
-        self.shell.add_state_blocks()
-        self.tube.add_state_blocks()
+        self.shell.add_state_blocks(
+            information_flow=set_direction_shell,
+            has_phase_equilibrium=self.config.shell_has_phase_equilibrium)
+        self.tube.add_state_blocks(
+            information_flow=set_direction_tube,
+            has_phase_equilibrium=self.config.tube_has_phase_equilibrium)
 
+        # Populate shell
         self.shell.add_material_balances(
             balance_type=self.config.material_balance_type)
 
@@ -344,11 +341,12 @@ tube side flows from 1 to 0"""))
             has_pressure_change=self.config.has_pressure_change)
 
         self.shell.apply_transformation(
-            transformation_method=self.config.transformation_method,
-            transformation_scheme=self.config.transformation_scheme,
+            transformation_method=self.config.shell_transformation_method,
+            transformation_scheme=self.config.shell_transformation_scheme,
             finite_elements=self.config.finite_elements,
             collocation_points=self.config.collocation_points)
 
+        # Populate tube
         self.tube.add_material_balances(
             balance_type=self.config.material_balance_type)
 
@@ -361,14 +359,18 @@ tube side flows from 1 to 0"""))
             has_pressure_change=self.config.has_pressure_change)
 
         self.tube.apply_transformation(
-            transformation_method=self.config.transformation_method,
-            transformation_scheme=self.config.transformation_scheme,
+            transformation_method=self.config.tube_transformation_method,
+            transformation_scheme=self.config.tube_transformation_scheme,
             finite_elements=self.config.finite_elements,
             collocation_points=self.config.collocation_points)
 
-        # Add Ports
-        self.add_inlet_port()
-        self.add_outlet_port()
+        # Add Ports for shell side
+        self.add_inlet_port(name="shell_inlet", block=self.shell)
+        self.add_outlet_port(name="shell_outlet", block=self.shell)
+
+        # Add Ports for tube side
+        self.add_inlet_port(name="tube_inlet", block=self.tube)
+        self.add_outlet_port(name="tube_outlet", block=self.tube)
 
         # Add reference to control volume geometry
         add_object_reference(self,
@@ -410,26 +412,26 @@ tube side flows from 1 to 0"""))
         # "tube_length" need to be fixed at the flowsheet level
 
         # Performance variables
-        self.shell_heat_transfer_coefficient = Var(self.time,
-                                                   self.shell.ldomain,
+        self.shell_heat_transfer_coefficient = Var(self.time_ref,
+                                                   self.shell.length_domain,
                                                    initialize=50,
                                                    doc="Heat transfer "
                                                    "coefficient")
-        self.tube_heat_transfer_coefficient = Var(self.time,
-                                                  self.tube.ldomain,
+        self.tube_heat_transfer_coefficient = Var(self.time_ref,
+                                                  self.tube.length_domain,
                                                   initialize=50,
                                                   doc="Heat transfer "
                                                   "coefficient")
 
         # Wall 0D model (Q_shell = Q_tube*N_tubes)
         if self.config.has_wall_conduction == "none":
-            self.temperature_wall = Var(self.time, self.tube.ldomain,
+            self.temperature_wall = Var(self.time_ref, self.tube.length_domain,
                                         initialize=298.15)
 
             # Performance equations
             # Energy transfer between shell and tube wall
 
-            @self.Constraint(self.time, self.shell.ldomain,
+            @self.Constraint(self.time_ref, self.shell.length_domain,
                              doc="Heat transfer between shell and tube")
             def shell_heat_transfer_eq(self, t, x):
                 return self.shell.heat[t, x] == - self.N_tubes *\
@@ -439,7 +441,7 @@ tube side flows from 1 to 0"""))
                       self.temperature_wall[t, x]))
 
             # Energy transfer between tube wall and tube
-            @self.Constraint(self.time, self.tube.ldomain,
+            @self.Constraint(self.time_ref, self.tube.length_domain,
                              doc="Convective heat transfer")
             def tube_heat_transfer_eq(self, t, x):
                 return self.tube.heat[t, x] == \
@@ -449,8 +451,112 @@ tube side flows from 1 to 0"""))
                      self.tube.properties[t, x].temperature)
 
             # Wall 0D model
-            @self.Constraint(self.time, self.shell.ldomain,
+            @self.Constraint(self.time_ref, self.shell.length_domain,
                              doc="wall 0D model")
             def wall_0D_model(self, t, x):
                 return self.tube.heat[t, x] == -(self.shell.heat[t, x] /
                                                  self.N_tubes)
+
+    def initialize(blk, shell_state_args={}, tube_state_args={}, outlvl=0,
+                   solver='ipopt', optarg={'tol': 1e-6}):
+        """
+        Initialisation routine for isothermal unit (default solver ipopt).
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialisation routine
+
+                     * 0 = no output (default)
+                     * 1 = return solver state for each step in routine
+                     * 2 = return solver state for each step in subroutines
+                     * 3 = include solver output infomation (tee=True)
+
+            optarg : solver options dictionary object (default={'tol': 1e-6})
+            solver : str indicating whcih solver to use during
+                     initialization (default = 'ipopt')
+
+        Returns:
+            None
+        """
+        # Set solver options
+        if outlvl > 3:
+            stee = True
+        else:
+            stee = False
+
+        opt = SolverFactory(solver)
+        opt.options = optarg
+
+        # ---------------------------------------------------------------------
+        # Initialize shell block
+        flags = blk.shell.initialize(outlvl=outlvl - 1,
+                                     optarg=optarg,
+                                     solver=solver,
+                                     state_args=shell_state_args)
+
+        flags = blk.tube.initialize(outlvl=outlvl - 1,
+                                    optarg=optarg,
+                                    solver=solver,
+                                    state_args=tube_state_args)
+
+        if outlvl > 0:
+            _log.info('{} Initialisation Step 1 Complete.'.format(blk.name))
+
+        # ---------------------------------------------------------------------
+        # Solve unit
+        # Wall 0D
+        if blk.config.has_wall_conduction == "none":
+            for t in blk.time:
+                for z in blk.shell.ldomain:
+                    blk.temperature_wall[t, z].fix(value(
+                        0.5 * (blk.shell.properties[t, 0].temperature +
+                               blk.tube.properties[t, 0].temperature)))
+
+            blk.tube.deactivate()
+            blk.tube_heat_transfer_eq.deactivate()
+            blk.wall_0D_model.deactivate()
+
+            results = opt.solve(blk, tee=stee)
+            if outlvl > 0:
+                if results.solver.termination_condition \
+                        == TerminationCondition.optimal:
+                    _log.info('{} Initialisation Step 2 Complete.'
+                              .format(blk.name))
+                else:
+                    _log.warning('{} Initialisation Step 2 Failed.'
+                                 .format(blk.name))
+
+            blk.tube.activate()
+            blk.tube_heat_transfer_eq.activate()
+
+            results = opt.solve(blk, tee=stee)
+            if outlvl > 0:
+                if results.solver.termination_condition \
+                        == TerminationCondition.optimal:
+                    _log.info('{} Initialisation Step 3 Complete.'
+                              .format(blk.name))
+                else:
+                    _log.warning('{} Initialisation Step 3 Failed.'
+                                 .format(blk.name))
+            blk.wall_0D_model.activate()
+            blk.temperature_wall.unfix()
+
+            results = opt.solve(blk, tee=stee)
+            if outlvl > 0:
+                if results.solver.termination_condition \
+                        == TerminationCondition.optimal:
+                    _log.info('{} Initialisation Step 4 Complete.'
+                              .format(blk.name))
+                else:
+                    _log.warning('{} Initialisation Step 4 Failed.'
+                                 .format(blk.name))
+        # ---------------------------------------------------------------------
+        # Release Inlet state
+        blk.shell.release_state(flags, outlvl - 1)
+        blk.tube.release_state(flags, outlvl - 1)
+
+        if outlvl > 0:
+            _log.info('{} Initialisation Complete.'.format(blk.name))

@@ -39,7 +39,7 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         PropertyNotSupportedError)
 from idaes.core.util.misc import add_object_reference
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Jaffer Ghouse"
 
 
 _log = logging.getLogger(__name__)
@@ -125,7 +125,7 @@ class ControlVolume1dData(ControlVolumeBase):
             self._flow_direction = flow_direction
         else:
             raise ConfigurationError("{} invliad value for flow_direction "
-                                     "argumnet. Must be a FlowDirection Enum."
+                                     "argument. Must be a FlowDirection Enum."
                                      .format(self.name))
         if flow_direction is FlowDirection.forward:
             self._flow_direction_term = -1
@@ -1542,7 +1542,7 @@ class ControlVolume1dData(ControlVolumeBase):
     def apply_transformation(self,
                              transformation_method="dae.finite_difference",
                              transformation_scheme="BACKWARD",
-                             finite_elements=20,
+                             finite_elements=10,
                              collocation_points=3):
         """
         Method to apply DAE transformation to the Control Volume length domain.
@@ -1557,7 +1557,7 @@ class ControlVolume1dData(ControlVolumeBase):
                                     schemes (default="BACKWARD")
             finite_elements - number of finite elements to use in
                               transformation (equivalent to Pyomo nfe argument,
-                              default = 20)
+                              default = 10)
             collocation_points - number of collocation points to use (if using
                                  collocation, default = 3)
 
@@ -1578,7 +1578,7 @@ class ControlVolume1dData(ControlVolumeBase):
                     wrt=self.length_domain,
                     nfe=finite_elements,
                     collocation_points=collocation_points,
-                    scheme='LAGRANGE-LEGENDRE')
+                    scheme=transformation_scheme)
         else:
             raise ConfigurationError("{} unrecognised transfromation_method, "
                                      "must match one of the Transformations "
