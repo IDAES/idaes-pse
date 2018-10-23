@@ -12,8 +12,7 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-This module contains utility functions for mathematical operators of use in
-equation oriented models.
+This module contains utility functions for initialization of IDAES models.
 """
 
 from pyomo.environ import Block
