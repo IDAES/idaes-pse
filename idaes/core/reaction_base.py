@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-This module contains classes for property blocks and property parameter blocks.
+This module contains classes for reaction blocks and reaction parameter blocks.
 """
 from __future__ import division
 
@@ -31,28 +31,31 @@ from ideas.core.util.exceptions import (PropertyNotSupportedError,
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
 
-__all__ = ['PropertyBlockDataBase',
-           'PropertyBlockBase',
-           'PropertyParameterBase']
+__all__ = ['ReactionBlockDataBase',
+           'ReactionBlockBase',
+           'ReactionParameterBase']
 
 # Set up logger
 logger = logging.getLogger('idaes.core')
 
 
-class PropertyParameterBase(ProcessBlockData):
+class ReactionParameterBase(ProcessBlockData):
     """
-        This is the base class for property parameter blocks. These are blocks
-        that contain a set of parameters associated with a specific property
-        package, and are linked to by all instances of that property package.
+        This is the base class for reaction parameter blocks. These are blocks
+        that contain a set of parameters associated with a specific reaction
+        package, and are linked to by all instances of that reaction package.
     """
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
+    CONFIG.declare("property_package", ConfigValue(
+            description="Reference to associated PropertyPackageParameter "
+                        "object"))
     CONFIG.declare("default_arguments", ConfigBlock(
             description="Default arguments to use with Property Package"))
 
     def build(self):
         """
-        General build method for PropertyParameterBlocks. Inheriting models
+        General build method for ReactionParameterBlocks. Inheriting models
         should call super().build.
 
         Args:
@@ -64,6 +67,26 @@ class PropertyParameterBase(ProcessBlockData):
         # Get module reference and store on block
         frm = inspect.stack()[1]
         self.property_module = inspect.getmodule(frm[0])
+        self._validate_state_block()
+
+    @classmethod
+    def get_required_properties(self):
+        """
+        Method which returns a list of properties required by the reaction
+        package which must be supported by the assoicated state block. This is
+        used as part of valiadting the state block. Unless overloaded, this
+        method returns None.
+
+        Args:
+            None
+
+        Returns:
+            A list of required property variables using standard names.
+        """
+        raise NotImplementedError('{} reaction package has not implemented the'
+                                  ' get_required_properties method. Please '
+                                  'contact the reaction package developer'
+                                  .format(self.name))
 
     @classmethod
     def get_supported_properties(self):
@@ -89,22 +112,22 @@ class PropertyParameterBase(ProcessBlockData):
         Returns:
             A dict with supported properties as keys.
         """
-        raise NotImplementedError('{} property package has not implemented the'
+        raise NotImplementedError('{} reaction package has not implemented the'
                                   ' get_supported_properties method. Please '
-                                  'contact the property package developer'
+                                  'contact the reaction package developer'
                                   .format(self.name))
 
     @classmethod
     def get_package_units(self):
         """
         Method to return a dictionary of default units of measurement used in
-        the property package. This is used to populate doc strings for
-        variables which derive from the property package (such as flows and
+        the reaction package. This is used to populate doc strings for
+        variables which derive from the reaction package (such as flows and
         volumes). This method should return a dict with keys for the
-        quantities used in the property package (as strs) and values of their
+        quantities used in the reaction package (as strs) and values of their
         default units as strs.
 
-        The quantities used by the framewokr are (all optional):
+        The quantities used by the framework are (all optional):
             - 'time'
             - 'length'
             - 'mass'
@@ -125,24 +148,64 @@ class PropertyParameterBase(ProcessBlockData):
             A dict with supported properties as keys and tuples of (method,
             units) as values.
         """
-        raise NotImplementedError('{} property package has not implemented the'
+        raise NotImplementedError('{} reaction package has not implemented the'
                                   ' get_package_units method. Please contact '
-                                  'the property package developer'
+                                  'the reaction package developer'
                                   .format(self.name))
 
+    def _validate_state_block(self):
+        """
+        Method to validate the state block assoicated with the reaction block
+        to ensure that the two are compatible.
+        """
+        # TODO: Need way to tie reaction package to a specfic property package
 
-class StateBlockBase(ProcessBlock):
+        # Check that package units agree
+        r_units = self.get_package_units()
+        prop_units = self.config.property_package.get_package_units()
+        for u in r_units:
+            if prop_units[u] != r_units[u]:
+                raise PropertyPackageError(
+                            '{} the property package associated with this '
+                            'reaction package does not use the same set of '
+                            'units of measurement ({}). Please choose a '
+                            'property package which uses the same units.'
+                            .format(self.name, u))
+
+        # Check that associated property package supports necessary properties
+        req_props = self.get_required_properties()
+        supp_props = self.config.property_package.get_supported_properties()
+
+        if req_props is not None:
+            for p in req_props:
+                if p not in supp_props:
+                    raise PropertyPackageError(
+                            '{} the property package associated with this '
+                            'reaction package does not support the necessary '
+                            'property, {}. Please choose a property package '
+                            'which supports all required properties.'
+                            .format(self.name, p))
+                elif supp_props[p] is False:
+                    raise PropertyPackageError(
+                            '{} the property package associated with this '
+                            'reaction package does not support the necessary '
+                            'property, {}. Please choose a property package '
+                            'which supports all required properties.'
+                            .format(self.name, p))
+
+
+class ReactionBlockBase(ProcessBlock):
     """
-        This is the base class for state block objects. These are used when
+        This is the base class for reaction block objects. These are used when
         constructing the SimpleBlock or IndexedBlock which will contain the
         PropertyData objects, and contains methods that can be applied to
-        multiple StateBlockData objects simultaneously.
+        multiple ReactionBlockData objects simultaneously.
     """
     def initialize(self, *args):
         """
-        This is a default initialization routine for StateBlocks to ensure
-        that a routine is present. All StateBlockData classes should
-        overload this method with one suited to the particular property package
+        This is a default initialization routine for ReactionBlocks to ensure
+        that a routine is present. All ReactionBlockData classes should
+        overload this method with one suited to the particular reaction package
 
         Args:
             None
@@ -150,42 +213,38 @@ class StateBlockBase(ProcessBlock):
         Returns:
             None
         """
-        raise NotImplementedError('{} property package has not implemented the'
+        raise NotImplementedError('{} reaction package has not implemented the'
                                   ' initialize method. Please contact '
-                                  'the property package developer'
+                                  'the reaction package developer'
                                   .format(self.name))
 
 
-class StateBlockDataBase(ProcessBlockData):
+class ReactionBlockDataBase(ProcessBlockData):
     """
-        This is the base class for state block data objects. These are
+        This is the base class for reaction block data objects. These are
         blocks that contain the Pyomo components associated with calculating a
-        set of thermophysical and transport properties for a given material.
+        set of reacion properties for a given material.
     """
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("parameters", ConfigValue(
-            description="""A reference to an instance of the Property Parameter
+            description="""A reference to an instance of the Reaction Parameter
                         Block associated with this property package."""))
-    CONFIG.declare("defined_state", ConfigValue(
-            default=False,
-            domain=In([True, False]),
-            description="Flag indicating if incoming state is fully defined",
-            doc="""Flag indicating whether the state should be considered fully
-                defines, and thus whether constraints such as sum of mass/mole
-                fractions should be included (default=False).
-                """))
-    CONFIG.declare("has_phase_equilibrium", ConfigValue(
+    CONFIG.declare("state_block", ConfigValue(
+            description="""A reference to an instance of a StateBlock with
+                        which this reaction block should be associated."""))
+    CONFIG.declare("has_equilibrium", ConfigValue(
             default=True,
             domain=In([True, False]),
-            description="Phase equilibrium constraint flag",
-            doc="""Flag indicating whether phase equilibrium constraints
-                should be constructed in this state block (default=True).
+            description="Equilibrium constraint flag",
+            doc="""Flag indicating whether equilibrium constraints
+                should be constructed in this reaction block (default=True).
                 """))
 
     def build(self):
         """
-        General build method for StateBlockDatas.
+        General build method for PropertyBlockDatas. Inheriting models should
+        call super().build.
 
         Args:
             None
@@ -193,93 +252,48 @@ class StateBlockDataBase(ProcessBlockData):
         Returns:
             None
         """
-        raise NotImplementedError('{} property package has not implemented a '
-                                  'build method. Please contact the property '
-                                  'package developer.')
+        self._validate_state_block()
 
-    def define_state_vars(self):
+    def _validate_state_block(self):
         """
-        Method that returns a dictionary of state variables used in property
-        package. Implement a placeholder method which returns an Exception to
-        force users to overload this.
+        Method to validate that the associated state block matches with the
+        PropertyParameterBlock assoicated with the ReactionParameterBlock.
         """
-        raise NotImplementedError('{} property package has not implemented the'
-                                  ' define_state_vars method. Please contact '
-                                  'the property package developer.')
+        if (self.config.parameters.config.property_package !=
+                self.config.state_block.config.parameters):
+            raise PropertyPackageError(
+                            '{} the StateBlock associated with this '
+                            'ReactionBlock does not match with the '
+                            'PropertyParamterBlock associated with the '
+                            'ReactionParameterBlock. The modelling framework '
+                            'does not support mixed associations of property '
+                            'and reaction packages.'
+                            .format(self.name))
 
-    def define_port_members(self):
-        """
-        Method used to specific components to populate Ports with. Defaults to
-        define_state_vars, and developers should overload as required.
-        """
-        return self.define_state_vars()
-
-    def get_material_flow_terms(self):
+    def get_reaction_material_terms(self):
         """
         Method which returns a tuple containing a valid expression to use in
         the material balances and a constant indicating the basis of this
         expression (mass, mole or None).
         """
-        raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_material_flow_terms method. Please '
-                                  'contact the property package developer.')
+        raise NotImplementedError('{} reaction package has not implemented the'
+                                  ' get_reaction_material_terms method. Please'
+                                  ' contact the reaction package developer.')
 
-    def get_material_density_terms(self):
-        """
-        Method which returns a tuple containing a valid expression to use in
-        the material balances and a constant indicating the basis of this
-        expression (mass, mole or None).
-        """
-        raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_material_density_terms method. Please '
-                                  'contact the property package developer.')
-
-    def get_material_diffusion_terms(self):
-        """
-        Method which returns a tuple containing a valid expression to use in
-        the material balances and a constant indicating the basis of this
-        expression (mass, mole or None).
-        """
-        raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_material_diffusion_terms method. '
-                                  'Please contact the property package '
-                                  'developer.')
-
-    def get_enthlpy_flow_terms(self):
+    def get_reaction_energy_terms(self):
         """
         Method which returns a tuple containing a valid expression to use in
         the energy balances and a constant indicating the basis of this
         expression (mass, mole or None).
         """
-        raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_energy_flow_terms method. Please '
-                                  'contact the property package developer.')
-
-    def get_enthlpy_density_terms(self):
-        """
-        Method which returns a tuple containing a valid expression to use in
-        the energy balances and a constant indicating the basis of this
-        expression (mass, mole or None).
-        """
-        raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_energy_density_terms method. Please '
-                                  'contact the property package developer.')
-
-    def get_energy_diffusion_terms(self):
-        """
-        Method which returns a tuple containing a valid expression to use in
-        the energy balances and a constant indicating the basis of this
-        expression (mass, mole or None).
-        """
-        raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_energy_diffusion_terms method. '
-                                  'Please contact the property package '
-                                  'developer.')
+        raise NotImplementedError('{} reaction package has not implemented the'
+                                  ' get_reaction_energy_terms method. Please'
+                                  ' contact the reaction package developer.')
 
     def __getattr__(self, attr):
         """
         This method is used to avoid generating unnecessary property
-        calculations in state blocks. __getattr__ is called whenever a
+        calculations in property blocks. __getattr__ is called whenever a
         property is called for, and if a propery does not exist, it looks for
         a method to create the required property, and any associated
         components.
