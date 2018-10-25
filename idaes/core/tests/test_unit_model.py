@@ -18,8 +18,8 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import ConcreteModel, Expression, Set, Var
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
-                        UnitBlockData)
-#, PropertyParameterBase, PropertyBlockDataBase)
+                        UnitBlockData, PropertyParameterBase,
+                        StateBlockDataBase)
 from pyomo.common.config import ConfigValue
 
 
@@ -40,6 +40,7 @@ def test_config_block():
 
     m.u = Unit()
 
+    assert len(m.u. config) == 1
     assert m.u.config.dynamic == 'use_parent_value'
 
 
@@ -163,10 +164,10 @@ def test_setup_dynamics_include_holdup():
 #                'energy': 'J',
 #                'holdup': 'mol'}
 #
-#@declare_process_block_class("PropertyBlock")
-#class PropertyBlockData(PropertyBlockDataBase):
+#@declare_process_block_class("StateBlock")
+#class StateBlockData(StateBlockDataBase):
 #    def build(self):
-#        super(PropertyBlockData, self).build()
+#        super(StateBlockData, self).build()
 #        self.phase_list = Set(initialize=["phase1", "phase2"])
 #        self.component_list = Set(initialize=["comp1", "comp2"])
 #        self.pressure = Var(initialize=1.0)

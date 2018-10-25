@@ -49,6 +49,8 @@ def test_config_validation():
 
     fs.p = ParameterBlock()
 
+    assert len(fs.config) == 3
+
     # Test dynamic attribute - valid values
     fs.config.dynamic = False
     fs.config.dynamic = 'use_parent_value'
@@ -229,21 +231,3 @@ def test_build_method():
     super(_Flowsheet, fs).build()
 
     assert isinstance(fs.time, Set)
-
-
-def test_post_transform_build():
-    # Test that post_transform_build works
-    fs = Flowsheet(dynamic=False, concrete=True)
-
-    def post_transform_build(self):
-        self.check_val = 1
-
-    # Add post_transform_build method to Block and create an instance
-    Block.post_transform_build = post_transform_build
-    fs.b = Block()
-
-    # Call flowsheet post_transform_build
-    fs.post_transform_build()
-
-    # Check that fs.b.post_transform_build was executed
-    assert fs.b.check_val == 1
