@@ -25,7 +25,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
-from ideas.core.util.exceptions import (PropertyNotSupportedError,
+from idaes.core.util.exceptions import (PropertyNotSupportedError,
                                         PropertyPackageError)
 
 # Some more information about this module
@@ -314,23 +314,23 @@ class StateBlockDataBase(ProcessBlockData):
                 else:
                     del self.__getattrcalls[-1]
             else:
-                raise ValueError("{} Trying to remove call {} from __getattr__"
-                                 " call list, however this is not the most "
-                                 "recent call in the list ({}). This indicates"
-                                 " a bug in the __getattr__ calls. Please "
-                                 "contact the IDAES developers with this bug."
-                                 .format(self.name,
-                                         attr,
-                                         self.__getattrcalls[-1]))
+                raise PropertyPackageError(
+                        "{} Trying to remove call {} from __getattr__"
+                        " call list, however this is not the most "
+                        "recent call in the list ({}). This indicates"
+                        " a bug in the __getattr__ calls. Please "
+                        "contact the IDAES developers with this bug."
+                        .format(self.name, attr, self.__getattrcalls[-1]))
 
         # Check that attr is not something we shouldn't touch
         if attr == "domain" or attr.startswith("_"):
             # Don't interfere with anything by getting attributes that are
             # none of my business
-            raise AttributeError('{} {} does not exist, but is a protected '
-                                 'attribute. Check the naming of your '
-                                 'components to avoid any reserved names'
-                                 .format(self.name, attr))
+            raise PropertyPackageError(
+                    '{} {} does not exist, but is a protected '
+                    'attribute. Check the naming of your '
+                    'components to avoid any reserved names'
+                    .format(self.name, attr))
 
         # Check for recursive calls
         try:
@@ -433,10 +433,11 @@ class StateBlockDataBase(ProcessBlockData):
             # No method key - raise Exception
             # Need to use an AttributeError so Pyomo.DAE will handle this
             clear_call_list(self, attr)
-            raise AttributeError('{} get_supported_properties method '
-                                 'does not contain a method for {}. '
-                                 'Please contact the developer of the '
-                                 'property package.'.format(self.name, attr))
+            raise PropertyPackageError('{} get_supported_properties method '
+                                       'does not contain a method for {}. '
+                                       'Please contact the developer of the '
+                                       'property package.'
+                                       .format(self.name, attr))
 
         # Call attribute if it is callable
         # If this fails, it should return a meaningful error.
