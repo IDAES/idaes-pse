@@ -15,11 +15,23 @@ Tests for math util methods.
 """
 
 import pytest
-from pyomo.environ import value
+from pyomo.environ import ConcreteModel, Param, Var, value
 from idaes.core.util.math import (smooth_abs, smooth_minmax,
                                   smooth_min, smooth_max)
 
 __author__ = "Andrew Lee"
+
+
+@pytest.fixture(scope="module")
+def simple_model():
+    """Build a simple model for testing.
+    """
+    m = ConcreteModel()
+    m.a = Var(initialize=4.0)
+    m.b = Var(initialize=-4.0)
+    m.e = Param(default=1e-4)
+
+    return m
 
 
 def test_smooth_abs_maths():
