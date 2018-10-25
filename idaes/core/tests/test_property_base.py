@@ -157,11 +157,16 @@ class _State(StateBlockDataBase):
         self.a = Var(initialize=1)
 
 
-def test_getattr_add_var():
+@pytest.fixture()
+def m():
     m = ConcreteModel()
     m.pb = Parameters()
     m.p = State(parameters=m.pb)
 
+    return m
+
+
+def test_getattr_add_var(m):
     assert isinstance(m.p.a, Var)
     assert m.p.a.value == 1
 
