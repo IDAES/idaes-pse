@@ -34,10 +34,12 @@ class DynamicError(ValueError):
     pass  # Incorrect browness setting
 
 
-class PropertyNotSupportedError(NotImplementedError):
+class PropertyNotSupportedError(AttributeError):
     """
     IDAES exception for cases when a models calls for a property which is
     not supported by the chosen property package.
+
+    Needs to inherit from AttributeError for Pyomo interactions.
     """
     pass  # Could not find bread
 

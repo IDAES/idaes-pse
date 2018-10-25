@@ -19,7 +19,8 @@ import pytest
 from pyomo.environ import ConcreteModel, Constraint, Var
 from idaes.core import (declare_process_block_class, PropertyParameterBase,
                         StateBlockBase, StateBlockDataBase)
-
+from idaes.core.util.exceptions import (PropertyPackageError,
+                                        PropertyNotSupportedError)
 
 # -----------------------------------------------------------------------------
 # Test ParameterBlock
@@ -138,23 +139,35 @@ class _Parameters(PropertyParameterBase):
 
     @classmethod
     def get_supported_properties(self):
-        return {'a': {'method': 'a_method', 'units': 'mol/s'},
-                'recursion1': {'method': '_recursion1', 'units': 'Pa'},
-                'recursion2': {'method': '_recursion2', 'units': 'K'},
-                'raise_exception': {'method': '_raise_exception',
-                                    'units': 'K'},
+        return {'a': {'method': 'a_method'},
+                'recursion1': {'method': '_recursion1'},
+                'recursion2': {'method': '_recursion2'},
+                'not_callable': {'method': 'test_obj'},
+                'raise_exception': {'method': '_raise_exception'},
+                'not_supported': {'method': False},
                 'does_not_create_component': {
-                        'method': '_does_not_create_component',
-                        'units': 'K'}}
+                        'method': '_does_not_create_component'}}
 
 
 @declare_process_block_class("State", block_class=StateBlockBase)
 class _State(StateBlockDataBase):
     def build(self):
-        self.not_callable = 1
+        self.test_obj = 1
 
     def a_method(self):
         self.a = Var(initialize=1)
+
+    def _recursion1(self):
+        self.recursive_cons1 = Constraint(expr=self.recursion2 == 1)
+
+    def _recursion2(self):
+        self.recursive_cons2 = Constraint(expr=self.recursion1 == 1)
+
+    def _raise_exception(self):
+        raise Exception()
+
+    def _does_not_create_component(self):
+        pass
 
 
 @pytest.fixture()
@@ -171,50 +184,39 @@ def test_getattr_add_var(m):
     assert m.p.a.value == 1
 
 
-#def test_getattr_protected():
-#    m = ConcreteModel()
-#    m.p = StateBlockData()
-#
-#    with pytest.raises(AttributeError):
-#        # Call a protected component that does not exist
-#        m.p.simple_cons = Constraint(expr=m.p._foo == 2)
-#
-#
-#def test_getattr_recursion():
-#    m = ConcreteModel()
-#    m.p = StateBlockData()
-#
-#    with pytest.raises(Exception):
-#        # Call a component that triggers a recursive loop of calls
-#        m.p.simple_cons = Constraint(expr=m.p.recursion1 == 2)
-#
-#
-#def test_getattr_does_not_exist():
-#    m = ConcreteModel()
-#    m.p = PropertyBlockData()
-#    with pytest.raises(AttributeError):
-#        m.p.simple_cons = Constraint(expr=m.p.does_not_exist == 2)
-#
-#
-#def test_getattr_not_callable():
-#    m = ConcreteModel()
-#    m.p = PropertyBlockData()
-#    with pytest.raises(AttributeError):
-#        m.p.simple_cons = Constraint(expr=m.p.not_callable == 2)
-#
-#
-#def test_getattr_raise_exception():
-#    m = ConcreteModel()
-#    m.pb = ParameterBlock()
-#    super(_ParameterBlock, m.pb).build()
-#    m.p = PropertyBlockData(parameters=m.pb)
-#    with pytest.raises(KeyError):
-#        m.p.simple_cons = Constraint(expr=m.p.raise_exception == 2)
-#
-#
-#def test_getattr_does_not_create_component():
-#    m = ConcreteModel()
-#    m.p = PropertyBlockData()
-#    with pytest.raises(Exception):
-#        m.p.simple_cons = Constraint(expr=m.p.does_not_create_component == 2)
+def test_getattr_protected(m):
+    with pytest.raises(PropertyPackageError):
+        # Call a protected component that does not exist
+        m.p.cons = Constraint(expr=m.p._foo == 1)
 
+
+def test_getattr_recursion(m):
+    with pytest.raises(PropertyPackageError):
+        # Call a component that triggers a recursive loop of calls
+        m.p.cons = Constraint(expr=m.p.recursion1 == 1)
+
+
+def test_getattr_does_not_exist(m):
+    with pytest.raises(PropertyNotSupportedError):
+        m.p.cons = Constraint(expr=m.p.does_not_exist == 1)
+
+
+def test_getattr_not_callable(m):
+    with pytest.raises(PropertyPackageError):
+        m.p.cons = Constraint(expr=m.p.not_callable == 1)
+
+
+def test_getattr_not_supported(m):
+    with pytest.raises(PropertyNotSupportedError):
+        m.p.cons = Constraint(expr=m.p.not_supported == 1)
+
+
+def test_getattr_raise_exception(m):
+    with pytest.raises(Exception):
+        m.p.cons = Constraint(expr=m.p.raise_exception == 1)
+
+
+# TODO : Need a test for cases where method does not create property
+#def test_getattr_does_not_create_component(m):
+#    with pytest.raises(PropertyPackageError):
+#        m.p.cons = Constraint(expr=m.p.does_not_create_component == 1)

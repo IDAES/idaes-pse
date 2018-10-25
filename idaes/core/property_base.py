@@ -433,11 +433,12 @@ class StateBlockDataBase(ProcessBlockData):
             # No method key - raise Exception
             # Need to use an AttributeError so Pyomo.DAE will handle this
             clear_call_list(self, attr)
-            raise PropertyPackageError('{} get_supported_properties method '
-                                       'does not contain a method for {}. '
-                                       'Please contact the developer of the '
-                                       'property package.'
-                                       .format(self.name, attr))
+            raise PropertyNotSupportedError(
+                    '{} get_supported_properties method '
+                    'does not contain a method for {}. '
+                    'Please elect a package which supports '
+                    'the necessary properties for your process.'
+                    .format(self.name, attr))
 
         # Call attribute if it is callable
         # If this fails, it should return a meaningful error.
@@ -452,8 +453,9 @@ class StateBlockDataBase(ProcessBlockData):
             # If f is not callable, inform the user and clear call list
             clear_call_list(self, attr)
             raise PropertyPackageError(
-                    '{} has an attribute _{}, however it is not '
-                    'callable.'.format(self.name, attr))
+                    '{} tried calling attribute {} in order to create '
+                    'component {}. However the method is not callable.'
+                    .format(self.name, f, attr))
 
         # Clear call list, and return
         comp = getattr(self, attr)

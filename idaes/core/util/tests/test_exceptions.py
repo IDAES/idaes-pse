@@ -31,7 +31,7 @@ def test_DynamicError():
 
 
 def test_PropertyNotSupportedError():
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(AttributeError):
         raise PropertyNotSupportedError()
 
 
