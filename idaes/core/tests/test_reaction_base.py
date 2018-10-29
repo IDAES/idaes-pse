@@ -215,7 +215,7 @@ def test_StateBlock_config():
         m.p.config.has_equilibrium = 10
 
 
-@declare_process_block_class("StateBlock")
+@declare_process_block_class("StateBlock", block_class=StateBlockBase)
 class StateBlockData(StateBlockDataBase):
     def build(self):
         pass

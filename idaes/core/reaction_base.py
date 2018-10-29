@@ -27,7 +27,9 @@ from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core.util.exceptions import (PropertyNotSupportedError,
                                         PropertyPackageError)
-from idaes.core.util.config import is_property_parameter_block
+from idaes.core.util.config import (is_property_parameter_block,
+                                    is_reaction_parameter_block,
+                                    is_state_block)
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -230,9 +232,11 @@ class ReactionBlockDataBase(ProcessBlockData):
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("parameters", ConfigValue(
+            domain=is_reaction_parameter_block,
             description="""A reference to an instance of the Reaction Parameter
                         Block associated with this property package."""))
     CONFIG.declare("state_block", ConfigValue(
+            domain=is_state_block,
             description="""A reference to an instance of a StateBlock with
                         which this reaction block should be associated."""))
     CONFIG.declare("has_equilibrium", ConfigValue(

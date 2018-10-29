@@ -78,7 +78,6 @@ def test_config_validation():
 
     # Test default_property_package attribute - valid values
     fs.config.default_property_package = fs.p
-    fs.config.default_property_package = "use_parent_value"
     # Test default_property_package - invalid values
     with pytest.raises(ValueError):
         fs.config.default_property_package = "foo"  # invalid str

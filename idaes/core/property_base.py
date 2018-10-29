@@ -25,6 +25,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
+from idaes.core.util.config import is_property_parameter_block
 from idaes.core.util.exceptions import (PropertyNotSupportedError,
                                         PropertyPackageError)
 
@@ -165,6 +166,7 @@ class StateBlockDataBase(ProcessBlockData):
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("parameters", ConfigValue(
+            domain=is_property_parameter_block,
             description="""A reference to an instance of the Property Parameter
                         Block associated with this property package."""))
     CONFIG.declare("defined_state", ConfigValue(

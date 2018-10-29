@@ -18,11 +18,18 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import ConcreteModel
 from pyomo.network import Port
-from idaes.core import declare_process_block_class, PropertyParameterBase
+from idaes.core import (declare_process_block_class,
+                        PropertyParameterBase,
+                        StateBlockBase,
+                        StateBlockDataBase,
+                        ReactionParameterBase)
 from idaes.core.util.config import (is_property_parameter_block,
+                                    is_reaction_parameter_block,
+                                    is_state_block,
                                     list_of_floats,
                                     list_of_strings,
                                     is_port)
+from idaes.core.util.exceptions import PropertyPackageError
 
 
 @declare_process_block_class("ParameterBlock")
@@ -40,15 +47,69 @@ def test_is_property_parameter_block_passes():
 
 
 def test_is_property_parameter_block_fails():
-    # Test that is_property_parameter_block returns TypeError with wrong input
+    # Test that is_property_parameter_block returns PropertyPackageError with
+    # wrong input
     m = ConcreteModel()
 
-    with pytest.raises(TypeError):
+    with pytest.raises(PropertyPackageError):
         is_property_parameter_block(m)  # Non Parameter Block Pyomo object
-    with pytest.raises(TypeError):
+    with pytest.raises(PropertyPackageError):
         is_property_parameter_block("foo")  # str
-    with pytest.raises(TypeError):
+    with pytest.raises(PropertyPackageError):
         is_property_parameter_block(1)  # int
+
+
+@declare_process_block_class("RParameterBlock")
+class _RParameterBlock(ReactionParameterBase):
+    def build(self):
+        pass
+
+
+def test_is_reaction_parameter_block_passes():
+    # Make an instance of a Parameter Block
+    r = RParameterBlock()
+
+    # Check that is_reaction_parameter_block returns the ReactionParameterBlock
+    assert r == is_reaction_parameter_block(r)
+
+
+def test_is_reaction_parameter_block_fails():
+    # Test that is_reaction_parameter_block returns PropertyPackageError with
+    # wrong input
+    m = ConcreteModel()
+
+    with pytest.raises(PropertyPackageError):
+        is_reaction_parameter_block(m)  # Non Parameter Block Pyomo object
+    with pytest.raises(PropertyPackageError):
+        is_reaction_parameter_block("foo")  # str
+    with pytest.raises(PropertyPackageError):
+        is_reaction_parameter_block(1)  # int
+
+
+@declare_process_block_class("StateBlock", block_class=StateBlockBase)
+class StateBlockData(StateBlockDataBase):
+    def build(self):
+        pass
+
+
+def test_is_state_block_passes():
+    # Make an instance of a StateBlock
+    s = StateBlock()
+
+    # Check that is_state_block returns the StateBlock
+    assert s == is_state_block(s)
+
+
+def test_is_state_block_fails():
+    # Test that is_state_block returns PropertyPackageError with wrong input
+    m = ConcreteModel()
+
+    with pytest.raises(PropertyPackageError):
+        is_state_block(m)  # Non Parameter Block Pyomo object
+    with pytest.raises(PropertyPackageError):
+        is_state_block("foo")  # str
+    with pytest.raises(PropertyPackageError):
+        is_state_block(1)  # int
 
 
 def test_list_of_strings():

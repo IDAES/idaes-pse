@@ -20,7 +20,7 @@ the `domain` argument in ConfigBlocks.
 __author__ = "Andrew Lee"
 
 from pyomo.network import Port
-from idaes.core.property_base import PropertyParameterBase
+from idaes.core.util.exceptions import PropertyPackageError
 
 
 def is_property_parameter_block(val):
@@ -30,16 +30,56 @@ def is_property_parameter_block(val):
         val : value to be checked
 
     Returns:
-        TypeError if val is not an instance of PropertyParameterBase,
-        'use_parameter_block' or None
+        PropertyPackageError if val is not an instance of PropertyParameterBase
+        or None
     '''
+    from idaes.core.property_base import PropertyParameterBase
     if (isinstance(val, PropertyParameterBase) or
-            val in (None, 'use_parent_value')):
+            val is None):
         return val
     else:
-        raise TypeError("""Property package argument should be an instance
-                        of a Property Parameter Block, or have a value of
-                        'use_parent_value' or None""")
+        raise PropertyPackageError(
+                """Property package argument should be an instance
+                of a PropertyParameterBlock or  None""")
+
+
+def is_reaction_parameter_block(val):
+    '''Domain validator for reaction package attributes
+
+    Args:
+        val : value to be checked
+
+    Returns:
+        PropertyPackageError if val is not an instance of ReactionParameterBase
+        or None
+    '''
+    from idaes.core.reaction_base import ReactionParameterBase
+    if (isinstance(val, ReactionParameterBase) or
+            val is None):
+        return val
+    else:
+        raise PropertyPackageError(
+                """Reaction package argument should be an instance
+                of a ReactionParameterBlock or None""")
+
+
+def is_state_block(val):
+    '''Domain validator for state block as an argument
+
+    Args:
+        val : value to be checked
+
+    Returns:
+        PropertyPackageError if val is not an instance of StateBlockBase
+        or None
+    '''
+    from idaes.core.property_base import StateBlockBase
+    if (isinstance(val, StateBlockBase) or val is None):
+        return val
+    else:
+        raise PropertyPackageError(
+                """State block should be an instance of a StateBlock or
+                None""")
 
 
 def list_of_floats(arg):
