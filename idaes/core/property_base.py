@@ -374,7 +374,7 @@ class StateBlockDataBase(ProcessBlockData):
 
             if m is None:
                 raise PropertyPackageError(
-                        '{} Property package get_supported_properties'
+                        '{} property package get_supported_properties'
                         ' method returned None when trying to create '
                         '{}. Please contact the developer of the '
                         'property package'.format(self.name, attr))
@@ -436,7 +436,7 @@ class StateBlockDataBase(ProcessBlockData):
             raise PropertyNotSupportedError(
                     '{} get_supported_properties method '
                     'does not contain a method for {}. '
-                    'Please elect a package which supports '
+                    'Please select a package which supports '
                     'the necessary properties for your process.'
                     .format(self.name, attr))
 

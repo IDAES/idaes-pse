@@ -25,8 +25,9 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
-from ideas.core.util.exceptions import (PropertyNotSupportedError,
+from idaes.core.util.exceptions import (PropertyNotSupportedError,
                                         PropertyPackageError)
+from idaes.core.util.config import is_property_parameter_block
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -49,7 +50,8 @@ class ReactionParameterBase(ProcessBlockData):
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("property_package", ConfigValue(
             description="Reference to associated PropertyPackageParameter "
-                        "object"))
+                        "object",
+            domain=is_property_parameter_block))
     CONFIG.declare("default_arguments", ConfigBlock(
             description="Default arguments to use with Property Package"))
 
@@ -67,7 +69,7 @@ class ReactionParameterBase(ProcessBlockData):
         # Get module reference and store on block
         frm = inspect.stack()[1]
         self.property_module = inspect.getmodule(frm[0])
-        self._validate_state_block()
+        self._validate_property_parameter_block()
 
     @classmethod
     def get_required_properties(self):
@@ -153,10 +155,10 @@ class ReactionParameterBase(ProcessBlockData):
                                   'the reaction package developer'
                                   .format(self.name))
 
-    def _validate_state_block(self):
+    def _validate_property_parameter_block(self):
         """
-        Method to validate the state block assoicated with the reaction block
-        to ensure that the two are compatible.
+        Method to validate the property parameter block assoicated with the
+        reaction block to ensure that the two are compatible.
         """
         # TODO: Need way to tie reaction package to a specfic property package
 
@@ -293,7 +295,7 @@ class ReactionBlockDataBase(ProcessBlockData):
     def __getattr__(self, attr):
         """
         This method is used to avoid generating unnecessary property
-        calculations in property blocks. __getattr__ is called whenever a
+        calculations in reaction blocks. __getattr__ is called whenever a
         property is called for, and if a propery does not exist, it looks for
         a method to create the required property, and any associated
         components.
@@ -328,23 +330,23 @@ class ReactionBlockDataBase(ProcessBlockData):
                 else:
                     del self.__getattrcalls[-1]
             else:
-                raise ValueError("{} Trying to remove call {} from __getattr__"
-                                 " call list, however this is not the most "
-                                 "recent call in the list ({}). This indicates"
-                                 " a bug in the __getattr__ calls. Please "
-                                 "contact the IDAES developers with this bug."
-                                 .format(self.name,
-                                         attr,
-                                         self.__getattrcalls[-1]))
+                raise PropertyPackageError(
+                        "{} Trying to remove call {} from __getattr__"
+                        " call list, however this is not the most "
+                        "recent call in the list ({}). This indicates"
+                        " a bug in the __getattr__ calls. Please "
+                        "contact the IDAES developers with this bug."
+                        .format(self.name, attr, self.__getattrcalls[-1]))
 
         # Check that attr is not something we shouldn't touch
         if attr == "domain" or attr.startswith("_"):
             # Don't interfere with anything by getting attributes that are
             # none of my business
-            raise AttributeError('{} {} does not exist, but is a protected '
-                                 'attribute. Check the naming of your '
-                                 'components to avoid any reserved names'
-                                 .format(self.name, attr))
+            raise PropertyPackageError(
+                    '{} {} does not exist, but is a protected '
+                    'attribute. Check the naming of your '
+                    'components to avoid any reserved names'
+                    .format(self.name, attr))
 
         # Check for recursive calls
         try:
@@ -388,7 +390,7 @@ class ReactionBlockDataBase(ProcessBlockData):
 
             if m is None:
                 raise PropertyPackageError(
-                        '{} Property package get_supported_properties'
+                        '{} reaction package get_supported_properties'
                         ' method returned None when trying to create '
                         '{}. Please contact the developer of the '
                         'property package'.format(self.name, attr))
@@ -397,7 +399,7 @@ class ReactionBlockDataBase(ProcessBlockData):
             # support property
             clear_call_list(self, attr)
             raise PropertyNotSupportedError(
-                    '{} {} is not supported by property package (property is '
+                    '{} {} is not supported by reaction package (property is '
                     'not listed in get_supported_properties).'
                     .format(self.name, attr, attr))
 
@@ -409,7 +411,7 @@ class ReactionBlockDataBase(ProcessBlockData):
                 clear_call_list(self, attr)
                 raise PropertyPackageError(
                         '{} {} should be constructed automatically '
-                        'by property package, but is not present. '
+                        'by reaction package, but is not present. '
                         'This can be caused by methods being called '
                         'out of order.'.format(self.name, attr))
             elif m[attr]['method'] is False:
@@ -417,7 +419,7 @@ class ReactionBlockDataBase(ProcessBlockData):
                 # Raise NotImplementedError
                 clear_call_list(self, attr)
                 raise PropertyNotSupportedError(
-                        '{} {} is not supported by property package '
+                        '{} {} is not supported by reaction package '
                         '(property method is listed as False in '
                         'get_supported_properties).'
                         .format(self.name, attr))
@@ -431,9 +433,9 @@ class ReactionBlockDataBase(ProcessBlockData):
                     raise PropertyPackageError(
                             '{} {} get_supported_properties method '
                             'returned a name that does not correspond'
-                            ' to any method in the property package. '
+                            ' to any method in the reaction package. '
                             'Please contact the developer of the '
-                            'property package.'.format(self.name, attr))
+                            'reaction package.'.format(self.name, attr))
             else:
                 # Otherwise method name is invalid
                 clear_call_list(self, attr)
@@ -441,16 +443,18 @@ class ReactionBlockDataBase(ProcessBlockData):
                              '{} {} get_supported_properties method '
                              'returned invalid value for method name. '
                              'Please contact the developer of the '
-                             'property package.'
+                             'reaction package.'
                              .format(self.name, attr))
         except KeyError:
             # No method key - raise Exception
             # Need to use an AttributeError so Pyomo.DAE will handle this
             clear_call_list(self, attr)
-            raise AttributeError('{} get_supported_properties method '
-                                 'does not contain a method for {}. '
-                                 'Please contact the developer of the '
-                                 'property package.'.format(self.name, attr))
+            raise PropertyNotSupportedError(
+                    '{} get_supported_properties method '
+                    'does not contain a method for {}. '
+                    'Please select a package which supports '
+                    'the necessary properties for your process.'
+                    .format(self.name, attr))
 
         # Call attribute if it is callable
         # If this fails, it should return a meaningful error.
@@ -465,8 +469,9 @@ class ReactionBlockDataBase(ProcessBlockData):
             # If f is not callable, inform the user and clear call list
             clear_call_list(self, attr)
             raise PropertyPackageError(
-                    '{} has an attribute _{}, however it is not '
-                    'callable.'.format(self.name, attr))
+                    '{} tried calling attribute {} in order to create '
+                    'component {}. However the method is not callable.'
+                    .format(self.name, f, attr))
 
         # Clear call list, and return
         comp = getattr(self, attr)

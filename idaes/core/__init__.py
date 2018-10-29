@@ -5,3 +5,5 @@ from .unit_model import UnitBlockData, UnitBlock
 from .flowsheet_model import FlowsheetBlockData, FlowsheetBlock
 from .property_base import (StateBlockDataBase, PropertyParameterBase,
                             StateBlockBase)
+from .reaction_base import (ReactionBlockDataBase, ReactionParameterBase,
+                            ReactionBlockBase)

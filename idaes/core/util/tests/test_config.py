@@ -18,36 +18,37 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import ConcreteModel
 from pyomo.network import Port
-from idaes.core.util.config import is_parameter_block, list_of_floats, \
-                                    list_of_strings, is_port
-
-# Import a Property file for testing
-from os.path import abspath, dirname, join
-from pyutilib.misc import import_file
-example = join(dirname(abspath(__file__)), '..', '..', '..', '..',
-               'examples', 'core', 'examples',
-               'steam_properties_demo.py')
-fe = import_file(example)
+from idaes.core import declare_process_block_class, PropertyParameterBase
+from idaes.core.util.config import (is_property_parameter_block,
+                                    list_of_floats,
+                                    list_of_strings,
+                                    is_port)
 
 
-def test_is_parameter_block_passes():
+@declare_process_block_class("ParameterBlock")
+class _ParameterBlock(PropertyParameterBase):
+    def build(self):
+        pass
+
+
+def test_is_property_parameter_block_passes():
     # Make an instance of a Parameter Block
-    p = fe.PropertyParameterBlock()
+    p = ParameterBlock()
 
-    # Check that is_parameter_block returns the ParameterBlock
-    assert p == is_parameter_block(p)
+    # Check that is_property_parameter_block returns the ParameterBlock
+    assert p == is_property_parameter_block(p)
 
 
-def test_is_parameter_block_fails():
-    # Test that is_parameter_block returns TypeError with wrong input
+def test_is_property_parameter_block_fails():
+    # Test that is_property_parameter_block returns TypeError with wrong input
     m = ConcreteModel()
 
     with pytest.raises(TypeError):
-        is_parameter_block(m)  # Non Parameter Block Pyomo object
+        is_property_parameter_block(m)  # Non Parameter Block Pyomo object
     with pytest.raises(TypeError):
-        is_parameter_block("foo")  # str
+        is_property_parameter_block("foo")  # str
     with pytest.raises(TypeError):
-        is_parameter_block(1)  # int
+        is_property_parameter_block(1)  # int
 
 
 def test_list_of_strings():

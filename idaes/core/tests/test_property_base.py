@@ -17,6 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, Var
+from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, PropertyParameterBase,
                         StateBlockBase, StateBlockDataBase)
 from idaes.core.util.exceptions import (PropertyPackageError,
@@ -30,6 +31,15 @@ class _ParameterBlock(PropertyParameterBase):
         pass
 
 
+def test_config_block():
+    # Test that PropertyParameterBase gets module information
+    m = ConcreteModel()
+    m.p = ParameterBlock()
+
+    assert len(m.p.config) == 1
+    assert isinstance(m.p.config.default_arguments, ConfigBlock)
+
+
 def test_PropertyParameterBase():
     # Test that PropertyParameterBase gets module information
     m = ConcreteModel()
@@ -39,7 +49,7 @@ def test_PropertyParameterBase():
     assert hasattr(m.p, "property_module")
 
 
-def test_NotImplementedErrors():
+def test_PropertyParameter_NotImplementedErrors():
     # Test that class methods return NotImplementedError
     m = ConcreteModel()
     m.p = ParameterBlock()
@@ -52,8 +62,14 @@ def test_NotImplementedErrors():
 
 # -----------------------------------------------------------------------------
 # Test StateBlockBase
+@declare_process_block_class("StateBlockData", block_class=StateBlockBase)
+class _StateBlockData(StateBlockDataBase):
+    def build(self):
+        pass
+
+
 def test_StateBlockBase_initialize():
-    # Test that StateBlockBase initialize method rasie NotImplementedError
+    # Test that StateBlockBase initialize method raise NotImplementedError
     m = ConcreteModel()
     m.p = StateBlockData()
 
@@ -76,11 +92,6 @@ def test_build_NotImplementedError():
     with pytest.raises(NotImplementedError):
         m.p = BuildTest()
 
-
-@declare_process_block_class("StateBlockData", block_class=StateBlockBase)
-class _StateBlockData(StateBlockDataBase):
-    def build(self):
-        pass
 
 def test_StateBlock_config():
     # Test that StateBlockDataBase config has correct arguments
@@ -107,7 +118,7 @@ def test_StateBlock_config():
         m.p.config.defined_state = 10
 
 
-def test_NotImplementedErrors():
+def test_StateBlock_NotImplementedErrors():
     # Test that placeholder methods return NotImplementedErrors
     m = ConcreteModel()
     m.p = StateBlockData()

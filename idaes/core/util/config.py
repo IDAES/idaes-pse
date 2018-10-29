@@ -23,7 +23,7 @@ from pyomo.network import Port
 from idaes.core.property_base import PropertyParameterBase
 
 
-def is_parameter_block(val):
+def is_property_parameter_block(val):
     '''Domain validator for property package attributes
 
     Args:
