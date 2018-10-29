@@ -29,7 +29,7 @@ from idaes.core.util.config import (is_property_parameter_block,
                                     list_of_floats,
                                     list_of_strings,
                                     is_port)
-from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.exceptions import ConfigurationError
 
 
 @declare_process_block_class("ParameterBlock")
@@ -47,15 +47,15 @@ def test_is_property_parameter_block_passes():
 
 
 def test_is_property_parameter_block_fails():
-    # Test that is_property_parameter_block returns PropertyPackageError with
+    # Test that is_property_parameter_block returns ConfigurationError with
     # wrong input
     m = ConcreteModel()
 
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_property_parameter_block(m)  # Non Parameter Block Pyomo object
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_property_parameter_block("foo")  # str
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_property_parameter_block(1)  # int
 
 
@@ -74,15 +74,15 @@ def test_is_reaction_parameter_block_passes():
 
 
 def test_is_reaction_parameter_block_fails():
-    # Test that is_reaction_parameter_block returns PropertyPackageError with
+    # Test that is_reaction_parameter_block returns ConfigurationError with
     # wrong input
     m = ConcreteModel()
 
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_reaction_parameter_block(m)  # Non Parameter Block Pyomo object
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_reaction_parameter_block("foo")  # str
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_reaction_parameter_block(1)  # int
 
 
@@ -101,14 +101,14 @@ def test_is_state_block_passes():
 
 
 def test_is_state_block_fails():
-    # Test that is_state_block returns PropertyPackageError with wrong input
+    # Test that is_state_block returns ConfigurationError with wrong input
     m = ConcreteModel()
 
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_state_block(m)  # Non Parameter Block Pyomo object
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_state_block("foo")  # str
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_state_block(1)  # int
 
 
@@ -125,8 +125,8 @@ def test_list_of_strings():
 
 def test_list_of_strings_errors():
     # Test that list_of_strings fails correctly
-    with pytest.raises(ValueError):
-        list_of_floats({"foo": "bar"})  # dict
+    with pytest.raises(ConfigurationError):
+        list_of_strings({"foo": "bar"})  # dict
 
 
 def test_list_of_floats():
@@ -156,13 +156,13 @@ def test_is_port():
 
 def test_is_port_errors():
     # Test that is_port returns errors when not given a Port
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigurationError):
         is_port("foo")  # str
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigurationError):
         is_port(["foo", "bar"])  # list of strs
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigurationError):
         is_port({"foo": "bar"})  # dict
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigurationError):
         is_port(1.0)  # float
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigurationError):
         is_port(1)  # int

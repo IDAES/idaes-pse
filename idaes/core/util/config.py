@@ -20,7 +20,7 @@ the `domain` argument in ConfigBlocks.
 __author__ = "Andrew Lee"
 
 from pyomo.network import Port
-from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.exceptions import ConfigurationError
 
 
 def is_property_parameter_block(val):
@@ -30,7 +30,7 @@ def is_property_parameter_block(val):
         val : value to be checked
 
     Returns:
-        PropertyPackageError if val is not an instance of PropertyParameterBase
+        ConfigurationError if val is not an instance of PropertyParameterBase
         or None
     '''
     from idaes.core.property_base import PropertyParameterBase
@@ -38,7 +38,7 @@ def is_property_parameter_block(val):
             val is None):
         return val
     else:
-        raise PropertyPackageError(
+        raise ConfigurationError(
                 """Property package argument should be an instance
                 of a PropertyParameterBlock or  None""")
 
@@ -50,7 +50,7 @@ def is_reaction_parameter_block(val):
         val : value to be checked
 
     Returns:
-        PropertyPackageError if val is not an instance of ReactionParameterBase
+        ConfigurationError if val is not an instance of ReactionParameterBase
         or None
     '''
     from idaes.core.reaction_base import ReactionParameterBase
@@ -58,7 +58,7 @@ def is_reaction_parameter_block(val):
             val is None):
         return val
     else:
-        raise PropertyPackageError(
+        raise ConfigurationError(
                 """Reaction package argument should be an instance
                 of a ReactionParameterBlock or None""")
 
@@ -70,14 +70,14 @@ def is_state_block(val):
         val : value to be checked
 
     Returns:
-        PropertyPackageError if val is not an instance of StateBlockBase
+        ConfigurationError if val is not an instance of StateBlockBase
         or None
     '''
     from idaes.core.property_base import StateBlockBase
     if (isinstance(val, StateBlockBase) or val is None):
         return val
     else:
-        raise PropertyPackageError(
+        raise ConfigurationError(
                 """State block should be an instance of a StateBlock or
                 None""")
 
@@ -110,7 +110,9 @@ def list_of_strings(arg):
         List of strings
     '''
     if isinstance(arg, dict):
-        raise ValueError("list_of_strings cannot cast dict")
+        raise ConfigurationError("Invalid argument type (dict). "
+                                 "Expected a list of strings, or something "
+                                 "that can be cast to a list of strings")
 
     try:
         # Assume arg is iterable
@@ -134,7 +136,6 @@ def is_port(arg):
         Port object or Exception
     '''
     if not isinstance(arg, Port):
-        raise TypeError('One side of the Stream is not a Port. Check '
-                        'that both source and destination are Port '
-                        'objects.')
+        raise ConfigurationError('Invalid argument type. Expected an instance '
+                                 'of a Pyomo Port object')
     return arg
