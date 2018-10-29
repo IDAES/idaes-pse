@@ -17,10 +17,12 @@ Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import ConcreteModel, Expression, Set, Var
+from pyomo.common.config import ConfigValue
+
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
                         UnitBlockData, PropertyParameterBase,
                         StateBlockDataBase)
-from pyomo.common.config import ConfigValue
+from idaes.core.util.exceptions import DynamicError
 
 
 @declare_process_block_class("Flowsheet")
@@ -41,7 +43,7 @@ def test_config_block():
     m.u = Unit()
 
     assert len(m.u. config) == 1
-    assert m.u.config.dynamic == 'use_parent_value'
+    assert m.u.config.dynamic == None
 
 
 def test_config_args():
@@ -60,7 +62,7 @@ def test_config_args_invalid():
 
     m.u.config.dynamic = True
     m.u.config.dynamic = False
-    m.u.config.dynamic = 'use_parent_value'
+    m.u.config.dynamic = None
 
     # Test that Value error raised when given invalid config arguments
     with pytest.raises(ValueError):
@@ -88,25 +90,25 @@ def test_setup_dynamics1():
 
 
 def test_setup_dynamics2():
-    # Test that _setup_dynamics returns an Attribute error when parent has no
+    # Test that _setup_dynamics returns an DynamicError when parent has no
     # dynamic config argument
 
     m = ConcreteModel()
     m.u = Unit()
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(DynamicError):
         m.u._setup_dynamics()
 
 
 def test_setup_dynamics_dynamic_in_steady_state():
-    # Test that a Value Error is raised when a dynamic models is placed in a
+    # Test that a DynamicError is raised when a dynamic models is placed in a
     # steady-state parent
     m = ConcreteModel()
 
     m.fs = Flowsheet(dynamic=False)
 
     m.fs.u = Unit(dynamic=True)
-    with pytest.raises(ValueError):
+    with pytest.raises(DynamicError):
         m.fs.u._setup_dynamics()
 
 
@@ -123,12 +125,12 @@ def test_setup_dynamics_get_time():
 
 
 def test_setup_dynamics_get_time_fails():
-    # Test that AttributeError is raised when parent does not have time domain
+    # Test that DynamicError is raised when parent does not have time domain
     m = ConcreteModel()
 
     m.u = Unit()
-    with pytest.raises(AttributeError):
-        m.fs.u._setup_dynamics()
+    with pytest.raises(DynamicError):
+        m.u._setup_dynamics()
 
 
 def test_setup_dynamics_include_holdup():
