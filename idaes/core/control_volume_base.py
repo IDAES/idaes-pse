@@ -20,17 +20,22 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
+from pyomo.core import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
 # Import IDAES cores
 from idaes.core import ProcessBlockData
-from idaes.core.util.config import is_property_parameter_block
+from idaes.core.util.config import (is_property_parameter_block,
+                                    is_reaction_parameter_block)
+from idaes.core.util.exceptions import (ConfigurationError,
+                                        DynamicError,
+                                        PropertyPackageError)
 
 __author__ = "Andrew Lee"
 
 # Set up logger
-logger = logging.getLogger('idaes.unit_model.holdup')
+logger = logging.getLogger('idaes.unit_model.control_volume')
 
 
 # Enumerate options for material balances
@@ -60,12 +65,11 @@ MomentumBalanceType = Enum(
 # Set up example ConfigBlock that will work with ControlVolume autobuild method
 CONFIG_Base = ProcessBlockData.CONFIG()
 CONFIG_Base.declare("dynamic", ConfigValue(
-        default='use_parent_value',
-        domain=In(['use_parent_value', True, False]),
+        domain=In([True, False]),
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic,
-**default** - 'use_parent_value'.  **Valid values:** {
-**'use_parent_value'** - get flag from parent,
+**default** - None.  **Valid values:** {
+**None** - get flag from parent,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model}"""))
 CONFIG_Base.declare("include_holdup", ConfigValue(
@@ -168,7 +172,7 @@ constructed, **default** - False. **Valid values:** {
 **False** - exclude pressure change terms.}"""))
 CONFIG_Base.declare("property_package", ConfigValue(
         domain=is_property_parameter_block,
-        description="Property package to use for holdup",
+        description="Property package to use for control volume",
         doc="""Property parameter object used to define property calculations,
 **default** - None. **Valid values:** {
 **a ParameterBlock object**.}"""))
@@ -198,13 +202,13 @@ class ControlVolumeBase(ProcessBlockData):
         domain=In([True, False]),
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic, **default** -
-'use_parent_value'. **Valid values:** {
-**'use_parent_value'** - get flag from parent,
+None. **Valid values:** {
+**None** - get flag from parent,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model}"""))
     CONFIG.declare("property_package", ConfigValue(
         domain=is_property_parameter_block,
-        description="Property package to use for holdup",
+        description="Property package to use for control volume",
         doc="""Property parameter object used to define property calculations.
 **Valid values:** a PropertyParameterBlock object.}"""))
     CONFIG.declare("property_package_args", ConfigValue(
@@ -213,12 +217,23 @@ class ControlVolumeBase(ProcessBlockData):
         doc="""A ConfigBlock with arguments to be passed to a property block(s)
  and used when constructing these, **default** - None. **Valid values:** {
 see property package for documentation.}"""))
+    CONFIG.declare("reaction_package", ConfigValue(
+        domain=is_reaction_parameter_block,
+        description="Reaction package to use for control volume",
+        doc="""Reaction parameter object used to define reaction calculations.
+**Valid values:** a ReactionParameterBlock object.}"""))
+    CONFIG.declare("reaction_package_args", ConfigValue(
+        domain=ConfigBlock,
+        description="Arguments to use for constructing reaction packages",
+        doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
+ and used when constructing these, **default** - None. **Valid values:** {
+see reaction package for documentation.}"""))
 
     def build(self):
         """
-        General build method for Holdup blocks. This method calls a number
-        of sub-methods which automate the construction of expected attributes
-        of all Holdup blocks.
+        General build method for Control Volumes blocks. This method calls a
+        number of sub-methods which automate the construction of expected
+        attributes of all ControlVolume blocks.
 
         Inheriting models should call `super().build`.
 
@@ -228,270 +243,181 @@ see property package for documentation.}"""))
         Returns:
             None
         """
-        pass
-#        # Check construction flags
-#        self._inherit_default_build_arguments()
-#
-#        # Call UnitBlockData.build to setup dynamics
-#        self._setup_dynamics()
-#
-#        # Get property pacakge details
-#        self.get_property_package()
+        # Setup dynamics flag and time domain
+        self._setup_dynamics()
 
-#    def _inherit_default_build_arguments(self):
-#        """
-#        Method to collect build arguments from parent blocks as required.
-#
-#        If an argument is set as 'use_parent_value', this method attempts to
-#        set the argument to that of the parent model, otherwise a default value
-#        is used.
-#
-#        Args:
-#            None
-#
-#        Returns:
-#            None
-#        """
-#        parent = self.parent_block()
-#        build_arguments = {'property_package': None,
-#                           'property_package_args': {},
-#                           'include_holdup': True,
-#                           'material_balance_type': 'component_phase',
-#                           'energy_balance_type': 'enthalpy_total',
-#                           'momentum_balance_type': 'pressure',
-#                           'has_rate_reactions': False,
-#                           'has_equilibrium_reactions': False,
-#                           'has_phase_equilibrium': False,
-#                           'has_mass_transfer': False,
-#                           'has_heat_transfer': False,
-#                           'has_work_transfer': False,
-#                           'has_pressure_change': False
-#                           }
-#        for arg in build_arguments:
-#            # If argument is 'use_parent_value', try to get from parent
-#            if getattr(self.config, arg) is 'use_parent_value':
-#                try:
-#                    setattr(self.config, arg, getattr(parent.config, arg))
-#                except AttributeError:
-#                    # If parent does not have flag, resort to defaults
-#                    self.config[arg] = build_arguments[arg]
-#
-#    def _setup_dynamics(self):
-#        """
-#        This method automates the setting of the dynamic flag and time domain
-#        for holdup blocks.
-#
-#        If dynamic flag is 'use_parent_value', method attempts to get the value
-#        of the dynamic flag from the parent model, otherwise the local vlaue is
-#        used. The time domain is aloways collected from the parent model.
-#
-#        Finally, if dynamic = True, the include_holdup flag is checked to
-#        ensure it is also True.
-#
-#        Args:
-#            None
-#
-#        Returns:
-#            None
-#        """
-#        # Check the dynamic flag, and retrieve if necessary
-#        if self.config.dynamic == 'use_parent_value':
-#            # Get dynamic flag from parent
-#            try:
-#                self.config.dynamic = self.parent_block().config.dynamic
-#            except AttributeError:
-#                # If parent does not have dynamic flag, raise Exception
-#                raise AttributeError('{} has a parent model '
-#                                     'with no dynamic attribute.'
-#                                     .format(self.name))
-#
-#        # Try to get reference to time object from parent
-#        try:
-#            object.__setattr__(self, "time", self.parent_block().time)
-#        except AttributeError:
-#            raise AttributeError('{} has a parent model '
-#                                 'with no time domain'.format(self.name))
-#
-#        # Check include_holdup, if present
-#        if self.config.dynamic:
-#            if not self.config.include_holdup:
-#                # Dynamic model must have include_holdup = True
-#                logger.warning('{} Dynamic holdup blocks must have '
-#                               'include_holdup = True. '
-#                               'Overwritting argument.'
-#                               .format(self.name))
-#                self.config.include_holdup = True
-#
-#    def get_property_package(self):
-#        """
-#        This method gathers the necessary information about the property
-#        package to be used in the holdup block.
-#
-#        If a property package has not been provided by the user, the method
-#        searches up the model tree until it finds an object with the
-#        'default_property_package' attribute and uses this package for the
-#        holdup block.
-#
-#        The method also gathers any default construction arguments specified
-#        for the property package and combines these with any arguments
-#        specified by the user for the holdup block (user specified arguments
-#        take priority over defaults).
-#
-#        Args:
-#            None
-#
-#        Returns:
-#            None
-#        """
-#        # Get property_package block if not provided in arguments
-#        parent = self.parent_block()
-#        if self.config.property_package in (None, 'use_parent_value'):
-#            # Try to get property_package from parent
-#            if hasattr(parent.config, "property_package"):
-#                if parent.config.property_package is None:
-#                    parent.config.property_package = \
-#                        self._get_default_prop_pack()
-#
-#                self.config.property_package = parent.config.property_package
-#            else:
-#                self.config.property_package = self._get_default_prop_pack()
-#
-#        # Get module of property package
-#        self.property_module = self.config.property_package.property_module
-#
-#        # Check for any flowsheet level build arguments
-#        try:
-#            # If flowsheet arguments exist, merge with local arguments
-#            # Local arguments take precedence
-#            arg_dict = self.config.property_package.config.default_arguments
-#            arg_dict.update(self.config.property_package_args)
-#            self.config.property_package_args = arg_dict
-#        except AttributeError:
-#            # Otherwise, just use local arguments
-#            pass
-#
-#    def _get_default_prop_pack(self):
-#        """
-#        This method is used to find a default property package defined at the
-#        flowsheet level if a package is not provided as an argument when
-#        instantiating the holdup block.
-#
-#        Args:
-#            None
-#
-#        Returns:
-#            None
-#        """
-#        parent = self.parent_block()
-#        while True:
-#            if hasattr(parent.config, "default_property_package"):
-#                break
-#            else:
-#                if parent.parent_block() is None:
-#                    raise AttributeError(
-#                            '{} no property package provided and '
-#                            'no default defined. Found end of '
-#                            'parent tree.'.format(self.name))
-#                elif parent.parent_block() == parent:
-#                    raise ValueError(
-#                            '{} no property package provided and '
-#                            'no default defined. Found recursive '
-#                            'loop in parent tree.'.format(self.name))
-#                parent = parent.parent_block()
-#
-#        logger.info('{} Using default property package'
-#                    .format(self.name))
-#
-#        if parent.config.default_property_package is None:
-#            raise ValueError('{} no default property package has been '
-#                             'specified at flowsheet level ('
-#                             'default_property_package = None)'
-#                             .format(self.name))
-#
-#        return parent.config.default_property_package
-#
-#    def _get_indexing_sets(self):
-#        """
-#        This method collects all necessary indexing sets from property
-#        parameter block and makes references to these for use within the holdup
-#        block. Collected indexing sets are: phase_list, component_list,
-#        rate_reaction_idx, equilibrium_reaction_idx, and element_list.
-#
-#        Args:
-#            None
-#
-#        Returns:
-#            None
-#        """
-#        # Get outlet property block object
-#        try:
-#            prop_block = self.properties_out[0]
-#        except AttributeError:
-#            try:
-#                prop_block = self.properties[0, self.ldomain.last()]
-#            except AttributeError:
-#                prop_block = self.properties[0]
-#
-#        # Get phase and component list(s)
-#        try:
-#            add_object_ref(self, "phase_list",
-#                           prop_block.phase_list)
-#            add_object_ref(self, "component_list",
-#                           prop_block.component_list)
-#        except AttributeError:
-#            raise AttributeError('{} property_package provided does not appear'
-#                                 ' to be a valid property package (does not '
-#                                 'contain a component_list and/or phase_list)'
-#                                 .format(self.name))
-#
-#        # Get reaction indices and stoichiometry
-#        if self.config.has_rate_reactions:
-#            try:
-#                add_object_ref(self, "rate_reaction_idx",
-#                               prop_block.rate_reaction_idx)
-#                add_object_ref(self,
-#                               "rate_reaction_stoichiometry",
-#                               prop_block.rate_reaction_stoichiometry)
-#            except AttributeError:
-#                self.config.has_rate_reactions = False
-#                logger.info('{} property package does not support kinetic '
-#                            'reactions. has_rate_reactions set to False.'
-#                            .format(self.name))
-#
-#        if self.config.has_equilibrium_reactions:
-#            try:
-#                add_object_ref(self,
-#                               "equilibrium_reaction_idx",
-#                               prop_block.equilibrium_reaction_idx)
-#                add_object_ref(self,
-#                               "equilibrium_reaction_stoichiometry",
-#                               prop_block.equilibrium_reaction_stoichiometry)
-#            except AttributeError:
-#                self.config.has_equilibrium_reactions = False
-#                logger.info('{} property package does not support equilibrium '
-#                            'reactions. has_equilibrium_reactions set to '
-#                            'False.'.format(self.name))
-#
-#        if self.config.has_phase_equilibrium:
-#            try:
-#                add_object_ref(self,
-#                               "phase_equilibrium_idx",
-#                               prop_block.phase_equilibrium_idx)
-#                add_object_ref(self,
-#                               "phase_equilibrium_list",
-#                               prop_block.phase_equilibrium_list)
-#            except AttributeError:
-#                self.config.has_phase_equilibrium = False
-#                logger.info('{} property package does not support phase '
-#                            'equilibrium has_phase_equilibrium set to '
-#                            'False.'.format(self.name))
-#
-#        # If element balances, check properties for list of elements
-#        if self.config.material_balance_type == 'element_total':
-#            try:
-#                add_object_ref(self, "element_list",
-#                               prop_block.element_list)
-#            except AttributeError:
-#                raise AttributeError("{} Selected property package does not "
-#                                     "support elemental mass balances"
-#                                     .format(self.name))
+        # Get property package details
+        self._get_property_package()
+
+        # Get indexing sets
+        self._get_indexing_sets()
+
+#        self.get_reaction_package()
+
+    def _setup_dynamics(self):
+        """
+        This method automates the setting of the dynamic flag and time domain
+        for control volume blocks.
+
+        If dynamic flag is 'use_parent_value', method attempts to get the value
+        of the dynamic flag from the parent model, otherwise the local value is
+        used. The time domain is always collected from the parent model.
+
+        Finally, if dynamic = True, the include_holdup flag is checked to
+        ensure it is also True.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Check the dynamic flag, and retrieve if necessary
+        if self.config.dynamic is None:
+            # Get dynamic flag from parent
+            try:
+                self.config.dynamic = self.parent_block().config.dynamic
+            except AttributeError:
+                # If parent does not have dynamic flag, raise Exception
+                raise DynamicError('{} has a parent model '
+                                   'with no dynamic attribute.'
+                                   .format(self.name))
+
+        # Try to get reference to time object from parent
+        try:
+            object.__setattr__(self, "time", self.parent_block().time)
+        except AttributeError:
+            raise DynamicError('{} has a parent model '
+                               'with no time domain'.format(self.name))
+
+    def _get_property_package(self):
+        """
+        This method gathers the necessary information about the property
+        package to be used in the control volume block.
+
+        If a property package has not been provided by the user, the method
+        searches up the model tree until it finds an object with the
+        'default_property_package' attribute and uses this package for the
+        control volume block.
+
+        The method also gathers any default construction arguments specified
+        for the property package and combines these with any arguments
+        specified by the user for the control volume block (user specified
+        arguments take priority over defaults).
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Get property_package block if not provided in arguments
+        parent = self.parent_block()
+        if self.config.property_package is None:
+            # Try to get property_package from parent
+            try:
+                if parent.config.property_package is None:
+                    parent.config.property_package = \
+                        self._get_default_prop_pack()
+
+                self.config.property_package = parent.config.property_package
+            except AttributeError:
+                self.config.property_package = self._get_default_prop_pack()
+
+        # Get module of property package
+        self.property_module = self.config.property_package.property_module
+
+        # Check for any flowsheet level build arguments
+        try:
+            # If flowsheet arguments exist, merge with local arguments
+            # Local arguments take precedence
+            arg_dict = self.config.property_package.config.default_arguments
+            arg_dict.update(self.config.property_package_args)
+            self.config.property_package_args = arg_dict
+        except AttributeError:
+            # Otherwise, just use local arguments
+            pass
+
+    def _get_default_prop_pack(self):
+        """
+        This method is used to find a default property package defined at the
+        flowsheet level if a package is not provided as an argument when
+        instantiating the control volume block.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        parent = self.parent_block()
+        while True:
+            if hasattr(parent.config, "default_property_package"):
+                break
+            else:
+                if parent.parent_block() is None:
+                    raise ConfigurationError(
+                            '{} no property package provided and '
+                            'no default defined. Found end of '
+                            'parent tree.'.format(self.name))
+                elif parent.parent_block() == parent:
+                    raise ConfigurationError(
+                            '{} no property package provided and '
+                            'no default defined. Found recursive '
+                            'loop in parent tree.'.format(self.name))
+                parent = parent.parent_block()
+
+        logger.info('{} Using default property package'
+                    .format(self.name))
+
+        if parent.config.default_property_package is None:
+            raise ConfigurationError(
+                             '{} no default property package has been '
+                             'specified at flowsheet level ('
+                             'default_property_package = None)'
+                             .format(self.name))
+
+        return parent.config.default_property_package
+
+    def _get_indexing_sets(self):
+        """
+        This method collects all necessary indexing sets from property
+        parameter block and makes references to these for use within the
+        control volume block. Collected indexing sets are phase_list and
+        component_list.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Get outlet property block object
+        try:
+            # Guess a ControlVolume0D
+            prop_block = self.properties_out[0]
+        except AttributeError:
+            try:
+                # Guess ControlVolume1D
+                prop_block = self.properties[0, self.ldomain.last()]
+            except AttributeError:
+                # Must be ControlVolumeStatic
+                prop_block = self.properties[0]
+
+        # Get phase and component list(s)
+        try:
+            self.phase_list = Reference(prop_block.phase_list)
+        except AttributeError:
+            raise PropertyPackageError(
+                    '{} property_package provided does not '
+                    'contain a phase_list. '
+                    'Please contact the developer of the property package.'
+                    .format(self.name))
+        try:
+            self.component_list = Reference(prop_block.component_list)
+        except AttributeError:
+            raise PropertyPackageError(
+                    '{} property_package provided does not '
+                    'contain a component_list. '
+                    'Please contact the developer of the property package.'
+                    .format(self.name))
