@@ -25,7 +25,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
 # Import IDAES cores
-from idaes.core import ProcessBlockData
+from idaes.core import ProcessBlockData, useDefault
 from idaes.core.util.config import (is_property_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
@@ -40,36 +40,37 @@ logger = logging.getLogger('idaes.unit_model.control_volume')
 
 # Enumerate options for material balances
 MaterialBalanceType = Enum(
-    'None',
-    'ComponentPhase',
-    'ComponentTotal',
-    'ElementTotal',
-    'Total')
+    'none',
+    'componentPhase',
+    'componentTotal',
+    'elementTotal',
+    'total')
 
 # Enumerate options for energy balances
 EnergyBalanceType = Enum(
-    'None',
-    'EnthalpyPhase',
-    'EnthalpyTotal',
-    'EnergyPhase',
-    'EnergyTotal')
+    'none',
+    'enthalpyPhase',
+    'enthalpyTotal',
+    'energyPhase',
+    'energyTotal')
 
 # Enumerate options for momentum balances
 MomentumBalanceType = Enum(
-    'None',
-    'PressureTotal',
-    'PressurePhase',
-    'MomentumTotal',
-    'MomentumPhase')
+    'none',
+    'pressureTotal',
+    'pressurePhase',
+    'momentumTotal',
+    'momentumPhase')
 
 # Set up example ConfigBlock that will work with ControlVolume autobuild method
 CONFIG_Base = ProcessBlockData.CONFIG()
 CONFIG_Base.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
+        default=useDefault,
+        domain=In([useDefault, True, False]),
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic,
-**default** - None.  **Valid values:** {
-**None** - get flag from parent,
+**default** - useDefault.  **Valid values:** {
+**useDefault** - get flag from parent,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model}"""))
 CONFIG_Base.declare("include_holdup", ConfigValue(
@@ -82,38 +83,38 @@ Must be True if dynamic = True, **default** - False.
 **True** - construct holdup terms,
 **False** - do not construct holdup terms}"""))
 CONFIG_Base.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.ComponentPhase,
+        default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
-**default** - MaterialBalanceType.ComponentPhase. **Valid values:** {
-**MaterialBalanceType.None** - exclude material balances,
-**MaterialBalanceType.ComponentPhase - use phase component balances,
-**MaterialBalanceType.ComponentTotal - use total component balances,
-**MaterialBalanceType.ElementTotal - use total element balances,
-**MaterialBalanceType.Total - use total material balance.}"""))
+**default** - MaterialBalanceType.componentPhase. **Valid values:** {
+**MaterialBalanceType.none** - exclude material balances,
+**MaterialBalanceType.componentPhase - use phase component balances,
+**MaterialBalanceType.componentTotal - use total component balances,
+**MaterialBalanceType.elementTotal - use total element balances,
+**MaterialBalanceType.total - use total material balance.}"""))
 CONFIG_Base.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.EnthalpyPhase,
+        default=EnergyBalanceType.enthalpyPhase,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.EnthalpyPhase. **Valid values:** {
-**EnergyBalanceType.None** - exclude energy balances,
-**EnergyBalanceType.EnthalpyTotal** - single ethalpy balance for material,
-**EnergyBalanceType.EnthalpyPhase** - ethalpy balances for each phase,
-**EnergyBalanceType.EnergyTotal** - single energy balance for material,
-**EnergyBalanceType.EnergyPhase** - energy balances for each phase.}"""))
+**default** - EnergyBalanceType.enthalpyPhase. **Valid values:** {
+**EnergyBalanceType.none** - exclude energy balances,
+**EnergyBalanceType.enthalpyTotal** - single ethalpy balance for material,
+**EnergyBalanceType.enthalpyPhase** - ethalpy balances for each phase,
+**EnergyBalanceType.energyTotal** - single energy balance for material,
+**EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
 CONFIG_Base.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.PressureTotal,
+        default=MomentumBalanceType.pressureTotal,
         domain=In(MomentumBalanceType),
         description="Momentum balance construction flag",
         doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.PressureTotal. **Valid values:** {
-**MomentumBalanceType.None** - exclude momentum balances,
-**MomentumBalanceType.PressureTotal** - single pressure balance for material,
-**MomentumBalanceType.PressurePhase** - pressure balances for each phase,
-**MomentumBalanceType.MomentumTotal** - single momentum balance for material,
-**MomentumBalanceType.MomentumPhase** - momentum balances for each phase.}"""))
+**default** - MomentumBalanceType.pressureTotal. **Valid values:** {
+**MomentumBalanceType.none** - exclude momentum balances,
+**MomentumBalanceType.pressureTotal** - single pressure balance for material,
+**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
+**MomentumBalanceType.momentumTotal** - single momentum balance for material,
+**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
 CONFIG_Base.declare("has_rate_reactions", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -171,17 +172,33 @@ constructed, **default** - False. **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
 CONFIG_Base.declare("property_package", ConfigValue(
+        default=useDefault,
         domain=is_property_parameter_block,
         description="Property package to use for control volume",
         doc="""Property parameter object used to define property calculations,
-**default** - None. **Valid values:** {
-**a ParameterBlock object**.}"""))
-CONFIG_Base.declare("property_package_args", ConfigValue(
-        domain=ConfigBlock,
+**default** - useDefault. **Valid values:** {
+**useDefault** - use default package from parent model or flowsheet,
+**PropertyParameterObject** - a PropertyParameterBlock object.}"""))
+CONFIG_Base.declare("property_package_args", ConfigBlock(
+        implicit=True,
         description="Arguments to use for constructing property packages",
-        doc="""A dict of arguments to be passed to a property block and used
-when constructing these, **default** - empty ConfigBlock. **Valid values:** {
-**ConfigBlock** - see property package for documentation.}"""))
+        doc="""A ConfigBlock with arguments to be passed to a property block(s)
+ and used when constructing these, **default** - None. **Valid values:** {
+see property package for documentation.}"""))
+CONFIG_Base.declare("reaction_package", ConfigValue(
+        default=None,
+        domain=is_reaction_parameter_block,
+        description="Reaction package to use for control volume",
+        doc="""Reaction parameter object used to define reaction calculations,
+**default** - None. **Valid values:** {
+**None** - no reaction package,
+**ReactionParameterBlock** - a ReactionParameterBlock object.}"""))
+CONFIG_Base.declare("reaction_package_args", ConfigBlock(
+        implicit=True,
+        description="Arguments to use for constructing reaction packages",
+        doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
+ and used when constructing these, **default** - None. **Valid values:** {
+see reaction package for documentation.}"""))
 
 
 class ControlVolumeBase(ProcessBlockData):
@@ -199,31 +216,38 @@ class ControlVolumeBase(ProcessBlockData):
 
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
+        domain=In([useDefault, True, False]),
+        default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic, **default** -
-None. **Valid values:** {
-**None** - get flag from parent,
+useDefault. **Valid values:** {
+**useDefault** - get flag from parent,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model}"""))
     CONFIG.declare("property_package", ConfigValue(
+        default=useDefault,
         domain=is_property_parameter_block,
         description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations.
-**Valid values:** a PropertyParameterBlock object.}"""))
-    CONFIG.declare("property_package_args", ConfigValue(
-        domain=ConfigBlock,
+        doc="""Property parameter object used to define property calculations,
+**default** - useDefault. **Valid values:** {
+**useDefault** - use default package from parent model or flowsheet,
+**PropertyParameterObject** - a PropertyParameterBlock object.}"""))
+    CONFIG.declare("property_package_args", ConfigBlock(
+        implicit=True,
         description="Arguments to use for constructing property packages",
         doc="""A ConfigBlock with arguments to be passed to a property block(s)
  and used when constructing these, **default** - None. **Valid values:** {
 see property package for documentation.}"""))
     CONFIG.declare("reaction_package", ConfigValue(
+        default=None,
         domain=is_reaction_parameter_block,
         description="Reaction package to use for control volume",
-        doc="""Reaction parameter object used to define reaction calculations.
-**Valid values:** a ReactionParameterBlock object.}"""))
-    CONFIG.declare("reaction_package_args", ConfigValue(
-        domain=ConfigBlock,
+        doc="""Reaction parameter object used to define reaction calculations,
+**default** - None. **Valid values:** {
+**None** - no reaction package,
+**ReactionParameterBlock** - a ReactionParameterBlock object.}"""))
+    CONFIG.declare("reaction_package_args", ConfigBlock(
+        implicit=True,
         description="Arguments to use for constructing reaction packages",
         doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
  and used when constructing these, **default** - None. **Valid values:** {
@@ -252,7 +276,8 @@ see reaction package for documentation.}"""))
         # Get indexing sets
         self._get_indexing_sets()
 
-#        self.get_reaction_package()
+        # Get reaction package details (as necessary)
+        self.get_reaction_package()
 
     def _setup_dynamics(self):
         """
@@ -273,7 +298,7 @@ see reaction package for documentation.}"""))
             None
         """
         # Check the dynamic flag, and retrieve if necessary
-        if self.config.dynamic is None:
+        if self.config.dynamic == useDefault:
             # Get dynamic flag from parent
             try:
                 self.config.dynamic = self.parent_block().config.dynamic
@@ -313,7 +338,7 @@ see reaction package for documentation.}"""))
         """
         # Get property_package block if not provided in arguments
         parent = self.parent_block()
-        if self.config.property_package is None:
+        if self.config.property_package == useDefault:
             # Try to get property_package from parent
             try:
                 if parent.config.property_package is None:
@@ -328,15 +353,10 @@ see reaction package for documentation.}"""))
         self.property_module = self.config.property_package.property_module
 
         # Check for any flowsheet level build arguments
-        try:
-            # If flowsheet arguments exist, merge with local arguments
-            # Local arguments take precedence
-            arg_dict = self.config.property_package.config.default_arguments
-            arg_dict.update(self.config.property_package_args)
-            self.config.property_package_args = arg_dict
-        except AttributeError:
-            # Otherwise, just use local arguments
-            pass
+        for k in self.config.property_package.config.default_arguments:
+            if k not in self.config.property_package_args:
+                self.config.property_package_args[k] = \
+                    self.config.property_package.config.default_arguments[k]
 
     def _get_default_prop_pack(self):
         """
@@ -392,21 +412,10 @@ see reaction package for documentation.}"""))
         Returns:
             None
         """
-        # Get outlet property block object
-        try:
-            # Guess a ControlVolume0D
-            prop_block = self.properties_out[0]
-        except AttributeError:
-            try:
-                # Guess ControlVolume1D
-                prop_block = self.properties[0, self.ldomain.last()]
-            except AttributeError:
-                # Must be ControlVolumeStatic
-                prop_block = self.properties[0]
-
         # Get phase and component list(s)
         try:
-            self.phase_list = Reference(prop_block.phase_list)
+            self.phase_list = Reference(
+                                self.config.property_package.phase_list)
         except AttributeError:
             raise PropertyPackageError(
                     '{} property_package provided does not '
@@ -414,10 +423,38 @@ see reaction package for documentation.}"""))
                     'Please contact the developer of the property package.'
                     .format(self.name))
         try:
-            self.component_list = Reference(prop_block.component_list)
+            self.component_list = Reference(
+                                self.config.property_package.component_list)
         except AttributeError:
             raise PropertyPackageError(
                     '{} property_package provided does not '
                     'contain a component_list. '
                     'Please contact the developer of the property package.'
                     .format(self.name))
+
+    def _get_reaction_package(self):
+        """
+        This method gathers the necessary information about the reaction
+        package to be used in the control volume block (if required).
+
+        If a reaction package has been provided by the user, the method
+        gathers any default construction arguments specified
+        for the reaction package and combines these with any arguments
+        specified by the user for the control volume block (user specified
+        arguments take priority over defaults).
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        if self.config.reaction_package is not None:
+            # Get module of reaction package
+            self.reaction_module = self.config.reaction_package.property_module
+
+            # Check for any flowsheet level build arguments
+            for k in self.config.reaction_package.config.default_arguments:
+                if k not in self.config.reaction_package_args:
+                    self.config.reaction_package_args[k] = \
+                       self.config.reaction_package.config.default_arguments[k]

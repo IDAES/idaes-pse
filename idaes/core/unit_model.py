@@ -23,7 +23,9 @@ from pyomo.network import Port
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigValue, In
 
-from .process_base import declare_process_block_class, ProcessBlockData
+from .process_base import (declare_process_block_class,
+                           ProcessBlockData,
+                           useDefault)
 from idaes.core.util.exceptions import DynamicError
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -45,11 +47,12 @@ class UnitBlockData(ProcessBlockData):
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
+        default=useDefault,
+        domain=In([useDefault, True, False]),
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not
-(default = None).
-None - get flag from parent (default = False)
+(default = useDefault).
+useDefault - get flag from parent (default = False)
 True - set as a dynamic model
 False - set as a steady-state model"""))
 
@@ -89,7 +92,7 @@ False - set as a steady-state model"""))
             None
         """
         # Check the dynamic flag, and retrieve if necessary
-        if self.config.dynamic is None:
+        if self.config.dynamic == useDefault:
             # Get dynamic flag from parent
             try:
                 self.config.dynamic = self.parent_block().config.dynamic

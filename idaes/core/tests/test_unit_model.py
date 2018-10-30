@@ -21,7 +21,7 @@ from pyomo.common.config import ConfigValue
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
                         UnitBlockData, PropertyParameterBase,
-                        StateBlockDataBase)
+                        StateBlockDataBase, useDefault)
 from idaes.core.util.exceptions import DynamicError
 
 
@@ -43,7 +43,7 @@ def test_config_block():
     m.u = Unit()
 
     assert len(m.u. config) == 1
-    assert m.u.config.dynamic == None
+    assert m.u.config.dynamic == useDefault
 
 
 def test_config_args():

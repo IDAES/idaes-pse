@@ -60,6 +60,7 @@ def test_config_block():
 
     assert len(m.r.config) == 2
     assert isinstance(m.r.config.default_arguments, ConfigBlock)
+    assert len(m.r.config.default_arguments) == 0
 
 
 def test_ReactionParameter_NotImplementedErrors():

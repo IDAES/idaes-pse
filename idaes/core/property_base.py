@@ -49,6 +49,7 @@ class PropertyParameterBase(ProcessBlockData):
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("default_arguments", ConfigBlock(
+            implicit=True,
             description="Default arguments to use with Property Package"))
 
     def build(self):

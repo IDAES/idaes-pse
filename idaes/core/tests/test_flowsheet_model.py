@@ -19,7 +19,7 @@ import pytest
 from pyomo.environ import AbstractModel, Block, ConcreteModel, Set
 from pyomo.dae import ContinuousSet
 from idaes.core import FlowsheetBlockData, declare_process_block_class, \
-                        PropertyParameterBase
+                        PropertyParameterBase, useDefault
 from idaes.ui.report import degrees_of_freedom
 from idaes.core.util.exceptions import DynamicError
 
@@ -55,6 +55,7 @@ def test_config_validation():
     # Test dynamic attribute - valid values
     fs.config.dynamic = False
     fs.config.dynamic = None
+    fs.config.dynamic = useDefault
     # Test dynamic attribute - invalid values
     with pytest.raises(ValueError):
         fs.config.dynamic = "foo"  # invalid str

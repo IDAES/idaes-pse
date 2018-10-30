@@ -23,8 +23,8 @@ import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
 from pyomo.common.config import ConfigValue, In
 
-from idaes.core import ProcessBlockData, declare_process_block_class, \
-                        UnitBlockData
+from idaes.core import (ProcessBlockData, declare_process_block_class,
+                        UnitBlockData, useDefault)
 from idaes.core.util.config import is_property_parameter_block, list_of_floats
 from idaes.core.util.exceptions import DynamicError
 
@@ -55,11 +55,12 @@ class FlowsheetBlockData(ProcessBlockData):
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
+        default=useDefault,
+        domain=In([useDefault, True, False]),
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic,
-**default** - None.  **Valid values:** {
-**None** - get flag from parent,
+**default** - useDefault.  **Valid values:** {
+**useDefault** - get flag from parent or False,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model}"""))
     CONFIG.declare("time_set", ConfigValue(
@@ -171,7 +172,7 @@ within this flowsheet if not otherwise specified, **default** - None.
             top_level = False
 
         # Check the dynamic flag, and retrieve if necessary
-        if self.config.dynamic is None:
+        if self.config.dynamic == useDefault:
             # Check to see if this is a top level model
             if top_level:
                 # If there is no parent, set dynamic to False by default and

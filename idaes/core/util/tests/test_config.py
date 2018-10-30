@@ -22,14 +22,15 @@ from idaes.core import (declare_process_block_class,
                         PropertyParameterBase,
                         StateBlockBase,
                         StateBlockDataBase,
-                        ReactionParameterBase)
+                        ReactionParameterBase,
+                        useDefault)
 from idaes.core.util.config import (is_property_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block,
                                     list_of_floats,
                                     list_of_strings,
                                     is_port)
-from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.exceptions import ConfigurationError
 
 
 @declare_process_block_class("ParameterBlock")
@@ -46,16 +47,20 @@ def test_is_property_parameter_block_passes():
     assert p == is_property_parameter_block(p)
 
 
+def test_is_property_parameter_block_useDefault():
+    assert useDefault == is_property_parameter_block(useDefault)
+
+
 def test_is_property_parameter_block_fails():
-    # Test that is_property_parameter_block returns PropertyPackageError with
+    # Test that is_property_parameter_block returns ConfigurationError with
     # wrong input
     m = ConcreteModel()
 
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_property_parameter_block(m)  # Non Parameter Block Pyomo object
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_property_parameter_block("foo")  # str
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_property_parameter_block(1)  # int
 
 
@@ -73,16 +78,22 @@ def test_is_reaction_parameter_block_passes():
     assert r == is_reaction_parameter_block(r)
 
 
+def test_is_reaction_parameter_block_useDefault():
+    # No useDefault option for is_reaction_parameter_block
+    with pytest.raises(ConfigurationError):
+        is_reaction_parameter_block(useDefault)
+
+
 def test_is_reaction_parameter_block_fails():
-    # Test that is_reaction_parameter_block returns PropertyPackageError with
+    # Test that is_reaction_parameter_block returns ConfigurationError with
     # wrong input
     m = ConcreteModel()
 
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_reaction_parameter_block(m)  # Non Parameter Block Pyomo object
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_reaction_parameter_block("foo")  # str
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_reaction_parameter_block(1)  # int
 
 
@@ -101,14 +112,14 @@ def test_is_state_block_passes():
 
 
 def test_is_state_block_fails():
-    # Test that is_state_block returns PropertyPackageError with wrong input
+    # Test that is_state_block returns ConfigurationError with wrong input
     m = ConcreteModel()
 
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_state_block(m)  # Non Parameter Block Pyomo object
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_state_block("foo")  # str
-    with pytest.raises(PropertyPackageError):
+    with pytest.raises(ConfigurationError):
         is_state_block(1)  # int
 
 

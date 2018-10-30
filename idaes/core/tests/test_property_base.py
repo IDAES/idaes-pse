@@ -38,6 +38,7 @@ def test_config_block():
 
     assert len(m.p.config) == 1
     assert isinstance(m.p.config.default_arguments, ConfigBlock)
+    assert len(m.p.config.default_arguments) == 0
 
 
 def test_PropertyParameterBase():

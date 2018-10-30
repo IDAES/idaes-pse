@@ -34,32 +34,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['ProcessBlockData']
 
 
-class _RemoteReferences(object):
-    """
-    This class creates an object to maintain references to remote Pyomo
-    components. This is done to clearly identify what components are remote
-    references to avoid confusion.
-
-    References are made using weakref.proxy.
-    """
-    def __setattr__(self, name, val):
-        """
-        Overloading __setattr__ to create weakref.proxies.
-
-        Args:
-            name : local name to use for referenced component
-            val : extrenal component to make reference to
-
-        Returns:
-            None
-        """
-        try:
-            super(_RemoteReferences, self).__setattr__(name,
-                                                       weakref.proxy(val))
-        except Exception as e:
-            logging.getLogger(__name__).exception(
-                "Failed to create remote reference {}".format(name))
-            raise e
+useDefault = object()
 
 
 @declare_process_block_class("ProcessBaseBlock")
@@ -91,7 +66,6 @@ class ProcessBlockData(_BlockData):
         """
         super(ProcessBlockData, self).__init__(component=component)
         self.config = self.CONFIG(component._block_data_config)
-        self.remote = _RemoteReferences()
 
     def build(self):
         """
