@@ -26,7 +26,7 @@ from idaes.core import (ControlVolumeBase, CONFIG_Base,
                         FlowsheetBlockData, UnitBlockData, useDefault,
                         PropertyParameterBase, ReactionParameterBase)
 from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
-                                        PropertyPackageError)
+                                        PropertyPackageError, IDAESError)
 
 
 # -----------------------------------------------------------------------------
@@ -148,7 +148,7 @@ class CVFrameData(ControlVolumeBase):
 def test_config_block():
     cv = CVFrame()
 
-    assert len(cv.config) == 5
+    assert len(cv.config) == 6
     assert cv.config.dynamic == useDefault
     assert cv.config.property_package == useDefault
     assert isinstance(cv.config.property_package_args, ConfigBlock)
@@ -156,6 +156,7 @@ def test_config_block():
     assert cv.config.reaction_package is None
     assert isinstance(cv.config.reaction_package_args, ConfigBlock)
     assert len(cv.config.reaction_package_args) == 0
+    assert cv.config.auto_construct is False
 
 
 # -----------------------------------------------------------------------------
@@ -363,3 +364,24 @@ def test_get_reaction_package_module_default_args():
     assert m.cv.config.reaction_package_args["test1"] == "foo"
     assert m.cv.config.reaction_package_args["test2"] == "baz"
     assert m.cv.config.reaction_package_args["test3"] == "bar"
+
+
+# -----------------------------------------------------------------------------
+# Test build and auto_construct methods
+def test_build():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+
+    super(CVFrameData, m.fs.cv).build()
+
+
+def test_auto_construct():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp, auto_construct=True)
+
+    with pytest.raises(IDAESError):
+        super(CVFrameData, m.fs.cv).build()

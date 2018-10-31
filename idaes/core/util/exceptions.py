@@ -34,6 +34,13 @@ class DynamicError(ValueError):
     pass  # Incorrect browness setting
 
 
+class IDAESError(Exception):
+    """
+    General exception for when something breaks badly in the core.
+    """
+    pass  # Toaster on fire
+
+
 class PropertyNotSupportedError(AttributeError):
     """
     IDAES exception for cases when a models calls for a property which is

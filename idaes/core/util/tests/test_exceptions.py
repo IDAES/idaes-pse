@@ -30,6 +30,11 @@ def test_DynamicError():
         raise DynamicError()
 
 
+def test_IDAESError():
+    with pytest.raises(Exception):
+        raise IDAESError()
+
+
 def test_PropertyNotSupportedError():
     with pytest.raises(AttributeError):
         raise PropertyNotSupportedError()

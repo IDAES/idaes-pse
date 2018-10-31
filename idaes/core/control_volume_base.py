@@ -29,6 +29,7 @@ from idaes.core.util.config import (is_property_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError,
+                                        IDAESError,
                                         PropertyPackageError)
 
 __author__ = "Andrew Lee"
@@ -251,6 +252,17 @@ see property package for documentation.}"""))
         doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
  and used when constructing these, **default** - None. **Valid values:** {
 see reaction package for documentation.}"""))
+    CONFIG.declare("auto_construct", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Argument indicating whether ControlVolume should "
+                    "automatically construct balance equations",
+        doc="""If set to True, this argument will trigger the auto_construct
+method which will attempt to construct a set of material, energy and momentum
+balance equations based on the parent unit's config block. THe parent unit must
+have a config block which derives from CONFIG_Base, **default** - False.
+**Valid values:** {**True** - use automatic construction,
+**False** - do not use automatic construciton.}"""))
 
     def build(self):
         """
@@ -276,7 +288,27 @@ see reaction package for documentation.}"""))
         self._get_indexing_sets()
 
         # Get reaction package details (as necessary)
-        self.get_reaction_package()
+        self._get_reaction_package()
+
+        if self.config.auto_construct is True:
+            self._auto_construct()
+
+    def _auto_construct(self):
+        """
+        Placeholder _auto_construct method to ensure a useful exception is
+        returned if auto_build is set to True but something breaks in the
+        process. Derived ControlVolume classes should overload this.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        raise IDAESError("{} auto-construct failed as ControlVolume "
+                         "class failed to create _auto_construct method."
+                         "Please contact the IDAES developers with this bug."
+                         .format(self.name))
 
     def _setup_dynamics(self):
         """
