@@ -34,7 +34,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['FlowsheetBlock, FlowsheetBlockData']
 
 # Set up logger
-logger = logging.getLogger('idaes.core')
+logger = logging.getLogger(__name__)
 
 
 @declare_process_block_class("FlowsheetBlock", doc="""
