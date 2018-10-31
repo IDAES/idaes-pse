@@ -1,6 +1,6 @@
 """ __init__.py for idaes module
 
-Set up logging for the idaes module.
+Set up logging for the idaes module, and import plugins.
 """
 import logging.config
 import json
@@ -63,11 +63,9 @@ def _import_packages(packages, optional=True):
 
 # This make "idaes" the current plugin envirnment while importing plugins here
 pyomo.common.plugin.push("idaes") # Add idaes plugin environment at top of stack
-# The next line imports plugins that must import successfully. Currently only
-# imports from idaes.core, but other locations can be added as needed.
-_import_packages(['idaes.core'], optional=False)
-# The next line does nothing.  It's a place holder for eventual addition of
-# plugins to contrib. With these packages, failure to import is okay.
+# Import plugins standard IDAES plugins, non-optional plugins (currently none)
+_import_packages([], optional=False)
+# Import contrib plugins, failure to import these is non-fatal. (currently none)
 _import_packages([], optional=True)
 # go back to the previous plugin environment (what it was before pushing "idaes")
 pyomo.common.plugin.pop()
