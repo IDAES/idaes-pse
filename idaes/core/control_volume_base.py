@@ -35,7 +35,7 @@ from idaes.core.util.exceptions import (ConfigurationError,
 __author__ = "Andrew Lee"
 
 # Set up logger
-logger = logging.getLogger('idaes.unit_model.control_volume')
+logger = logging.getLogger(__name__)
 
 
 # Enumerate options for material balances
@@ -61,6 +61,11 @@ MomentumBalanceType = Enum(
     'pressurePhase',
     'momentumTotal',
     'momentumPhase')
+
+# Enumerate options for flow direction
+FlowDirection = Enum(
+    'forward',
+    'backward')
 
 # Set up example ConfigBlock that will work with ControlVolume autobuild method
 CONFIG_Base = ProcessBlockData.CONFIG()
@@ -491,3 +496,31 @@ have a config block which derives from CONFIG_Base, **default** - False.
                 if k not in self.config.reaction_package_args:
                     self.config.reaction_package_args[k] = \
                        self.config.reaction_package.config.default_arguments[k]
+
+    def _validate_add_balance_arguments(self, dynamic, has_holdup):
+        """
+        Method to validate dynamic and has_holdup arguments used by many
+        balance equation methods.
+
+        Args:
+            dynamic, has_holdup
+
+        Returns:
+            Validated values of dynamic and has_holdup
+        """
+        # If dynamic argument not provided, try to get argument from parent
+        if dynamic == useDefault:
+            dynamic = self.config.dynamic
+        elif dynamic and not self.config.dynamic:
+            raise DynamicError("{} cannot have dynamic balance equations "
+                               "within a steady-state control volume."
+                               .format(self.name))
+
+        # If dynamic = True, has_holdup must also be True
+        if dynamic and not has_holdup:
+            raise ConfigurationError(
+                    "{} invalid arguments for dynamic and has_holdup. "
+                    "If dynamic = True, has_holdup must also be True (was "
+                    "False)".format(self.name))
+
+        return dynamic, has_holdup

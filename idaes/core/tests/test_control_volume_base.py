@@ -21,7 +21,7 @@ from pyomo.environ import ConcreteModel, Block, Set
 from pyomo.common.config import ConfigBlock, ConfigValue
 from idaes.core import (ControlVolumeBase, CONFIG_Base,
                         MaterialBalanceType, EnergyBalanceType,
-                        MomentumBalanceType,
+                        MomentumBalanceType, FlowDirection,
                         declare_process_block_class,
                         FlowsheetBlockData, UnitBlockData, useDefault,
                         PropertyParameterBase, ReactionParameterBase)
@@ -41,6 +41,10 @@ def test_energy_balance_type():
 
 def test_momentum_balance_type():
     assert len(MomentumBalanceType) == 5
+
+
+def testflow_direction():
+    assert len(FlowDirection) == 2
 
 
 # -----------------------------------------------------------------------------
@@ -385,3 +389,70 @@ def test_auto_construct():
 
     with pytest.raises(IDAESError):
         super(CVFrameData, m.fs.cv).build()
+
+# -----------------------------------------------------------------------------
+# Test _validate_add_balance_arguments
+def test_validate_add_balance_arguments_both_false():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    super(CVFrameData, m.fs.cv).build()
+
+    d, h = m.fs.cv._validate_add_balance_arguments(dynamic=useDefault,
+                                                   has_holdup=False)
+
+    assert d is False
+    assert h is False
+
+
+def test_validate_add_balance_arguments_both_true():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=True)
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    super(CVFrameData, m.fs.cv).build()
+
+    d, h = m.fs.cv._validate_add_balance_arguments(dynamic=True,
+                                                   has_holdup=True)
+
+    assert d is True
+    assert h is True
+
+
+def test_validate_add_balance_arguments_ss_with_holdup():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=True)
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    super(CVFrameData, m.fs.cv).build()
+
+    d, h = m.fs.cv._validate_add_balance_arguments(dynamic=False,
+                                                   has_holdup=True)
+
+    assert d is False
+    assert h is True
+
+
+def test_validate_add_balance_arguments_invalid():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=True)
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    super(CVFrameData, m.fs.cv).build()
+
+    with pytest.raises(ConfigurationError):
+        d, h = m.fs.cv._validate_add_balance_arguments(dynamic=useDefault,
+                                                       has_holdup=False)
+
+
+def test_validate_add_balance_arguments_dynamic_error():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    super(CVFrameData, m.fs.cv).build()
+
+    with pytest.raises(DynamicError):
+        d, h = m.fs.cv._validate_add_balance_arguments(dynamic=True,
+                                                       has_holdup=True)
