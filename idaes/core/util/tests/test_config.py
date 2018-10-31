@@ -136,8 +136,8 @@ def test_list_of_strings():
 
 def test_list_of_strings_errors():
     # Test that list_of_strings fails correctly
-    with pytest.raises(ValueError):
-        list_of_floats({"foo": "bar"})  # dict
+    with pytest.raises(ConfigurationError):
+        list_of_strings({"foo": "bar"})  # dict
 
 
 def test_list_of_floats():
@@ -167,13 +167,13 @@ def test_is_port():
 
 def test_is_port_errors():
     # Test that is_port returns errors when not given a Port
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigurationError):
         is_port("foo")  # str
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigurationError):
         is_port(["foo", "bar"])  # list of strs
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigurationError):
         is_port({"foo": "bar"})  # dict
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigurationError):
         is_port(1.0)  # float
-    with pytest.raises(TypeError):
+    with pytest.raises(ConfigurationError):
         is_port(1)  # int

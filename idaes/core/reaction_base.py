@@ -39,7 +39,7 @@ __all__ = ['ReactionBlockDataBase',
            'ReactionParameterBase']
 
 # Set up logger
-logger = logging.getLogger('idaes.core')
+logger = logging.getLogger(__name__)
 
 
 class ReactionParameterBase(ProcessBlockData):

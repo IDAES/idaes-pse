@@ -109,7 +109,9 @@ def list_of_strings(arg):
         List of strings
     '''
     if isinstance(arg, dict):
-        raise ValueError("list_of_strings cannot cast dict")
+        raise ConfigurationError("Invalid argument type (dict). "
+                                 "Expected a list of strings, or something "
+                                 "that can be cast to a list of strings")
 
     try:
         # Assume arg is iterable
@@ -133,7 +135,6 @@ def is_port(arg):
         Port object or Exception
     '''
     if not isinstance(arg, Port):
-        raise TypeError('One side of the Stream is not a Port. Check '
-                        'that both source and destination are Port '
-                        'objects.')
+        raise ConfigurationError('Invalid argument type. Expected an instance '
+                                 'of a Pyomo Port object')
     return arg

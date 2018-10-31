@@ -33,11 +33,11 @@ from idaes.core.util.exceptions import (PropertyNotSupportedError,
 __author__ = "Andrew Lee, John Eslick"
 
 __all__ = ['PropertyBlockDataBase',
-           'PropertyBlockBase',
-           'PropertyParameterBase']
+           'StateBlockBase',
+           'StateParameterBase']
 
 # Set up logger
-logger = logging.getLogger('idaes.core')
+logger = logging.getLogger(__name__)
 
 
 class PropertyParameterBase(ProcessBlockData):
@@ -175,7 +175,7 @@ class StateBlockDataBase(ProcessBlockData):
             domain=In([True, False]),
             description="Flag indicating if incoming state is fully defined",
             doc="""Flag indicating whether the state should be considered fully
-                defines, and thus whether constraints such as sum of mass/mole
+                defined, and thus whether constraints such as sum of mass/mole
                 fractions should be included (default=False).
                 """))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
