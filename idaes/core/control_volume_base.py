@@ -524,3 +524,110 @@ have a config block which derives from CONFIG_Base, **default** - False.
                     "False)".format(self.name))
 
         return dynamic, has_holdup
+
+    # Add placeholder methods for all types of material, energy and momentum
+    # balance equations which return NotImplementedErrors
+    def add_material_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_material_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_phase_component_material_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_phase_component_material_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_total_component_material_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_total_component_material_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_total_element_material_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_total_element_material_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_total_material_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_total_material_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_energy_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_energy_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_phase_enthalpy_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_phase_enthalpy_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_total_enthalpy_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_total_enthalpy_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_phase_energy_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_phase_energy_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_total_energy_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_total_energy_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_momentum_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_momentum_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_phase_pressure_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_phase_pressure_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_total_pressure_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_total_pressure_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_phase_momentum_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_phase_momentum_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_total_momentum_balances(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_total_momentum_balances. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
