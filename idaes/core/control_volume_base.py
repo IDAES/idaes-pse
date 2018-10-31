@@ -20,7 +20,6 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.core import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
@@ -414,8 +413,9 @@ see reaction package for documentation.}"""))
         """
         # Get phase and component list(s)
         try:
-            self.phase_list = Reference(
-                                self.config.property_package.phase_list)
+            # TODO : Look at ways to use Pyomo references, or create new Set
+            object.__setattr__(self, "phase_list",
+                               self.config.property_package.phase_list)
         except AttributeError:
             raise PropertyPackageError(
                     '{} property_package provided does not '
@@ -423,8 +423,9 @@ see reaction package for documentation.}"""))
                     'Please contact the developer of the property package.'
                     .format(self.name))
         try:
-            self.component_list = Reference(
-                                self.config.property_package.component_list)
+            # TODO : Look at ways to use Pyomo references, or create new Set
+            object.__setattr__(self, "component_list",
+                               self.config.property_package.component_list)
         except AttributeError:
             raise PropertyPackageError(
                     '{} property_package provided does not '

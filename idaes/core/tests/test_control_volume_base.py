@@ -19,12 +19,102 @@ import inspect
 import pytest
 from pyomo.environ import ConcreteModel, Block, Set
 from pyomo.common.config import ConfigBlock, ConfigValue
-from idaes.core import (ControlVolumeBase, declare_process_block_class,
+from idaes.core import (ControlVolumeBase, CONFIG_Base,
+                        MaterialBalanceType, EnergyBalanceType,
+                        MomentumBalanceType,
+                        declare_process_block_class,
                         FlowsheetBlockData, UnitBlockData, useDefault,
                         PropertyParameterBase, ReactionParameterBase)
-from idaes.core.util.exceptions import ConfigurationError, DynamicError
+from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
+                                        PropertyPackageError)
 
-# TODO : Test CONFIG_Base, Enums
+
+# -----------------------------------------------------------------------------
+# Test Enumerators for balance type options
+def test_material_balance_type():
+    assert len(MaterialBalanceType) == 5
+
+
+def test_energy_balance_type():
+    assert len(EnergyBalanceType) == 5
+
+
+def test_momentum_balance_type():
+    assert len(MomentumBalanceType) == 5
+
+
+# -----------------------------------------------------------------------------
+# Test CONFIG_Base
+def test_CONFIG_Base():
+    c = CONFIG_Base()
+
+    assert len(c) == 16
+
+    for i in c:
+        if i == "dynamic":
+            assert c[i] == useDefault
+        elif i == "material_balance_type":
+            assert c[i] == MaterialBalanceType.componentPhase
+        elif i == "energy_balance_type":
+            assert c[i] == EnergyBalanceType.enthalpyPhase
+        elif i == "momentum_balance_type":
+            assert c[i] == MomentumBalanceType.pressureTotal
+        elif i == "property_package":
+            assert c[i] == useDefault
+        elif i == "reaction_package":
+            assert c[i] is None
+        elif i in ["property_package_args", "reaction_package_args"]:
+            assert isinstance(c[i], ConfigBlock)
+            assert len(c[i]) == 0
+        else:
+            assert c[i] is False
+
+
+def test_CONFIG_Base_validation_general():
+    # No config argument takes a string, float/int or list
+    c = CONFIG_Base()
+
+    for i in c:
+        with pytest.raises(ValueError):
+            c[i] = "foo"
+        with pytest.raises(ValueError):
+            c[i] = 10.0
+        with pytest.raises(ValueError):
+            c[i] = [1, 2]
+
+
+def test_CONFIG_Base_true_false():
+    # Check arguments that accept True/False as values
+    c = CONFIG_Base()
+
+    for i in c:
+        if i not in ["material_balance_type", "energy_balance_type",
+                     "momentum_balance_type", "property_package",
+                     "reaction_package", "property_package_args",
+                     "reaction_package_args"]:
+            c[i] = True
+            c[i] = False
+
+
+def test_CONFIG_Base_material_balance_type():
+    c = CONFIG_Base()
+
+    for i in MaterialBalanceType:
+        c["material_balance_type"] = i
+
+
+def test_CONFIG_Base_energy_balance_type():
+    c = CONFIG_Base()
+
+    for i in EnergyBalanceType:
+        c["energy_balance_type"] = i
+
+
+def test_CONFIG_Base_momentum_balance_type():
+    c = CONFIG_Base()
+
+    for i in MomentumBalanceType:
+        c["momentum_balance_type"] = i
 
 
 # -----------------------------------------------------------------------------
@@ -205,6 +295,30 @@ def test_get_indexing_sets():
 
     assert hasattr(m.cv, "phase_list")
     assert hasattr(m.cv, "component_list")
+
+
+def test_get_indexing_sets_missing_phase_list():
+    m = ConcreteModel()
+    m.pp = PropertyParameterBlock()
+    m.pp.del_component(m.pp.phase_list)
+    m.cv = CVFrame(property_package=m.pp)
+    m.cv._get_property_package()
+
+    with pytest.raises(PropertyPackageError):
+        m.cv._get_indexing_sets()
+
+
+def test_get_indexing_sets_missing_component_list():
+    m = ConcreteModel()
+    m.pp = PropertyParameterBlock()
+    m.pp.del_component(m.pp.component_list)
+    m.cv = CVFrame(property_package=m.pp)
+    m.cv._get_property_package()
+
+    with pytest.raises(PropertyPackageError):
+        m.cv._get_indexing_sets()
+    assert hasattr(m.cv, "phase_list")
+
 
 # -----------------------------------------------------------------------------
 # Test _get_reaction_package

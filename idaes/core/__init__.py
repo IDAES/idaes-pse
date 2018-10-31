@@ -7,4 +7,6 @@ from .property_base import (StateBlockDataBase, PropertyParameterBase,
                             StateBlockBase)
 from .reaction_base import (ReactionBlockDataBase, ReactionParameterBase,
                             ReactionBlockBase)
-from .control_volume_base import ControlVolumeBase, CONFIG_Base
+from .control_volume_base import (ControlVolumeBase, CONFIG_Base,
+                                  MaterialBalanceType, EnergyBalanceType,
+                                  MomentumBalanceType)
