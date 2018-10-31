@@ -32,9 +32,9 @@ from idaes.core.util.exceptions import (PropertyNotSupportedError,
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
 
-__all__ = ['PropertyBlockDataBase',
+__all__ = ['StateBlockDataBase',
            'StateBlockBase',
-           'StateParameterBase']
+           'PropertyParameterBase']
 
 # Set up logger
 logger = logging.getLogger(__name__)
