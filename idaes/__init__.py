@@ -4,44 +4,48 @@ Set up logging for the idaes module, and import plugins.
 """
 import logging.config
 import json
+from importlib import import_module as _do_import
 
-config_dict = {
+import pyomo.common.plugin
+
+#TODO<jce> read global idaes config if available
+#          the location of the config would probably be:
+#          * %APPDATA%/.idaes/idaes.config (Windows)
+#          * $HOME/.idaes/idaes.config (not Windows)
+
+_logging_config_dict = {
     "version":1,
     "disable_existing_loggers":False,
     "formatters":{
         "f1":{
             "format":"%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-            "datefmt":"%Y-%m-%d %H:%M"}},
+            "datefmt":"%Y-%m-%d %H:%M:%S"}},
     "handlers":{
         "console":{
             "class":"logging.StreamHandler",
             "formatter":"f1",
-            "stream":"ext://sys.stdout"}},
+            "stream":"ext://sys.stderr"}},
     "loggers":{
         "idaes":{
             "level":"INFO",
             "handlers":["console"]}}}
-logging.config.dictConfig(config_dict)
+logging.config.dictConfig(_logging_config_dict)
 
 try: # Also provide or to switch to ini config file or YAML?
     with open("logging.json", "r") as f:
-        config_dict = json.load(f)
-    logging.config.dictConfig(config_dict)
+        _logging_config_dict = json.load(f)
+    logging.config.dictConfig(_logging_config_dict)
 except IOError:
     pass # don't require a config file
-except:
-    logging.getLogger("idaes").exception("Error reading logger config file")
 
-logging.getLogger("idaes").debug("Set up 'idaes' logger")
+_log = logging.getLogger(__name__)
+_log.debug("Set up 'idaes' logger")
 
 
 ##
 ## Load pugins. This code was taken and condensed from Pyomo
 ## specifically pyomo.environ.__init__.py
 ##
-import sys as _sys
-from importlib import import_module as _do_import
-import pyomo.common.plugin
 
 def _import_packages(packages, optional=True):
     """Import plugin package
@@ -54,8 +58,7 @@ def _import_packages(packages, optional=True):
         try:
             pkg = _do_import(pname)
         except ImportError as e:
-            logging.getLogger(__name__).exception(
-                "failed to import plugins: {}".format(pname))
+            _log.exception("failed to import plugin: {}".format(pname))
             if not optional:
                 raise e
         if hasattr(pkg, 'load'): # run load function for a package if it exists
