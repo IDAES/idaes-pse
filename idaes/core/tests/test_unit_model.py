@@ -22,7 +22,7 @@ from pyomo.common.config import ConfigValue
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
                         UnitBlockData, PropertyParameterBase,
                         StateBlockDataBase, useDefault)
-from idaes.core.util.exceptions import DynamicError
+from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 
 @declare_process_block_class("Flowsheet")
@@ -134,16 +134,16 @@ def test_setup_dynamics_get_time_fails():
 
 
 def test_setup_dynamics_include_holdup():
-    # Test that include holdup argument is True when dynamic is True
+    # Test that include holdup argument must be True when dynamic is True
     m = ConcreteModel()
 
     m.fs = Flowsheet(dynamic=True)
 
     m.fs.u = Unit()
     m.fs.u.config.declare("include_holdup", ConfigValue(default=False))
-    m.fs.u._setup_dynamics()
 
-    assert m.fs.u.config.include_holdup is True
+    with pytest.raises(ConfigurationError):
+        m.fs.u._setup_dynamics()
 
 
 ## -----------------------------------------------------------------------------

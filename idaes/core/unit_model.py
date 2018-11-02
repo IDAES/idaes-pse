@@ -26,7 +26,7 @@ from pyomo.common.config import ConfigValue, In
 from .process_base import (declare_process_block_class,
                            ProcessBlockData,
                            useDefault)
-from idaes.core.util.exceptions import DynamicError
+from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -34,7 +34,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['UnitBlockData', 'UnitBlock']
 
 # Set up logger
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 @declare_process_block_class("UnitBlock")
@@ -122,11 +122,10 @@ False - set as a steady-state model"""))
             if hasattr(self.config, "include_holdup"):
                 if not self.config.include_holdup:
                     # Dynamic model must have include_holdup = True
-                    logger.warning('{} Dynamic models must have '
-                                   'include_holdup = True. '
-                                   'Overwritting argument.'
-                                   .format(self.name))
-                    self.config.include_holdup = True
+                    raise ConfigurationError(
+                            "{} invalid arguments for dynamic and has_holdup. "
+                            "If dynamic = True, has_holdup must also be True "
+                            "(was False)".format(self.name))
 
     def model_check(blk):
         """
@@ -197,8 +196,7 @@ False - set as a steady-state model"""))
                                       state_args=state_args)
 
         if outlvl > 0:
-            logger.info('{} Initialisation Step 1 Complete.'
-                        .format(blk.name))
+            _log.info('{} Initialisation Step 1 Complete.'.format(blk.name))
 
         # ---------------------------------------------------------------------
         # Solve unit
@@ -207,15 +205,15 @@ False - set as a steady-state model"""))
         if outlvl > 0:
             if results.solver.termination_condition == \
                     TerminationCondition.optimal:
-                logger.info('{} Initialisation Step 2 Complete.'
-                            .format(blk.name))
+                _log.info('{} Initialisation Step 2 Complete.'
+                          .format(blk.name))
             else:
-                logger.warning('{} Initialisation Step 2 Failed.'
-                               .format(blk.name))
+                _log.warning('{} Initialisation Step 2 Failed.'
+                             .format(blk.name))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.holdup.release_state(flags, outlvl-1)
 
         if outlvl > 0:
-            logger.info('{} Initialisation Complete.'.format(blk.name))
+            _log.info('{} Initialisation Complete.'.format(blk.name))

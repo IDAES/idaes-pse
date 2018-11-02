@@ -17,7 +17,6 @@ from __future__ import division
 
 # Import Python libraries
 import inspect
-import logging
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -37,9 +36,6 @@ __author__ = "Andrew Lee, John Eslick"
 __all__ = ['ReactionBlockDataBase',
            'ReactionBlockBase',
            'ReactionParameterBase']
-
-# Set up logger
-logger = logging.getLogger(__name__)
 
 
 class ReactionParameterBase(ProcessBlockData):

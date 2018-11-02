@@ -35,7 +35,7 @@ from idaes.core.util.exceptions import (ConfigurationError,
 __author__ = "Andrew Lee"
 
 # Set up logger
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 # Enumerate options for material balances
@@ -423,8 +423,8 @@ have a config block which derives from CONFIG_Base, **default** - False.
                             'loop in parent tree.'.format(self.name))
                 parent = parent.parent_block()
 
-        logger.info('{} Using default property package'
-                    .format(self.name))
+        _log.info('{} Using default property package'
+                  .format(self.name))
 
         if parent.config.default_property_package is None:
             raise ConfigurationError(

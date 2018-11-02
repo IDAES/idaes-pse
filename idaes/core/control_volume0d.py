@@ -16,9 +16,6 @@ Base class for control volumes
 
 from __future__ import division
 
-# Import Python libraries
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import Var
 
@@ -33,9 +30,6 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Andrew Lee"
-
-# Set up logger
-logger = logging.getLogger(__name__)
 
 
 @declare_process_block_class("ControlVolume0D", doc="""
