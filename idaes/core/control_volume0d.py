@@ -132,7 +132,7 @@ class ControlVolume0dData(ControlVolumeBase):
                 parameters=self.config.reaction_package,
                 **package_arguments)
 
-    def _add_volume(self, length_units):
+    def add_geometry(self, length_units):
         """
         Method to create volume Var in ControlVolume.
 
@@ -198,9 +198,13 @@ class ControlVolume0dData(ControlVolumeBase):
             except KeyError:
                 units[u] = '-'
 
-        if self.config.has_holdup:
+        if has_holdup or has_rate_reactions:
             if not hasattr(self, "volume"):
-                self._add_volume(lenght_units=units["length"])
+                raise ConfigurationError(
+                        "{} control volume must have volume defined to have "
+                        "holdup and/or rate reaction terms. Please call the "
+                        "add_geometry method before adding balance equations."
+                        .format(self.name))
 
         # Material holdup and accumulation
         if has_holdup:
@@ -315,6 +319,69 @@ class ControlVolume0dData(ControlVolumeBase):
                         transfer_term(b, t, p, j))
             else:
                 return Constraint.Skip
+
+        # TODO: Need to set material_holdup = 0 for non-present component-phase
+        # pairs. Not ideal, but needed to close DoF. Is there a better way?
+
+        # Material Holdup
+        if self.config.include_holdup:
+            @self.Constraint(self.time,
+                             self.phase_list,
+                             self.component_list,
+                             doc="Material holdup calculations")
+            def material_holdup_calculation(b, t, p, j):
+                if j in phase_component_list[p]:
+                    return b.material_holdup[t, p, j] == (
+                           b.volume[t]*self.phase_fraction[t, p] *
+                           b.properties_out[t].material_density_term[p, j])
+                else:
+                    return b.material_holdup[t, p, j] == 0
+
+        if has_rate_reactions:
+            # Add extents of reaction and stoichiometric constraints
+            self.rate_reaction_extent = Var(
+                    self.time,
+                    self.rate_reaction_idx,
+                    domain=Reals,
+                    doc="Extent of kinetic reactions[{}/{}]"
+                        .format(units['holdup'], units['time']))
+
+            @self.Constraint(self.time,
+                             self.phase_list,
+                             self.component_list,
+                             doc="Kinetic reaction stoichiometry constraint")
+            def rate_reaction_stoichiometry_constraint(b, t, p, j):
+                if j in phase_component_list[p]:
+                    return b.rate_reaction_generation[t, p, j] == (
+                                sum(b.rate_reaction_stoichiometry[r, p, j] *
+                                    b.rate_reaction_extent[t, r]
+                                    for r in b.rate_reaction_idx))
+                else:
+                    return Constraint.Skip
+
+        if has_equilibrium_reactions:
+            # Add extents of reaction and stoichiometric constraints
+            self.equilibrium_reaction_extent = Var(
+                            self.time,
+                            self.equilibrium_reaction_idx,
+                            domain=Reals,
+                            doc="Extent of equilibrium reactions[{}/{}]"
+                                .format(units['holdup'], units['time']))
+
+            @self.Constraint(self.time,
+                             self.phase_list,
+                             self.component_list,
+                             doc="Equilibrium reaction stoichiometry")
+            def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
+                if j in phase_component_list[p]:
+                    return b.equilibrium_reaction_generation[t, p, j] == (
+                            sum(b.equilibrium_reaction_stoichiometry[r, p, j] *
+                                b.equilibrium_reaction_extent[t, r]
+                                for r in b.equilibrium_reaction_idx))
+                else:
+                    return Constraint.Skip
+
+        return self.material_balances
 
 #    def _make_phase_frac(self):
 #        """

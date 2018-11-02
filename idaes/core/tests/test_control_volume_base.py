@@ -397,6 +397,15 @@ def test_build():
     super(CVFrameData, m.fs.cv).build()
 
 
+def test_add_geometry():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.cv = CVFrame()
+
+    with pytest.raises(NotImplementedError):
+        m.fs.cv.add_geometry()
+
+
 def test_auto_construct():
     m = ConcreteModel()
     m.fs = Flowsheet()

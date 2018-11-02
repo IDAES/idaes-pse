@@ -298,6 +298,14 @@ have a config block which derives from CONFIG_Base, **default** - False.
         if self.config.auto_construct is True:
             self._auto_construct()
 
+    def add_geometry(self, *args, **kwargs):
+        # Placeholder method for add_geometry
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_geometry. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
     def add_material_balances(self,
                               balance_type=MaterialBalanceType.componentPhase,
                               **kwargs):
