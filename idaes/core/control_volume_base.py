@@ -298,6 +298,144 @@ have a config block which derives from CONFIG_Base, **default** - False.
         if self.config.auto_construct is True:
             self._auto_construct()
 
+    def add_material_balances(self,
+                              balance_type=MaterialBalanceType.componentPhase,
+                              **kwargs):
+        """
+        General method for adding material balances to a control volume.
+        This method makes calls to specialised sub-methods for each type of
+        material balance.
+
+        Args:
+            balance_type - MaterialBalanceType Enum indicating which type of
+                    material balance should be constructed.
+            dynamic - argument indicating whether material balances should
+                    include temporal derivative terms. If not provided,
+                    will use the dynamic flag of the control volume block
+            has_holdup - whether material holdup terms should be included in
+                    material balances. Must be True if dynamic = True
+            has_rate_reactions - whether default generation terms for rate
+                    reactions should be included in material balances
+            has_equilibrium_reactions - whether generation terms should for
+                    chemical equilibrium reactions should be included in
+                    material balances
+            has_phase_equilibrium - whether generation terms should for phase
+                    equilibrium behaviour should be included in material
+                    balances
+            has_mass_transfer - whether generic mass transfer terms should be
+                    included in material balances
+            custom_molar_term - a Pyomo Expression reresenting custom terms to
+                    be included in material balances on a molar basis.
+            custom_mass_term - a Pyomo Expression reresenting custom terms to
+                    be included in material balances on a mass basis.
+
+        Returns:
+            Constraint objects constructed by sub-method
+        """
+        if balance_type == MaterialBalanceType.none:
+            mb = None
+        elif balance_type == MaterialBalanceType.componentPhase:
+            mb = self.add_phase_component_balances(**kwargs)
+        elif balance_type == MaterialBalanceType.componentTotal:
+            mb = self.add_total_component_balances(**kwargs)
+        elif balance_type == MaterialBalanceType.elementTotal:
+            mb = self.add_total_element_balances(**kwargs)
+        elif balance_type == MaterialBalanceType.total:
+            mb = self.add_total_material_balances(**kwargs)
+        else:
+            raise BurntToast(
+                    "{} invalid balance_type for add_material_balances."
+                    "Please contact the IDAES developers with this bug."
+                    .format(self.name))
+
+        return mb
+
+    def add_energy_balances(self,
+                            balance_type=EnergyBalanceType.enthalpyPhase,
+                            **kwargs):
+        """
+        General method for adding energy balances to a control volume.
+        This method makes calls to specialised sub-methods for each type of
+        energy balance.
+
+        Args:
+            balance_type - EnergyBalanceType Enum indicating which type of
+                    energy balance should be constructed.
+            dynamic - argument indicating whether energy balances should
+                    include temporal derivative terms. If not provided,
+                    will use the dynamic flag of the control volume block
+            has_holdup - whether material holdup terms should be included in
+                    energy balances. Must be True if dynamic = True
+            has_heat_transfer - whether generic heat transfer terms should be
+                    included in energy balances
+            has_work_transfer - whether generic mass transfer terms should be
+                    included in energy balances
+            custom_term - a Pyomo Expression reresenting custom terms to
+                    be included in energy balances
+
+        Returns:
+            Constraint objects constructed by sub-method
+        """
+        if balance_type == EnergyBalanceType.none:
+            eb = None
+        elif balance_type == EnergyBalanceType.enthalpyPhase:
+            eb = self.add_phase_enthalpy_balances(**kwargs)
+        elif balance_type == EnergyBalanceType.enthalpyTotal:
+            eb = self.add_total_enthalpy_balances(**kwargs)
+        elif balance_type == EnergyBalanceType.energyTotal:
+            eb = self.add_total_energy_balances(**kwargs)
+        elif balance_type == EnergyBalanceType.energyPhase:
+            eb = self.add_phase_energy_balances(**kwargs)
+        else:
+            raise BurntToast(
+                    "{} invalid balance_type for add_energy_balances."
+                    "Please contact the IDAES developers with this bug."
+                    .format(self.name))
+
+        return eb
+
+    def add_momentum_balances(self,
+                              balance_type=MomentumBalanceType.pressureTotal,
+                              **kwargs):
+        """
+        General method for adding momentum balances to a control volume.
+        This method makes calls to specialised sub-methods for each type of
+        momentum balance.
+
+        Args:
+            balance_type - MomentumBalanceType Enum indicating which type of
+                    momentum balance should be constructed.
+            dynamic - argument indicating whether momentum balances should
+                    include temporal derivative terms. If not provided,
+                    will use the dynamic flag of the control volume block
+            has_holdup - whether momentum holdup terms should be included in
+                    momentum balances. Must be True if dynamic = True
+            has_pressure_change - whether default generation terms for pressure
+                    change should be included in momentum balances
+            custom_term - a Pyomo Expression reresenting custom terms to
+                    be included in momentum balances
+
+        Returns:
+            Constraint objects constructed by sub-method
+        """
+        if balance_type == MomentumBalanceType.none:
+            mb = None
+        elif balance_type == MomentumBalanceType.pressureTotal:
+            mb = self.add_total_pressure_balances(**kwargs)
+        elif balance_type == MomentumBalanceType.pressurePhase:
+            mb = self.add_phase_pressure_balances(**kwargs)
+        elif balance_type == MomentumBalanceType.momentumTotal:
+            mb = self.add_total_momentum_balances(**kwargs)
+        elif balance_type == MomentumBalanceType.momentumPhase:
+            mb = self.add_phase_momentum_balances(**kwargs)
+        else:
+            raise BurntToast(
+                    "{} invalid balance_type for add_momentum_balances."
+                    "Please contact the IDAES developers with this bug."
+                    .format(self.name))
+
+        return mb
+
     def _auto_construct(self):
         """
         Placeholder _auto_construct method to ensure a useful exception is
@@ -310,7 +448,8 @@ have a config block which derives from CONFIG_Base, **default** - False.
         Returns:
             None
         """
-        raise BurntToast("{} auto-construct failed as ControlVolume "
+        raise NotImplementedError(
+                         "{} auto-construct failed as ControlVolume "
                          "class failed to create _auto_construct method."
                          "Please contact the IDAES developers with this bug."
                          .format(self.name))
@@ -525,6 +664,30 @@ have a config block which derives from CONFIG_Base, **default** - False.
 
         return dynamic, has_holdup
 
+    def _get_phase_comp_list(self):
+        """
+        Method to collect phase-component list from property package.
+        If property pakcage does not define a phase-component list, then it is
+        assumed that all components are present in all phases.
+
+        Args:
+            None
+
+        Returns:
+            phase_component_list
+        """
+        # Get phase component list(s)
+        if hasattr(self.config.property_package, "phase_component_list"):
+            phase_component_list = (
+                    self.config.property_package.phase_component_list)
+        else:
+            # Otherwise assume all components in all phases
+            phase_component_list = {}
+            for p in self.phase_list:
+                phase_component_list[p] = self.component_list
+
+        return phase_component_list
+
     # Add placeholder methods for adding property and reaction packages
     def add_state_blocks(self, *args, **kwargs):
         raise NotImplementedError(
@@ -542,28 +705,21 @@ have a config block which derives from CONFIG_Base, **default** - False.
 
     # Add placeholder methods for all types of material, energy and momentum
     # balance equations which return NotImplementedErrors
-    def add_material_balances(self, *args, **kwargs):
-        raise NotImplementedError(
-                "{} control volume class has not implemented a method for "
-                "add_material_balances. Please contact the "
-                "developer of the ControlVolume class you are using."
-                .format(self.name))
-
-    def add_phase_component_material_balances(self, *args, **kwargs):
+    def add_phase_component_balances(self, *args, **kwargs):
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_phase_component_material_balances. Please contact the "
                 "developer of the ControlVolume class you are using."
                 .format(self.name))
 
-    def add_total_component_material_balances(self, *args, **kwargs):
+    def add_total_component_balances(self, *args, **kwargs):
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_component_material_balances. Please contact the "
                 "developer of the ControlVolume class you are using."
                 .format(self.name))
 
-    def add_total_element_material_balances(self, *args, **kwargs):
+    def add_total_element_balances(self, *args, **kwargs):
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_element_material_balances. Please contact the "
@@ -574,13 +730,6 @@ have a config block which derives from CONFIG_Base, **default** - False.
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_material_balances. Please contact the "
-                "developer of the ControlVolume class you are using."
-                .format(self.name))
-
-    def add_energy_balances(self, *args, **kwargs):
-        raise NotImplementedError(
-                "{} control volume class has not implemented a method for "
-                "add_energy_balances. Please contact the "
                 "developer of the ControlVolume class you are using."
                 .format(self.name))
 
@@ -609,13 +758,6 @@ have a config block which derives from CONFIG_Base, **default** - False.
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_energy_balances. Please contact the "
-                "developer of the ControlVolume class you are using."
-                .format(self.name))
-
-    def add_momentum_balances(self, *args, **kwargs):
-        raise NotImplementedError(
-                "{} control volume class has not implemented a method for "
-                "add_momentum_balances. Please contact the "
                 "developer of the ControlVolume class you are using."
                 .format(self.name))
 

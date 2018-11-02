@@ -403,7 +403,7 @@ def test_auto_construct():
     m.fs.pp = PropertyParameterBlock()
     m.fs.cv = CVFrame(property_package=m.fs.pp, auto_construct=True)
 
-    with pytest.raises(BurntToast):
+    with pytest.raises(NotImplementedError):
         super(CVFrameData, m.fs.cv).build()
 
 # -----------------------------------------------------------------------------
@@ -495,81 +495,33 @@ def test_add_material_balances():
     m = ConcreteModel()
     m.cv = CVFrame()
 
-    with pytest.raises(NotImplementedError):
-        m.cv.add_material_balances()
-
-    def none_method():
-        raise NotImplementedError
-
     for t in MaterialBalanceType:
         if t == MaterialBalanceType.none:
-            method = none_method
-        elif t == MaterialBalanceType.componentPhase:
-            method = m.cv.add_phase_component_material_balances
-        elif t == MaterialBalanceType.componentTotal:
-            method = m.cv.add_total_component_material_balances
-        elif t == MaterialBalanceType.elementTotal:
-            method = m.cv.add_total_element_material_balances
-        elif t == MaterialBalanceType.total:
-            method = m.cv.add_total_material_balances
+            assert m.cv.add_material_balances(t) is None
         else:
-            raise Exception("Missing option in tests {}".format(t))
-
-        with pytest.raises(NotImplementedError):
-            method()
+            with pytest.raises(NotImplementedError):
+                m.cv.add_material_balances(t)
 
 
 def test_add_energy_balances():
     m = ConcreteModel()
     m.cv = CVFrame()
 
-    with pytest.raises(NotImplementedError):
-        m.cv.add_energy_balances()
-
-    def none_method():
-        raise NotImplementedError
-
     for t in EnergyBalanceType:
         if t == EnergyBalanceType.none:
-            method = none_method
-        elif t == EnergyBalanceType.enthalpyPhase:
-            method = m.cv.add_phase_enthalpy_balances
-        elif t == EnergyBalanceType.enthalpyTotal:
-            method = m.cv.add_total_enthalpy_balances
-        elif t == EnergyBalanceType.energyPhase:
-            method = m.cv.add_phase_energy_balances
-        elif t == EnergyBalanceType.energyTotal:
-            method = m.cv.add_total_energy_balances
+            assert m.cv.add_energy_balances(t) is None
         else:
-            raise Exception("Missing option in tests {}".format(t))
-
-        with pytest.raises(NotImplementedError):
-            method()
+            with pytest.raises(NotImplementedError):
+                m.cv.add_energy_balances(t)
 
 
 def test_add_momentum_balances():
     m = ConcreteModel()
     m.cv = CVFrame()
 
-    with pytest.raises(NotImplementedError):
-        m.cv.add_momentum_balances()
-
-    def none_method():
-        raise NotImplementedError
-
     for t in MomentumBalanceType:
         if t == MomentumBalanceType.none:
-            method = none_method
-        elif t == MomentumBalanceType.pressurePhase:
-            method = m.cv.add_phase_pressure_balances
-        elif t == MomentumBalanceType.pressureTotal:
-            method = m.cv.add_total_pressure_balances
-        elif t == MomentumBalanceType.momentumPhase:
-            method = m.cv.add_phase_momentum_balances
-        elif t == MomentumBalanceType.momentumTotal:
-            method = m.cv.add_total_momentum_balances
+            assert m.cv.add_momentum_balances(t) is None
         else:
-            raise Exception("Missing option in tests {}".format(t))
-
-        with pytest.raises(NotImplementedError):
-            method()
+            with pytest.raises(NotImplementedError):
+                m.cv.add_momentum_balances(t)

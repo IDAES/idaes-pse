@@ -17,14 +17,12 @@ Base class for control volumes
 from __future__ import division
 
 # Import Pyomo libraries
-from pyomo.environ import Var
+from pyomo.environ import Constraint, Reals, Var
+from pyomo.dae import DerivativeVar
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         ControlVolumeBase,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType,
                         FlowDirection,
                         useDefault)
 from idaes.core.util.exceptions import ConfigurationError
@@ -134,51 +132,189 @@ class ControlVolume0dData(ControlVolumeBase):
                 parameters=self.config.reaction_package,
                 **package_arguments)
 
-#    def add_material_balances(balance_type=MaterialBalanceType.componentPhase,
-#                              dynamic=useDefault,
-#                              has_holdup=False,
-#                              has_rate_reactions=False,
-#                              has_equilibrium_reactions=False,
-#                              has_phase_equilibrium=False,
-#                              has_mass_transfer=False,
-#                              custom_molar_term=None,
-#                              custom_mass_term=None):
-#        """
-#        General method for adding material balances to a 0D control volume.
-#        This method makes calls to specialised sub-methods for each type of
-#        material balance.
-#
-#        Args:
-#            balance_type - MaterialBalanceType Enum indicating which type of
-#                    material balance should be constructed.
-#            dynamic - argument indicating whether material balances should
-#                    include temporal derivative terms. If not provided,
-#                    will use the dynamic flag of the control volume block
-#            has_holdup - whether material holdup terms should be included in
-#                    material balances. Must be True if dynamic = True
-#            has_rate_reactions - whether default generation terms for rate
-#                    reactions should be included in material balances
-#            has_equilibrium_reactions - whether generation terms should for
-#                    chemical equilibrium reactions should be included in
-#                    material balances
-#            has_phase_equilibrium - whether generation terms should for phase
-#                    equilibrium behaviour should be included in material
-#                    balances
-#            has_mass_transfer - whether generic mass transfer terms should be
-#                    included in material balances
-#            custom_molar_term - a Pyomo Expression reresenting custom terms to
-#                    be included in material balances on a molar basis.
-#                    Expression must be indexed by time, phase list and
-#                    component list
-#            custom_mass_term - a Pyomo Expression reresenting custom terms to
-#                    be included in material balances on a mass basis.
-#                    Expression must be indexed by time, phase list and
-#                    component list
-#
-#        Returns:
-#            None
-#        """
-#        pass
+    def _add_volume(self, length_units):
+        """
+        Method to create volume Var in ControlVolume.
+
+        Args:
+            length_units - string to use for units for length
+
+        Returns:
+            None
+        """
+        self.volume = Var(self.time, initialize=1.0,
+                          doc='Holdup Volume [{}^3]'.format(length_units))
+
+    def add_phase_component_balances(self,
+                                     dynamic=useDefault,
+                                     has_holdup=False,
+                                     has_rate_reactions=False,
+                                     has_equilibrium_reactions=False,
+                                     has_phase_equilibrium=False,
+                                     has_mass_transfer=False,
+                                     custom_molar_term=None,
+                                     custom_mass_term=None):
+        """
+        This method constructs a set of 0D material balances indexed by time,
+        phase and component.
+
+        Args:
+            dynamic - argument indicating whether material balances should
+                    include temporal derivative terms. If not provided,
+                    will use the dynamic flag of the control volume block
+            has_holdup - whether material holdup terms should be included in
+                    material balances. Must be True if dynamic = True
+            has_rate_reactions - whether default generation terms for rate
+                    reactions should be included in material balances
+            has_equilibrium_reactions - whether generation terms should for
+                    chemical equilibrium reactions should be included in
+                    material balances
+            has_phase_equilibrium - whether generation terms should for phase
+                    equilibrium behaviour should be included in material
+                    balances
+            has_mass_transfer - whether generic mass transfer terms should be
+                    included in material balances
+            custom_molar_term - a Pyomo Expression reresenting custom terms to
+                    be included in material balances on a molar basis.
+                    Expression must be indexed by time, phase list and
+                    component list
+            custom_mass_term - a Pyomo Expression reresenting custom terms to
+                    be included in material balances on a mass basis.
+                    Expression must be indexed by time, phase list and
+                    component list
+
+        Returns:
+            Constraint object representing material balances
+        """
+        # Validate arguments
+        self._validate_add_balance_arguments(dynamic=dynamic,
+                                             has_holdup=has_holdup)
+
+        # Get units from property package
+        units = {}
+        for u in ['length', 'holdup', 'amount', 'time']:
+            try:
+                units[u] = self.config.property_package.get_package_units()[u]
+            except KeyError:
+                units[u] = '-'
+
+        if self.config.has_holdup:
+            if not hasattr(self, "volume"):
+                self._add_volume(lenght_units=units["length"])
+
+        # Material holdup and accumulation
+        if has_holdup:
+            self.material_holdup = Var(self.time,
+                                       self.phase_list,
+                                       self.component_list,
+                                       domain=Reals,
+                                       doc="Material holdup in unit [{}]"
+                                           .format(units['holdup']))
+        if dynamic:
+            self.material_accumulation = DerivativeVar(
+                    self.material_holdup,
+                    wrt=self.time,
+                    doc="Material accumulation in unit [{}/{}]"
+                        .format(units['holdup'], units['time']))
+
+        # Get phase component list(s)
+        phase_component_list = self._get_phase_comp_list()
+
+        # Create material balance terms as required
+        # Kinetic reaction generation
+        if has_rate_reactions:
+            self.rate_reaction_generation = Var(
+                        self.time,
+                        self.phase_list,
+                        self.component_list,
+                        domain=Reals,
+                        doc="Amount of component generated in "
+                            "unit by kinetic reactions [{}/{}]"
+                            .format(units['holdup'], units['time']))
+
+        # Equilibrium reaction generation
+        if has_equilibrium_reactions:
+            self.equilibrium_reaction_generation = Var(
+                        self.time,
+                        self.phase_list,
+                        self.component_list,
+                        domain=Reals,
+                        doc="Amount of component generated in unit "
+                            "by equilibrium reactions [{}/{}]"
+                            .format(units['holdup'], units['time']))
+
+        # Phase equilibrium generation
+        if has_phase_equilibrium:
+            self.phase_equilibrium_generation = Var(
+                        self.time,
+                        self.phase_equilibrium_idx,
+                        domain=Reals,
+                        doc="Amount of generation in unit by phase "
+                            "equilibria [{}/{}]"
+                            .format(units['holdup'], units['time']))
+
+        # Material transfer term
+        if has_mass_transfer:
+            self.mass_transfer_term = Var(
+                        self.time,
+                        self.phase_list,
+                        self.component_list,
+                        domain=Reals,
+                        doc="Component material transfer into unit [{}/{}]"
+                            .format(units['holdup'], units['time']))
+
+        # Create rules to substitute material balance terms
+        # Accumulation term
+        def accumulation_term(b, t, p, j):
+            return b.material_accumulation[t, p, j] if dynamic else 0
+
+        def kinetic_term(b, t, p, j):
+            return (b.rate_reaction_generation[t, p, j] if has_rate_reactions
+                    else 0)
+
+        def equilibrium_term(b, t, p, j):
+            return (b.equilibrium_reaction_generation[t, p, j]
+                    if has_equilibrium_reactions else 0)
+
+        def phase_equilibrium_term(b, t, p, j):
+            if has_phase_equilibrium:
+                sd = {}
+                for r in b.phase_equilibrium_idx:
+                    if self.phase_equilibrium_list[r][0] == j:
+                        if self.phase_equilibrium_list[r][1][0] == p:
+                            sd[r] = 1
+                        elif self.phase_equilibrium_list[r][1][1] == p:
+                            sd[r] = -1
+                        else:
+                            sd[r] = 0
+                    else:
+                        sd[r] = 0
+
+                return sum(b.phase_equilibrium_generation[t, r]*sd[r]
+                           for r in b.phase_equilibrium_idx)
+
+        def transfer_term(b, t, p, j):
+            return (b.mass_transfer_term[t, p, j] if has_mass_transfer else 0)
+
+#        mbal_basis = self.properties_out[0].get_material_balance_term
+#        def custom_molar_term(b, t, p, j):
+
+        # Add component balances
+        @self.Constraint(self.time,
+                         self.phase_list,
+                         self.component_list,
+                         doc="Material balances")
+        def material_balance(b, t, p, j):
+            if j in phase_component_list[p]:
+                return accumulation_term(b, t, p, j) == (
+                        b.properties_in[t].material_balance_term[p, j] -
+                        b.properties_out[t].material_balance_term[p, j] +
+                        kinetic_term(b, t, p, j) +
+                        equilibrium_term(b, t, p, j) +
+                        phase_equilibrium_term(b, t, p, j) +
+                        transfer_term(b, t, p, j))
+            else:
+                return Constraint.Skip
 
 #    def _make_phase_frac(self):
 #        """
