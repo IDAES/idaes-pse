@@ -2,45 +2,60 @@
 
 Set up logging for the idaes module, and import plugins.
 """
+import os
 import logging.config
-import json
 from importlib import import_module as _do_import
-
+import toml
 import pyomo.common.plugin
 
-#TODO<jce> read global idaes config if available
-#          the location of the config would probably be:
-#          * %APPDATA%/.idaes/idaes.config (Windows)
-#          * $HOME/.idaes/idaes.config (not Windows)
+# Set default configuration.  Used TOML string to serve as an example for
+# and definative guid for IDAES configuration files.
+_config = toml.loads("""
+[plugins]
+required = []
+optional = []
+[logging]
+version = 1
+disable_existing_loggers = false
+formatters.f1.format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+formatters.f1.datefmt = "%Y-%m-%d %H:%M:%S"
+handlers.console.class = "logging.StreamHandler"
+handlers.console.formatter = "f1"
+handlers.console.stream = "ext://sys.stderr"
+loggers.idaes.level = "INFO"
+loggers.idaes.handlers = ["console"]
+""")
 
-_logging_config_dict = {
-    "version":1,
-    "disable_existing_loggers":False,
-    "formatters":{
-        "f1":{
-            "format":"%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-            "datefmt":"%Y-%m-%d %H:%M:%S"}},
-    "handlers":{
-        "console":{
-            "class":"logging.StreamHandler",
-            "formatter":"f1",
-            "stream":"ext://sys.stderr"}},
-    "loggers":{
-        "idaes":{
-            "level":"INFO",
-            "handlers":["console"]}}}
-logging.config.dictConfig(_logging_config_dict)
-
-try: # Also provide or to switch to ini config file or YAML?
-    with open("logging.json", "r") as f:
-        _logging_config_dict = json.load(f)
-    logging.config.dictConfig(_logging_config_dict)
-except IOError:
-    pass # don't require a config file
-
+# Use default logging config until config files have been read.
+logging.config.dictConfig(_config["logging"])
 _log = logging.getLogger(__name__)
-_log.debug("Set up 'idaes' logger")
 
+# Try to read the global IDAES config file.
+try:
+    if os.name == 'nt': # Windows
+        config_file = os.path.join(os.environ['APPDATA'], '.idaes/idaes.conf')
+    else: # any other OS
+        config_file = os.path.join(os.environ['HOME'], '.idaes/idaes.conf')
+    with open(config_file, "r") as f:
+        _config.update(toml.load(f))
+    _log.debug("Read global idaes.conf")
+except IOError:
+    # don't require config file
+    _log.debug("Global idaes.conf not found (this is okay)")
+except AttributeError:
+    _log.debug("Could not find path for global idaes.conf (this is okay)")
+
+# Try working directory for an IDAES config.
+try:
+    with open("idaes.conf", "r") as f:
+        _config.update(toml.load(f))
+    _log.debug("Read local idaes.conf")
+except IOError:
+    # don't require config file
+    _log.debug("Local idaes.conf not found (this is okay)")
+
+logging.config.dictConfig(_config["logging"])
+_log.debug("'idaes' logger debug test")
 
 ##
 ## Load pugins. This code was taken and condensed from Pyomo
@@ -54,21 +69,21 @@ def _import_packages(packages, optional=True):
         optional: true, log ImportError but contine; false, raise if ImportError
     """
     for name in packages:
-        pname = name+'.plugins' # look in plugins sub-package
+        pname = name + '.plugins' # look in plugins sub-package
         try:
             pkg = _do_import(pname)
         except ImportError as e:
             _log.exception("failed to import plugin: {}".format(pname))
             if not optional:
                 raise e
-        if hasattr(pkg, 'load'): # run load function for a package if it exists
+        if hasattr(pkg, 'load'): # run load function for a module if it exists
             pkg.load()
 
 # This make "idaes" the current plugin envirnment while importing plugins here
 pyomo.common.plugin.push("idaes") # Add idaes plugin environment at top of stack
 # Import plugins standard IDAES plugins, non-optional plugins (currently none)
-_import_packages([], optional=False)
+_import_packages(_config["plugins"]["required"], optional=False)
 # Import contrib plugins, failure to import these is non-fatal. (currently none)
-_import_packages([], optional=True)
+_import_packages(_config["plugins"]["optional"], optional=True)
 # go back to the previous plugin environment (what it was before pushing "idaes")
 pyomo.common.plugin.pop()
