@@ -12,18 +12,21 @@ import pyomo.common.plugin
 # and definative guid for IDAES configuration files.
 _config = toml.loads("""
 [plugins]
-required = []
-optional = []
+  required = []
+  optional = []
 [logging]
-version = 1
-disable_existing_loggers = false
-formatters.f1.format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-formatters.f1.datefmt = "%Y-%m-%d %H:%M:%S"
-handlers.console.class = "logging.StreamHandler"
-handlers.console.formatter = "f1"
-handlers.console.stream = "ext://sys.stderr"
-loggers.idaes.level = "INFO"
-loggers.idaes.handlers = ["console"]
+  version = 1
+  disable_existing_loggers = false
+  [logging.formatters.f1]
+    format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+    datefmt = "%Y-%m-%d %H:%M:%S"
+  [logging.handlers.console]
+    class = "logging.StreamHandler"
+    formatter = "f1"
+    stream = "ext://sys.stderr"
+  [logging.loggers.idaes]
+    level = "INFO"
+    handlers = ["console"]
 """)
 
 # Use default logging config until config files have been read.
