@@ -29,7 +29,7 @@ from idaes.core.util.config import (is_property_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError,
-                                        IDAESError,
+                                        BurntToast,
                                         PropertyPackageError)
 
 __author__ = "Andrew Lee"
@@ -310,7 +310,7 @@ have a config block which derives from CONFIG_Base, **default** - False.
         Returns:
             None
         """
-        raise IDAESError("{} auto-construct failed as ControlVolume "
+        raise BurntToast("{} auto-construct failed as ControlVolume "
                          "class failed to create _auto_construct method."
                          "Please contact the IDAES developers with this bug."
                          .format(self.name))
@@ -524,6 +524,21 @@ have a config block which derives from CONFIG_Base, **default** - False.
                     "False)".format(self.name))
 
         return dynamic, has_holdup
+
+    # Add placeholder methods for adding property and reaction packages
+    def add_state_blocks(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_state_blocks. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
+
+    def add_reaction_blocks(self, *args, **kwargs):
+        raise NotImplementedError(
+                "{} control volume class has not implemented a method for "
+                "add_reaction_blocks. Please contact the "
+                "developer of the ControlVolume class you are using."
+                .format(self.name))
 
     # Add placeholder methods for all types of material, energy and momentum
     # balance equations which return NotImplementedErrors

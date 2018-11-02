@@ -30,9 +30,9 @@ def test_DynamicError():
         raise DynamicError()
 
 
-def test_IDAESError():
+def test_BurntToast():
     with pytest.raises(Exception):
-        raise IDAESError()
+        raise BurntToast()
 
 
 def test_PropertyNotSupportedError():

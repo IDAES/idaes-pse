@@ -34,7 +34,7 @@ class DynamicError(ValueError):
     pass  # Incorrect browness setting
 
 
-class IDAESError(Exception):
+class BurntToast(Exception):
     """
     General exception for when something breaks badly in the core.
     """

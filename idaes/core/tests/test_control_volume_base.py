@@ -26,7 +26,7 @@ from idaes.core import (ControlVolumeBase, CONFIG_Base,
                         FlowsheetBlockData, UnitBlockData, useDefault,
                         PropertyParameterBase, ReactionParameterBase)
 from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
-                                        PropertyPackageError, IDAESError)
+                                        PropertyPackageError, BurntToast)
 
 
 # -----------------------------------------------------------------------------
@@ -34,17 +34,33 @@ from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
 def test_material_balance_type():
     assert len(MaterialBalanceType) == 5
 
+    # Test that error is raised when given non-member
+    with pytest.raises(AttributeError):
+        MaterialBalanceType.foo
+
 
 def test_energy_balance_type():
     assert len(EnergyBalanceType) == 5
+
+    # Test that error is raised when given non-member
+    with pytest.raises(AttributeError):
+        EnergyBalanceType.foo
 
 
 def test_momentum_balance_type():
     assert len(MomentumBalanceType) == 5
 
+    # Test that error is raised when given non-member
+    with pytest.raises(AttributeError):
+        MomentumBalanceType.foo
+
 
 def testflow_direction():
     assert len(FlowDirection) == 2
+
+    # Test that error is raised when given non-member
+    with pytest.raises(AttributeError):
+        FlowDirection.foo
 
 
 # -----------------------------------------------------------------------------
@@ -387,7 +403,7 @@ def test_auto_construct():
     m.fs.pp = PropertyParameterBlock()
     m.fs.cv = CVFrame(property_package=m.fs.pp, auto_construct=True)
 
-    with pytest.raises(IDAESError):
+    with pytest.raises(BurntToast):
         super(CVFrameData, m.fs.cv).build()
 
 # -----------------------------------------------------------------------------
@@ -458,7 +474,23 @@ def test_validate_add_balance_arguments_dynamic_error():
                                                        has_holdup=True)
 
 # -----------------------------------------------------------------------------
-# Test NotImplementedErrors for all balance type methods
+# Test NotImplementedErrors for all property and balance type methods
+def test_add_state_blocks():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+
+    with pytest.raises(NotImplementedError):
+        m.cv.add_state_blocks()
+
+
+def test_add_reaction_blocks():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+
+    with pytest.raises(NotImplementedError):
+        m.cv.add_reaction_blocks()
+
+
 def test_add_material_balances():
     m = ConcreteModel()
     m.cv = CVFrame()
