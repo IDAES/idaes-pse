@@ -25,7 +25,8 @@ from idaes.core import (declare_process_block_class,
                         ControlVolumeBase,
                         FlowDirection,
                         useDefault)
-from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.exceptions import (ConfigurationError,
+                                        PropertyNotSupportedError)
 
 __author__ = "Andrew Lee"
 
@@ -224,9 +225,31 @@ class ControlVolume0dData(ControlVolumeBase):
         # Get phase component list(s)
         phase_component_list = self._get_phase_comp_list()
 
+        # Check that reaction block exists if required
+        if has_rate_reactions or has_equilibrium_reactions:
+            try:
+                rblock = self.reactions
+            except AttributeError:
+                raise ConfigurationError(
+                        "{} does not contain a Reaction Block, but material "
+                        "balances have been set to contain reaction terms. "
+                        "Please construct a reaction block before adding "
+                        "balance equations.".format(self.name))
+
         # Create material balance terms as required
         # Kinetic reaction generation
         if has_rate_reactions:
+            try:
+                # TODO : replace with Reference
+                object.__setattr__(
+                        self,
+                        "rate_reaction_idx",
+                        self.config.reaction_parameters.rate_reaction_idx)
+            except AttributeError:
+                raise PropertyNotSupportedError(
+                    "{} Reaction package does not contain a list of rate "
+                    "reactions (rate_reaction_idx), thus does not support "
+                    "rate-based reactions.".format(self.name))
             self.rate_reaction_generation = Var(
                         self.time,
                         self.phase_list,
@@ -238,6 +261,18 @@ class ControlVolume0dData(ControlVolumeBase):
 
         # Equilibrium reaction generation
         if has_equilibrium_reactions:
+            try:
+                # TODO : replace with Reference
+                object.__setattr__(
+                    self,
+                    "equilibrium_reaction_idx",
+                    self.config.reaction_parameters.equilibrium_reaction_idx)
+            except AttributeError:
+                raise PropertyNotSupportedError(
+                    "{} Reaction package does not contain a list of "
+                    "equilibrium reactions (equilibrium_reaction_idx), thus "
+                    "does not support equilibrium-based reactions."
+                    .format(self.name))
             self.equilibrium_reaction_generation = Var(
                         self.time,
                         self.phase_list,
@@ -249,6 +284,17 @@ class ControlVolume0dData(ControlVolumeBase):
 
         # Phase equilibrium generation
         if has_phase_equilibrium:
+            try:
+                # TODO : replace with Reference
+                object.__setattr__(
+                    self,
+                    "phase_equilibrium_idx",
+                    self.config.property_parameters.phase_equilibrium_idx)
+            except AttributeError:
+                raise PropertyNotSupportedError(
+                    "{} Property package does not contain a list of phase "
+                    "equilibrium reactions (phase_equilibrium_idx), thus does "
+                    "not support phase equilibrium.".format(self.name))
             self.phase_equilibrium_generation = Var(
                         self.time,
                         self.phase_equilibrium_idx,
@@ -353,11 +399,18 @@ class ControlVolume0dData(ControlVolumeBase):
             def rate_reaction_stoichiometry_constraint(b, t, p, j):
                 if j in phase_component_list[p]:
                     return b.rate_reaction_generation[t, p, j] == (
-                                sum(b.rate_reaction_stoichiometry[r, p, j] *
-                                    b.rate_reaction_extent[t, r]
-                                    for r in b.rate_reaction_idx))
+                        sum(rblock[t].rate_reaction_stoichiometry[r, p, j] *
+                            b.rate_reaction_extent[t, r]
+                            for r in b.rate_reaction_idx))
                 else:
                     return Constraint.Skip
+
+            @self.Constraint(self.time,
+                             self.reaction_idx,
+                             doc="Kinetic reaction extents constraint")
+            def rate_reaction_extents_constraint(b, t, r):
+                return b.rate_reaction_extent[t, r] == (
+                        rblock[t].reaction_rate[r]*b.volume[t])
 
         if has_equilibrium_reactions:
             # Add extents of reaction and stoichiometric constraints
@@ -375,7 +428,8 @@ class ControlVolume0dData(ControlVolumeBase):
             def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
                 if j in phase_component_list[p]:
                     return b.equilibrium_reaction_generation[t, p, j] == (
-                            sum(b.equilibrium_reaction_stoichiometry[r, p, j] *
+                            sum(rblock[t].
+                                equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, r]
                                 for r in b.equilibrium_reaction_idx))
                 else:

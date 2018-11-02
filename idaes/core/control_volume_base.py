@@ -493,6 +493,7 @@ have a config block which derives from CONFIG_Base, **default** - False.
 
         # Try to get reference to time object from parent
         try:
+            # TODO : replace with Reference
             object.__setattr__(self, "time", self.parent_block().time)
         except AttributeError:
             raise DynamicError('{} has a parent model '

@@ -102,7 +102,7 @@ class PropertyParameterBase(ProcessBlockData):
         quantities used in the property package (as strs) and values of their
         default units as strs.
 
-        The quantities used by the framewokr are (all optional):
+        The quantities used by the framework are (all optional):
             - 'time'
             - 'length'
             - 'mass'
