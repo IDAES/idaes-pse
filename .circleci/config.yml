@@ -8,7 +8,8 @@ shared: &shared
     - run: sudo python setup.py -q install
     - run: cd doc && make dep html
     - run: pytest idaes -m "not nocircleci"
-
+ 
+# Skip codecov for now
 #    - run: codecov --token=c786fe92-e199-484a-a586-b97ade166385
       
 jobs:
