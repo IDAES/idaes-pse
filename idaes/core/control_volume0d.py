@@ -102,7 +102,7 @@ class ControlVolume0dData(ControlVolumeBase):
                 parameters=self.config.property_package,
                 **package_arguments)
 
-        self.properties_out = self.property_module.PropertyBlock(
+        self.properties_out = self.property_module.StateBlock(
                 self.time,
                 doc="Material properties at outlet",
                 defined_state=not inlet_defined,
@@ -346,8 +346,7 @@ class ControlVolume0dData(ControlVolumeBase):
         def transfer_term(b, t, p, j):
             return (b.mass_transfer_term[t, p, j] if has_mass_transfer else 0)
 
-#        mbal_basis = self.properties_out[0].get_material_balance_term
-#        def custom_molar_term(b, t, p, j):
+        # TODO : Add custom terms
 
         # Add component balances
         @self.Constraint(self.time,
@@ -357,8 +356,8 @@ class ControlVolume0dData(ControlVolumeBase):
         def material_balance(b, t, p, j):
             if j in phase_component_list[p]:
                 return accumulation_term(b, t, p, j) == (
-                        b.properties_in[t].material_balance_term[p, j] -
-                        b.properties_out[t].material_balance_term[p, j] +
+                        b.properties_in[t].get_material_balance_term[p, j] -
+                        b.properties_out[t].get_material_balance_term[p, j] +
                         kinetic_term(b, t, p, j) +
                         equilibrium_term(b, t, p, j) +
                         phase_equilibrium_term(b, t, p, j) +

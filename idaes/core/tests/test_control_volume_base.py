@@ -26,7 +26,7 @@ from idaes.core import (ControlVolumeBase, CONFIG_Base,
                         FlowsheetBlockData, UnitBlockData, useDefault,
                         PropertyParameterBase, ReactionParameterBase)
 from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
-                                        PropertyPackageError, BurntToast)
+                                        PropertyPackageError)
 
 
 # -----------------------------------------------------------------------------
