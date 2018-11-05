@@ -25,7 +25,7 @@ from pyomo.common.config import ConfigValue, In
 
 from idaes.core import ProcessBlockData, declare_process_block_class, \
                         UnitBlockData
-from idaes.core.util.config import is_parameter_block, list_of_floats
+from idaes.core.util.config import is_property_parameter_block, list_of_floats
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -34,7 +34,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['FlowsheetBlock, FlowsheetBlockData']
 
 # Set up logger
-logger = logging.getLogger('idaes.core')
+logger = logging.getLogger(__name__)
 
 
 @declare_process_block_class("FlowsheetBlock", doc="""
@@ -70,7 +70,7 @@ class FlowsheetBlockData(ProcessBlockData):
         list of floating point numbers, **default** - [0]."""))
     CONFIG.declare("default_property_package", ConfigValue(
         default=None,
-        domain=is_parameter_block,
+        domain=is_property_parameter_block,
         description="Default property package to use in flowsheet",
         doc="""Indicates the default property package to be used by models
 within this flowsheet if not otherwise specified, **default** - None.
