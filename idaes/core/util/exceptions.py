@@ -18,7 +18,7 @@ This module contains custom IDAES exceptions.
 __author__ = "Andrew Lee"
 
 
-def ConfigurationError(ValueError):
+class ConfigurationError(ValueError):
     """
     IDAES exception to be used when configuration argumnet are incorrect
     or inconsistent.
@@ -26,7 +26,7 @@ def ConfigurationError(ValueError):
     pass  # Too many buttons, burnt toast
 
 
-def DynamicError(ValueError):
+class DynamicError(ValueError):
     """
     IDAES exception for cases where settings associated with dynamic models
     are incorrect.
@@ -34,16 +34,20 @@ def DynamicError(ValueError):
     pass  # Incorrect browness setting
 
 
-def PropertyNotSupportedError(NotImplementedError):
+class PropertyNotSupportedError(AttributeError):
     """
     IDAES exception for cases when a models calls for a property which is
     not supported by the chosen property package.
+
+    Needs to inherit from AttributeError for Pyomo interactions.
     """
     pass  # Could not find bread
 
 
-def PropertyPackageError(Exception):
+class PropertyPackageError(AttributeError):
     """
     IDAES exception for generic errors arising from property packages.
+
+    Needs to inherit from AttributeError for Pyomo interactions.
     """
     pass  # Bread stuck
