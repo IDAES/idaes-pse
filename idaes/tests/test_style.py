@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -16,6 +16,9 @@ Tests for Python code style.
 import os
 import subprocess
 
+# we want to look at everything:
+# DIRS = ['idaes']
+# but for now we only do this:
 DIRS = ['idaes/dmf']
 FLAKE8 = 'flake8'
 
@@ -31,8 +34,7 @@ def test_flake8():
             raise os.error('Target path "{}" in '
                            'current dir, "{}", '
                            'is not a directory'.format(path, d))
-        cmd = [FLAKE8, d]
-        #print('@@cmd={}'.format(cmd))
+        cmd = [FLAKE8, d, '--exclude=tests']
         proc = subprocess.Popen(cmd)
         proc.wait()
         status = proc.returncode

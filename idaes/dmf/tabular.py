@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -327,9 +327,10 @@ class Table(TabularObject):
     @classmethod
     def _validate_json(cls, d):
         # print('@@ validating:\n----\n{}\n-----'.format(d))
-        ok, msg = cls._validator.validate(d)
-        if not ok:
-            raise errors.DataFormatError('tabulardata', msg)
+        try:
+            cls._validator.validate(d)
+        except jsonschema.ValidationError as err:
+            raise errors.DataFormatError('tabulardata', str(err))
 
 
 class TabularData(object):
@@ -372,9 +373,10 @@ class TabularData(object):
                             .format(type(data)))
         if len(data) == 0:
             raise ValueError('Input data must have at least one column')
-        ok, msg = self._validator.validate(data)
-        if not ok:
-            raise ValueError(errors.DataFormatError('data_column', msg))
+        try:
+            self._validator.validate(data)
+        except jsonschema.ValidationError as err:
+            raise ValueError(str(err))
         self._data = data
         self._nrows = self._get_nrows()
         self._errcol = error_column

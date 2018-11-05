@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -364,7 +364,7 @@ class WorkspaceConfig(object):
                   The 'value' gives a default value. Its type is either
                   a list, a number, bool, or a string; the list may be empty.
         """
-        prop = self._schema['properties']
+        prop = CONFIG_SCHEMA['properties']
         result = {}
 
         for key, item in six.iteritems(prop):

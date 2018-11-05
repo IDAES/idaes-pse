@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -29,18 +29,6 @@ import six
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
-
-# Some more information about this module
-__author__ = "Andrew Lee"
-
-__all__ = ['PropertyBlockDataBase', 'PropertyParameterBase']
-
-# Set up logger
-logger = logging.getLogger('idaes.core')
-
-
-class PropertyParameterBase(ProcessBlockData,
-                            property_meta.HasPropertyClassMetadata):
 from idaes.core.util.config import is_property_parameter_block
 from idaes.core.util.exceptions import (PropertyNotSupportedError,
                                         PropertyPackageError)
@@ -97,7 +85,6 @@ class StateBlockBase(ProcessBlock):
         that a routine is present. All StateBlockData classes should
         overload this method with one suited to the particular property package
 
->>>>>>> idaes/master
         Args:
             None
 
@@ -135,21 +122,12 @@ class StateBlockDataBase(ProcessBlockData):
             domain=In([True, False]),
             description="Phase equilibrium constraint flag",
             doc="""Flag indicating whether phase equilibrium constraints
-<<<<<<< HEAD
-                should be constructed in this property block (default=True).
-=======
                 should be constructed in this state block (default=True).
->>>>>>> idaes/master
                 """))
 
     def build(self):
         """
-<<<<<<< HEAD
-        General build method for PropertyBlockDatas. Inheriting models should
-        call super().build.
-=======
         General build method for StateBlockDatas.
->>>>>>> idaes/master
 
         Args:
             None
@@ -157,9 +135,6 @@ class StateBlockDataBase(ProcessBlockData):
         Returns:
             None
         """
-<<<<<<< HEAD
-        pass
-=======
         raise NotImplementedError('{} property package has not implemented a '
                                   'build method. Please contact the property '
                                   'package developer.')
@@ -242,16 +217,11 @@ class StateBlockDataBase(ProcessBlockData):
                                   ' get_energy_diffusion_terms method. '
                                   'Please contact the property package '
                                   'developer.')
->>>>>>> idaes/master
 
     def __getattr__(self, attr):
         """
         This method is used to avoid generating unnecessary property
-<<<<<<< HEAD
-        calculations in property blocks. __getattr__ is called whenever a
-=======
         calculations in state blocks. __getattr__ is called whenever a
->>>>>>> idaes/master
         property is called for, and if a propery does not exist, it looks for
         a method to create the required property, and any associated
         components.
@@ -286,16 +256,6 @@ class StateBlockDataBase(ProcessBlockData):
                 else:
                     del self.__getattrcalls[-1]
             else:
-<<<<<<< HEAD
-                raise ValueError("{} Trying to remove call {} from __getattr__"
-                                 " call list, however this is not the most "
-                                 "recent call in the list ({}). This indicates"
-                                 " a bug in the __getattr__ calls. Please "
-                                 "contact the IDAES developers with this bug."
-                                 .format(self.name,
-                                         attr,
-                                         self.__getattrcalls[-1]))
-=======
                 raise PropertyPackageError(
                         "{} Trying to remove call {} from __getattr__"
                         " call list, however this is not the most "
@@ -303,24 +263,16 @@ class StateBlockDataBase(ProcessBlockData):
                         " a bug in the __getattr__ calls. Please "
                         "contact the IDAES developers with this bug."
                         .format(self.name, attr, self.__getattrcalls[-1]))
->>>>>>> idaes/master
 
         # Check that attr is not something we shouldn't touch
         if attr == "domain" or attr.startswith("_"):
             # Don't interfere with anything by getting attributes that are
             # none of my business
-<<<<<<< HEAD
-            raise AttributeError('{} {} does not exist, but is a protected '
-                                 'attribute. Check the naming of your '
-                                 'components to avoid any reserved names'
-                                 .format(self.name, attr))
-=======
             raise PropertyPackageError(
                     '{} {} does not exist, but is a protected '
                     'attribute. Check the naming of your '
                     'components to avoid any reserved names'
                     .format(self.name, attr))
->>>>>>> idaes/master
 
         # Check for recursive calls
         try:
@@ -330,12 +282,8 @@ class StateBlockDataBase(ProcessBlockData):
                 if attr == self.__getattrcalls[-1]:
                     # attr method is calling itself
                     self.__getattrcalls.append(attr)
-<<<<<<< HEAD
-                    raise Exception('{} _{} made a recursive call to '
-=======
                     raise PropertyPackageError(
                                     '{} _{} made a recursive call to '
->>>>>>> idaes/master
                                     'itself, indicating a potential '
                                     'recursive loop. This is generally '
                                     'caused by the {} method failing to '
@@ -343,12 +291,8 @@ class StateBlockDataBase(ProcessBlockData):
                                     .format(self.name, attr, attr, attr))
                 else:
                     self.__getattrcalls.append(attr)
-<<<<<<< HEAD
-                    raise Exception('{} a potential recursive loop has been '
-=======
                     raise PropertyPackageError(
                                     '{} a potential recursive loop has been '
->>>>>>> idaes/master
                                     'detected whilst trying to construct {}. '
                                     'A method was called, but resulted in a '
                                     'subsequent call to itself, indicating a '
@@ -363,59 +307,35 @@ class StateBlockDataBase(ProcessBlockData):
             # If not, add call to list
             self.__getattrcalls.append(attr)
         except AttributeError:
-<<<<<<< HEAD
-            # Creat a list of calls if one does not already exist
-=======
             # A list of calls if one does not exist, so create one
->>>>>>> idaes/master
             self.__getattrcalls = [attr]
 
         # Get property information from get_supported_properties
         try:
-            m = self.config.parameters.get_supported_properties()
+            m = self.config.parameters.get_metadata().properties
 
             if m is None:
-<<<<<<< HEAD
-                raise ValueError('{} Property package get_supported_properties'
-                                 ' method returned None when trying to create '
-                                 '{}. Please contact the developer of the '
-                                 'property package'.format(self.name, attr))
-=======
                 raise PropertyPackageError(
-                        '{} property package get_supported_properties'
+                        '{} property package get_metadata()'
                         ' method returned None when trying to create '
                         '{}. Please contact the developer of the '
                         'property package'.format(self.name, attr))
->>>>>>> idaes/master
         except KeyError:
             # If attr not in get_supported_properties, assume package does not
             # support property
             clear_call_list(self, attr)
-<<<<<<< HEAD
-            raise AttributeError('{} {} is not supported by property package '
-                                 '(property is not listed in '
-                                 'get_supported_properties).'
-                                 .format(self.name, attr, attr))
-=======
             raise PropertyNotSupportedError(
                     '{} {} is not supported by property package (property is '
-                    'not listed in get_supported_properties).'
+                    'not listed in package metadata properties).'
                     .format(self.name, attr, attr))
->>>>>>> idaes/master
 
-        # Get method name from get_supported_properties
+        # Get method name from resulting properties
         try:
             if m[attr]['method'] is None:
                 # If method is none, property should be constructed
-<<<<<<< HEAD
-                # by property package, so raise AttributeError
-                clear_call_list(self, attr)
-                raise AttributeError(
-=======
                 # by property package, so raise PropertyPackageError
                 clear_call_list(self, attr)
                 raise PropertyPackageError(
->>>>>>> idaes/master
                         '{} {} should be constructed automatically '
                         'by property package, but is not present. '
                         'This can be caused by methods being called '
@@ -424,14 +344,10 @@ class StateBlockDataBase(ProcessBlockData):
                 # If method is False, package does not support property
                 # Raise NotImplementedError
                 clear_call_list(self, attr)
-<<<<<<< HEAD
-                raise NotImplementedError(
-=======
                 raise PropertyNotSupportedError(
->>>>>>> idaes/master
                         '{} {} is not supported by property package '
                         '(property method is listed as False in '
-                        'get_supported_properties).'
+                        'package property metadata).'
                         .format(self.name, attr))
             elif isinstance(m[attr]['method'], str):
                 # Try to get method name in from PropertyBlock object
@@ -440,12 +356,8 @@ class StateBlockDataBase(ProcessBlockData):
                 except AttributeError:
                     # If fails, method does not exist
                     clear_call_list(self, attr)
-<<<<<<< HEAD
-                    raise AttributeError(
-=======
                     raise PropertyPackageError(
->>>>>>> idaes/master
-                            '{} {} get_supported_properties method '
+                            '{} {} package property metadata method '
                             'returned a name that does not correspond'
                             ' to any method in the property package. '
                             'Please contact the developer of the '
@@ -453,63 +365,39 @@ class StateBlockDataBase(ProcessBlockData):
             else:
                 # Otherwise method name is invalid
                 clear_call_list(self, attr)
-<<<<<<< HEAD
-                raise ValueError('{} {} get_supported_properties method '
-                                 'returned invalid value for method name. '
-                                 'Please contact the developer of the '
-                                 'property package.'
-                                 .format(self.name, attr))
-=======
                 raise PropertyPackageError(
-                             '{} {} get_supported_properties method '
+                             '{} {} package property metadata method '
                              'returned invalid value for method name. '
                              'Please contact the developer of the '
                              'property package.'
                              .format(self.name, attr))
->>>>>>> idaes/master
         except KeyError:
             # No method key - raise Exception
             # Need to use an AttributeError so Pyomo.DAE will handle this
             clear_call_list(self, attr)
-<<<<<<< HEAD
-            raise AttributeError('{} get_supported_properties method '
-                                 'does not contain a method for {}. '
-                                 'Please contact the developer of the '
-                                 'property package.'.format(self.name, attr))
-=======
             raise PropertyNotSupportedError(
-                    '{} get_supported_properties method '
+                    '{} package property metadata method '
                     'does not contain a method for {}. '
                     'Please select a package which supports '
                     'the necessary properties for your process.'
                     .format(self.name, attr))
->>>>>>> idaes/master
 
         # Call attribute if it is callable
         # If this fails, it should return a meaningful error.
         if callable(f):
             try:
                 f()
-<<<<<<< HEAD
-            except:
-=======
             except Exception:
->>>>>>> idaes/master
                 # Clear call list and reraise error
                 clear_call_list(self, attr)
                 raise
         else:
             # If f is not callable, inform the user and clear call list
             clear_call_list(self, attr)
-<<<<<<< HEAD
-            raise AttributeError('{} has an attribute _{}, however it is not '
-                                 'callable.'.format(self.name, attr))
-=======
             raise PropertyPackageError(
                     '{} tried calling attribute {} in order to create '
                     'component {}. However the method is not callable.'
                     .format(self.name, f, attr))
->>>>>>> idaes/master
 
         # Clear call list, and return
         comp = getattr(self, attr)
