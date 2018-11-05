@@ -34,7 +34,7 @@ def test_flake8():
             raise os.error('Target path "{}" in '
                            'current dir, "{}", '
                            'is not a directory'.format(path, d))
-        cmd = [FLAKE8, d, '--exclude=tests']
+        cmd = [FLAKE8, d]
         proc = subprocess.Popen(cmd)
         proc.wait()
         status = proc.returncode
