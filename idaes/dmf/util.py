@@ -108,7 +108,7 @@ def get_module_version(mod):
     v = getattr(mod, '__version__', None)
     if v is None:
         return None
-    pat = '\d+\.\d+\.\d+.*'
+    pat = r'\d+\.\d+\.\d+.*'
     if not re.match(pat, v):
         raise ValueError('Version "{}" does not match regular expression '
                          'pattern "{}"'.format(v, pat))
@@ -276,7 +276,7 @@ class CPrint(object):
               '-': '\033[2m',
               '_': '\033[4m'}
 
-    _styled = re.compile('@([*_-]?[hbgyrwcm*_-])\[([^]]*)\]')
+    _styled = re.compile(r'@([*_-]?[hbgyrwcm*_-])\[([^]]*)\]')
 
     def __init__(self, color=True):
         self._c = color

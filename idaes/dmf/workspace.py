@@ -28,32 +28,32 @@ from .util import get_logger
 _log = get_logger('workspace')
 
 CONFIG_SCHEMA = {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "id": "http://idaes.org/dmf/workspace-config",
-  "type": "object",
-  "properties": {
-    "_id": {
-      "description": "Unique workspace identifier",
-      "type": "string"
-    },
-    "htmldocs": {
-      "description": "HTML documentation paths",
-      "type": "array",
-      "items": {
-        "type": "string",
-        "description": "directory containing Sphinx-generated HTML docs"
-      },
-      "default": "{dmf_root}/doc/build/html"
-    },
-    "description": {
-      "description": "A human-readable description of the workspace",
-      "type": "string"
-    },
-    "name": {
-      "description": "A short name for the workspace",
-      "type": "string"
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "http://idaes.org/dmf/workspace-config",
+    "type": "object",
+    "properties": {
+        "_id": {
+            "description": "Unique workspace identifier",
+            "type": "string"
+        },
+        "htmldocs": {
+            "description": "HTML documentation paths",
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "directory containing Sphinx HTML docs"
+            },
+            "default": "{dmf_root}/doc/build/html"
+        },
+        "description": {
+            "description": "A human-readable description of the workspace",
+            "type": "string"
+        },
+        "name": {
+            "description": "A short name for the workspace",
+            "type": "string"
+        }
     }
-  }
 }
 
 

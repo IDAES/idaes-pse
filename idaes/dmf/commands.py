@@ -396,7 +396,7 @@ def _cat_resource_show(cp, r):
 
 
 # regular expression to find VT100 color escape codes
-_noprint_re = re.compile('\033\[[0-9]+m')
+_noprint_re = re.compile(r'\033\[[0-9]+m')
 
 
 def _display_in_columns(items, max_line=80, col_sep='  ', row_sep='\n'):

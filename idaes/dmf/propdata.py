@@ -77,7 +77,7 @@ class PropertyTable(tabular.Table):
     @classmethod
     def load(cls, file_or_path, validate=True):
         """Create PropertyTable from JSON input.
-        
+
         Args:
             file_or_path (file or str): Filename or file object
                 from which to read the JSON-formatted data.
@@ -122,13 +122,13 @@ class PropertyTable(tabular.Table):
 class PropertyData(tabular.TabularData):
     """Class representing property data that knows how to
     construct itself from a CSV file.
-    
+
     You can build objects from multiple CSV files as well.
     See the property database section of the API docs for
     details, or read the code in :meth:`add_csv` and the
     tests in :mod:`idaes_dmf.propdb.tests.test_mergecsv`.
     """
-    embedded_units = '(.*)\((.*)\)'
+    embedded_units = r'(.*)\((.*)\)'
 
     def __init__(self, data):
         """Construct new object from input list.
@@ -171,7 +171,7 @@ class PropertyData(tabular.TabularData):
 
     def names(self, states=True, properties=True):
         """Get column names.
-        
+
         Args:
             states (bool): If False, exclude "state" data, e.g. the
                           ambient temperature, and only
@@ -179,7 +179,7 @@ class PropertyData(tabular.TabularData):
             properties (bool): If False, excluse property data
 
         Returns:
-            list[str]: List of column names. 
+            list[str]: List of column names.
         """
         result = []
         if states:
@@ -207,7 +207,7 @@ class PropertyData(tabular.TabularData):
 
     def as_arr(self, states=True):
         """Export property data as arrays.
-        
+
         Args:
             states (bool): If False, exclude "state" data, e.g. the
                           ambient temperature, and only
@@ -245,10 +245,10 @@ class PropertyData(tabular.TabularData):
 
     def values_dataframe(self, states=True):
         """Get values as a dataframe.
-        
+
         Args:
             states (bool): see :meth:`names()`.
- 
+
         Returns:
             (pd.DataFrame) Pandas dataframe for values.
  
@@ -320,7 +320,7 @@ class PropertyData(tabular.TabularData):
 
     def add_csv(self, file_or_path, strict=False):
         """Add to existing object from a new CSV file.
-        
+
         Depending on the value of the `strict` argument (see
         below), the new file may or may not have the same 
         properties as the object -- but it always needs to have

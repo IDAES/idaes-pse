@@ -111,11 +111,11 @@ class ModuleClassWalker(Walker):
         if exclude_testdirs:
             expr_list.append('{sl}tests?{sl}'.format(sl=psep))
         if exclude_tests:
-            expr_list.append('tests?_.*\.py')
+            expr_list.append(r'tests?_.*.py')
         if exclude_init:
-            expr_list.append('__init__\.py')
+            expr_list.append(r'__init__\.py')
         if exclude_setup:
-            expr_list.append('setup\.py')
+            expr_list.append(r'setup\.py')
         if exclude_dirs:
             for ed in exclude_dirs:
                 expr_list.append('{sl}{d}'.format(sl=psep, d=ed))

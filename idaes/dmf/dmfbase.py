@@ -127,7 +127,7 @@ class DMF(workspace.Workspace, HasTraits):
     """Data Management Framework (DMF).
 
     Expected usage is to instantiate this class, once, and then use it for
-    storing, searching, and retrieve :term:`resource` \s that
+    storing, searching, and retrieve :term:`resource`s that
     are required for the given analysis.
 
     For details on the configuration files used by the DMF, see
@@ -570,4 +570,3 @@ class DMF(workspace.Workspace, HasTraits):
 
 def get_propertydb_table(rsrc):
     return propdata.PropertyTable.load(rsrc.datafiles[0].fullpath)
-

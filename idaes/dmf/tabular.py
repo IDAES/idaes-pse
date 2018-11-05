@@ -182,6 +182,7 @@ COLUMN_SCHEMA = {
 # Schemas
 # --------------------------------------------------------------------------
 
+
 class TabularObject(object):
     """Abstract Property data class.
     """
@@ -342,7 +343,7 @@ class TabularData(object):
     details, or read the code in :meth:`add_csv` and the
     tests in :mod:`idaes_dmf.propdb.tests.test_mergecsv`.
     """
-    embedded_units = '(.*)\((.*)\)'
+    embedded_units = r'(.*)\((.*)\)'
 
     _validator = jsonschema.Draft4Validator(COLUMN_SCHEMA)
 
@@ -657,9 +658,9 @@ class Metadata(object):
     """Class to import metadata.
     """
     # generic line regular expression
-    line_expr = re.compile('\s*(\w+)\s*,\s*(.*)\s*')
+    line_expr = re.compile(r'\s*(\w+)\s*,\s*(.*)\s*')
     # source line regular expression
-    source_expr = re.compile('\s*(.*)\s*,\s*"(.*)"\s*,\s*(.*)\s*')
+    source_expr = re.compile(r'\s*(.*)\s*,\s*"(.*)"\s*,\s*(.*)\s*')
 
     def __init__(self, values=None):
         if values is None:
@@ -749,7 +750,7 @@ class Metadata(object):
         if m is None:
             raise ValueError('Cannot parse source: {}'.format(s))
         auth, title, rest = m.groups()
-        date_match = re.search(',\s*(\d\d\d\d(?:-\d\d(?:-\d\d)))', rest)
+        date_match = re.search(r',\s*(\d\d\d\d(?:-\d\d(?:-\d\d)))', rest)
         date = date_match.group(1) if date_match else '1970-01-01'
         return {Fields.AUTH: auth,
                 Fields.DATE: date,
