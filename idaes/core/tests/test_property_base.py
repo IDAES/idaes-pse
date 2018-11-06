@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -55,9 +55,7 @@ def test_PropertyParameter_NotImplementedErrors():
     m.p = ParameterBlock()
 
     with pytest.raises(NotImplementedError):
-        m.p.get_supported_properties()
-    with pytest.raises(NotImplementedError):
-        m.p.get_package_units()
+        m.p.get_metadata()
 
 
 # -----------------------------------------------------------------------------
@@ -149,15 +147,15 @@ class _Parameters(PropertyParameterBase):
         super(_Parameters, self).build()
 
     @classmethod
-    def get_supported_properties(self):
-        return {'a': {'method': 'a_method'},
-                'recursion1': {'method': '_recursion1'},
-                'recursion2': {'method': '_recursion2'},
-                'not_callable': {'method': 'test_obj'},
-                'raise_exception': {'method': '_raise_exception'},
-                'not_supported': {'method': False},
-                'does_not_create_component': {
-                        'method': '_does_not_create_component'}}
+    def define_metadata(cls, obj):
+        obj.add_properties({'a': {'method': 'a_method'},
+                            'recursion1': {'method': '_recursion1'},
+                            'recursion2': {'method': '_recursion2'},
+                            'not_callable': {'method': 'test_obj'},
+                            'raise_exception': {'method': '_raise_exception'},
+                            'not_supported': {'method': False},
+                            'does_not_create_component': {
+                                'method': '_does_not_create_component'}})
 
 
 @declare_process_block_class("State", block_class=StateBlockBase)

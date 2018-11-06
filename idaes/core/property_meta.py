@@ -1,0 +1,189 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes".
+##############################################################################
+"""
+These classes handle the metadata aspects of classes representing
+property packages.
+
+Implementors of property packages need to do the following:
+
+1. Create a new class that inherits from
+   :class:`idaes.core.property_base.PropertyParameterBase`, which in turn
+   inherits from :class:`HasPropertyClassMetadata`, in this module.
+
+2. In that class, implement the `define_metadata()` method, inherited from
+   :class:`HasPropertyClassMetadata`. This method is called
+   automatically, once, when the `get_metadata()` method is first invoked.
+   An empty metadata object (an instance of :class:`PropertyClassMetadata`)
+   will be passed in, which the method should populate with information about
+   properties and default units.
+
+Example::
+
+    from idaes.core.property_base import PropertyParameterBase
+
+    class MyPropParams(PropertyParameterBase):
+
+        @classmethod
+        def define_metadata(cls, meta):
+            meta.add_default_units({foo.U.TIME: 'fortnights',
+                                   foo.U.MASS: 'stones'})
+            meta.add_properties({'under_sea': {'units': 'leagues'},
+                                'tentacle_size': {'units': 'yards'}})
+
+        # Also, of course, implement the non-metadata methods that
+        # do the work of the class.
+
+"""
+import six
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+
+class HasPropertyClassMetadata(object):
+    """Interface for classes that have PropertyClassMetadata.
+    """
+    _metadata = None
+
+    @classmethod
+    def get_metadata(cls):
+        """Get property parameter metadata.
+
+        If the metadata is not defined, this will instantiate a new
+        metadata object and call `define_metadata()` to set it up.
+
+        If the metadata is already defined, it will be simply returned.
+
+        Returns:
+            PropertyClassMetadata: The metadata
+        """
+        if cls._metadata is None:
+            pcm = PropertyClassMetadata()
+            cls.define_metadata(pcm)
+            cls._metadata = pcm
+        return cls._metadata
+
+    @classmethod
+    def define_metadata(cls, pcm):
+        """Set all the metadata for properties and units.
+
+        This method should be implemented by subclasses.
+        In the implementation, they should set information into the
+        object provided as an argument.
+
+        Args:
+            pcm (PropertyClassMetadata): Add metadata to this object.
+
+        Returns:
+            None
+        """
+        raise NotImplementedError()
+
+
+class UnitNames(object):
+    """Names for recognized units.
+    """
+    TM = TIME = 'time'
+    LN = LENGTH = 'length'
+    MA = MASS = 'mass'
+    AM = AMOUNT = 'amount'
+    TE = TEMPERATURE = 'temperature'
+    EN = ENERGY = 'energy'
+    CU = CURRENT = 'current'
+    LI = LUMINOUS_INTENSITY = 'luminous intensity'
+
+
+class PropertyClassMetadata(object):
+    """Container for metadata about the property class, which includes
+       default units and properties.
+
+    Example usage::
+
+            foo = PropertyClassMetadata()
+            foo.add_default_units({foo.U.TIME: 'fortnights',
+                                   foo.U.MASS: 'stones'})
+            foo.add_properties({'under_sea': {'units': 'leagues'},
+                                'tentacle_size': {'units': 'yards'}})
+
+    """
+    #: Alias for class enumerating supported/known unit types
+    U = UnitNames
+
+    def __init__(self):
+        self._default_units = {}
+        self._properties = {}
+
+    @property
+    def default_units(self):
+        return self._default_units
+
+    @property
+    def properties(self):
+        return self._properties
+
+    def add_default_units(self, u):
+        """Add a dict with keys for the
+        quantities used in the property package (as strings) and values of their
+        default units as strings.
+
+        The quantities used by the framework are in constants
+        defined in :class:`UnitNames`, aliased here in the class
+        attribute `U`.
+
+        Args:
+            u (dict): Key=property, Value=units
+
+        Returns:
+            None
+        """
+        self._default_units.update(u)
+
+    def add_properties(self, p):
+        """Add properties to the metadata.
+
+        For each property, the value should be another dict which may contain
+        the following keys:
+            - 'method': (required) the name of a method to construct the
+                        property as a str, or None if the property will be
+                        constructed by default.
+            - 'units': (optional) units of measurement for the property.
+
+        Args:
+            p (dict): Key=property, Value=PropertyMetadata or equiv. dict
+
+        Returns:
+            None
+        """
+        for k, v in six.iteritems(p):
+            if not isinstance(v, PropertyMetadata):
+                v = PropertyMetadata(name=k, **v)
+            self._properties[k] = v
+
+
+class PropertyMetadata(dict):
+    """Container for property parameter metadata.
+
+    Instances of this class are exactly dictionaries, with the
+    only difference being some guidance on the values expected in the
+    dictionary from the constructor.
+    """
+    def __init__(self, name=None, method=None, units=None):
+        if name is None:
+            raise TypeError('"name" is required')
+        d = {'name': name, 'method': method}
+        if units is not None:
+            d['units'] = units
+        super(PropertyMetadata, self).__init__(d)
+
+
+
+

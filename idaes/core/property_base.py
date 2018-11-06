@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -22,9 +22,13 @@ import logging
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
+# Other third-party
+import six
+
 # Import IDAES cores
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
+from idaes.core import property_meta
 from idaes.core.util.config import is_property_parameter_block
 from idaes.core.util.exceptions import (PropertyNotSupportedError,
                                         PropertyPackageError)
@@ -40,7 +44,8 @@ __all__ = ['StateBlockDataBase',
 logger = logging.getLogger(__name__)
 
 
-class PropertyParameterBase(ProcessBlockData):
+class PropertyParameterBase(ProcessBlockData,
+                            property_meta.HasPropertyClassMetadata):
     """
         This is the base class for property parameter blocks. These are blocks
         that contain a set of parameters associated with a specific property
@@ -65,71 +70,6 @@ class PropertyParameterBase(ProcessBlockData):
         # Get module reference and store on block
         frm = inspect.stack()[1]
         self.property_module = inspect.getmodule(frm[0])
-
-    @classmethod
-    def get_supported_properties(self):
-        """
-        Method to return a dictionary of properties supported by this package
-        and their assoicated construction methods and units of measurement.
-        This method should return a dict with keys for each supported property.
-
-        For each property, the value should be another dict which may contain
-        the following keys:
-            - 'method': (required) the name of a method to construct the
-                        property as a str, or None if the property will be
-                        constructed by default.
-            - 'units': (optional) units of measurement for the property.
-
-        This default method is a placeholder and should be overloaded by the
-        package developer. This method will return an Exception if not
-        overloaded.
-
-        Args:
-            None
-
-        Returns:
-            A dict with supported properties as keys.
-        """
-        raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_supported_properties method. Please '
-                                  'contact the property package developer'
-                                  .format(self.name))
-
-    @classmethod
-    def get_package_units(self):
-        """
-        Method to return a dictionary of default units of measurement used in
-        the property package. This is used to populate doc strings for
-        variables which derive from the property package (such as flows and
-        volumes). This method should return a dict with keys for the
-        quantities used in the property package (as strs) and values of their
-        default units as strs.
-
-        The quantities used by the framewokr are (all optional):
-            - 'time'
-            - 'length'
-            - 'mass'
-            - 'amount'
-            - 'temperature'
-            - 'energy'
-            - 'current'
-            - 'luminous intensity'
-
-        This default method is a placeholder and should be overloaded by the
-        package developer. This method will return an Exception if not
-        overloaded.
-
-        Args:
-            None
-
-        Returns:
-            A dict with supported properties as keys and tuples of (method,
-            units) as values.
-        """
-        raise NotImplementedError('{} property package has not implemented the'
-                                  ' get_package_units method. Please contact '
-                                  'the property package developer'
-                                  .format(self.name))
 
 
 class StateBlockBase(ProcessBlock):
@@ -372,11 +312,11 @@ class StateBlockDataBase(ProcessBlockData):
 
         # Get property information from get_supported_properties
         try:
-            m = self.config.parameters.get_supported_properties()
+            m = self.config.parameters.get_metadata().properties
 
             if m is None:
                 raise PropertyPackageError(
-                        '{} property package get_supported_properties'
+                        '{} property package get_metadata()'
                         ' method returned None when trying to create '
                         '{}. Please contact the developer of the '
                         'property package'.format(self.name, attr))
@@ -386,10 +326,10 @@ class StateBlockDataBase(ProcessBlockData):
             clear_call_list(self, attr)
             raise PropertyNotSupportedError(
                     '{} {} is not supported by property package (property is '
-                    'not listed in get_supported_properties).'
+                    'not listed in package metadata properties).'
                     .format(self.name, attr, attr))
 
-        # Get method name from get_supported_properties
+        # Get method name from resulting properties
         try:
             if m[attr]['method'] is None:
                 # If method is none, property should be constructed
@@ -407,7 +347,7 @@ class StateBlockDataBase(ProcessBlockData):
                 raise PropertyNotSupportedError(
                         '{} {} is not supported by property package '
                         '(property method is listed as False in '
-                        'get_supported_properties).'
+                        'package property metadata).'
                         .format(self.name, attr))
             elif isinstance(m[attr]['method'], str):
                 # Try to get method name in from PropertyBlock object
@@ -417,7 +357,7 @@ class StateBlockDataBase(ProcessBlockData):
                     # If fails, method does not exist
                     clear_call_list(self, attr)
                     raise PropertyPackageError(
-                            '{} {} get_supported_properties method '
+                            '{} {} package property metadata method '
                             'returned a name that does not correspond'
                             ' to any method in the property package. '
                             'Please contact the developer of the '
@@ -426,7 +366,7 @@ class StateBlockDataBase(ProcessBlockData):
                 # Otherwise method name is invalid
                 clear_call_list(self, attr)
                 raise PropertyPackageError(
-                             '{} {} get_supported_properties method '
+                             '{} {} package property metadata method '
                              'returned invalid value for method name. '
                              'Please contact the developer of the '
                              'property package.'
@@ -436,7 +376,7 @@ class StateBlockDataBase(ProcessBlockData):
             # Need to use an AttributeError so Pyomo.DAE will handle this
             clear_call_list(self, attr)
             raise PropertyNotSupportedError(
-                    '{} get_supported_properties method '
+                    '{} package property metadata method '
                     'does not contain a method for {}. '
                     'Please select a package which supports '
                     'the necessary properties for your process.'

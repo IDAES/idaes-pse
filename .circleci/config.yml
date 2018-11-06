@@ -6,7 +6,8 @@ shared: &shared
     - checkout
     - run: sudo pip install -qr requirements.txt
     - run: sudo python setup.py -q install
-    - run: cd doc && make dep html
+# Skip doc build until we move them over
+#    - run: cd doc && make dep html
     - run: pytest idaes -m "not nocircleci"
  
 # Skip codecov for now
