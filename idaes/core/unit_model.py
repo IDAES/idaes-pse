@@ -68,6 +68,8 @@ False - set as a steady-state model"""))
         Returns:
             None
         """
+        super(UnitBlockData, self).build()
+
         # Set up dynamic flag and time domain
         self._setup_dynamics()
 

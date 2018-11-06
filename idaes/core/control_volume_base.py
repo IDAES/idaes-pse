@@ -266,6 +266,8 @@ see reaction package for documentation.}"""))
         Returns:
             None
         """
+        super(ControlVolumeBase, self).build()
+
         # Setup dynamics flag and time domain
         self._setup_dynamics()
 

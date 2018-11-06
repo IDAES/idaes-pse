@@ -34,7 +34,7 @@ class _Flowsheet(FlowsheetBlockData):
 @declare_process_block_class("Unit")
 class UnitData(UnitBlockData):
     def build(self):
-        pass
+        super(UnitBlockData, self).build()
 
 
 def test_config_block():
@@ -49,7 +49,7 @@ def test_config_block():
 def test_config_args():
     m = ConcreteModel()
 
-    m.u = Unit(dynamic=True)
+    m.u = Unit(default={"dynamic": True})
 
     assert m.u.config.dynamic is True
 
@@ -81,7 +81,7 @@ def test_setup_dynamics1():
     # Test that _setup_dynamics gets argument from parent
     m = ConcreteModel()
 
-    m.fs = Flowsheet(dynamic=False)
+    m.fs = Flowsheet(default={"dynamic": False})
 
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
@@ -105,9 +105,9 @@ def test_setup_dynamics_dynamic_in_steady_state():
     # steady-state parent
     m = ConcreteModel()
 
-    m.fs = Flowsheet(dynamic=False)
+    m.fs = Flowsheet(default={"dynamic": False})
 
-    m.fs.u = Unit(dynamic=True)
+    m.fs.u = Unit(default={"dynamic": True})
     with pytest.raises(DynamicError):
         m.fs.u._setup_dynamics()
 
@@ -116,7 +116,7 @@ def test_setup_dynamics_get_time():
     # Test that time domain is collected correctly
     m = ConcreteModel()
 
-    m.fs = Flowsheet(dynamic=False)
+    m.fs = Flowsheet(default={"dynamic": False})
 
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
@@ -137,7 +137,7 @@ def test_setup_dynamics_has_holdup():
     # Test that has_holdup argument is True when dynamic is True
     m = ConcreteModel()
 
-    m.fs = Flowsheet(dynamic=True)
+    m.fs = Flowsheet(default={"dynamic": True})
 
     m.fs.u = Unit()
     m.fs.u.config.declare("has_holdup", ConfigValue(default=False))

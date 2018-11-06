@@ -142,11 +142,11 @@ class _UnitData(UnitBlockData):
 @declare_process_block_class("CVFrame")
 class CVFrameData(ControlVolumeBase):
     def build(self):
-        pass
+        super(ControlVolumeBase, self).build()
 
 
 def test_config_block():
-    cv = CVFrame()
+    cv = CVFrame(concrete=True)
 
     assert len(cv.config) == 5
     assert cv.config.dynamic == useDefault
@@ -163,8 +163,8 @@ def test_config_block():
 def test_setup_dynamics_use_parent_value():
     # Test that dynamic = None works correctly
     m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=False)
-    m.fs.u = Unit(dynamic=False)
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.u = Unit(default={"dynamic": False})
     m.fs.u.cv = CVFrame()
 
     m.fs.u.cv._setup_dynamics()
@@ -175,7 +175,7 @@ def test_setup_dynamics_use_parent_value():
 
 def test_setup_dynamics_use_parent_value_fail_no_dynamic():
     # Test that dynamic = None works correctly
-    fs = Flowsheet(dynamic=False, concrete=True)
+    fs = Flowsheet(default={"dynamic": False}, concrete=True)
 
     # Create a Block (with no dynamic attribute)
     fs.b = Block()
@@ -191,7 +191,7 @@ def test_setup_dynamics_use_parent_value_fail_no_dynamic():
 
 def test_setup_dynamics_use_parent_value_fail_no_time():
     # Test that methods fails when no time domain in parent
-    fs = Flowsheet(dynamic=False, concrete=True)
+    fs = Flowsheet(default={"dynamic": False}, concrete=True)
 
     # Mock-up an object with a dynamic flag but no time domain (using CVFrame)
     fs.u = CVFrame()
@@ -211,6 +211,8 @@ def test_setup_dynamics_use_parent_value_fail_no_time():
 @declare_process_block_class("PropertyParameterBlock")
 class _PropertyParameterBlock(PropertyParameterBase):
     def build(self):
+        super(_PropertyParameterBlock, self).build()
+
         frm = inspect.stack()[1]
         self.property_module = inspect.getmodule(frm[0])
 
@@ -221,7 +223,7 @@ class _PropertyParameterBlock(PropertyParameterBase):
 def test_get_property_package_set():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
-    m.cv = CVFrame(property_package=m.pp)
+    m.cv = CVFrame(default={"property_package": m.pp})
     m.cv._get_property_package()
 
     assert m.cv.property_module == m.pp.property_module
@@ -229,8 +231,9 @@ def test_get_property_package_set():
 
 def test_get_property_package_default_args():
     m = ConcreteModel()
-    m.pp = PropertyParameterBlock(default_arguments={"test": "foo"})
-    m.cv = CVFrame(property_package=m.pp)
+    m.pp = PropertyParameterBlock(
+                default={"default_arguments": {"test": "foo"}})
+    m.cv = CVFrame(default={"property_package": m.pp})
     m.cv._get_property_package()
 
     assert m.cv.config.property_package_args["test"] == "foo"
@@ -239,11 +242,12 @@ def test_get_property_package_default_args():
 def test_get_reaction_package_module_combine_args():
     # Test that local and default args combine correctly
     m = ConcreteModel()
-    m.pp = PropertyParameterBlock(default_arguments={"test1": "foo",
-                                                     "test2": "bar"})
-    m.cv = CVFrame(property_package=m.pp,
-                   property_package_args={"test2": "baz",
-                                          "test3": "bar"})
+    m.pp = PropertyParameterBlock(
+            default={"default_arguments": {"test1": "foo",
+                                           "test2": "bar"}})
+    m.cv = CVFrame(default={"property_package": m.pp,
+                            "property_package_args": {"test2": "baz",
+                                                      "test3": "bar"}})
     m.cv._get_property_package()
 
     assert m.cv.config.property_package_args["test1"] == "foo"
@@ -289,7 +293,7 @@ def test_get_property_package_call_to_get_default_prop_pack():
 def test_get_indexing_sets():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
-    m.cv = CVFrame(property_package=m.pp)
+    m.cv = CVFrame(default={"property_package": m.pp})
     m.cv._get_property_package()
     m.cv._get_indexing_sets()
 
@@ -301,7 +305,7 @@ def test_get_indexing_sets_missing_phase_list():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
     m.pp.del_component(m.pp.phase_list)
-    m.cv = CVFrame(property_package=m.pp)
+    m.cv = CVFrame(default={"property_package": m.pp})
     m.cv._get_property_package()
 
     with pytest.raises(PropertyPackageError):
@@ -312,7 +316,7 @@ def test_get_indexing_sets_missing_component_list():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
     m.pp.del_component(m.pp.component_list)
-    m.cv = CVFrame(property_package=m.pp)
+    m.cv = CVFrame(default={"property_package": m.pp})
     m.cv._get_property_package()
 
     with pytest.raises(PropertyPackageError):
@@ -334,14 +338,17 @@ def test_get_reaction_package_none():
 @declare_process_block_class("ReactionParameterBlock")
 class _ReactionParameterBlock(ReactionParameterBase):
     def build(self):
+        super(ReactionParameterBase, self).build()
+
         frm = inspect.stack()[1]
         self.property_module = inspect.getmodule(frm[0])
 
 
 def test_get_reaction_package_module():
     m = ConcreteModel()
-    m.rp = ReactionParameterBlock(default_arguments={"test": "foo"})
-    m.cv = CVFrame(reaction_package=m.rp)
+    m.rp = ReactionParameterBlock(
+                default={"default_arguments": {"test": "foo"}})
+    m.cv = CVFrame(default={"reaction_package": m.rp})
 
     m.cv._get_reaction_package()
 
@@ -352,11 +359,12 @@ def test_get_reaction_package_module():
 def test_get_reaction_package_module_default_args():
     # Test that local and default args combine correctly
     m = ConcreteModel()
-    m.rp = ReactionParameterBlock(default_arguments={"test1": "foo",
-                                                     "test2": "bar"})
-    m.cv = CVFrame(reaction_package=m.rp,
-                   reaction_package_args={"test2": "baz",
-                                          "test3": "bar"})
+    m.rp = ReactionParameterBlock(
+            default={"default_arguments": {"test1": "foo",
+                                           "test2": "bar"}})
+    m.cv = CVFrame(default={"reaction_package": m.rp,
+                            "reaction_package_args": {"test2": "baz",
+                                                      "test3": "bar"}})
 
     m.cv._get_reaction_package()
 
