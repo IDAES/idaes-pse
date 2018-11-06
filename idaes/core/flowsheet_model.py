@@ -130,7 +130,6 @@ within this flowsheet if not otherwise specified, **default** - None.
          2) Gets dynamic flag from parent if not top level, or checks validity
             of argument provided
          3) Gets time domain from parent, or creates domain if top level model
-         4) Checks include_holdup flag if present and dynamic = True
 
         Args:
             None

@@ -72,7 +72,7 @@ CONFIG_Base.declare("dynamic", ConfigValue(
 **useDefault** - get flag from parent,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model}"""))
-CONFIG_Base.declare("include_holdup", ConfigValue(
+CONFIG_Base.declare("has_holdup", ConfigValue(
         default=False,
         domain=In([True, False]),
         description="Holdup construction flag",
@@ -287,8 +287,8 @@ see reaction package for documentation.}"""))
         of the dynamic flag from the parent model, otherwise the local value is
         used. The time domain is always collected from the parent model.
 
-        Finally, if dynamic = True, the include_holdup flag is checked to
-        ensure it is also True.
+        Finally, the method checks the has_holdup argument (if present), and
+        ensures that has_holdup is True if dynamic is True.
 
         Args:
             None
@@ -313,6 +313,17 @@ see reaction package for documentation.}"""))
         except AttributeError:
             raise DynamicError('{} has a parent model '
                                'with no time domain'.format(self.name))
+
+        # Check has_holdup, if present
+        if self.config.dynamic:
+            if hasattr(self.config, "has_holdup"):
+                if not self.config.has_holdup:
+                    # Dynamic model must have has_holdup = True
+                    logger.warning('{} Dynamic models must have '
+                                   'has_holdup = True. '
+                                   'Overwritting argument.'
+                                   .format(self.name))
+                    self.config.has_holdup = True
 
     def _get_property_package(self):
         """

@@ -82,7 +82,7 @@ False - set as a steady-state model"""))
          2) Gets dynamic flag from parent if not top level, or checks validity
             of argument provided
          3) Gets time domain from parent, or creates domain if top level model
-         4) Checks include_holdup flag if present and dynamic = True
+         4) Checks has_holdup flag if present and dynamic = True
 
         Args:
             None
@@ -117,16 +117,16 @@ False - set as a steady-state model"""))
             raise DynamicError('{} has a parent model '
                                'with no time domain'.format(self.name))
 
-        # Check include_holdup, if present
+        # Check has_holdup, if present
         if self.config.dynamic:
-            if hasattr(self.config, "include_holdup"):
-                if not self.config.include_holdup:
-                    # Dynamic model must have include_holdup = True
+            if hasattr(self.config, "has_holdup"):
+                if not self.config.has_holdup:
+                    # Dynamic model must have has_holdup = True
                     logger.warning('{} Dynamic models must have '
-                                   'include_holdup = True. '
+                                   'has_holdup = True. '
                                    'Overwritting argument.'
                                    .format(self.name))
-                    self.config.include_holdup = True
+                    self.config.has_holdup = True
 
     def model_check(blk):
         """
