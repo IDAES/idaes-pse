@@ -26,7 +26,7 @@ from pyomo.common.config import ConfigValue, In
 from idaes.core import (ProcessBlockData, declare_process_block_class,
                         UnitBlockData, useDefault)
 from idaes.core.util.config import is_property_parameter_block, list_of_floats
-from idaes.core.util.exceptions import DynamicError
+from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -92,6 +92,8 @@ within this flowsheet if not otherwise specified, **default** - None.
         Returns:
             None
         """
+        super(FlowsheetBlockData, self).build()
+
         # Set up dynamic flag and time domain
         self._setup_dynamics()
 
@@ -137,6 +139,14 @@ within this flowsheet if not otherwise specified, **default** - None.
         Returns:
             None
         """
+        # Test to ensure model is constructed
+        if not self._constructed:
+            raise ConfigurationError('{} flowsheet has no parent object but '
+                                     'has not yet been constructed. Either '
+                                     'attach the flowsheet to a ConcreteModel '
+                                     'or use the argument concrete = True.'
+                                     .format(self.name))
+
         # Determine if this is top level flowsheet
         if self.parent_block() is None:
             # Flowsheet has no parent, so top level model

@@ -50,7 +50,7 @@ class _PropertyParameterBlock(PropertyParameterBase):
 @declare_process_block_class("ReactionParameterBlock")
 class _ReactionParameterBlock(ReactionParameterBase):
     def build(self):
-        pass
+        super(ReactionParameterBase, self).build()
 
 
 def test_config_block():
@@ -79,7 +79,7 @@ def test_ReactionParameter_NotImplementedErrors():
 @declare_process_block_class("ReactionParameterBlock2")
 class _ReactionParameterBlock2(ReactionParameterBase):
     def build(self):
-        pass
+        super(ReactionParameterBase, self).build()
 
     @classmethod
     def get_required_properties(self):
@@ -104,7 +104,7 @@ def test_validate_state_block_invalid_units():
     # Test validation of associated PropertyParameterBlock
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock2(property_package=m.p)
+    m.r = ReactionParameterBlock2(default={"property_package": m.p})
 
     with pytest.raises(PropertyPackageError):
         m.r._validate_property_parameter_block()
@@ -113,7 +113,7 @@ def test_validate_state_block_invalid_units():
 @declare_process_block_class("ReactionParameterBlock3")
 class _ReactionParameterBlock3(ReactionParameterBase):
     def build(self):
-        pass
+        super(ReactionParameterBase, self).build()
 
     @classmethod
     def get_required_properties(self):
@@ -138,7 +138,7 @@ def test_validate_state_block_unsupported_prop():
     # Test validation of associated PropertyParameterBlock
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock3(property_package=m.p)
+    m.r = ReactionParameterBlock3(default={"property_package": m.p})
 
     with pytest.raises(PropertyPackageError):
         m.r._validate_property_parameter_block()
@@ -147,7 +147,7 @@ def test_validate_state_block_unsupported_prop():
 @declare_process_block_class("ReactionParameterBlock4")
 class _ReactionParameterBlock4(ReactionParameterBase):
     def build(self):
-        pass
+        super(ReactionParameterBase, self).build()
 
     @classmethod
     def get_required_properties(self):
@@ -172,7 +172,7 @@ def test_ReactionParameterBase_build():
     # Test that ReactionParameterBase gets module information
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock4(property_package=m.p)
+    m.r = ReactionParameterBlock4(default={"property_package": m.p})
     super(_ReactionParameterBlock4, m.r).build()
 
     assert hasattr(m.r, "property_module")
@@ -184,11 +184,11 @@ def test_ReactionParameterBase_build():
                              block_class=ReactionBlockBase)
 class ReactionBlockData(ReactionBlockDataBase):
     def build(self):
-        pass
+        super(ReactionBlockDataBase, self).build()
 
 
 def test_ReactionBlockBase_initialize():
-    # Test that ReactionBlockBase initialize method raise NotImplementedError
+    # Test that ReactionBlockBase initialize method raises NotImplementedError
     m = ConcreteModel()
     m.r = ReactionBlock()
 
@@ -219,7 +219,7 @@ def test_StateBlock_config():
 @declare_process_block_class("StateBlock", block_class=StateBlockBase)
 class StateBlockData(StateBlockDataBase):
     def build(self):
-        pass
+        super(StateBlockDataBase, self).build()
 
 
 def test_validate_state_block_fail():
@@ -228,12 +228,13 @@ def test_validate_state_block_fail():
     m.p = PropertyParameterBlock()
     m.p2 = PropertyParameterBlock()
 
-    m.pb = StateBlock(parameters=m.p2)
+    m.pb = StateBlock(default={"parameters": m.p2})
 
-    m.r = ReactionParameterBlock4(property_package=m.p)
+    m.r = ReactionParameterBlock4(default={"property_package": m.p})
     super(_ReactionParameterBlock4, m.r).build()
 
-    m.rb = ReactionBlock(parameters=m.r, state_block=m.pb)
+    m.rb = ReactionBlock(default={"parameters": m.r,
+                                  "state_block": m.pb})
 
     with pytest.raises(PropertyPackageError):
         m.rb._validate_state_block()
@@ -251,12 +252,13 @@ def test_build():
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
 
-    m.pb = StateBlock(parameters=m.p)
+    m.pb = StateBlock(default={"parameters": m.p})
 
-    m.r = ReactionParameterBlock4(property_package=m.p)
+    m.r = ReactionParameterBlock4(default={"property_package": m.p})
     super(_ReactionParameterBlock4, m.r).build()
 
-    m.rb = ReactionBlock2(parameters=m.r, state_block=m.pb)
+    m.rb = ReactionBlock2(default={"parameters": m.r,
+                                   "state_block": m.pb})
 
 
 def test_ReactionBlock_NotImplementedErrors():
@@ -264,12 +266,13 @@ def test_ReactionBlock_NotImplementedErrors():
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
 
-    m.pb = StateBlock(parameters=m.p)
+    m.pb = StateBlock(default={"parameters": m.p})
 
-    m.r = ReactionParameterBlock4(property_package=m.p)
+    m.r = ReactionParameterBlock4(default={"property_package": m.p})
     super(_ReactionParameterBlock4, m.r).build()
 
-    m.rb = ReactionBlock2(parameters=m.r, state_block=m.pb)
+    m.rb = ReactionBlock2(default={"parameters": m.r,
+                                   "state_block": m.pb})
 
     with pytest.raises(NotImplementedError):
         m.rb.get_reaction_material_terms()
@@ -281,8 +284,6 @@ def test_ReactionBlock_NotImplementedErrors():
 # Test reaction __getattr__ method
 @declare_process_block_class("Parameters")
 class _Parameters(ReactionParameterBase):
-    def build(self):
-        pass
 
     @classmethod
     def get_supported_properties(self):
@@ -299,6 +300,8 @@ class _Parameters(ReactionParameterBase):
 @declare_process_block_class("Reaction", block_class=ReactionBlockBase)
 class _Reaction(ReactionBlockDataBase):
     def build(self):
+        super(_Reaction, self).build()
+
         self.test_obj = 1
 
     def a_method(self):
@@ -321,7 +324,7 @@ class _Reaction(ReactionBlockDataBase):
 def m():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = Reaction(parameters=m.pb)
+    m.p = Reaction(default={"parameters": m.pb})
 
     return m
 

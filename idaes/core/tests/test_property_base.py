@@ -27,8 +27,9 @@ from idaes.core.util.exceptions import (PropertyPackageError,
 # Test ParameterBlock
 @declare_process_block_class("ParameterBlock")
 class _ParameterBlock(PropertyParameterBase):
-    def build(self):
-        pass
+    pass
+#    def build(self):
+#        pass
 
 
 def test_config_block():
@@ -65,12 +66,11 @@ def test_PropertyParameter_NotImplementedErrors():
 # Test StateBlockBase
 @declare_process_block_class("StateBlockData", block_class=StateBlockBase)
 class _StateBlockData(StateBlockDataBase):
-    def build(self):
-        pass
+    pass
 
 
 def test_StateBlockBase_initialize():
-    # Test that StateBlockBase initialize method raise NotImplementedError
+    # Test that StateBlockBase initialize method raises NotImplementedError
     m = ConcreteModel()
     m.p = StateBlockData()
 
@@ -80,20 +80,6 @@ def test_StateBlockBase_initialize():
 
 # -----------------------------------------------------------------------------
 # Test StateBlockDataBase
-@declare_process_block_class("BuildTest")
-class _BuildTest(StateBlockDataBase):
-    def build(self):
-        super(_BuildTest, self).build()
-
-
-def test_build_NotImplementedError():
-    # Test that StateBlockDataBase build method returns NotImplementedErrors
-    m = ConcreteModel()
-
-    with pytest.raises(NotImplementedError):
-        m.p = BuildTest()
-
-
 def test_StateBlock_config():
     # Test that StateBlockDataBase config has correct arguments
     m = ConcreteModel()
@@ -164,6 +150,8 @@ class _Parameters(PropertyParameterBase):
 @declare_process_block_class("State", block_class=StateBlockBase)
 class _State(StateBlockDataBase):
     def build(self):
+        super(StateBlockDataBase, self).build()
+
         self.test_obj = 1
 
     def a_method(self):
@@ -186,7 +174,7 @@ class _State(StateBlockDataBase):
 def m():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = State(parameters=m.pb)
+    m.p = State(default={"parameters": m.pb})
 
     return m
 

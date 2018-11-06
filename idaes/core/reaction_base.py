@@ -69,6 +69,8 @@ class ReactionParameterBase(ProcessBlockData):
         Returns:
             None
         """
+        super(ReactionParameterBase, self).build()
+
         # Get module reference and store on block
         frm = inspect.stack()[1]
         self.property_module = inspect.getmodule(frm[0])
@@ -259,6 +261,8 @@ class ReactionBlockDataBase(ProcessBlockData):
         Returns:
             None
         """
+        super(ReactionBlockDataBase, self).build()
+
         self._validate_state_block()
 
     def _validate_state_block(self):

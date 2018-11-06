@@ -63,6 +63,8 @@ class PropertyParameterBase(ProcessBlockData):
         Returns:
             None
         """
+        super(PropertyParameterBase, self).build()
+
         # Get module reference and store on block
         frm = inspect.stack()[1]
         self.property_module = inspect.getmodule(frm[0])
@@ -196,9 +198,7 @@ class StateBlockDataBase(ProcessBlockData):
         Returns:
             None
         """
-        raise NotImplementedError('{} property package has not implemented a '
-                                  'build method. Please contact the property '
-                                  'package developer.')
+        super(StateBlockDataBase, self).build()
 
     def define_state_vars(self):
         """
