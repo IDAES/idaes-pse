@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -19,14 +19,13 @@ from __future__ import division, print_function
 import logging
 
 from pyomo.environ import SolverFactory
-from pyomo.network import Port
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigValue, In
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData,
                            useDefault)
-from idaes.core.util.exceptions import DynamicError
+from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -122,11 +121,10 @@ False - set as a steady-state model"""))
             if hasattr(self.config, "has_holdup"):
                 if not self.config.has_holdup:
                     # Dynamic model must have has_holdup = True
-                    logger.warning('{} Dynamic models must have '
-                                   'has_holdup = True. '
-                                   'Overwritting argument.'
-                                   .format(self.name))
-                    self.config.has_holdup = True
+                    raise ConfigurationError(
+                            "{} invalid arguments for dynamic and has_holdup. "
+                            "If dynamic = True, has_holdup must also be True "
+                            "(was False)".format(self.name))
 
     def model_check(blk):
         """
