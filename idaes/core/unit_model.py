@@ -131,13 +131,14 @@ False - set as a steady-state model"""))
     def model_check(blk):
         """
         This is a general purpose initialization routine for simple unit
-        models. This method assumes a single Holdup block called holdup and
-        tries to call the model_check method of the holdup block. If an
-        AttributeError is raised, the check is passed.
+        models. This method assumes a single ControlVolume block called
+        controlVolume and tries to call the model_check method of the
+        controlVolume block. If an AttributeError is raised, the check is
+        passed.
 
         More complex models should overload this method with a model_check
         suited to the particular application, especially if there are multiple
-        Holdup blocks present.
+        ControlVolume blocks present.
 
         Args:
             None
@@ -145,9 +146,9 @@ False - set as a steady-state model"""))
         Returns:
             None
         """
-        # Run holdup block model checks
+        # Run conrol volume block model checks
         try:
-            blk.holdup.model_check()
+            blk.controlVolume.model_check()
         except AttributeError:
             pass
 
@@ -155,8 +156,9 @@ False - set as a steady-state model"""))
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This is a general purpose initialization routine for simple unit
-        models. This method assumes a single Holdup block called holdup, and
-        first initializes this and then attempts to solve the entire unit.
+        models. This method assumes a single ControlVolume block called
+        controlVolume, and first initializes this and then attempts to solve
+        the entire unit.
 
         More complex models should overload this method with their own
         initialization routines,
@@ -190,11 +192,11 @@ False - set as a steady-state model"""))
         opt.options = optarg
 
         # ---------------------------------------------------------------------
-        # Initialize holdup block
-        flags = blk.holdup.initialize(outlvl=outlvl-1,
-                                      optarg=optarg,
-                                      solver=solver,
-                                      state_args=state_args)
+        # Initialize control volume block
+        flags = blk.controlVolume.initialize(outlvl=outlvl-1,
+                                             optarg=optarg,
+                                             solver=solver,
+                                             state_args=state_args)
 
         if outlvl > 0:
             logger.info('{} Initialisation Step 1 Complete.'
@@ -215,7 +217,7 @@ False - set as a steady-state model"""))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.holdup.release_state(flags, outlvl-1)
+        blk.controlVolume.release_state(flags, outlvl-1)
 
         if outlvl > 0:
             logger.info('{} Initialisation Complete.'.format(blk.name))
