@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -26,21 +26,6 @@ from pyomo.environ import Block
 __author__ = "John Eslick"
 __all__ = ['ProcessBlock', 'declare_process_block_class']
 
-# Reserved keywords that go to the Block __init__
-_block_kwds = ('rule', 'options', 'concrete',
-               'ctype', 'noruleinit', 'doc', 'name')
-
-def _pop_nonblock(dct):
-    """Split a kwargs dictionary into keys meant for Block vs. a _BlockData
-    subclass.
-
-    """
-    da = {}
-    pop_list = [key for key in dct if key not in _block_kwds]
-    for key in pop_list:
-        da[key] = dct.pop(key, {})
-    return da
-
 def _rule_default(b, *args):
     """Default rule for ProcessBlock, which calls build(). A different rule can
     be specified to add additional build steps, or to not call build at all
@@ -57,13 +42,11 @@ _process_block_docstring = """
 Args:
     rule: (Optional) A rule function or None. Default rule calls build().
     concrete: If True, make this a toplevel model. **Default** - False.
-    ctype: (Optional) Pyomo ctype of the Block.\n"""
-# These are arguments for Block, but not sure how they should show up in docs
-# yet.  At this point including these may just be extra confusing.
-#    options: A dictionary of options
-#    noruleinit: Don't warn for no-rule initlization of an indexed Block
-#    doc: Block documentation
-#    name: Block name\n"""
+    ctype: (Optional) Pyomo ctype of the Block.
+    default: dict with default arguments to ProcessBlockData init
+    initialize: dict with block index keys where the values are argument dicts
+        for specific ProcessBlockData element init. If a key is missing,
+        default will be used.\n"""
 
 class _IndexedProcessBlockMeta(type):
     """Metaclass used to create an indexed model class."""
@@ -71,7 +54,10 @@ class _IndexedProcessBlockMeta(type):
     def __new__(meta, name, bases, dct):
         def __init__(self, *args, **kwargs):
             kwargs.setdefault("rule", _rule_default)
-            self._block_data_config = _pop_nonblock(kwargs)
+            kwargs.setdefault("default", {})
+            kwargs.setdefault("initialize", {})
+            self._block_data_config_default = kwargs.pop("default")
+            self._block_data_config_initialize = kwargs.pop("initialize")
             bases[0].__init__(self, *args, **kwargs)
         dct["__init__"] = __init__
         dct["__process_block__"] = "indexed"
@@ -84,7 +70,10 @@ class _ScalarProcessBlockMeta(type):
     def __new__(meta, name, bases, dct):
         def __init__(self, *args, **kwargs):
             kwargs.setdefault("rule", _rule_default)
-            self._block_data_config = _pop_nonblock(kwargs)
+            kwargs.setdefault("default", {})
+            kwargs.setdefault("initialize", {})
+            self._block_data_config_default = kwargs.pop("default")
+            self._block_data_config_initialize = kwargs.pop("initialize")
             bases[0].__init__(self, component=self)
             bases[1].__init__(self, *args, **kwargs)
         dct["__init__"] = __init__
