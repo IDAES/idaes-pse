@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -17,13 +17,11 @@ from __future__ import absolute_import  # disable implicit relative imports
 from __future__ import division  # No integer division
 from __future__ import print_function  # Python 3 style print
 
-import weakref
 import logging
 
 from idaes.core.process_block import declare_process_block_class
 from pyomo.core.base.block import _BlockData
 from pyomo.environ import Block
-from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
 
 
@@ -32,6 +30,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 
 __all__ = ['ProcessBlockData']
+
 
 
 useDefault = object()
@@ -53,9 +52,9 @@ class ProcessBlockData(_BlockData):
 
     def __init__(self, component):
         """
-        Initialize the object.  Anything inheriting from process base
-        should impliment a build() function that create the Pyomo
-        variables, constriants, and whatever.
+        Initialize the object. Anything inheriting from process base should
+        impliment a build() function that creates the Pyomo comonents. This
+        build function is called by the blocks default rule.
 
         Args:
             component: container Block instance to which this _BlockData
@@ -65,7 +64,6 @@ class ProcessBlockData(_BlockData):
             None
         """
         super(ProcessBlockData, self).__init__(component=component)
-        self.config = self.CONFIG(component._block_data_config)
 
     def build(self):
         """
@@ -79,7 +77,13 @@ class ProcessBlockData(_BlockData):
         Returns:
             None
         """
-        pass
+        try:
+            idx = self.index()
+        except:
+            idx = None
+        kwargs = self.parent_component()._block_data_config_initialize.get(
+            idx, self.parent_component()._block_data_config_default)
+        self.config = self.CONFIG(kwargs)
 
     def fix_initial_conditions(self, state="steady-state"):
         """This method fixes the initial conditions for dynamic models.

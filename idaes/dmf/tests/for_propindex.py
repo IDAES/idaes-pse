@@ -10,37 +10,13 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
-"""
-Tests for custom exceptions.
-"""
-
-import pytest
-from idaes.core.util.exceptions import *
-
-__author__ = "Andrew Lee"
+from idaes.core.property_base import PropertyParameterBase
 
 
-def test_ConfigurationError():
-    with pytest.raises(ValueError):
-        raise ConfigurationError()
+class IndexMePlease1(PropertyParameterBase):
 
-
-def test_DynamicError():
-    with pytest.raises(ValueError):
-        raise DynamicError()
-
-
-def test_BurntToast():
-    with pytest.raises(Exception):
-        raise BurntToast()
-
-
-def test_PropertyNotSupportedError():
-    with pytest.raises(AttributeError):
-        raise PropertyNotSupportedError()
-
-
-def test_PropertyPackageError():
-    with pytest.raises(AttributeError):
-        # This MUST be an AttributeError due to behaviour in Pyomo
-        raise PropertyPackageError()
+    @classmethod
+    def define_metadata(cls, m):
+        m.add_default_units({'temperature': 'K'})
+        m.add_properties({'pressure': {'units': 'Pa', 'method': 'foo'},
+                          'temperature': {'method': 'bar'}})
