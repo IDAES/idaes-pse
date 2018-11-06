@@ -184,7 +184,7 @@ class StateBlockDataBase(ProcessBlockData):
                                   'Please contact the property package '
                                   'developer.')
 
-    def get_enthlpy_flow_terms(self):
+    def get_enthalpy_flow_terms(self):
         """
         Method which returns a tuple containing a valid expression to use in
         the energy balances and a constant indicating the basis of this
@@ -194,7 +194,7 @@ class StateBlockDataBase(ProcessBlockData):
                                   ' get_energy_flow_terms method. Please '
                                   'contact the property package developer.')
 
-    def get_enthlpy_density_terms(self):
+    def get_enthalpy_density_terms(self):
         """
         Method which returns a tuple containing a valid expression to use in
         the energy balances and a constant indicating the basis of this
