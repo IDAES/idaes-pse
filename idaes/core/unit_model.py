@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Base clase for unit models
+Base class for unit models
 """
 from __future__ import absolute_import  # disable implicit relative imports
 from __future__ import division, print_function
@@ -23,7 +23,10 @@ from pyomo.network import Port
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigValue, In
 
-from .process_base import declare_process_block_class, ProcessBlockData
+from .process_base import (declare_process_block_class,
+                           ProcessBlockData,
+                           useDefault)
+from idaes.core.util.exceptions import DynamicError
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -43,12 +46,12 @@ class UnitBlockData(ProcessBlockData):
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
-        default='use_parent_value',
-        domain=In(['use_parent_value', True, False]),
+        default=useDefault,
+        domain=In([useDefault, True, False]),
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not
-(default = 'use_parent_value').
-'use_parent_value' - get flag from parent (default = False)
+(default = useDefault).
+useDefault - get flag from parent (default = False)
 True - set as a dynamic model
 False - set as a steady-state model"""))
 
@@ -88,31 +91,31 @@ False - set as a steady-state model"""))
             None
         """
         # Check the dynamic flag, and retrieve if necessary
-        if self.config.dynamic == 'use_parent_value':
+        if self.config.dynamic == useDefault:
             # Get dynamic flag from parent
             try:
                 self.config.dynamic = self.parent_block().config.dynamic
             except AttributeError:
                 # If parent does not have dynamic flag, raise Exception
-                raise AttributeError('{} has a parent model '
-                                     'with no dynamic attribute.'
-                                     .format(self.name))
+                raise DynamicError('{} has a parent model '
+                                   'with no dynamic attribute.'
+                                   .format(self.name))
 
         # Check for case when dynamic=True, but parent dynamic=False
         if (self.config.dynamic and not self.parent_block().config.dynamic):
-            raise ValueError('{} trying to declare a dynamic model within '
-                             'a steady-state flowsheet. This is not '
-                             'supported by the IDAES framework. Try '
-                             'creating a dynamic flowsheet instead, and '
-                             'declaring some models as steady-state.'
-                             .format(self.name))
+            raise DynamicError('{} trying to declare a dynamic model within '
+                               'a steady-state flowsheet. This is not '
+                               'supported by the IDAES framework. Try '
+                               'creating a dynamic flowsheet instead, and '
+                               'declaring some models as steady-state.'
+                               .format(self.name))
 
         # Try to get reference to time object from parent
         try:
             object.__setattr__(self, "time", self.parent_block().time)
         except AttributeError:
-            raise AttributeError('{} has a parent model '
-                                 'with no time domain'.format(self.name))
+            raise DynamicError('{} has a parent model '
+                               'with no time domain'.format(self.name))
 
         # Check include_holdup, if present
         if self.config.dynamic:

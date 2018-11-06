@@ -55,7 +55,8 @@ class ReactionParameterBase(ProcessBlockData):
                         "object",
             domain=is_property_parameter_block))
     CONFIG.declare("default_arguments", ConfigBlock(
-            description="Default arguments to use with Property Package"))
+            description="Default arguments to use with Property Package",
+            implicit=True))
 
     def build(self):
         """

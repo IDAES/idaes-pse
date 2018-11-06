@@ -23,9 +23,10 @@ import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
 from pyomo.common.config import ConfigValue, In
 
-from idaes.core import ProcessBlockData, declare_process_block_class, \
-                        UnitBlockData
+from idaes.core import (ProcessBlockData, declare_process_block_class,
+                        UnitBlockData, useDefault)
 from idaes.core.util.config import is_property_parameter_block, list_of_floats
+from idaes.core.util.exceptions import DynamicError
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -54,12 +55,12 @@ class FlowsheetBlockData(ProcessBlockData):
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
-        default='use_parent_value',
-        domain=In(['use_parent_value', True, False]),
+        default=useDefault,
+        domain=In([useDefault, True, False]),
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic,
-**default** - 'use_parent_value'.  **Valid values:** {
-**'use_parent_value'** - get flag from parent,
+**default** - useDefault.  **Valid values:** {
+**useDefault** - get flag from parent or False,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model}"""))
     CONFIG.declare("time_set", ConfigValue(
@@ -142,11 +143,11 @@ within this flowsheet if not otherwise specified, **default** - None.
             # Flowsheet has no parent, so top level model
             # Check that flowsheet has been set as concrete
             if not self._constructed:
-                raise AttributeError('{} flowsheet has no parent object but '
-                                     'has not yet been constructed. Either '
-                                     'attach the flowsheet to a ConcreteModel '
-                                     'or use the argument concrete = True.'
-                                     .format(self.name))
+                raise DynamicError('{} flowsheet has no parent object but '
+                                   'has not yet been constructed. Either '
+                                   'attach the flowsheet to a ConcreteModel '
+                                   'or use the argument concrete = True.'
+                                   .format(self.name))
             top_level = True
         elif isinstance(self.parent_block(), pe.ConcreteModel):
             # If flowsheet is attached to a ConcreteModel, this is a top level
@@ -161,9 +162,9 @@ within this flowsheet if not otherwise specified, **default** - None.
                                    'behaviour'.format(self.name))
                     top_level = False
                 else:
-                    raise TypeError('{} has an attribute time which is not '
-                                    'a Set or ContinuousSet.'
-                                    .format(self.name))
+                    raise DynamicError('{} has an attribute time which is not '
+                                       'a Set or ContinuousSet.'
+                                       .format(self.name))
             except AttributeError:
                 # Set top level flag
                 top_level = True
@@ -171,7 +172,7 @@ within this flowsheet if not otherwise specified, **default** - None.
             top_level = False
 
         # Check the dynamic flag, and retrieve if necessary
-        if self.config.dynamic == 'use_parent_value':
+        if self.config.dynamic == useDefault:
             # Check to see if this is a top level model
             if top_level:
                 # If there is no parent, set dynamic to False by default and
@@ -187,19 +188,19 @@ within this flowsheet if not otherwise specified, **default** - None.
                     self.config.dynamic = self.parent_block().config.dynamic
                 except AttributeError:
                     # If parent does not have dynamic flag, raise Exception
-                    raise AttributeError('{} has a parent model '
-                                         'with no dynamic attribute.'
-                                         .format(self.name))
+                    raise DynamicError('{} has a parent model '
+                                       'with no dynamic attribute.'
+                                       .format(self.name))
 
         # Check for case when dynamic=True, but parent dynamic=False
         if (not top_level and self.config.dynamic is True and
                 not self.parent_block().config.dynamic):
-            raise ValueError('{} trying to declare a dynamic model within '
-                             'a steady-state flowsheet. This is not '
-                             'supported by the IDAES framework. Try '
-                             'creating a dynamic flowsheet instead, and '
-                             'declaring some models as  steady-state.'
-                             .format(self.name))
+            raise DynamicError('{} trying to declare a dynamic model within '
+                               'a steady-state flowsheet. This is not '
+                               'supported by the IDAES framework. Try '
+                               'creating a dynamic flowsheet instead, and '
+                               'declaring some models as  steady-state.'
+                               .format(self.name))
 
         # Set up time domain
         if not top_level:
@@ -207,8 +208,8 @@ within this flowsheet if not otherwise specified, **default** - None.
             try:
                 object.__setattr__(self, "time", self.parent_block().time)
             except AttributeError:
-                raise AttributeError('{} has a parent model '
-                                     'with no time domain'.format(self.name))
+                raise DynamicError('{} has a parent model '
+                                   'with no time domain'.format(self.name))
         else:
             # Create time domain
             if self.config.dynamic:
@@ -220,9 +221,9 @@ within this flowsheet if not otherwise specified, **default** - None.
                         self.config.time_set = [0.0, 1.0]
                     else:
                         # Invalid user input, raise Excpetion
-                        raise ValueError("Flowsheet provided with invalid "
-                                         "time_set attribute - must have at "
-                                         "least two values (start and end).")
+                        raise DynamicError("Flowsheet provided with invalid "
+                                           "time_set attribute - must have at "
+                                           "least two values (start and end).")
                 # For dynamics, need a ContinuousSet
                 self.time = ContinuousSet(initialize=self.config.time_set)
             else:

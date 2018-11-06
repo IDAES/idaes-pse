@@ -22,7 +22,8 @@ from idaes.core import (declare_process_block_class,
                         PropertyParameterBase,
                         StateBlockBase,
                         StateBlockDataBase,
-                        ReactionParameterBase)
+                        ReactionParameterBase,
+                        useDefault)
 from idaes.core.util.config import (is_property_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block,
@@ -44,6 +45,10 @@ def test_is_property_parameter_block_passes():
 
     # Check that is_property_parameter_block returns the ParameterBlock
     assert p == is_property_parameter_block(p)
+
+
+def test_is_property_parameter_block_useDefault():
+    assert useDefault == is_property_parameter_block(useDefault)
 
 
 def test_is_property_parameter_block_fails():
@@ -71,6 +76,12 @@ def test_is_reaction_parameter_block_passes():
 
     # Check that is_reaction_parameter_block returns the ReactionParameterBlock
     assert r == is_reaction_parameter_block(r)
+
+
+def test_is_reaction_parameter_block_useDefault():
+    # No useDefault option for is_reaction_parameter_block
+    with pytest.raises(ConfigurationError):
+        is_reaction_parameter_block(useDefault)
 
 
 def test_is_reaction_parameter_block_fails():

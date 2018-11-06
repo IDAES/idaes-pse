@@ -20,6 +20,7 @@ the `domain` argument in ConfigBlocks.
 __author__ = "Andrew Lee"
 
 from pyomo.network import Port
+from idaes.core import useDefault
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -31,16 +32,16 @@ def is_property_parameter_block(val):
 
     Returns:
         ConfigurationError if val is not an instance of PropertyParameterBase
-        or None
+        or useDefault
     '''
     from idaes.core.property_base import PropertyParameterBase
     if (isinstance(val, PropertyParameterBase) or
-            val is None):
+            val == useDefault):
         return val
     else:
         raise ConfigurationError(
                 """Property package argument should be an instance
-                of a PropertyParameterBlock or  None""")
+                of a PropertyParameterBlock or useDefault""")
 
 
 def is_reaction_parameter_block(val):
@@ -51,16 +52,14 @@ def is_reaction_parameter_block(val):
 
     Returns:
         ConfigurationError if val is not an instance of ReactionParameterBase
-        or None
     '''
     from idaes.core.reaction_base import ReactionParameterBase
-    if (isinstance(val, ReactionParameterBase) or
-            val is None):
+    if isinstance(val, ReactionParameterBase):
         return val
     else:
         raise ConfigurationError(
                 """Reaction package argument should be an instance
-                of a ReactionParameterBlock or None""")
+                of a ReactionParameterBlock""")
 
 
 def is_state_block(val):

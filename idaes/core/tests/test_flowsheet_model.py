@@ -19,8 +19,9 @@ import pytest
 from pyomo.environ import AbstractModel, Block, ConcreteModel, Set
 from pyomo.dae import ContinuousSet
 from idaes.core import FlowsheetBlockData, declare_process_block_class, \
-                        PropertyParameterBase
+                        PropertyParameterBase, useDefault
 from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.exceptions import DynamicError
 
 
 @declare_process_block_class("Flowsheet")
@@ -53,7 +54,8 @@ def test_config_validation():
 
     # Test dynamic attribute - valid values
     fs.config.dynamic = False
-    fs.config.dynamic = 'use_parent_value'
+    fs.config.dynamic = None
+    fs.config.dynamic = useDefault
     # Test dynamic attribute - invalid values
     with pytest.raises(ValueError):
         fs.config.dynamic = "foo"  # invalid str
@@ -109,29 +111,29 @@ def test_setup_dynamics_top_level_concrete2():
 
 
 def test_setup_dynamics_top_level_abstract():
-    # Test that method returns AttributeError when flowsheet is not constructed
+    # Test that method returns DynamicError when flowsheet is not constructed
     fs = Flowsheet(dynamic=False)
-    with pytest.raises(AttributeError):
+    with pytest.raises(DynamicError):
         fs._setup_dynamics()
 
 
 def test_dynamic_flowsheet_in_ss_flowsheet():
     # Test that declaring a dynamic flowsheet within a steady-state flowsheet
-    # raises a ValueError
+    # raises a DynamicError
     m = ConcreteModel()
     m.fs = Flowsheet(dynamic=False)
     m.fs._setup_dynamics()
     m.fs.blk = Flowsheet(dynamic=True)
-    with pytest.raises(ValueError):
+    with pytest.raises(DynamicError):
         m.fs.blk._setup_dynamics()
 
 
 def test_setup_dynamics_top_level_abstract2():
-    # Test that method returns AttributeError when flowsheet attached to an
+    # Test that method returns DynamicError when flowsheet attached to an
     # unconstructed AbstractModel
     m = AbstractModel()
     m.fs = Flowsheet(dynamic=False)
-    with pytest.raises(AttributeError):
+    with pytest.raises(DynamicError):
         m.fs._setup_dynamics()
 
 
@@ -156,7 +158,7 @@ def test_setup_dynamics_dynamic():
 def test_setup_dynamics_dynamic_invalid_time_set():
     # Test that dynamic flag creates a ContinuousSet
     fs = Flowsheet(dynamic=True, time_set=[1], concrete=True)
-    with pytest.raises(ValueError):
+    with pytest.raises(DynamicError):
         fs._setup_dynamics()
 
 
@@ -181,7 +183,7 @@ def test_setup_dynamics_ConcreteModel_with_invalid_time():
     m = ConcreteModel()
     m.time = 1
     m.fs = Flowsheet(dynamic=False)
-    with pytest.raises(TypeError):
+    with pytest.raises(DynamicError):
         m.fs._setup_dynamics()
 
 
@@ -220,7 +222,7 @@ def test_setup_dynamics_subflowsheet_parent_with_no_time():
     fs = Flowsheet(dynamic=True, concrete=True)
 
     fs.sub = Flowsheet()
-    with pytest.raises(AttributeError):
+    with pytest.raises(DynamicError):
         fs.sub._setup_dynamics()
 
 
