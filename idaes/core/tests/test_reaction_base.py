@@ -21,7 +21,7 @@ from pyomo.environ import ConcreteModel, Constraint, Var
 from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, ReactionParameterBase,
                         ReactionBlockBase, ReactionBlockDataBase,
-                        PropertyParameterBase, StateBlockBase,
+                        PhysicalParameterBase, StateBlockBase,
                         StateBlockDataBase)
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
@@ -29,7 +29,7 @@ from idaes.core.util.exceptions import (PropertyPackageError,
 # -----------------------------------------------------------------------------
 # Test ParameterBlock
 @declare_process_block_class("PropertyParameterBlock")
-class _PropertyParameterBlock(PropertyParameterBase):
+class _PropertyParameterBlock(PhysicalParameterBase):
     def build(self):
         super(_PropertyParameterBlock, self).build()
 
@@ -55,7 +55,7 @@ class _ReactionParameterBlock(ReactionParameterBase):
 
 
 def test_config_block():
-    # Test that PropertyParameterBase gets module information
+    # Test that PhysicalParameterBase gets module information
     m = ConcreteModel()
     m.r = ReactionParameterBlock()
 

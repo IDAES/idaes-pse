@@ -19,7 +19,7 @@ import pytest
 from pyomo.environ import ConcreteModel
 from pyomo.network import Port
 from idaes.core import (declare_process_block_class,
-                        PropertyParameterBase,
+                        PhysicalParameterBase,
                         StateBlockBase,
                         StateBlockDataBase,
                         ReactionParameterBase,
@@ -34,7 +34,7 @@ from idaes.core.util.exceptions import ConfigurationError
 
 
 @declare_process_block_class("ParameterBlock")
-class _ParameterBlock(PropertyParameterBase):
+class _ParameterBlock(PhysicalParameterBase):
     def build(self):
         pass
 

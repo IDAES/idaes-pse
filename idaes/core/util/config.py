@@ -31,11 +31,11 @@ def is_property_parameter_block(val):
         val : value to be checked
 
     Returns:
-        ConfigurationError if val is not an instance of PropertyParameterBase
+        ConfigurationError if val is not an instance of PhysicalParameterBase
         or useDefault
     '''
-    from idaes.core.property_base import PropertyParameterBase
-    if (isinstance(val, PropertyParameterBase) or
+    from idaes.core.property_base import PhysicalParameterBase
+    if (isinstance(val, PhysicalParameterBase) or
             val == useDefault):
         return val
     else:

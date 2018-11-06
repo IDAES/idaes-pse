@@ -37,15 +37,16 @@ __author__ = "Andrew Lee, John Eslick"
 
 __all__ = ['StateBlockDataBase',
            'StateBlockBase',
-           'PropertyParameterBase']
+           'PhysicalParameterBase']
 
 
-class PropertyParameterBase(ProcessBlockData,
+class PhysicalParameterBase(ProcessBlockData,
                             property_meta.HasPropertyClassMetadata):
     """
-        This is the base class for property parameter blocks. These are blocks
-        that contain a set of parameters associated with a specific property
-        package, and are linked to by all instances of that property package.
+        This is the base class for thermophysical parameter blocks. These are
+        blocks that contain a set of parameters associated with a specific
+        thermophysical property package, and are linked to by all instances of
+        that property package.
     """
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
@@ -64,7 +65,7 @@ class PropertyParameterBase(ProcessBlockData,
         Returns:
             None
         """
-        super(PropertyParameterBase, self).build()
+        super(PhysicalParameterBase, self).build()
 
         # Get module reference and store on block
         frm = inspect.stack()[1]

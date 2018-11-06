@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, Var
 from pyomo.common.config import ConfigBlock
-from idaes.core import (declare_process_block_class, PropertyParameterBase,
+from idaes.core import (declare_process_block_class, PhysicalParameterBase,
                         StateBlockBase, StateBlockDataBase)
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
@@ -26,14 +26,14 @@ from idaes.core.util.exceptions import (PropertyPackageError,
 # -----------------------------------------------------------------------------
 # Test ParameterBlock
 @declare_process_block_class("ParameterBlock")
-class _ParameterBlock(PropertyParameterBase):
+class _ParameterBlock(PhysicalParameterBase):
     pass
 #    def build(self):
 #        pass
 
 
 def test_config_block():
-    # Test that PropertyParameterBase gets module information
+    # Test that PhysicalParameterBase gets module information
     m = ConcreteModel()
     m.p = ParameterBlock()
 
@@ -42,8 +42,8 @@ def test_config_block():
     assert len(m.p.config.default_arguments) == 0
 
 
-def test_PropertyParameterBase():
-    # Test that PropertyParameterBase gets module information
+def test_PhysicalParameterBase():
+    # Test that PhysicalParameterBase gets module information
     m = ConcreteModel()
     m.p = ParameterBlock()
     super(_ParameterBlock, m.p).build()
@@ -129,7 +129,7 @@ def test_StateBlock_NotImplementedErrors():
 # -----------------------------------------------------------------------------
 # Test properties __getattr__ method
 @declare_process_block_class("Parameters")
-class _Parameters(PropertyParameterBase):
+class _Parameters(PhysicalParameterBase):
     def build(self):
         super(_Parameters, self).build()
 

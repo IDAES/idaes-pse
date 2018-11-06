@@ -19,7 +19,7 @@ from pyomo.environ import ConcreteModel, Set
 from pyomo.common.config import ConfigBlock
 from idaes.core import (ControlVolume0D, ControlVolumeBase, FlowsheetBlockData,
                         declare_process_block_class, useDefault, FlowDirection,
-                        PropertyParameterBase, StateBlockDataBase)
+                        PhysicalParameterBase, StateBlockDataBase)
 
 
 # -----------------------------------------------------------------------------
@@ -31,7 +31,7 @@ class _Flowsheet(FlowsheetBlockData):
 
 
 @declare_process_block_class("PropertyParameterBlock")
-class _PropertyParameterBlock(PropertyParameterBase):
+class _PropertyParameterBlock(PhysicalParameterBase):
     def build(self):
         super(_PropertyParameterBlock, self).build()
 

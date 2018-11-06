@@ -24,7 +24,7 @@ from idaes.core import (ControlVolumeBase, CONFIG_Base,
                         MomentumBalanceType, FlowDirection,
                         declare_process_block_class,
                         FlowsheetBlockData, UnitBlockData, useDefault,
-                        PropertyParameterBase, ReactionParameterBase)
+                        PhysicalParameterBase, ReactionParameterBase)
 from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
                                         PropertyPackageError)
 
@@ -230,7 +230,7 @@ def test_setup_dynamics_use_parent_value_fail_no_time():
 # -----------------------------------------------------------------------------
 # Test _get_property_package
 @declare_process_block_class("PropertyParameterBlock")
-class _PropertyParameterBlock(PropertyParameterBase):
+class _PropertyParameterBlock(PhysicalParameterBase):
     def build(self):
         super(_PropertyParameterBlock, self).build()
 

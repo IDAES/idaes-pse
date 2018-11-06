@@ -16,12 +16,11 @@ Tests for unit_model.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import ConcreteModel, Expression, Set, Var
+from pyomo.environ import ConcreteModel
 from pyomo.common.config import ConfigValue
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
-                        UnitBlockData, PropertyParameterBase,
-                        StateBlockDataBase, useDefault)
+                        UnitBlockData, useDefault)
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 
