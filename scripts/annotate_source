@@ -134,7 +134,7 @@ class FileModifier(object):
 
     def __init__(self, text: str):
         lines = [l.strip() for l in text.split('\n')]
-        self._txt = '\n'.join(['{} {}'.format(self.comment_pfx, l)
+        self._txt = '\n'.join(['{} {}'.format(self.comment_pfx, l).strip()
                                for l in lines])
 
     def modify(self, fname: str, remove=False):
