@@ -16,6 +16,7 @@ Tests for flowsheet_model.
 Author: Andrew Lee
 """
 import pytest
+import inspect
 from pyomo.environ import ConcreteModel, Constraint, Var
 from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, ReactionParameterBase,
@@ -284,6 +285,10 @@ def test_ReactionBlock_NotImplementedErrors():
 # Test reaction __getattr__ method
 @declare_process_block_class("Parameters")
 class _Parameters(ReactionParameterBase):
+    def build(self):
+        super(ReactionParameterBase, self).build()
+        frm = inspect.stack()[1]
+        self.property_module = inspect.getmodule(frm[0])
 
     @classmethod
     def get_supported_properties(self):
@@ -300,7 +305,7 @@ class _Parameters(ReactionParameterBase):
 @declare_process_block_class("Reaction", block_class=ReactionBlockBase)
 class _Reaction(ReactionBlockDataBase):
     def build(self):
-        super(_Reaction, self).build()
+        super(ReactionBlockDataBase, self).build()
 
         self.test_obj = 1
 

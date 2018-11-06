@@ -150,13 +150,6 @@ within this flowsheet if not otherwise specified, **default** - None.
         # Determine if this is top level flowsheet
         if self.parent_block() is None:
             # Flowsheet has no parent, so top level model
-            # Check that flowsheet has been set as concrete
-            if not self._constructed:
-                raise DynamicError('{} flowsheet has no parent object but '
-                                   'has not yet been constructed. Either '
-                                   'attach the flowsheet to a ConcreteModel '
-                                   'or use the argument concrete = True.'
-                                   .format(self.name))
             top_level = True
         elif isinstance(self.parent_block(), pe.ConcreteModel):
             # If flowsheet is attached to a ConcreteModel, this is a top level
