@@ -400,7 +400,7 @@ def test_build():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
 
     super(CVFrameData, m.fs.cv).build()
 
@@ -418,7 +418,8 @@ def test_auto_construct():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(property_package=m.fs.pp, auto_construct=True)
+    m.fs.cv = CVFrame(default={"property_package": m.fs.pp,
+                               "auto_construct": True})
 
     with pytest.raises(NotImplementedError):
         super(CVFrameData, m.fs.cv).build()
@@ -429,7 +430,7 @@ def test_validate_add_balance_arguments_both_false():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
     super(CVFrameData, m.fs.cv).build()
 
     d, h = m.fs.cv._validate_add_balance_arguments(dynamic=useDefault,
@@ -441,9 +442,9 @@ def test_validate_add_balance_arguments_both_false():
 
 def test_validate_add_balance_arguments_both_true():
     m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=True)
+    m.fs = Flowsheet(default={"dynamic": True})
     m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
     super(CVFrameData, m.fs.cv).build()
 
     d, h = m.fs.cv._validate_add_balance_arguments(dynamic=True,
@@ -455,9 +456,9 @@ def test_validate_add_balance_arguments_both_true():
 
 def test_validate_add_balance_arguments_ss_with_holdup():
     m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=True)
+    m.fs = Flowsheet(default={"dynamic": True})
     m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
     super(CVFrameData, m.fs.cv).build()
 
     d, h = m.fs.cv._validate_add_balance_arguments(dynamic=False,
@@ -469,9 +470,9 @@ def test_validate_add_balance_arguments_ss_with_holdup():
 
 def test_validate_add_balance_arguments_invalid():
     m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=True)
+    m.fs = Flowsheet(default={"dynamic": True})
     m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
     super(CVFrameData, m.fs.cv).build()
 
     with pytest.raises(ConfigurationError):
@@ -483,7 +484,7 @@ def test_validate_add_balance_arguments_dynamic_error():
     m = ConcreteModel()
     m.fs = Flowsheet()
     m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
     super(CVFrameData, m.fs.cv).build()
 
     with pytest.raises(DynamicError):

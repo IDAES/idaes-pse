@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -84,10 +84,14 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             None
         """
+        tmp_dict = package_arguments
+        tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
+        tmp_dict["parameters"] = self.config.property_package
+
         if information_flow == FlowDirection.forward:
-            inlet_defined = True
+            tmp_dict["defined_state"] = True
         elif information_flow == FlowDirection.backward:
-            inlet_defined = False
+            tmp_dict["defined_state"] = False
         else:
             raise ConfigurationError(
                     '{} invalid value for information_flow argument. '
@@ -97,18 +101,15 @@ class ControlVolume0dData(ControlVolumeBase):
         self.properties_in = self.property_module.StateBlock(
                 self.time,
                 doc="Material properties at inlet",
-                defined_state=inlet_defined,
-                has_phase_equilibrium=has_phase_equilibrium,
-                parameters=self.config.property_package,
-                **package_arguments)
+                default=tmp_dict)
+
+        # Reverse defined_state
+        tmp_dict["defined_state"] = not tmp_dict["defined_state"]
 
         self.properties_out = self.property_module.StateBlock(
                 self.time,
                 doc="Material properties at outlet",
-                defined_state=not inlet_defined,
-                has_phase_equilibrium=has_phase_equilibrium,
-                parameters=self.config.property_package,
-                **package_arguments)
+                default=tmp_dict)
 
     def add_reaction_blocks(self,
                             has_equilibrium=False,
@@ -125,13 +126,15 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             None
         """
+        tmp_dict = package_arguments
+        tmp_dict["state_block"] = self.properties_out
+        tmp_dict["has_equilibrium"] = has_equilibrium
+        tmp_dict["parameters"] = self.config.reaction_package
+
         self.reactions = self.reaction_module.ReactionBlock(
                 self.time,
                 doc="Reaction properties in control volume",
-                state_block=self.properties_out,
-                has_equilibrium=has_equilibrium,
-                parameters=self.config.reaction_package,
-                **package_arguments)
+                default=tmp_dict)
 
     def add_geometry(self, length_units):
         """

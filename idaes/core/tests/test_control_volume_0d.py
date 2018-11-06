@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 from pyomo.environ import ConcreteModel, Set
 from pyomo.common.config import ConfigBlock
-from idaes.core import (ControlVolume0D, FlowsheetBlockData,
+from idaes.core import (ControlVolume0D, ControlVolumeBase, FlowsheetBlockData,
                         declare_process_block_class, useDefault, FlowDirection,
                         PropertyParameterBase, StateBlockDataBase)
 
@@ -44,31 +44,33 @@ class StateBlockData(StateBlockDataBase):
     CONFIG = ConfigBlock(implicit=True)
 
     def build(self):
-        pass
+        super(StateBlockData, self).build()
+
+
+@declare_process_block_class("CVFrame")
+class CVFrameData(ControlVolume0D):
+    def build(self):
+        super(ControlVolumeBase, self).build()
 
 
 # -----------------------------------------------------------------------------
 # Basic tests
-def test_config_block():
-    cv = ControlVolume0D()
-
-    assert len(cv.config) == 6
-    assert cv.config.dynamic == useDefault
-    assert cv.config.property_package == useDefault
-    assert isinstance(cv.config.property_package_args, ConfigBlock)
-    assert len(cv.config.property_package_args) == 0
-    assert cv.config.reaction_package is None
-    assert isinstance(cv.config.reaction_package_args, ConfigBlock)
-    assert len(cv.config.reaction_package_args) == 0
-    assert cv.config.auto_construct is False
-
-
 def test_base_build():
     m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=False)
+    m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PropertyParameterBlock()
 
-    m.fs.cv = ControlVolume0D(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
+
+    assert len(m.fs.cv.config) == 6
+    assert m.fs.cv.config.dynamic is False
+    assert m.fs.cv.config.property_package == m.fs.pp
+    assert isinstance(m.fs.cv.config.property_package_args, ConfigBlock)
+    assert len(m.fs.cv.config.property_package_args) == 0
+    assert m.fs.cv.config.reaction_package is None
+    assert isinstance(m.fs.cv.config.reaction_package_args, ConfigBlock)
+    assert len(m.fs.cv.config.reaction_package_args) == 0
+    assert m.fs.cv.config.auto_construct is False
 
     assert hasattr(m.fs.cv, "time")
     assert hasattr(m.fs.cv, "phase_list")
@@ -79,10 +81,10 @@ def test_base_build():
 # Test add_state_blocks
 def test_add_state_blocks():
     m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=False)
+    m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PropertyParameterBlock()
 
-    m.fs.cv = ControlVolume0D(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
     m.fs.cv.add_state_blocks()
 
@@ -101,10 +103,10 @@ def test_add_state_blocks():
 
 def test_add_state_block_forward_flow():
     m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=False)
+    m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PropertyParameterBlock()
 
-    m.fs.cv = ControlVolume0D(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
     m.fs.cv.add_state_blocks(information_flow=FlowDirection.forward)
 
@@ -114,10 +116,10 @@ def test_add_state_block_forward_flow():
 
 def test_add_state_block_backward_flow():
     m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=False)
+    m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PropertyParameterBlock()
 
-    m.fs.cv = ControlVolume0D(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
     m.fs.cv.add_state_blocks(information_flow=FlowDirection.backward)
 
@@ -127,10 +129,10 @@ def test_add_state_block_backward_flow():
 
 def test_add_state_blocks_has_phase_equilibrium():
     m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=False)
+    m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PropertyParameterBlock()
 
-    m.fs.cv = ControlVolume0D(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
 
@@ -140,10 +142,10 @@ def test_add_state_blocks_has_phase_equilibrium():
 
 def test_add_state_blocks_custom_args():
     m = ConcreteModel()
-    m.fs = Flowsheet(dynamic=False)
+    m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PropertyParameterBlock()
 
-    m.fs.cv = ControlVolume0D(property_package=m.fs.pp)
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
     m.fs.cv.add_state_blocks(package_arguments={"test": "test"})
 
