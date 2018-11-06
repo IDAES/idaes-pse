@@ -33,7 +33,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['UnitBlockData', 'UnitBlock']
 
 # Set up logger
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 @declare_process_block_class("UnitBlock")
@@ -113,6 +113,7 @@ False - set as a steady-state model"""))
 
         # Try to get reference to time object from parent
         try:
+            # TODO : Replace with Reference
             object.__setattr__(self, "time", self.parent_block().time)
         except AttributeError:
             raise DynamicError('{} has a parent model '
@@ -199,8 +200,7 @@ False - set as a steady-state model"""))
                                              state_args=state_args)
 
         if outlvl > 0:
-            logger.info('{} Initialisation Step 1 Complete.'
-                        .format(blk.name))
+            _log.info('{} Initialisation Step 1 Complete.'.format(blk.name))
 
         # ---------------------------------------------------------------------
         # Solve unit
@@ -209,15 +209,15 @@ False - set as a steady-state model"""))
         if outlvl > 0:
             if results.solver.termination_condition == \
                     TerminationCondition.optimal:
-                logger.info('{} Initialisation Step 2 Complete.'
-                            .format(blk.name))
+                _log.info('{} Initialisation Step 2 Complete.'
+                          .format(blk.name))
             else:
-                logger.warning('{} Initialisation Step 2 Failed.'
-                               .format(blk.name))
+                _log.warning('{} Initialisation Step 2 Failed.'
+                             .format(blk.name))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
         blk.controlVolume.release_state(flags, outlvl-1)
 
         if outlvl > 0:
-            logger.info('{} Initialisation Complete.'.format(blk.name))
+            _log.info('{} Initialisation Complete.'.format(blk.name))

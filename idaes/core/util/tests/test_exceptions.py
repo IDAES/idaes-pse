@@ -30,6 +30,11 @@ def test_DynamicError():
         raise DynamicError()
 
 
+def test_BurntToast():
+    with pytest.raises(Exception):
+        raise BurntToast()
+
+
 def test_PropertyNotSupportedError():
     with pytest.raises(AttributeError):
         raise PropertyNotSupportedError()

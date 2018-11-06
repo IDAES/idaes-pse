@@ -35,7 +35,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['FlowsheetBlock', 'FlowsheetBlockData']
 
 # Set up logger
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 @declare_process_block_class("FlowsheetBlock", doc="""
@@ -111,16 +111,16 @@ within this flowsheet if not otherwise specified, **default** - None.
         Returns:
             None
         """
-        logger.info("Executing model checks.")
+        _log.info("Executing model checks.")
         for o in self.component_objects(descend_into=False):
             if isinstance(o, UnitBlockData):
                 try:
                     o.model_check()
                 except AttributeError:
-                    logger.warning('{} Model/block has no model check. To '
-                                   'correct this, add a model_check method to '
-                                   'the associated unit model class'
-                                   .format(o.name))
+                    _log.warning('{} Model/block has no model check. To '
+                                 'correct this, add a model_check method to '
+                                 'the associated unit model class'
+                                 .format(o.name))
 
     def _setup_dynamics(self):
         """
@@ -158,10 +158,10 @@ within this flowsheet if not otherwise specified, **default** - None.
                 # If parent has time, it must be a ContinuousSet or Set
                 if isinstance(self.parent_block().time,
                               (ContinuousSet, pe.Set)):
-                    logger.warning('{} parent ConcreteModel has an attribute '
-                                   'time. Flowsheet will use this as its time '
-                                   'domain, however this may be unexpected '
-                                   'behaviour'.format(self.name))
+                    _log.warning('{} parent ConcreteModel has an attribute '
+                                 'time. Flowsheet will use this as its time '
+                                 'domain, however this may be unexpected '
+                                 'behaviour'.format(self.name))
                     top_level = False
                 else:
                     raise DynamicError('{} has an attribute time which is not '
@@ -179,10 +179,10 @@ within this flowsheet if not otherwise specified, **default** - None.
             if top_level:
                 # If there is no parent, set dynamic to False by default and
                 # warn the user
-                logger.warning('{} is a top level flowhseet, but dynamic flag '
-                               'set to "use_parent"value". Dynamic '
-                               'flag set to False by default'
-                               .format(self.name))
+                _log.warning('{} is a top level flowhseet, but dynamic flag '
+                             'set to useDefault. Dynamic '
+                             'flag set to False by default'
+                             .format(self.name))
                 self.config.dynamic = False
             else:
                 # Get dynamic flag from parent

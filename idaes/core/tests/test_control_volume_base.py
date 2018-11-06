@@ -21,7 +21,7 @@ from pyomo.environ import ConcreteModel, Block, Set
 from pyomo.common.config import ConfigBlock, ConfigValue
 from idaes.core import (ControlVolumeBase, CONFIG_Base,
                         MaterialBalanceType, EnergyBalanceType,
-                        MomentumBalanceType,
+                        MomentumBalanceType, FlowDirection,
                         declare_process_block_class,
                         FlowsheetBlockData, UnitBlockData, useDefault,
                         PropertyParameterBase, ReactionParameterBase)
@@ -34,13 +34,33 @@ from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
 def test_material_balance_type():
     assert len(MaterialBalanceType) == 5
 
+    # Test that error is raised when given non-member
+    with pytest.raises(AttributeError):
+        MaterialBalanceType.foo
+
 
 def test_energy_balance_type():
     assert len(EnergyBalanceType) == 5
 
+    # Test that error is raised when given non-member
+    with pytest.raises(AttributeError):
+        EnergyBalanceType.foo
+
 
 def test_momentum_balance_type():
     assert len(MomentumBalanceType) == 5
+
+    # Test that error is raised when given non-member
+    with pytest.raises(AttributeError):
+        MomentumBalanceType.foo
+
+
+def testflow_direction():
+    assert len(FlowDirection) == 2
+
+    # Test that error is raised when given non-member
+    with pytest.raises(AttributeError):
+        FlowDirection.foo
 
 
 # -----------------------------------------------------------------------------
@@ -148,7 +168,7 @@ class CVFrameData(ControlVolumeBase):
 def test_config_block():
     cv = CVFrame(concrete=True)
 
-    assert len(cv.config) == 5
+    assert len(cv.config) == 6
     assert cv.config.dynamic == useDefault
     assert cv.config.property_package == useDefault
     assert isinstance(cv.config.property_package_args, ConfigBlock)
@@ -156,6 +176,7 @@ def test_config_block():
     assert cv.config.reaction_package is None
     assert isinstance(cv.config.reaction_package_args, ConfigBlock)
     assert len(cv.config.reaction_package_args) == 0
+    assert cv.config.auto_construct is False
 
 
 # -----------------------------------------------------------------------------
@@ -371,3 +392,153 @@ def test_get_reaction_package_module_default_args():
     assert m.cv.config.reaction_package_args["test1"] == "foo"
     assert m.cv.config.reaction_package_args["test2"] == "baz"
     assert m.cv.config.reaction_package_args["test3"] == "bar"
+
+
+# -----------------------------------------------------------------------------
+# Test build and auto_construct methods
+def test_build():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+
+    super(CVFrameData, m.fs.cv).build()
+
+
+def test_add_geometry():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.cv = CVFrame()
+
+    with pytest.raises(NotImplementedError):
+        m.fs.cv.add_geometry()
+
+
+def test_auto_construct():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp, auto_construct=True)
+
+    with pytest.raises(NotImplementedError):
+        super(CVFrameData, m.fs.cv).build()
+
+# -----------------------------------------------------------------------------
+# Test _validate_add_balance_arguments
+def test_validate_add_balance_arguments_both_false():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    super(CVFrameData, m.fs.cv).build()
+
+    d, h = m.fs.cv._validate_add_balance_arguments(dynamic=useDefault,
+                                                   has_holdup=False)
+
+    assert d is False
+    assert h is False
+
+
+def test_validate_add_balance_arguments_both_true():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=True)
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    super(CVFrameData, m.fs.cv).build()
+
+    d, h = m.fs.cv._validate_add_balance_arguments(dynamic=True,
+                                                   has_holdup=True)
+
+    assert d is True
+    assert h is True
+
+
+def test_validate_add_balance_arguments_ss_with_holdup():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=True)
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    super(CVFrameData, m.fs.cv).build()
+
+    d, h = m.fs.cv._validate_add_balance_arguments(dynamic=False,
+                                                   has_holdup=True)
+
+    assert d is False
+    assert h is True
+
+
+def test_validate_add_balance_arguments_invalid():
+    m = ConcreteModel()
+    m.fs = Flowsheet(dynamic=True)
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    super(CVFrameData, m.fs.cv).build()
+
+    with pytest.raises(ConfigurationError):
+        d, h = m.fs.cv._validate_add_balance_arguments(dynamic=useDefault,
+                                                       has_holdup=False)
+
+
+def test_validate_add_balance_arguments_dynamic_error():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PropertyParameterBlock()
+    m.fs.cv = CVFrame(property_package=m.fs.pp)
+    super(CVFrameData, m.fs.cv).build()
+
+    with pytest.raises(DynamicError):
+        d, h = m.fs.cv._validate_add_balance_arguments(dynamic=True,
+                                                       has_holdup=True)
+
+# -----------------------------------------------------------------------------
+# Test NotImplementedErrors for all property and balance type methods
+def test_add_state_blocks():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+
+    with pytest.raises(NotImplementedError):
+        m.cv.add_state_blocks()
+
+
+def test_add_reaction_blocks():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+
+    with pytest.raises(NotImplementedError):
+        m.cv.add_reaction_blocks()
+
+
+def test_add_material_balances():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+
+    for t in MaterialBalanceType:
+        if t == MaterialBalanceType.none:
+            assert m.cv.add_material_balances(t) is None
+        else:
+            with pytest.raises(NotImplementedError):
+                m.cv.add_material_balances(t)
+
+
+def test_add_energy_balances():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+
+    for t in EnergyBalanceType:
+        if t == EnergyBalanceType.none:
+            assert m.cv.add_energy_balances(t) is None
+        else:
+            with pytest.raises(NotImplementedError):
+                m.cv.add_energy_balances(t)
+
+
+def test_add_momentum_balances():
+    m = ConcreteModel()
+    m.cv = CVFrame()
+
+    for t in MomentumBalanceType:
+        if t == MomentumBalanceType.none:
+            assert m.cv.add_momentum_balances(t) is None
+        else:
+            with pytest.raises(NotImplementedError):
+                m.cv.add_momentum_balances(t)
