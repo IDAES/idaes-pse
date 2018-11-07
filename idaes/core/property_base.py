@@ -28,7 +28,7 @@ import six
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
-from idaes.core.util.config import is_property_parameter_block
+from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (PropertyNotSupportedError,
                                         PropertyPackageError)
 
@@ -69,7 +69,7 @@ class PhysicalParameterBase(ProcessBlockData,
 
         # Get module reference and store on block
         frm = inspect.stack()[1]
-        self.property_module = inspect.getmodule(frm[0])
+        self._package_module = inspect.getmodule(frm[0])
 
 
 class StateBlockBase(ProcessBlock):
@@ -106,7 +106,7 @@ class StateBlockDataBase(ProcessBlockData):
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("parameters", ConfigValue(
-            domain=is_property_parameter_block,
+            domain=is_physical_parameter_block,
             description="""A reference to an instance of the Property Parameter
                         Block associated with this property package."""))
     CONFIG.declare("defined_state", ConfigValue(

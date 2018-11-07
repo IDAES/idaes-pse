@@ -26,7 +26,7 @@ from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core.util.exceptions import (PropertyNotSupportedError,
                                         PropertyPackageError)
-from idaes.core.util.config import (is_property_parameter_block,
+from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block)
 
@@ -49,7 +49,7 @@ class ReactionParameterBase(ProcessBlockData):
     CONFIG.declare("property_package", ConfigValue(
             description="Reference to associated PropertyPackageParameter "
                         "object",
-            domain=is_property_parameter_block))
+            domain=is_physical_parameter_block))
     CONFIG.declare("default_arguments", ConfigBlock(
             description="Default arguments to use with Property Package",
             implicit=True))
@@ -69,7 +69,7 @@ class ReactionParameterBase(ProcessBlockData):
 
         # Get module reference and store on block
         frm = inspect.stack()[1]
-        self.property_module = inspect.getmodule(frm[0])
+        self._package_module = inspect.getmodule(frm[0])
         self._validate_property_parameter_block()
 
     @classmethod

@@ -176,7 +176,7 @@ def test_ReactionParameterBase_build():
     m.r = ReactionParameterBlock4(default={"property_package": m.p})
     super(_ReactionParameterBlock4, m.r).build()
 
-    assert hasattr(m.r, "property_module")
+    assert hasattr(m.r, "_package_module")
 
 
 # -----------------------------------------------------------------------------
@@ -288,7 +288,7 @@ class _Parameters(ReactionParameterBase):
     def build(self):
         super(ReactionParameterBase, self).build()
         frm = inspect.stack()[1]
-        self.property_module = inspect.getmodule(frm[0])
+        self.__package_module = inspect.getmodule(frm[0])
 
     @classmethod
     def get_supported_properties(self):

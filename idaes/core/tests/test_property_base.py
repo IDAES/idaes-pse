@@ -48,7 +48,7 @@ def test_PhysicalParameterBase():
     m.p = ParameterBlock()
     super(_ParameterBlock, m.p).build()
 
-    assert hasattr(m.p, "property_module")
+    assert hasattr(m.p, "_package_module")
 
 
 def test_PropertyParameter_NotImplementedErrors():
