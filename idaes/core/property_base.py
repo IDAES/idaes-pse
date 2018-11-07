@@ -17,7 +17,6 @@ from __future__ import division
 
 # Import Python libraries
 import inspect
-import logging
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -38,22 +37,21 @@ __author__ = "Andrew Lee, John Eslick"
 
 __all__ = ['StateBlockDataBase',
            'StateBlockBase',
-           'PropertyParameterBase']
-
-# Set up logger
-logger = logging.getLogger(__name__)
+           'PhysicalParameterBase']
 
 
-class PropertyParameterBase(ProcessBlockData,
+class PhysicalParameterBase(ProcessBlockData,
                             property_meta.HasPropertyClassMetadata):
     """
-        This is the base class for property parameter blocks. These are blocks
-        that contain a set of parameters associated with a specific property
-        package, and are linked to by all instances of that property package.
+        This is the base class for thermophysical parameter blocks. These are
+        blocks that contain a set of parameters associated with a specific
+        thermophysical property package, and are linked to by all instances of
+        that property package.
     """
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("default_arguments", ConfigBlock(
+            implicit=True,
             description="Default arguments to use with Property Package"))
 
     def build(self):
@@ -67,6 +65,8 @@ class PropertyParameterBase(ProcessBlockData,
         Returns:
             None
         """
+        super(PhysicalParameterBase, self).build()
+
         # Get module reference and store on block
         frm = inspect.stack()[1]
         self.property_module = inspect.getmodule(frm[0])
@@ -135,9 +135,7 @@ class StateBlockDataBase(ProcessBlockData):
         Returns:
             None
         """
-        raise NotImplementedError('{} property package has not implemented a '
-                                  'build method. Please contact the property '
-                                  'package developer.')
+        super(StateBlockDataBase, self).build()
 
     def define_state_vars(self):
         """
@@ -187,7 +185,7 @@ class StateBlockDataBase(ProcessBlockData):
                                   'Please contact the property package '
                                   'developer.')
 
-    def get_enthlpy_flow_terms(self):
+    def get_enthalpy_flow_terms(self):
         """
         Method which returns a tuple containing a valid expression to use in
         the energy balances and a constant indicating the basis of this
@@ -197,7 +195,7 @@ class StateBlockDataBase(ProcessBlockData):
                                   ' get_energy_flow_terms method. Please '
                                   'contact the property package developer.')
 
-    def get_enthlpy_density_terms(self):
+    def get_enthalpy_density_terms(self):
         """
         Method which returns a tuple containing a valid expression to use in
         the energy balances and a constant indicating the basis of this

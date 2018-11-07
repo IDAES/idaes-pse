@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, Var
 from pyomo.common.config import ConfigBlock
-from idaes.core import (declare_process_block_class, PropertyParameterBase,
+from idaes.core import (declare_process_block_class, PhysicalParameterBase,
                         StateBlockBase, StateBlockDataBase)
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
@@ -26,22 +26,24 @@ from idaes.core.util.exceptions import (PropertyPackageError,
 # -----------------------------------------------------------------------------
 # Test ParameterBlock
 @declare_process_block_class("ParameterBlock")
-class _ParameterBlock(PropertyParameterBase):
-    def build(self):
-        pass
+class _ParameterBlock(PhysicalParameterBase):
+    pass
+#    def build(self):
+#        pass
 
 
 def test_config_block():
-    # Test that PropertyParameterBase gets module information
+    # Test that PhysicalParameterBase gets module information
     m = ConcreteModel()
     m.p = ParameterBlock()
 
     assert len(m.p.config) == 1
     assert isinstance(m.p.config.default_arguments, ConfigBlock)
+    assert len(m.p.config.default_arguments) == 0
 
 
-def test_PropertyParameterBase():
-    # Test that PropertyParameterBase gets module information
+def test_PhysicalParameterBase():
+    # Test that PhysicalParameterBase gets module information
     m = ConcreteModel()
     m.p = ParameterBlock()
     super(_ParameterBlock, m.p).build()
@@ -62,12 +64,11 @@ def test_PropertyParameter_NotImplementedErrors():
 # Test StateBlockBase
 @declare_process_block_class("StateBlockData", block_class=StateBlockBase)
 class _StateBlockData(StateBlockDataBase):
-    def build(self):
-        pass
+    pass
 
 
 def test_StateBlockBase_initialize():
-    # Test that StateBlockBase initialize method raise NotImplementedError
+    # Test that StateBlockBase initialize method raises NotImplementedError
     m = ConcreteModel()
     m.p = StateBlockData()
 
@@ -77,20 +78,6 @@ def test_StateBlockBase_initialize():
 
 # -----------------------------------------------------------------------------
 # Test StateBlockDataBase
-@declare_process_block_class("BuildTest")
-class _BuildTest(StateBlockDataBase):
-    def build(self):
-        super(_BuildTest, self).build()
-
-
-def test_build_NotImplementedError():
-    # Test that StateBlockDataBase build method returns NotImplementedErrors
-    m = ConcreteModel()
-
-    with pytest.raises(NotImplementedError):
-        m.p = BuildTest()
-
-
 def test_StateBlock_config():
     # Test that StateBlockDataBase config has correct arguments
     m = ConcreteModel()
@@ -132,9 +119,9 @@ def test_StateBlock_NotImplementedErrors():
     with pytest.raises(NotImplementedError):
         m.p.get_material_diffusion_terms()
     with pytest.raises(NotImplementedError):
-        m.p.get_enthlpy_flow_terms()
+        m.p.get_enthalpy_flow_terms()
     with pytest.raises(NotImplementedError):
-        m.p.get_enthlpy_density_terms()
+        m.p.get_enthalpy_density_terms()
     with pytest.raises(NotImplementedError):
         m.p.get_energy_diffusion_terms()
 
@@ -142,7 +129,7 @@ def test_StateBlock_NotImplementedErrors():
 # -----------------------------------------------------------------------------
 # Test properties __getattr__ method
 @declare_process_block_class("Parameters")
-class _Parameters(PropertyParameterBase):
+class _Parameters(PhysicalParameterBase):
     def build(self):
         super(_Parameters, self).build()
 
@@ -161,6 +148,8 @@ class _Parameters(PropertyParameterBase):
 @declare_process_block_class("State", block_class=StateBlockBase)
 class _State(StateBlockDataBase):
     def build(self):
+        super(StateBlockDataBase, self).build()
+
         self.test_obj = 1
 
     def a_method(self):
@@ -183,7 +172,7 @@ class _State(StateBlockDataBase):
 def m():
     m = ConcreteModel()
     m.pb = Parameters()
-    m.p = State(parameters=m.pb)
+    m.p = State(default={"parameters": m.pb})
 
     return m
 

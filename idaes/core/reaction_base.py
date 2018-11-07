@@ -17,7 +17,6 @@ from __future__ import division
 
 # Import Python libraries
 import inspect
-import logging
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -38,9 +37,6 @@ __all__ = ['ReactionBlockDataBase',
            'ReactionBlockBase',
            'ReactionParameterBase']
 
-# Set up logger
-logger = logging.getLogger(__name__)
-
 
 class ReactionParameterBase(ProcessBlockData):
     """
@@ -55,7 +51,8 @@ class ReactionParameterBase(ProcessBlockData):
                         "object",
             domain=is_property_parameter_block))
     CONFIG.declare("default_arguments", ConfigBlock(
-            description="Default arguments to use with Property Package"))
+            description="Default arguments to use with Property Package",
+            implicit=True))
 
     def build(self):
         """
@@ -68,6 +65,8 @@ class ReactionParameterBase(ProcessBlockData):
         Returns:
             None
         """
+        super(ReactionParameterBase, self).build()
+
         # Get module reference and store on block
         frm = inspect.stack()[1]
         self.property_module = inspect.getmodule(frm[0])
@@ -258,6 +257,8 @@ class ReactionBlockDataBase(ProcessBlockData):
         Returns:
             None
         """
+        super(ReactionBlockDataBase, self).build()
+
         self._validate_state_block()
 
     def _validate_state_block(self):

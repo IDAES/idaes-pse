@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Base clase for unit models
+Base class for unit models
 """
 from __future__ import absolute_import  # disable implicit relative imports
 from __future__ import division, print_function
@@ -19,11 +19,13 @@ from __future__ import division, print_function
 import logging
 
 from pyomo.environ import SolverFactory
-from pyomo.network import Port
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigValue, In
 
-from .process_base import declare_process_block_class, ProcessBlockData
+from .process_base import (declare_process_block_class,
+                           ProcessBlockData,
+                           useDefault)
+from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -31,7 +33,7 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 __all__ = ['UnitBlockData', 'UnitBlock']
 
 # Set up logger
-logger = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 @declare_process_block_class("UnitBlock")
@@ -43,12 +45,12 @@ class UnitBlockData(ProcessBlockData):
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("dynamic", ConfigValue(
-        default='use_parent_value',
-        domain=In(['use_parent_value', True, False]),
+        default=useDefault,
+        domain=In([useDefault, True, False]),
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not
-(default = 'use_parent_value').
-'use_parent_value' - get flag from parent (default = False)
+(default = useDefault).
+useDefault - get flag from parent (default = False)
 True - set as a dynamic model
 False - set as a steady-state model"""))
 
@@ -66,6 +68,8 @@ False - set as a steady-state model"""))
         Returns:
             None
         """
+        super(UnitBlockData, self).build()
+
         # Set up dynamic flag and time domain
         self._setup_dynamics()
 
@@ -79,7 +83,7 @@ False - set as a steady-state model"""))
          2) Gets dynamic flag from parent if not top level, or checks validity
             of argument provided
          3) Gets time domain from parent, or creates domain if top level model
-         4) Checks include_holdup flag if present and dynamic = True
+         4) Checks has_holdup flag if present and dynamic = True
 
         Args:
             None
@@ -88,53 +92,54 @@ False - set as a steady-state model"""))
             None
         """
         # Check the dynamic flag, and retrieve if necessary
-        if self.config.dynamic == 'use_parent_value':
+        if self.config.dynamic == useDefault:
             # Get dynamic flag from parent
             try:
                 self.config.dynamic = self.parent_block().config.dynamic
             except AttributeError:
                 # If parent does not have dynamic flag, raise Exception
-                raise AttributeError('{} has a parent model '
-                                     'with no dynamic attribute.'
-                                     .format(self.name))
+                raise DynamicError('{} has a parent model '
+                                   'with no dynamic attribute.'
+                                   .format(self.name))
 
         # Check for case when dynamic=True, but parent dynamic=False
         if (self.config.dynamic and not self.parent_block().config.dynamic):
-            raise ValueError('{} trying to declare a dynamic model within '
-                             'a steady-state flowsheet. This is not '
-                             'supported by the IDAES framework. Try '
-                             'creating a dynamic flowsheet instead, and '
-                             'declaring some models as steady-state.'
-                             .format(self.name))
+            raise DynamicError('{} trying to declare a dynamic model within '
+                               'a steady-state flowsheet. This is not '
+                               'supported by the IDAES framework. Try '
+                               'creating a dynamic flowsheet instead, and '
+                               'declaring some models as steady-state.'
+                               .format(self.name))
 
         # Try to get reference to time object from parent
         try:
+            # TODO : Replace with Reference
             object.__setattr__(self, "time", self.parent_block().time)
         except AttributeError:
-            raise AttributeError('{} has a parent model '
-                                 'with no time domain'.format(self.name))
+            raise DynamicError('{} has a parent model '
+                               'with no time domain'.format(self.name))
 
-        # Check include_holdup, if present
+        # Check has_holdup, if present
         if self.config.dynamic:
-            if hasattr(self.config, "include_holdup"):
-                if not self.config.include_holdup:
-                    # Dynamic model must have include_holdup = True
-                    logger.warning('{} Dynamic models must have '
-                                   'include_holdup = True. '
-                                   'Overwritting argument.'
-                                   .format(self.name))
-                    self.config.include_holdup = True
+            if hasattr(self.config, "has_holdup"):
+                if not self.config.has_holdup:
+                    # Dynamic model must have has_holdup = True
+                    raise ConfigurationError(
+                            "{} invalid arguments for dynamic and has_holdup. "
+                            "If dynamic = True, has_holdup must also be True "
+                            "(was False)".format(self.name))
 
     def model_check(blk):
         """
         This is a general purpose initialization routine for simple unit
-        models. This method assumes a single Holdup block called holdup and
-        tries to call the model_check method of the holdup block. If an
-        AttributeError is raised, the check is passed.
+        models. This method assumes a single ControlVolume block called
+        controlVolume and tries to call the model_check method of the
+        controlVolume block. If an AttributeError is raised, the check is
+        passed.
 
         More complex models should overload this method with a model_check
         suited to the particular application, especially if there are multiple
-        Holdup blocks present.
+        ControlVolume blocks present.
 
         Args:
             None
@@ -142,9 +147,9 @@ False - set as a steady-state model"""))
         Returns:
             None
         """
-        # Run holdup block model checks
+        # Run conrol volume block model checks
         try:
-            blk.holdup.model_check()
+            blk.controlVolume.model_check()
         except AttributeError:
             pass
 
@@ -152,8 +157,9 @@ False - set as a steady-state model"""))
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This is a general purpose initialization routine for simple unit
-        models. This method assumes a single Holdup block called holdup, and
-        first initializes this and then attempts to solve the entire unit.
+        models. This method assumes a single ControlVolume block called
+        controlVolume, and first initializes this and then attempts to solve
+        the entire unit.
 
         More complex models should overload this method with their own
         initialization routines,
@@ -187,15 +193,14 @@ False - set as a steady-state model"""))
         opt.options = optarg
 
         # ---------------------------------------------------------------------
-        # Initialize holdup block
-        flags = blk.holdup.initialize(outlvl=outlvl-1,
-                                      optarg=optarg,
-                                      solver=solver,
-                                      state_args=state_args)
+        # Initialize control volume block
+        flags = blk.controlVolume.initialize(outlvl=outlvl-1,
+                                             optarg=optarg,
+                                             solver=solver,
+                                             state_args=state_args)
 
         if outlvl > 0:
-            logger.info('{} Initialisation Step 1 Complete.'
-                        .format(blk.name))
+            _log.info('{} Initialisation Step 1 Complete.'.format(blk.name))
 
         # ---------------------------------------------------------------------
         # Solve unit
@@ -204,15 +209,15 @@ False - set as a steady-state model"""))
         if outlvl > 0:
             if results.solver.termination_condition == \
                     TerminationCondition.optimal:
-                logger.info('{} Initialisation Step 2 Complete.'
-                            .format(blk.name))
+                _log.info('{} Initialisation Step 2 Complete.'
+                          .format(blk.name))
             else:
-                logger.warning('{} Initialisation Step 2 Failed.'
-                               .format(blk.name))
+                _log.warning('{} Initialisation Step 2 Failed.'
+                             .format(blk.name))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.holdup.release_state(flags, outlvl-1)
+        blk.controlVolume.release_state(flags, outlvl-1)
 
         if outlvl > 0:
-            logger.info('{} Initialisation Complete.'.format(blk.name))
+            _log.info('{} Initialisation Complete.'.format(blk.name))

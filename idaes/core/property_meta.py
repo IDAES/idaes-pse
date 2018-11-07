@@ -17,7 +17,7 @@ property packages.
 Implementors of property packages need to do the following:
 
 1. Create a new class that inherits from
-   :class:`idaes.core.property_base.PropertyParameterBase`, which in turn
+   :class:`idaes.core.property_base.PhysicalParameterBase`, which in turn
    inherits from :class:`HasPropertyClassMetadata`, in this module.
 
 2. In that class, implement the `define_metadata()` method, inherited from
@@ -29,9 +29,9 @@ Implementors of property packages need to do the following:
 
 Example::
 
-    from idaes.core.property_base import PropertyParameterBase
+    from idaes.core.property_base import PhysicalParameterBase
 
-    class MyPropParams(PropertyParameterBase):
+    class MyPropParams(PhysicalParameterBase):
 
         @classmethod
         def define_metadata(cls, meta):
