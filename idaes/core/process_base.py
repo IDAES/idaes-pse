@@ -17,8 +17,6 @@ from __future__ import absolute_import  # disable implicit relative imports
 from __future__ import division  # No integer division
 from __future__ import print_function  # Python 3 style print
 
-import logging
-
 from idaes.core.process_block import declare_process_block_class
 from pyomo.core.base.block import _BlockData
 from pyomo.environ import Block
@@ -30,6 +28,9 @@ __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 
 __all__ = ['ProcessBlockData']
+
+
+useDefault = object()
 
 
 @declare_process_block_class("ProcessBaseBlock")
