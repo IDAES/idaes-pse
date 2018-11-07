@@ -64,6 +64,20 @@ class ControlVolume0dData(ControlVolumeBase):
 
     # TODO : add autobuild method
 
+    def add_geometry(self):
+        """
+        Method to create volume Var in ControlVolume.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        l_units = self.config.property_package.get_package_units()["length"]
+        self.volume = Var(self.time, initialize=1.0,
+                          doc='Holdup Volume [{}^3]'.format(l_units))
+
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
                          has_phase_equilibrium=False,
@@ -135,19 +149,6 @@ class ControlVolume0dData(ControlVolumeBase):
                 self.time,
                 doc="Reaction properties in control volume",
                 default=tmp_dict)
-
-    def add_geometry(self, length_units):
-        """
-        Method to create volume Var in ControlVolume.
-
-        Args:
-            length_units - string to use for units for length
-
-        Returns:
-            None
-        """
-        self.volume = Var(self.time, initialize=1.0,
-                          doc='Holdup Volume [{}^3]'.format(length_units))
 
     def add_phase_component_balances(self,
                                      dynamic=useDefault,

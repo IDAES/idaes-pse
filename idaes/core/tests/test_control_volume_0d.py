@@ -78,6 +78,21 @@ def test_base_build():
 
 
 # -----------------------------------------------------------------------------
+# Test add_geometry
+def test_add_geometry():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PropertyParameterBlock()
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
+
+    m.fs.cv.add_geometry()
+
+    assert hasattr(m.fs.cv, "volume")
+    assert m.fs.cv.volume.value == 1.0
+
+
+# -----------------------------------------------------------------------------
 # Test add_state_blocks
 def test_add_state_blocks():
     m = ConcreteModel()
@@ -158,3 +173,11 @@ def test_add_state_blocks_custom_args():
 
 # -----------------------------------------------------------------------------
 # Test add_reaction_blocks
+#def test_add_reaction_blocks():
+#    m = ConcreteModel()
+#    m.fs = Flowsheet(default={"dynamic": False})
+#    m.fs.pp = PropertyParameterBlock()
+#
+#    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
+#
+#    m.fs.cv.add_state_blocks()
