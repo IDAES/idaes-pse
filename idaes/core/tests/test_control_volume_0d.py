@@ -38,6 +38,16 @@ class _PropertyParameterBlock(PhysicalParameterBase):
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"])
 
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
+
 
 @declare_process_block_class("StateBlock")
 class StateBlockData(StateBlockDataBase):
@@ -89,7 +99,8 @@ def test_add_geometry():
     m.fs.cv.add_geometry()
 
     assert hasattr(m.fs.cv, "volume")
-    assert m.fs.cv.volume.value == 1.0
+    assert len(m.fs.cv.volume) == 1.0
+    assert m.fs.cv.volume[0].value == 1.0
 
 
 # -----------------------------------------------------------------------------

@@ -74,7 +74,7 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             None
         """
-        l_units = self.config.property_package.get_package_units()["length"]
+        l_units = self.config.property_package.get_metadata().default_units["length"]
         self.volume = Var(self.time, initialize=1.0,
                           doc='Holdup Volume [{}^3]'.format(l_units))
 

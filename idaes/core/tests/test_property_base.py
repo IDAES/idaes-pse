@@ -28,8 +28,6 @@ from idaes.core.util.exceptions import (PropertyPackageError,
 @declare_process_block_class("ParameterBlock")
 class _ParameterBlock(PhysicalParameterBase):
     pass
-#    def build(self):
-#        pass
 
 
 def test_config_block():
