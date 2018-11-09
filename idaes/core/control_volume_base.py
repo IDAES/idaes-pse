@@ -458,11 +458,30 @@ have a config block which derives from CONFIG_Base, **default** - False.
         Returns:
             None
         """
-        raise NotImplementedError(
-                         "{} auto-construct failed as ControlVolume "
-                         "class failed to create _auto_construct method."
-                         "Please contact the IDAES developers with this bug."
-                         .format(self.name))
+        self.add_geometry()
+        self.add_state_blocks()
+        self.add_reaction_blocks()
+
+        self.add_material_balances(
+            material_balance_type=self.config.material_balance_type,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            has_rate_reactions=self.config.has_rate_reactions,
+            has_equilibrium_reactions=self.config.has_equilibrium_reactions,
+            has_phase_equilibrium=self.config.has_phase_equilibrium,
+            has_mass_transfer=self.config.has_mass_transfer)
+
+        self.add_energy_balances(
+            energy_balance_type=self.config.energy_balance_type,
+            dynamic=self.config.dynamic,
+            has_holdup=self.config.has_holdup,
+            has_heat_transfer=self.config.has_heat_transfer,
+            has_work_transfer=self.config.has_work_transfer)
+
+        try:
+            self.apply_transformation()
+        except AttributeError:
+            pass
 
     def _setup_dynamics(self):
         """

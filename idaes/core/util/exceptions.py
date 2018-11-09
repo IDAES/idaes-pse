@@ -18,9 +18,17 @@ This module contains custom IDAES exceptions.
 __author__ = "Andrew Lee"
 
 
+class BalanceTypeNotSupportedError(NotImplementedError):
+    """
+    IDAES exception to be used when a control volumedoes not support a given
+    type of balance equation.
+    """
+    pass  # Tried to put bagel in normal toaster
+
+
 class ConfigurationError(ValueError):
     """
-    IDAES exception to be used when configuration argumnet are incorrect
+    IDAES exception to be used when configuration arguments are incorrect
     or inconsistent.
     """
     pass  # Too many buttons, burnt toast
