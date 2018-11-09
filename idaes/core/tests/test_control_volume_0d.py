@@ -23,7 +23,8 @@ from idaes.core import (ControlVolume0D, ControlVolumeBase, FlowsheetBlockData,
                         PhysicalParameterBase, StateBlockBase,
                         StateBlockDataBase, ReactionParameterBase,
                         ReactionBlockBase, ReactionBlockDataBase)
-from idaes.core.util.exceptions import (ConfigurationError,
+from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
+                                        ConfigurationError,
                                         PropertyNotSupportedError)
 
 
@@ -56,7 +57,19 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
                                'holdup': 'mol'})
 
 
-@declare_process_block_class("StateBlock", block_class=StateBlockBase)
+class SBlockBase(StateBlockBase):
+    def initialize(blk, outlvl=0, optarg=None, solver=None,
+                   hold_state=False, **state_args):
+        for k in blk.keys():
+            blk[k].init_test = True
+            blk[k].hold_state = hold_state
+
+    def release_state(blk, flags=None, outlvl=0):
+        for k in blk.keys():
+            blk[k].hold_state = not blk[k].hold_state
+
+
+@declare_process_block_class("StateBlock", block_class=SBlockBase)
 class StateBlockData(StateBlockDataBase):
     CONFIG = ConfigBlock(implicit=True)
 
@@ -70,12 +83,22 @@ class StateBlockData(StateBlockDataBase):
              "e2": ["c2", ("p1", "p2")]}
         self.element_comp = {"c1": {"H": 1, "He": 2, "Li": 3},
                              "c2": {"H": 4, "He": 5, "Li": 6}}
+        self.pressure = Var()
 
     def get_material_flow_terms(b, p, j):
         return b.test_var
 
     def get_material_density_terms(b, p, j):
         return b.test_var
+
+    def get_enthalpy_flow_terms(b, p):
+        return b.test_var
+
+    def get_enthalpy_density_terms(b, p):
+        return b.test_var
+
+    def model_check(self):
+        self.check = True
 
 
 @declare_process_block_class("ReactionParameterBlock")
@@ -103,7 +126,13 @@ class _ReactionParameterBlock(ReactionParameterBase):
         return {}
 
 
-@declare_process_block_class("ReactionBlock", block_class=ReactionBlockBase)
+class RBlockBase(ReactionBlockBase):
+    def initialize(blk, outlvl=0, optarg=None, solver=None):
+        for k in blk.keys():
+            blk[k].init_test = True
+
+
+@declare_process_block_class("ReactionBlock", block_class=RBlockBase)
 class ReactionBlockData(ReactionBlockDataBase):
     CONFIG = ConfigBlock(implicit=True)
 
@@ -130,6 +159,9 @@ class ReactionBlockData(ReactionBlockDataBase):
                                             ("e2", "p1", "c2"): 1,
                                             ("e2", "p2", "c1"): 1,
                                             ("e2", "p2", "c2"): 1}
+
+    def model_check(self):
+        self.check = True
 
 
 @declare_process_block_class("CVFrame")
@@ -1229,3 +1261,347 @@ def test_add_total_element_balances_mass_transfer():
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
     assert isinstance(m.fs.cv.elemental_mass_transfer_term, Var)
+
+
+# -----------------------------------------------------------------------------
+# Test unsupported material balance types
+def test_add_total_material_balances():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.cv.add_total_material_balances()
+
+
+# -----------------------------------------------------------------------------
+# Test phase enthalpy balances
+def test_add_total_enthalpy_balances_default():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    eb = m.fs.cv.add_total_enthalpy_balances()
+
+    assert isinstance(eb, Constraint)
+    assert len(eb) == 1
+
+
+def test_add_total_enthalpy_balances_dynamic():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_total_enthalpy_balances(dynamic=True, has_holdup=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 2
+    assert isinstance(m.fs.cv.phase_fraction, Var)
+    assert isinstance(m.fs.cv.enthalpy_holdup, Var)
+    assert isinstance(m.fs.cv.enthalpy_accumulation, Var)
+
+
+def test_add_total_enthalpy_balances_dynamic_no_holdup():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_total_enthalpy_balances(dynamic=True,
+                                            has_holdup=False)
+
+
+def test_add_total_enthalpy_balances_dynamic_no_geometry():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    # Do not add geometry
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_total_enthalpy_balances(dynamic=True,
+                                             has_holdup=True)
+
+
+def test_add_total_enthalpy_balances_heat_transfer():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_total_enthalpy_balances(has_heat_transfer=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 1
+    assert isinstance(m.fs.cv.heat, Var)
+
+
+def test_add_total_enthalpy_balances_work_transfer():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_total_enthalpy_balances(has_work_transfer=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 1
+    assert isinstance(m.fs.cv.work, Var)
+
+
+# -----------------------------------------------------------------------------
+# Test unsupported energy balance types
+def test_add_phase_enthalpy_balances():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.cv.add_phase_enthalpy_balances()
+
+
+def test_add_phase_energy_balances():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.cv.add_phase_energy_balances()
+
+
+def test_add_total_energy_balances():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.cv.add_total_energy_balances()
+
+
+# -----------------------------------------------------------------------------
+# Test add total pressure balances
+def test_add_total_pressure_balances_default():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    eb = m.fs.cv.add_total_pressure_balances()
+
+    assert isinstance(eb, Constraint)
+    assert len(eb) == 1
+
+
+def test_add_total_pressure_balances_deltaP():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_total_pressure_balances(has_pressure_change=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 1
+    assert isinstance(m.fs.cv.deltaP, Var)
+
+
+# -----------------------------------------------------------------------------
+# Test unsupported momentum balance types
+def test_add_phase_pressure_balances():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.cv.add_phase_pressure_balances()
+
+
+def test_add_phase_momentum_balances():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.cv.add_phase_momentum_balances()
+
+
+def test_add_total_momentum_balances():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(BalanceTypeNotSupportedError):
+        m.fs.cv.add_total_momentum_balances()
+
+
+# -----------------------------------------------------------------------------
+# Test model checks, initialize and release_state
+def test_model_checks():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    m.fs.cv.model_check()
+
+    for t in m.fs.time:
+        assert m.fs.cv.properties_in[t].check is True
+        assert m.fs.cv.properties_out[t].check is True
+        assert m.fs.cv.reactions[t].check is True
+
+
+def test_initialize():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    f= m.fs.cv.initialize(state_args={})
+
+    for t in m.fs.time:
+        assert m.fs.cv.properties_in[t].init_test is True
+        assert m.fs.cv.properties_out[t].init_test is True
+        assert m.fs.cv.properties_in[t].hold_state is True
+        assert m.fs.cv.properties_out[t].hold_state is False
+        assert m.fs.cv.reactions[t].init_test is True
+
+    m.fs.cv.release_state(flags=f)
+
+    for t in m.fs.time:
+        assert m.fs.cv.properties_in[t].hold_state is False
+        assert m.fs.cv.properties_out[t].hold_state is False

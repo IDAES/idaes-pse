@@ -38,6 +38,8 @@ __author__ = "Andrew Lee"
 _log = logging.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
+# TODO : add support for heat of reaction terms
+
 
 @declare_process_block_class("ControlVolume0D", doc="""
     ControlVolume0D is a specialized Pyomo block for IDAES non-discretized
@@ -1075,7 +1077,7 @@ class ControlVolume0dData(ControlVolumeBase):
                 "add_total_material_balances (yet)."
                 .format(self.name))
 
-    def add_phase_enthalpy_balances(self,
+    def add_total_enthalpy_balances(self,
                                     dynamic=useDefault,
                                     has_holdup=False,
                                     has_heat_transfer=False,
@@ -1125,6 +1127,22 @@ class ControlVolume0dData(ControlVolumeBase):
             except KeyError:
                 units[u] = '-'
 
+        # Create variables
+        if has_holdup:
+            self.enthalpy_holdup = Var(
+                        self.time,
+                        self.phase_list,
+                        domain=Reals,
+                        doc="Enthalpy holdup in unit [{}]"
+                        .format(units['energy']))
+
+        if dynamic is True:
+            self.enthalpy_accumulation = DerivativeVar(
+                        self.enthalpy_holdup,
+                        wrt=self.time,
+                        doc="Enthaly holdup in unit [{}/{}]"
+                        .format(units['energy'], units['time']))
+
         # Create scaling factor
         self.scaling_factor_energy = Param(
                         default=1e-6,
@@ -1151,17 +1169,17 @@ class ControlVolume0dData(ControlVolumeBase):
         # Create rules to substitute energy balance terms
         # Accumulation term
         def accumulation_term(b, t, p):
-            return b.energy_accumulation[t, p] if b.config.dynamic else 0
+            return b.enthalpy_accumulation[t, p] if dynamic else 0
 
         def heat_term(b, t):
-            return b.heat[t] if b.config.has_heat_transfer else 0
+            return b.heat[t] if has_heat_transfer else 0
 
         def work_term(b, t):
-            return b.work[t] if b.config.has_work_transfer else 0
+            return b.work[t] if has_work_transfer else 0
 
         # Energy balance equation
         @self.Constraint(self.time, doc="Energy balances")
-        def enthalpy_balance(b, t):
+        def enthalpy_balances(b, t):
             return (sum(accumulation_term(b, t, p) for p in b.phase_list) *
                     b.scaling_factor_energy) == (
                         sum(b.properties_in[t].get_enthalpy_flow_terms(p)
@@ -1184,14 +1202,14 @@ class ControlVolume0dData(ControlVolumeBase):
             def enthalpy_holdup_calculation(b, t, p):
                 return b.enthalpy_holdup[t, p] == (
                             b.volume[t]*self.phase_fraction[t, p] *
-                            b.properties_out[t].get_energy_density_terms(p))
+                            b.properties_out[t].get_enthalpy_density_terms(p))
 
         return self.enthalpy_balances
 
-    def add_total_enthalpy_balances(self, *args, **kwargs):
+    def add_phase_enthalpy_balances(self, *args, **kwargs):
         raise BalanceTypeNotSupportedError(
                 "{} OD control volumes do not support "
-                "add_total_enthalpy_balances."
+                "add_phase_enthalpy_balances."
                 .format(self.name))
 
     def add_phase_energy_balances(self, *args, **kwargs):
@@ -1263,7 +1281,7 @@ class ControlVolume0dData(ControlVolumeBase):
         # Create rules to substitute energy balance terms
         # Pressure change term
         def deltaP_term(b, t):
-            return b.deltaP[t] if b.config.has_pressure_change else 0
+            return b.deltaP[t] if has_pressure_change else 0
 
         # Create scaling factor
         self.scaling_factor_pressure = Param(
@@ -1329,6 +1347,14 @@ class ControlVolume0dData(ControlVolumeBase):
                              'model_check method to the associated '
                              'PropertyBlock class.'.format(blk.name))
 
+            try:
+                blk.reactions[t].model_check()
+            except AttributeError:
+                _log.warning('{} Holdup outlet property block has no '
+                             'model check. To correct this, add a '
+                             'model_check method to the associated '
+                             'PropertyBlock class.'.format(blk.name))
+
     def initialize(blk, state_args=None, outlvl=0, optarg=None,
                    solver='ipopt', hold_state=True):
         '''
@@ -1383,6 +1409,10 @@ class ControlVolume0dData(ControlVolumeBase):
                                       solver=solver,
                                       hold_state=False,
                                       **state_args)
+
+        blk.reactions.initialize(outlvl=outlvl-1,
+                                 optarg=optarg,
+                                 solver=solver)
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete'.format(blk.name))
