@@ -1,5 +1,6 @@
 ## Fixes # .
 
+
 ## Summary/Motivation:
 
 
@@ -14,32 +15,27 @@ By contributing to this software project, I agree to the following terms and con
 1. I agree my contributions are submitted under the license terms described in the LICENSE.txt file at the top level of this directory.
 2. I represent I am authorized to make the contributions and grant the license. If my employer has rights to intellectual property that includes these contributions, I represent that I have received permission to make contributions and grant the required license on behalf of that employer.
 
+----
 
 ## Reviewer Checklist
+When you are ready to review, please check the first box, and then all other boxes as appropriate. You may edit the text and replace the reviewer number with your name.
 
-### Is the PR inserted correctly in the repository?
-   * [ ] Is the PR linked to an issue or milestone?
-   * [ ] Is the PR attached to the appropriate project boards?
-   * [ ] Has the change log been updated?
-### Are the changes appropriate for the public repo?
-   * [ ] Are the proposed changes of interest to a general user?
-   * [ ] Is there any protected information in the PR?
-   * [ ] Do the changes add functionality to IDAES (new features of interest to IDAES as a whole)?
-   * [ ] Do the changes align with the existing framework design (no significant changes to APIs without thorough design planning and review)?
-### Is the code of appropriate quality?
-   * [ ] Does the code work as advertised, and does it meet all potential requirements (or document cases where it is known not to work)?
-   * [ ]  Does the code conform to the coding standards (PEP8, IDAES standards)?
-   * [ ]  Is the code in the correct location? E.g. models in the model library should be general in nature, case specific models would be more appropriate for contrib.
-   * [ ]  Is the code clean and readable?
-   * [ ]  Is the code sufficiently commented to explain its purpose?
-   * [ ]  Are there any errors or issues with the code, and is the code robust?
-### Does the PR include tests?
-   * [ ] Do all tests pass?
-   * [ ]  Is test coverage sufficient?
-   * [ ]  Are the tests readable and sufficiently documented?
-   * [ ]  Are the tests appropriate and robust?
-### Does the PR include documentation of the changes, and it the documentation clear and comprehensive?
-   * [ ]  Does the documentation cover all the changes?
-   * [ ]  Has ALL the documentation been updated to reflect any changes in object naming, etc.?
-   * [ ]  Is the documentation clear, concise and understandable?
-   * [ ]  Has the documentation been checked for spelling and grammatical errors? 
+### Reviewer: 1
+- [ ] **Review for the pull request has started**
+- [ ] Is the PR linked to an issue or milestone
+- [ ] Is the PR attached to project boards
+- [ ] Are the changes appropriate for the public repo (general interest, no protected information, aligns with existing design)?
+- [ ] Is the code of appropriate quality (see Github review for details)?
+- [ ] Are tests sufficient (do they pass, do they cover functionality, are they readable)?
+- [ ] Are comments in the code updated and clear?
+- [ ] Is the user documentation (Sphinx docs) updated and clear?
+
+### Reviewer: 2
+- [ ] **Review for the pull request has started**
+- [ ] Is the PR linked to an issue or milestone
+- [ ] Is the PR attached to project boards
+- [ ] Are the changes appropriate for the public repo (general interest, no protected information, aligns with existing design)?
+- [ ] Is the code of appropriate quality (see Github review for details)?
+- [ ] Are tests sufficient (do they pass, do they cover functionality, are they readable)?
+- [ ] Are comments in the code updated and clear?
+- [ ] Is the user documentation (Sphinx docs) updated and clear?
