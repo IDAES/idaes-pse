@@ -22,8 +22,8 @@ When you are ready to review, please check the first box, and then all other box
 
 ### Reviewer: 1
 - [ ] **Review for the pull request has started**
-- [ ] Is the PR linked to an issue or milestone
-- [ ] Is the PR attached to project boards
+- [ ] Is the PR linked to an issue or milestone?
+- [ ] Is the PR attached to project boards?
 - [ ] Are the changes appropriate for the public repo (general interest, no protected information, aligns with existing design)?
 - [ ] Is the code of appropriate quality (see Github review for details)?
 - [ ] Are tests sufficient (do they pass, do they cover functionality, are they readable)?
@@ -32,8 +32,8 @@ When you are ready to review, please check the first box, and then all other box
 
 ### Reviewer: 2
 - [ ] **Review for the pull request has started**
-- [ ] Is the PR linked to an issue or milestone
-- [ ] Is the PR attached to project boards
+- [ ] Is the PR linked to an issue or milestone?
+- [ ] Is the PR attached to project boards?
 - [ ] Are the changes appropriate for the public repo (general interest, no protected information, aligns with existing design)?
 - [ ] Is the code of appropriate quality (see Github review for details)?
 - [ ] Are tests sufficient (do they pass, do they cover functionality, are they readable)?
