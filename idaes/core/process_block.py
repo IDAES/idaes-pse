@@ -29,7 +29,7 @@ __all__ = ['ProcessBlock', 'declare_process_block_class']
 def _rule_default(b, *args):
     """Default rule for ProcessBlock, which calls build(). A different rule can
     be specified to add additional build steps, or to not call build at all
-    using the normal rule argument to ProcessBlock init.
+    using the normal rule argument.
     """
     try:
         b.build()
