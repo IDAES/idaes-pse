@@ -33,7 +33,9 @@ Contents
 .. toctree::
     :maxdepth: 1
 
-    install
+    Modules <apidoc/modules>
+
+..    install
 ..    core/index
 ..    dmf/index
 
