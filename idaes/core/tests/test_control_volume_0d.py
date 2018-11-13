@@ -46,7 +46,7 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
         self.component_list = Set(initialize=["c1", "c2"])
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
         self.element_list = Set(initialize=["H", "He", "Li"])
-        
+
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
 
