@@ -13,8 +13,11 @@
 """
 Tests for Python code style.
 """
+import logging
 import os
 import subprocess
+
+_log = logging.getLogger(__name__)
 
 # we want to look at everything:
 # DIRS = ['idaes']
@@ -28,13 +31,16 @@ def test_flake8():
     for d in DIRS:
         path = os.path.join(cwd, d)
         if not os.path.exists(path):
-            raise os.error('Target path "{}" not found in '
-                           'current dir, "{}"'.format(path, d))
+            _log.warning('Target path "{}" not found in '
+                         'current dir, "{}". Skipping test.'.format(d, cwd))
+            continue
         if not os.path.isdir(path):
-            raise os.error('Target path "{}" in '
-                           'current dir, "{}", '
-                           'is not a directory'.format(path, d))
+            _log.warning('Target path "{}" in '
+                         'current dir, "{}", '
+                         'is not a directory. Skipping test.'.format(d, cwd))
+            continue
         cmd = [FLAKE8, d]
+        _log.info('Test code style with command "{}"'.format(' '.join(cmd)))
         proc = subprocess.Popen(cmd)
         proc.wait()
         status = proc.returncode
