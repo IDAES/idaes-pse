@@ -56,7 +56,7 @@ clean:
 
 .PHONY: apidoc
 apidoc:
-	sphinx-apidoc -fM -o source/apidoc ../idaes ../idaes/tests "../idaes/*/tests"
+	sphinx-apidoc -fM --separate -o source/apidoc ../idaes ../idaes/tests "../idaes/*/tests"
 
 .PHONY: dep
 dep: apidoc
