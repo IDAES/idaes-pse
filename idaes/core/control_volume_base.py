@@ -67,6 +67,12 @@ FlowDirection = Enum(
     'forward',
     'backward')
 
+# Enumerate options for material flow basis
+MaterialFlowBasis = Enum(
+    'molar',
+    'mass',
+    'other')
+
 # Set up example ConfigBlock that will work with ControlVolume autobuild method
 CONFIG_Base = ProcessBlockData.CONFIG()
 CONFIG_Base.declare("dynamic", ConfigValue(

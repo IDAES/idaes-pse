@@ -9,5 +9,6 @@ from .reaction_base import (ReactionBlockDataBase, ReactionParameterBase,
                             ReactionBlockBase)
 from .control_volume_base import (ControlVolumeBase, CONFIG_Base,
                                   MaterialBalanceType, EnergyBalanceType,
-                                  MomentumBalanceType, FlowDirection)
+                                  MomentumBalanceType, FlowDirection,
+                                  MaterialFlowBasis)
 from .control_volume0d import ControlVolume0D
