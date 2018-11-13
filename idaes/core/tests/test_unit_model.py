@@ -16,11 +16,13 @@ Tests for unit_model.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, Set, Var
+from pyomo.network import Port
 from pyomo.common.config import ConfigValue
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
-                        UnitBlockData, useDefault)
+                        UnitBlockData, useDefault, PhysicalParameterBase,
+                        StateBlockBase, StateBlockDataBase, ControlVolume0D)
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 
@@ -28,6 +30,30 @@ from idaes.core.util.exceptions import ConfigurationError, DynamicError
 class _Flowsheet(FlowsheetBlockData):
     def build(self):
         super(_Flowsheet, self).build()
+
+
+@declare_process_block_class("PhysicalParameterBlock")
+class _PhysicalParameterBlock(PhysicalParameterBase):
+    def build(self):
+        super(_PhysicalParameterBlock, self).build()
+
+        self.phase_list = Set(initialize=["p1", "p2"])
+        self.component_list = Set(initialize=["c1", "c2"])
+
+
+@declare_process_block_class("StateBlock", block_class=StateBlockBase)
+class StateBlockData(StateBlockDataBase):
+    def build(self):
+        super(StateBlockData, self).build()
+
+        self.a = Var(initialize=1)
+        self.b = Var(initialize=2)
+        self.c = Var(initialize=3)
+
+    def define_port_members(self):
+        return {"a": self.a,
+                "b": self.b,
+                "c": self.c}
 
 
 @declare_process_block_class("Unit")
@@ -143,3 +169,193 @@ def test_setup_dynamics_has_holdup():
 
     with pytest.raises(ConfigurationError):
         m.fs.u._setup_dynamics()
+
+
+def test_add_port():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.prop = StateBlock(m.fs.time,
+                             default={"parameters": m.fs.pp})
+
+    p_obj = m.fs.u.add_port(name="test_port", block=m.fs.u.prop)
+
+    assert isinstance(p_obj, Port)
+    assert hasattr(m.fs.u, "test_port")
+    assert len(m.fs.u.test_port) == 1
+    assert m.fs.u.test_port[0].a.value == m.fs.u.prop[0].a.value
+    assert m.fs.u.test_port[0].b.value == m.fs.u.prop[0].b.value
+    assert m.fs.u.test_port[0].c.value == m.fs.u.prop[0].c.value
+
+
+def test_add_port_invalid_block():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.prop = StateBlock(m.fs.time,
+                             default={"parameters": m.fs.pp})
+
+    with pytest.raises(ConfigurationError):
+        m.fs.u.add_port(name="test_port", block=m.fs.u)
+
+
+def test_add_inlet_port_CV0D():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume0D(
+            default={"property_package": m.fs.pp})
+
+    m.fs.u.control_volume.add_state_blocks()
+
+    p_obj = m.fs.u.add_inlet_port()
+
+    assert isinstance(p_obj, Port)
+    assert hasattr(m.fs.u, "inlet")
+    assert len(m.fs.u.inlet) == 1
+
+    # Set new inlet conditions to differentiate from outlet
+    m.fs.u.control_volume.properties_in[0].a = 10
+    m.fs.u.control_volume.properties_in[0].b = 20
+    m.fs.u.control_volume.properties_in[0].c = 30
+
+    assert m.fs.u.inlet[0].a.value == \
+        m.fs.u.control_volume.properties_in[0].a.value
+    assert m.fs.u.inlet[0].b.value == \
+        m.fs.u.control_volume.properties_in[0].b.value
+    assert m.fs.u.inlet[0].c.value == \
+        m.fs.u.control_volume.properties_in[0].c.value
+
+
+def test_add_inlet_port_CV0D_no_default_block():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.cv = ControlVolume0D(
+            default={"property_package": m.fs.pp})
+
+    with pytest.raises(ConfigurationError):
+        m.fs.u.add_inlet_port()
+
+
+def test_add_inlet_port_CV0D_full_args():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.cv = ControlVolume0D(
+            default={"property_package": m.fs.pp})
+
+    m.fs.u.cv.add_state_blocks()
+
+    p_obj = m.fs.u.add_inlet_port(name="test_port",
+                                  block=m.fs.u.cv,
+                                  doc="Test")
+
+    assert isinstance(p_obj, Port)
+    assert hasattr(m.fs.u, "test_port")
+    assert len(m.fs.u.test_port) == 1
+
+    # Set new inlet conditions to differentiate from outlet
+    m.fs.u.cv.properties_in[0].a = 10
+    m.fs.u.cv.properties_in[0].b = 20
+    m.fs.u.cv.properties_in[0].c = 30
+
+    assert m.fs.u.test_port[0].a.value == \
+        m.fs.u.cv.properties_in[0].a.value
+    assert m.fs.u.test_port[0].b.value == \
+        m.fs.u.cv.properties_in[0].b.value
+    assert m.fs.u.test_port[0].c.value == \
+        m.fs.u.cv.properties_in[0].c.value
+
+
+def test_add_outlet_port_CV0D():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume0D(
+            default={"property_package": m.fs.pp})
+
+    m.fs.u.control_volume.add_state_blocks()
+
+    p_obj = m.fs.u.add_outlet_port()
+
+    assert isinstance(p_obj, Port)
+    assert hasattr(m.fs.u, "outlet")
+    assert len(m.fs.u.outlet) == 1
+
+    # Set new outlet conditions to differentiate from intlet
+    m.fs.u.control_volume.properties_out[0].a = 10
+    m.fs.u.control_volume.properties_out[0].b = 20
+    m.fs.u.control_volume.properties_out[0].c = 30
+
+    assert m.fs.u.outlet[0].a.value == \
+        m.fs.u.control_volume.properties_out[0].a.value
+    assert m.fs.u.outlet[0].b.value == \
+        m.fs.u.control_volume.properties_out[0].b.value
+    assert m.fs.u.outlet[0].c.value == \
+        m.fs.u.control_volume.properties_out[0].c.value
+
+
+def test_add_outlet_port_CV0D_no_default_block():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.cv = ControlVolume0D(
+            default={"property_package": m.fs.pp})
+
+    with pytest.raises(ConfigurationError):
+        m.fs.u.add_outlet_port()
+
+
+def test_add_outlet_port_CV0D_full_args():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.cv = ControlVolume0D(
+            default={"property_package": m.fs.pp})
+
+    m.fs.u.cv.add_state_blocks()
+
+    p_obj = m.fs.u.add_outlet_port(name="test_port",
+                                  block=m.fs.u.cv,
+                                  doc="Test")
+
+    assert isinstance(p_obj, Port)
+    assert hasattr(m.fs.u, "test_port")
+    assert len(m.fs.u.test_port) == 1
+
+    # Set new outlet conditions to differentiate from inlet
+    m.fs.u.cv.properties_out[0].a = 10
+    m.fs.u.cv.properties_out[0].b = 20
+    m.fs.u.cv.properties_out[0].c = 30
+
+    assert m.fs.u.test_port[0].a.value == \
+        m.fs.u.cv.properties_out[0].a.value
+    assert m.fs.u.test_port[0].b.value == \
+        m.fs.u.cv.properties_out[0].b.value
+    assert m.fs.u.test_port[0].c.value == \
+        m.fs.u.cv.properties_out[0].c.value
