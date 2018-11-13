@@ -33,7 +33,13 @@ while [ "x$1" != x ]; do
 			;;
 	esac
 done
-make clean html > docs.stdout 2> docs.stderr
+
+make clean >/dev/null
+printf "Rebuilding API docs\n"
+make apidoc > docs.stdout 2> docs.stderr
+printf "Rebuilding HTML pages\n"
+make html >> docs.stdout 2>> docs.stderr
+
 grep WARNING docs.stderr > docs.warnings
 numwarn=$( wc -l docs.warnings | cut -f1 -d' ' )
 grep ERROR docs.stderr > docs.errors
@@ -43,8 +49,8 @@ if [ $numerr -eq 0 ]; then
 	printf "No errors\n"
 	rm -f docs.errors
 else
-	printf "%d errors!\n" $numerr
+	printf "%d errors in docs.errors\n" $numerr
 	cat docs.errors
 	printf "----\n"
 fi
-printf "%s warnings\n" $numwarn
+printf "%s warnings in docs.warnings\n" $numwarn
