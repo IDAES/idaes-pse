@@ -29,7 +29,7 @@ __all__ = ['ProcessBlock', 'declare_process_block_class']
 def _rule_default(b, *args):
     """Default rule for ProcessBlock, which calls build(). A different rule can
     be specified to add additional build steps, or to not call build at all
-    using the normal rule argument to ProcessBlock init.
+    using the normal rule argument.
     """
     try:
         b.build()
@@ -43,10 +43,14 @@ Args:
     rule: (Optional) A rule function or None. Default rule calls build().
     concrete: If True, make this a toplevel model. **Default** - False.
     ctype: (Optional) Pyomo ctype of the Block.
-    default: dict with default arguments to ProcessBlockData init
+    default: dict with default arguments to ProcessBlockData ConfigBlock. These
+        arguments are passed to the ConfigBlock in the ProcessBlockData build()
+        method, which is called by the default rule.
     initialize: dict with block index keys where the values are argument dicts
-        for specific ProcessBlockData element init. If a key is missing,
-        default will be used.\n"""
+        for specific ProcessBlockData element ConfigBlock. If a key is missing,
+        default will be used. These arguments are passed to the ConfigBlock in 
+        the ProcessBlockData build() method, which is called by the default
+        rule.\n"""
 
 class _IndexedProcessBlockMeta(type):
     """Metaclass used to create an indexed model class."""
