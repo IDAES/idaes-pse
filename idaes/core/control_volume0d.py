@@ -1158,7 +1158,7 @@ class ControlVolume0dData(ControlVolumeBase):
 
             @self.Constraint(self.time,
                              self.element_list,
-                             doc="Elemental holdup calcuation")
+                             doc="Elemental holdup calculation")
             def elemental_holdup_calculation(b, t, e):
                 return b.element_holdup[t, e] == (
                     b.volume[t] *
