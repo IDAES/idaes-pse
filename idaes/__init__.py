@@ -64,7 +64,7 @@ def _import_packages(packages, optional=True):
     """Import plugin package, condensed from pyomo.environ.__init__.py
     Args:
         packages: list of pacakges in which to look for plugins
-        optional: true, log ImportError but contine; false, raise if ImportError
+        optional: true, log ImportError but continue; false, raise if ImportError
     Returns:
         None
     """
