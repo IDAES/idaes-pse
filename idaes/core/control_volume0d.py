@@ -201,7 +201,7 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             Constraint object representing material balances
         """
-        # Validate arguments
+        # Validate arguments - ensures  has_holdup = True when dynamic = True
         dynamic, has_holdup = self._validate_add_balance_arguments(
                                             dynamic=dynamic,
                                             has_holdup=has_holdup)
@@ -1435,7 +1435,7 @@ class ControlVolume0dData(ControlVolumeBase):
 
     def model_check(blk):
         """
-        This method exectues the model_check methods on the associated property
+        This method executes the model_check methods on the associated property
         blocks (if they exist). This method is generally called by a unit model
         as part of the unit's model_check method.
 
@@ -1490,10 +1490,10 @@ class ControlVolume0dData(ControlVolumeBase):
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
                      initialization, **default** - True. **Valid values:**
-                     **True** - states varaibles are not unfixed, and a dict of
+                     **True** - states variables are not unfixed, and a dict of
                      returned containing flags for which states were fixed
                      during initialization, **False** - state variables are
-                     unfixed after initialization by calling the relase_state
+                     unfixed after initialization by calling the release_state
                      method.
 
         Returns:
@@ -1536,14 +1536,14 @@ class ControlVolume0dData(ControlVolumeBase):
 
     def release_state(blk, flags, outlvl=0):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to release state variables fixed during initialisation.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
                     unfixed. This dict is returned by initialize if
                     hold_state = True.
-            outlvl : sets output level of of logging
+            outlvl : sets output level of logging
 
         Returns:
             None
