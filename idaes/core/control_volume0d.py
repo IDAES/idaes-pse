@@ -1503,7 +1503,8 @@ class ControlVolume0dData(ControlVolumeBase):
         # Get inlet state if not provided
         if state_args is None:
             state_args = {}
-            state_dict = blk.properties_in[0].declare_port_members()
+            state_dict = \
+                blk.properties_in[blk.time.first()].declare_port_members()
             for k in state_dict.keys():
                 if state_dict[k].is_indexed():
                     state_args[k] = {}

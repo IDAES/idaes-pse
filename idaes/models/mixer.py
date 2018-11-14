@@ -18,16 +18,29 @@ from __future__ import division, print_function
 
 import logging
 
+from pyomo.environ import Set
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyutilib.enum import Enum
 
-from idaes.core import declare_process_block_class, UnitBlockData, useDefault
-from idaes.core.util.config import is_physical_parameter_block, list_of_strings
+from idaes.core import (declare_process_block_class,
+                        UnitBlockData,
+                        useDefault)
+from idaes.core.util.config import (is_physical_parameter_block,
+                                    is_state_block,
+                                    list_of_strings)
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
 
 __author__ = "Andrew Lee"
 
 
 # Set up logger
 _log = logging.getLogger(__name__)
+
+
+# Enumerate options for material balances
+MomentumMixingType = Enum(
+    'minimize',
+    'equality')
 
 
 @declare_process_block_class("MixerBlock")
@@ -80,12 +93,37 @@ provided, **int** - number of inlets to creat (will be named with sequential
 integers from 1 to num_inlets).}"""))
     CONFIG.declare("calculate_phase_equilibrium", ConfigValue(
         default=False,
-        domain=In(True, False),
+        domain=In([True, False]),
         description="Calculate phase equilibrium in mixed stream",
         doc="""Argument indicating whether phase equilibrium should be
 calculated for the resulting mixed stream, **default** - False. **Valid values:
 ** {**True** - calculate phase equilibrium in mixed stream, **False** -
 do not calculate equilibrium in mixed stream.}"""))
+    CONFIG.declare("momentum_mixing_type", ConfigValue(
+        default=MomentumMixingType.minimize,
+        domain=MomentumMixingType,
+        description="Method to use when mxing momentum/pressure",
+        doc="""Argument indicating what method to use when mixing momentum/
+pressure of incoming streams, **default** - MomentumMixingType.minimize.
+**Valid values:** {**MomentumMixingType.minimize** - mixed stream has
+pressure equal to the minimimum pressure of the incoming streams (uses
+smoothMin operator), **MomentumMixingType.equality** - enforces equality of
+pressure in mixed and all incoming streams.}"""))
+    CONFIG.declare("mixed_state_block", ConfigValue(
+        domain=is_state_block,
+        description="Existing StateBlock to use as mixed stream",
+        doc="""An existing state block to use as the outlet stream from the
+Mixer block, **default** - None. **Valid values:** {**None** - create a new
+StateBlock for the mixed stream, **StateBlock** - a StateBock to use as the
+destination for the mixed stream.}"""))
+    CONFIG.declare("construct_ports", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Construct inlet and outlet Port objects",
+        doc="""Argument indicating whether model should construct Port objects
+linked to all inlet states and the mixed state, **default** - True.
+**Valid values:** {**True** - construct Ports for all states, **False** - do
+not construct Ports."""))
 
     def build(self):
         """
@@ -101,4 +139,167 @@ do not calculate equilibrium in mixed stream.}"""))
         Returns:
             None
         """
+        # Call super.build()
         super(MixerBlockData, self).build()
+
+        # Call setup methods from ControlVolumeBase
+        self._get_property_package()
+        self._get_indexing_sets()
+
+        # Create list of inlet names
+        inlet_list = self.create_inlet_list()
+
+        # Build StateBlocks
+        inlet_blocks = self.add_inlet_state_blocks(inlet_list)
+
+        if self.config.mixed_state_block is None:
+            mixed_block = self.add_mixed_state_block()
+        else:
+            mixed_block = self.get_mixed_state_block()
+
+#        self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
+#                                           mixed_block=mixed_block)
+#        self.add_energy_mixing_equations(inlet_blocks=inlet_blocks,
+#                                         mixed_block=mixed_block)
+#
+#        if self.config.momentum_mixing_type == MomentumMixingType.minimize:
+#            self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
+#                                                     mixed_block=mixed_block)
+#        elif self.config.momentum_mixing_type == MomentumMixingType.equality:
+#            self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
+#                                                 mixed_block=mixed_block)
+#        else:
+#            raise ConfigurationError("{} recieved unrecognised value for "
+#                                     "momentum_mixing_type argument. This "
+#                                     "should not occur, so please contact "
+#                                     "the IDAES developers with this bug."
+#                                     .format(self.name))
+#
+        self.add_port_objects(inlet_blocks, mixed_block)
+
+    def create_inlet_list(self):
+        """
+        Create list on inlet stream names based on config arguments.
+
+        Returns:
+            list of strings
+        """
+        if (self.config.inlet_list is not None and
+                self.config.num_inlets is not None):
+            # If both arguments provided and not consistent, raise Exception
+            if len(self.config.inlet_list) != self.config.num_inlets:
+                raise ConfigurationError(
+                        "{} MixerBlock provided with both inlet_list and "
+                        "num_inlets arguments, which were not consistent ("
+                        "length of inlet_list was not equal to num_inlets). "
+                        "PLease check your arguments for consistency, and "
+                        "note that it is only necessry to provide one of "
+                        "these arguments.".format(self.name))
+        elif self.config.inlet_list is None and self.config.num_inlets is None:
+            # If no arguments provided for inlets, default to num_inlets = 2
+            self.config.num_inlets = 2
+
+        # Create a list of names for inlet StateBlocks
+        if self.config.inlet_list is not None:
+            inlet_list = self.config.inlet_list
+        else:
+            inlet_list = ['inlet_' + str(n)
+                          for n in range(1, self.config.num_inlets+1)]
+
+        return inlet_list
+
+    def add_inlet_state_blocks(self, inlet_list):
+        """
+        Construct StateBlocks for all inlet streams.
+
+        Args:
+            list of strings to use as StateBlock names
+
+        Returns:
+            list of StateBlocks
+        """
+        # Setup StateBlock argument dict
+        tmp_dict = self.config.property_package_args
+        tmp_dict["has_phase_equilibrium"] = False
+        tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = True
+
+        # Create empty list to hold StateBlocks for return
+        inlet_blocks = []
+
+        # Create an instance of StateBlock for all inlets
+        for i in inlet_list:
+            i_obj = self._property_module.StateBlock(
+                        self.time,
+                        doc="Material properties at inlet",
+                        default=tmp_dict)
+
+            setattr(self, i+"_state", i_obj)
+
+            inlet_blocks.append(getattr(self, i+"_state"))
+
+        return inlet_blocks
+
+    def add_mixed_state_block(self):
+        """
+        Constructs StateBlock to represent mixed stream.
+
+        Returns:
+            New StateBlock object
+        """
+        # Setup StateBlock argument dict
+        tmp_dict = self.config.property_package_args
+        tmp_dict["has_phase_equilibrium"] = \
+            self.config.calculate_phase_equilibrium
+        tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = False
+
+        self.mixed_state = self._property_module.StateBlock(
+                                self.time,
+                                doc="Material properties of mixed stream",
+                                default=tmp_dict)
+
+        return self.mixed_state
+
+    def get_mixed_state_block(self):
+        """
+        Validates StateBlock provided in user arguments for mixed stream.
+
+        Returns:
+            The user-provided StateBlock or an Exception
+        """
+        # Sanity check to make sure method is not called when arg missing
+        if self.config.mixed_state_block is None:
+            raise BurntToast("{} get_mixed_state_block method called when "
+                             "mixed_state_block argument is None. This should "
+                             "not happen.".format(self.name))
+
+        # Check that the user-provided StateBlock uses the same prop pack
+        if (self.config.mixed_state_block[self.time.first()].config.parameters
+                != self.config.property_package):
+            raise ConfigurationError(
+                    "{} StateBlock provided in mixed_state_block argument "
+                    " does not come from the same property package as "
+                    "provided in the property_package argument. All "
+                    "StateBlocks within a MixerBlock must use the same "
+                    "property package.".format(self.name))
+
+        return self.config.mixed_state_block
+
+    def add_port_objects(self, inlet_list, inlet_blocks, mixed_block):
+        """
+        Adds Port objects if required.
+
+        Args:
+            a list of inlet StateBlock objects
+            a mixed state StateBlock object
+
+        Returns:
+            None
+        """
+        if self.config.construct_ports is True:
+            # Add ports
+            for p in inlet_list:
+                i_state = getattr(self, p+"_state")
+                self.add_port(name=p, block=i_state, doc="Inlet Port")
+            self.add_port(name="outlet", block=mixed_block, doc="Outlet Port")

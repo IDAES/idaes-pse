@@ -1,0 +1,378 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes".
+##############################################################################
+"""
+Tests for ControlVolumeBase.
+
+Author: Andrew Lee
+"""
+import pytest
+
+from pyomo.environ import ConcreteModel, Set, Var
+from pyomo.network import Port
+from pyomo.common.config import ConfigBlock
+
+from idaes.core import (FlowsheetBlockData, declare_process_block_class,
+                        PhysicalParameterBase, StateBlockBase,
+                        StateBlockDataBase)
+from idaes.models.mixer import MixerBlockData, MomentumMixingType
+from idaes.core.util.exceptions import BurntToast, ConfigurationError
+
+
+# -----------------------------------------------------------------------------
+# Mockup classes for testing
+@declare_process_block_class("Flowsheet")
+class _Flowsheet(FlowsheetBlockData):
+    def build(self):
+        super(_Flowsheet, self).build()
+
+
+@declare_process_block_class("PhysicalParameterBlock")
+class _PhysicalParameterBlock(PhysicalParameterBase):
+    def build(self):
+        super(_PhysicalParameterBlock, self).build()
+
+        self.phase_list = Set(initialize=["p1", "p2"])
+        self.component_list = Set(initialize=["c1", "c2"])
+
+
+@declare_process_block_class("StateBlock", block_class=StateBlockBase)
+class StateBlockData(StateBlockDataBase):
+    CONFIG = ConfigBlock(implicit=True)
+
+    def build(self):
+        super(StateBlockData, self).build()
+
+        self.pressure = Var()
+        self.a = Var(initialize=1)
+        self.b = Var(initialize=2)
+        self.c = Var(initialize=3)
+
+    def define_port_members(self):
+        return {"a": self.a,
+                "b": self.b,
+                "c": self.c}
+
+
+@declare_process_block_class("MixerFrame")
+class MixerFrameData(MixerBlockData):
+    def build(self):
+        super(MixerBlockData, self).build()
+
+
+# -----------------------------------------------------------------------------
+# Test Mixer unit model
+def test_mixer_config():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
+
+    assert len(m.fs.mix.config) == 9
+    assert m.fs.mix.config.dynamic is False
+    assert m.fs.mix.config.property_package == m.fs.pp
+    assert isinstance(m.fs.mix.config.property_package_args, ConfigBlock)
+    assert len(m.fs.mix.config.property_package_args) == 0
+    assert m.fs.mix.config.inlet_list is None
+    assert m.fs.mix.config.num_inlets is None
+    assert m.fs.mix.config.calculate_phase_equilibrium is False
+    assert m.fs.mix.config.momentum_mixing_type == MomentumMixingType.minimize
+    assert m.fs.mix.config.mixed_state_block is None
+    assert m.fs.mix.config.construct_ports is True
+
+
+def test_inherited_methods():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    assert hasattr(m.fs.mix, "_property_module")
+    assert hasattr(m.fs.mix, "phase_list")
+    assert hasattr(m.fs.mix, "component_list")
+
+
+def test_create_inlet_list_default():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+
+    for i in inlet_list:
+        assert i in ["inlet_1", "inlet_2"]
+
+
+def test_create_inlet_list_inlet_list():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "inlet_list": ["foo", "bar"]})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+
+    for i in inlet_list:
+        assert i in ["foo", "bar"]
+
+
+def test_create_inlet_list_num_inlets():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "num_inlets": 3})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+
+    for i in inlet_list:
+        assert i in ["inlet_1", "inlet_2", "inlet_3"]
+
+
+def test_create_inlet_list_both_args_consistent():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "inlet_list": ["foo", "bar"],
+                                   "num_inlets": 2})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+
+    for i in inlet_list:
+        assert i in ["foo", "bar"]
+
+
+def test_create_inlet_list_both_args_inconsistent():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "inlet_list": ["foo", "bar"],
+                                   "num_inlets": 3})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.mix.create_inlet_list()
+
+
+def test_add_inlet_state_blocks():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "inlet_list": ["foo", "bar"]})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+    inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
+
+    assert isinstance(m.fs.mix.foo_state, StateBlockBase)
+    assert isinstance(m.fs.mix.bar_state, StateBlockBase)
+
+    assert len(inlet_blocks) == 2
+    for i in inlet_blocks:
+        assert isinstance(i, StateBlockBase)
+        assert i.local_name in ["foo_state", "bar_state"]
+        assert i[0].config.has_phase_equilibrium is False
+        assert i[0].config.defined_state is True
+        assert len(i[0].config) == 3
+
+
+def test_add_inlet_state_blocks_prop_pack_args():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "property_package_args": {"test": 1},
+                                   "inlet_list": ["foo", "bar"]})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+    inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
+
+    assert isinstance(m.fs.mix.foo_state, StateBlockBase)
+    assert isinstance(m.fs.mix.bar_state, StateBlockBase)
+
+    assert len(inlet_blocks) == 2
+    for i in inlet_blocks:
+        assert isinstance(i, StateBlockBase)
+        assert i.local_name in ["foo_state", "bar_state"]
+        assert i[0].config.has_phase_equilibrium is False
+        assert i[0].config.defined_state is True
+        assert len(i[0].config) == 4
+        assert i[0].config.test == 1
+
+
+def test_add_mixed_state_block():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    mixed_block = m.fs.mix.add_mixed_state_block()
+
+    assert isinstance(mixed_block, StateBlockBase)
+    assert hasattr(m.fs.mix, "mixed_state")
+    assert m.fs.mix.mixed_state[0].config.has_phase_equilibrium is False
+    assert m.fs.mix.mixed_state[0].config.defined_state is False
+    assert len(m.fs.mix.mixed_state[0].config) == 3
+
+
+def test_add_mixed_state_block_prop_pack_args():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "property_package_args": {"test": 1}})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    mixed_block = m.fs.mix.add_mixed_state_block()
+
+    assert isinstance(mixed_block, StateBlockBase)
+    assert hasattr(m.fs.mix, "mixed_state")
+    assert m.fs.mix.mixed_state[0].config.has_phase_equilibrium is False
+    assert m.fs.mix.mixed_state[0].config.defined_state is False
+    assert len(m.fs.mix.mixed_state[0].config) == 4
+    assert m.fs.mix.mixed_state[0].config.test == 1
+
+
+def test_get_mixed_state_block():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "mixed_state_block": m.fs.sb})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    mixed_block = m.fs.mix.get_mixed_state_block()
+
+    assert mixed_block == m.fs.sb
+
+
+def test_get_mixed_state_block_none():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    with pytest.raises(BurntToast):
+        m.fs.mix.get_mixed_state_block()
+
+
+def test_get_mixed_state_block_mismatch():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    # Change parameters arg to create mismatch
+    m.fs.sb[0].config.parameters = None
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "mixed_state_block": m.fs.sb})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.mix.get_mixed_state_block()
+
+
+def test_add_port_objects():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+    inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
+    mixed_block = m.fs.mix.add_mixed_state_block()
+
+    m.fs.mix.add_port_objects(inlet_list, inlet_blocks, mixed_block)
+
+    assert isinstance(m.fs.mix.inlet_1, Port)
+    assert isinstance(m.fs.mix.inlet_2, Port)
+    assert isinstance(m.fs.mix.outlet, Port)
+
+
+def test_add_port_objects_construct_ports_False():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "construct_ports": False})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+    inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
+    mixed_block = m.fs.mix.add_mixed_state_block()
+
+    m.fs.mix.add_port_objects(inlet_list, inlet_blocks, mixed_block)
+
+    assert hasattr(m.fs.mix, "inlet_1") is False
+    assert hasattr(m.fs.mix, "inlet_2") is False
+    assert hasattr(m.fs.mix, "outlet") is False
