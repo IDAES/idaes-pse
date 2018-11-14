@@ -80,7 +80,7 @@ def _import_packages(packages, optional=True):
             pkg.load()
 
 # Set default configuration.  Used TOML string to serve as an example for
-# and definative guide for IDAES configuration files.
+# and definitive guide for IDAES configuration files.
 _read_config(toml.loads("""
 [plugins]
   required = []
@@ -101,7 +101,7 @@ _read_config(toml.loads("""
 """))
 
 # Try to read the global IDAES config file.
-#Set where to look for config files
+# Set where to look for config files
 try:
     if os.name == 'nt': # Windows
         _global_config_file = \
@@ -124,7 +124,7 @@ _log.debug("'idaes' logger debug test")
 # plugins only automatiaclly import when 'idaes' is imported. Could call
 # _import_packages again later though
 
-# This make "idaes" the current plugin envirnment while importing plugins here
+# This make "idaes" the current plugin environment while importing plugins here
 pyomo.common.plugin.push("idaes") # Add idaes plugin environment at top of stack
 # Import plugins standard IDAES plugins, non-optional plugins
 _import_packages(_config["plugins"]["required"], optional=False)
