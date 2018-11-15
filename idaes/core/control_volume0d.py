@@ -715,27 +715,6 @@ class ControlVolume0dData(ControlVolumeBase):
                             "by equilibrium reactions [{}/{}]"
                             .format(units['holdup'], units['time']))
 
-        # Phase equilibrium generation
-        if has_phase_equilibrium:
-            try:
-                # TODO : replace with Reference
-                object.__setattr__(
-                    self,
-                    "phase_equilibrium_idx",
-                    self.config.property_package.phase_equilibrium_idx)
-            except AttributeError:
-                raise PropertyNotSupportedError(
-                    "{} Property package does not contain a list of phase "
-                    "equilibrium reactions (phase_equilibrium_idx), thus does "
-                    "not support phase equilibrium.".format(self.name))
-            self.phase_equilibrium_generation = Var(
-                        self.time,
-                        self.phase_equilibrium_idx,
-                        domain=Reals,
-                        doc="Amount of generation in unit by phase "
-                            "equilibria [{}/{}]"
-                            .format(units['holdup'], units['time']))
-
         # Material transfer term
         if has_mass_transfer:
             self.mass_transfer_term = Var(
@@ -758,24 +737,6 @@ class ControlVolume0dData(ControlVolumeBase):
         def equilibrium_term(b, t, p, j):
             return (b.equilibrium_reaction_generation[t, p, j]
                     if has_equilibrium_reactions else 0)
-
-        def phase_equilibrium_term(b, t, p, j):
-            if has_phase_equilibrium:
-                sd = {}
-                sblock = self.properties_out[t]
-                for r in b.phase_equilibrium_idx:
-                    if sblock.phase_equilibrium_list[r][0] == j:
-                        if sblock.phase_equilibrium_list[r][1][0] == p:
-                            sd[r] = 1
-                        elif sblock.phase_equilibrium_list[r][1][1] == p:
-                            sd[r] = -1
-                        else:
-                            sd[r] = 0
-                    else:
-                        sd[r] = 0
-
-                return sum(b.phase_equilibrium_generation[t, r]*sd[r]
-                           for r in b.phase_equilibrium_idx)
 
         def transfer_term(b, t, p, j):
             return (b.mass_transfer_term[t, p, j] if has_mass_transfer else 0)

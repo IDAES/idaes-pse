@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, Set, Var
+from pyomo.environ import ConcreteModel, Constraint, Set, Var
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 
@@ -25,7 +25,9 @@ from idaes.core import (FlowsheetBlockData, declare_process_block_class,
                         PhysicalParameterBase, StateBlockBase,
                         StateBlockDataBase)
 from idaes.models.mixer import MixerBlockData, MomentumMixingType
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
+                                        PropertyNotSupportedError)
 
 
 # -----------------------------------------------------------------------------
@@ -43,6 +45,17 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
 
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"])
+        self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
 
 
 @declare_process_block_class("StateBlock", block_class=StateBlockBase)
@@ -52,15 +65,29 @@ class StateBlockData(StateBlockDataBase):
     def build(self):
         super(StateBlockData, self).build()
 
+        self.phase_list = Set(initialize=["p1", "p2"])
+        self.component_list = Set(initialize=["c1", "c2"])
+        self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
+        self.phase_equilibrium_list = \
+            {"e1": ["c1", ("p1", "p2")],
+             "e2": ["c2", ("p1", "p2")]}
+
         self.pressure = Var()
-        self.a = Var(initialize=1)
-        self.b = Var(initialize=2)
-        self.c = Var(initialize=3)
+        self.flow_mol_phase_comp = Var(self.phase_list,
+                                       self.component_list,
+                                       initialize=1)
+        self.enth_mol_phase = Var(self.phase_list, initialize=2)
+
+    def get_material_flow_terms(b, p, j):
+        return b.flow_mol_phase_comp[p, j]
+
+    def get_enthalpy_flow_terms(b, p):
+        return b.enth_mol_phase[p]
 
     def define_port_members(self):
-        return {"a": self.a,
-                "b": self.b,
-                "c": self.c}
+        return {"component_flow": self.flow_mol_phase_comp,
+                "enthalpy": self.enth_mol_phase,
+                "pressure": self.pressure}
 
 
 @declare_process_block_class("MixerFrame")
@@ -335,6 +362,102 @@ def test_get_mixed_state_block_mismatch():
         m.fs.mix.get_mixed_state_block()
 
 
+# -----------------------------------------------------------------------------
+# Test mixing equation methods
+def test_add_material_mixing_equations():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "mixed_state_block": m.fs.sb})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+    inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
+    mixed_block = m.fs.mix.get_mixed_state_block()
+
+    m.fs.mix.add_material_mixing_equations(inlet_blocks, mixed_block)
+
+    assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
+    assert len(m.fs.mix.material_mixing_equations) == 4
+
+
+def test_add_material_mixing_equations_equilibrium():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "mixed_state_block": m.fs.sb,
+                                   "calculate_phase_equilibrium": True})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+    inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
+    mixed_block = m.fs.mix.get_mixed_state_block()
+
+    m.fs.mix.add_material_mixing_equations(inlet_blocks, mixed_block)
+
+    assert hasattr(m.fs.mix, "phase_equilibrium_idx")
+    assert isinstance(m.fs.mix.phase_equilibrium_generation, Var)
+    assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
+    assert len(m.fs.mix.material_mixing_equations) == 4
+
+
+def test_add_material_mixing_equations_equilibrium_not_supported():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "mixed_state_block": m.fs.sb,
+                                   "calculate_phase_equilibrium": True})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+    inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
+    mixed_block = m.fs.mix.get_mixed_state_block()
+
+    with pytest.raises(PropertyNotSupportedError):
+        m.fs.mix.add_material_mixing_equations(inlet_blocks, mixed_block)
+
+
+def test_add_energy_mixing_equations():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "mixed_state_block": m.fs.sb,
+                                   "calculate_phase_equilibrium": True})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+    inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
+    mixed_block = m.fs.mix.get_mixed_state_block()
+
+    m.fs.mix.add_energy_mixing_equations(inlet_blocks, mixed_block)
+
+    assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
+    assert len(m.fs.mix.enthalpy_mixing_equations) == 1
+
+
+# -----------------------------------------------------------------------------
 def test_add_port_objects():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})

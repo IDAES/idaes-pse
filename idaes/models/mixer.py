@@ -18,7 +18,7 @@ from __future__ import division, print_function
 
 import logging
 
-from pyomo.environ import Set
+from pyomo.environ import Constraint, Var, Reals
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
@@ -28,7 +28,10 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
                                     list_of_strings)
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
+                                        PropertyNotSupportedError)
+from idaes.core.util.math import smooth_min
 
 __author__ = "Andrew Lee"
 
@@ -157,8 +160,8 @@ not construct Ports."""))
         else:
             mixed_block = self.get_mixed_state_block()
 
-#        self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
-#                                           mixed_block=mixed_block)
+        self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
+                                           mixed_block=mixed_block)
 #        self.add_energy_mixing_equations(inlet_blocks=inlet_blocks,
 #                                         mixed_block=mixed_block)
 #
@@ -285,6 +288,129 @@ not construct Ports."""))
                     "property package.".format(self.name))
 
         return self.config.mixed_state_block
+
+    def add_material_mixing_equations(self, inlet_blocks, mixed_block):
+        """
+        Add material mixing equations (phase-component balances).
+        """
+        # Create equilibrium generation term and constraints if required
+        if self.config.calculate_phase_equilibrium is True:
+            # Get units from property package
+            units = {}
+            for u in ['holdup', 'time']:
+                try:
+                    units[u] = (self.config.property_package
+                                .get_metadata().default_units[u])
+                except KeyError:
+                    units[u] = '-'
+
+            try:
+                # TODO : replace with Reference
+                object.__setattr__(
+                    self,
+                    "phase_equilibrium_idx",
+                    self.config.property_package.phase_equilibrium_idx)
+            except AttributeError:
+                raise PropertyNotSupportedError(
+                    "{} Property package does not contain a list of phase "
+                    "equilibrium reactions (phase_equilibrium_idx), thus does "
+                    "not support phase equilibrium.".format(self.name))
+            self.phase_equilibrium_generation = Var(
+                        self.time,
+                        self.phase_equilibrium_idx,
+                        domain=Reals,
+                        doc="Amount of generation in unit by phase "
+                            "equilibria [{}/{}]"
+                            .format(units['holdup'], units['time']))
+
+        # Define terms to use in mixing equation
+        def phase_equilibrium_term(b, t, p, j):
+            if self.config.calculate_phase_equilibrium:
+                sd = {}
+                sblock = mixed_block[t]
+                for r in b.phase_equilibrium_idx:
+                    if sblock.phase_equilibrium_list[r][0] == j:
+                        if sblock.phase_equilibrium_list[r][1][0] == p:
+                            sd[r] = 1
+                        elif sblock.phase_equilibrium_list[r][1][1] == p:
+                            sd[r] = -1
+                        else:
+                            sd[r] = 0
+                    else:
+                        sd[r] = 0
+
+                return sum(b.phase_equilibrium_generation[t, r]*sd[r]
+                           for r in b.phase_equilibrium_idx)
+            else:
+                return 0
+
+        # Get phase component list(s)
+        phase_component_list = self._get_phase_comp_list()
+
+        # Write phase-component balances
+        @self.Constraint(self.time,
+                         self.phase_list,
+                         self.component_list,
+                         doc="Material mixing equations")
+        def material_mixing_equations(b, t, p, j):
+            if j in phase_component_list[p]:
+                return 0 == (
+                        sum(inlet_blocks[i][t].get_material_flow_terms(p, j)
+                            for i in range(len(inlet_blocks))) -
+                        mixed_block[t].get_material_flow_terms(p, j) +
+                        phase_equilibrium_term(b, t, p, j))
+            else:
+                return Constraint.Skip
+
+    def add_energy_mixing_equations(self, inlet_blocks, mixed_block):
+        """
+        Add energy mixing equations (total enthalpy balance).
+        """
+        @self.Constraint(self.time, doc="Energy balances")
+        def enthalpy_mixing_equations(b, t):
+            return 0 == (sum(sum(inlet_blocks[i][t].get_enthalpy_flow_terms(p)
+                                 for p in b.phase_list)
+                             for i in range(len(inlet_blocks))) -
+                         sum(mixed_block[t].get_enthalpy_flow_terms(p)
+                             for p in b.phase_list))
+
+    def add_pressure_minimization_equations(self, inlet_blocks, mixed_block):
+        """
+        Add pressure minimization equations. This is done by sequential
+        comparisons of each inlet to the minimum pressure so far, using
+       the IDAES smooth minimum fuction.
+        """
+        # Add variables
+        self.minimum_pressure = Var(self.time,
+                                    self.inlet_idx,
+                                    doc='Variable for calculating '
+                                        'minimum inlet pressure')
+
+        self.eps_pressure = Param(mutable=True,
+                                  initialize=1e-3,
+                                  domain=PositiveReals,
+                                  doc='Smoothing term for '
+                                      'minimum inlet pressure')
+
+        # Calculate minimum inlet pressure
+        @self.Constraint(self.time,
+                         self.inlet_idx,
+                         doc='Calculation for minimum inlet pressure')
+        def minimum_pressure_constraint(b, t, i):
+            if i == self.inlet_idx.first():
+                return self.minimum_pressure[t, i] == (
+                           self.properties[t, i].pressure)
+            else:
+                return self.minimum_pressure[t, i] == (
+                        smooth_min(self.minimum_pressure[t, self.inlet_idx.prev(i)], inlet_blocks[i], self.eps_pressure))
+
+#        # Set inlet pressure to minimum pressure
+#        @self.Constraint(self.time, doc='link pressure to holdup')
+#        def inlet_pressure(b, t):
+#            return self.properties_in[t].pressure == (
+#                       self.minimum_pressure[t,
+#                                             self.inlet_idx.last()])
+
 
     def add_port_objects(self, inlet_list, inlet_blocks, mixed_block):
         """
