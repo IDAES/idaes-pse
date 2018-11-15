@@ -161,10 +161,11 @@ class PropertyClassMetadata(object):
 
         For each property, the value should be another dict which may contain
         the following keys:
-            - 'method': (required) the name of a method to construct the
-                        property as a str, or None if the property will be
-                        constructed by default.
-            - 'units': (optional) units of measurement for the property.
+
+        - 'method': (required) the name of a method to construct the
+                    property as a str, or None if the property will be
+                    constructed by default.
+        - 'units': (optional) units of measurement for the property.
 
         Args:
             p (dict): Key=property, Value=PropertyMetadata or equiv. dict
