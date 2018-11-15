@@ -337,9 +337,9 @@ class Resource(object):
         """Generate readable file objects for 'datafiles' in resource.
 
         Args:
-            mode (str): Mode for `open()`
+            mode (str): Mode for ``open()``
         Returns:
-            generator: Generates `file`s.
+            generator: Generates ``file`` objects.
         """
         dfdir = self.v['datafiles_dir']
         for datafile in self.v['datafiles']:

@@ -25,7 +25,7 @@ def smooth_abs(a, eps=1e-4):
     """General function for creating an expression for a smooth minimum or
     maximum.
 
-    |a| = sqrt(a^2 + eps^2)
+    .. math:: |a| = sqrt(a^2 + eps^2)
 
     Args:
         a : term to get absolute value from (Pyomo component, float or int)
@@ -53,7 +53,7 @@ def smooth_minmax(a, b, eps=1e-4, sense='max'):
     """General function for creating an expression for a smooth minimum or
     maximum. Uses the smooth_abs operator.
 
-    minmax(a, b) = 0.5*(a+b +- |a-b|)
+    .. math:: minmax(a, b) = 0.5*(a+b +- |a-b|)
 
     Args:
         a : first term in mix or max function (Pyomo component, float or int)
@@ -92,7 +92,7 @@ def smooth_minmax(a, b, eps=1e-4, sense='max'):
 def smooth_max(a, b, eps=1e-4):
     """Smooth maximum operator, using smooth_abs operator.
 
-    max(a, b) = 0.5*(a+b + |a-b|)
+    .. math:: max(a, b) = 0.5*(a+b + |a-b|)
 
     Args:
         a : first term in max function
@@ -109,7 +109,7 @@ def smooth_max(a, b, eps=1e-4):
 def smooth_min(a, b, eps=1e-4):
     """Smooth minimum operator, using smooth_abs operator.
 
-    max(a, b) = 0.5*(a+b - |a-b|)
+    .. math:: max(a, b) = 0.5*(a+b - |a-b|)
 
     Args:
         a : first term in min function
