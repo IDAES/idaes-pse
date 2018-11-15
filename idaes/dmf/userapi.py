@@ -64,7 +64,8 @@ def get_workspace(path='', name=None, desc=None, create=False, errs=None,
 def find_property_packages(dmf, properties=None):
     """Find all property packages matching provided criteria.
 
-    Return the matching packages as a generator
+    Return the matching packages as a generator.
+
     Args:
         dmf (DMF): Data Management Framework instance
         properties (List[str]): Names of properties that must be present in the

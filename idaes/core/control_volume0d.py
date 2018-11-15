@@ -48,13 +48,9 @@ class ControlVolume0dData(ControlVolumeBase):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
-
     def build(self):
         """
         Build method for ControlVolume0D blocks.
-
-        Args:
-            None
 
         Returns:
             None
@@ -74,7 +70,8 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             None
         """
-        l_units = self.config.property_package.get_metadata().default_units["length"]
+        l_units = self.config.property_package.get_metadata().default_units[
+                                                                      "length"]
         self.volume = Var(self.time, initialize=1.0,
                           doc='Holdup Volume [{}^3]'.format(l_units))
 
@@ -87,14 +84,13 @@ class ControlVolume0dData(ControlVolumeBase):
         control volume.
 
         Args:
-            information_flow - a FlowDirection Enum indicating whether
+            information_flow: a FlowDirection Enum indicating whether
                                information flows from inlet-to-outlet or
                                outlet-to-inlet
-            has_phase_equilibrium - indicates whether equilibrium calculations
+            has_phase_equilibrium: indicates whether equilibrium calculations
                                     will be required in state blocks
-            package_arguments - dict-like object of arguments to be passed to
+            package_arguments: dict-like object of arguments to be passed to
                                 state blocks as construction arguments
-
         Returns:
             None
         """
@@ -132,9 +128,9 @@ class ControlVolume0dData(ControlVolumeBase):
         This method constructs the reaction block for the control volume.
 
         Args:
-            has_equilibrium - indicates whether equilibrium calculations
+            has_equilibrium: indicates whether equilibrium calculations
                               will be required in reaction block
-            package_arguments - dict-like object of arguments to be passed to
+            package_arguments: dict-like object of arguments to be passed to
                                 reaction block as construction arguments
 
         Returns:
@@ -164,26 +160,26 @@ class ControlVolume0dData(ControlVolumeBase):
         phase and component.
 
         Args:
-            dynamic - argument indicating whether material balances should
+            dynamic: argument indicating whether material balances should
                     include temporal derivative terms. If not provided,
                     will use the dynamic flag of the control volume block
-            has_holdup - whether material holdup terms should be included in
+            has_holdup: whether material holdup terms should be included in
                     material balances. Must be True if dynamic = True
-            has_rate_reactions - whether default generation terms for rate
+            has_rate_reactions: whether default generation terms for rate
                     reactions should be included in material balances
-            has_equilibrium_reactions - whether generation terms should for
+            has_equilibrium_reactions: whether generation terms should for
                     chemical equilibrium reactions should be included in
                     material balances
-            has_phase_equilibrium - whether generation terms should for phase
+            has_phase_equilibrium: whether generation terms should for phase
                     equilibrium behaviour should be included in material
                     balances
-            has_mass_transfer - whether generic mass transfer terms should be
+            has_mass_transfer: whether generic mass transfer terms should be
                     included in material balances
-            custom_molar_term - a Pyomo Expression reresenting custom terms to
+            custom_molar_term: a Pyomo Expression reresenting custom terms to
                     be included in material balances on a molar basis.
                     Expression must be indexed by time, phase list and
                     component list
-            custom_mass_term - a Pyomo Expression reresenting custom terms to
+            custom_mass_term: a Pyomo Expression reresenting custom terms to
                     be included in material balances on a mass basis.
                     Expression must be indexed by time, phase list and
                     component list
