@@ -416,6 +416,23 @@ not construct Ports."""))
                        self.minimum_pressure[t,
                                              self.inlet_idx.last()])
 
+    def add_pressure_equality_equations(self, inlet_blocks, mixed_block):
+        """
+        Add pressure equality equations. Note that this writes a number of
+        constraints equal to the number of inlets, enforcing equality between
+        all inlets and the mixed stream.
+        """
+        # Add indexing Set
+        self.inlet_idx = Set(initialize=range(1, len(inlet_blocks)+1),
+                             ordered=True)
+
+        # Create equality constraints
+        @self.Constraint(self.time,
+                         self.inlet_idx,
+                         doc='Calculation for minimum inlet pressure')
+        def pressure_equality_constraints(b, t, i):
+            return mixed_block[t].pressure == inlet_blocks[i][t].pressure
+
     def add_port_objects(self, inlet_list, inlet_blocks, mixed_block):
         """
         Adds Port objects if required.

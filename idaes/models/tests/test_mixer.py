@@ -486,6 +486,30 @@ def test_add_pressure_minimization_equations():
     assert isinstance(m.fs.mix.mixture_pressure, Constraint)
 
 
+def test_add_pressure_equality_equations():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "mixed_state_block": m.fs.sb,
+                                   "calculate_phase_equilibrium": True})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+    inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
+    mixed_block = m.fs.mix.get_mixed_state_block()
+
+    m.fs.mix.add_pressure_equality_equations(inlet_blocks, mixed_block)
+
+    assert isinstance(m.fs.mix.pressure_equality_constraints, Constraint)
+    assert len(m.fs.mix.pressure_equality_constraints) == 2
+
+
 # -----------------------------------------------------------------------------
 def test_add_port_objects():
     m = ConcreteModel()
