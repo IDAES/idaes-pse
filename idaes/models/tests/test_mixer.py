@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, Constraint, Set, Var
+from pyomo.environ import ConcreteModel, Constraint, Param, Set, Var
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 
@@ -455,6 +455,35 @@ def test_add_energy_mixing_equations():
 
     assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
     assert len(m.fs.mix.enthalpy_mixing_equations) == 1
+
+
+def test_add_pressure_minimization_equations():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
+                                   "mixed_state_block": m.fs.sb,
+                                   "calculate_phase_equilibrium": True})
+
+    m.fs.mix._get_property_package()
+    m.fs.mix._get_indexing_sets()
+
+    inlet_list = m.fs.mix.create_inlet_list()
+    inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
+    mixed_block = m.fs.mix.get_mixed_state_block()
+
+    m.fs.mix.add_pressure_minimization_equations(inlet_blocks, mixed_block)
+
+    assert isinstance(m.fs.mix.inlet_idx, Set)
+    assert isinstance(m.fs.mix.minimum_pressure, Var)
+    assert len(m.fs.mix.minimum_pressure) == 2
+    assert isinstance(m.fs.mix.eps_pressure, Param)
+    assert isinstance(m.fs.mix.minimum_pressure_constraint, Constraint)
+    assert len(m.fs.mix.minimum_pressure) == 2
+    assert isinstance(m.fs.mix.mixture_pressure, Constraint)
 
 
 # -----------------------------------------------------------------------------

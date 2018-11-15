@@ -18,7 +18,7 @@ from __future__ import division, print_function
 
 import logging
 
-from pyomo.environ import Constraint, Var, Reals
+from pyomo.environ import Constraint, Param, PositiveReals, Reals, Set, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
@@ -381,6 +381,9 @@ not construct Ports."""))
        the IDAES smooth minimum fuction.
         """
         # Add variables
+        self.inlet_idx = Set(initialize=range(1, len(inlet_blocks)+1),
+                             ordered=True)
+
         self.minimum_pressure = Var(self.time,
                                     self.inlet_idx,
                                     doc='Variable for calculating '
@@ -399,18 +402,19 @@ not construct Ports."""))
         def minimum_pressure_constraint(b, t, i):
             if i == self.inlet_idx.first():
                 return self.minimum_pressure[t, i] == (
-                           self.properties[t, i].pressure)
+                           inlet_blocks[i-1][t].pressure)
             else:
                 return self.minimum_pressure[t, i] == (
-                        smooth_min(self.minimum_pressure[t, self.inlet_idx.prev(i)], inlet_blocks[i], self.eps_pressure))
+                        smooth_min(self.minimum_pressure[t, i-1],
+                                   inlet_blocks[i-1][t].pressure,
+                                   self.eps_pressure))
 
-#        # Set inlet pressure to minimum pressure
-#        @self.Constraint(self.time, doc='link pressure to holdup')
-#        def inlet_pressure(b, t):
-#            return self.properties_in[t].pressure == (
-#                       self.minimum_pressure[t,
-#                                             self.inlet_idx.last()])
-
+        # Set inlet pressure to minimum pressure
+        @self.Constraint(self.time, doc='link pressure to holdup')
+        def mixture_pressure(b, t):
+            return mixed_block[t].pressure == (
+                       self.minimum_pressure[t,
+                                             self.inlet_idx.last()])
 
     def add_port_objects(self, inlet_list, inlet_blocks, mixed_block):
         """
