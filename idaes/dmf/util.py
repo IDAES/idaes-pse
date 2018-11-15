@@ -326,8 +326,13 @@ def mkdir_p(path, *args):
         os.error: Raised from `os.mkdir()`
     """
     plist = path.split(os.path.sep)
-    dirname = plist[0]
-    for p in plist[1:]:
-        dirname = os.path.join(dirname, p)
-        if not os.path.exists(p):
-            os.mkdir(p, *args)
+    if plist[0] == '':
+        # do not try to create filesystem root
+        dir_name = os.path.sep
+        plist = plist[1:]
+    else:
+        dir_name = ''
+    for p in plist:
+        dir_name = os.path.join(dir_name, p)
+        if not os.path.exists(dir_name):
+            os.mkdir(dir_name, *args)

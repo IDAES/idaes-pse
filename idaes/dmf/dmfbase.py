@@ -315,7 +315,7 @@ class DMF(workspace.Workspace, HasTraits):
         return rsrc.id
 
     def _copy_files(self, rsrc):
-        if 'datafiles_dir' in rsrc.v:
+        if rsrc.v.get('datafiles_dir', None):
             # If there is a datafiles_dir, use it
             ddir = rsrc.v['datafiles_dir']
         else:

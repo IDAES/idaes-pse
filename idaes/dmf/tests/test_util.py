@@ -14,8 +14,13 @@
 Tests for idaes.dmf.util module
 """
 import datetime
+import hashlib
+import os
+import shutil
 import time
+
 import pytest
+
 from idaes.dmf import util
 from .util import get_logger
 
@@ -80,3 +85,17 @@ def test_datetime_timestamp():
     dt = datetime.datetime.fromtimestamp(ts)
     ts1 = util.datetime_timestamp(dt)
     assert pytest.approx(ts, ts1, 0.000001)
+
+
+def test_mkdir_p():
+    random_str = hashlib.sha1().hexdigest()
+    # test absolute
+    path = '/tmp/{}/idaes/dmf/util/mkdir_p'.format(random_str)
+    util.mkdir_p(path)
+    assert os.path.exists(path)
+    shutil.rmtree('/tmp/{}'.format(random_str))
+    # test relative
+    path = '{}/idaes/dmf/util/mkdir_p'.format(random_str)
+    util.mkdir_p(path)
+    assert os.path.exists(path)
+    shutil.rmtree(random_str)

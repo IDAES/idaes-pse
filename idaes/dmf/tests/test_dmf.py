@@ -159,6 +159,7 @@ def test_dmf_add(tmp_dmf):
     except Exception as err:
         pass
 
+    os.unlink(tmpf3.name)
     # This is ignored. It makes no sense to ask the file
     # to be removed, but not copied (just a file delete?!)
     r = resource.Resource(value={'desc': 'test resource'})
