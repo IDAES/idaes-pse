@@ -95,15 +95,16 @@ class ReactionParameterBase(ProcessBlockData):
     def get_supported_properties(self):
         """
         Method to return a dictionary of properties supported by this package
-        and their assoicated construction methods and units of measurement.
+        and their associated construction methods and units of measurement.
         This method should return a dict with keys for each supported property.
 
         For each property, the value should be another dict which may contain
         the following keys:
-            - 'method': (required) the name of a method to construct the
-                        property as a str, or None if the property will be
-                        constructed by default.
-            - 'units': (optional) units of measurement for the property.
+
+        - 'method': (required) the name of a method to construct the
+                    property as a str, or None if the property will be
+                    constructed by default.
+        - 'units': (optional) units of measurement for the property.
 
         This default method is a placeholder and should be overloaded by the
         package developer. This method will return an Exception if not
