@@ -25,7 +25,8 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
-from idaes.core.util.exceptions import (PropertyNotSupportedError,
+from idaes.core.util.exceptions import (BurntToast,
+                                        PropertyNotSupportedError,
                                         PropertyPackageError)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
@@ -70,41 +71,31 @@ class ReactionParameterBase(ProcessBlockData,
         super(ReactionParameterBase, self).build()
 
         # Get module reference and store on block
-        frm = inspect.stack()[1]
-        self._package_module = inspect.getmodule(frm[0])
-        self._validate_property_parameter_block()
+        try:
+            frm = inspect.stack()[1]
+            self._package_module = inspect.getmodule(frm[0])
+        except KeyError:
+            raise BurntToast('{} an error occured when trying to retrieve '
+                             'a pointer to the reaction package module. '
+                             'Please contact the IDAES developers with this '
+                             'bug'.format(self.name))
 
-    @classmethod
-    def get_required_properties(self):
-        """
-        Method which returns a list of properties required by the reaction
-        package which must be supported by the assoicated state block. This is
-        used as part of valiadting the state block. Unless overloaded, this
-        method returns None.
-
-        Args:
-            None
-
-        Returns:
-            A list of required property variables using standard names.
-        """
-        raise NotImplementedError('{} reaction package has not implemented the'
-                                  ' get_required_properties method. Please '
-                                  'contact the reaction package developer'
-                                  .format(self.name))
-
-    def _validate_property_parameter_block(self):
-        """
-        Method to validate the property parameter block assoicated with the
-        reaction block to ensure that the two are compatible.
-        """
         # TODO: Need way to tie reaction package to a specfic property package
+        self._validate_property_parameter_units()
+        self._validate_property_parameter_properties()
 
-        # Check that package units agree
+    def _validate_property_parameter_units(self):
+        """
+        Checks that the property parameter block associated with the
+        reaction block uses the same set of default units.
+        """
         r_units = self.get_metadata().default_units
         prop_units = self.config.property_package.get_metadata().default_units
         for u in r_units:
-            if prop_units[u] != r_units[u]:
+            try:
+                if prop_units[u] != r_units[u]:
+                    raise KeyError()
+            except KeyError:
                 raise PropertyPackageError(
                             '{} the property package associated with this '
                             'reaction package does not use the same set of '
@@ -112,27 +103,42 @@ class ReactionParameterBase(ProcessBlockData,
                             'property package which uses the same units.'
                             .format(self.name, u))
 
-        # Check that associated property package supports necessary properties
-        # TODO : Need to link required properties to DMF
-        req_props = self.get_required_properties()
+    def _validate_property_parameter_properties(self):
+        """
+        Checks that the property parameter block associated with the
+        reaction block supports the necessary properties with correct units.
+        """
+        req_props = self.get_metadata().required_properties
         supp_props = self.config.property_package.get_metadata().properties
 
-        if req_props is not None:
-            for p in req_props:
-                if p not in supp_props:
-                    raise PropertyPackageError(
-                            '{} the property package associated with this '
-                            'reaction package does not support the necessary '
-                            'property, {}. Please choose a property package '
-                            'which supports all required properties.'
-                            .format(self.name, p))
-                elif supp_props[p] is False:
-                    raise PropertyPackageError(
-                            '{} the property package associated with this '
-                            'reaction package does not support the necessary '
-                            'property, {}. Please choose a property package '
-                            'which supports all required properties.'
-                            .format(self.name, p))
+        for p in req_props:
+            if p not in supp_props:
+                raise PropertyPackageError(
+                        '{} the property package associated with this '
+                        'reaction package does not support the necessary '
+                        'property, {}. Please choose a property package '
+                        'which supports all required properties.'
+                        .format(self.name, p))
+            elif supp_props[p]['method'] is False:
+                raise PropertyPackageError(
+                        '{} the property package associated with this '
+                        'reaction package does not support the necessary '
+                        'property, {}. Please choose a property package '
+                        'which supports all required properties.'
+                        .format(self.name, p))
+
+            # Check property units
+            if req_props[p]['units'] != supp_props[p]['units']:
+                raise PropertyPackageError(
+                        '{} the units associated with property {} in this '
+                        'reaction package ({}) do not match with the units '
+                        'used in the assoicated property package ({}). Please '
+                        'choose a property package which used the same '
+                        'units for all properties.'
+                        .format(self.name,
+                                p,
+                                req_props[p]['units'],
+                                supp_props[p]['units']))
 
 
 class ReactionBlockBase(ProcessBlock):

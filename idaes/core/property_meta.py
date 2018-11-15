@@ -39,6 +39,8 @@ Example::
                                    foo.U.MASS: 'stones'})
             meta.add_properties({'under_sea': {'units': 'leagues'},
                                 'tentacle_size': {'units': 'yards'}})
+            meta.add_required_properties({'under_sea': 'leagues',
+                                'tentacle_size': 'yards'})
 
         # Also, of course, implement the non-metadata methods that
         # do the work of the class.
@@ -113,6 +115,8 @@ class PropertyClassMetadata(object):
                                    foo.U.MASS: 'stones'})
             foo.add_properties({'under_sea': {'units': 'leagues'},
                                 'tentacle_size': {'units': 'yards'}})
+            foo.add_required_properties({'under_sea': 'leagues',
+                                        'tentacle_size': 'yards'})
 
     """
     #: Alias for class enumerating supported/known unit types
@@ -121,6 +125,7 @@ class PropertyClassMetadata(object):
     def __init__(self):
         self._default_units = {}
         self._properties = {}
+        self._required_properties = {}
 
     @property
     def default_units(self):
@@ -130,10 +135,14 @@ class PropertyClassMetadata(object):
     def properties(self):
         return self._properties
 
+    @property
+    def required_properties(self):
+        return self._required_properties
+
     def add_default_units(self, u):
         """Add a dict with keys for the
-        quantities used in the property package (as strings) and values of their
-        default units as strings.
+        quantities used in the property package (as strings) and values of
+        their default units as strings.
 
         The quantities used by the framework are in constants
         defined in :class:`UnitNames`, aliased here in the class
@@ -152,10 +161,11 @@ class PropertyClassMetadata(object):
 
         For each property, the value should be another dict which may contain
         the following keys:
-            - 'method': (required) the name of a method to construct the
-                        property as a str, or None if the property will be
-                        constructed by default.
-            - 'units': (optional) units of measurement for the property.
+
+        - 'method': (required) the name of a method to construct the
+                    property as a str, or None if the property will be
+                    constructed by default.
+        - 'units': (optional) units of measurement for the property.
 
         Args:
             p (dict): Key=property, Value=PropertyMetadata or equiv. dict
@@ -167,6 +177,25 @@ class PropertyClassMetadata(object):
             if not isinstance(v, PropertyMetadata):
                 v = PropertyMetadata(name=k, **v)
             self._properties[k] = v
+
+    def add_required_properties(self, p):
+        """Add required properties to the metadata.
+
+        For each property, the value should be the expected units of
+        measurement for the property.
+
+        Args:
+            p (dict): Key=property, Value=units
+
+        Returns:
+            None
+        """
+        # Using the same PropertyMetadata class as for units, but 'method'
+        # will always be none
+        for k, v in six.iteritems(p):
+            if not isinstance(v, PropertyMetadata):
+                v = PropertyMetadata(name=k, units=v)
+            self._required_properties[k] = v
 
 
 class PropertyMetadata(dict):
@@ -182,8 +211,7 @@ class PropertyMetadata(dict):
         d = {'name': name, 'method': method}
         if units is not None:
             d['units'] = units
+        else:
+            # Adding a default "null" unit in case it is not provided by user
+            d['units'] = "-"
         super(PropertyMetadata, self).__init__(d)
-
-
-
-
