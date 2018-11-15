@@ -107,7 +107,7 @@ class Workspace(object):
         htmldocs
             Full path to the location of the built (not source) Sphinx HTML
             documentation for the `idaes_dmf` package. See
-            :ref:`DMF Help Configuration` for more details.
+            DMF Help Configuration for more details.
 
     There are many different possible "styles" of formatting a list of values
     in YAML, but we prefer the simple block-indented style, where the key is

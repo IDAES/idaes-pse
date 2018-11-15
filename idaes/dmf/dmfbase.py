@@ -36,9 +36,9 @@ _log = get_logger('dmf')
 class DMFConfig(object):
     """Global DMF configuration.
 
-    Every time you create an instance of the :class:`DMF <idaes.dmf.dmf.DMF>`,
+    Every time you create an instance of the :class:`DMF`
     or run a ``dmf`` command on the command-line, the library opens the
-    global DMF configuration file to figure out wthe default workspace
+    global DMF configuration file to figure out the default workspace
     (and, eventually, other values).
 
     The default location for this configuration file is "~/.dmf", i.e.
@@ -46,17 +46,11 @@ class DMFConfig(object):
     modified programmatically by changing the "filename" attribute of
     this class.
 
-    The contents of .dmf are formatted as `YAML`_, with the following
-    keys defined:
+    The contents of the configuration are formatted as `YAML`_ with
+    the following keys defined:
 
         workspace
             Path to the default workspace directory.
-
-    An example file is shown below:
-
-    .. code-block:: YAML
-
-        {workspace: /tmp/newdir}
 
     .. _YAML: http://www.yaml.org/
     """
@@ -127,7 +121,7 @@ class DMF(workspace.Workspace, HasTraits):
     """Data Management Framework (DMF).
 
     Expected usage is to instantiate this class, once, and then use it for
-    storing, searching, and retrieve :term:`resource`s that
+    storing, searching, and retrieving resources that
     are required for the given analysis.
 
     For details on the configuration files used by the DMF, see
@@ -321,7 +315,7 @@ class DMF(workspace.Workspace, HasTraits):
         return rsrc.id
 
     def _copy_files(self, rsrc):
-        if 'datafiles_dir' in rsrc.v:
+        if rsrc.v.get('datafiles_dir', None):
             # If there is a datafiles_dir, use it
             ddir = rsrc.v['datafiles_dir']
         else:

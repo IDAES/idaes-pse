@@ -76,28 +76,28 @@ MaterialFlowBasis = Enum(
 # Set up example ConfigBlock that will work with ControlVolume autobuild method
 CONFIG_Base = ProcessBlockData.CONFIG()
 CONFIG_Base.declare("dynamic", ConfigValue(
-        default=useDefault,
-        domain=In([useDefault, True, False]),
-        description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic,
+    default=useDefault,
+    domain=In([useDefault, True, False]),
+    description="Dynamic model flag",
+    doc="""Indicates whether this model will be dynamic,
 **default** - useDefault.  **Valid values:** {
 **useDefault** - get flag from parent,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model}"""))
 CONFIG_Base.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
+    default=False,
+    domain=In([True, False]),
+    description="Holdup construction flag",
+    doc="""Indicates whether holdup terms should be constructed or not.
 Must be True if dynamic = True, **default** - False.
 **Valid values:** {
 **True** - construct holdup terms,
 **False** - do not construct holdup terms}"""))
 CONFIG_Base.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
-        domain=In(MaterialBalanceType),
-        description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed,
+    default=MaterialBalanceType.componentPhase,
+    domain=In(MaterialBalanceType),
+    description="Material balance construction flag",
+    doc="""Indicates what type of mass balance should be constructed,
 **default** - MaterialBalanceType.componentPhase. **Valid values:** {
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase - use phase component balances,
@@ -105,10 +105,10 @@ CONFIG_Base.declare("material_balance_type", ConfigValue(
 **MaterialBalanceType.elementTotal - use total element balances,
 **MaterialBalanceType.total - use total material balance.}"""))
 CONFIG_Base.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyPhase,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
+    default=EnergyBalanceType.enthalpyPhase,
+    domain=In(EnergyBalanceType),
+    description="Energy balance construction flag",
+    doc="""Indicates what type of energy balance should be constructed,
 **default** - EnergyBalanceType.enthalpyPhase. **Valid values:** {
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single ethalpy balance for material,
@@ -116,10 +116,10 @@ CONFIG_Base.declare("energy_balance_type", ConfigValue(
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
 CONFIG_Base.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
+    default=MomentumBalanceType.pressureTotal,
+    domain=In(MomentumBalanceType),
+    description="Momentum balance construction flag",
+    doc="""Indicates what type of momentum balance should be constructed,
 **default** - MomentumBalanceType.pressureTotal. **Valid values:** {
 **MomentumBalanceType.none** - exclude momentum balances,
 **MomentumBalanceType.pressureTotal** - single pressure balance for material,
@@ -127,88 +127,98 @@ CONFIG_Base.declare("momentum_balance_type", ConfigValue(
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
 CONFIG_Base.declare("has_rate_reactions", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Rate reaction construction flag",
-        doc="""Indicates whether terms for rate controlled reactions should be
-constructed, **default** - False. **Valid values:** {
+    default=False,
+    domain=In([True, False]),
+    description="Rate reaction construction flag",
+    doc="""Indicates whether terms for rate controlled reactions should be
+constructed,
+**default** - False. **Valid values:** {
 **True** - include kinetic reaction terms,
 **False** - exclude kinetic reaction terms.}"""))
 CONFIG_Base.declare("has_equilibrium_reactions", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Equilibrium reaction construction flag",
-        doc="""Indicates whether terms for equilibrium controlled reactions
-should be constructed, **default** - False. **Valid values:** {
+    default=False,
+    domain=In([True, False]),
+    description="Equilibrium reaction construction flag",
+    doc="""Indicates whether terms for equilibrium controlled reactions
+should be constructed,
+**default** - False. **Valid values:** {
 **True** - include equilibrium reaction terms,
 **False** - exclude equilibrium reaction terms.}"""))
 CONFIG_Base.declare("has_phase_equilibrium", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Phase equilibrium construction flag",
-        doc="""Indicates whether terms for phase equilibrium should be
-constructed, **default** = False. **Valid values:** {
+    default=False,
+    domain=In([True, False]),
+    description="Phase equilibrium construction flag",
+    doc="""Indicates whether terms for phase equilibrium should be
+constructed,
+**default** = False. **Valid values:** {
 **True** - include phase equilibrium terms
 **False** - exclude phase equilibrium terms.}"""))
 CONFIG_Base.declare("has_mass_transfer", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Mass transfer term construction flag",
-        doc="""Indicates whether terms for mass transfer should be constructed,
+    default=False,
+    domain=In([True, False]),
+    description="Mass transfer term construction flag",
+    doc="""Indicates whether terms for mass transfer should be constructed,
 **default** - False. **Valid values:** {
 **True** - include mass transfer terms,
 **False** - exclude mass transfer terms.}"""))
 CONFIG_Base.declare("has_heat_transfer", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Heat transfer term construction flag",
-        doc="""Indicates whether terms for heat transfer should be constructed,
+    default=False,
+    domain=In([True, False]),
+    description="Heat transfer term construction flag",
+    doc="""Indicates whether terms for heat transfer should be constructed,
 **default** - False. **Valid values:** {
 **True** - include heat transfer terms,
 **False** - exclude heat transfer terms.}"""))
 CONFIG_Base.declare("has_work_transfer", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Work transfer term construction flag",
-        doc="""Indicates whether terms for work transfer should be constructed,
+    default=False,
+    domain=In([True, False]),
+    description="Work transfer term construction flag",
+    doc="""Indicates whether terms for work transfer should be constructed,
 **default** - False. **Valid values** {,
 **True** - include work transfer terms,
 **False** - exclude work transfer terms.}"""))
 CONFIG_Base.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed, **default** - False. **Valid values:** {
+    default=False,
+    domain=In([True, False]),
+    description="Pressure change term construction flag",
+    doc="""Indicates whether terms for pressure change should be
+constructed, 
+**default** - False. **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
 CONFIG_Base.declare("property_package", ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations,
-**default** - useDefault. **Valid values:** {
+    default=useDefault,
+    domain=is_physical_parameter_block,
+    description="Property package to use for control volume",
+    doc="""Property parameter object used to define property calculations,
+**default** - useDefault. 
+**Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
 **PropertyParameterObject** - a PropertyParameterBlock object.}"""))
 CONFIG_Base.declare("property_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing property packages",
-        doc="""A ConfigBlock with arguments to be passed to a property block(s)
- and used when constructing these, **default** - None. **Valid values:** {
+    implicit=True,
+    description="Arguments to use for constructing property packages",
+    doc="""A ConfigBlock with arguments to be passed to a property block(s)
+ and used when constructing these, 
+**default** - None. 
+**Valid values:** {
 see property package for documentation.}"""))
 CONFIG_Base.declare("reaction_package", ConfigValue(
-        default=None,
-        domain=is_reaction_parameter_block,
-        description="Reaction package to use for control volume",
-        doc="""Reaction parameter object used to define reaction calculations,
-**default** - None. **Valid values:** {
+    default=None,
+    domain=is_reaction_parameter_block,
+    description="Reaction package to use for control volume",
+    doc="""Reaction parameter object used to define reaction calculations,
+**default** - None. 
+**Valid values:** {
 **None** - no reaction package,
 **ReactionParameterBlock** - a ReactionParameterBlock object.}"""))
 CONFIG_Base.declare("reaction_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing reaction packages",
-        doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
- and used when constructing these, **default** - None. **Valid values:** {
+    implicit=True,
+    description="Arguments to use for constructing reaction packages",
+    doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
+and used when constructing these, 
+**default** - None. 
+**Valid values:** {
 see reaction package for documentation.}"""))
 
 
@@ -247,7 +257,7 @@ useDefault. **Valid values:** {
         implicit=True,
         description="Arguments to use for constructing property packages",
         doc="""A ConfigBlock with arguments to be passed to a property block(s)
- and used when constructing these, **default** - None. **Valid values:** {
+and used when constructing these, **default** - None. **Valid values:** {
 see property package for documentation.}"""))
     CONFIG.declare("reaction_package", ConfigValue(
         default=None,
@@ -261,7 +271,7 @@ see property package for documentation.}"""))
         implicit=True,
         description="Arguments to use for constructing reaction packages",
         doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
- and used when constructing these, **default** - None. **Valid values:** {
+and used when constructing these, **default** - None. **Valid values:** {
 see reaction package for documentation.}"""))
     CONFIG.declare("auto_construct", ConfigValue(
         default=False,

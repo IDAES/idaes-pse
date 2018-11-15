@@ -162,13 +162,13 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
 
     This is a decorator function for a class definition, where the class is
     derived from _BlockData. It creates a ProcessBlock subclass to contain it.
-    For example (where ProcessBlockData is a subclass of _BlockData):
+    For example (where ProcessBlockData is a subclass of _BlockData)::
 
-    @declare_process_block_class(name=MyUnitBlock)
-    class MyUnitBlockData(ProcessBlockData):
-        # This class is a _BlockData subclass contained in a Block subclass
-        # MyUnitBlock
-        ....
+        @declare_process_block_class(name=MyUnitBlock)
+        class MyUnitBlockData(ProcessBlockData):
+            # This class is a _BlockData subclass contained in a Block subclass
+            # MyUnitBlock
+            ....
 
     The only requirment is that the subclass of _BlockData contain a build()
     method.
