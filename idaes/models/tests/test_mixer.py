@@ -24,7 +24,7 @@ from pyomo.common.config import ConfigBlock
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
                         PhysicalParameterBase, StateBlockBase,
                         StateBlockDataBase)
-from idaes.models.mixer import MixerBlockData, MomentumMixingType
+from idaes.models.mixer import MixerBlock, MixerBlockData, MomentumMixingType
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
@@ -362,7 +362,6 @@ def test_get_mixed_state_block_mismatch():
         m.fs.mix.get_mixed_state_block()
 
 
-# -----------------------------------------------------------------------------
 # Test mixing equation methods
 def test_add_material_mixing_equations():
     m = ConcreteModel()
@@ -510,7 +509,6 @@ def test_add_pressure_equality_equations():
     assert len(m.fs.mix.pressure_equality_constraints) == 2
 
 
-# -----------------------------------------------------------------------------
 def test_add_port_objects():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -552,3 +550,84 @@ def test_add_port_objects_construct_ports_False():
     assert hasattr(m.fs.mix, "inlet_1") is False
     assert hasattr(m.fs.mix, "inlet_2") is False
     assert hasattr(m.fs.mix, "outlet") is False
+
+
+# -----------------------------------------------------------------------------
+# Test build method
+def test_build_default():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerBlock(default={"property_package": m.fs.pp})
+
+    assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
+    assert len(m.fs.mix.material_mixing_equations) == 4
+    assert hasattr(m.fs.mix, "phase_equilibrium_idx") is False
+
+    assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
+    assert len(m.fs.mix.enthalpy_mixing_equations) == 1
+
+    assert isinstance(m.fs.mix.inlet_idx, Set)
+    assert isinstance(m.fs.mix.minimum_pressure, Var)
+    assert len(m.fs.mix.minimum_pressure) == 2
+    assert isinstance(m.fs.mix.eps_pressure, Param)
+    assert isinstance(m.fs.mix.minimum_pressure_constraint, Constraint)
+    assert len(m.fs.mix.minimum_pressure) == 2
+    assert isinstance(m.fs.mix.mixture_pressure, Constraint)
+
+    assert isinstance(m.fs.mix.inlet_1, Port)
+    assert isinstance(m.fs.mix.inlet_2, Port)
+    assert isinstance(m.fs.mix.outlet, Port)
+
+
+def test_build_phase_equilibrium():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerBlock(default={"property_package": m.fs.pp,
+                                   "calculate_phase_equilibrium": True})
+
+    assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
+    assert len(m.fs.mix.material_mixing_equations) == 4
+    assert hasattr(m.fs.mix, "phase_equilibrium_idx")
+    assert isinstance(m.fs.mix.phase_equilibrium_generation, Var)
+
+    assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
+    assert len(m.fs.mix.enthalpy_mixing_equations) == 1
+
+    assert isinstance(m.fs.mix.inlet_idx, Set)
+    assert isinstance(m.fs.mix.minimum_pressure, Var)
+    assert len(m.fs.mix.minimum_pressure) == 2
+    assert isinstance(m.fs.mix.eps_pressure, Param)
+    assert isinstance(m.fs.mix.minimum_pressure_constraint, Constraint)
+    assert len(m.fs.mix.minimum_pressure) == 2
+    assert isinstance(m.fs.mix.mixture_pressure, Constraint)
+
+    assert isinstance(m.fs.mix.inlet_1, Port)
+    assert isinstance(m.fs.mix.inlet_2, Port)
+    assert isinstance(m.fs.mix.outlet, Port)
+
+
+def test_build_phase_pressure_equality():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerBlock(default={
+            "property_package": m.fs.pp,
+            "momentum_mixing_type": MomentumMixingType.equality})
+
+    assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
+    assert len(m.fs.mix.material_mixing_equations) == 4
+
+    assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
+    assert len(m.fs.mix.enthalpy_mixing_equations) == 1
+
+    assert isinstance(m.fs.mix.pressure_equality_constraints, Constraint)
+    assert len(m.fs.mix.pressure_equality_constraints) == 2
+
+    assert isinstance(m.fs.mix.inlet_1, Port)
+    assert isinstance(m.fs.mix.inlet_2, Port)
+    assert isinstance(m.fs.mix.outlet, Port)

@@ -162,23 +162,23 @@ not construct Ports."""))
 
         self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
                                            mixed_block=mixed_block)
-#        self.add_energy_mixing_equations(inlet_blocks=inlet_blocks,
-#                                         mixed_block=mixed_block)
-#
-#        if self.config.momentum_mixing_type == MomentumMixingType.minimize:
-#            self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
-#                                                     mixed_block=mixed_block)
-#        elif self.config.momentum_mixing_type == MomentumMixingType.equality:
-#            self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
-#                                                 mixed_block=mixed_block)
-#        else:
-#            raise ConfigurationError("{} recieved unrecognised value for "
-#                                     "momentum_mixing_type argument. This "
-#                                     "should not occur, so please contact "
-#                                     "the IDAES developers with this bug."
-#                                     .format(self.name))
-#
-        self.add_port_objects(inlet_blocks, mixed_block)
+        self.add_energy_mixing_equations(inlet_blocks=inlet_blocks,
+                                         mixed_block=mixed_block)
+
+        if self.config.momentum_mixing_type == MomentumMixingType.minimize:
+            self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
+                                                     mixed_block=mixed_block)
+        elif self.config.momentum_mixing_type == MomentumMixingType.equality:
+            self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
+                                                 mixed_block=mixed_block)
+        else:
+            raise ConfigurationError("{} recieved unrecognised value for "
+                                     "momentum_mixing_type argument. This "
+                                     "should not occur, so please contact "
+                                     "the IDAES developers with this bug."
+                                     .format(self.name))
+
+        self.add_port_objects(inlet_list, inlet_blocks, mixed_block)
 
     def create_inlet_list(self):
         """
@@ -431,7 +431,7 @@ not construct Ports."""))
                          self.inlet_idx,
                          doc='Calculation for minimum inlet pressure')
         def pressure_equality_constraints(b, t, i):
-            return mixed_block[t].pressure == inlet_blocks[i][t].pressure
+            return mixed_block[t].pressure == inlet_blocks[i-1][t].pressure
 
     def add_port_objects(self, inlet_list, inlet_blocks, mixed_block):
         """
