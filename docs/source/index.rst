@@ -33,6 +33,7 @@ Contents
 .. toctree::
     :maxdepth: 1
 
+    Core <core/index>
     Modules <apidoc/modules>
 
 ..    install

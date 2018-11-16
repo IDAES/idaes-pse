@@ -29,7 +29,7 @@ __all__ = ['ProcessBlock', 'declare_process_block_class']
 def _rule_default(b, *args):
     """Default rule for ProcessBlock, which calls build(). A different rule can
     be specified to add additional build steps, or to not call build at all
-    using the normal rule argument.
+    using the normal rule argument to ProcessBlock init.
     """
     try:
         b.build()
@@ -40,17 +40,15 @@ def _rule_default(b, *args):
 
 _process_block_docstring = """
 Args:
-    rule: (Optional) A rule function or None. Default rule calls build().
-    concrete: If True, make this a toplevel model. **Default** - False.
-    ctype: (Optional) Pyomo ctype of the Block.
-    default: dict with default arguments to ProcessBlockData ConfigBlock. These
-        arguments are passed to the ConfigBlock in the ProcessBlockData build()
-        method, which is called by the default rule.
-    initialize: dict with block index keys where the values are argument dicts
-        for specific ProcessBlockData element ConfigBlock. If a key is missing,
-        default will be used. These arguments are passed to the ConfigBlock in 
-        the ProcessBlockData build() method, which is called by the default
-        rule.\n"""
+    rule (function): A rule function or None. Default rule calls build().
+    concrete (bool): If True, make this a toplevel model. **Default** - False.
+    ctype (str): Pyomo ctype of the block.  **Default** - "Block"
+    default (dict): Default ProcessBlockData config
+{}
+    initialize (dict): ProcessBlockData config for individual elements. Keys are
+        BlockData indexes and values are dictionaries described under the
+        "default" argument above.
+"""
 
 class _IndexedProcessBlockMeta(type):
     """Metaclass used to create an indexed model class."""
@@ -162,13 +160,13 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
 
     This is a decorator function for a class definition, where the class is
     derived from _BlockData. It creates a ProcessBlock subclass to contain it.
-    For example (where ProcessBlockData is a subclass of _BlockData)::
+    For example (where ProcessBlockData is a subclass of _BlockData):
 
-        @declare_process_block_class(name=MyUnitBlock)
-        class MyUnitBlockData(ProcessBlockData):
-            # This class is a _BlockData subclass contained in a Block subclass
-            # MyUnitBlock
-            ....
+    @declare_process_block_class(name=MyUnitBlock)
+    class MyUnitBlockData(ProcessBlockData):
+        # This class is a _BlockData subclass contained in a Block subclass
+        # MyUnitBlock
+        ....
 
     The only requirment is that the subclass of _BlockData contain a build()
     method.
@@ -184,13 +182,15 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         # create a new class called name from block_class
         try:
             cb_doc = cls.CONFIG.generate_documentation(
-                block_start="", block_end="", item_start="%s: ",
-                indent_spacing=4, item_body="%s", item_end="")
-            #cb_doc = '\n'.join(' '*4+x for x in cb_doc.splitlines())
+                block_start="", block_end="", item_start="%s\n",
+                indent_spacing=4, item_body="%s", item_end="", width=70)
+            cb_doc = '\n'.join(' '*8 + x for x in cb_doc.splitlines())
         except:
             cb_doc = ""
-        ds = "{}\n{}{}\nReturns:\n   New {} instance"\
-            .format(doc, _process_block_docstring, cb_doc, name)
+        if cb_doc != "":
+            cb_doc = "        Keys:\n{}".format(cb_doc)
+        ds = _process_block_docstring.format(cb_doc)
+        ds = "{}\n{}\nReturns:\n   New {} instance".format(doc, ds, name)
         c = type(name, (block_class,),
                 {"__module__": cls.__module__,
                  "_ComponentDataClass": cls,
