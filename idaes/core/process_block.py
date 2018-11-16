@@ -191,7 +191,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         if cb_doc != "":
             cb_doc = "\n        ..\n\n        Keys\n{}\n        ..\n".format(cb_doc)
         ds = _process_block_docstring.format(cb_doc)
-        ds = "{}\n{}\nReturns:\n   New {} instance".format(doc, ds, name)
+        ds = "{}\n{}\nReturns:\n   ({}) New instance".format(doc, ds, name)
         c = type(name, (block_class,),
                 {"__module__": cls.__module__,
                  "_ComponentDataClass": cls,
