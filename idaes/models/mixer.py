@@ -78,7 +78,7 @@ class MixerBlockData(UnitBlockData):
         implicit=True,
         description="Arguments to use for constructing property packages",
         doc="""A ConfigBlock with arguments to be passed to a property block(s)
- and used when constructing these, **default** - None. **Valid values:** {
+and used when constructing these, **default** - None. **Valid values:** {
 see property package for documentation.}"""))
     CONFIG.declare("inlet_list", ConfigValue(
         domain=list_of_strings,
@@ -89,10 +89,10 @@ names to use for inlets.}"""))
     CONFIG.declare("num_inlets", ConfigValue(
         domain=int,
         description="Number of inlets to unit",
-        doc="""Argument indication number (int) of inlets to construct, not
+        doc="""Argument indicating number (int) of inlets to construct, not
 used if inlet_list arg is provided, **default** - None. **Valid values:** {
 **None** - use inlet_list arg instead, or default to 2 if neither argument
-provided, **int** - number of inlets to creat (will be named with sequential
+provided, **int** - number of inlets to create (will be named with sequential
 integers from 1 to num_inlets).}"""))
     CONFIG.declare("calculate_phase_equilibrium", ConfigValue(
         default=False,
@@ -182,7 +182,7 @@ not construct Ports."""))
 
     def create_inlet_list(self):
         """
-        Create list on inlet stream names based on config arguments.
+        Create list of inlet stream names based on config arguments.
 
         Returns:
             list of strings
@@ -471,9 +471,9 @@ not construct Ports."""))
                     i_block = getattr(blk, i+"_state")
                     i_block[t].model_check()
             except AttributeError:
-                _log.warning('{} Holdup inlet property block has no model '
-                             'check. To correct this, add a model_check '
-                             'method to the associated PropertyBlock class.'
+                _log.warning('{} MixerBlock inlet property block has no model '
+                             'checks. To correct this, add a model_check '
+                             'method to the associated StateBlock class.'
                              .format(blk.name))
             try:
                 if blk.config.mixed_state_block is None:
@@ -481,10 +481,10 @@ not construct Ports."""))
                 else:
                     blk.config.mixed_state_block.model_check()
             except AttributeError:
-                _log.warning('{} Holdup outlet property block has no '
-                             'model check. To correct this, add a '
+                _log.warning('{} MixerBlock outlet property block has no '
+                             'model checks. To correct this, add a '
                              'model_check method to the associated '
-                             'PropertyBlock class.'.format(blk.name))
+                             'StateBlock class.'.format(blk.name))
 
     def initialize(blk, outlvl=0, optarg=None,
                    solver='ipopt', hold_state=True):

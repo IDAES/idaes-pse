@@ -1407,14 +1407,14 @@ class ControlVolume0dData(ControlVolumeBase):
                 blk.properties_in[t].model_check()
             except AttributeError:
                 _log.warning('{} ControlVolume inlet property block has no '
-                             'model check. To correct this, add a model_check '
+                             'model checks. To correct this, add a model_check '
                              'method to the associated StateBlock class.'
                              .format(blk.name))
             try:
                 blk.properties_out[t].model_check()
             except AttributeError:
                 _log.warning('{} ControlVolume outlet property block has no '
-                             'model check. To correct this, add a '
+                             'model checks. To correct this, add a '
                              'model_check method to the associated '
                              'StateBlock class.'.format(blk.name))
 
