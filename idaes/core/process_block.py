@@ -43,7 +43,8 @@ Args:
     rule (function): A rule function or None. Default rule calls build().
     concrete (bool): If True, make this a toplevel model. **Default** - False.
     ctype (str): Pyomo ctype of the block.  **Default** - "Block"
-    default (dict): Default ProcessBlockData config{}
+    default (dict): Default ProcessBlockData config
+{}
     initialize (dict): ProcessBlockData config for individual elements. Keys are
         BlockData indexes and values are dictionaries described under the
         "default" argument above.
@@ -182,12 +183,13 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         try:
             cb_doc = cls.CONFIG.generate_documentation(
                 block_start="", block_end="", item_start="%s\n",
-                indent_spacing=4, item_body="%s", item_end="", width=74)
-            cb_doc = '\n'.join(' '*4 + x for x in cb_doc.splitlines())
+                indent_spacing=4, item_body="%s", item_end="", width=70)
+            cb_doc += "\n"
+            cb_doc = '\n'.join(' '*8 + x for x in cb_doc.splitlines())
         except:
             cb_doc = ""
         if cb_doc != "":
-            cb_doc = ", Keys\n{}\n".format(cb_doc)
+            cb_doc = "\n        ..\n\n        Keys\n{}\n        ..\n".format(cb_doc)
         ds = _process_block_docstring.format(cb_doc)
         ds = "{}\n{}\nReturns:\n   New {} instance".format(doc, ds, name)
         c = type(name, (block_class,),

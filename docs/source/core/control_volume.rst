@@ -7,3 +7,6 @@ Control volumes are great.
 
 .. autoclass:: ControlVolume0D
     :members:
+
+.. autoclass:: ControlVolume0dData
+    :members:
