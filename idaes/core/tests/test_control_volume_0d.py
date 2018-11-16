@@ -475,8 +475,6 @@ def test_add_phase_component_balances_rate_rxns():
     assert isinstance(m.fs.cv.rate_reaction_extent, Var)
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
-    assert isinstance(m.fs.cv.rate_reaction_extents_constraint,
-                      Constraint)
 
 
 def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
@@ -506,43 +504,6 @@ def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
-
-    with pytest.raises(PropertyNotSupportedError):
-        m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
-
-
-def test_add_phase_component_balances_rate_rxns_no_volume():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
-
-    # Do not add geometry
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
-
-
-def test_add_phase_component_balances_rate_rxns_no_reaction_rate():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
-
-    m.fs.cv.reactions[0].del_component(
-            m.fs.cv.reactions[0].reaction_rate)
 
     with pytest.raises(PropertyNotSupportedError):
         m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
@@ -1012,8 +973,6 @@ def test_add_total_component_balances_rate_rxns():
     assert isinstance(m.fs.cv.rate_reaction_extent, Var)
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
-    assert isinstance(m.fs.cv.rate_reaction_extents_constraint,
-                      Constraint)
 
 
 def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
@@ -1043,43 +1002,6 @@ def test_add_total_component_balances_rate_rxns_no_rxn_idx():
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
-
-    with pytest.raises(PropertyNotSupportedError):
-        m.fs.cv.add_total_component_balances(has_rate_reactions=True)
-
-
-def test_add_total_component_balances_rate_rxns_no_volume():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
-
-    # Do not add geometry
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_component_balances(has_rate_reactions=True)
-
-
-def test_add_total_component_balances_rate_rxns_no_reaction_rate():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
-
-    m.fs.cv.reactions[0].del_component(
-            m.fs.cv.reactions[0].reaction_rate)
 
     with pytest.raises(PropertyNotSupportedError):
         m.fs.cv.add_total_component_balances(has_rate_reactions=True)
