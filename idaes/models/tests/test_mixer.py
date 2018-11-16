@@ -58,7 +58,19 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
                                'holdup': 'mol'})
 
 
-@declare_process_block_class("StateBlock", block_class=StateBlockBase)
+class SBlockBase(StateBlockBase):
+    def initialize(blk, outlvl=0, optarg=None, solver=None,
+                   hold_state=False, **state_args):
+        for k in blk.keys():
+            blk[k].init_test = True
+            blk[k].hold_state = hold_state
+
+    def release_state(blk, flags=None, outlvl=0):
+        for k in blk.keys():
+            blk[k].hold_state = not blk[k].hold_state
+
+
+@declare_process_block_class("StateBlock", block_class=SBlockBase)
 class StateBlockData(StateBlockDataBase):
     CONFIG = ConfigBlock(implicit=True)
 
@@ -88,6 +100,9 @@ class StateBlockData(StateBlockDataBase):
         return {"component_flow": self.flow_mol_phase_comp,
                 "enthalpy": self.enth_mol_phase,
                 "pressure": self.pressure}
+
+    def model_check(self):
+        self.check = True
 
 
 @declare_process_block_class("MixerFrame")
@@ -631,3 +646,46 @@ def test_build_phase_pressure_equality():
     assert isinstance(m.fs.mix.inlet_1, Port)
     assert isinstance(m.fs.mix.inlet_2, Port)
     assert isinstance(m.fs.mix.outlet, Port)
+
+
+# -----------------------------------------------------------------------------
+# Test models checks, initialize and release state methods
+def test_model_checks():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerBlock(default={
+            "property_package": m.fs.pp,
+            "momentum_mixing_type": MomentumMixingType.equality})
+
+    m.fs.mix.model_check()
+
+    assert m.fs.mix.inlet_1_state[0].check is True
+    assert m.fs.mix.inlet_2_state[0].check is True
+    assert m.fs.mix.mixed_state[0].check is True
+
+
+def test_initialize():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+
+    m.fs.mix = MixerBlock(default={
+            "property_package": m.fs.pp,
+            "momentum_mixing_type": MomentumMixingType.equality})
+
+    f = m.fs.mix.initialize()
+
+    assert m.fs.mix.inlet_1_state[0].init_test is True
+    assert m.fs.mix.inlet_2_state[0].init_test is True
+    assert m.fs.mix.mixed_state[0].init_test is True
+    assert m.fs.mix.inlet_1_state[0].hold_state is True
+    assert m.fs.mix.inlet_2_state[0].hold_state is True
+    assert m.fs.mix.mixed_state[0].hold_state is False
+
+    m.fs.mix.release_state(flags=f)
+
+    assert m.fs.mix.inlet_1_state[0].hold_state is False
+    assert m.fs.mix.inlet_2_state[0].hold_state is False
+    assert m.fs.mix.mixed_state[0].hold_state is False
