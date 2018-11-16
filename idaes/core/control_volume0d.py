@@ -1391,7 +1391,7 @@ class ControlVolume0dData(ControlVolumeBase):
 
     def model_check(blk):
         """
-        This method executes the model_check methods on the associated property
+        This method executes the model_check methods on the associated state
         blocks (if they exist). This method is generally called by a unit model
         as part of the unit's model_check method.
 
@@ -1406,25 +1406,25 @@ class ControlVolume0dData(ControlVolumeBase):
             try:
                 blk.properties_in[t].model_check()
             except AttributeError:
-                _log.warning('{} Holdup inlet property block has no model '
-                             'check. To correct this, add a model_check '
-                             'method to the associated PropertyBlock class.'
+                _log.warning('{} ControlVolume inlet property block has no '
+                             'model check. To correct this, add a model_check '
+                             'method to the associated StateBlock class.'
                              .format(blk.name))
             try:
                 blk.properties_out[t].model_check()
             except AttributeError:
-                _log.warning('{} Holdup outlet property block has no '
+                _log.warning('{} ControlVolume outlet property block has no '
                              'model check. To correct this, add a '
                              'model_check method to the associated '
-                             'PropertyBlock class.'.format(blk.name))
+                             'StateBlock class.'.format(blk.name))
 
             try:
                 blk.reactions[t].model_check()
             except AttributeError:
-                _log.warning('{} Holdup outlet property block has no '
+                _log.warning('{} ControlVolume outlet reaction block has no '
                              'model check. To correct this, add a '
                              'model_check method to the associated '
-                             'PropertyBlock class.'.format(blk.name))
+                             'ReactionBlock class.'.format(blk.name))
 
     def initialize(blk, state_args=None, outlvl=0, optarg=None,
                    solver='ipopt', hold_state=True):
@@ -1469,7 +1469,7 @@ class ControlVolume0dData(ControlVolumeBase):
                 else:
                     state_args[k] = state_dict[k].value
 
-        # Initialize property blocks
+        # Initialize state blocks
         flags = blk.properties_in.initialize(outlvl=outlvl-1,
                                              optarg=optarg,
                                              solver=solver,

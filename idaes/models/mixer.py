@@ -450,3 +450,109 @@ not construct Ports."""))
                 i_state = getattr(self, p+"_state")
                 self.add_port(name=p, block=i_state, doc="Inlet Port")
             self.add_port(name="outlet", block=mixed_block, doc="Outlet Port")
+
+    def model_check(blk):
+        """
+        This method executes the model_check methods on the associated state
+        blocks (if they exist). This method is generally called by a unit model
+        as part of the unit's model_check method.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Try property block model check
+        for t in blk.time:
+            try:
+                inlet_list = blk.create_inlet_list()
+                for i in inlet_list:
+                    i_block = getattr(blk, i+"_state")
+                    i_block[t].model_check()
+            except AttributeError:
+                _log.warning('{} Holdup inlet property block has no model '
+                             'check. To correct this, add a model_check '
+                             'method to the associated PropertyBlock class.'
+                             .format(blk.name))
+            try:
+                if blk.config.mixed_state_block is None:
+                    blk.mixed_state[t].model_check()
+                else:
+                    blk.config.mixed_state_block.model_check()
+            except AttributeError:
+                _log.warning('{} Holdup outlet property block has no '
+                             'model check. To correct this, add a '
+                             'model_check method to the associated '
+                             'PropertyBlock class.'.format(blk.name))
+
+    def initialize(blk, outlvl=0, optarg=None,
+                   solver='ipopt', hold_state=True):
+        '''
+        Initialisation routine for holdup (default solver ipopt)
+
+        Keyword Arguments:
+            outlvl : sets output level of initialisation routine. **Valid
+                     values:** **0** - no output (default), **1** - return
+                     solver state for each step in routine, **2** - include
+                     solver output infomation (tee=True)
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating whcih solver to use during
+                     initialization (default = 'ipopt')
+            hold_state : flag indicating whether the initialization routine
+                     should unfix any state variables fixed during
+                     initialization, **default** - True. **Valid values:**
+                     **True** - states variables are not unfixed, and a dict of
+                     returned containing flags for which states were fixed
+                     during initialization, **False** - state variables are
+                     unfixed after initialization by calling the release_state
+                     method.
+
+        Returns:
+            If hold_states is True, returns a dict containing flags for which
+            states were fixed during initialization.
+        '''
+        # Initialize inlet state blocks
+        flags = {}
+        inlet_list = blk.create_inlet_list()
+        for i in inlet_list:
+            i_block = getattr(blk, i+"_state")
+            flags[i] = {}
+            flags[i] = i_block.initialize(outlvl=outlvl-1,
+                                          optarg=optarg,
+                                          solver=solver,
+                                          hold_state=hold_state)
+
+        if blk.config.mixed_state_block is None:
+            mblock = blk.mixed_state
+        else:
+            mblock = blk.config.mixed_state_block
+
+        mblock.initialize(outlvl=outlvl-1,
+                          optarg=optarg,
+                          solver=solver,
+                          hold_state=False)
+
+        if outlvl > 0:
+            _log.info('{} Initialisation Complete'.format(blk.name))
+
+        return flags
+
+    def release_state(blk, flags, outlvl=0):
+        '''
+        Method to release state variables fixed during initialisation.
+
+        Keyword Arguments:
+            flags : dict containing information of which state variables
+                    were fixed during initialization, and should now be
+                    unfixed. This dict is returned by initialize if
+                    hold_state = True.
+            outlvl : sets output level of logging
+
+        Returns:
+            None
+        '''
+        inlet_list = blk.create_inlet_list()
+        for i in inlet_list:
+            i_block = getattr(blk, i+"_state")
+            i_block.release_state(flags[i], outlvl=outlvl-1)
