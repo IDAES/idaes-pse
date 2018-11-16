@@ -71,62 +71,79 @@ class MixerBlockData(UnitBlockData):
         domain=is_physical_parameter_block,
         description="Property package to use for mixer",
         doc="""Property parameter object used to define property calculations,
-**default** - useDefault. **Valid values:** {
+**default** - useDefault.
+**Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
 **PropertyParameterObject** - a PropertyParameterBlock object.}"""))
     CONFIG.declare("property_package_args", ConfigBlock(
         implicit=True,
         description="Arguments to use for constructing property packages",
         doc="""A ConfigBlock with arguments to be passed to a property block(s)
-and used when constructing these, **default** - None. **Valid values:** {
+and used when constructing these,
+**default** - None.
+**Valid values:** {
 see property package for documentation.}"""))
     CONFIG.declare("inlet_list", ConfigValue(
         domain=list_of_strings,
         description="List of inlet names",
-        doc="""A list containing names of inlets, **default** - None.
-**Valid values:** {**None** - use num_inlets argument, **list** - a list of
-names to use for inlets.}"""))
+        doc="""A list containing names of inlets,
+**default** - None.
+**Valid values:** {
+**None** - use num_inlets argument,
+**list** - a list of names to use for inlets.}"""))
     CONFIG.declare("num_inlets", ConfigValue(
         domain=int,
         description="Number of inlets to unit",
         doc="""Argument indicating number (int) of inlets to construct, not
-used if inlet_list arg is provided, **default** - None. **Valid values:** {
+used if inlet_list arg is provided,
+**default** - None.
+**Valid values:** {
 **None** - use inlet_list arg instead, or default to 2 if neither argument
-provided, **int** - number of inlets to create (will be named with sequential
-integers from 1 to num_inlets).}"""))
+provided,
+**int** - number of inlets to create (will be named with sequential integers
+from 1 to num_inlets).}"""))
     CONFIG.declare("calculate_phase_equilibrium", ConfigValue(
         default=False,
         domain=In([True, False]),
         description="Calculate phase equilibrium in mixed stream",
         doc="""Argument indicating whether phase equilibrium should be
-calculated for the resulting mixed stream, **default** - False. **Valid values:
-** {**True** - calculate phase equilibrium in mixed stream, **False** -
-do not calculate equilibrium in mixed stream.}"""))
+calculated for the resulting mixed stream,
+**default** - False.
+**Valid values:** {
+**True** - calculate phase equilibrium in mixed stream,
+**False** - do not calculate equilibrium in mixed stream.}"""))
     CONFIG.declare("momentum_mixing_type", ConfigValue(
         default=MomentumMixingType.minimize,
         domain=MomentumMixingType,
         description="Method to use when mxing momentum/pressure",
         doc="""Argument indicating what method to use when mixing momentum/
-pressure of incoming streams, **default** - MomentumMixingType.minimize.
-**Valid values:** {**MomentumMixingType.minimize** - mixed stream has
-pressure equal to the minimimum pressure of the incoming streams (uses
-smoothMin operator), **MomentumMixingType.equality** - enforces equality of
-pressure in mixed and all incoming streams.}"""))
+pressure of incoming streams,
+**default** - MomentumMixingType.minimize.
+**Valid values:** {
+**MomentumMixingType.minimize** - mixed stream has pressure equal to the
+minimimum pressure of the incoming streams (uses smoothMin operator),
+**MomentumMixingType.equality** - enforces equality of pressure in mixed and
+all incoming streams.}"""))
     CONFIG.declare("mixed_state_block", ConfigValue(
         domain=is_state_block,
         description="Existing StateBlock to use as mixed stream",
         doc="""An existing state block to use as the outlet stream from the
-Mixer block, **default** - None. **Valid values:** {**None** - create a new
-StateBlock for the mixed stream, **StateBlock** - a StateBock to use as the
-destination for the mixed stream.}"""))
+Mixer block,
+**default** - None.
+**Valid values:** {
+**None** - create a new StateBlock for the mixed stream,
+**StateBlock** - a StateBock to use as the destination for the mixed stream.}
+"""))
     CONFIG.declare("construct_ports", ConfigValue(
         default=True,
         domain=In([True, False]),
         description="Construct inlet and outlet Port objects",
         doc="""Argument indicating whether model should construct Port objects
-linked to all inlet states and the mixed state, **default** - True.
-**Valid values:** {**True** - construct Ports for all states, **False** - do
-not construct Ports."""))
+linked to all inlet states and the mixed state,
+**default** - True.
+**Valid values:** {
+**True** - construct Ports for all states,
+**False** - do not construct Ports."""))
 
     def build(self):
         """

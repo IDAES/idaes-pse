@@ -53,11 +53,12 @@ class UnitBlockData(ProcessBlockData):
         default=useDefault,
         domain=In([useDefault, True, False]),
         description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic or not
-(default = useDefault).
-useDefault - get flag from parent (default = False)
-True - set as a dynamic model
-False - set as a steady-state model"""))
+        doc="""Indicates whether this model will be dynamic or not,
+**default** = useDefault.
+**Valid values:** {
+**useDefault** - get flag from parent (default = False),
+**True** - set as a dynamic model,
+**False** - set as a steady-state model.}"""))
 
     def build(self):
         """
