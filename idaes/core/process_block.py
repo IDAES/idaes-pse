@@ -11,10 +11,10 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-The process_block module simplifies inheritance of Pyomo blocks. The main reason
-to subclass a Pyomo block is to create a block that comes with pre-defined model
-equations. This is used in the IDAES modeling framework to to create modular
-process model blocks.
+The process_block module simplifies inheritance of Pyomo blocks. The main
+reason to subclass a Pyomo block is to create a block that comes with
+pre-defined model equations. This is used in the IDAES modeling framework to
+create modular process model blocks.
 
 """
 from __future__ import absolute_import, division, print_function
@@ -25,6 +25,7 @@ from pyomo.environ import Block
 
 __author__ = "John Eslick"
 __all__ = ['ProcessBlock', 'declare_process_block_class']
+
 
 def _rule_default(b, *args):
     """Default rule for ProcessBlock, which calls build(). A different rule can
@@ -38,6 +39,7 @@ def _rule_default(b, *args):
             "Failure in build: {}".format(b))
         raise e
 
+
 _process_block_docstring = """
 Args:
     rule (function): A rule function or None. Default rule calls build().
@@ -45,10 +47,11 @@ Args:
     ctype (str): Pyomo ctype of the block.  **Default** - "Block"
     default (dict): Default ProcessBlockData config
 {}
-    initialize (dict): ProcessBlockData config for individual elements. Keys are
-        BlockData indexes and values are dictionaries described under the
+    initialize (dict): ProcessBlockData config for individual elements. Keys
+        are BlockData indexes and values are dictionaries described under the
         "default" argument above.
 """
+
 
 class _IndexedProcessBlockMeta(type):
     """Metaclass used to create an indexed model class."""
@@ -149,7 +152,7 @@ class ProcessBlock(Block):
            (str) Module of the class.
         Raises:
            AttributeError, if no base class module was set, e.g. this class
-               was *not* wrapped by the `declare_process_block_class` decorator.
+              was *not* wrapped by the `declare_process_block_class` decorator.
 
         """
         return cls._orig_module

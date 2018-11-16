@@ -184,7 +184,3 @@ class PropertyMetadata(dict):
         if units is not None:
             d['units'] = units
         super(PropertyMetadata, self).__init__(d)
-
-
-
-
