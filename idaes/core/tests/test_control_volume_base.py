@@ -19,7 +19,7 @@ import inspect
 import pytest
 from pyomo.environ import ConcreteModel, Block, Set
 from pyomo.common.config import ConfigBlock, ConfigValue
-from idaes.core import (ControlVolumeBase, CONFIG_Base,
+from idaes.core import (ControlVolumeBase, CONFIG_Template,
                         MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType, FlowDirection,
                         declare_process_block_class,
@@ -64,9 +64,9 @@ def testflow_direction():
 
 
 # -----------------------------------------------------------------------------
-# Test CONFIG_Base
-def test_CONFIG_Base():
-    c = CONFIG_Base()
+# Test CONFIG_Template
+def test_CONFIG_Template():
+    c = CONFIG_Template()
 
     assert len(c) == 16
 
@@ -90,9 +90,9 @@ def test_CONFIG_Base():
             assert c[i] is False
 
 
-def test_CONFIG_Base_validation_general():
+def test_CONFIG_Template_validation_general():
     # No config argument takes a string, float/int or list
-    c = CONFIG_Base()
+    c = CONFIG_Template()
 
     for i in c:
         with pytest.raises(ValueError):
@@ -103,9 +103,9 @@ def test_CONFIG_Base_validation_general():
             c[i] = [1, 2]
 
 
-def test_CONFIG_Base_true_false():
+def test_CONFIG_Template_true_false():
     # Check arguments that accept True/False as values
-    c = CONFIG_Base()
+    c = CONFIG_Template()
 
     for i in c:
         if i not in ["material_balance_type", "energy_balance_type",
@@ -116,22 +116,22 @@ def test_CONFIG_Base_true_false():
             c[i] = False
 
 
-def test_CONFIG_Base_material_balance_type():
-    c = CONFIG_Base()
+def test_CONFIG_Template_material_balance_type():
+    c = CONFIG_Template()
 
     for i in MaterialBalanceType:
         c["material_balance_type"] = i
 
 
-def test_CONFIG_Base_energy_balance_type():
-    c = CONFIG_Base()
+def test_CONFIG_Template_energy_balance_type():
+    c = CONFIG_Template()
 
     for i in EnergyBalanceType:
         c["energy_balance_type"] = i
 
 
-def test_CONFIG_Base_momentum_balance_type():
-    c = CONFIG_Base()
+def test_CONFIG_Template_momentum_balance_type():
+    c = CONFIG_Template()
 
     for i in MomentumBalanceType:
         c["momentum_balance_type"] = i
