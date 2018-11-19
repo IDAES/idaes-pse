@@ -11,10 +11,10 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-The process_block module simplifies inheritance of Pyomo blocks. The main reason
-to subclass a Pyomo block is to create a block that comes with pre-defined model
-equations. This is used in the IDAES modeling framework to to create modular
-process model blocks.
+The process_block module simplifies inheritance of Pyomo blocks. The main
+reason to subclass a Pyomo block is to create a block that comes with
+pre-defined model equations. This is used in the IDAES modeling framework to
+create modular process model blocks.
 """
 from __future__ import absolute_import, division, print_function
 
@@ -24,6 +24,7 @@ from pyomo.environ import Block
 
 __author__ = "John Eslick"
 __all__ = ['ProcessBlock', 'declare_process_block_class']
+
 
 def _rule_default(b, *args):
     """
@@ -37,6 +38,7 @@ def _rule_default(b, *args):
         logging.getLogger(__name__).exception(
             "Failure in build: {}".format(b))
         raise e
+
 
 _process_block_docstring = """
     Args:
@@ -58,6 +60,7 @@ _config_block_keys_docstring = """
 {}
             ..
 """
+
 
 class _IndexedProcessBlockMeta(type):
     """Metaclass used to create an indexed model class."""
@@ -148,7 +151,7 @@ class ProcessBlock(Block):
            (str) Module of the class.
         Raises:
            AttributeError, if no base class module was set, e.g. this class
-               was *not* wrapped by the `declare_process_block_class` decorator.
+              was *not* wrapped by the `declare_process_block_class` decorator.
 
         """
         return cls._orig_module
