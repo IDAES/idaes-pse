@@ -18,7 +18,14 @@ from __future__ import division, print_function
 
 import logging
 
-from pyomo.environ import Constraint, Param, PositiveReals, Reals, Set, Var
+from pyomo.environ import (Constraint,
+                           Param,
+                           PositiveReals,
+                           Reals,
+                           Set,
+                           SolverFactory,
+                           TerminationCondition,
+                           Var)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
@@ -576,6 +583,15 @@ linked to all inlet states and the mixed state,
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         '''
+        # Set solver options
+        if outlvl > 1:
+            stee = True
+        else:
+            stee = False
+
+        opt = SolverFactory(solver)
+        opt.options = optarg
+
         # Initialize inlet state blocks
         flags = {}
         inlet_list = blk.create_inlet_list()
@@ -623,8 +639,15 @@ linked to all inlet states and the mixed state,
                           solver=solver,
                           hold_state=False)
 
+        if blk.config.mixed_state_block is None:
+            results = opt.solve(blk, tee=stee)
+
         if outlvl > 0:
-            _log.info('{} Initialisation Complete'.format(blk.name))
+            if results.solver.termination_condition == \
+                    TerminationCondition.optimal:
+                _log.info('{} Initialisation Complete.'.format(blk.name))
+            else:
+                _log.warning('{} Initialisation Failed.'.format(blk.name))
 
         return flags
 

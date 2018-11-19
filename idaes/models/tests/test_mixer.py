@@ -677,10 +677,11 @@ def test_initialize():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterBlock()
+    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.mix = MixerBlock(default={
             "property_package": m.fs.pp,
-            "momentum_mixing_type": MomentumMixingType.equality})
+            "mixed_state_block": m.fs.sb})
 
     # Change one inlet pressure to check initialization calculations
     m.fs.mix.inlet_1_state[0].pressure = 8e4
@@ -689,23 +690,23 @@ def test_initialize():
 
     assert m.fs.mix.inlet_1_state[0].init_test is True
     assert m.fs.mix.inlet_2_state[0].init_test is True
-    assert m.fs.mix.mixed_state[0].init_test is True
+    assert m.fs.sb[0].init_test is True
     assert m.fs.mix.inlet_1_state[0].hold_state is True
     assert m.fs.mix.inlet_2_state[0].hold_state is True
-    assert m.fs.mix.mixed_state[0].hold_state is False
+    assert m.fs.sb[0].hold_state is False
 
-    assert m.fs.mix.mixed_state[0].flow_mol_phase_comp["p1", "c1"].value == 2
-    assert m.fs.mix.mixed_state[0].flow_mol_phase_comp["p1", "c2"].value == 2
-    assert m.fs.mix.mixed_state[0].flow_mol_phase_comp["p2", "c1"].value == 2
-    assert m.fs.mix.mixed_state[0].flow_mol_phase_comp["p2", "c2"].value == 2
+    assert m.fs.sb[0].flow_mol_phase_comp["p1", "c1"].value == 2
+    assert m.fs.sb[0].flow_mol_phase_comp["p1", "c2"].value == 2
+    assert m.fs.sb[0].flow_mol_phase_comp["p2", "c1"].value == 2
+    assert m.fs.sb[0].flow_mol_phase_comp["p2", "c2"].value == 2
 
-    assert m.fs.mix.mixed_state[0].enth_mol_phase["p1"].value == 4
-    assert m.fs.mix.mixed_state[0].enth_mol_phase["p2"].value == 4
+    assert m.fs.sb[0].enth_mol_phase["p1"].value == 4
+    assert m.fs.sb[0].enth_mol_phase["p2"].value == 4
 
-    assert m.fs.mix.mixed_state[0].pressure.value == 8e4
+    assert m.fs.sb[0].pressure.value == 8e4
 
     m.fs.mix.release_state(flags=f)
 
     assert m.fs.mix.inlet_1_state[0].hold_state is False
     assert m.fs.mix.inlet_2_state[0].hold_state is False
-    assert m.fs.mix.mixed_state[0].hold_state is False
+    assert m.fs.sb[0].hold_state is False
