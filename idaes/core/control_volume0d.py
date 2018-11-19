@@ -254,7 +254,7 @@ class ControlVolume0dData(ControlVolumeBase):
                 units[u] = '-'
 
         # Test for components that must exist prior to calling this method
-        if has_holdup or has_rate_reactions:
+        if has_holdup:
             if not hasattr(self, "volume"):
                 raise ConfigurationError(
                         "{} control volume must have volume defined to have "
@@ -501,19 +501,6 @@ class ControlVolume0dData(ControlVolumeBase):
                 else:
                     return Constraint.Skip
 
-            try:
-                @self.Constraint(self.time,
-                                 self.rate_reaction_idx,
-                                 doc="Kinetic reaction extents constraint")
-                def rate_reaction_extents_constraint(b, t, r):
-                    return b.rate_reaction_extent[t, r] == (
-                            rblock[t].reaction_rate[r]*b.volume[t])
-            except AttributeError:
-                raise PropertyNotSupportedError(
-                    "{} Reaction package does not contain a reaction_rate "
-                    "variable, thus does not support kinetic equilibrium."
-                    .format(self.name))
-
         if has_equilibrium_reactions:
             # Add extents of reaction and stoichiometric constraints
             self.equilibrium_reaction_extent = Var(
@@ -638,7 +625,7 @@ class ControlVolume0dData(ControlVolumeBase):
                 units[u] = '-'
 
         # Test for components that must exist prior to calling this method
-        if has_holdup or has_rate_reactions:
+        if has_holdup:
             if not hasattr(self, "volume"):
                 raise ConfigurationError(
                         "{} control volume must have volume defined to have "
@@ -847,19 +834,6 @@ class ControlVolume0dData(ControlVolumeBase):
                             for r in b.rate_reaction_idx))
                 else:
                     return Constraint.Skip
-
-            try:
-                @self.Constraint(self.time,
-                                 self.rate_reaction_idx,
-                                 doc="Kinetic reaction extents constraint")
-                def rate_reaction_extents_constraint(b, t, r):
-                    return b.rate_reaction_extent[t, r] == (
-                            rblock[t].reaction_rate[r]*b.volume[t])
-            except AttributeError:
-                raise PropertyNotSupportedError(
-                    "{} Reaction package does not contain a reaction_rate "
-                    "variable, thus does not support kinetic equilibrium."
-                    .format(self.name))
 
         if has_equilibrium_reactions:
             # Add extents of reaction and stoichiometric constraints

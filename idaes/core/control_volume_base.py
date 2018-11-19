@@ -79,7 +79,7 @@ CONFIG_Base.declare("dynamic", ConfigValue(
     domain=In([useDefault, True, False]),
     description="Dynamic model flag",
     doc="""Indicates whether this model will be dynamic,
-**default** - useDefault. 
+**default** - useDefault.
 **Valid values:** {
 **useDefault** - get flag from parent,
 **True** - set as a dynamic model,
@@ -184,7 +184,7 @@ CONFIG_Base.declare("has_work_transfer", ConfigValue(
     description="Work transfer term construction flag",
     doc="""Indicates whether terms for work transfer should be constructed,
 **default** - False.
-**Valid values** {,
+**Valid values** {
 **True** - include work transfer terms,
 **False** - exclude work transfer terms.}"""))
 CONFIG_Base.declare("has_pressure_change", ConfigValue(
@@ -210,7 +210,7 @@ CONFIG_Base.declare("property_package_args", ConfigBlock(
     implicit=True,
     description="Arguments to use for constructing property packages",
     doc="""A ConfigBlock with arguments to be passed to a property block(s)
- and used when constructing these,
+and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
