@@ -177,18 +177,21 @@ class ReactionBlockDataBase(ProcessBlockData):
     CONFIG.declare("parameters", ConfigValue(
             domain=is_reaction_parameter_block,
             description="""A reference to an instance of the Reaction Parameter
-                        Block associated with this property package."""))
+Block associated with this property package."""))
     CONFIG.declare("state_block", ConfigValue(
             domain=is_state_block,
             description="""A reference to an instance of a StateBlock with
-                        which this reaction block should be associated."""))
+which this reaction block should be associated."""))
     CONFIG.declare("has_equilibrium", ConfigValue(
             default=True,
             domain=In([True, False]),
             description="Equilibrium constraint flag",
             doc="""Flag indicating whether equilibrium constraints
-                should be constructed in this reaction block (default=True).
-                """))
+should be constructed in this reaction block,
+**default** - True.
+**Valid values:** {
+**True** - ReactionBlock should enforce equilibrium constraints,
+**False** - ReactionBlock should not enforce equilibrium constraints.}"""))
 
     def build(self):
         """

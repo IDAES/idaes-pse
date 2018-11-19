@@ -21,9 +21,6 @@ import inspect
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
-# Other third-party
-import six
-
 # Import IDAES cores
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
@@ -115,22 +112,28 @@ class StateBlockDataBase(ProcessBlockData):
     CONFIG.declare("parameters", ConfigValue(
             domain=is_physical_parameter_block,
             description="""A reference to an instance of the Property Parameter
-                        Block associated with this property package."""))
+Block associated with this property package."""))
     CONFIG.declare("defined_state", ConfigValue(
             default=False,
             domain=In([True, False]),
             description="Flag indicating if incoming state is fully defined",
             doc="""Flag indicating whether the state should be considered fully
-                defined, and thus whether constraints such as sum of mass/mole
-                fractions should be included (default=False).
-                """))
+defined, and thus whether constraints such as sum of mass/mole fractions should
+be included,
+**default** - False.
+**Valid values:** {
+**True** - state variables will be fully defined,
+**False** - state variables will not be fully defined.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
             default=True,
             domain=In([True, False]),
             description="Phase equilibrium constraint flag",
             doc="""Flag indicating whether phase equilibrium constraints
-                should be constructed in this state block (default=True).
-                """))
+should be constructed in this state block,
+**default** - True.
+**Valid values:** {
+**True** - StateBlock should calculate phase equilibrium,
+**False** - StateBlock should not calculate phase equilibrium.}"""))
 
     def build(self):
         """
