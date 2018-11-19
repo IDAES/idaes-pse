@@ -427,7 +427,7 @@ linked to all inlet states and the mixed state,
                                    self.eps_pressure))
 
         # Set inlet pressure to minimum pressure
-        @self.Constraint(self.time, doc='link pressure to holdup')
+        @self.Constraint(self.time, doc='Link pressure to control volume')
         def mixture_pressure(b, t):
             return mixed_block[t].pressure == (
                        self.minimum_pressure[t,
@@ -506,7 +506,7 @@ linked to all inlet states and the mixed state,
     def initialize(blk, outlvl=0, optarg=None,
                    solver='ipopt', hold_state=True):
         '''
-        Initialisation routine for holdup (default solver ipopt)
+        Initialisation routine for mixer (default solver ipopt)
 
         Keyword Arguments:
             outlvl : sets output level of initialisation routine. **Valid
@@ -532,18 +532,30 @@ linked to all inlet states and the mixed state,
         # Initialize inlet state blocks
         flags = {}
         inlet_list = blk.create_inlet_list()
+        i_block_list = []
         for i in inlet_list:
             i_block = getattr(blk, i+"_state")
+            i_block_list.append(i_block)
             flags[i] = {}
             flags[i] = i_block.initialize(outlvl=outlvl-1,
                                           optarg=optarg,
                                           solver=solver,
                                           hold_state=hold_state)
 
+        # Initialize mixed state block
         if blk.config.mixed_state_block is None:
             mblock = blk.mixed_state
         else:
             mblock = blk.config.mixed_state_block
+
+        # Calculate mixed flow terms
+        for t in blk.time:
+            for p in blk.phase_list:
+                for j in blk.component_list:
+                    flow_term = mblock[t].get_material_flow_terms(p, j)
+                    flow_term = sum(
+                        i_block_list[i][t].get_material_flow_terms(p, j).value
+                        for i in range(len(i_block_list)))
 
         mblock.initialize(outlvl=outlvl-1,
                           optarg=optarg,

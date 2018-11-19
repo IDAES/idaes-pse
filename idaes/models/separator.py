@@ -340,7 +340,7 @@ linked the mixed state and all outlet states,
     def initialize(blk, outlvl=0, optarg=None,
                    solver='ipopt', hold_state=True):
         '''
-        Initialisation routine for holdup (default solver ipopt)
+        Initialisation routine for separator (default solver ipopt)
 
         Keyword Arguments:
             outlvl : sets output level of initialisation routine. **Valid
@@ -363,26 +363,25 @@ linked the mixed state and all outlet states,
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         '''
-        # Initialize inlet state blocks
-        flags = {}
-        inlet_list = blk.create_inlet_list()
-        for i in inlet_list:
-            i_block = getattr(blk, i+"_state")
-            flags[i] = {}
-            flags[i] = i_block.initialize(outlvl=outlvl-1,
-                                          optarg=optarg,
-                                          solver=solver,
-                                          hold_state=hold_state)
-
+        # Initialize mixed state block
         if blk.config.mixed_state_block is None:
             mblock = blk.mixed_state
         else:
             mblock = blk.config.mixed_state_block
 
-        mblock.initialize(outlvl=outlvl-1,
-                          optarg=optarg,
-                          solver=solver,
-                          hold_state=False)
+        flags = mblock.initialize(outlvl=outlvl-1,
+                                  optarg=optarg,
+                                  solver=solver,
+                                  hold_state=hold_state)
+
+        # Initialize outlets as applicable
+        outlet_list = blk.create_outlet_list()
+        for o in outlet_list:
+            o_block = getattr(blk, o+"_state")
+            o_block.initialize(outlvl=outlvl-1,
+                               optarg=optarg,
+                               solver=solver,
+                               hold_state=False)
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete'.format(blk.name))
@@ -403,7 +402,9 @@ linked the mixed state and all outlet states,
         Returns:
             None
         '''
-        inlet_list = blk.create_inlet_list()
-        for i in inlet_list:
-            i_block = getattr(blk, i+"_state")
-            i_block.release_state(flags[i], outlvl=outlvl-1)
+        if blk.config.mixed_state_block is None:
+            mblock = blk.mixed_state
+        else:
+            mblock = blk.config.mixed_state_block
+
+        mblock.release_state(flags, outlvl=outlvl-1)

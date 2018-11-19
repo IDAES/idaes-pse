@@ -1403,7 +1403,7 @@ class ControlVolume0dData(ControlVolumeBase):
     def initialize(blk, state_args=None, outlvl=0, optarg=None,
                    solver='ipopt', hold_state=True):
         '''
-        Initialisation routine for holdup (default solver ipopt)
+        Initialisation routine for 0D control volume (default solver ipopt)
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
