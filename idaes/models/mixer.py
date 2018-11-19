@@ -40,8 +40,13 @@ __author__ = "Andrew Lee"
 _log = logging.getLogger(__name__)
 
 
-# Enumerate options for material balances
+# Enumerate options for balances
+MixingType = Enum(
+    'none',
+    'extensive')
+
 MomentumMixingType = Enum(
+    'none',
     'minimize',
     'equality')
 
@@ -112,14 +117,35 @@ calculated for the resulting mixed stream,
 **Valid values:** {
 **True** - calculate phase equilibrium in mixed stream,
 **False** - do not calculate equilibrium in mixed stream.}"""))
+    CONFIG.declare("material_mixing_type", ConfigValue(
+        default=MixingType.extensive,
+        domain=MixingType,
+        description="Method to use when mixing material flows",
+        doc="""Argument indicating what method to use when mixing material
+flows of incoming streams,
+**default** - MixingType.extensive.
+**Valid values:** {
+**MixingType.none** - do not include material mixing equations,
+**MixingType.extensive** - mix total flows of each phase-component pair.}"""))
+    CONFIG.declare("energy_mixing_type", ConfigValue(
+        default=MixingType.extensive,
+        domain=MixingType,
+        description="Method to use when mixing energy flows",
+        doc="""Argument indicating what method to use when mixing energy
+flows of incoming streams,
+**default** - MixingType.extensive.
+**Valid values:** {
+**MixingType.none** - do not include energy mixing equations,
+**MixingType.extensive** - mix total enthalpy flows of each phase.}"""))
     CONFIG.declare("momentum_mixing_type", ConfigValue(
         default=MomentumMixingType.minimize,
         domain=MomentumMixingType,
-        description="Method to use when mxing momentum/pressure",
+        description="Method to use when mixing momentum/pressure",
         doc="""Argument indicating what method to use when mixing momentum/
 pressure of incoming streams,
 **default** - MomentumMixingType.minimize.
 **Valid values:** {
+**MomentumMixingType.none** - do not include momentum mixing equations,
 **MomentumMixingType.minimize** - mixed stream has pressure equal to the
 minimimum pressure of the incoming streams (uses smoothMin operator),
 **MomentumMixingType.equality** - enforces equality of pressure in mixed and
@@ -177,10 +203,29 @@ linked to all inlet states and the mixed state,
         else:
             mixed_block = self.get_mixed_state_block()
 
-        self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
-                                           mixed_block=mixed_block)
-        self.add_energy_mixing_equations(inlet_blocks=inlet_blocks,
-                                         mixed_block=mixed_block)
+        if self.config.material_mixing_type == MixingType.extensive:
+            self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
+                                               mixed_block=mixed_block)
+        elif self.config.material_mixing_type == MixingType.extensive:
+            pass
+        else:
+            raise ConfigurationError("{} recieved unrecognised value for "
+                                     "material_mixing_type argument. This "
+                                     "should not occur, so please contact "
+                                     "the IDAES developers with this bug."
+                                     .format(self.name))
+
+        if self.config.energy_mixing_type == MixingType.extensive:
+            self.add_energy_mixing_equations(inlet_blocks=inlet_blocks,
+                                             mixed_block=mixed_block)
+        elif self.config.energy_mixing_type == MixingType.extensive:
+            pass
+        else:
+            raise ConfigurationError("{} recieved unrecognised value for "
+                                     "material_mixing_type argument. This "
+                                     "should not occur, so please contact "
+                                     "the IDAES developers with this bug."
+                                     .format(self.name))
 
         if self.config.momentum_mixing_type == MomentumMixingType.minimize:
             self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
@@ -188,6 +233,8 @@ linked to all inlet states and the mixed state,
         elif self.config.momentum_mixing_type == MomentumMixingType.equality:
             self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
                                                  mixed_block=mixed_block)
+        elif self.config.momentum_mixing_type == MomentumMixingType.none:
+            pass
         else:
             raise ConfigurationError("{} recieved unrecognised value for "
                                      "momentum_mixing_type argument. This "
@@ -548,13 +595,27 @@ linked to all inlet states and the mixed state,
         else:
             mblock = blk.config.mixed_state_block
 
-        # Calculate mixed flow terms
+        # Calculate mixed stream terms
         for t in blk.time:
             for p in blk.phase_list:
-                for j in blk.component_list:
-                    flow_term = mblock[t].get_material_flow_terms(p, j)
-                    flow_term = sum(
-                        i_block_list[i][t].get_material_flow_terms(p, j).value
+                # Component flow terms
+                if blk.config.material_mixing_type != MixingType.none:
+                    for j in blk.component_list:
+                        mblock[t].get_material_flow_terms(p, j).value = sum(
+                                i_block_list[i][t].
+                                get_material_flow_terms(p, j).value
+                                for i in range(len(i_block_list)))
+
+                # Energy flow terms
+                if blk.config.energy_mixing_type != MixingType.none:
+                    mblock[t].get_enthalpy_flow_terms(p).value = sum(
+                        i_block_list[i][t].get_enthalpy_flow_terms(p).value
+                        for i in range(len(i_block_list)))
+
+            # Pressure term
+            if blk.config.momentum_mixing_type != MixingType.none:
+                mblock[t].pressure.value = min(
+                        i_block_list[i][t].pressure.value
                         for i in range(len(i_block_list)))
 
         mblock.initialize(outlvl=outlvl-1,

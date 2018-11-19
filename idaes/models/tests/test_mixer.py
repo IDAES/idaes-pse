@@ -21,10 +21,15 @@ from pyomo.environ import ConcreteModel, Constraint, Param, Set, Var
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 
-from idaes.core import (FlowsheetBlockData, declare_process_block_class,
-                        PhysicalParameterBase, StateBlockBase,
+from idaes.core import (FlowsheetBlockData,
+                        declare_process_block_class,
+                        PhysicalParameterBase,
+                        StateBlockBase,
                         StateBlockDataBase)
-from idaes.models.mixer import MixerBlock, MixerBlockData, MomentumMixingType
+from idaes.models.mixer import (MixerBlock,
+                                MixerBlockData,
+                                MixingType,
+                                MomentumMixingType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
@@ -84,7 +89,7 @@ class StateBlockData(StateBlockDataBase):
             {"e1": ["c1", ("p1", "p2")],
              "e2": ["c2", ("p1", "p2")]}
 
-        self.pressure = Var()
+        self.pressure = Var(initialize=1e5)
         self.flow_mol_phase_comp = Var(self.phase_list,
                                        self.component_list,
                                        initialize=1)
@@ -120,7 +125,7 @@ def test_mixer_config():
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
 
-    assert len(m.fs.mix.config) == 9
+    assert len(m.fs.mix.config) == 11
     assert m.fs.mix.config.dynamic is False
     assert m.fs.mix.config.property_package == m.fs.pp
     assert isinstance(m.fs.mix.config.property_package_args, ConfigBlock)
@@ -128,6 +133,8 @@ def test_mixer_config():
     assert m.fs.mix.config.inlet_list is None
     assert m.fs.mix.config.num_inlets is None
     assert m.fs.mix.config.calculate_phase_equilibrium is False
+    assert m.fs.mix.config.material_mixing_type == MixingType.extensive
+    assert m.fs.mix.config.energy_mixing_type == MixingType.extensive
     assert m.fs.mix.config.momentum_mixing_type == MomentumMixingType.minimize
     assert m.fs.mix.config.mixed_state_block is None
     assert m.fs.mix.config.construct_ports is True
@@ -675,6 +682,9 @@ def test_initialize():
             "property_package": m.fs.pp,
             "momentum_mixing_type": MomentumMixingType.equality})
 
+    # Change one inlet pressure to check initialization calculations
+    m.fs.mix.inlet_1_state[0].pressure = 8e4
+
     f = m.fs.mix.initialize()
 
     assert m.fs.mix.inlet_1_state[0].init_test is True
@@ -683,6 +693,16 @@ def test_initialize():
     assert m.fs.mix.inlet_1_state[0].hold_state is True
     assert m.fs.mix.inlet_2_state[0].hold_state is True
     assert m.fs.mix.mixed_state[0].hold_state is False
+
+    assert m.fs.mix.mixed_state[0].flow_mol_phase_comp["p1", "c1"].value == 2
+    assert m.fs.mix.mixed_state[0].flow_mol_phase_comp["p1", "c2"].value == 2
+    assert m.fs.mix.mixed_state[0].flow_mol_phase_comp["p2", "c1"].value == 2
+    assert m.fs.mix.mixed_state[0].flow_mol_phase_comp["p2", "c2"].value == 2
+
+    assert m.fs.mix.mixed_state[0].enth_mol_phase["p1"].value == 4
+    assert m.fs.mix.mixed_state[0].enth_mol_phase["p2"].value == 4
+
+    assert m.fs.mix.mixed_state[0].pressure.value == 8e4
 
     m.fs.mix.release_state(flags=f)
 

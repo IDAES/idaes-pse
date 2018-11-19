@@ -218,7 +218,7 @@ class UnitBlockData(ProcessBlockData):
                         "{} add_inlet_port was called without a block argument"
                         " but no default ControlVolume exists "
                         "(control_volume). Please provide block to which the "
-                        "Port should be assoicated.".format(blk.name))
+                        "Port should be associated.".format(blk.name))
 
         # Set default name and doc string if not provided
         if name is None:
@@ -283,7 +283,7 @@ class UnitBlockData(ProcessBlockData):
                         "{} add_outlet_port was called without a block "
                         "argument but no default ControlVolume exists "
                         "(control_volume). Please provide block to which the "
-                        "Port should be assoicated.".format(blk.name))
+                        "Port should be associated.".format(blk.name))
 
         # Set default name and doc string if not provided
         if name is None:
