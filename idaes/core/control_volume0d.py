@@ -184,11 +184,11 @@ class ControlVolume0dData(ControlVolumeBase):
                     balances
             has_mass_transfer: whether generic mass transfer terms should be
                     included in material balances
-            custom_molar_term: a Pyomo Expression reresenting custom terms to
+            custom_molar_term: a Pyomo Expression representing custom terms to
                     be included in material balances on a molar basis.
                     Expression must be indexed by time, phase list and
                     component list
-            custom_mass_term: a Pyomo Expression reresenting custom terms to
+            custom_mass_term: a Pyomo Expression representing custom terms to
                     be included in material balances on a mass basis.
                     Expression must be indexed by time, phase list and
                     component list
@@ -555,11 +555,11 @@ class ControlVolume0dData(ControlVolumeBase):
                     balances
             has_mass_transfer - whether generic mass transfer terms should be
                     included in material balances
-            custom_molar_term - a Pyomo Expression reresenting custom terms to
+            custom_molar_term - a Pyomo Expression representing custom terms to
                     be included in material balances on a molar basis.
                     Expression must be indexed by time, phase list and
                     component list
-            custom_mass_term - a Pyomo Expression reresenting custom terms to
+            custom_mass_term - a Pyomo Expression representing custom terms to
                     be included in material balances on a mass basis.
                     Expression must be indexed by time, phase list and
                     component list
@@ -926,7 +926,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     balances
             has_mass_transfer - whether generic mass transfer terms should be
                     included in material balances
-            custom_elemental_term - a Pyomo Expression reresenting custom terms
+            custom_elemental_term - a Pyomo Expression representing custom terms
                     to be included in material balances on a molar elemental
                     basis. Expression must be indexed by time and element list
 
@@ -1165,7 +1165,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     included in enthalpy balances
             has_work_transfer - whether terms for work transfer should be
                     included in enthalpy balances
-            custom_term - a Pyomo Expression reresenting custom terms to
+            custom_term - a Pyomo Expression representing custom terms to
                     be included in enthalpy balances.
                     Expression must be indexed by time and phase list
 
@@ -1316,7 +1316,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     material balances. Must be True if dynamic = True
             has_pressure_change - whether terms for pressure change should be
                     included in enthalpy balances
-            custom_term - a Pyomo Expression reresenting custom terms to
+            custom_term - a Pyomo Expression representing custom terms to
                     be included in pressure balances.
                     Expression must be indexed by time
 

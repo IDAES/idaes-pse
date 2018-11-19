@@ -363,7 +363,7 @@ have a config block which derives from CONFIG_Template, **default** - False.
                     included in material balances
             custom_molar_term - a Pyomo Expression representing custom terms to
                     be included in material balances on a molar basis.
-            custom_mass_term - a Pyomo Expression reresenting custom terms to
+            custom_mass_term - a Pyomo Expression representing custom terms to
                     be included in material balances on a mass basis.
 
         Returns:
