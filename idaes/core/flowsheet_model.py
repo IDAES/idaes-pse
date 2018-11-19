@@ -59,23 +59,27 @@ class FlowsheetBlockData(ProcessBlockData):
         domain=In([useDefault, True, False]),
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic,
-**default** - useDefault.  **Valid values:** {
+**default** - useDefault.
+**Valid values:** {
 **useDefault** - get flag from parent or False,
 **True** - set as a dynamic model,
-**False** - set as a steady-state model}"""))
+**False** - set as a steady-state model.}"""))
     CONFIG.declare("time_set", ConfigValue(
         default=[0],
         domain=list_of_floats,
         description="Set of points for initializing time domain",
         doc="""Set of points for initializing time domain. This should be a
-        list of floating point numbers, **default** - [0]."""))
+        list of floating point numbers,
+**default** - [0]."""))
     CONFIG.declare("default_property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
         description="Default property package to use in flowsheet",
         doc="""Indicates the default property package to be used by models
-within this flowsheet if not otherwise specified, **default** - None.
-**Valid values:** {**None** - no default property package,
+within this flowsheet if not otherwise specified,
+**default** - None.
+**Valid values:** {
+**None** - no default property package,
 **a ParameterBlock object**.}"""))
 
     def build(self):
