@@ -213,8 +213,15 @@ should be constructed in this reaction block,
         Method to validate that the associated state block matches with the
         PropertyParameterBlock assoicated with the ReactionParameterBlock.
         """
+        # Add a reference to the corresponding state block data for later use
+        # TODO : Convert to Reference
+        object.__setattr__(self,
+                           "_state",
+                           self.config.state_block[self.index()])
+
+        # Validate that property package of state matches that of reaction pack
         if (self.config.parameters.config.property_package !=
-                self.config.state_block.config.parameters):
+                self._state.config.parameters):
             raise PropertyPackageError(
                             '{} the StateBlock associated with this '
                             'ReactionBlock does not match with the '

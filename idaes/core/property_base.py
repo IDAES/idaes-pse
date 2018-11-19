@@ -164,7 +164,7 @@ should be constructed in this state block,
         """
         return self.define_state_vars()
 
-    def get_material_flow_terms(self):
+    def get_material_flow_terms(self, *args, **kwargs):
         """
         Method which returns a tuple containing a valid expression to use in
         the material balances and a constant indicating the basis of this
@@ -174,7 +174,7 @@ should be constructed in this state block,
                                   ' get_material_flow_terms method. Please '
                                   'contact the property package developer.')
 
-    def get_material_density_terms(self):
+    def get_material_density_terms(self, *args, **kwargs):
         """
         Method which returns a tuple containing a valid expression to use in
         the material balances and a constant indicating the basis of this
@@ -184,7 +184,7 @@ should be constructed in this state block,
                                   ' get_material_density_terms method. Please '
                                   'contact the property package developer.')
 
-    def get_material_diffusion_terms(self):
+    def get_material_diffusion_terms(self, *args, **kwargs):
         """
         Method which returns a tuple containing a valid expression to use in
         the material balances and a constant indicating the basis of this
@@ -195,7 +195,7 @@ should be constructed in this state block,
                                   'Please contact the property package '
                                   'developer.')
 
-    def get_enthalpy_flow_terms(self):
+    def get_enthalpy_flow_terms(self, *args, **kwargs):
         """
         Method which returns a tuple containing a valid expression to use in
         the energy balances and a constant indicating the basis of this
@@ -205,7 +205,7 @@ should be constructed in this state block,
                                   ' get_energy_flow_terms method. Please '
                                   'contact the property package developer.')
 
-    def get_enthalpy_density_terms(self):
+    def get_enthalpy_density_terms(self, *args, **kwargs):
         """
         Method which returns a tuple containing a valid expression to use in
         the energy balances and a constant indicating the basis of this
@@ -215,7 +215,7 @@ should be constructed in this state block,
                                   ' get_energy_density_terms method. Please '
                                   'contact the property package developer.')
 
-    def get_energy_diffusion_terms(self):
+    def get_energy_diffusion_terms(self, *args, **kwargs):
         """
         Method which returns a tuple containing a valid expression to use in
         the energy balances and a constant indicating the basis of this
