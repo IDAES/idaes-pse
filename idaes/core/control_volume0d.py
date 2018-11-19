@@ -60,6 +60,21 @@ class ControlVolume0dData(ControlVolumeBase):
 
     # TODO : add autobuild method
 
+    def add_geometry(self):
+        """
+        Method to create volume Var in ControlVolume.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        l_units = self.config.property_package.get_metadata().default_units[
+                                                                      "length"]
+        self.volume = Var(self.time, initialize=1.0,
+                          doc='Holdup Volume [{}^3]'.format(l_units))
+
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
                          has_phase_equilibrium=False,
@@ -93,7 +108,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     'Valid values are FlowDirection.forward and '
                     'FlowDirection.backward'.format(self.name))
 
-        self.properties_in = self.property_module.StateBlock(
+        self.properties_in = self._property_module.StateBlock(
                 self.time,
                 doc="Material properties at inlet",
                 default=tmp_dict)
@@ -101,7 +116,7 @@ class ControlVolume0dData(ControlVolumeBase):
         # Reverse defined_state
         tmp_dict["defined_state"] = not tmp_dict["defined_state"]
 
-        self.properties_out = self.property_module.StateBlock(
+        self.properties_out = self._property_module.StateBlock(
                 self.time,
                 doc="Material properties at outlet",
                 default=tmp_dict)
@@ -126,23 +141,10 @@ class ControlVolume0dData(ControlVolumeBase):
         tmp_dict["has_equilibrium"] = has_equilibrium
         tmp_dict["parameters"] = self.config.reaction_package
 
-        self.reactions = self.reaction_module.ReactionBlock(
+        self.reactions = self._reaction_module.ReactionBlock(
                 self.time,
                 doc="Reaction properties in control volume",
                 default=tmp_dict)
-
-    def add_geometry(self, length_units):
-        """
-        Method to create volume Var in ControlVolume.
-
-        Args:
-            length_units: string to use for units for length
-
-        Returns:
-            None
-        """
-        self.volume = Var(self.time, initialize=1.0,
-                          doc='Holdup Volume [{}^3]'.format(length_units))
 
     def add_phase_component_balances(self,
                                      dynamic=useDefault,

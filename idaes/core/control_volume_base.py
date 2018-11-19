@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -25,7 +25,7 @@ from pyutilib.enum import Enum
 
 # Import IDAES cores
 from idaes.core import ProcessBlockData, useDefault
-from idaes.core.util.config import (is_property_parameter_block,
+from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError,
@@ -74,7 +74,7 @@ CONFIG_Base.declare("dynamic", ConfigValue(
     domain=In([useDefault, True, False]),
     description="Dynamic model flag",
     doc="""Indicates whether this model will be dynamic,
-**default** - useDefault. 
+**default** - useDefault.
 **Valid values:** {
 **useDefault** - get flag from parent,
 **True** - set as a dynamic model,
@@ -194,7 +194,7 @@ constructed,
 **False** - exclude pressure change terms.}"""))
 CONFIG_Base.declare("property_package", ConfigValue(
     default=useDefault,
-    domain=is_property_parameter_block,
+    domain=is_physical_parameter_block,
     description="Property package to use for control volume",
     doc="""Property parameter object used to define property calculations,
 **default** - useDefault.
@@ -253,7 +253,7 @@ useDefault. **Valid values:** {
 **False** - set as a steady-state model}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
-        domain=is_property_parameter_block,
+        domain=is_physical_parameter_block,
         description="Property package to use for control volume",
         doc="""Property parameter object used to define property calculations,
 **default** - useDefault. **Valid values:** {
@@ -286,7 +286,7 @@ see reaction package for documentation.}"""))
                     "automatically construct balance equations",
         doc="""If set to True, this argument will trigger the auto_construct
 method which will attempt to construct a set of material, energy and momentum
-balance equations based on the parent unit's config block. THe parent unit must
+balance equations based on the parent unit's config block. The parent unit must
 have a config block which derives from CONFIG_Base, **default** - False.
 **Valid values:** {**True** - use automatic construction,
 **False** - do not use automatic construciton.}"""))
@@ -528,11 +528,12 @@ have a config block which derives from CONFIG_Base, **default** - False.
             if hasattr(self.config, "has_holdup"):
                 if not self.config.has_holdup:
                     # Dynamic model must have has_holdup = True
-                    logger.warning('{} Dynamic models must have '
-                                   'has_holdup = True. '
-                                   'Overwritting argument.'
-                                   .format(self.name))
-                    self.config.has_holdup = True
+                    raise ConfigurationError(
+                            '{} inconsistent arguments for control volume. '
+                            'dynamic was set to True, which requires that'
+                            'has_holdup = True (was False). Please correct '
+                            'your arguments to be consistent.'
+                            .format(self.name))
 
     def _get_property_package(self):
         """
@@ -569,7 +570,7 @@ have a config block which derives from CONFIG_Base, **default** - False.
                 self.config.property_package = self._get_default_prop_pack()
 
         # Get module of property package
-        self.property_module = self.config.property_package.property_module
+        self._property_module = self.config.property_package._package_module
 
         # Check for any flowsheet level build arguments
         for k in self.config.property_package.config.default_arguments:
@@ -672,7 +673,8 @@ have a config block which derives from CONFIG_Base, **default** - False.
         """
         if self.config.reaction_package is not None:
             # Get module of reaction package
-            self.reaction_module = self.config.reaction_package.property_module
+            self._reaction_module = \
+                self.config.reaction_package._package_module
 
             # Check for any flowsheet level build arguments
             for k in self.config.reaction_package.config.default_arguments:

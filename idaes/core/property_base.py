@@ -25,8 +25,9 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
-from idaes.core.util.config import is_property_parameter_block
-from idaes.core.util.exceptions import (PropertyNotSupportedError,
+from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import (BurntToast,
+                                        PropertyNotSupportedError,
                                         PropertyPackageError)
 
 # Some more information about this module
@@ -65,8 +66,14 @@ class PhysicalParameterBase(ProcessBlockData,
         super(PhysicalParameterBase, self).build()
 
         # Get module reference and store on block
-        frm = inspect.stack()[1]
-        self.property_module = inspect.getmodule(frm[0])
+        try:
+            frm = inspect.stack()[1]
+            self._package_module = inspect.getmodule(frm[0])
+        except KeyError:
+            raise BurntToast('{} an error occured when trying to retrieve '
+                             'a pointer to the reaction package module. '
+                             'Please contact the IDAES developers with this '
+                             'bug'.format(self.name))
 
 
 class StateBlockBase(ProcessBlock):
@@ -103,7 +110,7 @@ class StateBlockDataBase(ProcessBlockData):
     # Create Class ConfigBlock
     CONFIG = ProcessBlockData.CONFIG()
     CONFIG.declare("parameters", ConfigValue(
-            domain=is_property_parameter_block,
+            domain=is_physical_parameter_block,
             description="""A reference to an instance of the Property Parameter
 Block associated with this property package."""))
     CONFIG.declare("defined_state", ConfigValue(

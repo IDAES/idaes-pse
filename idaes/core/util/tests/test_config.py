@@ -24,7 +24,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlockDataBase,
                         ReactionParameterBase,
                         useDefault)
-from idaes.core.util.config import (is_property_parameter_block,
+from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block,
                                     list_of_floats,
@@ -39,29 +39,29 @@ class _ParameterBlock(PhysicalParameterBase):
         pass
 
 
-def test_is_property_parameter_block_passes():
+def test_is_physical_parameter_block_passes():
     # Make an instance of a Parameter Block
     p = ParameterBlock()
 
-    # Check that is_property_parameter_block returns the ParameterBlock
-    assert p == is_property_parameter_block(p)
+    # Check that is_physical_parameter_block returns the ParameterBlock
+    assert p == is_physical_parameter_block(p)
 
 
-def test_is_property_parameter_block_useDefault():
-    assert useDefault == is_property_parameter_block(useDefault)
+def test_is_physical_parameter_block_useDefault():
+    assert useDefault == is_physical_parameter_block(useDefault)
 
 
-def test_is_property_parameter_block_fails():
-    # Test that is_property_parameter_block returns ConfigurationError with
+def test_is_physical_parameter_block_fails():
+    # Test that is_physical_parameter_block returns ConfigurationError with
     # wrong input
     m = ConcreteModel()
 
     with pytest.raises(ConfigurationError):
-        is_property_parameter_block(m)  # Non Parameter Block Pyomo object
+        is_physical_parameter_block(m)  # Non Parameter Block Pyomo object
     with pytest.raises(ConfigurationError):
-        is_property_parameter_block("foo")  # str
+        is_physical_parameter_block("foo")  # str
     with pytest.raises(ConfigurationError):
-        is_property_parameter_block(1)  # int
+        is_physical_parameter_block(1)  # int
 
 
 @declare_process_block_class("RParameterBlock")

@@ -26,6 +26,7 @@ from idaes.core import (declare_process_block_class, ReactionParameterBase,
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
 
+
 # -----------------------------------------------------------------------------
 # Test ParameterBlock
 @declare_process_block_class("PropertyParameterBlock")
@@ -34,18 +35,16 @@ class _PropertyParameterBlock(PhysicalParameterBase):
         super(_PropertyParameterBlock, self).build()
 
     @classmethod
-    def get_supported_properties(self):
-        return {'prop1': {'method': None}}
-
-    @classmethod
-    def get_package_units(self):
-        return {'time': 's',
-                'length': 'm',
-                'mass': 'g',
-                'amount': 'mol',
-                'temperature': 'K',
-                'energy': 'J',
-                'holdup': 'mol'}
+    def define_metadata(cls, obj):
+        obj.add_properties({'prop1': {'method': None, 'units': 'm'},
+                            'prop3': {'method': False}})
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
 
 
 @declare_process_block_class("ReactionParameterBlock")
@@ -70,11 +69,7 @@ def test_ReactionParameter_NotImplementedErrors():
     m.r = ReactionParameterBlock()
 
     with pytest.raises(NotImplementedError):
-        m.r.get_required_properties()
-    with pytest.raises(NotImplementedError):
-        m.r.get_supported_properties()
-    with pytest.raises(NotImplementedError):
-        m.r.get_package_units()
+        m.r.get_metadata()
 
 
 @declare_process_block_class("ReactionParameterBlock2")
@@ -87,19 +82,15 @@ class _ReactionParameterBlock2(ReactionParameterBase):
         return ['prop1']
 
     @classmethod
-    def get_supported_properties(self):
-        return {'rxn1': {'method': None}}
-
-    @classmethod
-    def get_package_units(self):
-        return {'time': 'hr',
-                'length': 'm',
-                'mass': 'g',
-                'amount': 'mol',
-                'temperature': 'K',
-                'energy': 'J',
-                'holdup': 'mol'}
-
+    def define_metadata(cls, obj):
+        obj.add_properties({'rxn1': {'method': None}})
+        obj.add_default_units({'time': 'hr',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
 
 def test_validate_state_block_invalid_units():
     # Test validation of associated PropertyParameterBlock
@@ -108,7 +99,7 @@ def test_validate_state_block_invalid_units():
     m.r = ReactionParameterBlock2(default={"property_package": m.p})
 
     with pytest.raises(PropertyPackageError):
-        m.r._validate_property_parameter_block()
+        m.r._validate_property_parameter_units()
 
 
 @declare_process_block_class("ReactionParameterBlock3")
@@ -117,22 +108,16 @@ class _ReactionParameterBlock3(ReactionParameterBase):
         super(ReactionParameterBase, self).build()
 
     @classmethod
-    def get_required_properties(self):
-        return ['prop2']
-
-    @classmethod
-    def get_supported_properties(self):
-        return {'rxn1': {'method': None}}
-
-    @classmethod
-    def get_package_units(self):
-        return {'time': 's',
-                'length': 'm',
-                'mass': 'g',
-                'amount': 'mol',
-                'temperature': 'K',
-                'energy': 'J',
-                'holdup': 'mol'}
+    def define_metadata(cls, obj):
+        obj.add_properties({'rxn1': {'method': None}})
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
+        obj.add_required_properties({'prop2': 'some'})
 
 
 def test_validate_state_block_unsupported_prop():
@@ -142,7 +127,7 @@ def test_validate_state_block_unsupported_prop():
     m.r = ReactionParameterBlock3(default={"property_package": m.p})
 
     with pytest.raises(PropertyPackageError):
-        m.r._validate_property_parameter_block()
+        m.r._validate_property_parameter_properties()
 
 
 @declare_process_block_class("ReactionParameterBlock4")
@@ -151,32 +136,82 @@ class _ReactionParameterBlock4(ReactionParameterBase):
         super(ReactionParameterBase, self).build()
 
     @classmethod
-    def get_required_properties(self):
-        return ['prop1']
+    def define_metadata(cls, obj):
+        obj.add_properties({'rxn1': {'method': None}})
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
+        obj.add_required_properties({'prop3': 'some'})
+
+
+def test_validate_state_block_unsupported_prop_False():
+    # Test validation of associated PropertyParameterBlock
+    m = ConcreteModel()
+    m.p = PropertyParameterBlock()
+    m.r = ReactionParameterBlock4(default={"property_package": m.p})
+
+    with pytest.raises(PropertyPackageError):
+        m.r._validate_property_parameter_properties()
+
+
+@declare_process_block_class("ReactionParameterBlock5")
+class _ReactionParameterBlock5(ReactionParameterBase):
+    def build(self):
+        super(ReactionParameterBase, self).build()
 
     @classmethod
-    def get_supported_properties(self):
-        return {'rxn1': {'method': None}}
+    def define_metadata(cls, obj):
+        obj.add_properties({'rxn1': {'method': None}})
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
+        obj.add_required_properties({'prop1': 'km'})
+
+
+def test_validate_state_block_req_prop_wrong_units():
+    # Test validation of associated PropertyParameterBlock
+    m = ConcreteModel()
+    m.p = PropertyParameterBlock()
+    m.r = ReactionParameterBlock5(default={"property_package": m.p})
+
+    with pytest.raises(PropertyPackageError):
+        m.r._validate_property_parameter_properties()
+
+
+@declare_process_block_class("ReactionParameterBlock6")
+class _ReactionParameterBlock6(ReactionParameterBase):
+    def build(self):
+        super(ReactionParameterBase, self).build()
 
     @classmethod
-    def get_package_units(self):
-        return {'time': 's',
-                'length': 'm',
-                'mass': 'g',
-                'amount': 'mol',
-                'temperature': 'K',
-                'energy': 'J',
-                'holdup': 'mol'}
+    def define_metadata(cls, obj):
+        obj.add_properties({'rxn1': {'method': None}})
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
+        obj.add_required_properties({'prop1': 'm'})
 
 
 def test_ReactionParameterBase_build():
     # Test that ReactionParameterBase gets module information
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
-    m.r = ReactionParameterBlock4(default={"property_package": m.p})
-    super(_ReactionParameterBlock4, m.r).build()
+    m.r = ReactionParameterBlock6(default={"property_package": m.p})
+    super(_ReactionParameterBlock6, m.r).build()
 
-    assert hasattr(m.r, "property_module")
+    assert hasattr(m.r, "_package_module")
 
 
 # -----------------------------------------------------------------------------
@@ -231,8 +266,8 @@ def test_validate_state_block_fail():
 
     m.pb = StateBlock(default={"parameters": m.p2})
 
-    m.r = ReactionParameterBlock4(default={"property_package": m.p})
-    super(_ReactionParameterBlock4, m.r).build()
+    m.r = ReactionParameterBlock6(default={"property_package": m.p})
+    super(_ReactionParameterBlock6, m.r).build()
 
     m.rb = ReactionBlock(default={"parameters": m.r,
                                   "state_block": m.pb})
@@ -255,8 +290,8 @@ def test_build():
 
     m.pb = StateBlock(default={"parameters": m.p})
 
-    m.r = ReactionParameterBlock4(default={"property_package": m.p})
-    super(_ReactionParameterBlock4, m.r).build()
+    m.r = ReactionParameterBlock6(default={"property_package": m.p})
+    super(_ReactionParameterBlock6, m.r).build()
 
     m.rb = ReactionBlock2(default={"parameters": m.r,
                                    "state_block": m.pb})
@@ -269,8 +304,8 @@ def test_ReactionBlock_NotImplementedErrors():
 
     m.pb = StateBlock(default={"parameters": m.p})
 
-    m.r = ReactionParameterBlock4(default={"property_package": m.p})
-    super(_ReactionParameterBlock4, m.r).build()
+    m.r = ReactionParameterBlock6(default={"property_package": m.p})
+    super(_ReactionParameterBlock6, m.r).build()
 
     m.rb = ReactionBlock2(default={"parameters": m.r,
                                    "state_block": m.pb})
@@ -288,18 +323,18 @@ class _Parameters(ReactionParameterBase):
     def build(self):
         super(ReactionParameterBase, self).build()
         frm = inspect.stack()[1]
-        self.property_module = inspect.getmodule(frm[0])
+        self.__package_module = inspect.getmodule(frm[0])
 
     @classmethod
-    def get_supported_properties(self):
-        return {'a': {'method': 'a_method'},
-                'recursion1': {'method': '_recursion1'},
-                'recursion2': {'method': '_recursion2'},
-                'not_callable': {'method': 'test_obj'},
-                'raise_exception': {'method': '_raise_exception'},
-                'not_supported': {'method': False},
-                'does_not_create_component': {
-                        'method': '_does_not_create_component'}}
+    def define_metadata(cls, obj):
+        obj.add_properties({'a': {'method': 'a_method'},
+                            'recursion1': {'method': '_recursion1'},
+                            'recursion2': {'method': '_recursion2'},
+                            'not_callable': {'method': 'test_obj'},
+                            'raise_exception': {'method': '_raise_exception'},
+                            'not_supported': {'method': False},
+                            'does_not_create_component': {
+                                    'method': '_does_not_create_component'}})
 
 
 @declare_process_block_class("Reaction", block_class=ReactionBlockBase)
@@ -371,7 +406,7 @@ def test_getattr_raise_exception(m):
         m.p.cons = Constraint(expr=m.p.raise_exception == 1)
 
 
-## TODO : Need a test for cases where method does not create property
-##def test_getattr_does_not_create_component(m):
-##    with pytest.raises(PropertyPackageError):
-##        m.p.cons = Constraint(expr=m.p.does_not_create_component == 1)
+# TODO : Need a test for cases where method does not create property
+#def test_getattr_does_not_create_component(m):
+#    with pytest.raises(PropertyPackageError):
+#        m.p.cons = Constraint(expr=m.p.does_not_create_component == 1)

@@ -38,6 +38,16 @@ class _PropertyParameterBlock(PhysicalParameterBase):
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"])
 
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
+
 
 @declare_process_block_class("StateBlock")
 class StateBlockData(StateBlockDataBase):
@@ -75,6 +85,22 @@ def test_base_build():
     assert hasattr(m.fs.cv, "time")
     assert hasattr(m.fs.cv, "phase_list")
     assert hasattr(m.fs.cv, "component_list")
+
+
+# -----------------------------------------------------------------------------
+# Test add_geometry
+def test_add_geometry():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PropertyParameterBlock()
+
+    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
+
+    m.fs.cv.add_geometry()
+
+    assert hasattr(m.fs.cv, "volume")
+    assert len(m.fs.cv.volume) == 1.0
+    assert m.fs.cv.volume[0].value == 1.0
 
 
 # -----------------------------------------------------------------------------
@@ -158,3 +184,11 @@ def test_add_state_blocks_custom_args():
 
 # -----------------------------------------------------------------------------
 # Test add_reaction_blocks
+#def test_add_reaction_blocks():
+#    m = ConcreteModel()
+#    m.fs = Flowsheet(default={"dynamic": False})
+#    m.fs.pp = PropertyParameterBlock()
+#
+#    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
+#
+#    m.fs.cv.add_state_blocks()

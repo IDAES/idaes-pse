@@ -24,7 +24,7 @@ from idaes.core import useDefault
 from idaes.core.util.exceptions import ConfigurationError
 
 
-def is_property_parameter_block(val):
+def is_physical_parameter_block(val):
     '''Domain validator for property package attributes
 
     Args:
@@ -41,7 +41,7 @@ def is_property_parameter_block(val):
     else:
         raise ConfigurationError(
                 """Property package argument should be an instance
-                of a PropertyParameterBlock or useDefault""")
+                of a PhysicalParameterBlock or useDefault""")
 
 
 def is_reaction_parameter_block(val):
