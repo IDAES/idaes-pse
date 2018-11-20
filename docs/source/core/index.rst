@@ -13,12 +13,11 @@ Core Contents
     control_volume
     unit_model
     flowsheet_model
-    stream_block
 
 Overview
 --------
 
-The ProcessBlock class is the base class of IDAES models.
+The ProcessBlock_ class is the base class of IDAES models.
 
 StateBlock supplies information about a materials state including physical
 properties and flow rates. ReactionBlock is used in systems where chemical
