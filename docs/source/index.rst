@@ -38,6 +38,8 @@ Contents
 
 ..    install
 ..    core/index
+..    properties/index
+..    models/index
 ..    dmf/index
 
 Indices and tables
