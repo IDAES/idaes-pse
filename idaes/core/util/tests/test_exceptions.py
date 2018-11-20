@@ -20,6 +20,11 @@ from idaes.core.util.exceptions import *
 __author__ = "Andrew Lee"
 
 
+def test_BalanceTypeNotSupportedError():
+    with pytest.raises(NotImplementedError):
+        raise BalanceTypeNotSupportedError()
+
+
 def test_ConfigurationError():
     with pytest.raises(ValueError):
         raise ConfigurationError()

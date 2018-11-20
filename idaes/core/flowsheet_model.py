@@ -25,7 +25,7 @@ from pyomo.common.config import ConfigValue, In
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
                         UnitBlockData, useDefault)
-from idaes.core.util.config import is_property_parameter_block, list_of_floats
+from idaes.core.util.config import is_physical_parameter_block, list_of_floats
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 # Some more information about this module
@@ -73,7 +73,7 @@ class FlowsheetBlockData(ProcessBlockData):
 **default** - [0]."""))
     CONFIG.declare("default_property_package", ConfigValue(
         default=None,
-        domain=is_property_parameter_block,
+        domain=is_physical_parameter_block,
         description="Default property package to use in flowsheet",
         doc="""Indicates the default property package to be used by models
 within this flowsheet if not otherwise specified,
