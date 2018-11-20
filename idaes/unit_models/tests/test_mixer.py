@@ -26,10 +26,10 @@ from idaes.core import (FlowsheetBlockData,
                         PhysicalParameterBase,
                         StateBlockBase,
                         StateBlockDataBase)
-from idaes.models.mixer import (MixerBlock,
-                                MixerBlockData,
-                                MixingType,
-                                MomentumMixingType)
+from idaes.unit_models.mixer import (MixerBlock,
+                                     MixerBlockData,
+                                     MixingType,
+                                     MomentumMixingType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
