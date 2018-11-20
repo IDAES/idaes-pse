@@ -101,7 +101,7 @@ class StateBlockData(StateBlockDataBase):
     def get_enthalpy_flow_terms(b, p):
         return b.enth_mol_phase[p]
 
-    def define_port_members(self):
+    def define_state_vars(self):
         return {"component_flow": self.flow_mol_phase_comp,
                 "enthalpy": self.enth_mol_phase,
                 "pressure": self.pressure}
@@ -700,8 +700,8 @@ def test_initialize():
     assert m.fs.sb[0].flow_mol_phase_comp["p2", "c1"].value == 2
     assert m.fs.sb[0].flow_mol_phase_comp["p2", "c2"].value == 2
 
-    assert m.fs.sb[0].enth_mol_phase["p1"].value == 4
-    assert m.fs.sb[0].enth_mol_phase["p2"].value == 4
+    assert m.fs.sb[0].enth_mol_phase["p1"].value == 2
+    assert m.fs.sb[0].enth_mol_phase["p2"].value == 2
 
     assert m.fs.sb[0].pressure.value == 8e4
 

@@ -611,28 +611,34 @@ linked to all inlet states and the mixed state,
         else:
             mblock = blk.config.mixed_state_block
 
-        # Calculate mixed stream terms
+        # Calculate initial guesses for mixed stream state
         for t in blk.time:
-            for p in blk.phase_list:
-                # Component flow terms
-                if blk.config.material_mixing_type != MixingType.none:
-                    for j in blk.component_list:
-                        mblock[t].get_material_flow_terms(p, j).value = sum(
-                                i_block_list[i][t].
-                                get_material_flow_terms(p, j).value
-                                for i in range(len(i_block_list)))
+            # Iterate over state vars as defined by property package
+            s_vars = mblock[t].define_state_vars()
+            for s in s_vars:
+                i_vars = []
+                for i in range(len(i_block_list)):
+                    i_vars.append(getattr(i_block_list[i][t],
+                                          s_vars[s].local_name))
 
-                # Energy flow terms
-                if blk.config.energy_mixing_type != MixingType.none:
-                    mblock[t].get_enthalpy_flow_terms(p).value = sum(
-                        i_block_list[i][t].get_enthalpy_flow_terms(p).value
-                        for i in range(len(i_block_list)))
-
-            # Pressure term
-            if blk.config.momentum_mixing_type != MixingType.none:
-                mblock[t].pressure.value = min(
-                        i_block_list[i][t].pressure.value
-                        for i in range(len(i_block_list)))
+                if s == "pressure":
+                    # If pressure, use minimum as initial guess
+                    mblock[t].pressure.value = min(
+                            i_block_list[i][t].pressure.value
+                            for i in range(len(i_block_list)))
+                elif "flow" in s:
+                    # If a "flow" variable (i.e. extensive), sum inlets
+                    for k in s_vars[s]:
+                        s_vars[s][k].value = sum(i_vars[i][k].value
+                                                 for i in range(
+                                                         len(i_block_list)))
+                else:
+                    # Otherwise use average of inlets
+                    for k in s_vars[s]:
+                        s_vars[s][k].value = (sum(i_vars[i][k].value
+                                                  for i in range(
+                                                         len(i_block_list))) /
+                                              len(i_block_list))
 
         mblock.initialize(outlvl=outlvl-1,
                           optarg=optarg,
