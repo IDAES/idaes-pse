@@ -59,24 +59,30 @@ class ProcessBlockData(_BlockData):
 
     def __init__(self, component):
         """
-        Initialize the object. Anything inheriting from process base should
-        impliment a build() function that creates the Pyomo comonents. This
-        build function is called by the blocks default rule.
+        Initialize a ProcessBlockData object.
 
         Args:
-            component: container Block instance to which this _BlockData
-                       belongs.
+            component(Block): container Block instance to which this _BlockData
+                              belongs.
 
         Returns:
-            None
+            (ProcessBlockData): A new instance
         """
         super(ProcessBlockData, self).__init__(component=component)
 
     def build(self):
         """
-        Default build method for all Classes inheriting from ProcessBlockData.
-        Currently empty, but left in place to allow calls to super().build and
-        for future compatability.
+        The build method is called by the default ProcessBlock rule.  If a rule
+        is sepecified other than the default it is important to call
+        ProcessBlockData's build method to put information from the "default"
+        and "initialize" arguments to a ProcessBlock derived class into the
+        BlockData object's ConfigBlock.
+
+        The the build method should usually be overloaded in a subclass derived
+        from ProcessBlockData. This method would generally add Pyomo components
+        such as variables, expressions, and constraints to the object. It is
+        important for build() methods implimented in derived classes to call
+        build() from the super class.
 
         Args:
             None

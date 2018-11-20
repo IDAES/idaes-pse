@@ -69,7 +69,7 @@ class FlowsheetBlockData(ProcessBlockData):
         domain=list_of_floats,
         description="Set of points for initializing time domain",
         doc="""Set of points for initializing time domain. This should be a
-        list of floating point numbers,
+list of floating point numbers,
 **default** - [0]."""))
     CONFIG.declare("default_property_package", ConfigValue(
         default=None,

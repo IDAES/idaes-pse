@@ -15,7 +15,6 @@ The process_block module simplifies inheritance of Pyomo blocks. The main
 reason to subclass a Pyomo block is to create a block that comes with
 pre-defined model equations. This is used in the IDAES modeling framework to
 create modular process model blocks.
-
 """
 from __future__ import absolute_import, division, print_function
 
@@ -28,7 +27,8 @@ __all__ = ['ProcessBlock', 'declare_process_block_class']
 
 
 def _rule_default(b, *args):
-    """Default rule for ProcessBlock, which calls build(). A different rule can
+    """
+    Default rule for ProcessBlock, which calls build(). A different rule can
     be specified to add additional build steps, or to not call build at all
     using the normal rule argument to ProcessBlock init.
     """
@@ -41,15 +41,24 @@ def _rule_default(b, *args):
 
 
 _process_block_docstring = """
-Args:
-    rule (function): A rule function or None. Default rule calls build().
-    concrete (bool): If True, make this a toplevel model. **Default** - False.
-    ctype (str): Pyomo ctype of the block.  **Default** - "Block"
-    default (dict): Default ProcessBlockData config
+    Args:
+        rule (function): A rule function or None. Default rule calls build().
+        concrete (bool): If True, make this a toplevel model. **Default** - False.
+        ctype (str): Pyomo ctype of the block.  **Default** - "Block"
+        default (dict): Default ProcessBlockData config{}
+        initialize (dict): ProcessBlockData config for individual elements. Keys
+            are BlockData indexes and values are dictionaries described under the
+            "default" argument above.
+    Returns:
+        ({}) New instance
+    """
+_config_block_keys_docstring = """
+
+            ..
+
+            Keys
 {}
-    initialize (dict): ProcessBlockData config for individual elements. Keys
-        are BlockData indexes and values are dictionaries described under the
-        "default" argument above.
+            ..
 """
 
 
@@ -87,25 +96,15 @@ class _ScalarProcessBlockMeta(type):
 
 
 class ProcessBlock(Block):
-    """Process block.
+    __doc__ = """
+    ProcessBlock is a Pyomo Block that is part of a system to make Pyomo
+    Block easier to subclass. The main difference between a Pyomo Block and
+    ProcessBlock from the user perspective is that a ProcessBlock has a rule
+    assigned by default that calls the build() method for the contained
+    ProcessBlockData objects. The default rule can be overridden, but the new
+    rule should always call build() for the ProcessBlockData object.
+    """ + _process_block_docstring.format("", "ProcessBlock")
 
-    Process block behaves like a Pyomo Block. The important differences are
-    listed below.
-
-    * There is a default rule that calls the build() method for _BlockData
-      subclass ojects, so subclass of _BlockData used in a ProcessBlock
-      should have a build() method. A different rule or no rule (None) can be
-      set with the usual rule argument, if additional steps are required to
-      build an element of a block. A example of such a case is where
-      different elements of an indexed block require addtional
-      information to construct.
-
-    * Some of the arguments to __init__, which are not expected arguments of
-      Block, are split off and stored in self._block_data_config. If the
-      _BlockData subclass inherits ProcessBlockData, self._block_data_config
-      is sent to the self.config ConfigBlock.
-
-    """
     def __new__(cls, *args, **kwds):
         """Create a new indexed or scalar ProcessBlock subclass instance
         depending on whether there are args.  If there are args those should be
@@ -179,22 +178,20 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         block_class: ProcessBlock or a subclass of ProcessBlock, this allows
             you to use a subclass of ProcessBlock if needed.
         doc: Documentation for the class. This should play nice with sphinx.
-
     """
     def proc_dec(cls):  # Decorator function
         # create a new class called name from block_class
         try:
             cb_doc = cls.CONFIG.generate_documentation(
                 block_start="", block_end="", item_start="%s\n",
-                indent_spacing=4, item_body="%s", item_end="", width=70)
+                indent_spacing=4, item_body="%s", item_end="", width=66)
             cb_doc += "\n"
-            cb_doc = '\n'.join(' '*8 + x for x in cb_doc.splitlines())
+            cb_doc = '\n'.join(' '*12 + x for x in cb_doc.splitlines())
         except:
             cb_doc = ""
         if cb_doc != "":
-            cb_doc = "\n        ..\n\n        Keys\n{}\n        ..\n".format(cb_doc)
-        ds = _process_block_docstring.format(cb_doc)
-        ds = "{}\n{}\nReturns:\n   ({}) New instance".format(doc, ds, name)
+            cb_doc = _config_block_keys_docstring.format(cb_doc)
+        ds = "\n".join([doc, _process_block_docstring.format(cb_doc, name)])
         c = type(name, (block_class,),
                 {"__module__": cls.__module__,
                  "_ComponentDataClass": cls,
