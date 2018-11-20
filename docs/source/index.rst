@@ -33,11 +33,14 @@ Contents
 .. toctree::
     :maxdepth: 1
 
-    Core <core/index>
-    Modules <apidoc/modules>
+    core/index
+    properties/index
+    models/index
 
 ..    install
 ..    core/index
+..    properties/index
+..    models/index
 ..    dmf/index
 
 Indices and tables
