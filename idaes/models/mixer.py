@@ -213,7 +213,7 @@ linked to all inlet states and the mixed state,
         if self.config.material_mixing_type == MixingType.extensive:
             self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
                                                mixed_block=mixed_block)
-        elif self.config.material_mixing_type == MixingType.extensive:
+        elif self.config.material_mixing_type == MixingType.none:
             pass
         else:
             raise ConfigurationError("{} recieved unrecognised value for "
@@ -225,7 +225,7 @@ linked to all inlet states and the mixed state,
         if self.config.energy_mixing_type == MixingType.extensive:
             self.add_energy_mixing_equations(inlet_blocks=inlet_blocks,
                                              mixed_block=mixed_block)
-        elif self.config.energy_mixing_type == MixingType.extensive:
+        elif self.config.energy_mixing_type == MixingType.none:
             pass
         else:
             raise ConfigurationError("{} recieved unrecognised value for "
