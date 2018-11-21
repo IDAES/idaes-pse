@@ -195,15 +195,15 @@ class PhysicalParameterData(PhysicalParameterBase):
                 'dens_mol_phase': {'method': '_dens_mol_phase',
                                    'units': 'mol/m^3'},
                 'enth_mol': {'method': '_enth_mol', 'units': 'J/mol'},
-                'enth_mol_comp': {'method': '_enth_mol_comp',
-                                  'units': 'J/mol'},
+                'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp',
+                                        'units': 'J/mol'},
                 'entr_mol': {'method': '_entr_mol', 'units': 'J/mol'},
-                'entr_mol_comp': {'method': '_entr_mol_comp',
-                                  'units': 'J/mol'},
+                'entr_mol_phase_comp': {'method': '_entr_mol_phase_comp',
+                                        'units': 'J/mol'},
                 'flow_mol': {'method': '_flow_mol', 'units': 'mol/s'},
                 'gibbs_mol': {'method': '_gibbs_mol', 'units': 'J/mol'},
-                'gibbs_mol_comp': {'method': '_gibbs_mol_comp',
-                                   'units': 'J/mol'}})
+                'gibbs_mol_phase_comp': {'method': '_gibbs_mol_phase_comp',
+                                         'units': 'J/mol'}})
         obj.add_default_units({'time': 's',
                                'length': 'm',
                                'mass': 'g',
@@ -316,7 +316,7 @@ class _StateBlock(StateBlockBase):
                         blk[k].cp_params[j, 5]/(blk[k].temperature*1e-3)**2)
 
                 if hasattr(blk[k], "enthalpy_shomate_eqn"):
-                    blk[k].enth_mol_comp[j] = 1e3*value(
+                    blk[k].enth_mol_phase_comp["Vap", j] = 1e3*value(
                         blk[k].cp_params[j, 1]*(blk[k].temperature*1e-3) +
                         blk[k].cp_params[j, 2]*(blk[k].temperature*1e-3)**2/2 +
                         blk[k].cp_params[j, 3]*(blk[k].temperature*1e-3)**3/3 +
@@ -327,7 +327,7 @@ class _StateBlock(StateBlockBase):
                         blk[k].cp_params[j, 9])
 
                 if hasattr(blk[k], "entropy_shomate_eqn"):
-                    blk[k].entr_mol_comp[j] = value(
+                    blk[k].entr_mol_phase_comp["Vap", j] = value(
                         blk[k].cp_params[j, 1]*log((blk[k].temperature*1e-3)) +
                         blk[k].cp_params[j, 2]*(blk[k].temperature*1e-3) +
                         blk[k].cp_params[j, 3]*(blk[k].temperature*1e-3)**2/2 +
@@ -338,9 +338,10 @@ class _StateBlock(StateBlockBase):
                         blk[k].gas_const*log(blk[k].mole_frac[j]))
 
                 if hasattr(blk[k], "partial_gibbs_energy_eqn"):
-                    blk[k].gibbs_mol_comp[j] = value(
-                            blk[k].enth_mol_comp[j] -
-                            blk[k].temperature*blk[k].entr_mol_comp[j])
+                    blk[k].gibbs_mol_phase_comp["Vap", j] = value(
+                        blk[k].enth_mol_phase_comp["Vap", j] -
+                        blk[k].temperature *
+                        blk[k].entr_mol_phase_comp["Vap", j])
 
             if hasattr(blk[k], "ideal_gas"):
                 blk[k].dens_mol_phase["Vap"] = value(
@@ -352,14 +353,16 @@ class _StateBlock(StateBlockBase):
                         for j in blk[k].component_list))
 
             if hasattr(blk[k], "mixture_enthalpy_eqn"):
-                blk[k].enth_mol = value(sum(blk[k].mole_frac[j] *
-                                            blk[k].enth_mol_comp[j]
-                                            for j in blk[k].component_list))
+                blk[k].enth_mol = value(
+                        sum(blk[k].mole_frac[j] *
+                            blk[k].enth_mol_phase_comp["Vap", j]
+                            for j in blk[k].component_list))
 
             if hasattr(blk[k], "mixture_entropy_eqn"):
-                blk[k].entr_mol = value(sum(blk[k].mole_frac[j] *
-                                            blk[k].entr_mol_comp[j]
-                                            for j in blk[k].component_list))
+                blk[k].entr_mol = value(
+                        sum(blk[k].mole_frac[j] *
+                            blk[k].entr_mol_phase_comp["Vap", j]
+                            for j in blk[k].component_list))
 
             if hasattr(blk[k], "total_flow_eqn"):
                 blk[k].flow_mol = value(sum(blk[k].flow_mol_comp[j]
@@ -575,16 +578,17 @@ class StateBlockData(StateBlockDataBase):
             self.del_component(self.mixture_heat_capacity_eqn)
             raise
 
-    def _enth_mol_comp(self):
+    def _enth_mol_phase_comp(self):
         # Pure component vapour enthalpies
-        self.enth_mol_comp = Var(
+        self.enth_mol_phase_comp = Var(
+                self.phase_list,
                 self.component_list,
                 domain=Reals,
                 initialize=1.0,
-                doc="Pure component vapour enthalpies [J/mol]")
+                doc="Pure component enthalpies [J/mol]")
 
         def pure_comp_enthalpy(b, j):
-            return b.enth_mol_comp[j] == 1e3*(
+            return b.enth_mol_phase_comp["Vap", j] == 1e3*(
                     b.cp_params[j, 1]*(b.temperature*1e-3) +
                     b.cp_params[j, 2]*(b.temperature*1e-3)**2/2 +
                     b.cp_params[j, 3]*(b.temperature*1e-3)**3/3 +
@@ -612,7 +616,7 @@ class StateBlockData(StateBlockDataBase):
             # Try to build constraint
             self.mixture_enthalpy_eqn = Constraint(expr=(
                         self.enth_mol == sum(self.mole_frac[j] *
-                                             self.enth_mol_comp[j]
+                                             self.enth_mol_phase_comp["Vap", j]
                                              for j in self.component_list)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -620,16 +624,17 @@ class StateBlockData(StateBlockDataBase):
             self.del_component(self.mixture_enthalpy_eqn)
             raise
 
-    def _entr_mol_comp(self):
-        # Partial component vapour entropies
-        self.entr_mol_comp = Var(
+    def _entr_mol_phase_comp(self):
+        # Partial component entropies
+        self.entr_mol_phase_comp = Var(
+                self.phase_list,
                 self.component_list,
                 domain=Reals,
                 initialize=1.0,
-                doc="Partial component vapour entropies [J/mol.K]")
+                doc="Partial component entropies [J/mol.K]")
 
         def pure_comp_entropy(b, j):
-            return b.entr_mol_comp[j] == (
+            return b.entr_mol_phase_comp["Vap", j] == (
                     b.cp_params[j, 1]*log((b.temperature*1e-3)) +
                     b.cp_params[j, 2]*(b.temperature*1e-3) +
                     b.cp_params[j, 3]*(b.temperature*1e-3)**2/2 +
@@ -643,7 +648,7 @@ class StateBlockData(StateBlockDataBase):
                                                   rule=pure_comp_entropy)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.entr_mol_comp)
+            self.del_component(self.entr_mol_phase_comp)
             self.del_component(self.entropy_shomate_eqn)
             raise
 
@@ -656,7 +661,7 @@ class StateBlockData(StateBlockDataBase):
             # Try to build constraint
             self.mixture_entropy_eqn = Constraint(expr=(
                         self.entr_mol == sum(self.mole_frac[j] *
-                                             self.entr_mol_comp[j]
+                                             self.entr_mol_phase_comp[j]
                                              for j in self.component_list)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -681,9 +686,10 @@ class StateBlockData(StateBlockDataBase):
             self.del_component(self.total_flow_eqn)
             raise
 
-    def _gibbs_mol_comp(self):
+    def _gibbs_mol_phase_comp(self):
         # Partial component Gibbs free energy
-        self.gibbs_mol_comp = Var(
+        self.gibbs_mol_phase_comp = Var(
+                            self.phase_list,
                             self.component_list,
                             domain=Reals,
                             initialize=0.0,
@@ -691,8 +697,9 @@ class StateBlockData(StateBlockDataBase):
 
         # Assume constant cp_mol for simplicity and vapour phase only
         def comp_gibbs_energy_equation(b, j):
-            return b.gibbs_mol_comp[j] == (b.enth_mol_comp[j] -
-                                           b.temperature*b.entr_mol_comp[j])
+            return b.gibbs_mol_phase_comp["Vap", j] == (
+                        b.enth_mol_phase_comp["Vap", j] -
+                        b.temperature*b.entr_mol_phase_comp["Vap", j])
         try:
             # Try to build constraint
             self.partial_gibbs_energy_eqn = Constraint(

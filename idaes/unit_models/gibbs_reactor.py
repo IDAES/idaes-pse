@@ -172,6 +172,9 @@ see property package for documentation.}"""))
                            "component_list",
                            self.control_volume.component_list)
         object.__setattr__(self,
+                           "phase_list",
+                           self.control_volume.phase_list)
+        object.__setattr__(self,
                            "element_list",
                            self.control_volume.element_list)
 
@@ -182,25 +185,25 @@ see property package for documentation.}"""))
                                  initialize=100,
                                  doc="Lagrangian multipliers")
 
-        # TODO: Need to add support for multiple phases
         # Use Lagrangian multiple method to derive equations for Out_Fi
         # Use RT*lagrange as the Lagrangian multiple such that lagrange is in
         # a similar order of magnitude as log(Yi)
 
         @self.Constraint(self.time,
+                         self.phase_list,
                          self.component_list,
                          doc="Gibbs energy minimisation constraint")
-        def gibbs_minimization(b, t, j):
+        def gibbs_minimization(b, t, p, j):
             # Use natural log of species mole flow to avoid Pyomo solver
             # warnings of reaching infeasible point
             return 0 == (
-                    b.control_volume.properties_out[t].gibbs_mol_comp[j] +
-                    b.control_volume.properties_out[t].gas_const *
-                    b.control_volume.properties_out[t].temperature *
-                    (log(b.control_volume.properties_out[t].mole_frac[j]) +
-                     sum(b.lagrange_mult[t, e] *
-                         b.control_volume.properties_out[t].element_comp[j][e]
-                         for e in b.element_list)))
+                b.control_volume.properties_out[t].gibbs_mol_phase_comp[p, j] +
+                b.control_volume.properties_out[t].gas_const *
+                b.control_volume.properties_out[t].temperature *
+                (log(b.control_volume.properties_out[t].mole_frac[j]) +
+                 sum(b.lagrange_mult[t, e] *
+                     b.control_volume.properties_out[t].element_comp[j][e]
+                     for e in b.element_list)))
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and
