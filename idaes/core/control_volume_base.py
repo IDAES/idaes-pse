@@ -106,11 +106,11 @@ CONFIG_Template.declare("material_balance_type", ConfigValue(
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
 CONFIG_Template.declare("energy_balance_type", ConfigValue(
-    default=EnergyBalanceType.enthalpyPhase,
+    default=EnergyBalanceType.enthalpyTotal,
     domain=In(EnergyBalanceType),
     description="Energy balance construction flag",
     doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyPhase.
+**default** - EnergyBalanceType.enthalpyTotal.
 **Valid values:** {
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single ethalpy balance for material,
@@ -421,10 +421,10 @@ have a config block which derives from CONFIG_Base,
         """
         if balance_type == EnergyBalanceType.none:
             eb = None
-        elif balance_type == EnergyBalanceType.enthalpyPhase:
-            eb = self.add_phase_enthalpy_balances(**kwargs)
         elif balance_type == EnergyBalanceType.enthalpyTotal:
             eb = self.add_total_enthalpy_balances(**kwargs)
+        elif balance_type == EnergyBalanceType.enthalpyPhase:
+            eb = self.add_phase_enthalpy_balances(**kwargs)
         elif balance_type == EnergyBalanceType.energyTotal:
             eb = self.add_total_energy_balances(**kwargs)
         elif balance_type == EnergyBalanceType.energyPhase:

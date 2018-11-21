@@ -83,7 +83,7 @@ class StateBlockBase(ProcessBlock):
         PropertyData objects, and contains methods that can be applied to
         multiple StateBlockData objects simultaneously.
     """
-    def initialize(self, *args):
+    def initialize(self, *args, **kwargs):
         """
         This is a default initialization routine for StateBlocks to ensure
         that a routine is present. All StateBlockData classes should

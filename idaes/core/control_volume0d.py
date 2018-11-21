@@ -887,9 +887,10 @@ class ControlVolume0dData(ControlVolumeBase):
                     balances
             has_mass_transfer - whether generic mass transfer terms should be
                     included in material balances
-            custom_elemental_term - a Pyomo Expression representing custom terms
-                    to be included in material balances on a molar elemental
-                    basis. Expression must be indexed by time and element list
+            custom_elemental_term - a Pyomo Expression representing custom
+                    terms to be included in material balances on a molar
+                    elemental basis. Expression must be indexed by time and
+                    element list
 
         Returns:
             Constraint object representing material balances
@@ -1434,7 +1435,7 @@ class ControlVolume0dData(ControlVolumeBase):
         if state_args is None:
             state_args = {}
             state_dict = \
-                blk.properties_in[blk.time.first()].declare_port_members()
+                blk.properties_in[blk.time.first()].define_port_members()
             for k in state_dict.keys():
                 if state_dict[k].is_indexed():
                     state_args[k] = {}
@@ -1456,9 +1457,12 @@ class ControlVolume0dData(ControlVolumeBase):
                                       hold_state=False,
                                       **state_args)
 
-        blk.reactions.initialize(outlvl=outlvl-1,
-                                 optarg=optarg,
-                                 solver=solver)
+        try:
+            blk.reactions.initialize(outlvl=outlvl-1,
+                                     optarg=optarg,
+                                     solver=solver)
+        except AttributeError:
+            pass
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete'.format(blk.name))

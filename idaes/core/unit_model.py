@@ -363,10 +363,10 @@ class UnitBlockData(ProcessBlockData):
 
         # ---------------------------------------------------------------------
         # Initialize control volume block
-        flags = blk.controlVolume.initialize(outlvl=outlvl-1,
-                                             optarg=optarg,
-                                             solver=solver,
-                                             state_args=state_args)
+        flags = blk.control_volume.initialize(outlvl=outlvl-1,
+                                              optarg=optarg,
+                                              solver=solver,
+                                              state_args=state_args)
 
         if outlvl > 0:
             _log.info('{} Initialisation Step 1 Complete.'.format(blk.name))
@@ -386,7 +386,7 @@ class UnitBlockData(ProcessBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.controlVolume.release_state(flags, outlvl-1)
+        blk.control_volume.release_state(flags, outlvl-1)
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete.'.format(blk.name))
