@@ -76,7 +76,7 @@ def test_CONFIG_Template():
         elif i == "material_balance_type":
             assert c[i] == MaterialBalanceType.componentPhase
         elif i == "energy_balance_type":
-            assert c[i] == EnergyBalanceType.enthalpyPhase
+            assert c[i] == EnergyBalanceType.enthalpyTotal
         elif i == "momentum_balance_type":
             assert c[i] == MomentumBalanceType.pressureTotal
         elif i == "property_package":
