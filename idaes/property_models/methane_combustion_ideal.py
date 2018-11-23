@@ -631,7 +631,7 @@ class StateBlockData(StateBlockDataBase):
                 initialize=1.0,
                 doc="Partial component entropies [J/mol.K]")
 
-        def pure_comp_entropy(b, j):
+        def partial_comp_entropy(b, j):
             return b.entr_mol_phase_comp["Vap", j] == (
                     b.cp_params[j, 1]*log((b.temperature*1e-3)) +
                     b.cp_params[j, 2]*(b.temperature*1e-3) +
@@ -643,7 +643,7 @@ class StateBlockData(StateBlockDataBase):
         try:
             # Try to build constraint
             self.entropy_shomate_eqn = Constraint(self.component_list,
-                                                  rule=pure_comp_entropy)
+                                                  rule=partial_comp_entropy)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.entr_mol_phase_comp)
@@ -659,7 +659,7 @@ class StateBlockData(StateBlockDataBase):
             # Try to build constraint
             self.mixture_entropy_eqn = Constraint(expr=(
                         self.entr_mol == sum(self.mole_frac[j] *
-                                             self.entr_mol_phase_comp[j]
+                                             self.entr_mol_phase_comp["Vap", j]
                                              for j in self.component_list)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
