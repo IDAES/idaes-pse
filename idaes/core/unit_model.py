@@ -19,13 +19,18 @@ from __future__ import division, print_function
 import logging
 
 from pyomo.environ import SolverFactory
+from pyomo.network import Port
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigValue, In
 
 from .process_base import (declare_process_block_class,
                            ProcessBlockData,
                            useDefault)
-from idaes.core.util.exceptions import ConfigurationError, DynamicError
+from .property_base import StateBlockBase
+from .control_volume_base import ControlVolumeBase, FlowDirection
+from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
+                                        DynamicError)
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -148,11 +153,174 @@ class UnitBlockData(ProcessBlockData):
         Returns:
             None
         """
-        # Run conrol volume block model checks
+        # Run control volume block model checks
         try:
             blk.controlVolume.model_check()
         except AttributeError:
             pass
+
+    def add_port(blk, name=None, block=None, doc=None):
+        """
+        This is a method to build Port objects in a unit model and
+        connect these to a specified StateBlock.
+
+        Keyword Args:
+            name = name to use for Port object.
+            block = an instance of a StateBlock to use as the source to
+                    populate the Port object
+            doc = doc string for Port object
+
+        Returns:
+            A Pyomo Port object and associated components.
+        """
+        # Validate block object
+        if not isinstance(block, StateBlockBase):
+            raise ConfigurationError("{} block object provided to add_port "
+                                     "method is not an instance of a "
+                                     "StateBlock object. IDAES port objects "
+                                     "should only be associated with "
+                                     "StateBlocks.".format(blk.name))
+
+        def port_rule(b, t):
+            return block[t].define_port_members()
+
+        p = Port(blk.time,
+                 rule=port_rule,
+                 doc=doc)
+        setattr(blk, name, p)
+        p_obj = getattr(blk, name)
+
+        return p_obj
+
+    def add_inlet_port(blk, name=None, block=None, doc=None):
+        """
+        This is a method to build inlet Port objects in a unit model and
+        connect these to a specified control volume or state block.
+
+        Keyword Args:
+            name = name to use for Port object (default = "inlet").
+            block = an instance of a ControlVolume or StateBlock to use as the
+                    source to populate the Port object. If a ControlVolume is
+                    provided, the method will use the inlet state block as
+                    defined by the ControlVolume. If not provided, method will
+                    attempt to default to an object named control_volume.
+            doc = doc string for Port object (default = "Inlet Port")
+
+        Returns:
+            A Pyomo Port object and associated components.
+        """
+        if block is None:
+            # Try for default ControlVolume name
+            try:
+                block = blk.control_volume
+            except AttributeError:
+                raise ConfigurationError(
+                        "{} add_inlet_port was called without a block argument"
+                        " but no default ControlVolume exists "
+                        "(control_volume). Please provide block to which the "
+                        "Port should be associated.".format(blk.name))
+
+        # Set default name and doc string if not provided
+        if name is None:
+            name = "inlet"
+        if doc is None:
+            doc = "Inlet Port"
+
+        if isinstance(block, ControlVolumeBase):
+            try:
+                state_block = block.properties_in
+            except AttributeError:
+                if hasattr(block, "ldomain"):
+                    if block.config.flow_direction == FlowDirection.forward:
+                        state_block = block.properties[:,
+                                                       block.ldomain.first()]
+                    elif block.config.flow_direction == FlowDirection.backward:
+                        state_block = block.properties[:,
+                                                       block.ldomain.last()]
+                    else:
+                        raise BurntToast("{} flow_direction argument received "
+                                         "invalid value. This should never "
+                                         "happen, so please contact the IDAES "
+                                         "developers with this bug."
+                                         .format(blk.name))
+                else:
+                    state_block = block.properties
+        elif isinstance(block, StateBlockBase):
+            state_block = block
+        else:
+            raise ConfigurationError("{} block provided to add_inlet_port "
+                                     "method was not an instance of a "
+                                     "ControlVolume or a StateBlock."
+                                     .format(blk.name))
+
+        p_obj = blk.add_port(name, state_block, doc)
+
+        return p_obj
+
+    def add_outlet_port(blk, name=None, block=None, doc=None):
+        """
+        This is a method to build outlet Port objects in a unit model and
+        connect these to a specified control volume or state block.
+
+        Keyword Args:
+            name = name to use for Port object (default = "outlet").
+            block = an instance of a ControlVolume or StateBlock to use as the
+                    source to populate the Port object. If a ControlVolume is
+                    provided, the method will use the outlet state block as
+                    defined by the ControlVolume. If not provided, method will
+                    attempt to default to an object named control_volume.
+            doc = doc string for Port object (default = "Outlet Port")
+
+        Returns:
+            A Pyomo Port object and associated components.
+        """
+        if block is None:
+            # Try for default ControlVolume name
+            try:
+                block = blk.control_volume
+            except AttributeError:
+                raise ConfigurationError(
+                        "{} add_outlet_port was called without a block "
+                        "argument but no default ControlVolume exists "
+                        "(control_volume). Please provide block to which the "
+                        "Port should be associated.".format(blk.name))
+
+        # Set default name and doc string if not provided
+        if name is None:
+            name = "outlet"
+        if doc is None:
+            doc = "Outlet Port"
+
+        if isinstance(block, ControlVolumeBase):
+            try:
+                state_block = block.properties_out
+            except AttributeError:
+                if hasattr(block, "ldomain"):
+                    if block.config.flow_direction == FlowDirection.forward:
+                        state_block = block.properties[:,
+                                                       block.ldomain.last()]
+                    elif block.config.flow_direction == FlowDirection.backward:
+                        state_block = block.properties[:,
+                                                       block.ldomain.first()]
+                    else:
+                        raise BurntToast("{} flow_direction argument received "
+                                         "invalid value. This should never "
+                                         "happen, so please contact the IDAES "
+                                         "developers with this bug."
+                                         .format(blk.name))
+                else:
+                    state_block = block.properties
+        elif isinstance(block, StateBlockBase):
+            state_block = block
+        else:
+            raise ConfigurationError("{} block provided to add_outlet_port "
+                                     "method was not an instance of a "
+                                     "ControlVolume or a StateBlock."
+                                     .format(blk.name))
+
+        p_obj = blk.add_port(name, state_block, doc)
+
+        return p_obj
 
     def initialize(blk, state_args=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}):
@@ -178,7 +346,7 @@ class UnitBlockData(ProcessBlockData):
                      * 3 = include solver output infomation (tee=True)
 
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
 
         Returns:
