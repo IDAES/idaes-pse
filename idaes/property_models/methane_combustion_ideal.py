@@ -487,7 +487,6 @@ class StateBlockData(StateBlockDataBase):
 
         self.flow_mol_comp = Var(self.component_list,
                                  initialize=1.0,
-                                 bounds=(1e-5, 1e3),
                                  doc='Component molar flowrate [mol/s]')
         self.pressure = Var(domain=Reals,
                             initialize=101325.0,
@@ -495,11 +494,10 @@ class StateBlockData(StateBlockDataBase):
                             doc='State pressure [Pa]')
         self.temperature = Var(domain=Reals,
                                initialize=1500,
-                               bounds=(1500, 3000),
+                               bounds=(1450, 3000),
                                doc='State temperature [K]')
         self.mole_frac = Var(self.component_list,
                              domain=Reals,
-                             bounds=(1e-8, 1),
                              initialize=0.0,
                              doc='State component mole fractions [-]')
 
