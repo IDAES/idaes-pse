@@ -87,7 +87,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                              'NH3': {'H': 3, 'N': 1, 'O': 0, 'C': 0}}
 
         # Heat capacity parameters - Shomate eqn (from NIST webbook)
-        # Parameter 9 is the enthalpy at the reference state in kJ/mol
+        # Parameter 9 is the enthalpy at 1500K (Tref) in J/mol
         cp_param_dict = {('H2', 1): 18.563083,
                          ('H2', 2): 12.257357,
                          ('H2', 3): -2.859786,
@@ -96,7 +96,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                          ('H2', 6): -1.147438,
                          ('H2', 7): 156.288133,
                          ('H2', 8): 0.0,
-                         ('H2', 9): -1.72700150691,
+                         ('H2', 9): 36290.28,
                          ('N2', 1): 19.50583,
                          ('N2', 2): 19.88705,
                          ('N2', 3): -8.598535,
@@ -105,7 +105,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                          ('N2', 6): -4.935202,
                          ('N2', 7): 212.3900,
                          ('N2', 8): 0,
-                         ('N2', 9): -0.0784651886274,
+                         ('N2', 9): 38405.02,
                          ('O2', 1): 30.03235,
                          ('O2', 2): 8.772972,
                          ('O2', 3): -3.988133,
@@ -114,7 +114,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                          ('O2', 6): -11.32468,
                          ('O2', 7): 236.1663,
                          ('O2', 8): 0,
-                         ('O2', 9): 0.473054200803,
+                         ('O2', 9): 40598.9,
                          ('CH4', 1): 85.81217,
                          ('CH4', 2): 11.26467,
                          ('CH4', 3): -2.114146,
@@ -123,7 +123,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                          ('CH4', 6): -153.5327,
                          ('CH4', 7): 224.4143,
                          ('CH4', 8): -74.87310,
-                         ('CH4', 9): 36.0280981217,
+                         ('CH4', 9): 78142.7,
                          ('CO', 1): 35.15070,
                          ('CO', 2): 1.300095,
                          ('CO', 3): -0.205921,
@@ -132,7 +132,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                          ('CO', 6): -127.8375,
                          ('CO', 7): 231.7120,
                          ('CO', 8): -110.5271,
-                         ('CO', 9): 4.23627177752,
+                         ('CO', 9): 38852.26,
                          ('CO2', 1): 58.16639,
                          ('CO2', 2): 2.720074,
                          ('CO2', 3): -0.492289,
@@ -141,7 +141,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                          ('CO2', 6): -425.9186,
                          ('CO2', 7): 263.6125,
                          ('CO2', 8): -393.5224,
-                         ('CO2', 9): 6.68706180077,
+                         ('CO2', 9): 61707.0,
                          ('H2O', 1): 41.96426,
                          ('H2O', 2): 8.622053,
                          ('H2O', 3): -1.499780,
@@ -150,7 +150,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                          ('H2O', 6): -272.1797,
                          ('H2O', 7): 219.7809,
                          ('H2O', 8): -241.8264,
-                         ('H2O', 9): 19.951417943,
+                         ('H2O', 9): 48150.13,
                          ('NH3', 1): 52.02427,
                          ('NH3', 2): 18.48801,
                          ('NH3', 3): -3.765128,
@@ -159,7 +159,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                          ('NH3', 6): -85.53895,
                          ('NH3', 7): 223.8022,
                          ('NH3', 8): -45.89806,
-                         ('NH3', 9): 18.4434084248}
+                         ('NH3', 9): 63578.64}
         self.cp_params = Param(self.component_list,
                                range(1, 10),
                                mutable=False,
@@ -179,7 +179,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                                   doc='Reference pressure [Pa]')
         self.temperature_ref = Param(within=PositiveReals,
                                      mutable=True,
-                                     default=298.15,
+                                     default=1500.0,
                                      doc='Reference temperature [K]')
 
     @classmethod
@@ -316,15 +316,15 @@ class _StateBlock(StateBlockBase):
                         blk[k].cp_params[j, 5]/(blk[k].temperature*1e-3)**2)
 
                 if hasattr(blk[k], "enthalpy_shomate_eqn"):
-                    blk[k].enth_mol_phase_comp["Vap", j] = 1e3*value(
+                    blk[k].enth_mol_phase_comp["Vap", j] = (1e3*value(
                         blk[k].cp_params[j, 1]*(blk[k].temperature*1e-3) +
                         blk[k].cp_params[j, 2]*(blk[k].temperature*1e-3)**2/2 +
                         blk[k].cp_params[j, 3]*(blk[k].temperature*1e-3)**3/3 +
                         blk[k].cp_params[j, 4]*(blk[k].temperature*1e-3)**4/4 -
                         blk[k].cp_params[j, 5]/(blk[k].temperature*1e-3) +
                         blk[k].cp_params[j, 6] -
-                        blk[k].cp_params[j, 8] -
-                        blk[k].cp_params[j, 9])
+                        blk[k].cp_params[j, 8]) -
+                        value(blk[k].cp_params[j, 9]))
 
                 if hasattr(blk[k], "entropy_shomate_eqn"):
                     blk[k].entr_mol_phase_comp["Vap", j] = value(
@@ -588,14 +588,14 @@ class StateBlockData(StateBlockDataBase):
                 doc="Pure component enthalpies [J/mol]")
 
         def pure_comp_enthalpy(b, j):
-            return b.enth_mol_phase_comp["Vap", j] == 1e3*(
+            return b.enth_mol_phase_comp["Vap", j] == (1e3*(
                     b.cp_params[j, 1]*(b.temperature*1e-3) +
                     b.cp_params[j, 2]*(b.temperature*1e-3)**2/2 +
                     b.cp_params[j, 3]*(b.temperature*1e-3)**3/3 +
                     b.cp_params[j, 4]*(b.temperature*1e-3)**4/4 -
                     b.cp_params[j, 5]/(b.temperature*1e-3) +
                     b.cp_params[j, 6] -
-                    b.cp_params[j, 8] -
+                    b.cp_params[j, 8]) -
                     b.cp_params[j, 9])
         try:
             # Try to build constraint

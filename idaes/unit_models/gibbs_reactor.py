@@ -182,7 +182,7 @@ see property package for documentation.}"""))
         self.lagrange_mult = Var(self.time,
                                  self.element_list,
                                  domain=Reals,
-                                 initialize=100,
+                                 initialize=1000,
                                  doc="Lagrangian multipliers")
 
         # Use Lagrangian multiple method to derive equations for Out_Fi
