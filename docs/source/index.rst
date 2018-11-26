@@ -37,6 +37,7 @@ Contents
     properties/index
     models/index
     dmf/index
+    glossary
 
 ..    install
 ..    core/index
