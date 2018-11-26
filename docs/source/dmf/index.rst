@@ -7,6 +7,8 @@ DMF Contents
 .. toctree::
     :maxdepth: 1
 
+    base
+    workspace
     resource
 
 Overview
@@ -29,6 +31,5 @@ four standard relations defined: derived, contains, uses, version. These may
 be expanded in the future.
 
 For most users the goal of the DMF is to
-provide high-level APIs or interface that don't require knowing how the
-internal resource representation works. For example, see the
-property data indexing API.
+provide high-level APIs or interface that don't require knowing the
+internal resource representation.

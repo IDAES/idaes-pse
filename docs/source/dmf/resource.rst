@@ -1,8 +1,17 @@
 DMF Resource
 ------------
 
-.. contents::
+.. contents:: Sections
+    :depth: 2
 
+Resource API
++++++++++++++
+
+.. module:: idaes.dmf.resource
+
+.. autoclass:: Resource
+    :members:
+    :noindex:
 
 Resource JSON schema
 ++++++++++++++++++++
