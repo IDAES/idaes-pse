@@ -28,8 +28,7 @@ from idaes.core import ProcessBlockData, useDefault
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
-                                        DynamicError,
-                                        PropertyPackageError)
+                                        DynamicError)
 
 __author__ = "Andrew Lee"
 
@@ -210,7 +209,7 @@ CONFIG_Template.declare("property_package_args", ConfigBlock(
     implicit=True,
     description="Arguments to use for constructing property packages",
     doc="""A ConfigBlock with arguments to be passed to a property block(s)
- and used when constructing these,
+and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
@@ -251,8 +250,9 @@ class ControlVolumeBase(ProcessBlockData):
         domain=In([useDefault, True, False]),
         default=useDefault,
         description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic, **default** -
-useDefault. **Valid values:** {
+        doc="""Indicates whether this model will be dynamic,
+**default** - useDefault.
+**Valid values:** {
 **useDefault** - get flag from parent,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model}"""))
@@ -261,7 +261,8 @@ useDefault. **Valid values:** {
         domain=is_physical_parameter_block,
         description="Property package to use for control volume",
         doc="""Property parameter object used to define property calculations,
-**default** - useDefault. **Valid values:** {
+**default** - useDefault.
+**Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
 **PropertyParameterObject** - a PropertyParameterBlock object.}"""))
     CONFIG.declare("property_package_args", ConfigBlock(
@@ -275,14 +276,17 @@ see property package for documentation.}"""))
         domain=is_reaction_parameter_block,
         description="Reaction package to use for control volume",
         doc="""Reaction parameter object used to define reaction calculations,
-**default** - None. **Valid values:** {
+**default** - None.
+**Valid values:** {
 **None** - no reaction package,
 **ReactionParameterBlock** - a ReactionParameterBlock object.}"""))
     CONFIG.declare("reaction_package_args", ConfigBlock(
         implicit=True,
         description="Arguments to use for constructing reaction packages",
         doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
-and used when constructing these, **default** - None. **Valid values:** {
+and used when constructing these,
+**default** - None.
+**Valid values:** {
 see reaction package for documentation.}"""))
     CONFIG.declare("auto_construct", ConfigValue(
         default=False,
@@ -292,9 +296,11 @@ see reaction package for documentation.}"""))
         doc="""If set to True, this argument will trigger the auto_construct
 method which will attempt to construct a set of material, energy and momentum
 balance equations based on the parent unit's config block. The parent unit must
-have a config block which derives from CONFIG_Template, **default** - False.
-**Valid values:** {**True** - use automatic construction,
-**False** - do not use automatic construction.}"""))
+have a config block which derives from CONFIG_Base,
+**default** - False.
+**Valid values:** {
+**True** - use automatic construction,
+**False** - do not use automatic construciton.}"""))
 
     def build(self):
         """
@@ -565,205 +571,6 @@ have a config block which derives from CONFIG_Template, **default** - False.
                             'has_holdup = True (was False). Please correct '
                             'your arguments to be consistent.'
                             .format(self.name))
-
-    def _get_property_package(self):
-        """
-        This method gathers the necessary information about the property
-        package to be used in the control volume block.
-
-        If a property package has not been provided by the user, the method
-        searches up the model tree until it finds an object with the
-        'default_property_package' attribute and uses this package for the
-        control volume block.
-
-        The method also gathers any default construction arguments specified
-        for the property package and combines these with any arguments
-        specified by the user for the control volume block (user specified
-        arguments take priority over defaults).
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Get property_package block if not provided in arguments
-        parent = self.parent_block()
-        if self.config.property_package == useDefault:
-            # Try to get property_package from parent
-            try:
-                if parent.config.property_package is None:
-                    parent.config.property_package = \
-                        self._get_default_prop_pack()
-
-                self.config.property_package = parent.config.property_package
-            except AttributeError:
-                self.config.property_package = self._get_default_prop_pack()
-
-        # Get module of property package
-        self._property_module = self.config.property_package._package_module
-
-        # Check for any flowsheet level build arguments
-        for k in self.config.property_package.config.default_arguments:
-            if k not in self.config.property_package_args:
-                self.config.property_package_args[k] = \
-                    self.config.property_package.config.default_arguments[k]
-
-    def _get_default_prop_pack(self):
-        """
-        This method is used to find a default property package defined at the
-        flowsheet level if a package is not provided as an argument when
-        instantiating the control volume block.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        parent = self.parent_block()
-        while True:
-            if hasattr(parent.config, "default_property_package"):
-                break
-            else:
-                if parent.parent_block() is None:
-                    raise ConfigurationError(
-                            '{} no property package provided and '
-                            'no default defined. Found end of '
-                            'parent tree.'.format(self.name))
-                elif parent.parent_block() == parent:
-                    raise ConfigurationError(
-                            '{} no property package provided and '
-                            'no default defined. Found recursive '
-                            'loop in parent tree.'.format(self.name))
-                parent = parent.parent_block()
-
-        _log.info('{} Using default property package'
-                  .format(self.name))
-
-        if parent.config.default_property_package is None:
-            raise ConfigurationError(
-                             '{} no default property package has been '
-                             'specified at flowsheet level ('
-                             'default_property_package = None)'
-                             .format(self.name))
-
-        return parent.config.default_property_package
-
-    def _get_indexing_sets(self):
-        """
-        This method collects all necessary indexing sets from property
-        parameter block and makes references to these for use within the
-        control volume block. Collected indexing sets are phase_list and
-        component_list.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Get phase and component list(s)
-        try:
-            # TODO : Look at ways to use Pyomo references, or create new Set
-            object.__setattr__(self, "phase_list",
-                               self.config.property_package.phase_list)
-        except AttributeError:
-            raise PropertyPackageError(
-                    '{} property_package provided does not '
-                    'contain a phase_list. '
-                    'Please contact the developer of the property package.'
-                    .format(self.name))
-        try:
-            # TODO : Look at ways to use Pyomo references, or create new Set
-            object.__setattr__(self, "component_list",
-                               self.config.property_package.component_list)
-        except AttributeError:
-            raise PropertyPackageError(
-                    '{} property_package provided does not '
-                    'contain a component_list. '
-                    'Please contact the developer of the property package.'
-                    .format(self.name))
-
-    def _get_reaction_package(self):
-        """
-        This method gathers the necessary information about the reaction
-        package to be used in the control volume block (if required).
-
-        If a reaction package has been provided by the user, the method
-        gathers any default construction arguments specified
-        for the reaction package and combines these with any arguments
-        specified by the user for the control volume block (user specified
-        arguments take priority over defaults).
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        if self.config.reaction_package is not None:
-            # Get module of reaction package
-            self._reaction_module = \
-                self.config.reaction_package._package_module
-
-            # Check for any flowsheet level build arguments
-            for k in self.config.reaction_package.config.default_arguments:
-                if k not in self.config.reaction_package_args:
-                    self.config.reaction_package_args[k] = \
-                       self.config.reaction_package.config.default_arguments[k]
-
-    def _validate_add_balance_arguments(self, dynamic, has_holdup):
-        """
-        Method to validate dynamic and has_holdup arguments used by many
-        balance equation methods.
-
-        Args:
-            dynamic, has_holdup
-
-        Returns:
-            Validated values of dynamic and has_holdup
-        """
-        # If dynamic argument not provided, try to get argument from parent
-        if dynamic == useDefault:
-            dynamic = self.config.dynamic
-        elif dynamic and not self.config.dynamic:
-            raise DynamicError("{} cannot have dynamic balance equations "
-                               "within a steady-state control volume."
-                               .format(self.name))
-
-        # If dynamic = True, has_holdup must also be True
-        if dynamic and not has_holdup:
-            raise ConfigurationError(
-                    "{} invalid arguments for dynamic and has_holdup. "
-                    "If dynamic = True, has_holdup must also be True (was "
-                    "False)".format(self.name))
-
-        return dynamic, has_holdup
-
-    def _get_phase_comp_list(self):
-        """
-        Method to collect phase-component list from property package.
-        If property pakcage does not define a phase-component list, then it is
-        assumed that all components are present in all phases.
-
-        Args:
-            None
-
-        Returns:
-            phase_component_list
-        """
-        # Get phase component list(s)
-        if hasattr(self.config.property_package, "phase_component_list"):
-            phase_component_list = (
-                    self.config.property_package.phase_component_list)
-        else:
-            # Otherwise assume all components in all phases
-            phase_component_list = {}
-            for p in self.phase_list:
-                phase_component_list[p] = self.component_list
-
-        return phase_component_list
 
     # Add placeholder methods for adding property and reaction packages
     def add_state_blocks(self, *args, **kwargs):

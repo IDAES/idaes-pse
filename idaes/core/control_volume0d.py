@@ -697,27 +697,6 @@ class ControlVolume0dData(ControlVolumeBase):
                             "by equilibrium reactions [{}/{}]"
                             .format(units['holdup'], units['time']))
 
-        # Phase equilibrium generation
-        if has_phase_equilibrium:
-            try:
-                # TODO : replace with Reference
-                object.__setattr__(
-                    self,
-                    "phase_equilibrium_idx",
-                    self.config.property_package.phase_equilibrium_idx)
-            except AttributeError:
-                raise PropertyNotSupportedError(
-                    "{} Property package does not contain a list of phase "
-                    "equilibrium reactions (phase_equilibrium_idx), thus does "
-                    "not support phase equilibrium.".format(self.name))
-            self.phase_equilibrium_generation = Var(
-                        self.time,
-                        self.phase_equilibrium_idx,
-                        domain=Reals,
-                        doc="Amount of generation in unit by phase "
-                            "equilibria [{}/{}]"
-                            .format(units['holdup'], units['time']))
-
         # Material transfer term
         if has_mass_transfer:
             self.mass_transfer_term = Var(
@@ -740,24 +719,6 @@ class ControlVolume0dData(ControlVolumeBase):
         def equilibrium_term(b, t, p, j):
             return (b.equilibrium_reaction_generation[t, p, j]
                     if has_equilibrium_reactions else 0)
-
-        def phase_equilibrium_term(b, t, p, j):
-            if has_phase_equilibrium:
-                sd = {}
-                sblock = self.properties_out[t]
-                for r in b.phase_equilibrium_idx:
-                    if sblock.phase_equilibrium_list[r][0] == j:
-                        if sblock.phase_equilibrium_list[r][1][0] == p:
-                            sd[r] = 1
-                        elif sblock.phase_equilibrium_list[r][1][1] == p:
-                            sd[r] = -1
-                        else:
-                            sd[r] = 0
-                    else:
-                        sd[r] = 0
-
-                return sum(b.phase_equilibrium_generation[t, r]*sd[r]
-                           for r in b.phase_equilibrium_idx)
 
         def transfer_term(b, t, p, j):
             return (b.mass_transfer_term[t, p, j] if has_mass_transfer else 0)
@@ -1404,7 +1365,7 @@ class ControlVolume0dData(ControlVolumeBase):
 
     def model_check(blk):
         """
-        This method executes the model_check methods on the associated property
+        This method executes the model_check methods on the associated state
         blocks (if they exist). This method is generally called by a unit model
         as part of the unit's model_check method.
 
@@ -1419,30 +1380,30 @@ class ControlVolume0dData(ControlVolumeBase):
             try:
                 blk.properties_in[t].model_check()
             except AttributeError:
-                _log.warning('{} Holdup inlet property block has no model '
-                             'check. To correct this, add a model_check '
-                             'method to the associated PropertyBlock class.'
+                _log.warning('{} ControlVolume inlet property block has no '
+                             'model checks. To correct this, add a model_check '
+                             'method to the associated StateBlock class.'
                              .format(blk.name))
             try:
                 blk.properties_out[t].model_check()
             except AttributeError:
-                _log.warning('{} Holdup outlet property block has no '
-                             'model check. To correct this, add a '
+                _log.warning('{} ControlVolume outlet property block has no '
+                             'model checks. To correct this, add a '
                              'model_check method to the associated '
-                             'PropertyBlock class.'.format(blk.name))
+                             'StateBlock class.'.format(blk.name))
 
             try:
                 blk.reactions[t].model_check()
             except AttributeError:
-                _log.warning('{} Holdup outlet property block has no '
+                _log.warning('{} ControlVolume outlet reaction block has no '
                              'model check. To correct this, add a '
                              'model_check method to the associated '
-                             'PropertyBlock class.'.format(blk.name))
+                             'ReactionBlock class.'.format(blk.name))
 
     def initialize(blk, state_args=None, outlvl=0, optarg=None,
                    solver='ipopt', hold_state=True):
         '''
-        Initialisation routine for holdup (default solver ipopt)
+        Initialisation routine for 0D control volume (default solver ipopt)
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -1472,7 +1433,8 @@ class ControlVolume0dData(ControlVolumeBase):
         # Get inlet state if not provided
         if state_args is None:
             state_args = {}
-            state_dict = blk.properties_in[0].declare_port_members()
+            state_dict = \
+                blk.properties_in[blk.time.first()].declare_port_members()
             for k in state_dict.keys():
                 if state_dict[k].is_indexed():
                     state_args[k] = {}
@@ -1481,7 +1443,7 @@ class ControlVolume0dData(ControlVolumeBase):
                 else:
                     state_args[k] = state_dict[k].value
 
-        # Initialize property blocks
+        # Initialize state blocks
         flags = blk.properties_in.initialize(outlvl=outlvl-1,
                                              optarg=optarg,
                                              solver=solver,
