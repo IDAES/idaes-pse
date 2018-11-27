@@ -31,6 +31,7 @@ from idaes.core.util.exceptions import (BurntToast,
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block)
+from idaes.core.util.misc import add_object_reference
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -215,9 +216,9 @@ should be constructed in this reaction block,
         """
         # Add a reference to the corresponding state block data for later use
         # TODO : Convert to Reference
-        object.__setattr__(self,
-                           "_state",
-                           self.config.state_block[self.index()])
+        add_object_reference(self,
+                             "_state",
+                             self.config.state_block[self.index()])
 
         # Validate that property package of state matches that of reaction pack
         if (self.config.parameters.config.property_package !=

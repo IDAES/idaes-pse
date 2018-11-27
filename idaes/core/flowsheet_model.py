@@ -27,6 +27,7 @@ from idaes.core import (ProcessBlockData, declare_process_block_class,
                         UnitBlockData, useDefault)
 from idaes.core.util.config import is_physical_parameter_block, list_of_floats
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
+from idaes.core.util.misc import add_object_reference
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -212,7 +213,7 @@ within this flowsheet if not otherwise specified,
         if not top_level:
             # Try to get reference to time object from parent
             try:
-                object.__setattr__(self, "time", self.parent_block().time)
+                add_object_reference(self, "time", self.parent_block().time)
             except AttributeError:
                 raise DynamicError('{} has a parent model '
                                    'with no time domain'.format(self.name))

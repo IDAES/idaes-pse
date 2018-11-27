@@ -31,6 +31,7 @@ from .control_volume_base import ControlVolumeBase, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         DynamicError)
+from idaes.core.util.misc import add_object_reference
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -119,8 +120,7 @@ class UnitBlockData(ProcessBlockData):
 
         # Try to get reference to time object from parent
         try:
-            # TODO : Replace with Reference
-            object.__setattr__(self, "time", self.parent_block().time)
+            add_object_reference(self, "time", self.parent_block().time)
         except AttributeError:
             raise DynamicError('{} has a parent model '
                                'with no time domain'.format(self.name))

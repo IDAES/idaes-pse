@@ -32,6 +32,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
+from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee"
 
@@ -284,8 +285,7 @@ class ControlVolume0dData(ControlVolumeBase):
         # Kinetic reaction generation
         if has_rate_reactions:
             try:
-                # TODO : replace with Reference
-                object.__setattr__(
+                add_object_reference(
                         self,
                         "rate_reaction_idx",
                         self.config.reaction_package.rate_reaction_idx)
@@ -306,8 +306,7 @@ class ControlVolume0dData(ControlVolumeBase):
         # Equilibrium reaction generation
         if has_equilibrium_reactions:
             try:
-                # TODO : replace with Reference
-                object.__setattr__(
+                add_object_reference(
                     self,
                     "equilibrium_reaction_idx",
                     self.config.reaction_package.equilibrium_reaction_idx)
@@ -329,8 +328,7 @@ class ControlVolume0dData(ControlVolumeBase):
         # Phase equilibrium generation
         if has_phase_equilibrium:
             try:
-                # TODO : replace with Reference
-                object.__setattr__(
+                add_object_reference(
                     self,
                     "phase_equilibrium_idx",
                     self.config.property_package.phase_equilibrium_idx)
@@ -655,8 +653,7 @@ class ControlVolume0dData(ControlVolumeBase):
         # Kinetic reaction generation
         if has_rate_reactions:
             try:
-                # TODO : replace with Reference
-                object.__setattr__(
+                add_object_reference(
                         self,
                         "rate_reaction_idx",
                         self.config.reaction_package.rate_reaction_idx)
@@ -677,8 +674,7 @@ class ControlVolume0dData(ControlVolumeBase):
         # Equilibrium reaction generation
         if has_equilibrium_reactions:
             try:
-                # TODO : replace with Reference
-                object.__setattr__(
+                add_object_reference(
                     self,
                     "equilibrium_reaction_idx",
                     self.config.reaction_package.equilibrium_reaction_idx)
@@ -887,9 +883,10 @@ class ControlVolume0dData(ControlVolumeBase):
                     balances
             has_mass_transfer - whether generic mass transfer terms should be
                     included in material balances
-            custom_elemental_term - a Pyomo Expression representing custom terms
-                    to be included in material balances on a molar elemental
-                    basis. Expression must be indexed by time and element list
+            custom_elemental_term - a Pyomo Expression representing custom
+                    terms to be included in material balances on a molar
+                    elemental basis. Expression must be indexed by time and
+                    element list
 
         Returns:
             Constraint object representing material balances
@@ -910,9 +907,9 @@ class ControlVolume0dData(ControlVolumeBase):
 
         # Check that property package supports element balances
         try:
-            object.__setattr__(self,
-                               "element_list",
-                               self.config.property_package.element_list)
+            add_object_reference(self,
+                                 "element_list",
+                                 self.config.property_package.element_list)
         except AttributeError:
             raise PropertyNotSupportedError(
                     "{} property package provided does not contain a list of "
@@ -944,8 +941,7 @@ class ControlVolume0dData(ControlVolumeBase):
                             "Please correct your configuration arguments."
                             .format(self.name))
                 try:
-                # TODO : replace with Reference
-                    object.__setattr__(
+                    add_object_reference(
                         self,
                         "equilibrium_reaction_idx",
                         self.config.reaction_package.equilibrium_reaction_idx)
@@ -976,8 +972,7 @@ class ControlVolume0dData(ControlVolumeBase):
                             " correct your configuration arguments."
                             .format(self.name))
                 try:
-                    # TODO : replace with Reference
-                    object.__setattr__(
+                    add_object_reference(
                         self,
                         "phase_equilibrium_idx",
                         self.config.property_package.phase_equilibrium_idx)
@@ -1381,8 +1376,8 @@ class ControlVolume0dData(ControlVolumeBase):
                 blk.properties_in[t].model_check()
             except AttributeError:
                 _log.warning('{} ControlVolume inlet property block has no '
-                             'model checks. To correct this, add a model_check '
-                             'method to the associated StateBlock class.'
+                             'model checks. To correct this, add a model_check'
+                             ' method to the associated StateBlock class.'
                              .format(blk.name))
             try:
                 blk.properties_out[t].model_check()

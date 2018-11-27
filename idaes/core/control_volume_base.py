@@ -29,6 +29,7 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError)
+from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee"
 
@@ -554,8 +555,7 @@ have a config block which derives from CONFIG_Base,
 
         # Try to get reference to time object from parent
         try:
-            # TODO : replace with Reference
-            object.__setattr__(self, "time", self.parent_block().time)
+            add_object_reference(self, "time", self.parent_block().time)
         except AttributeError:
             raise DynamicError('{} has a parent model '
                                'with no time domain'.format(self.name))

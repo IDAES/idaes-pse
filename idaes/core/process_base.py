@@ -27,6 +27,7 @@ from idaes.core.process_block import declare_process_block_class
 from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError,
                                         PropertyPackageError)
+from idaes.core.util.misc import add_object_reference
 
 
 # Some more inforation about this module
@@ -248,9 +249,8 @@ class ProcessBlockData(_BlockData):
         """
         # Get phase and component list(s)
         try:
-            # TODO : Look at ways to use Pyomo references, or create new Set
-            object.__setattr__(self, "phase_list",
-                               self.config.property_package.phase_list)
+            add_object_reference(self, "phase_list",
+                                 self.config.property_package.phase_list)
         except AttributeError:
             raise PropertyPackageError(
                     '{} property_package provided does not '
@@ -258,9 +258,8 @@ class ProcessBlockData(_BlockData):
                     'Please contact the developer of the property package.'
                     .format(self.name))
         try:
-            # TODO : Look at ways to use Pyomo references, or create new Set
-            object.__setattr__(self, "component_list",
-                               self.config.property_package.component_list)
+            add_object_reference(self, "component_list",
+                                 self.config.property_package.component_list)
         except AttributeError:
             raise PropertyPackageError(
                     '{} property_package provided does not '
