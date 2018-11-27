@@ -215,7 +215,6 @@ should be constructed in this reaction block,
         PropertyParameterBlock assoicated with the ReactionParameterBlock.
         """
         # Add a reference to the corresponding state block data for later use
-        # TODO : Convert to Reference
         add_object_reference(self,
                              "_state",
                              self.config.state_block[self.index()])

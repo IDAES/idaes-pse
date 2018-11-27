@@ -213,7 +213,9 @@ within this flowsheet if not otherwise specified,
         if not top_level:
             # Try to get reference to time object from parent
             try:
-                add_object_reference(self, "time", self.parent_block().time)
+                add_object_reference(self,
+                                     "time_ref",
+                                     self.parent_block().time)
             except AttributeError:
                 raise DynamicError('{} has a parent model '
                                    'with no time domain'.format(self.name))

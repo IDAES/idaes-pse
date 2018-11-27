@@ -151,8 +151,8 @@ def test_inherited_methods():
     m.fs.mix._get_indexing_sets()
 
     assert hasattr(m.fs.mix, "_property_module")
-    assert hasattr(m.fs.mix, "phase_list")
-    assert hasattr(m.fs.mix, "component_list")
+    assert hasattr(m.fs.mix, "phase_list_ref")
+    assert hasattr(m.fs.mix, "component_list_ref")
 
 
 def test_create_inlet_list_default():

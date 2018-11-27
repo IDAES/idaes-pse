@@ -146,7 +146,7 @@ def test_setup_dynamics_get_time():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    assert m.fs.u.time == m.fs.time
+    assert m.fs.u.time_ref == m.fs.time
 
 
 def test_setup_dynamics_get_time_fails():

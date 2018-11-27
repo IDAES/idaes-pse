@@ -179,7 +179,7 @@ def test_setup_dynamics_ConcreteModel_with_time():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs._setup_dynamics()
 
-    assert m.fs.time == m.time
+    assert m.fs.time_ref == m.time
 
 
 def test_setup_dynamics_ConcreteModel_with_invalid_time():

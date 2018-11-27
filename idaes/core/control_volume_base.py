@@ -555,10 +555,20 @@ have a config block which derives from CONFIG_Base,
 
         # Try to get reference to time object from parent
         try:
-            add_object_reference(self, "time", self.parent_block().time)
+            # Guess that parent has a reference to time domain
+            add_object_reference(self,
+                                 "time_ref",
+                                 self.parent_block().time_ref)
         except AttributeError:
-            raise DynamicError('{} has a parent model '
-                               'with no time domain'.format(self.name))
+            try:
+                # Should not happen, but guess parent has actual time domain
+                add_object_reference(self,
+                                     "time_ref",
+                                     self.parent_block().time)
+            except AttributeError:
+                # Can't find time domain
+                raise DynamicError('{} has a parent model '
+                                   'with no time domain'.format(self.name))
 
         # Check has_holdup, if present
         if self.config.dynamic:

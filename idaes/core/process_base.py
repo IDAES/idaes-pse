@@ -114,13 +114,15 @@ class ProcessBlockData(_BlockData):
                                               descend_into=True):
                 # Try to fix material_accumulation @ first time point
                 try:
-                    obj.material_accumulation[obj.time.first(), ...].fix(0.0)
+                    obj.material_accumulation[obj.time_ref.first(),
+                                              ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix energy_accumulation @ first time point
                 try:
-                    obj.energy_accumulation[obj.time.first(), ...].fix(0.0)
+                    obj.energy_accumulation[obj.time_ref.first(),
+                                            ...].fix(0.0)
                 except AttributeError:
                     pass
 
@@ -140,13 +142,13 @@ class ProcessBlockData(_BlockData):
         for obj in self.component_objects(Block, descend_into=True):
             # Try to unfix material_accumulation @ first time point
             try:
-                obj.material_accumulation[obj.time.first(), ...].unfix()
+                obj.material_accumulation[obj.time_ref.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to unfix energy_accumulation @ first time point
             try:
-                obj.energy_accumulation[obj.time.first(), ...].unfix()
+                obj.energy_accumulation[obj.time_ref.first(), ...].unfix()
             except AttributeError:
                 pass
 
@@ -249,7 +251,7 @@ class ProcessBlockData(_BlockData):
         """
         # Get phase and component list(s)
         try:
-            add_object_reference(self, "phase_list",
+            add_object_reference(self, "phase_list_ref",
                                  self.config.property_package.phase_list)
         except AttributeError:
             raise PropertyPackageError(
@@ -258,7 +260,7 @@ class ProcessBlockData(_BlockData):
                     'Please contact the developer of the property package.'
                     .format(self.name))
         try:
-            add_object_reference(self, "component_list",
+            add_object_reference(self, "component_list_ref",
                                  self.config.property_package.component_list)
         except AttributeError:
             raise PropertyPackageError(
@@ -326,7 +328,7 @@ class ProcessBlockData(_BlockData):
     def _get_phase_comp_list(self):
         """
         Method to collect phase-component list from property package.
-        If property pakcage does not define a phase-component list, then it is
+        If property package does not define a phase-component list, then it is
         assumed that all components are present in all phases.
 
         Args:
@@ -342,7 +344,7 @@ class ProcessBlockData(_BlockData):
         else:
             # Otherwise assume all components in all phases
             phase_component_list = {}
-            for p in self.phase_list:
-                phase_component_list[p] = self.component_list
+            for p in self.phase_list_ref:
+                phase_component_list[p] = self.component_list_ref
 
         return phase_component_list
