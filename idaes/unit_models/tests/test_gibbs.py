@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, SolverFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.gibbs_reactor import GibbsReactor
