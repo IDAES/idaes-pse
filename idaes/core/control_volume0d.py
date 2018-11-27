@@ -1436,6 +1436,7 @@ class ControlVolume0dData(ControlVolumeBase):
             state_args = {}
             state_dict = \
                 blk.properties_in[blk.time.first()].define_port_members()
+
             for k in state_dict.keys():
                 if state_dict[k].is_indexed():
                     state_args[k] = {}

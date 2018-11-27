@@ -238,7 +238,7 @@ class UnitBlockData(ProcessBlockData):
                         state_block = block.properties[:,
                                                        block.ldomain.last()]
                     else:
-                        raise BurntToast("{} flow_direction argument recieved "
+                        raise BurntToast("{} flow_direction argument received "
                                          "invalid value. This should never "
                                          "happen, so please contact the IDAES "
                                          "developers with this bug."
@@ -303,7 +303,7 @@ class UnitBlockData(ProcessBlockData):
                         state_block = block.properties[:,
                                                        block.ldomain.first()]
                     else:
-                        raise BurntToast("{} flow_direction argument recieved "
+                        raise BurntToast("{} flow_direction argument received "
                                          "invalid value. This should never "
                                          "happen, so please contact the IDAES "
                                          "developers with this bug."
@@ -346,7 +346,7 @@ class UnitBlockData(ProcessBlockData):
                      * 3 = include solver output infomation (tee=True)
 
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
 
         Returns:
