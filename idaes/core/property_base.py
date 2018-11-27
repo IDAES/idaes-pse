@@ -318,7 +318,7 @@ should be constructed in this state block,
             # A list of calls if one does not exist, so create one
             self.__getattrcalls = [attr]
 
-        # Get property information from get_supported_properties
+        # Get property information from properties metadata
         try:
             m = self.config.parameters.get_metadata().properties
 
@@ -329,7 +329,7 @@ should be constructed in this state block,
                         '{}. Please contact the developer of the '
                         'property package'.format(self.name, attr))
         except KeyError:
-            # If attr not in get_supported_properties, assume package does not
+            # If attr not in metadata, assume package does not
             # support property
             clear_call_list(self, attr)
             raise PropertyNotSupportedError(

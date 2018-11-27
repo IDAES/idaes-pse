@@ -16,7 +16,7 @@ Standard IDAES Gibbs reactor model.
 from __future__ import division
 
 # Import Pyomo libraries
-from pyomo.environ import log, Reals,  Var
+from pyomo.environ import Reals,  Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -128,46 +128,27 @@ see property package for documentation.}"""))
 
         # Build Control Volume
         self.control_volume = ControlVolume0D(default={
-                "dynamic": False,
+                "dynamic": self.config.dynamic,
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args})
 
         self.control_volume.add_state_blocks()
 
-        self.control_volume.add_total_element_balances(
-            dynamic=False,
-            has_holdup=False)
+        self.control_volume.add_total_element_balances()
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
-            dynamic=False,
-            has_holdup=False,
-            has_heat_transfer=self.config.has_heat_transfer,
-            has_work_transfer=False)
+            has_heat_transfer=self.config.has_heat_transfer)
 
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
-            dynamic=self.config.dynamic,
-            has_holdup=False,
             has_pressure_change=self.config.has_pressure_change)
-
-        # Add performance equations
-        self.add_performance_equations()
 
         # Add Ports
         self.add_inlet_port()
         self.add_outlet_port()
 
-    def add_performance_equations(self):
-        """
-        Define constraints which describe the behaviour of the unit model.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
+        # Add performance equations
         object.__setattr__(self,
                            "component_list",
                            self.control_volume.component_list)
@@ -198,12 +179,9 @@ see property package for documentation.}"""))
             # warnings of reaching infeasible point
             return 0 == (
                 b.control_volume.properties_out[t].gibbs_mol_phase_comp[p, j] +
-                b.control_volume.properties_out[t].gas_const *
-                b.control_volume.properties_out[t].temperature *
-                (log(b.control_volume.properties_out[t].mole_frac[j]) +
-                 sum(b.lagrange_mult[t, e] *
-                     b.control_volume.properties_out[t].element_comp[j][e]
-                     for e in b.element_list)))
+                sum(b.lagrange_mult[t, e] *
+                    b.control_volume.properties_out[t].element_comp[j][e]
+                    for e in b.element_list))
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and

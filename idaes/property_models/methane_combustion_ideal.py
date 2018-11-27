@@ -166,6 +166,21 @@ class PhysicalParameterData(PhysicalParameterBase):
                                initialize=cp_param_dict,
                                doc="Shomate equation heat capacity parameters")
 
+        # Heat of Formation
+        hf_dict = {"CH4": -74600,
+                   "CO": -110530,
+                   "CO2": -393520,
+                   "H2": 0,
+                   "H2O": -241830,
+                   "N2": 0,
+                   "NH3": -45900,
+                   "O2": 0}
+        self.enth_mol_form = Param(
+                self.component_list,
+                mutable=False,
+                initialize=hf_dict,
+                doc="Component molar heats of formation [J/mol]")
+
         # Gas Constant
         self.gas_const = Param(within=PositiveReals,
                                mutable=False,
@@ -324,7 +339,8 @@ class _StateBlock(StateBlockBase):
                         blk[k].cp_params[j, 5]/(blk[k].temperature*1e-3) +
                         blk[k].cp_params[j, 6] -
                         blk[k].cp_params[j, 8]) -
-                        value(blk[k].cp_params[j, 9]))
+                        value(blk[k].cp_params[j, 9] +
+                              blk[k].enth_mol_form[j]))
 
                 if hasattr(blk[k], "entropy_shomate_eqn"):
                     blk[k].entr_mol_phase_comp["Vap", j] = value(
@@ -469,6 +485,11 @@ class StateBlockData(StateBlockDataBase):
                            "cp_params",
                            self.config.parameters.cp_params)
 
+        # Heat of formation
+        object.__setattr__(self,
+                           "enth_mol_form",
+                           self.config.parameters.enth_mol_form)
+
         # Gas constant
         object.__setattr__(self, "gas_const",
                            self.config.parameters.gas_const)
@@ -594,7 +615,8 @@ class StateBlockData(StateBlockDataBase):
                     b.cp_params[j, 5]/(b.temperature*1e-3) +
                     b.cp_params[j, 6] -
                     b.cp_params[j, 8]) -
-                    b.cp_params[j, 9])
+                    b.cp_params[j, 9] +
+                    b.enth_mol_form[j])
         try:
             # Try to build constraint
             self.enthalpy_shomate_eqn = Constraint(self.component_list,
@@ -639,7 +661,7 @@ class StateBlockData(StateBlockDataBase):
                     b.cp_params[j, 4]*(b.temperature*1e-3)**3/3 -
                     b.cp_params[j, 5]/(2*(b.temperature*1e-3)**2) +
                     b.cp_params[j, 7] -
-                    b.gas_const*log(b.mole_frac[j]))
+                    b.gas_const*log(b.mole_frac[j]*b.pressure/b.pressure_ref))
         try:
             # Try to build constraint
             self.entropy_shomate_eqn = Constraint(self.component_list,
