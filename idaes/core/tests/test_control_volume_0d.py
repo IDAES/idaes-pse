@@ -192,8 +192,9 @@ def test_base_build():
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
-    assert len(m.fs.cv.config) == 6
+    assert len(m.fs.cv.config) == 7
     assert m.fs.cv.config.dynamic is False
+    assert m.fs.cv.config.has_holdup is False
     assert m.fs.cv.config.property_package == m.fs.pp
     assert isinstance(m.fs.cv.config.property_package_args, ConfigBlock)
     assert len(m.fs.cv.config.property_package_args) == 0
@@ -403,37 +404,20 @@ def test_add_phase_component_balances_dynamic():
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
+                                       "reaction_package": m.fs.rp,
+                                       "dynamic": True})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    mb = m.fs.cv.add_phase_component_balances(dynamic=True, has_holdup=True)
+    mb = m.fs.cv.add_phase_component_balances()
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 8
     assert isinstance(m.fs.cv.phase_fraction, Var)
     assert isinstance(m.fs.cv.material_holdup, Var)
     assert isinstance(m.fs.cv.material_accumulation, Var)
-
-
-def test_add_phase_component_balances_dynamic_no_holdup():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_phase_component_balances(dynamic=True,
-                                             has_holdup=False)
 
 
 def test_add_phase_component_balances_dynamic_no_geometry():
@@ -443,15 +427,15 @@ def test_add_phase_component_balances_dynamic_no_geometry():
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
+                                       "reaction_package": m.fs.rp,
+                                       "dynamic": True})
 
     # Do not add geometry
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
     with pytest.raises(ConfigurationError):
-        m.fs.cv.add_phase_component_balances(dynamic=True,
-                                             has_holdup=True)
+        m.fs.cv.add_phase_component_balances()
 
 
 def test_add_phase_component_balances_rate_rxns():
@@ -901,37 +885,20 @@ def test_add_total_component_balances_dynamic():
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
+                                       "reaction_package": m.fs.rp,
+                                       "dynamic": True})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    mb = m.fs.cv.add_total_component_balances(dynamic=True, has_holdup=True)
+    mb = m.fs.cv.add_total_component_balances()
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
     assert isinstance(m.fs.cv.phase_fraction, Var)
     assert isinstance(m.fs.cv.material_holdup, Var)
     assert isinstance(m.fs.cv.material_accumulation, Var)
-
-
-def test_add_total_component_balances_dynamic_no_holdup():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_component_balances(dynamic=True,
-                                             has_holdup=False)
 
 
 def test_add_total_component_balances_dynamic_no_geometry():
@@ -941,15 +908,15 @@ def test_add_total_component_balances_dynamic_no_geometry():
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
+                                       "reaction_package": m.fs.rp,
+                                       "dynamic": True})
 
     # Do not add geometry
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
     with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_component_balances(dynamic=True,
-                                             has_holdup=True)
+        m.fs.cv.add_total_component_balances()
 
 
 def test_add_total_component_balances_rate_rxns():
@@ -1361,37 +1328,20 @@ def test_add_total_element_balances_dynamic():
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
+                                       "reaction_package": m.fs.rp,
+                                       "dynamic": True})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    mb = m.fs.cv.add_total_element_balances(dynamic=True, has_holdup=True)
+    mb = m.fs.cv.add_total_element_balances()
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 6
     assert isinstance(m.fs.cv.phase_fraction, Var)
     assert isinstance(m.fs.cv.element_holdup, Var)
     assert isinstance(m.fs.cv.element_accumulation, Var)
-
-
-def test_add_total_element_balances_dynamic_no_holdup():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_element_balances(dynamic=True,
-                                           has_holdup=False)
 
 
 def test_add_total_element_balances_dynamic_no_geometry():
@@ -1401,15 +1351,15 @@ def test_add_total_element_balances_dynamic_no_geometry():
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
+                                       "reaction_package": m.fs.rp,
+                                       "dynamic": True})
 
     # Do not add geometry
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
     with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_element_balances(dynamic=True,
-                                           has_holdup=True)
+        m.fs.cv.add_total_element_balances()
 
 
 def test_add_total_element_balances_rate_rxns():
@@ -1645,37 +1595,20 @@ def test_add_total_enthalpy_balances_dynamic():
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
+                                       "reaction_package": m.fs.rp,
+                                       "dynamic": True})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    mb = m.fs.cv.add_total_enthalpy_balances(dynamic=True, has_holdup=True)
+    mb = m.fs.cv.add_total_enthalpy_balances()
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
     assert isinstance(m.fs.cv.phase_fraction, Var)
     assert isinstance(m.fs.cv.enthalpy_holdup, Var)
     assert isinstance(m.fs.cv.enthalpy_accumulation, Var)
-
-
-def test_add_total_enthalpy_balances_dynamic_no_holdup():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_enthalpy_balances(dynamic=True,
-                                            has_holdup=False)
 
 
 def test_add_total_enthalpy_balances_dynamic_no_geometry():
@@ -1685,15 +1618,15 @@ def test_add_total_enthalpy_balances_dynamic_no_geometry():
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
-                                       "reaction_package": m.fs.rp})
+                                       "reaction_package": m.fs.rp,
+                                       "dynamic": True})
 
     # Do not add geometry
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
     with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_enthalpy_balances(dynamic=True,
-                                             has_holdup=True)
+        m.fs.cv.add_total_enthalpy_balances()
 
 
 def test_add_total_enthalpy_balances_heat_transfer():

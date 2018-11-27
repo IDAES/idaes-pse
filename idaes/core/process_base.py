@@ -25,7 +25,6 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.core.process_block import declare_process_block_class
 from idaes.core.util.exceptions import (ConfigurationError,
-                                        DynamicError,
                                         PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
 
@@ -296,34 +295,6 @@ class ProcessBlockData(_BlockData):
                 if k not in self.config.reaction_package_args:
                     self.config.reaction_package_args[k] = \
                        self.config.reaction_package.config.default_arguments[k]
-
-    def _validate_add_balance_arguments(self, dynamic, has_holdup):
-        """
-        Method to validate dynamic and has_holdup arguments used by many
-        balance equation methods.
-
-        Args:
-            dynamic, has_holdup
-
-        Returns:
-            Validated values of dynamic and has_holdup
-        """
-        # If dynamic argument not provided, try to get argument from parent
-        if dynamic == useDefault:
-            dynamic = self.config.dynamic
-        elif dynamic and not self.config.dynamic:
-            raise DynamicError("{} cannot have dynamic balance equations "
-                               "within a steady-state control volume."
-                               .format(self.name))
-
-        # If dynamic = True, has_holdup must also be True
-        if dynamic and not has_holdup:
-            raise ConfigurationError(
-                    "{} invalid arguments for dynamic and has_holdup. "
-                    "If dynamic = True, has_holdup must also be True (was "
-                    "False)".format(self.name))
-
-        return dynamic, has_holdup
 
     def _get_phase_comp_list(self):
         """

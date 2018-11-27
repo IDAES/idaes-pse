@@ -27,7 +27,6 @@ from pyomo.dae import DerivativeVar
 from idaes.core import (declare_process_block_class,
                         ControlVolumeBase,
                         FlowDirection,
-                        useDefault,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
@@ -157,8 +156,6 @@ class ControlVolume0dData(ControlVolumeBase):
                 default=tmp_dict)
 
     def add_phase_component_balances(self,
-                                     dynamic=useDefault,
-                                     has_holdup=False,
                                      has_rate_reactions=False,
                                      has_equilibrium_reactions=False,
                                      has_phase_equilibrium=False,
@@ -170,11 +167,6 @@ class ControlVolume0dData(ControlVolumeBase):
         phase and component.
 
         Args:
-            dynamic: argument indicating whether material balances should
-                    include temporal derivative terms. If not provided,
-                    will use the dynamic flag of the control volume block
-            has_holdup: whether material holdup terms should be included in
-                    material balances. Must be True if dynamic = True
             has_rate_reactions: whether default generation terms for rate
                     reactions should be included in material balances
             has_equilibrium_reactions: whether generation terms should for
@@ -197,10 +189,9 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             Constraint object representing material balances
         """
-        # Validate arguments - ensures  has_holdup = True when dynamic = True
-        dynamic, has_holdup = self._validate_add_balance_arguments(
-                                            dynamic=dynamic,
-                                            has_holdup=has_holdup)
+        # Get dynamic and holdup flags from config block
+        dynamic = self.config.dynamic
+        has_holdup = self.config.has_holdup
 
         # Check that reaction block exists if required
         if has_rate_reactions or has_equilibrium_reactions:
@@ -525,8 +516,6 @@ class ControlVolume0dData(ControlVolumeBase):
         return self.material_balances
 
     def add_total_component_balances(self,
-                                     dynamic=useDefault,
-                                     has_holdup=False,
                                      has_rate_reactions=False,
                                      has_equilibrium_reactions=False,
                                      has_phase_equilibrium=False,
@@ -538,11 +527,6 @@ class ControlVolume0dData(ControlVolumeBase):
         and component.
 
         Args:
-            dynamic - argument indicating whether material balances should
-                    include temporal derivative terms. If not provided,
-                    will use the dynamic flag of the control volume block
-            has_holdup - whether material holdup terms should be included in
-                    material balances. Must be True if dynamic = True
             has_rate_reactions - whether default generation terms for rate
                     reactions should be included in material balances
             has_equilibrium_reactions - whether generation terms should for
@@ -565,10 +549,9 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             Constraint object representing material balances
         """
-        # Validate arguments
-        dynamic, has_holdup = self._validate_add_balance_arguments(
-                                            dynamic=dynamic,
-                                            has_holdup=has_holdup)
+        # Get dynamic and holdup flags from config block
+        dynamic = self.config.dynamic
+        has_holdup = self.config.has_holdup
 
         # Check that reaction block exists if required
         if has_rate_reactions or has_equilibrium_reactions:
@@ -857,8 +840,6 @@ class ControlVolume0dData(ControlVolumeBase):
         return self.material_balances
 
     def add_total_element_balances(self,
-                                   dynamic=useDefault,
-                                   has_holdup=False,
                                    has_rate_reactions=False,
                                    has_equilibrium_reactions=False,
                                    has_phase_equilibrium=False,
@@ -868,11 +849,6 @@ class ControlVolume0dData(ControlVolumeBase):
         This method constructs a set of 0D element balances indexed by time.
 
         Args:
-            dynamic - argument indicating whether material balances should
-                    include temporal derivative terms. If not provided,
-                    will use the dynamic flag of the control volume block
-            has_holdup - whether material holdup terms should be included in
-                    material balances. Must be True if dynamic = True
             has_rate_reactions - whether default generation terms for rate
                     reactions should be included in material balances
             has_equilibrium_reactions - whether generation terms should for
@@ -891,11 +867,9 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             Constraint object representing material balances
         """
-
-        # Validate arguments
-        dynamic, has_holdup = self._validate_add_balance_arguments(
-                                            dynamic=dynamic,
-                                            has_holdup=has_holdup)
+        # Get dynamic and holdup flags from config block
+        dynamic = self.config.dynamic
+        has_holdup = self.config.has_holdup
 
         if has_rate_reactions:
             raise ConfigurationError(
@@ -1089,7 +1063,8 @@ class ControlVolume0dData(ControlVolumeBase):
                     b.volume[t] *
                     sum(b.phase_fraction[t, p] *
                         b.properties_out[t].get_material_density_terms(p, j) *
-                        b.properties_out[t].config.parameters.element_comp[j][e]
+                        b.properties_out[t]
+                        .config.parameters.element_comp[j][e]
                         for p in b.phase_list_ref
                         for j in b.component_list_ref))
 
@@ -1102,8 +1077,6 @@ class ControlVolume0dData(ControlVolumeBase):
                 .format(self.name))
 
     def add_total_enthalpy_balances(self,
-                                    dynamic=useDefault,
-                                    has_holdup=False,
                                     has_heat_transfer=False,
                                     has_work_transfer=False,
                                     custom_term=None):
@@ -1112,11 +1085,6 @@ class ControlVolume0dData(ControlVolumeBase):
         and phase.
 
         Args:
-            dynamic - argument indicating whether enthalpy balances should
-                    include temporal derivative terms. If not provided,
-                    will use the dynamic flag of the control volume block
-            has_holdup - whether enthalpy holdup terms should be included in
-                    material balances. Must be True if dynamic = True
             has_heat_transfer - whether terms for heat transfer should be
                     included in enthalpy balances
             has_work_transfer - whether terms for work transfer should be
@@ -1128,10 +1096,9 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             Constraint object representing enthalpy balances
         """
-        # Validate arguments
-        dynamic, has_holdup = self._validate_add_balance_arguments(
-                                            dynamic=dynamic,
-                                            has_holdup=has_holdup)
+        # Get dynamic and holdup flags from config block
+        dynamic = self.config.dynamic
+        has_holdup = self.config.has_holdup
 
         # Test for components that must exist prior to calling this method
         if has_holdup:
@@ -1257,19 +1224,12 @@ class ControlVolume0dData(ControlVolumeBase):
                 .format(self.name))
 
     def add_total_pressure_balances(self,
-                                    dynamic=useDefault,
-                                    has_holdup=False,
                                     has_pressure_change=False,
                                     custom_term=None):
         """
         This method constructs a set of 0D pressure balances indexed by time.
 
         Args:
-            dynamic - argument indicating whether enthalpy balances should
-                    include temporal derivative terms. If not provided,
-                    will use the dynamic flag of the control volume block
-            has_holdup - whether enthalpy holdup terms should be included in
-                    material balances. Must be True if dynamic = True
             has_pressure_change - whether terms for pressure change should be
                     included in enthalpy balances
             custom_term - a Pyomo Expression representing custom terms to
@@ -1279,10 +1239,9 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             Constraint object representing pressure balances
         """
-        # Validate arguments
-        dynamic, has_holdup = self._validate_add_balance_arguments(
-                                            dynamic=dynamic,
-                                            has_holdup=has_holdup)
+        # Get dynamic and holdup flags from config block
+        dynamic = self.config.dynamic
+        has_holdup = self.config.has_holdup
 
         if dynamic:
             _log.info("{} add_total_pressure_balances was provided with "
