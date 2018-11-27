@@ -27,6 +27,17 @@ from idaes.ui.report import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
+# See if ipopt is available and set up solver
+if SolverFactory('ipopt').available():
+    solver = SolverFactory('ipopt')
+    solver.options = {'tol': 1e-6,
+                      'mu_init': 1e-8,
+                      'bound_push': 1e-8}
+else:
+    solver = None
+
+
+# -----------------------------------------------------------------------------
 def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -52,6 +63,7 @@ def test_build():
     assert hasattr(m.fs.gibbs.control_volume, "heat")
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_temperature():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -111,6 +123,7 @@ def test_initialize_temperature():
             m.fs.gibbs.outlet[0].vars["pressure"].value)
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_heat_duty():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
