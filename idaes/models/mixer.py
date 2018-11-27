@@ -304,7 +304,7 @@ linked to all inlet states and the mixed state,
         # Create an instance of StateBlock for all inlets
         for i in inlet_list:
             i_obj = self._property_module.StateBlock(
-                        self.time,
+                        self.time_ref,
                         doc="Material properties at inlet",
                         default=tmp_dict)
 
@@ -329,7 +329,7 @@ linked to all inlet states and the mixed state,
         tmp_dict["defined_state"] = False
 
         self.mixed_state = self._property_module.StateBlock(
-                                self.time,
+                                self.time_ref,
                                 doc="Material properties of mixed stream",
                                 default=tmp_dict)
 
@@ -349,7 +349,8 @@ linked to all inlet states and the mixed state,
                              "not happen.".format(self.name))
 
         # Check that the user-provided StateBlock uses the same prop pack
-        if (self.config.mixed_state_block[self.time.first()].config.parameters
+        if (self.config.mixed_state_block[
+                self.time_ref.first()].config.parameters
                 != self.config.property_package):
             raise ConfigurationError(
                     "{} StateBlock provided in mixed_state_block argument "
@@ -387,7 +388,7 @@ linked to all inlet states and the mixed state,
                     "equilibrium reactions (phase_equilibrium_idx), thus does "
                     "not support phase equilibrium.".format(self.name))
             self.phase_equilibrium_generation = Var(
-                        self.time,
+                        self.time_ref,
                         self.phase_equilibrium_idx,
                         domain=Reals,
                         doc="Amount of generation in unit by phase "
@@ -419,9 +420,9 @@ linked to all inlet states and the mixed state,
         phase_component_list = self._get_phase_comp_list()
 
         # Write phase-component balances
-        @self.Constraint(self.time,
-                         self.phase_list,
-                         self.component_list,
+        @self.Constraint(self.time_ref,
+                         self.phase_list_ref,
+                         self.component_list_ref,
                          doc="Material mixing equations")
         def material_mixing_equations(b, t, p, j):
             if j in phase_component_list[p]:
@@ -437,13 +438,13 @@ linked to all inlet states and the mixed state,
         """
         Add energy mixing equations (total enthalpy balance).
         """
-        @self.Constraint(self.time, doc="Energy balances")
+        @self.Constraint(self.time_ref, doc="Energy balances")
         def enthalpy_mixing_equations(b, t):
             return 0 == (sum(sum(inlet_blocks[i][t].get_enthalpy_flow_terms(p)
-                                 for p in b.phase_list)
+                                 for p in b.phase_list_ref)
                              for i in range(len(inlet_blocks))) -
                          sum(mixed_block[t].get_enthalpy_flow_terms(p)
-                             for p in b.phase_list))
+                             for p in b.phase_list_ref))
 
     def add_pressure_minimization_equations(self, inlet_blocks, mixed_block):
         """
@@ -455,7 +456,7 @@ linked to all inlet states and the mixed state,
         self.inlet_idx = Set(initialize=range(1, len(inlet_blocks)+1),
                              ordered=True)
 
-        self.minimum_pressure = Var(self.time,
+        self.minimum_pressure = Var(self.time_ref,
                                     self.inlet_idx,
                                     doc='Variable for calculating '
                                         'minimum inlet pressure')
@@ -467,7 +468,7 @@ linked to all inlet states and the mixed state,
                                       'minimum inlet pressure')
 
         # Calculate minimum inlet pressure
-        @self.Constraint(self.time,
+        @self.Constraint(self.time_ref,
                          self.inlet_idx,
                          doc='Calculation for minimum inlet pressure')
         def minimum_pressure_constraint(b, t, i):
@@ -481,7 +482,7 @@ linked to all inlet states and the mixed state,
                                    self.eps_pressure))
 
         # Set inlet pressure to minimum pressure
-        @self.Constraint(self.time, doc='Link pressure to control volume')
+        @self.Constraint(self.time_ref, doc='Link pressure to control volume')
         def mixture_pressure(b, t):
             return mixed_block[t].pressure == (
                        self.minimum_pressure[t,
@@ -498,7 +499,7 @@ linked to all inlet states and the mixed state,
                              ordered=True)
 
         # Create equality constraints
-        @self.Constraint(self.time,
+        @self.Constraint(self.time_ref,
                          self.inlet_idx,
                          doc='Calculation for minimum inlet pressure')
         def pressure_equality_constraints(b, t, i):
@@ -535,7 +536,7 @@ linked to all inlet states and the mixed state,
             None
         """
         # Try property block model check
-        for t in blk.time:
+        for t in blk.time_ref:
             try:
                 inlet_list = blk.create_inlet_list()
                 for i in inlet_list:
@@ -612,11 +613,11 @@ linked to all inlet states and the mixed state,
             mblock = blk.config.mixed_state_block
 
         # Calculate mixed stream terms
-        for t in blk.time:
-            for p in blk.phase_list:
+        for t in blk.time_ref:
+            for p in blk.phase_list_ref:
                 # Component flow terms
                 if blk.config.material_mixing_type != MixingType.none:
-                    for j in blk.component_list:
+                    for j in blk.component_list_ref:
                         mblock[t].get_material_flow_terms(p, j).value = sum(
                                 i_block_list[i][t].
                                 get_material_flow_terms(p, j).value

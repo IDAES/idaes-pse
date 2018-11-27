@@ -201,9 +201,9 @@ def test_base_build():
     assert len(m.fs.cv.config.reaction_package_args) == 0
     assert m.fs.cv.config.auto_construct is False
 
-    assert hasattr(m.fs.cv, "time")
-    assert hasattr(m.fs.cv, "phase_list")
-    assert hasattr(m.fs.cv, "component_list")
+    assert hasattr(m.fs.cv, "time_ref")
+    assert hasattr(m.fs.cv, "phase_list_ref")
+    assert hasattr(m.fs.cv, "component_list_ref")
 
 
 # -----------------------------------------------------------------------------
@@ -471,7 +471,7 @@ def test_add_phase_component_balances_rate_rxns():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
     assert isinstance(m.fs.cv.rate_reaction_generation, Var)
-    assert isinstance(m.fs.cv.rate_reaction_idx, Set)
+    assert isinstance(m.fs.cv.rate_reaction_idx_ref, Set)
     assert isinstance(m.fs.cv.rate_reaction_extent, Var)
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
@@ -527,7 +527,7 @@ def test_add_phase_component_balances_eq_rxns():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
     assert isinstance(m.fs.cv.equilibrium_reaction_generation, Var)
-    assert isinstance(m.fs.cv.equilibrium_reaction_idx, Set)
+    assert isinstance(m.fs.cv.equilibrium_reaction_idx_ref, Set)
     assert isinstance(m.fs.cv.equilibrium_reaction_extent, Var)
     assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
                       Constraint)
@@ -600,7 +600,7 @@ def test_add_phase_component_balances_phase_eq():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
     assert isinstance(m.fs.cv.phase_equilibrium_generation, Var)
-    assert isinstance(m.fs.cv.phase_equilibrium_idx, Set)
+    assert isinstance(m.fs.cv.phase_equilibrium_idx_ref, Set)
 
 
 def test_add_phase_component_balances_phase_eq_not_active():
@@ -671,9 +671,9 @@ def test_add_phase_component_balances_custom_molar_term():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time,
-                           m.fs.cv.phase_list,
-                           m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -698,9 +698,9 @@ def test_add_phase_component_balances_custom_molar_term_no_mw():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time,
-                           m.fs.cv.phase_list,
-                           m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -723,9 +723,9 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time,
-                           m.fs.cv.phase_list,
-                           m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -754,9 +754,9 @@ def test_add_phase_component_balances_custom_molar_term_undefined_basis():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time,
-                           m.fs.cv.phase_list,
-                           m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -779,9 +779,9 @@ def test_add_phase_component_balances_custom_mass_term():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time,
-                           m.fs.cv.phase_list,
-                           m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -806,9 +806,9 @@ def test_add_phase_component_balances_custom_mass_term_no_mw():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time,
-                           m.fs.cv.phase_list,
-                           m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -831,9 +831,9 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time,
-                           m.fs.cv.phase_list,
-                           m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -862,9 +862,9 @@ def test_add_phase_component_balances_custom_mass_term_undefined_basis():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time,
-                           m.fs.cv.phase_list,
-                           m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -969,7 +969,7 @@ def test_add_total_component_balances_rate_rxns():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
     assert isinstance(m.fs.cv.rate_reaction_generation, Var)
-    assert isinstance(m.fs.cv.rate_reaction_idx, Set)
+    assert isinstance(m.fs.cv.rate_reaction_idx_ref, Set)
     assert isinstance(m.fs.cv.rate_reaction_extent, Var)
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
@@ -1025,7 +1025,7 @@ def test_add_total_component_balances_eq_rxns():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
     assert isinstance(m.fs.cv.equilibrium_reaction_generation, Var)
-    assert isinstance(m.fs.cv.equilibrium_reaction_idx, Set)
+    assert isinstance(m.fs.cv.equilibrium_reaction_idx_ref, Set)
     assert isinstance(m.fs.cv.equilibrium_reaction_extent, Var)
     assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
                       Constraint)
@@ -1130,7 +1130,7 @@ def test_add_total_component_balances_custom_molar_term():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time, m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1155,7 +1155,7 @@ def test_add_total_component_balances_custom_molar_term_no_mw():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time, m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1178,7 +1178,7 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time, m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1207,7 +1207,7 @@ def test_add_total_component_balances_custom_molar_term_undefined_basis():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time, m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1230,7 +1230,7 @@ def test_add_total_component_balances_custom_mass_term():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time, m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1255,7 +1255,7 @@ def test_add_total_component_balances_custom_mass_term_no_mw():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time, m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1278,7 +1278,7 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time, m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1307,7 +1307,7 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time, m.fs.cv.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1445,7 +1445,7 @@ def test_add_total_element_balances_eq_rxns():
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
-    assert isinstance(m.fs.cv.equilibrium_reaction_idx, Set)
+    assert isinstance(m.fs.cv.equilibrium_reaction_idx_ref, Set)
 
 
 def test_add_total_element_balances_eq_rxns_not_active():
@@ -1514,7 +1514,7 @@ def test_add_total_element_balances_phase_eq():
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
-    assert isinstance(m.fs.cv.phase_equilibrium_idx, Set)
+    assert isinstance(m.fs.cv.phase_equilibrium_idx_ref, Set)
 
 
 def test_add_total_element_balances_phase_eq_not_active():
@@ -1585,7 +1585,7 @@ def test_add_total_element_balances_custom_term():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time, m.fs.pp.element_list)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.element_list)
 
     def custom_method(t, e):
         return m.fs.cv.test_var[t, e]
@@ -1748,7 +1748,7 @@ def test_add_total_enthalpy_balances_custom_term():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref)
 
     def custom_method(t):
         return m.fs.cv.test_var[t]
@@ -1868,7 +1868,7 @@ def test_add_total_pressure_balances_custom_term():
     m.fs.cv.add_state_blocks()
     m.fs.cv.add_reaction_blocks()
 
-    m.fs.cv.test_var = Var(m.fs.cv.time)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref)
 
     def custom_method(t):
         return m.fs.cv.test_var[t]

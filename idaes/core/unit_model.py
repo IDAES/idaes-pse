@@ -31,6 +31,7 @@ from .control_volume_base import ControlVolumeBase, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         DynamicError)
+from idaes.core.util.misc import add_object_reference
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -119,11 +120,18 @@ class UnitBlockData(ProcessBlockData):
 
         # Try to get reference to time object from parent
         try:
-            # TODO : Replace with Reference
-            object.__setattr__(self, "time", self.parent_block().time)
+            # Guess parent is top level flowsheet, has time domain
+            add_object_reference(self, "time_ref", self.parent_block().time)
         except AttributeError:
-            raise DynamicError('{} has a parent model '
-                               'with no time domain'.format(self.name))
+            # Try to look for a reference to time domain (time_ref)
+            try:
+                add_object_reference(self,
+                                     "time_ref",
+                                     self.parent_block().time_ref)
+            except AttributeError:
+                # Can't find time domain
+                raise DynamicError('{} has a parent model '
+                                   'with no time domain'.format(self.name))
 
         # Check has_holdup, if present
         if self.config.dynamic:
@@ -184,7 +192,7 @@ class UnitBlockData(ProcessBlockData):
         def port_rule(b, t):
             return block[t].define_port_members()
 
-        p = Port(blk.time,
+        p = Port(blk.time_ref,
                  rule=port_rule,
                  doc=doc)
         setattr(blk, name, p)

@@ -191,7 +191,7 @@ def test_setup_dynamics_use_parent_value():
     m.fs.u.cv._setup_dynamics()
 
     assert m.fs.u.cv.config.dynamic is False
-    assert m.fs.u.cv.time == [0]
+    assert m.fs.u.cv.time_ref == [0]
 
 
 def test_setup_dynamics_use_parent_value_fail_no_dynamic():
@@ -201,7 +201,7 @@ def test_setup_dynamics_use_parent_value_fail_no_dynamic():
     # Create a Block (with no dynamic attribute)
     fs.b = Block()
     # Add a time attribute to make sure the correct failure triggers
-    fs.b.time = Set(initialize=[0])
+    fs.b.time_ref = Set(initialize=[0])
 
     fs.b.cv = CVFrame()
 
@@ -318,8 +318,8 @@ def test_get_indexing_sets():
     m.cv._get_property_package()
     m.cv._get_indexing_sets()
 
-    assert hasattr(m.cv, "phase_list")
-    assert hasattr(m.cv, "component_list")
+    assert hasattr(m.cv, "phase_list_ref")
+    assert hasattr(m.cv, "component_list_ref")
 
 
 def test_get_indexing_sets_missing_phase_list():
@@ -342,7 +342,7 @@ def test_get_indexing_sets_missing_component_list():
 
     with pytest.raises(PropertyPackageError):
         m.cv._get_indexing_sets()
-    assert hasattr(m.cv, "phase_list")
+    assert hasattr(m.cv, "phase_list_ref")
 
 
 # -----------------------------------------------------------------------------

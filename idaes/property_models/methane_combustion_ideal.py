@@ -31,7 +31,8 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBase,
                         StateBlockDataBase,
                         StateBlockBase)
-from idaes.core.util.initialization import solve_indexed_blocks
+from idaes.core.util.initialization import (evaluate_variable_from_constraint,
+                                            solve_indexed_blocks)
 
 # Some more inforation about this module
 __author__ = "Andrew Lee, Jinliang Ma"
@@ -323,70 +324,53 @@ class _StateBlock(StateBlockBase):
             for j in blk[k].component_list:
 
                 if hasattr(blk[k], "cp_shomate_eqn"):
-                    blk[k].cp_mol_comp[j] = value(
-                        blk[k].cp_params[j, 1] +
-                        blk[k].cp_params[j, 2]*(blk[k].temperature*1e-3) +
-                        blk[k].cp_params[j, 3]*(blk[k].temperature*1e-3)**2 +
-                        blk[k].cp_params[j, 4]*(blk[k].temperature*1e-3)**3 +
-                        blk[k].cp_params[j, 5]/(blk[k].temperature*1e-3)**2)
+                    evaluate_variable_from_constraint(blk[k].cp_mol_comp[j],
+                                                      blk[k].cp_shomate_eqn[j])
 
                 if hasattr(blk[k], "enthalpy_shomate_eqn"):
-                    blk[k].enth_mol_phase_comp["Vap", j] = (1e3*value(
-                        blk[k].cp_params[j, 1]*(blk[k].temperature*1e-3) +
-                        blk[k].cp_params[j, 2]*(blk[k].temperature*1e-3)**2/2 +
-                        blk[k].cp_params[j, 3]*(blk[k].temperature*1e-3)**3/3 +
-                        blk[k].cp_params[j, 4]*(blk[k].temperature*1e-3)**4/4 -
-                        blk[k].cp_params[j, 5]/(blk[k].temperature*1e-3) +
-                        blk[k].cp_params[j, 6] -
-                        blk[k].cp_params[j, 8]) -
-                        value(blk[k].cp_params[j, 9] +
-                              blk[k].enth_mol_form[j]))
+                    evaluate_variable_from_constraint(
+                            blk[k].enth_mol_phase_comp["Vap", j],
+                            blk[k].enthalpy_shomate_eqn[j])
 
                 if hasattr(blk[k], "entropy_shomate_eqn"):
-                    blk[k].entr_mol_phase_comp["Vap", j] = value(
-                        blk[k].cp_params[j, 1]*log((blk[k].temperature*1e-3)) +
-                        blk[k].cp_params[j, 2]*(blk[k].temperature*1e-3) +
-                        blk[k].cp_params[j, 3]*(blk[k].temperature*1e-3)**2/2 +
-                        blk[k].cp_params[j, 4]*(blk[k].temperature*1e-3)**3/3 -
-                        (blk[k].cp_params[j, 5] /
-                         (2*(blk[k].temperature*1e-3)**2)) +
-                        blk[k].cp_params[j, 7] -
-                        blk[k].gas_const*log(blk[k].mole_frac[j]))
+                    evaluate_variable_from_constraint(
+                            blk[k].entr_mol_phase_comp["Vap", j],
+                            blk[k].entropy_shomate_eqn[j])
 
                 if hasattr(blk[k], "partial_gibbs_energy_eqn"):
-                    blk[k].gibbs_mol_phase_comp["Vap", j] = value(
-                        blk[k].enth_mol_phase_comp["Vap", j] -
-                        blk[k].temperature *
-                        blk[k].entr_mol_phase_comp["Vap", j])
+                    evaluate_variable_from_constraint(
+                            blk[k].gibbs_mol_phase_comp["Vap", j],
+                            blk[k].partial_gibbs_energy_eqn[j])
 
             if hasattr(blk[k], "ideal_gas"):
-                blk[k].dens_mol_phase["Vap"] = value(
-                        blk[k].pressure/(blk[k].gas_const*blk[k].temperature))
+                evaluate_variable_from_constraint(
+                            blk[k].dens_mol_phase["Vap"],
+                            blk[k].ideal_gas)
 
             if hasattr(blk[k], "mixture_heat_capacity_eqn"):
-                blk[k].cp_mol = value(sum(
-                        blk[k].cp_mol_comp[j]*blk[k].mole_frac[k]
-                        for j in blk[k].component_list))
+                evaluate_variable_from_constraint(
+                            blk[k].cp_mol,
+                            blk[k].mixture_heat_capacity_eqn)
 
             if hasattr(blk[k], "mixture_enthalpy_eqn"):
-                blk[k].enth_mol = value(
-                        sum(blk[k].mole_frac[j] *
-                            blk[k].enth_mol_phase_comp["Vap", j]
-                            for j in blk[k].component_list))
+                evaluate_variable_from_constraint(
+                            blk[k].enth_mol,
+                            blk[k].mixture_enthalpy_eqn)
 
             if hasattr(blk[k], "mixture_entropy_eqn"):
-                blk[k].entr_mol = value(
-                        sum(blk[k].mole_frac[j] *
-                            blk[k].entr_mol_phase_comp["Vap", j]
-                            for j in blk[k].component_list))
+                evaluate_variable_from_constraint(
+                            blk[k].entr_mol,
+                            blk[k].mixture_entropy_eqn)
 
             if hasattr(blk[k], "total_flow_eqn"):
-                blk[k].flow_mol = value(sum(blk[k].flow_mol_comp[j]
-                                            for j in blk[k].component_list))
+                evaluate_variable_from_constraint(
+                            blk[k].flow_mol,
+                            blk[k].total_flow_eqn)
 
             if hasattr(blk[k], "mixture_gibbs_eqn"):
-                blk[k].gibbs_mol = value(blk[k].enth_mol -
-                                         blk[k].temperature*blk[k].entr_mol)
+                evaluate_variable_from_constraint(
+                            blk[k].gibbs_mol,
+                            blk[k].mixture_gibbs_eqn)
 
         results = solve_indexed_blocks(opt, blk, tee=stee)
 
@@ -452,14 +436,7 @@ class StateBlockData(StateBlockDataBase):
         """
         super(StateBlockData, self).build()
 
-        self.make_params()
-        self.make_vars()
-        self.make_constraints()
-
-    def make_params(self):
-        # Create package parameters
-        ''' This section is for parameters needed for the property models.'''
-
+        # Create references to package parameters
         # List of valid phases in property package
         object.__setattr__(self,
                            "phase_list",
@@ -500,12 +477,7 @@ class StateBlockData(StateBlockDataBase):
         object.__setattr__(self, "temperature_ref",
                            self.config.parameters.temperature_ref)
 
-    def make_vars(self):
         # Create state variables
-        ''' This section contains the state variables to be used to calucate
-            the properties, and needs to be linked to the state properties in
-            the unit model.'''
-
         self.flow_mol_comp = Var(self.component_list,
                                  initialize=1.0,
                                  doc='Component molar flowrate [mol/s]')
@@ -522,12 +494,7 @@ class StateBlockData(StateBlockDataBase):
                              initialize=0.0,
                              doc='State component mole fractions [-]')
 
-    def make_constraints(self):
         # Create standard constraints
-        ''' This section creates the necessary constraints for calculating
-            the standard property values.
-            All calcuations assume ideal gas behaviour
-        '''
         # Mole fractions
         def mole_frac_constraint(b, j):
             return b.flow_mol_comp[j] == (

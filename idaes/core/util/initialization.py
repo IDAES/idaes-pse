@@ -15,9 +15,33 @@
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block
+from pyomo.environ import Block, Constraint, value, Var
 
 __author__ = "Andrew Lee"
+
+
+def evaluate_variable_from_constraint(variable, constraint):
+    """
+    Calculates the value of a variable based on the current residual of the
+    given constraint, and ot set the value of the variable to this value.
+
+    Args:
+        variable - Pyomo variable to be evaluated
+        constraint - Pyomo Constraint to use ot calucate variable value
+
+    Returns:
+        value of variable
+    """
+    residual = value(constraint.body)
+    upper = value(constraint.upper)
+
+    current_value = variable.value
+
+    target_value = current_value - (residual-upper)
+
+    variable.value = target_value
+
+    return target_value
 
 
 # HACK, courtesy of J. Siirola
