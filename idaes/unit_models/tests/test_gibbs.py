@@ -61,6 +61,7 @@ def test_build():
 
     assert hasattr(m.fs.gibbs, "gibbs_minimization")
     assert hasattr(m.fs.gibbs.control_volume, "heat")
+    assert hasattr(m.fs.gibbs, "heat_duty")
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -118,7 +119,7 @@ def test_initialize_temperature():
     assert (pytest.approx(0.710, abs=1e-2) ==
             m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["O2"].value)
     assert (pytest.approx(161882.3, abs=1e-2) ==
-            m.fs.gibbs.heat[0].value)
+            m.fs.gibbs.heat_duty[0].value)
     assert (pytest.approx(101325.0, abs=1e-2) ==
             m.fs.gibbs.outlet[0].vars["pressure"].value)
 
@@ -144,7 +145,7 @@ def test_initialize_heat_duty():
     m.fs.gibbs.inlet[:].temperature.fix(1500.0)
     m.fs.gibbs.inlet[:].pressure.fix(101325.0)
 
-    m.fs.gibbs.heat[:].fix(161882.303661)
+    m.fs.gibbs.heat_duty[:].fix(161882.303661)
 
     assert degrees_of_freedom(m) == 0
 

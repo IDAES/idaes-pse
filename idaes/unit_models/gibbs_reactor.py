@@ -27,6 +27,7 @@ from idaes.core import (ControlVolume0D,
                         UnitBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.misc import add_object_reference
 
 __author__ = "Jinliang Ma, Andrew Lee"
 
@@ -149,19 +150,19 @@ see property package for documentation.}"""))
         self.add_outlet_port()
 
         # Add performance equations
-        object.__setattr__(self,
-                           "component_list",
-                           self.control_volume.component_list)
-        object.__setattr__(self,
-                           "phase_list",
-                           self.control_volume.phase_list)
-        object.__setattr__(self,
-                           "element_list",
-                           self.control_volume.element_list)
+        add_object_reference(self,
+                             "component_list_ref",
+                             self.control_volume.component_list_ref)
+        add_object_reference(self,
+                             "phase_list_ref",
+                             self.control_volume.phase_list_ref)
+        add_object_reference(self,
+                             "element_list_ref",
+                             self.control_volume.element_list_ref)
 
         # Add Lagrangian multiplier variables
-        self.lagrange_mult = Var(self.time,
-                                 self.element_list,
+        self.lagrange_mult = Var(self.time_ref,
+                                 self.element_list_ref,
                                  domain=Reals,
                                  initialize=100,
                                  doc="Lagrangian multipliers")
@@ -170,9 +171,9 @@ see property package for documentation.}"""))
         # Use RT*lagrange as the Lagrangian multiple such that lagrange is in
         # a similar order of magnitude as log(Yi)
 
-        @self.Constraint(self.time,
-                         self.phase_list,
-                         self.component_list,
+        @self.Constraint(self.time_ref,
+                         self.phase_list_ref,
+                         self.component_list_ref,
                          doc="Gibbs energy minimisation constraint")
         def gibbs_minimization(b, t, p, j):
             # Use natural log of species mole flow to avoid Pyomo solver
@@ -180,12 +181,13 @@ see property package for documentation.}"""))
             return 0 == (
                 b.control_volume.properties_out[t].gibbs_mol_phase_comp[p, j] +
                 sum(b.lagrange_mult[t, e] *
-                    b.control_volume.properties_out[t].element_comp[j][e]
-                    for e in b.element_list))
+                    b.control_volume.properties_out[t].
+                    config.parameters.element_comp[j][e]
+                    for e in b.element_list_ref))
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != EnergyBalanceType.none):
-            object.__setattr__(self,
-                               "heat",
-                               self.control_volume.heat)
+            add_object_reference(self,
+                                 "heat_duty",
+                                 self.control_volume.heat)

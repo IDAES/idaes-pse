@@ -46,6 +46,8 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
         self.component_list = Set(initialize=["c1", "c2"])
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
         self.element_list = Set(initialize=["H", "He", "Li"])
+        self.element_comp = {"c1": {"H": 1, "He": 2, "Li": 3},
+                             "c2": {"H": 4, "He": 5, "Li": 6}}
 
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
@@ -85,8 +87,7 @@ class StateBlockData(StateBlockDataBase):
         self.phase_equilibrium_list = \
             {"e1": ["c1", ("p1", "p2")],
              "e2": ["c2", ("p1", "p2")]}
-        self.element_comp = {"c1": {"H": 1, "He": 2, "Li": 3},
-                             "c2": {"H": 4, "He": 5, "Li": 6}}
+
         self.pressure = Var()
 
     def get_material_flow_terms(b, p, j):

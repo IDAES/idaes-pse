@@ -1024,7 +1024,7 @@ class ControlVolume0dData(ControlVolumeBase):
                              .format(units['amount'], units['time']))
         def elemental_flow_in(b, t, p, e):
             return sum(b.properties_in[t].get_material_flow_terms(p, j) *
-                       b.properties_out[t].element_comp[j][e]
+                       b.properties_out[t].config.parameters.element_comp[j][e]
                        for j in b.component_list_ref)
 
         @self.Expression(self.time_ref,
@@ -1034,7 +1034,7 @@ class ControlVolume0dData(ControlVolumeBase):
                              .format(units['amount'], units['time']))
         def elemental_flow_out(b, t, p, e):
             return sum(b.properties_out[t].get_material_flow_terms(p, j) *
-                       b.properties_out[t].element_comp[j][e]
+                       b.properties_out[t].config.parameters.element_comp[j][e]
                        for j in b.component_list_ref)
 
         # Create material balance terms as needed
@@ -1089,7 +1089,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     b.volume[t] *
                     sum(b.phase_fraction[t, p] *
                         b.properties_out[t].get_material_density_terms(p, j) *
-                        b.properties_out[t].element_comp[j][e]
+                        b.properties_out[t].config.parameters.element_comp[j][e]
                         for p in b.phase_list_ref
                         for j in b.component_list_ref))
 
