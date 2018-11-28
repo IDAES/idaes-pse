@@ -52,7 +52,6 @@ class PhysicalParameterData(PhysicalParameterBase):
     superheated steam.
 
     """
-
     def build(self):
         '''
         Callable method for Block construction.

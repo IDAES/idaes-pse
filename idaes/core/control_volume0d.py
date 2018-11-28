@@ -30,7 +30,8 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
-                                        PropertyNotSupportedError)
+                                        PropertyNotSupportedError,
+                                        PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee"
@@ -117,18 +118,27 @@ class ControlVolume0dData(ControlVolumeBase):
                     'Valid values are FlowDirection.forward and '
                     'FlowDirection.backward'.format(self.name))
 
-        self.properties_in = self.config.property_package.state_block_class(
-                self.time_ref,
-                doc="Material properties at inlet",
-                default=tmp_dict)
+        try:
+            self.properties_in = (
+                    self.config.property_package.state_block_class(
+                            self.time_ref,
+                            doc="Material properties at inlet",
+                            default=tmp_dict))
 
-        # Reverse defined_state
-        tmp_dict["defined_state"] = not tmp_dict["defined_state"]
+            # Reverse defined_state
+            tmp_dict["defined_state"] = not tmp_dict["defined_state"]
 
-        self.properties_out = self.config.property_package.state_block_class(
-                self.time_ref,
-                doc="Material properties at outlet",
-                default=tmp_dict)
+            self.properties_out = (
+                    self.config.property_package.state_block_class(
+                            self.time_ref,
+                            doc="Material properties at outlet",
+                            default=tmp_dict))
+        except AttributeError:
+            raise PropertyPackageError(
+                    "{} physical property package has not implemented the "
+                    "state_block_class attribute. Please contact the "
+                    "developer of the physical property package."
+                    .format(self.name))
 
     def add_reaction_blocks(self,
                             has_equilibrium=False,
@@ -150,10 +160,18 @@ class ControlVolume0dData(ControlVolumeBase):
         tmp_dict["has_equilibrium"] = has_equilibrium
         tmp_dict["parameters"] = self.config.reaction_package
 
-        self.reactions = self.config.reaction_package.reaction_block_class(
-                self.time_ref,
-                doc="Reaction properties in control volume",
-                default=tmp_dict)
+        try:
+            self.reactions = (
+                    self.config.reaction_package.reaction_block_class(
+                            self.time_ref,
+                            doc="Reaction properties in control volume",
+                            default=tmp_dict))
+        except AttributeError:
+            raise PropertyPackageError(
+                    "{} reaction property package has not implemented the "
+                    "reaction_block_class attribute. Please contact the "
+                    "developer of the reaction property package."
+                    .format(self.name))
 
     def add_phase_component_balances(self,
                                      has_rate_reactions=False,
