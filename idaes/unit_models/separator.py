@@ -31,7 +31,6 @@ from idaes.core.util.config import (is_physical_parameter_block,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
-from idaes.core.util.math import smooth_min
 
 __author__ = "Andrew Lee"
 
@@ -40,8 +39,16 @@ __author__ = "Andrew Lee"
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("SeparatorBlock")
-class SeparatorBlockData(UnitBlockData):
+# Enumerate options for balances
+SplittingType = Enum(
+    'totalFlow',
+    'phaseFlow',
+    'componentFlow',
+    'phaseComponentFlow')
+
+
+@declare_process_block_class("Separator")
+class SeparatorData(UnitBlockData):
     """
     This is a general purpose model for a Separator block with the IDAES
     modeling framework. This block can be used either as a stand-alone
@@ -52,9 +59,9 @@ class SeparatorBlockData(UnitBlockData):
     overall enthalpy balance (2 options), and a momentum balance (2 options)
     linked to a mixed-state StateBlock. The mixed-state StateBlock can either
     be specified by the user (allowing use as a sub-model), or created by the
-    SeparatorBlock.
+    Separator.
 
-    When being used as a sub-model, SeparatorBlock should only be used when a
+    When being used as a sub-model, Separator should only be used when a
     set of new StateBlocks are required for the streams to be separated. It
     should not be used to separate streams to go to mutiple ControlVolumes in a
     single unit model - in these cases the unit model developer should write
@@ -97,6 +104,33 @@ used if outlet_list arg is provided,
 provided,
 **int** - number of outlets to create (will be named with sequential integers
 from 1 to num_outlets).}"""))
+    CONFIG.declare("split_basis", ConfigValue(
+        default=SplittingType.totalFlow,
+        domain=SplittingType,
+        description="Basis for splitting stream",
+        doc="""Argumnet indicating basis to use for splitting mixed stream,
+**default** - SplittingType.totalFlow.
+**Valid values:** {
+**SplittingType.totalFlow** - split based on total flow (split
+fraction indexed only by time and outlet),
+**SplittingType.phaseFlow** - split based on phase flows (split fraction
+indexed by time, outlet and phase),
+**SplittingType.componentFlow** - split based on component flows (split
+fraction indexed by time, outlet and components),
+**SplittingType.phaseComponentFlow** - split based on phase-component flows (
+split fraction indexed by both time, outlet, phase and components).}"""))
+    CONFIG.declare("ideal_separation", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Ideal splitting flag",
+        doc="""Argumnet indicating whether ideal splitting should be used.
+Ideal splitting assumes perfect spearation of material, and attempts to
+avoid duplication of StateBlocks by directly partitioning outlet flows to
+ports,
+**default** - True.
+**Valid values:** {
+**True** - use ideal splitting methods,
+**False** - use explicit splitting equations with split fractions.}"""))
     CONFIG.declare("calculate_phase_equilibrium", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -104,21 +138,9 @@ from 1 to num_outlets).}"""))
         doc="""Argument indicating whether phase equilibrium should be
 calculated for the resulting outlet streams,
 **default** - False.
-**Valid values: ** {
+**Valid values:** {
 **True** - calculate phase equilibrium in outlet streams,
 **False** - do not calculate equilibrium in outlet streams.}"""))
-#    CONFIG.declare("momentum_mixing_type", ConfigValue(
-#        default=MomentumMixingType.minimize,
-#        domain=MomentumMixingType,
-#        description="Method to use when mxing momentum/pressure",
-#        doc="""Argument indicating what method to use when mixing momentum/
-#pressure of incoming streams,
-#**default** - MomentumMixingType.minimize.
-#**Valid values:** {
-#**MomentumMixingType.minimize** - mixed stream has pressure equal to the
-#minimimum pressure of the incoming streams (uses smoothMin operator),
-#**MomentumMixingType.equality** - enforces equality of pressure in mixed and
-#all incoming streams.}"""))
     CONFIG.declare("mixed_state_block", ConfigValue(
         domain=is_state_block,
         description="Existing StateBlock to use as mixed stream",
@@ -141,7 +163,7 @@ linked the mixed state and all outlet states,
 
     def build(self):
         """
-        General build method for SeparatorBlockData. This method calls a number
+        General build method for SeparatorData. This method calls a number
         of sub-methods which automate the construction of expected attributes
         of unit models.
 
@@ -154,7 +176,7 @@ linked the mixed state and all outlet states,
             None
         """
         # Call super.build()
-        super(SeparatorBlockData, self).build()
+        super(SeparatorData, self).build()
 
         # Call setup methods from ControlVolumeBase
         self._get_property_package()
@@ -163,15 +185,30 @@ linked the mixed state and all outlet states,
         # Create list of inlet names
         outlet_list = self.create_outlet_list()
 
-        # Build StateBlocks
-        outlet_blocks = self.add_outlet_state_blocks(outlet_list)
-
         if self.config.mixed_state_block is None:
             mixed_block = self.add_mixed_state_block()
         else:
             mixed_block = self.get_mixed_state_block()
 
-        self.add_port_objects(outlet_list, outlet_blocks, mixed_block)
+        # Add inlet port
+        self.add_inlet_port_objects(mixed_block)
+
+        # Construct splitter based on ideal_separation argument
+        if self.config.ideal_separation:
+            # Use ideal partitioning method
+            self.partition_outlet_flows(mixed_block, outlet_list)
+        else:
+            # Otherwise, Build StateBlocks for outlet
+            outlet_blocks = self.add_outlet_state_blocks(outlet_list)
+
+            # Add split fractions
+            self.add_split_fractions(outlet_list)
+
+            # Construct splitting equations
+            self.add_material_splitting_constraints(mixed_block, outlet_blocks)
+
+            # Construct outlet port objects
+            self.add_outlet_port_objects(outlet_list, outlet_blocks)
 
     def create_outlet_list(self):
         """
@@ -185,7 +222,7 @@ linked the mixed state and all outlet states,
             # If both arguments provided and not consistent, raise Exception
             if len(self.config.outlet_list) != self.config.num_outlets:
                 raise ConfigurationError(
-                        "{} SeparatorBlock provided with both outlet_list and "
+                        "{} Separator provided with both outlet_list and "
                         "num_outlets arguments, which were not consistent ("
                         "length of outlet_list was not equal to num_outlets). "
                         "PLease check your arguments for consistency, and "
@@ -278,18 +315,30 @@ linked the mixed state and all outlet states,
                     "{} StateBlock provided in mixed_state_block argument "
                     " does not come from the same property package as "
                     "provided in the property_package argument. All "
-                    "StateBlocks within a SeparatorBlock must use the same "
+                    "StateBlocks within a Separator must use the same "
                     "property package.".format(self.name))
 
         return self.config.mixed_state_block
 
-    def add_port_objects(self, outlet_list, outlet_blocks, mixed_block):
+    def add_inlet_port_objects(self, mixed_block):
         """
-        Adds Port objects if required.
+        Adds inlet Port object if required.
+
+        Args:
+            a mixed state StateBlock object
+
+        Returns:
+            None
+        """
+        if self.config.construct_ports is True:
+            self.add_port(name="inlet", block=mixed_block, doc="Inlet Port")
+
+    def add_outlet_port_objects(self, outlet_list, outlet_blocks):
+        """
+        Adds outlet Port objects if required.
 
         Args:
             a list of outlet StateBlock objects
-            a mixed state StateBlock object
 
         Returns:
             None
@@ -299,7 +348,78 @@ linked the mixed state and all outlet states,
             for p in outlet_list:
                 o_state = getattr(self, p+"_state")
                 self.add_port(name=p, block=o_state, doc="Outlet Port")
-            self.add_port(name="inlet", block=mixed_block, doc="Inlet Port")
+
+    def add_split_fractions(self, outlet_list):
+        """
+        Creates outlet Port objects and tries to partiton mixed stream flows
+        between these
+
+        Args:
+            StateBlock representing the mixed flow to be split
+            a list of names for outlets
+
+        Returns:
+            None
+        """
+        self.outlet_idx = Set(initialize=outlet_list)
+
+        if self.config.split_basis == SplittingType.totalFlow:
+            sf_idx = (self.time_idx, self.outlet_idx)
+        elif self.config.split_basis == SplittingType.phaseFlow:
+            sf_idx = (self.time_idx, self.outlet_idx, self.phase_list_ref)
+        elif self.config.split_basis == SplittingType.componentFlow:
+            sf_idx = (self.time_idx, self.outlet_idx, self.component_list_ref)
+        elif self.config.split_basis == SplittingType.phaseComponentFlow:
+            sf_idx = (self.time_idx,
+                      self.outlet_idx,
+                      self.phase_list_ref,
+                      self.component_list_ref)
+        else:
+            raise BurntToast("{} split_basis has unexpected value. This "
+                             "should not happen.".format(self.name))
+
+        # Create split fraction variable
+        self.split_fraction = Var(sf_idx,
+                                  initialize=0.5,
+                                  doc="Outlet split fractions")
+
+    def add_material_splitting_constraints(self, mixed_block, outlet_blocks):
+        """
+        Creates constraints for splitting the material flows
+        """
+        def sf(t, o, p, j):
+            if self.config.split_basis == SplittingType.totalFlow:
+                return self.split_fraction[t, o]
+            elif self.config.split_basis == SplittingType.phaseFlow:
+                return self.split_fraction[t, o, p]
+            elif self.config.split_basis == SplittingType.componentFlow:
+                return self.split_fraction[t, o, j]
+            elif self.config.split_basis == SplittingType.phaseComponentFlow:
+                return self.split_fraction[t, o, p, j]
+
+        @self.Constraint(self.time_ref,
+                         self.outlet_idx,
+                         self.phase_list_ref,
+                         self.component_list_ref,
+                         doc="Material splitting equations")
+        def material_splitting_rule(b, t, o, p, j):
+            return mixed_block[t].get_material_flow_terms(p, j) == (
+                        sf(t, o, p, j) *
+                        outlet_blocks[o][t].get_material_flow_terms(p, j))
+
+    def partition_outlet_flows(self, mixed_block, outlet_list):
+        """
+        Creates outlet Port objects and tries to partiton mixed stream flows
+        between these
+
+        Args:
+            StateBlock representing the mixed flow to be split
+            a list of names for outlets
+
+        Returns:
+            None
+        """
+        pass
 
     def model_check(blk):
         """
@@ -321,7 +441,7 @@ linked the mixed state and all outlet states,
                 else:
                     blk.config.mixed_state_block.model_check()
             except AttributeError:
-                _log.warning('{} SeparatorBlock inlet state block has no '
+                _log.warning('{} Separator inlet state block has no '
                              'model check. To correct this, add a '
                              'model_check method to the associated '
                              'StateBlock class.'.format(blk.name))
@@ -332,7 +452,7 @@ linked the mixed state and all outlet states,
                     o_block = getattr(blk, o+"_state")
                     o_block[t].model_check()
             except AttributeError:
-                _log.warning('{} SeparatorBlock outlet state block has no '
+                _log.warning('{} Separator outlet state block has no '
                              'model checks. To correct this, add a model_check'
                              ' method to the associated StateBlock class.'
                              .format(blk.name))

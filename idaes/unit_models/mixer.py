@@ -70,9 +70,9 @@ class MixerData(UnitBlockData):
     streams, then writes a set of phase-component material balances, an
     overall enthalpy balance and a momentum balance (2 options) linked to a
     mixed-state StateBlock. The mixed-state StateBlock can either be specified
-    by the user (allowing use as a sub-model), or created by the MixerBlock.
+    by the user (allowing use as a sub-model), or created by the Mixer.
 
-    When being used as a sub-model, MixerBlock should only be used when a set
+    When being used as a sub-model, Mixer should only be used when a set
     of new StateBlocks are required for the streams to be mixed. It should not
     be used to mix streams from mutiple ControlVolumes in a single unit model -
     in these cases the unit model developer should write their own mixing
@@ -182,7 +182,7 @@ linked to all inlet states and the mixed state,
 
     def build(self):
         """
-        General build method for MixerBlockData. This method calls a number
+        General build method for MixerData. This method calls a number
         of sub-methods which automate the construction of expected attributes
         of unit models.
 
@@ -265,7 +265,7 @@ linked to all inlet states and the mixed state,
             # If both arguments provided and not consistent, raise Exception
             if len(self.config.inlet_list) != self.config.num_inlets:
                 raise ConfigurationError(
-                        "{} MixerBlock provided with both inlet_list and "
+                        "{} Mixer provided with both inlet_list and "
                         "num_inlets arguments, which were not consistent ("
                         "length of inlet_list was not equal to num_inlets). "
                         "PLease check your arguments for consistency, and "
@@ -358,7 +358,7 @@ linked to all inlet states and the mixed state,
                     "{} StateBlock provided in mixed_state_block argument "
                     " does not come from the same property package as "
                     "provided in the property_package argument. All "
-                    "StateBlocks within a MixerBlock must use the same "
+                    "StateBlocks within a Mixer must use the same "
                     "property package.".format(self.name))
 
         return self.config.mixed_state_block
@@ -544,7 +544,7 @@ linked to all inlet states and the mixed state,
                     i_block = getattr(blk, i+"_state")
                     i_block[t].model_check()
             except AttributeError:
-                _log.warning('{} MixerBlock inlet property block has no model '
+                _log.warning('{} Mixer inlet property block has no model '
                              'checks. To correct this, add a model_check '
                              'method to the associated StateBlock class.'
                              .format(blk.name))
@@ -554,7 +554,7 @@ linked to all inlet states and the mixed state,
                 else:
                     blk.config.mixed_state_block.model_check()
             except AttributeError:
-                _log.warning('{} MixerBlock outlet property block has no '
+                _log.warning('{} Mixer outlet property block has no '
                              'model checks. To correct this, add a '
                              'model_check method to the associated '
                              'StateBlock class.'.format(blk.name))
