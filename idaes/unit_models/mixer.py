@@ -59,8 +59,8 @@ MomentumMixingType = Enum(
     'equality')
 
 
-@declare_process_block_class("MixerBlock")
-class MixerBlockData(UnitBlockData):
+@declare_process_block_class("Mixer")
+class MixerData(UnitBlockData):
     """
     This is a general purpose model for a Mixer block with the IDAES modeling
     framework. This block can be used either as a stand-alone Mixer unit
@@ -159,6 +159,7 @@ minimimum pressure of the incoming streams (uses smoothMin operator),
 **MomentumMixingType.equality** - enforces equality of pressure in mixed and
 all incoming streams.}"""))
     CONFIG.declare("mixed_state_block", ConfigValue(
+        default=None,
         domain=is_state_block,
         description="Existing StateBlock to use as mixed stream",
         doc="""An existing state block to use as the outlet stream from the
@@ -194,7 +195,7 @@ linked to all inlet states and the mixed state,
             None
         """
         # Call super.build()
-        super(MixerBlockData, self).build()
+        super(MixerData, self).build()
 
         # Call setup methods from ControlVolumeBase
         self._get_property_package()
@@ -217,7 +218,7 @@ linked to all inlet states and the mixed state,
         elif self.config.material_mixing_type == MixingType.extensive:
             pass
         else:
-            raise ConfigurationError("{} recieved unrecognised value for "
+            raise ConfigurationError("{} received unrecognised value for "
                                      "material_mixing_type argument. This "
                                      "should not occur, so please contact "
                                      "the IDAES developers with this bug."
@@ -229,7 +230,7 @@ linked to all inlet states and the mixed state,
         elif self.config.energy_mixing_type == MixingType.extensive:
             pass
         else:
-            raise ConfigurationError("{} recieved unrecognised value for "
+            raise ConfigurationError("{} received unrecognised value for "
                                      "material_mixing_type argument. This "
                                      "should not occur, so please contact "
                                      "the IDAES developers with this bug."

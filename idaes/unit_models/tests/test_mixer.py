@@ -26,8 +26,8 @@ from idaes.core import (FlowsheetBlockData,
                         PhysicalParameterBase,
                         StateBlockBase,
                         StateBlockDataBase)
-from idaes.unit_models.mixer import (MixerBlock,
-                                     MixerBlockData,
+from idaes.unit_models.mixer import (Mixer,
+                                     MixerData,
                                      MixingType,
                                      MomentumMixingType)
 from idaes.core.util.exceptions import (BurntToast,
@@ -113,9 +113,9 @@ class StateBlockData(StateBlockDataBase):
 
 
 @declare_process_block_class("MixerFrame")
-class MixerFrameData(MixerBlockData):
+class MixerFrameData(MixerData):
     def build(self):
-        super(MixerBlockData, self).build()
+        super(MixerData, self).build()
 
 
 # -----------------------------------------------------------------------------
@@ -582,7 +582,7 @@ def test_build_default():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterBlock()
 
-    m.fs.mix = MixerBlock(default={"property_package": m.fs.pp})
+    m.fs.mix = Mixer(default={"property_package": m.fs.pp})
 
     assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
     assert len(m.fs.mix.material_mixing_equations) == 4
@@ -609,8 +609,8 @@ def test_build_phase_equilibrium():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterBlock()
 
-    m.fs.mix = MixerBlock(default={"property_package": m.fs.pp,
-                                   "calculate_phase_equilibrium": True})
+    m.fs.mix = Mixer(default={"property_package": m.fs.pp,
+                              "calculate_phase_equilibrium": True})
 
     assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
     assert len(m.fs.mix.material_mixing_equations) == 4
@@ -638,7 +638,7 @@ def test_build_phase_pressure_equality():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterBlock()
 
-    m.fs.mix = MixerBlock(default={
+    m.fs.mix = Mixer(default={
             "property_package": m.fs.pp,
             "momentum_mixing_type": MomentumMixingType.equality})
 
@@ -663,7 +663,7 @@ def test_model_checks():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterBlock()
 
-    m.fs.mix = MixerBlock(default={
+    m.fs.mix = Mixer(default={
             "property_package": m.fs.pp,
             "momentum_mixing_type": MomentumMixingType.equality})
 
@@ -680,7 +680,7 @@ def test_initialize():
     m.fs.pp = PhysicalParameterBlock()
     m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
-    m.fs.mix = MixerBlock(default={
+    m.fs.mix = Mixer(default={
             "property_package": m.fs.pp,
             "mixed_state_block": m.fs.sb})
 
