@@ -18,7 +18,7 @@ from __future__ import division, print_function
 
 import logging
 
-from pyomo.environ import Constraint, Param, PositiveReals, Reals, Set, Var
+from pyomo.environ import Set, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
@@ -29,8 +29,7 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
                                     list_of_strings)
 from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError,
-                                        PropertyNotSupportedError)
+                                        ConfigurationError)
 
 __author__ = "Andrew Lee"
 
@@ -206,6 +205,8 @@ linked the mixed state and all outlet states,
 
             # Construct splitting equations
             self.add_material_splitting_constraints(mixed_block, outlet_blocks)
+            self.add_energy_splitting_constraints(mixed_block, outlet_blocks)
+            self.add_momentum_splitting_constraints(mixed_block, outlet_blocks)
 
             # Construct outlet port objects
             self.add_outlet_port_objects(outlet_list, outlet_blocks)
@@ -402,10 +403,34 @@ linked the mixed state and all outlet states,
                          self.phase_list_ref,
                          self.component_list_ref,
                          doc="Material splitting equations")
-        def material_splitting_rule(b, t, o, p, j):
+        def material_splitting_eqn(b, t, o, p, j):
             return mixed_block[t].get_material_flow_terms(p, j) == (
                         sf(t, o, p, j) *
                         outlet_blocks[o][t].get_material_flow_terms(p, j))
+
+    def add_energy_splitting_constraints(self, mixed_block, outlet_blocks):
+        """
+        Creates constraints for splitting the energy flows - done by equating
+        temperatures in outlets.
+        """
+        @self.Constraint(self.time_ref,
+                         self.outlet_idx,
+                         doc="Temperature equality constraint")
+        def temperature_equality_eqn(b, t, o, p, j):
+            return mixed_block[t].temperature == (
+                        outlet_blocks[o][t].temperature)
+
+    def add_momentum_splitting_constraints(self, mixed_block, outlet_blocks):
+        """
+        Creates constraints for splitting the momentum flows - done by equating
+        pressures in outlets.
+        """
+        @self.Constraint(self.time_ref,
+                         self.outlet_idx,
+                         doc="Pressure equality constraint")
+        def pressure_equality_eqn(b, t, o, p, j):
+            return mixed_block[t].pressure == (
+                        outlet_blocks[o][t].pressure)
 
     def partition_outlet_flows(self, mixed_block, outlet_list):
         """
@@ -484,15 +509,15 @@ linked the mixed state and all outlet states,
             states were fixed during initialization.
         '''
         # Initialize mixed state block
-        if blk.config.mixed_state_block is None:
-            mblock = blk.mixed_state
-        else:
+        if blk.config.mixed_state_block is not None:
             mblock = blk.config.mixed_state_block
 
-        flags = mblock.initialize(outlvl=outlvl-1,
-                                  optarg=optarg,
-                                  solver=solver,
-                                  hold_state=hold_state)
+            flags = mblock.initialize(outlvl=outlvl-1,
+                                      optarg=optarg,
+                                      solver=solver,
+                                      hold_state=hold_state)
+        else:
+            flags = {}
 
         # Initialize outlets as applicable
         outlet_list = blk.create_outlet_list()
