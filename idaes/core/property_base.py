@@ -15,9 +15,6 @@ This module contains classes for property blocks and property parameter blocks.
 """
 from __future__ import division
 
-# Import Python libraries
-import inspect
-
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -26,8 +23,7 @@ from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import (BurntToast,
-                                        PropertyNotSupportedError,
+from idaes.core.util.exceptions import (PropertyNotSupportedError,
                                         PropertyPackageError)
 
 # Some more information about this module
@@ -64,16 +60,6 @@ class PhysicalParameterBase(ProcessBlockData,
             None
         """
         super(PhysicalParameterBase, self).build()
-
-        # Get module reference and store on block
-        try:
-            frm = inspect.stack()[1]
-            self._package_module = inspect.getmodule(frm[0])
-        except KeyError:
-            raise BurntToast('{} an error occured when trying to retrieve '
-                             'a pointer to the reaction package module. '
-                             'Please contact the IDAES developers with this '
-                             'bug'.format(self.name))
 
 
 class StateBlockBase(ProcessBlock):

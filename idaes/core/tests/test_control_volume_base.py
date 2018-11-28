@@ -265,8 +265,6 @@ def test_get_property_package_set():
     m.cv = CVFrame(default={"property_package": m.pp})
     m.cv._get_property_package()
 
-    assert m.cv._property_module == m.pp._package_module
-
 
 def test_get_property_package_default_args():
     m = ConcreteModel()
@@ -324,7 +322,7 @@ def test_get_property_package_call_to_get_default_prop_pack():
 
     m.fs.cv = CVFrame()
     m.fs.cv._get_property_package()
-    assert m.fs.cv._property_module == m.fs.pp._package_module
+    assert m.fs.cv.config.property_package == m.fs.pp
 
 
 # -----------------------------------------------------------------------------
@@ -391,7 +389,7 @@ def test_get_reaction_package_module():
 
     m.cv._get_reaction_package()
 
-    assert m.cv._reaction_module == m.rp._package_module
+    assert m.cv.config.reaction_package == m.rp
     assert m.cv.config.reaction_package_args["test"] == "foo"
 
 

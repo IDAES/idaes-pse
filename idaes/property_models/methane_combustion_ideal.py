@@ -59,12 +59,8 @@ class PhysicalParameterData(PhysicalParameterBase):
         '''
         super(PhysicalParameterData, self).build()
 
-        self._make_params()
+        self.state_block_class = StateBlock
 
-    def _make_params(self):
-        '''
-        This section is for parameters needed for the property models.
-        '''
         # List of valid phases in property package
         self.phase_list = Set(initialize=['Vap'])
 

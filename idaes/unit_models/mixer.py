@@ -304,7 +304,7 @@ linked to all inlet states and the mixed state,
 
         # Create an instance of StateBlock for all inlets
         for i in inlet_list:
-            i_obj = self._property_module.StateBlock(
+            i_obj = self.config.property_package.state_block_class(
                         self.time_ref,
                         doc="Material properties at inlet",
                         default=tmp_dict)
@@ -329,7 +329,7 @@ linked to all inlet states and the mixed state,
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = False
 
-        self.mixed_state = self._property_module.StateBlock(
+        self.mixed_state = self.config.property_package.state_block_class(
                                 self.time_ref,
                                 doc="Material properties of mixed stream",
                                 default=tmp_dict)

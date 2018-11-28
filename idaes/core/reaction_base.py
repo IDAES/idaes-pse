@@ -71,16 +71,6 @@ class ReactionParameterBase(ProcessBlockData,
         """
         super(ReactionParameterBase, self).build()
 
-        # Get module reference and store on block
-        try:
-            frm = inspect.stack()[1]
-            self._package_module = inspect.getmodule(frm[0])
-        except KeyError:
-            raise BurntToast('{} an error occured when trying to retrieve '
-                             'a pointer to the reaction package module. '
-                             'Please contact the IDAES developers with this '
-                             'bug'.format(self.name))
-
         # TODO: Need way to tie reaction package to a specfic property package
         self._validate_property_parameter_units()
         self._validate_property_parameter_properties()

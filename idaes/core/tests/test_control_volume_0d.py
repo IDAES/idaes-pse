@@ -52,6 +52,8 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
 
+        self.state_block_class = StateBlock
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_default_units({'time': 's',
@@ -123,6 +125,8 @@ class _ReactionParameterBlock(ReactionParameterBase):
         self.component_list = Set(initialize=["c1", "c2"])
         self.rate_reaction_idx = Set(initialize=["r1", "r2"])
         self.equilibrium_reaction_idx = Set(initialize=["e1", "e2"])
+
+        self.reaction_block_class = ReactionBlock
 
     @classmethod
     def define_metadata(cls, obj):

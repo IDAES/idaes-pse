@@ -185,9 +185,6 @@ class ProcessBlockData(_BlockData):
             except AttributeError:
                 self.config.property_package = self._get_default_prop_pack()
 
-        # Get module of property package
-        self._property_module = self.config.property_package._package_module
-
         # Check for any flowsheet level build arguments
         for k in self.config.property_package.config.default_arguments:
             if k not in self.config.property_package_args:
@@ -286,10 +283,6 @@ class ProcessBlockData(_BlockData):
             None
         """
         if self.config.reaction_package is not None:
-            # Get module of reaction package
-            self._reaction_module = \
-                self.config.reaction_package._package_module
-
             # Check for any flowsheet level build arguments
             for k in self.config.reaction_package.config.default_arguments:
                 if k not in self.config.reaction_package_args:

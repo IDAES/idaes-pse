@@ -52,6 +52,8 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
         self.component_list = Set(initialize=["c1", "c2"])
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
 
+        self.state_block_class = StateBlock
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_default_units({'time': 's',
@@ -150,7 +152,6 @@ def test_inherited_methods():
     m.fs.mix._get_property_package()
     m.fs.mix._get_indexing_sets()
 
-    assert hasattr(m.fs.mix, "_property_module")
     assert hasattr(m.fs.mix, "phase_list_ref")
     assert hasattr(m.fs.mix, "component_list_ref")
 

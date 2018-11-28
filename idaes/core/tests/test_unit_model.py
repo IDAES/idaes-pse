@@ -40,6 +40,8 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"])
 
+        self.state_block_class = StateBlock
+
 
 @declare_process_block_class("StateBlock", block_class=StateBlockBase)
 class StateBlockData(StateBlockDataBase):
