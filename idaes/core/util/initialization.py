@@ -15,7 +15,7 @@
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block, Constraint, value, Var
+from pyomo.environ import Block, value
 
 __author__ = "Andrew Lee"
 
