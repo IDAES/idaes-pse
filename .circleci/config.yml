@@ -9,9 +9,7 @@ shared: &shared
 # Skip doc build until we move them over
 #    - run: cd doc && make dep html
     - run: pytest idaes -m "not nocircleci"
- 
-# Skip codecov for now
-#    - run: codecov --token=c786fe92-e199-484a-a586-b97ade166385
+    - run: codecov --token=5cf93a40-daf7-4893-a28a-0d1cf229d110
       
 jobs:
   "python-2.7":
