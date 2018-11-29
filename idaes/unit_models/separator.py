@@ -18,7 +18,12 @@ from __future__ import division, print_function
 
 import logging
 
-from pyomo.environ import Set, SolverFactory, TerminationCondition, Var, value
+from pyomo.environ import (Port,
+                           Set,
+                           SolverFactory,
+                           TerminationCondition,
+                           Var,
+                           value)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
@@ -435,7 +440,83 @@ linked the mixed state and all outlet states,
         Returns:
             None
         """
-        pass
+        # Check arguments
+        if self.config.construct_ports is False:
+            raise ConfigurationError("{} cannot have and ideal separator "
+                                     "(ideal_separation = True) with "
+                                     "construct_ports = False."
+                                     .format(self.name))
+        if self.config.split_basis == SplittingType.totalFlow:
+            raise ConfigurationError("{} cannot do an ideal separation based "
+                                     "on total flow.".format(self.name))
+
+        # Add empty Port objects
+        for p in outlet_list:
+            p_obj = Port(self.time_ref,
+                         noruleinit=True,
+                         doc="Outlet Port")
+            setattr(self, p, p_obj)
+
+        for t in self.time_ref:
+            # Get port members from mixed block
+            s_vars = mixed_block[t].define_port_members
+
+            # Iterate over port members
+            for s in s_vars:
+                if s.keys is not None:
+                    # Is indexed, partition variables
+                    for o in outlet_list:
+                        p_obj = getattr(self, o)
+
+                        if self.config.split_basis == SplittingType.phaseFlow:
+                            for p in self.phase_list_ref:
+                                try:
+                                    p_obj[t].add(s_vars[s][p], s)
+                                except KeyError:
+                                    raise KeyError(
+                                        "{} property package uses port members"
+                                        " with indexes which are not "
+                                        "consistent with split_basis. Indexed "
+                                        "variables must have the same indexing"
+                                        " sets as the split_basis chosen."
+                                        .forma(self.name))
+                        elif self.config.split_basis == \
+                                SplittingType.componentFlow:
+                            for j in self.component_list_ref:
+                                try:
+                                    p_obj[t].add(s_vars[s][j], s)
+                                except KeyError:
+                                    raise KeyError(
+                                        "{} property package uses port members"
+                                        " with indexes which are not "
+                                        "consistent with split_basis. Indexed "
+                                        "variables must have the same indexing"
+                                        " sets as the split_basis chosen."
+                                        .forma(self.name))
+                        elif self.config.split_basis == \
+                                SplittingType.phaseComponentFlow:
+                            for p in self.phase_list_ref:
+                                for j in self.component_list_ref:
+                                    try:
+                                        p_obj[t].add(s_vars[s][p, j], s)
+                                    except KeyError:
+                                        raise KeyError(
+                                            "{} property package uses port "
+                                            "members with indexes which are "
+                                            "not consistent with split_basis. "
+                                            "Indexed variables must have the "
+                                            "same indexing sets as the "
+                                            "split_basis chosen."
+                                            .forma(self.name))
+                        else:
+                            raise BurntToast("{} got unexpected value for "
+                                             "split_basis. This should not "
+                                             "happen.".format(self.name))
+                else:
+                    # Is not indexed, outlets same as mixed block
+                    for o in outlet_list:
+                        p_obj = getattr(self, o)
+                        p_obj[t].add(s_vars[s], s)
 
     def model_check(blk):
         """
