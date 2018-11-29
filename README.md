@@ -25,6 +25,12 @@ The Dockerfile in the top-level can be used to build a docker image that include
   docker pull idaes/idaes_jupyterhub
   ```
 
+- Run the tests directly on the docker container by using the following command. If everything went well, all tests should pass.  
+
+  ```
+  docker run -it idaes/idaes_jupyterhub /bin/bash -c "cd /home/jovyan/idaes && pytest"
+  ```
+
 - There are then 2 ways to use the image: 
 
   - Start a docker container and interact with it directly:
