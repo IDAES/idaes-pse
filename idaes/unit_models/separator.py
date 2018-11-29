@@ -18,7 +18,7 @@ from __future__ import division, print_function
 
 import logging
 
-from pyomo.environ import Set, Var
+from pyomo.environ import Set, SolverFactory, TerminationCondition, Var, value
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
@@ -130,16 +130,6 @@ ports,
 **Valid values:** {
 **True** - use ideal splitting methods,
 **False** - use explicit splitting equations with split fractions.}"""))
-    CONFIG.declare("calculate_phase_equilibrium", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Calculate phase equilibrium in outlet streams",
-        doc="""Argument indicating whether phase equilibrium should be
-calculated for the resulting outlet streams,
-**default** - False.
-**Valid values:** {
-**True** - calculate phase equilibrium in outlet streams,
-**False** - do not calculate equilibrium in outlet streams.}"""))
     CONFIG.declare("mixed_state_block", ConfigValue(
         domain=is_state_block,
         description="Existing StateBlock to use as mixed stream",
@@ -204,9 +194,9 @@ linked the mixed state and all outlet states,
             self.add_split_fractions(outlet_list)
 
             # Construct splitting equations
-            self.add_material_splitting_constraints(mixed_block, outlet_blocks)
-            self.add_energy_splitting_constraints(mixed_block, outlet_blocks)
-            self.add_momentum_splitting_constraints(mixed_block, outlet_blocks)
+            self.add_material_splitting_constraints(mixed_block)
+            self.add_energy_splitting_constraints(mixed_block)
+            self.add_momentum_splitting_constraints(mixed_block)
 
             # Construct outlet port objects
             self.add_outlet_port_objects(outlet_list, outlet_blocks)
@@ -264,8 +254,8 @@ linked the mixed state and all outlet states,
 
         # Create an instance of StateBlock for all outlets
         for o in outlet_list:
-            o_obj = self._property_module.StateBlock(
-                        self.time,
+            o_obj = self.config.property_package.state_block_class(
+                        self.time_ref,
                         doc="Material properties at outlet",
                         default=tmp_dict)
 
@@ -284,13 +274,12 @@ linked the mixed state and all outlet states,
         """
         # Setup StateBlock argument dict
         tmp_dict = self.config.property_package_args
-        tmp_dict["has_phase_equilibrium"] = \
-            self.config.calculate_phase_equilibrium
+        tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = True
 
-        self.mixed_state = self._property_module.StateBlock(
-                                self.time,
+        self.mixed_state = self.config.property_package.state_block_class(
+                                self.time_ref,
                                 doc="Material properties of mixed stream",
                                 default=tmp_dict)
 
@@ -310,7 +299,8 @@ linked the mixed state and all outlet states,
                              "not happen.".format(self.name))
 
         # Check that the user-provided StateBlock uses the same prop pack
-        if (self.config.mixed_state_block[self.time.first()].config.parameters
+        if (self.config.mixed_state_block[
+                    self.time_ref.first()].config.parameters
                 != self.config.property_package):
             raise ConfigurationError(
                     "{} StateBlock provided in mixed_state_block argument "
@@ -365,26 +355,26 @@ linked the mixed state and all outlet states,
         self.outlet_idx = Set(initialize=outlet_list)
 
         if self.config.split_basis == SplittingType.totalFlow:
-            sf_idx = (self.time_idx, self.outlet_idx)
+            sf_idx = [self.time_ref, self.outlet_idx]
         elif self.config.split_basis == SplittingType.phaseFlow:
-            sf_idx = (self.time_idx, self.outlet_idx, self.phase_list_ref)
+            sf_idx = [self.time_ref, self.outlet_idx, self.phase_list_ref]
         elif self.config.split_basis == SplittingType.componentFlow:
-            sf_idx = (self.time_idx, self.outlet_idx, self.component_list_ref)
+            sf_idx = [self.time_ref, self.outlet_idx, self.component_list_ref]
         elif self.config.split_basis == SplittingType.phaseComponentFlow:
-            sf_idx = (self.time_idx,
+            sf_idx = [self.time_ref,
                       self.outlet_idx,
                       self.phase_list_ref,
-                      self.component_list_ref)
+                      self.component_list_ref]
         else:
             raise BurntToast("{} split_basis has unexpected value. This "
                              "should not happen.".format(self.name))
 
         # Create split fraction variable
-        self.split_fraction = Var(sf_idx,
+        self.split_fraction = Var(*sf_idx,
                                   initialize=0.5,
                                   doc="Outlet split fractions")
 
-    def add_material_splitting_constraints(self, mixed_block, outlet_blocks):
+    def add_material_splitting_constraints(self, mixed_block):
         """
         Creates constraints for splitting the material flows
         """
@@ -404,11 +394,12 @@ linked the mixed state and all outlet states,
                          self.component_list_ref,
                          doc="Material splitting equations")
         def material_splitting_eqn(b, t, o, p, j):
+            o_block = getattr(self, o+"_state")
             return mixed_block[t].get_material_flow_terms(p, j) == (
                         sf(t, o, p, j) *
-                        outlet_blocks[o][t].get_material_flow_terms(p, j))
+                        o_block[t].get_material_flow_terms(p, j))
 
-    def add_energy_splitting_constraints(self, mixed_block, outlet_blocks):
+    def add_energy_splitting_constraints(self, mixed_block):
         """
         Creates constraints for splitting the energy flows - done by equating
         temperatures in outlets.
@@ -416,11 +407,11 @@ linked the mixed state and all outlet states,
         @self.Constraint(self.time_ref,
                          self.outlet_idx,
                          doc="Temperature equality constraint")
-        def temperature_equality_eqn(b, t, o, p, j):
-            return mixed_block[t].temperature == (
-                        outlet_blocks[o][t].temperature)
+        def temperature_equality_eqn(b, t, o):
+            o_block = getattr(self, o+"_state")
+            return mixed_block[t].temperature == o_block[t].temperature
 
-    def add_momentum_splitting_constraints(self, mixed_block, outlet_blocks):
+    def add_momentum_splitting_constraints(self, mixed_block):
         """
         Creates constraints for splitting the momentum flows - done by equating
         pressures in outlets.
@@ -428,9 +419,9 @@ linked the mixed state and all outlet states,
         @self.Constraint(self.time_ref,
                          self.outlet_idx,
                          doc="Pressure equality constraint")
-        def pressure_equality_eqn(b, t, o, p, j):
-            return mixed_block[t].pressure == (
-                        outlet_blocks[o][t].pressure)
+        def pressure_equality_eqn(b, t, o):
+            o_block = getattr(self, o+"_state")
+            return mixed_block[t].pressure == o_block[t].pressure
 
     def partition_outlet_flows(self, mixed_block, outlet_list):
         """
@@ -459,7 +450,7 @@ linked the mixed state and all outlet states,
             None
         """
         # Try property block model check
-        for t in blk.time:
+        for t in blk.time_ref:
             try:
                 if blk.config.mixed_state_block is None:
                     blk.mixed_state[t].model_check()
@@ -508,28 +499,84 @@ linked the mixed state and all outlet states,
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         '''
+        # Set solver options
+        if outlvl > 1:
+            stee = True
+        else:
+            stee = False
+
+        opt = SolverFactory(solver)
+        opt.options = optarg
+
         # Initialize mixed state block
         if blk.config.mixed_state_block is not None:
             mblock = blk.config.mixed_state_block
-
-            flags = mblock.initialize(outlvl=outlvl-1,
-                                      optarg=optarg,
-                                      solver=solver,
-                                      hold_state=hold_state)
         else:
-            flags = {}
+            mblock = blk.mixed_state
+        flags = mblock.initialize(outlvl=outlvl-1,
+                                  optarg=optarg,
+                                  solver=solver,
+                                  hold_state=hold_state)
 
-        # Initialize outlets as applicable
+        if blk.config.ideal_separation:
+            # If using ideal splitting, initialisation should be complete
+            return flags
+
+        # Initialize outlet StateBlocks
         outlet_list = blk.create_outlet_list()
-        for o in outlet_list:
-            o_block = getattr(blk, o+"_state")
-            o_block.initialize(outlvl=outlvl-1,
-                               optarg=optarg,
-                               solver=solver,
-                               hold_state=False)
 
-        if outlvl > 0:
-            _log.info('{} Initialisation Complete'.format(blk.name))
+        for o in outlet_list:
+            # Get corresponding outlet StateBlock
+            o_block = getattr(blk, o+"_state")
+
+            for t in blk.time_ref:
+
+                # Calculate values for state variables
+                s_vars = o_block[t].define_state_vars()
+
+                for v in s_vars:
+                    m_var = getattr(mblock[t], s_vars[v].local_name)
+
+                    if "flow" in v:
+                        # If a "flow" variable, is extensive
+                        # Apply split fraction
+                        try:
+                            for k in s_vars[v]:
+                                s_vars[v][k].value = value(
+                                    m_var[k]*blk.split_fraction[(t, o) + k])
+                        except KeyError:
+                            raise KeyError(
+                                    "{} state variable and split fraction "
+                                    "indexing sets do not match. The in-built"
+                                    " initialization routine for Separators "
+                                    "relies on the split fraction and state "
+                                    "variable indexing sets matching to "
+                                    "calculate initial guesses for extensive "
+                                    "variables. In other cases users will "
+                                    "need to provide their own initial "
+                                    "guesses".format(blk.name))
+                    else:
+                        # Otherwise intensive, equate to mixed stream
+                        for k in s_vars[v]:
+                            s_vars[v][k].value = m_var[k].value
+
+                # Call initialization routine for outlet StateBlock
+                o_block.initialize(outlvl=outlvl-1,
+                                   optarg=optarg,
+                                   solver=solver,
+                                   hold_state=False)
+
+        if blk.config.mixed_state_block is None:
+            results = opt.solve(blk, tee=stee)
+
+            if outlvl > 0:
+                if results.solver.termination_condition == \
+                        TerminationCondition.optimal:
+                    _log.info('{} Initialisation Complete.'.format(blk.name))
+                else:
+                    _log.warning('{} Initialisation Failed.'.format(blk.name))
+        else:
+            _log.info('{} Initialisation Complete.'.format(blk.name))
 
         return flags
 

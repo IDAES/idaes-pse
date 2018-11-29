@@ -650,12 +650,14 @@ linked to all inlet states and the mixed state,
         if blk.config.mixed_state_block is None:
             results = opt.solve(blk, tee=stee)
 
-        if outlvl > 0:
-            if results.solver.termination_condition == \
-                    TerminationCondition.optimal:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
-            else:
-                _log.warning('{} Initialisation Failed.'.format(blk.name))
+            if outlvl > 0:
+                if results.solver.termination_condition == \
+                        TerminationCondition.optimal:
+                    _log.info('{} Initialisation Complete.'.format(blk.name))
+                else:
+                    _log.warning('{} Initialisation Failed.'.format(blk.name))
+        else:
+            _log.info('{} Initialisation Complete.'.format(blk.name))
 
         return flags
 
