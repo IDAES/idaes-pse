@@ -1205,135 +1205,155 @@ class ControlVolume1dData(ControlVolumeBase):
                 "add_total_material_balances (yet)."
                 .format(self.name))
 
-#    def add_total_enthalpy_balances(self,
-#                                    has_heat_transfer=False,
-#                                    has_work_transfer=False,
-#                                    custom_term=None):
-#        """
-#        This method constructs a set of 0D enthalpy balances indexed by time
-#        and phase.
-#
-#        Args:
-#            has_heat_transfer - whether terms for heat transfer should be
-#                    included in enthalpy balances
-#            has_work_transfer - whether terms for work transfer should be
-#                    included in enthalpy balances
-#            custom_term - a Pyomo Expression representing custom terms to
-#                    be included in enthalpy balances.
-#                    Expression must be indexed by time and phase list
-#
-#        Returns:
-#            Constraint object representing enthalpy balances
-#        """
-#        # Get dynamic and holdup flags from config block
-#        dynamic = self.config.dynamic
-#        has_holdup = self.config.has_holdup
-#
-#        # Test for components that must exist prior to calling this method
-#        if has_holdup:
-#            if not hasattr(self, "volume"):
-#                raise ConfigurationError(
-#                        "{} control volume must have volume defined to have "
-#                        "holdup terms. Please call the "
-#                        "add_geometry method before adding balance equations."
-#                        .format(self.name))
-#
-#        # Get units from property package
-#        units = {}
-#        for u in ['energy', 'time']:
-#            try:
-#                units[u] = \
-#                   self.config.property_package.get_metadata().default_units[u]
-#            except KeyError:
-#                units[u] = '-'
-#
-#        # Create variables
-#        if has_holdup:
-#            self.enthalpy_holdup = Var(
-#                        self.time_ref,
-#                        self.phase_list_ref,
-#                        domain=Reals,
-#                        doc="Enthalpy holdup in unit [{}]"
-#                        .format(units['energy']))
-#
-#        if dynamic is True:
-#            self.enthalpy_accumulation = DerivativeVar(
-#                        self.enthalpy_holdup,
-#                        wrt=self.time_ref,
-#                        doc="Enthaly holdup in unit [{}/{}]"
-#                        .format(units['energy'], units['time']))
-#
-#        # Create scaling factor
-#        self.scaling_factor_energy = Param(
-#                        default=1e-6,
-#                        mutable=True,
-#                        doc='Energy balance scaling parameter')
-#
-#        # Create energy balance terms as needed
-#        # Heat transfer term
-#        if has_heat_transfer:
-#            self.heat = Var(self.time_ref,
-#                            domain=Reals,
-#                            initialize=0.0,
-#                            doc="Heat transfered in unit [{}/{}]"
-#                                .format(units['energy'], units['time']))
-#
-#        # Work transfer
-#        if has_work_transfer:
-#            self.work = Var(self.time_ref,
-#                            domain=Reals,
-#                            initialize=0.0,
-#                            doc="Work transfered in unit [{}/{}]"
-#                                .format(units['energy'], units['time']))
-#
-#        # Create rules to substitute energy balance terms
-#        # Accumulation term
-#        def accumulation_term(b, t, p):
-#            return b.enthalpy_accumulation[t, p] if dynamic else 0
-#
-#        def heat_term(b, t):
-#            return b.heat[t] if has_heat_transfer else 0
-#
-#        def work_term(b, t):
-#            return b.work[t] if has_work_transfer else 0
-#
-#        # Custom term
-#        def user_term(t):
-#            if custom_term is not None:
-#                return custom_term(t)
-#            else:
-#                return 0
-#
-#        # Energy balance equation
-#        @self.Constraint(self.time_ref, doc="Energy balances")
-#        def enthalpy_balances(b, t):
-#            return (sum(accumulation_term(b, t, p) for p in b.phase_list_ref) *
-#                    b.scaling_factor_energy) == (
-#                        sum(b.properties_in[t].get_enthalpy_flow_terms(p)
-#                            for p in b.phase_list_ref) *
-#                        b.scaling_factor_energy -
-#                        sum(self.properties_out[t].get_enthalpy_flow_terms(p)
-#                            for p in b.phase_list_ref) *
-#                        b.scaling_factor_energy +
-#                        heat_term(b, t)*b.scaling_factor_energy +
-#                        work_term(b, t)*b.scaling_factor_energy +
-#                        user_term(t)*b.scaling_factor_energy)
-#
-#        # Energy Holdup
-#        if has_holdup:
-#            if not hasattr(self, "phase_fraction"):
-#                self._add_phase_fractions()
-#
-#            @self.Constraint(self.time_ref,
-#                             self.phase_list_ref,
-#                             doc="Enthalpy holdup constraint")
-#            def enthalpy_holdup_calculation(b, t, p):
-#                return b.enthalpy_holdup[t, p] == (
-#                            b.volume[t]*self.phase_fraction[t, p] *
-#                            b.properties_out[t].get_enthalpy_density_terms(p))
-#
-#        return self.enthalpy_balances
-#
+    def add_total_enthalpy_balances(self,
+                                    has_heat_transfer=False,
+                                    has_work_transfer=False,
+                                    custom_term=None):
+        """
+        This method constructs a set of 0D enthalpy balances indexed by time
+        and phase.
+
+        Args:
+            has_heat_transfer - whether terms for heat transfer should be
+                    included in enthalpy balances
+            has_work_transfer - whether terms for work transfer should be
+                    included in enthalpy balances
+            custom_term - a Pyomo Expression representing custom terms to
+                    be included in enthalpy balances.
+                    Expression must be indexed by time, length and phase list
+
+        Returns:
+            Constraint object representing enthalpy balances
+        """
+        # Get dynamic and holdup flags from config block
+        dynamic = self.config.dynamic
+        has_holdup = self.config.has_holdup
+
+        # Get units from property package
+        units = {}
+        for u in ['energy', 'time']:
+            try:
+                units[u] = \
+                   self.config.property_package.get_metadata().default_units[u]
+            except KeyError:
+                units[u] = '-'
+
+        # Create variables
+        self._enthalpy_flow = Var(self.time_ref,
+                                  self.length_domain,
+                                  self.phase_list_ref,
+                                  doc="Enthalpy flow terms")
+
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         self.phase_list_ref,
+                         doc="Enthapy flow linking constraints")
+        def enthalpy_flow_linking_constraint(b, t, x, p):
+            return b._enthalpy_flow[t, x, p] == \
+                    b.properties[t, x].get_enthalpy_flow_terms(p)
+
+        self.enthalpy_flow_dx = DerivativeVar(self._enthalpy_flow,
+                                              wrt=self.length_domain,
+                                              doc="Partial derivative of "
+                                              "enthalpy flow wrt length")
+
+        if has_holdup:
+            self.enthalpy_holdup = Var(
+                        self.time_ref,
+                        self.length_domain,
+                        self.phase_list_ref,
+                        domain=Reals,
+                        doc="Enthalpy holdup in unit [{}]"
+                        .format(units['energy']))
+
+        if dynamic is True:
+            self.enthalpy_accumulation = DerivativeVar(
+                        self.enthalpy_holdup,
+                        wrt=self.time_ref,
+                        doc="Enthaly holdup in unit [{}/{}]"
+                        .format(units['energy'], units['time']))
+
+        # Create scaling factor
+        self.scaling_factor_energy = Param(
+                        default=1e-6,
+                        mutable=True,
+                        doc='Energy balance scaling parameter')
+
+        # Create energy balance terms as needed
+        # Heat transfer term
+        if has_heat_transfer:
+            self.heat = Var(self.time_ref,
+                            self.length_domain,
+                            domain=Reals,
+                            initialize=0.0,
+                            doc="Heat transfered in unit [{}/{}]"
+                                .format(units['energy'], units['time']))
+
+        # Work transfer
+        if has_work_transfer:
+            self.work = Var(self.time_ref,
+                            self.length_domain,
+                            domain=Reals,
+                            initialize=0.0,
+                            doc="Work transfered in unit [{}/{}]"
+                                .format(units['energy'], units['time']))
+
+        # Create rules to substitute energy balance terms
+        # Accumulation term
+        def accumulation_term(b, t, x, p):
+            return b.enthalpy_accumulation[t, x, p] if dynamic else 0
+
+        def heat_term(b, t, x):
+            return b.heat[t, x] if has_heat_transfer else 0
+
+        def work_term(b, t, x):
+            return b.work[t, x] if has_work_transfer else 0
+
+        # Custom term
+        def user_term(t, x):
+            if custom_term is not None:
+                return custom_term(t, x)
+            else:
+                return 0
+
+        # Energy balance equation
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         doc="Energy balances")
+        def enthalpy_balances(b, t, x):
+            if ((b._flow_direction is FlowDirection.forward and
+                 x == b.length_domain.first()) or
+                (b._flow_direction is FlowDirection.backward and
+                 x == b.length_domain.last())):
+                return Constraint.Skip
+            else:
+                return (b.length*sum(accumulation_term(b, t, x, p)
+                                     for p in b.phase_list_ref) *
+                        b.scaling_factor_energy) == (
+                    b._flow_direction_term*sum(b.enthalpy_flow_dx[t, x, p]
+                                               for p in b.phase_list_ref) *
+                    b.scaling_factor_energy +
+                    heat_term(b, t, x)*b.scaling_factor_energy +
+                    work_term(b, t, x)*b.scaling_factor_energy +
+                    user_term(t, x)*b.scaling_factor_energy)
+                    # TODO : Add conduction/dispersion term
+
+        # Energy Holdup
+        if has_holdup:
+            if not hasattr(self, "phase_fraction"):
+                self._add_phase_fractions()
+
+            @self.Constraint(self.time_ref,
+                             self.length_domain,
+                             self.phase_list_ref,
+                             doc="Enthalpy holdup constraint")
+            def enthalpy_holdup_calculation(b, t, x, p):
+                return b.enthalpy_holdup[t, x, p] == (
+                            b.volume*self.phase_fraction[t, x, p] *
+                            b.properties[t, x].get_enthalpy_density_terms(p))
+
+        return self.enthalpy_balances
+
     def add_phase_enthalpy_balances(self, *args, **kwargs):
         raise BalanceTypeNotSupportedError(
                 "{} OD control volumes do not support "

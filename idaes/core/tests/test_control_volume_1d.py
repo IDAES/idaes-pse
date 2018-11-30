@@ -1408,7 +1408,7 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
 
 
 ## -----------------------------------------------------------------------------
-## Test add_total_component_balances
+## Test add_total_element_balances
 #def test_add_total_element_balances_default():
 #    m = ConcreteModel()
 #    m.fs = Flowsheet(default={"dynamic": False})
@@ -1691,131 +1691,117 @@ def test_add_total_material_balances():
         m.fs.cv.add_total_material_balances()
 
 
-## -----------------------------------------------------------------------------
-## Test phase enthalpy balances
-#def test_add_total_enthalpy_balances_default():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    eb = m.fs.cv.add_total_enthalpy_balances()
-#
-#    assert isinstance(eb, Constraint)
-#    assert len(eb) == 1
-#
-#
-#def test_add_total_enthalpy_balances_dynamic():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": True})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp,
-#                                       "dynamic": True})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    mb = m.fs.cv.add_total_enthalpy_balances()
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 2
-#    assert isinstance(m.fs.cv.phase_fraction, Var)
-#    assert isinstance(m.fs.cv.enthalpy_holdup, Var)
-#    assert isinstance(m.fs.cv.enthalpy_accumulation, Var)
-#
-#
-#def test_add_total_enthalpy_balances_dynamic_no_geometry():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": True})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp,
-#                                       "dynamic": True})
-#
-#    # Do not add geometry
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.cv.add_total_enthalpy_balances()
-#
-#
-#def test_add_total_enthalpy_balances_heat_transfer():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    mb = m.fs.cv.add_total_enthalpy_balances(has_heat_transfer=True)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 1
-#    assert isinstance(m.fs.cv.heat, Var)
-#
-#
-#def test_add_total_enthalpy_balances_work_transfer():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    mb = m.fs.cv.add_total_enthalpy_balances(has_work_transfer=True)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 1
-#    assert isinstance(m.fs.cv.work, Var)
-#
-#
-#def test_add_total_enthalpy_balances_custom_term():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    m.fs.cv.test_var = Var(m.fs.cv.time_ref)
-#
-#    def custom_method(t):
-#        return m.fs.cv.test_var[t]
-#
-#    mb = m.fs.cv.add_total_enthalpy_balances(custom_term=custom_method)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 1
-#
-#
+# -----------------------------------------------------------------------------
+# Test phase enthalpy balances
+def test_add_total_enthalpy_balances_default():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    eb = m.fs.cv.add_total_enthalpy_balances()
+
+    assert isinstance(eb, Constraint)
+    assert len(eb) == 1
+    assert isinstance(m.fs.cv._enthalpy_flow, Var)
+    assert isinstance(m.fs.cv.enthalpy_flow_linking_constraint, Constraint)
+    assert isinstance(m.fs.cv.enthalpy_flow_dx, DerivativeVar)
+
+
+def test_add_total_enthalpy_balances_dynamic():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp,
+                                       "dynamic": True})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_total_enthalpy_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 2
+    assert isinstance(m.fs.cv.phase_fraction, Var)
+    assert isinstance(m.fs.cv.enthalpy_holdup, Var)
+    assert isinstance(m.fs.cv.enthalpy_accumulation, Var)
+
+
+def test_add_total_enthalpy_balances_heat_transfer():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_total_enthalpy_balances(has_heat_transfer=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 1
+    assert isinstance(m.fs.cv.heat, Var)
+
+
+def test_add_total_enthalpy_balances_work_transfer():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_total_enthalpy_balances(has_work_transfer=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 1
+    assert isinstance(m.fs.cv.work, Var)
+
+
+def test_add_total_enthalpy_balances_custom_term():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref)
+
+    def custom_method(t, x):
+        return m.fs.cv.test_var[t]
+
+    mb = m.fs.cv.add_total_enthalpy_balances(custom_term=custom_method)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 1
+
+
 # -----------------------------------------------------------------------------
 # Test unsupported energy balance types
 def test_add_phase_enthalpy_balances():

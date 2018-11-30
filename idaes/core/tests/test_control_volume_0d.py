@@ -1289,7 +1289,7 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
 
 
 # -----------------------------------------------------------------------------
-# Test add_total_component_balances
+# Test add_total_element_balances
 def test_add_total_element_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
