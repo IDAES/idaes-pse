@@ -968,237 +968,236 @@ class ControlVolume1dData(ControlVolumeBase):
 
         return self.material_balances
 
-#    def add_total_element_balances(self,
-#                                   has_rate_reactions=False,
-#                                   has_equilibrium_reactions=False,
-#                                   has_phase_equilibrium=False,
-#                                   has_mass_transfer=False,
-#                                   custom_elemental_term=None):
-#        """
-#        This method constructs a set of 0D element balances indexed by time.
-#
-#        Args:
-#            has_rate_reactions - whether default generation terms for rate
-#                    reactions should be included in material balances
-#            has_equilibrium_reactions - whether generation terms should for
-#                    chemical equilibrium reactions should be included in
-#                    material balances
-#            has_phase_equilibrium - whether generation terms should for phase
-#                    equilibrium behaviour should be included in material
-#                    balances
-#            has_mass_transfer - whether generic mass transfer terms should be
-#                    included in material balances
-#            custom_elemental_term - a Pyomo Expression representing custom
-#                    terms to be included in material balances on a molar
-#                    elemental basis. Expression must be indexed by time and
-#                    element list
-#
-#        Returns:
-#            Constraint object representing material balances
-#        """
-#        # Get dynamic and holdup flags from config block
-#        dynamic = self.config.dynamic
-#        has_holdup = self.config.has_holdup
-#
-#        if has_rate_reactions:
-#            raise ConfigurationError(
-#                    "{} add_total_element_balances method as provided with "
-#                    "argument has_rate_reactions = True. Total element "
-#                    "balances do not support rate based reactions, "
-#                    "please correct your configuration arguments"
-#                    .format(self.name))
-#
-#        # Check that property package supports element balances
-#        try:
-#            add_object_reference(self,
-#                                 "element_list_ref",
-#                                 self.config.property_package.element_list)
-#        except AttributeError:
-#            raise PropertyNotSupportedError(
-#                    "{} property package provided does not contain a list of "
-#                    "elements (element_list), and thus does not support "
-#                    "elemental material balances. Please choose another type "
-#                    "of material balance or a property pakcage which supports "
-#                    "elemental balances.")
-#
-#        # Check that reaction block exists if required
-#        if has_equilibrium_reactions:
-#            try:
-#                rblock = self.reactions
-#            except AttributeError:
-#                raise ConfigurationError(
-#                        "{} does not contain a Reaction Block, but material "
-#                        "balances have been set to contain reaction terms. "
-#                        "Please construct a reaction block before adding "
-#                        "balance equations.".format(self.name))
-#
-#        if has_equilibrium_reactions:
-#            # Check that reaction block is set to calculate equilibrium
-#            for t in self.time_ref:
-#                if self.reactions[t].config.has_equilibrium is False:
-#                    raise ConfigurationError(
-#                            "{} material balance was set to include "
-#                            "equilibrium reactions, however the associated "
-#                            "ReactionBlock was not set to include equilibrium "
-#                            "constraints (has_equilibrium_reactions=False). "
-#                            "Please correct your configuration arguments."
-#                            .format(self.name))
-#                try:
-#                    add_object_reference(
-#                        self,
-#                        "equilibrium_reaction_idx_ref",
-#                        self.config.reaction_package.equilibrium_reaction_idx)
-#                except AttributeError:
-#                    raise PropertyNotSupportedError(
-#                        "{} Reaction package does not contain a list of "
-#                        "equilibrium reactions (equilibrium_reaction_idx), "
-#                        "thus does not support equilibrium-based reactions."
-#                        .format(self.name))
-#
-#        if has_phase_equilibrium:
-#            # Check that state blocks are set to calculate equilibrium
-#            for t in self.time_ref:
-#                if not self.properties_out[t].config.has_phase_equilibrium:
-#                    raise ConfigurationError(
-#                            "{} material balance was set to include phase "
-#                            "equilibrium, however the associated outlet "
-#                            "StateBlock was not set to include equilibrium "
-#                            "constraints (has_phase_equilibrium=False). Please"
-#                            " correct your configuration arguments."
-#                            .format(self.name))
-#                if not self.properties_in[t].config.has_phase_equilibrium:
-#                    raise ConfigurationError(
-#                            "{} material balance was set to include phase "
-#                            "equilibrium, however the associated inlet "
-#                            "StateBlock was not set to include equilibrium "
-#                            "constraints (has_phase_equilibrium=False). Please"
-#                            " correct your configuration arguments."
-#                            .format(self.name))
-#                try:
-#                    add_object_reference(
-#                        self,
-#                        "phase_equilibrium_idx_ref",
-#                        self.config.property_package.phase_equilibrium_idx)
-#                except AttributeError:
-#                    raise PropertyNotSupportedError(
-#                        "{} Property package does not contain a list of phase "
-#                        "equilibrium reactions (phase_equilibrium_idx), thus "
-#                        "does not support phase equilibrium."
-#                        .format(self.name))
-#
-#        # Test for components that must exist prior to calling this method
-#        if has_holdup:
-#            if not hasattr(self, "volume"):
-#                raise ConfigurationError(
-#                        "{} control volume must have volume defined to have "
-#                        "holdup terms. Please call the "
-#                        "add_geometry method before adding balance equations."
-#                        .format(self.name))
-#
-#        # Get units from property package
-#        units = {}
-#        for u in ['amount', 'time']:
-#            try:
-#                units[u] = \
-#                   self.config.property_package.get_metadata().default_units[u]
-#            except KeyError:
-#                units[u] = '-'
-#
-#        # Add Material Balance terms
-#        if has_holdup:
-#            self.element_holdup = Var(
-#                    self.time_ref,
-#                    self.element_list_ref,
-#                    domain=Reals,
-#                    doc="Elemental holdup in unit [{}]"
-#                        .format(units['amount']))
-#
-#        if dynamic:
-#            self.element_accumulation = DerivativeVar(
-#                    self.element_holdup,
-#                    wrt=self.time_ref,
-#                    doc="Elemental accumulation in unit [{}/{}]"
-#                        .format(units['amount'], units['time']))
-#
-#        @self.Expression(self.time_ref,
-#                         self.phase_list_ref,
-#                         self.element_list_ref,
-#                         doc="Inlet elemental flow terms [{}/{}]"
-#                             .format(units['amount'], units['time']))
-#        def elemental_flow_in(b, t, p, e):
-#            return sum(b.properties_in[t].get_material_flow_terms(p, j) *
-#                       b.properties_out[t].config.parameters.element_comp[j][e]
-#                       for j in b.component_list_ref)
-#
-#        @self.Expression(self.time_ref,
-#                         self.phase_list_ref,
-#                         self.element_list_ref,
-#                         doc="Outlet elemental flow terms [{}/{}]"
-#                             .format(units['amount'], units['time']))
-#        def elemental_flow_out(b, t, p, e):
-#            return sum(b.properties_out[t].get_material_flow_terms(p, j) *
-#                       b.properties_out[t].config.parameters.element_comp[j][e]
-#                       for j in b.component_list_ref)
-#
-#        # Create material balance terms as needed
-#        if has_mass_transfer:
-#            self.elemental_mass_transfer_term = Var(
-#                            self.time_ref,
-#                            self.element_list_ref,
-#                            domain=Reals,
-#                            doc="Element material transfer into unit [{}/{}]"
-#                            .format(units['amount'], units['time']))
-#
-#        # Create rules to substitute material balance terms
-#        # Accumulation term
-#        def accumulation_term(b, t, e):
-#            return b.element_accumulation[t, e] if dynamic else 0
-#
-#        # Mass transfer term
-#        def transfer_term(b, t, e):
-#            return (b.elemental_mass_transfer_term[t, e]
-#                    if has_mass_transfer else 0)
-#
-#        # Custom term
-#        def user_term(t, e):
-#            if custom_elemental_term is not None:
-#                return custom_elemental_term(t, e)
-#            else:
-#                return 0
-#
-#        # Element balances
-#        @self.Constraint(self.time_ref,
-#                         self.element_list_ref,
-#                         doc="Elemental material balances")
-#        def element_balances(b, t, e):
-#            return accumulation_term(b, t, e) == (
-#                        sum(b.elemental_flow_in[t, p, e]
-#                            for p in b.phase_list_ref) -
-#                        sum(b.elemental_flow_out[t, p, e]
-#                            for p in b.phase_list_ref) +
-#                        transfer_term(b, t, e) +
-#                        user_term(t, e))
-#
-#        # Elemental Holdup
-#        if has_holdup:
-#            if not hasattr(self, "phase_fraction"):
-#                self._add_phase_fractions()
-#
-#            @self.Constraint(self.time_ref,
-#                             self.element_list_ref,
-#                             doc="Elemental holdup calculation")
-#            def elemental_holdup_calculation(b, t, e):
-#                return b.element_holdup[t, e] == (
-#                    b.volume[t] *
-#                    sum(b.phase_fraction[t, p] *
-#                        b.properties_out[t].get_material_density_terms(p, j) *
-#                        b.properties_out[t]
-#                        .config.parameters.element_comp[j][e]
-#                        for p in b.phase_list_ref
-#                        for j in b.component_list_ref))
-#
-#        return self.element_balances
-#
+    def add_total_element_balances(self,
+                                   has_rate_reactions=False,
+                                   has_equilibrium_reactions=False,
+                                   has_phase_equilibrium=False,
+                                   has_mass_transfer=False,
+                                   custom_elemental_term=None):
+        """
+        This method constructs a set of 1D element balances indexed by time and
+        length.
+
+        Args:
+            has_rate_reactions - whether default generation terms for rate
+                    reactions should be included in material balances
+            has_equilibrium_reactions - whether generation terms should for
+                    chemical equilibrium reactions should be included in
+                    material balances
+            has_phase_equilibrium - whether generation terms should for phase
+                    equilibrium behaviour should be included in material
+                    balances
+            has_mass_transfer - whether generic mass transfer terms should be
+                    included in material balances
+            custom_elemental_term - a Pyomo Expression representing custom
+                    terms to be included in material balances on a molar
+                    elemental basis. Expression must be indexed by time, length
+                    and element list
+
+        Returns:
+            Constraint object representing material balances
+        """
+        # Get dynamic and holdup flags from config block
+        dynamic = self.config.dynamic
+        has_holdup = self.config.has_holdup
+
+        if has_rate_reactions:
+            raise ConfigurationError(
+                    "{} add_total_element_balances method as provided with "
+                    "argument has_rate_reactions = True. Total element "
+                    "balances do not support rate based reactions, "
+                    "please correct your configuration arguments"
+                    .format(self.name))
+
+        # Check that property package supports element balances
+        try:
+            add_object_reference(self,
+                                 "element_list_ref",
+                                 self.config.property_package.element_list)
+        except AttributeError:
+            raise PropertyNotSupportedError(
+                    "{} property package provided does not contain a list of "
+                    "elements (element_list), and thus does not support "
+                    "elemental material balances. Please choose another type "
+                    "of material balance or a property pakcage which supports "
+                    "elemental balances.")
+
+        # Check that reaction block exists if required
+        if has_equilibrium_reactions:
+            try:
+                rblock = self.reactions
+            except AttributeError:
+                raise ConfigurationError(
+                        "{} does not contain a Reaction Block, but material "
+                        "balances have been set to contain reaction terms. "
+                        "Please construct a reaction block before adding "
+                        "balance equations.".format(self.name))
+
+        if has_equilibrium_reactions:
+            # Check that reaction block is set to calculate equilibrium
+            for t in self.time_ref:
+                for x in self.length_domain:
+                    if self.reactions[t, x].config.has_equilibrium is False:
+                        raise ConfigurationError(
+                            "{} material balance was set to include "
+                            "equilibrium reactions, however the associated "
+                            "ReactionBlock was not set to include equilibrium "
+                            "constraints (has_equilibrium_reactions=False). "
+                            "Please correct your configuration arguments."
+                            .format(self.name))
+                try:
+                    add_object_reference(
+                        self,
+                        "equilibrium_reaction_idx_ref",
+                        self.config.reaction_package.equilibrium_reaction_idx)
+                except AttributeError:
+                    raise PropertyNotSupportedError(
+                        "{} Reaction package does not contain a list of "
+                        "equilibrium reactions (equilibrium_reaction_idx), "
+                        "thus does not support equilibrium-based reactions."
+                        .format(self.name))
+
+        if has_phase_equilibrium:
+            # Check that state blocks are set to calculate equilibrium
+            for t in self.time_ref:
+                for x in self.length_domain:
+                    if (not self.properties[t, x]
+                            .config.has_phase_equilibrium):
+                        raise ConfigurationError(
+                            "{} material balance was set to include phase "
+                            "equilibrium, however the associated outlet "
+                            "StateBlock was not set to include equilibrium "
+                            "constraints (has_phase_equilibrium=False). Please"
+                            " correct your configuration arguments."
+                            .format(self.name))
+                try:
+                    add_object_reference(
+                        self,
+                        "phase_equilibrium_idx_ref",
+                        self.config.property_package.phase_equilibrium_idx)
+                except AttributeError:
+                    raise PropertyNotSupportedError(
+                        "{} Property package does not contain a list of phase "
+                        "equilibrium reactions (phase_equilibrium_idx), thus "
+                        "does not support phase equilibrium."
+                        .format(self.name))
+
+        # Get units from property package
+        units = {}
+        for u in ['amount', 'time']:
+            try:
+                units[u] = \
+                   self.config.property_package.get_metadata().default_units[u]
+            except KeyError:
+                units[u] = '-'
+
+        # Add Material Balance terms
+        if has_holdup:
+            self.element_holdup = Var(
+                    self.time_ref,
+                    self.length_domain,
+                    self.element_list_ref,
+                    domain=Reals,
+                    doc="Elemental holdup in unit [{}]"
+                        .format(units['amount']))
+
+        if dynamic:
+            self.element_accumulation = DerivativeVar(
+                    self.element_holdup,
+                    wrt=self.time_ref,
+                    doc="Elemental accumulation in unit [{}/{}]"
+                        .format(units['amount'], units['time']))
+
+        self.elemental_flow_term = Var(self.time_ref,
+                                       self.length_domain,
+                                       self.element_list_ref,
+                                       doc="Elemental flow terms [{}/{}]"
+                                           .format(units['amount'],
+                                                   units['time']))
+
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         self.element_list_ref,
+                         doc="Elemental flow constraints")
+        def elemental_flow_constraint(b, t, x, e):
+            return b.elemental_flow_term[t, x, e] == (
+                    sum(sum(b.properties[t, x].get_material_flow_terms(p, j) *
+                        b.properties[t, x].config.parameters.element_comp[j][e]
+                        for j in b.component_list_ref)
+                        for p in b.phase_list_ref))
+
+        self.elemental_flow_dx = DerivativeVar(self.elemental_flow_term,
+                                               wrt=self.length_domain,
+                                               doc="Partial derivative of "
+                                               "elemental flow wrt length")
+
+        # Create material balance terms as needed
+        if has_mass_transfer:
+            self.elemental_mass_transfer_term = Var(
+                            self.time_ref,
+                            self.length_domain,
+                            self.element_list_ref,
+                            domain=Reals,
+                            doc="Element material transfer into unit [{}/{}]"
+                            .format(units['amount'], units['time']))
+
+        # Create rules to substitute material balance terms
+        # Accumulation term
+        def accumulation_term(b, t, x, e):
+            return b.element_accumulation[t, x, e] if dynamic else 0
+
+        # Mass transfer term
+        def transfer_term(b, t, x, e):
+            return (b.elemental_mass_transfer_term[t, x, e]
+                    if has_mass_transfer else 0)
+
+        # Custom term
+        def user_term(t, x, e):
+            if custom_elemental_term is not None:
+                return custom_elemental_term(t, x, e)
+            else:
+                return 0
+
+        # Element balances
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         self.element_list_ref,
+                         doc="Elemental material balances")
+        def element_balances(b, t, x, e):
+            if ((b._flow_direction is FlowDirection.forward and
+                 x == b.length_domain.first()) or
+                (b._flow_direction is FlowDirection.backward and
+                 x == b.length_domain.last())):
+                return Constraint.Skip
+            else:
+                return b.length*accumulation_term(b, t, x, e) == (
+                           b._flow_direction_term *
+                           b.elemental_flow_dx[t, x, e] +
+                           b.length*transfer_term(b, t, x, e) +
+                           b.length*user_term(t, x, e))  # +
+                           # TODO : Add diffusion terms
+                           #b.area*diffusion_term(b, t, x, e)/b.length)
+
+        # Elemental Holdup
+        if has_holdup:
+            if not hasattr(self, "phase_fraction"):
+                self._add_phase_fractions()
+
+            @self.Constraint(self.time_ref,
+                             self.length_domain,
+                             self.element_list_ref,
+                             doc="Elemental holdup calculation")
+            def elemental_holdup_calculation(b, t, x, e):
+                return b.element_holdup[t, x, e] == (
+                    b.volume *
+                    sum(b.phase_fraction[t, x, p] *
+                        b.properties[t, x].get_material_density_terms(p, j) *
+                        b.properties[t, x].config.parameters.element_comp[j][e]
+                        for p in b.phase_list_ref
+                        for j in b.component_list_ref))
+
+        return self.element_balances
+
     def add_total_material_balances(self, *args, **kwargs):
         raise BalanceTypeNotSupportedError(
                 "{} OD control volumes do not support "
