@@ -1793,7 +1793,7 @@ def test_add_total_enthalpy_balances_dh_rxn_no_extents():
     m.fs.pp = PhysicalParameterBlock()
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
@@ -1810,7 +1810,7 @@ def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
     m.fs.pp = PhysicalParameterBlock()
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
@@ -1828,7 +1828,7 @@ def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
     m.fs.pp = PhysicalParameterBlock()
     m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()

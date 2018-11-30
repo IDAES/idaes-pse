@@ -1316,7 +1316,7 @@ class ControlVolume1dData(ControlVolumeBase):
                              self.length_domain,
                              doc="Heat of reaction term at point x [{}/{}]"
                                  .format(units['energy'], units['time']))
-            def heat_of_reaction(b, t):
+            def heat_of_reaction(b, t, x):
                 if hasattr(self, "rate_reaction_extents"):
                     rate_heat = sum(b.rate_reaction_extent[t, x, r] *
                                     b.reactions[t, x].dh_rxn[r]
@@ -1344,7 +1344,7 @@ class ControlVolume1dData(ControlVolumeBase):
         def work_term(b, t, x):
             return b.work[t, x] if has_work_transfer else 0
 
-        def rxn_heat_term(b, x, t):
+        def rxn_heat_term(b, t, x):
             return b.heat_of_reaction[t, x] if has_heat_of_reaction else 0
 
         # Custom term
