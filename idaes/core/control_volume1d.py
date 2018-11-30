@@ -220,7 +220,7 @@ class ControlVolume1dData(ControlVolumeBase):
                                      custom_mass_term=None):
         """
         This method constructs a set of 1D material balances indexed by time,
-        phase and component.
+        length, phase and component.
 
         Args:
             has_rate_reactions: whether default generation terms for rate
@@ -492,7 +492,7 @@ class ControlVolume1dData(ControlVolumeBase):
                 elif flow_basis == MaterialFlowBasis.molar:
                     try:
                         return (custom_mass_term(t, x, p, j) /
-                                b.properties[t,x].mw[j])
+                                b.properties[t, x].mw[j])
                     except AttributeError:
                         raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -609,330 +609,365 @@ class ControlVolume1dData(ControlVolumeBase):
 
         return self.material_balances
 
-#    def add_total_component_balances(self,
-#                                     has_rate_reactions=False,
-#                                     has_equilibrium_reactions=False,
-#                                     has_phase_equilibrium=False,
-#                                     has_mass_transfer=False,
-#                                     custom_molar_term=None,
-#                                     custom_mass_term=None):
-#        """
-#        This method constructs a set of 0D material balances indexed by time
-#        and component.
-#
-#        Args:
-#            has_rate_reactions - whether default generation terms for rate
-#                    reactions should be included in material balances
-#            has_equilibrium_reactions - whether generation terms should for
-#                    chemical equilibrium reactions should be included in
-#                    material balances
-#            has_phase_equilibrium - whether generation terms should for phase
-#                    equilibrium behaviour should be included in material
-#                    balances
-#            has_mass_transfer - whether generic mass transfer terms should be
-#                    included in material balances
-#            custom_molar_term - a Pyomo Expression representing custom terms to
-#                    be included in material balances on a molar basis.
-#                    Expression must be indexed by time, phase list and
-#                    component list
-#            custom_mass_term - a Pyomo Expression representing custom terms to
-#                    be included in material balances on a mass basis.
-#                    Expression must be indexed by time, phase list and
-#                    component list
-#
-#        Returns:
-#            Constraint object representing material balances
-#        """
-#        # Get dynamic and holdup flags from config block
-#        dynamic = self.config.dynamic
-#        has_holdup = self.config.has_holdup
-#
-#        # Check that reaction block exists if required
-#        if has_rate_reactions or has_equilibrium_reactions:
-#            try:
-#                rblock = self.reactions
-#            except AttributeError:
-#                raise ConfigurationError(
-#                        "{} does not contain a Reaction Block, but material "
-#                        "balances have been set to contain reaction terms. "
-#                        "Please construct a reaction block before adding "
-#                        "balance equations.".format(self.name))
-#
-#        if has_equilibrium_reactions:
-#            # Check that reaction block is set to calculate equilibrium
-#            for t in self.time_ref:
-#                if self.reactions[t].config.has_equilibrium is False:
-#                    raise ConfigurationError(
-#                            "{} material balance was set to include "
-#                            "equilibrium reactions, however the associated "
-#                            "ReactionBlock was not set to include equilibrium "
-#                            "constraints (has_equilibrium_reactions=False). "
-#                            "Please correct your configuration arguments."
-#                            .format(self.name))
-#
-#        if has_phase_equilibrium:
-#            # Check that state blocks are set to calculate equilibrium
-#            for t in self.time_ref:
-#                if not self.properties_out[t].config.has_phase_equilibrium:
-#                    raise ConfigurationError(
-#                            "{} material balance was set to include phase "
-#                            "equilibrium, however the associated outlet "
-#                            "StateBlock was not set to include equilibrium "
-#                            "constraints (has_phase_equilibrium=False). Please"
-#                            " correct your configuration arguments."
-#                            .format(self.name))
-#                if not self.properties_in[t].config.has_phase_equilibrium:
-#                    raise ConfigurationError(
-#                            "{} material balance was set to include phase "
-#                            "equilibrium, however the associated inlet "
-#                            "StateBlock was not set to include equilibrium "
-#                            "constraints (has_phase_equilibrium=False). Please"
-#                            " correct your configuration arguments."
-#                            .format(self.name))
-#
-#        # Get units from property package
-#        units = {}
-#        for u in ['length', 'holdup', 'amount', 'time']:
-#            try:
-#                units[u] = \
-#                   self.config.property_package.get_metadata().default_units[u]
-#            except KeyError:
-#                units[u] = '-'
-#
-#        # Test for components that must exist prior to calling this method
-#        if has_holdup:
-#            if not hasattr(self, "volume"):
-#                raise ConfigurationError(
-#                        "{} control volume must have volume defined to have "
-#                        "holdup and/or rate reaction terms. Please call the "
-#                        "add_geometry method before adding balance equations."
-#                        .format(self.name))
-#
-#        # Material holdup and accumulation
-#        if has_holdup:
-#            self.material_holdup = Var(self.time_ref,
-#                                       self.phase_list_ref,
-#                                       self.component_list_ref,
-#                                       domain=Reals,
-#                                       doc="Material holdup in unit [{}]"
-#                                           .format(units['holdup']))
-#        if dynamic:
-#            self.material_accumulation = DerivativeVar(
-#                    self.material_holdup,
-#                    wrt=self.time_ref,
-#                    doc="Material accumulation in unit [{}/{}]"
-#                        .format(units['holdup'], units['time']))
-#
-#        # Get phase component list(s)
-#        phase_component_list = self._get_phase_comp_list()
-#
-#        # Create material balance terms as required
-#        # Kinetic reaction generation
-#        if has_rate_reactions:
-#            try:
-#                add_object_reference(
-#                        self,
-#                        "rate_reaction_idx_ref",
-#                        self.config.reaction_package.rate_reaction_idx)
-#            except AttributeError:
-#                raise PropertyNotSupportedError(
-#                    "{} Reaction package does not contain a list of rate "
-#                    "reactions (rate_reaction_idx), thus does not support "
-#                    "rate-based reactions.".format(self.name))
-#            self.rate_reaction_generation = Var(
-#                        self.time_ref,
-#                        self.phase_list_ref,
-#                        self.component_list_ref,
-#                        domain=Reals,
-#                        doc="Amount of component generated in "
-#                            "unit by kinetic reactions [{}/{}]"
-#                            .format(units['holdup'], units['time']))
-#
-#        # Equilibrium reaction generation
-#        if has_equilibrium_reactions:
-#            try:
-#                add_object_reference(
-#                    self,
-#                    "equilibrium_reaction_idx_ref",
-#                    self.config.reaction_package.equilibrium_reaction_idx)
-#            except AttributeError:
-#                raise PropertyNotSupportedError(
-#                    "{} Reaction package does not contain a list of "
-#                    "equilibrium reactions (equilibrium_reaction_idx), thus "
-#                    "does not support equilibrium-based reactions."
-#                    .format(self.name))
-#            self.equilibrium_reaction_generation = Var(
-#                        self.time_ref,
-#                        self.phase_list_ref,
-#                        self.component_list_ref,
-#                        domain=Reals,
-#                        doc="Amount of component generated in unit "
-#                            "by equilibrium reactions [{}/{}]"
-#                            .format(units['holdup'], units['time']))
-#
-#        # Material transfer term
-#        if has_mass_transfer:
-#            self.mass_transfer_term = Var(
-#                        self.time_ref,
-#                        self.phase_list_ref,
-#                        self.component_list_ref,
-#                        domain=Reals,
-#                        doc="Component material transfer into unit [{}/{}]"
-#                            .format(units['holdup'], units['time']))
-#
-#        # Create rules to substitute material balance terms
-#        # Accumulation term
-#        def accumulation_term(b, t, p, j):
-#            return b.material_accumulation[t, p, j] if dynamic else 0
-#
-#        def kinetic_term(b, t, p, j):
-#            return (b.rate_reaction_generation[t, p, j] if has_rate_reactions
-#                    else 0)
-#
-#        def equilibrium_term(b, t, p, j):
-#            return (b.equilibrium_reaction_generation[t, p, j]
-#                    if has_equilibrium_reactions else 0)
-#
-#        def transfer_term(b, t, p, j):
-#            return (b.mass_transfer_term[t, p, j] if has_mass_transfer else 0)
-#
-#        def user_term_mol(b, t, j):
-#            if custom_molar_term is not None:
-#                flow_basis = b.properties_out[t].get_material_flow_basis()
-#                if flow_basis == MaterialFlowBasis.molar:
-#                    return custom_molar_term(t, j)
-#                elif flow_basis == MaterialFlowBasis.mass:
-#                    try:
-#                        return (custom_molar_term(t, j) *
-#                                b.properties_out[t].mw[j])
-#                    except AttributeError:
-#                        raise PropertyNotSupportedError(
-#                                "{} property package does not support "
-#                                "molecular weight (mw), which is required for "
-#                                "using custom terms in material balances."
-#                                .format(self.name))
-#                else:
-#                    raise ConfigurationError(
-#                            "{} contained a custom_molar_term argument, but "
-#                            "the property package used an undefined basis "
-#                            "(MaterialFlowBasis.other). Custom terms can "
-#                            "only be used when the property package declares "
-#                            "a molar or mass flow basis.".format(self.name))
-#            else:
-#                return 0
-#
-#        def user_term_mass(b, t, j):
-#            if custom_mass_term is not None:
-#                flow_basis = b.properties_out[t].get_material_flow_basis()
-#                if flow_basis == MaterialFlowBasis.mass:
-#                    return custom_mass_term(t, j)
-#                elif flow_basis == MaterialFlowBasis.molar:
-#                    try:
-#                        return (custom_mass_term(t, j) /
-#                                b.properties_out[t].mw[j])
-#                    except AttributeError:
-#                        raise PropertyNotSupportedError(
-#                                "{} property package does not support "
-#                                "molecular weight (mw), which is required for "
-#                                "using custom terms in material balances."
-#                                .format(self.name))
-#                else:
-#                    raise ConfigurationError(
-#                            "{} contained a custom_mass_term argument, but "
-#                            "the property package used an undefined basis "
-#                            "(MaterialFlowBasis.other). Custom terms can "
-#                            "only be used when the property package declares "
-#                            "a molar or mass flow basis.".format(self.name))
-#            else:
-#                return 0
-#
-#        # Add component balances
-#        @self.Constraint(self.time_ref,
-#                         self.component_list_ref,
-#                         doc="Material balances")
-#        def material_balances(b, t, j):
-#            cplist = []
-#            for p in self.phase_list_ref:
-#                if j in phase_component_list[p]:
-#                    cplist.append(p)
-#            return (
-#                sum(accumulation_term(b, t, p, j) for p in cplist) ==
-#                sum(b.properties_in[t].get_material_flow_terms(p, j)
-#                    for p in cplist) -
-#                sum(b.properties_out[t].get_material_flow_terms(p, j)
-#                    for p in cplist) +
-#                sum(kinetic_term(b, t, p, j) for p in cplist) +
-#                sum(equilibrium_term(b, t, p, j) for p in cplist) +
-#                sum(transfer_term(b, t, p, j) for p in cplist) +
-#                user_term_mol(b, t, j) + user_term_mass(b, t, j))
-#
-#        # TODO: Need to set material_holdup = 0 for non-present component-phase
-#        # pairs. Not ideal, but needed to close DoF. Is there a better way?
-#
-#        # Material Holdup
-#        if has_holdup:
-#            if not hasattr(self, "phase_fraction"):
-#                self._add_phase_fractions()
-#
-#            @self.Constraint(self.time_ref,
-#                             self.phase_list_ref,
-#                             self.component_list_ref,
-#                             doc="Material holdup calculations")
-#            def material_holdup_calculation(b, t, p, j):
-#                if j in phase_component_list[p]:
-#                    return b.material_holdup[t, p, j] == (
-#                          b.volume[t]*self.phase_fraction[t, p] *
-#                          b.properties_out[t].get_material_density_terms(p, j))
-#                else:
-#                    return b.material_holdup[t, p, j] == 0
-#
-#        if has_rate_reactions:
-#            # Add extents of reaction and stoichiometric constraints
-#            self.rate_reaction_extent = Var(
-#                    self.time_ref,
-#                    self.rate_reaction_idx_ref,
-#                    domain=Reals,
-#                    doc="Extent of kinetic reactions[{}/{}]"
-#                        .format(units['holdup'], units['time']))
-#
-#            @self.Constraint(self.time_ref,
-#                             self.phase_list_ref,
-#                             self.component_list_ref,
-#                             doc="Kinetic reaction stoichiometry constraint")
-#            def rate_reaction_stoichiometry_constraint(b, t, p, j):
-#                if j in phase_component_list[p]:
-#                    return b.rate_reaction_generation[t, p, j] == (
-#                        sum(rblock[t].rate_reaction_stoichiometry[r, p, j] *
-#                            b.rate_reaction_extent[t, r]
-#                            for r in b.rate_reaction_idx_ref))
-#                else:
-#                    return Constraint.Skip
-#
-#        if has_equilibrium_reactions:
-#            # Add extents of reaction and stoichiometric constraints
-#            self.equilibrium_reaction_extent = Var(
-#                            self.time_ref,
-#                            self.equilibrium_reaction_idx_ref,
-#                            domain=Reals,
-#                            doc="Extent of equilibrium reactions[{}/{}]"
-#                                .format(units['holdup'], units['time']))
-#
-#            @self.Constraint(self.time_ref,
-#                             self.phase_list_ref,
-#                             self.component_list_ref,
-#                             doc="Equilibrium reaction stoichiometry")
-#            def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
-#                if j in phase_component_list[p]:
-#                    return b.equilibrium_reaction_generation[t, p, j] == (
-#                            sum(rblock[t].
-#                                equilibrium_reaction_stoichiometry[r, p, j] *
-#                                b.equilibrium_reaction_extent[t, r]
-#                                for r in b.equilibrium_reaction_idx_ref))
-#                else:
-#                    return Constraint.Skip
-#
-#        return self.material_balances
-#
+    def add_total_component_balances(self,
+                                     has_rate_reactions=False,
+                                     has_equilibrium_reactions=False,
+                                     has_phase_equilibrium=False,
+                                     has_mass_transfer=False,
+                                     custom_molar_term=None,
+                                     custom_mass_term=None):
+        """
+        This method constructs a set of 1D material balances indexed by time
+        length and component.
+
+        Args:
+            has_rate_reactions: whether default generation terms for rate
+                    reactions should be included in material balances
+            has_equilibrium_reactions: whether generation terms should for
+                    chemical equilibrium reactions should be included in
+                    material balances
+            has_phase_equilibrium: whether generation terms should for phase
+                    equilibrium behaviour should be included in material
+                    balances
+            has_mass_transfer: whether generic mass transfer terms should be
+                    included in material balances
+            custom_molar_term: a Pyomo Expression representing custom terms to
+                    be included in material balances on a molar basis.
+                    Expression must be indexed by time, length domain and
+                    component list
+            custom_mass_term: a Pyomo Expression representing custom terms to
+                    be included in material balances on a mass basis.
+                    Expression must be indexed by time, length domain and
+                    component list
+
+        Returns:
+            Constraint object representing material balances
+        """
+        # Get dynamic and holdup flags from config block
+        dynamic = self.config.dynamic
+        has_holdup = self.config.has_holdup
+
+        # Check that reaction block exists if required
+        if has_rate_reactions or has_equilibrium_reactions:
+            try:
+                rblock = self.reactions
+            except AttributeError:
+                raise ConfigurationError(
+                        "{} does not contain a Reaction Block, but material "
+                        "balances have been set to contain reaction terms. "
+                        "Please construct a reaction block before adding "
+                        "balance equations.".format(self.name))
+
+        if has_equilibrium_reactions:
+            # Check that reaction block is set to calculate equilibrium
+            for t in self.time_ref:
+                for x in self.length_domain:
+                    if self.reactions[t, x].config.has_equilibrium is False:
+                        raise ConfigurationError(
+                            "{} material balance was set to include "
+                            "equilibrium reactions, however the associated "
+                            "ReactionBlock was not set to include equilibrium "
+                            "constraints (has_equilibrium_reactions=False). "
+                            "Please correct your configuration arguments."
+                            .format(self.name))
+
+        if has_phase_equilibrium:
+            # Check that state blocks are set to calculate equilibrium
+            for t in self.time_ref:
+                for x in self.length_domain:
+                    if not self.properties[t, x].config.has_phase_equilibrium:
+                        raise ConfigurationError(
+                            "{} material balance was set to include phase "
+                            "equilibrium, however the associated "
+                            "StateBlock was not set to include equilibrium "
+                            "constraints (has_phase_equilibrium=False). Please"
+                            " correct your configuration arguments."
+                            .format(self.name))
+
+        # Get units from property package
+        units = {}
+        for u in ['length', 'holdup', 'amount', 'time']:
+            try:
+                units[u] = \
+                   self.config.property_package.get_metadata().default_units[u]
+            except KeyError:
+                units[u] = '-'
+
+        # Material holdup and accumulation
+        if has_holdup:
+            self.material_holdup = Var(self.time_ref,
+                                       self.length_domain,
+                                       self.phase_list_ref,
+                                       self.component_list_ref,
+                                       domain=Reals,
+                                       doc="Material holdup per unit length "
+                                           "[{}/{}]"
+                                           .format(units['holdup'],
+                                                   units['length']))
+        if dynamic:
+            self.material_accumulation = DerivativeVar(
+                    self.material_holdup,
+                    wrt=self.time_ref,
+                    doc="Material accumulation per unit length [{}/{}.{}]"
+                        .format(units['holdup'],
+                                units['length'],
+                                units['time']))
+
+        # Get phase component list(s)
+        phase_component_list = self._get_phase_comp_list()
+
+        # Create material balance terms as required
+        # Flow terms and derivatives
+        self._flow_terms = Var(self.time_ref,
+                               self.length_domain,
+                               self.phase_list_ref,
+                               self.component_list_ref,
+                               initialize=0,
+                               doc="Flow terms for material balance equations")
+
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         self.phase_list_ref,
+                         self.component_list_ref,
+                         doc="Mateiral flow linking constraints")
+        def material_flow_linking_constraints(b, t, x, p, j):
+            return b._flow_terms[t, x, p, j] == \
+                b.properties[t, x].get_material_flow_terms(p, j)
+
+        self.material_flow_dx = DerivativeVar(
+                                     self._flow_terms,
+                                     wrt=self.length_domain,
+                                     doc="Parital derivative of material flow "
+                                         "wrt to length {}/{}.{}"
+                                         .format(units['holdup'],
+                                                 units['length'],
+                                                 units['time']))
+
+        # Kinetic reaction generation
+        if has_rate_reactions:
+            try:
+                add_object_reference(
+                        self,
+                        "rate_reaction_idx_ref",
+                        self.config.reaction_package.rate_reaction_idx)
+            except AttributeError:
+                raise PropertyNotSupportedError(
+                    "{} Reaction package does not contain a list of rate "
+                    "reactions (rate_reaction_idx), thus does not support "
+                    "rate-based reactions.".format(self.name))
+            self.rate_reaction_generation = Var(
+                        self.time_ref,
+                        self.length_domain,
+                        self.phase_list_ref,
+                        self.component_list_ref,
+                        domain=Reals,
+                        doc="Amount of component generated in "
+                            "unit by kinetic reactions [{}/{}]"
+                            .format(units['holdup'], units['time']))
+
+        # Equilibrium reaction generation
+        if has_equilibrium_reactions:
+            try:
+                add_object_reference(
+                    self,
+                    "equilibrium_reaction_idx_ref",
+                    self.config.reaction_package.equilibrium_reaction_idx)
+            except AttributeError:
+                raise PropertyNotSupportedError(
+                    "{} Reaction package does not contain a list of "
+                    "equilibrium reactions (equilibrium_reaction_idx), thus "
+                    "does not support equilibrium-based reactions."
+                    .format(self.name))
+            self.equilibrium_reaction_generation = Var(
+                        self.time_ref,
+                        self.length_domain,
+                        self.phase_list_ref,
+                        self.component_list_ref,
+                        domain=Reals,
+                        doc="Amount of component generated in unit "
+                            "by equilibrium reactions [{}/{}]"
+                            .format(units['holdup'], units['time']))
+
+        # Material transfer term
+        if has_mass_transfer:
+            self.mass_transfer_term = Var(
+                        self.time_ref,
+                        self.length_domain,
+                        self.phase_list_ref,
+                        self.component_list_ref,
+                        domain=Reals,
+                        doc="Component material transfer into unit [{}/{}]"
+                            .format(units['holdup'], units['time']))
+
+        # Create rules to substitute material balance terms
+        # Accumulation term
+        def accumulation_term(b, t, x, p, j):
+            return b.material_accumulation[t, x, p, j] if dynamic else 0
+
+        def kinetic_term(b, t, x, p, j):
+            return (b.rate_reaction_generation[t, x, p, j]
+                    if has_rate_reactions else 0)
+
+        def equilibrium_term(b, t, x, p, j):
+            return (b.equilibrium_reaction_generation[t, x, p, j]
+                    if has_equilibrium_reactions else 0)
+
+        def transfer_term(b, t, x, p, j):
+            return (b.mass_transfer_term[t, x, p, j]
+                    if has_mass_transfer else 0)
+
+        def user_term_mol(b, t, x, j):
+            if custom_molar_term is not None:
+                flow_basis = b.properties[t, x].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.molar:
+                    return custom_molar_term(t, x, j)
+                elif flow_basis == MaterialFlowBasis.mass:
+                    try:
+                        return (custom_molar_term(t, x, j) *
+                                b.properties[t, x].mw[j])
+                    except AttributeError:
+                        raise PropertyNotSupportedError(
+                                "{} property package does not support "
+                                "molecular weight (mw), which is required for "
+                                "using custom terms in material balances."
+                                .format(self.name))
+                else:
+                    raise ConfigurationError(
+                            "{} contained a custom_molar_term argument, but "
+                            "the property package used an undefined basis "
+                            "(MaterialFlowBasis.other). Custom terms can "
+                            "only be used when the property package declares "
+                            "a molar or mass flow basis.".format(self.name))
+            else:
+                return 0
+
+        def user_term_mass(b, t, x, j):
+            if custom_mass_term is not None:
+                flow_basis = b.properties[t, x].get_material_flow_basis()
+                if flow_basis == MaterialFlowBasis.mass:
+                    return custom_mass_term(t, x, j)
+                elif flow_basis == MaterialFlowBasis.molar:
+                    try:
+                        return (custom_mass_term(t, x, j) /
+                                b.properties[t, x].mw[j])
+                    except AttributeError:
+                        raise PropertyNotSupportedError(
+                                "{} property package does not support "
+                                "molecular weight (mw), which is required for "
+                                "using custom terms in material balances."
+                                .format(self.name))
+                else:
+                    raise ConfigurationError(
+                            "{} contained a custom_mass_term argument, but "
+                            "the property package used an undefined basis "
+                            "(MaterialFlowBasis.other). Custom terms can "
+                            "only be used when the property package declares "
+                            "a molar or mass flow basis.".format(self.name))
+            else:
+                return 0
+
+        # Add component balances
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         self.component_list_ref,
+                         doc="Material balances")
+        def material_balances(b, t, x, j):
+            if ((b._flow_direction is FlowDirection.forward and
+                 x == b.length_domain.first()) or
+                    (b._flow_direction is FlowDirection.backward and
+                     x == b.length_domain.last())):
+                return Constraint.Skip
+            else:
+                cplist = []
+                for p in self.phase_list_ref:
+                    if j in phase_component_list[p]:
+                        cplist.append(p)
+                return (
+                    b.length*sum(accumulation_term(b, t, x, p, j)
+                                 for p in cplist) ==
+                    b._flow_direction_term*sum(b.material_flow_dx[t, x, p, j]
+                                               for p in cplist) +
+                    b.length*sum(kinetic_term(b, t, x, p, j) for p in cplist) +
+                    b.length*sum(equilibrium_term(b, t, x, p, j)
+                                 for p in cplist) +
+                    b.length*sum(transfer_term(b, t, x, p, j)
+                                 for p in cplist) +
+                    b.length*user_term_mol(b, t, x, j) +
+                    b.length*user_term_mass(b, t, x, j))
+
+        # TODO: Need to set material_holdup = 0 for non-present component-phase
+        # pairs. Not ideal, but needed to close DoF. Is there a better way?
+
+        # Material Holdup
+        if has_holdup:
+            if not hasattr(self, "phase_fraction"):
+                self._add_phase_fractions()
+
+            @self.Constraint(self.time_ref,
+                             self.length_domain,
+                             self.phase_list_ref,
+                             self.component_list_ref,
+                             doc="Material holdup calculations")
+            def material_holdup_calculation(b, t, x, p, j):
+                if j in phase_component_list[p]:
+                    return b.material_holdup[t, x, p, j] == (
+                          b.volume*self.phase_fraction[t, x, p] *
+                          b.properties[t, x].get_material_density_terms(p, j))
+                else:
+                    return b.material_holdup[t, x, p, j] == 0
+
+        if has_rate_reactions:
+            # Add extents of reaction and stoichiometric constraints
+            self.rate_reaction_extent = Var(
+                    self.time_ref,
+                    self.length_domain,
+                    self.rate_reaction_idx_ref,
+                    domain=Reals,
+                    doc="Extent of kinetic reactions at point x[{}/{}]"
+                        .format(units['holdup'], units['time']))
+
+            @self.Constraint(self.time_ref,
+                             self.length_domain,
+                             self.phase_list_ref,
+                             self.component_list_ref,
+                             doc="Kinetic reaction stoichiometry constraint")
+            def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
+                if j in phase_component_list[p]:
+                    return b.rate_reaction_generation[t, x, p, j] == (
+                        sum(rblock[t, x].rate_reaction_stoichiometry[r, p, j] *
+                            b.rate_reaction_extent[t, x, r]
+                            for r in b.rate_reaction_idx_ref))
+                else:
+                    return Constraint.Skip
+
+        if has_equilibrium_reactions:
+            # Add extents of reaction and stoichiometric constraints
+            self.equilibrium_reaction_extent = Var(
+                            self.time_ref,
+                            self.length_domain,
+                            self.equilibrium_reaction_idx_ref,
+                            domain=Reals,
+                            doc="Extent of equilibrium reactions at point x "
+                                "[{}/{}]".format(units['holdup'],
+                                                 units['time']))
+
+            @self.Constraint(self.time_ref,
+                             self.length_domain,
+                             self.phase_list_ref,
+                             self.component_list_ref,
+                             doc="Equilibrium reaction stoichiometry")
+            def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
+                if j in phase_component_list[p]:
+                    return b.equilibrium_reaction_generation[t, x, p, j] == (
+                            sum(rblock[t, x].
+                                equilibrium_reaction_stoichiometry[r, p, j] *
+                                b.equilibrium_reaction_extent[t, x, r]
+                                for r in b.equilibrium_reaction_idx_ref))
+                else:
+                    return Constraint.Skip
+
+        return self.material_balances
+
 #    def add_total_element_balances(self,
 #                                   has_rate_reactions=False,
 #                                   has_equilibrium_reactions=False,
@@ -1491,127 +1526,117 @@ class ControlVolume1dData(ControlVolumeBase):
                                      "TransformationFactory."
                                      .format(self.name))
 
-#    def model_check(blk):
-#        """
-#        This method executes the model_check methods on the associated state
-#        blocks (if they exist). This method is generally called by a unit model
-#        as part of the unit's model_check method.
-#
-#        Args:
-#            None
-#
-#        Returns:
-#            None
-#        """
-#        # Try property block model check
-#        for t in blk.time_ref:
-#            try:
-#                blk.properties_in[t].model_check()
-#            except AttributeError:
-#                _log.warning('{} ControlVolume inlet property block has no '
-#                             'model checks. To correct this, add a model_check'
-#                             ' method to the associated StateBlock class.'
-#                             .format(blk.name))
-#            try:
-#                blk.properties_out[t].model_check()
-#            except AttributeError:
-#                _log.warning('{} ControlVolume outlet property block has no '
-#                             'model checks. To correct this, add a '
-#                             'model_check method to the associated '
-#                             'StateBlock class.'.format(blk.name))
-#
-#            try:
-#                blk.reactions[t].model_check()
-#            except AttributeError:
-#                _log.warning('{} ControlVolume outlet reaction block has no '
-#                             'model check. To correct this, add a '
-#                             'model_check method to the associated '
-#                             'ReactionBlock class.'.format(blk.name))
-#
-#    def initialize(blk, state_args=None, outlvl=0, optarg=None,
-#                   solver='ipopt', hold_state=True):
-#        '''
-#        Initialisation routine for 0D control volume (default solver ipopt)
-#
-#        Keyword Arguments:
-#            state_args : a dict of arguments to be passed to the property
-#                         package(s) to provide an initial state for
-#                         initialization (see documentation of the specific
-#                         property package) (default = {}).
-#            outlvl : sets output level of initialisation routine. **Valid
-#                     values:** **0** - no output (default), **1** - return
-#                     solver state for each step in routine, **2** - include
-#                     solver output infomation (tee=True)
-#            optarg : solver options dictionary object (default=None)
-#            solver : str indicating whcih solver to use during
-#                     initialization (default = 'ipopt')
-#            hold_state : flag indicating whether the initialization routine
-#                     should unfix any state variables fixed during
-#                     initialization, **default** - True. **Valid values:**
-#                     **True** - states variables are not unfixed, and a dict of
-#                     returned containing flags for which states were fixed
-#                     during initialization, **False** - state variables are
-#                     unfixed after initialization by calling the release_state
-#                     method.
-#
-#        Returns:
-#            If hold_states is True, returns a dict containing flags for which
-#            states were fixed during initialization.
-#        '''
-#        # Get inlet state if not provided
-#        if state_args is None:
-#            state_args = {}
-#            state_dict = \
-#                blk.properties_in[blk.time.first()].define_port_members()
-#
-#            for k in state_dict.keys():
-#                if state_dict[k].is_indexed():
-#                    state_args[k] = {}
-#                    for m in state_dict[k].keys():
-#                        state_args[k][m] = state_dict[k][m].value
-#                else:
-#                    state_args[k] = state_dict[k].value
-#
-#        # Initialize state blocks
-#        flags = blk.properties_in.initialize(outlvl=outlvl-1,
-#                                             optarg=optarg,
-#                                             solver=solver,
-#                                             hold_state=hold_state,
-#                                             **state_args)
-#
-#        blk.properties_out.initialize(outlvl=outlvl-1,
-#                                      optarg=optarg,
-#                                      solver=solver,
-#                                      hold_state=False,
-#                                      **state_args)
-#
-#        try:
-#            blk.reactions.initialize(outlvl=outlvl-1,
-#                                     optarg=optarg,
-#                                     solver=solver)
-#        except AttributeError:
-#            pass
-#
-#        if outlvl > 0:
-#            _log.info('{} Initialisation Complete'.format(blk.name))
-#
-#        return flags
-#
-#    def release_state(blk, flags, outlvl=0):
-#        '''
-#        Method to release state variables fixed during initialisation.
-#
-#        Keyword Arguments:
-#            flags : dict containing information of which state variables
-#                    were fixed during initialization, and should now be
-#                    unfixed. This dict is returned by initialize if
-#                    hold_state = True.
-#            outlvl : sets output level of logging
-#
-#        Returns:
-#            None
-#        '''
-#        blk.properties_in.release_state(flags, outlvl=outlvl-1)
+    def model_check(blk):
+        """
+        This method executes the model_check methods on the associated state
+        blocks (if they exist). This method is generally called by a unit model
+        as part of the unit's model_check method.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Try property block model check
+        for t in blk.time_ref:
+            for x in blk.length_domain:
+                try:
+                    blk.properties[t, x].model_check()
+                except AttributeError:
+                    _log.warning(
+                            '{} ControlVolume StateBlock has no '
+                            'model checks. To correct this, add a model_check'
+                            ' method to the associated StateBlock class.'
+                            .format(blk.name))
+
+                try:
+                    blk.reactions[t, x].model_check()
+                except AttributeError:
+                    _log.warning(
+                            '{} ControlVolume outlet reaction block has no '
+                            'model check. To correct this, add a '
+                            'model_check method to the associated '
+                            'ReactionBlock class.'.format(blk.name))
+
+    def initialize(blk, state_args=None, outlvl=0, optarg=None,
+                   solver='ipopt', hold_state=True):
+        '''
+        Initialisation routine for 0D control volume (default solver ipopt)
+
+        Keyword Arguments:
+            state_args : a dict of arguments to be passed to the property
+                         package(s) to provide an initial state for
+                         initialization (see documentation of the specific
+                         property package) (default = {}).
+            outlvl : sets output level of initialisation routine. **Valid
+                     values:** **0** - no output (default), **1** - return
+                     solver state for each step in routine, **2** - include
+                     solver output infomation (tee=True)
+            optarg : solver options dictionary object (default=None)
+            solver : str indicating whcih solver to use during
+                     initialization (default = 'ipopt')
+            hold_state : flag indicating whether the initialization routine
+                     should unfix any state variables fixed during
+                     initialization, **default** - True. **Valid values:**
+                     **True** - states variables are not unfixed, and a dict of
+                     returned containing flags for which states were fixed
+                     during initialization, **False** - state variables are
+                     unfixed after initialization by calling the release_state
+                     method.
+
+        Returns:
+            If hold_states is True, returns a dict containing flags for which
+            states were fixed during initialization.
+        '''
+        # Get inlet state if not provided
+        if state_args is None:
+            state_args = {}
+            state_dict = \
+                blk.properties[blk.time.first(), 0].define_port_members()
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
+        # Initialize state blocks
+        # TODO : Consider handling hold_state for length domain
+        flags = blk.properties.initialize(outlvl=outlvl-1,
+                                          optarg=optarg,
+                                          solver=solver,
+                                          **state_args)
+
+        try:
+            blk.reactions.initialize(outlvl=outlvl-1,
+                                     optarg=optarg,
+                                     solver=solver)
+        except AttributeError:
+            pass
+
+        if outlvl > 0:
+            _log.info('{} Initialisation Complete'.format(blk.name))
+
+        return flags
+
+    def release_state(blk, flags, outlvl=0):
+        '''
+        Method to release state variables fixed during initialisation.
+
+        Keyword Arguments:
+            flags : dict containing information of which state variables
+                    were fixed during initialization, and should now be
+                    unfixed. This dict is returned by initialize if
+                    hold_state = True.
+            outlvl : sets output level of logging
+
+        Returns:
+            None
+        '''
+        blk.properties.release_state(flags, outlvl=outlvl-1)
 
     def _add_phase_fractions(self):
         """
