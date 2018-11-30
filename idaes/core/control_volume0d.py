@@ -40,6 +40,7 @@ __author__ = "Andrew Lee"
 _log = logging.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
+# TODO : Improve flexibility for get_material_flow_terms and associated
 # TODO : add support for heat of reaction terms
 
 
