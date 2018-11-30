@@ -394,6 +394,8 @@ class ControlVolume0dData(ControlVolumeBase):
 
                 return sum(b.phase_equilibrium_generation[t, r]*sd[r]
                            for r in b.phase_equilibrium_idx_ref)
+            else:
+                return 0
 
         def transfer_term(b, t, p, j):
             return (b.mass_transfer_term[t, p, j] if has_mass_transfer else 0)

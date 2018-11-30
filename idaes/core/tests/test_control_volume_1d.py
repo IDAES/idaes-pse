@@ -487,524 +487,513 @@ def test_add_reaction_blocks_has_equilibrium():
     assert m.fs.cv.reactions[0, 0].config.has_equilibrium is True
 
 
-## -----------------------------------------------------------------------------
-## Test _add_phase_fractions
-#def test_add_phase_fractions():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv._add_phase_fractions()
-#
-#    assert isinstance(m.fs.cv.phase_fraction, Var)
-#    assert len(m.fs.cv.phase_fraction) == 2
-#    assert hasattr(m.fs.cv, "sum_of_phase_fractions")
-#
-#
-#def test_add_phase_fractions_single_phase():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.pp.del_component(m.fs.pp.phase_list)
-#    m.fs.pp.phase_list = Set(initialize=["p1"])
-#
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv._add_phase_fractions()
-#
-#    assert isinstance(m.fs.cv.phase_fraction, Expression)
-#    assert len(m.fs.cv.phase_fraction) == 1
-#    assert not hasattr(m.fs.cv, "sum_of_phase_fractions")
-#
-#
-## -----------------------------------------------------------------------------
-## Test add_phase_component_balances
-#def test_add_phase_component_balances_default():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    mb = m.fs.cv.add_phase_component_balances()
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 4
-#
-#
-#def test_add_phase_component_balances_dynamic():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": True})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp,
-#                                       "dynamic": True})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    mb = m.fs.cv.add_phase_component_balances()
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 8
-#    assert isinstance(m.fs.cv.phase_fraction, Var)
-#    assert isinstance(m.fs.cv.material_holdup, Var)
-#    assert isinstance(m.fs.cv.material_accumulation, Var)
-#
-#
-#def test_add_phase_component_balances_dynamic_no_geometry():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": True})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp,
-#                                       "dynamic": True})
-#
-#    # Do not add geometry
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.cv.add_phase_component_balances()
-#
-#
-#def test_add_phase_component_balances_rate_rxns():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    mb = m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 4
-#    assert isinstance(m.fs.cv.rate_reaction_generation, Var)
-#    assert isinstance(m.fs.cv.rate_reaction_idx_ref, Set)
-#    assert isinstance(m.fs.cv.rate_reaction_extent, Var)
-#    assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
-#                      Constraint)
-#
-#
-#def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv.add_state_blocks()
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
-#
-#
-#def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#    m.fs.rp.del_component(m.fs.rp.rate_reaction_idx)
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    with pytest.raises(PropertyNotSupportedError):
-#        m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
-#
-#
-#def test_add_phase_component_balances_eq_rxns():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
-#
-#    mb = m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 4
-#    assert isinstance(m.fs.cv.equilibrium_reaction_generation, Var)
-#    assert isinstance(m.fs.cv.equilibrium_reaction_idx_ref, Set)
-#    assert isinstance(m.fs.cv.equilibrium_reaction_extent, Var)
-#    assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
-#                      Constraint)
-#
-#
-#def test_add_phase_component_balances_eq_rxns_not_active():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
-#
-#
-#def test_add_phase_component_balances_eq_rxns_no_idx():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#    m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
-#
-#    with pytest.raises(PropertyNotSupportedError):
-#        m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
-#
-#
-#def test_add_phase_component_balances_eq_rxns_no_ReactionBlock():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv.add_state_blocks()
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
-#
-#
-#def test_add_phase_component_balances_phase_eq():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-#    m.fs.cv.add_reaction_blocks()
-#
-#    mb = m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 4
-#    assert isinstance(m.fs.cv.phase_equilibrium_generation, Var)
-#    assert isinstance(m.fs.cv.phase_equilibrium_idx_ref, Set)
-#
-#
-#def test_add_phase_component_balances_phase_eq_not_active():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-#    m.fs.cv.add_reaction_blocks()
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
-#
-#
-#def test_add_phase_component_balances_phase_eq_no_idx():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-#    m.fs.cv.add_reaction_blocks()
-#
-#    with pytest.raises(PropertyNotSupportedError):
-#        m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
-#
-#
-#def test_add_phase_component_balances_mass_transfer():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    mb = m.fs.cv.add_phase_component_balances(has_mass_transfer=True)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 4
-#    assert isinstance(m.fs.cv.mass_transfer_term, Var)
-#
-#
-#def test_add_phase_component_balances_custom_molar_term():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-#                           m.fs.cv.phase_list_ref,
-#                           m.fs.cv.component_list_ref)
-#
-#    def custom_method(t, p, j):
-#        return m.fs.cv.test_var[t, p, j]
-#
-#    mb = m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 4
-#
-#
-#def test_add_phase_component_balances_custom_molar_term_no_mw():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.pp.basis_switch = 2
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-#                           m.fs.cv.phase_list_ref,
-#                           m.fs.cv.component_list_ref)
-#
-#    def custom_method(t, p, j):
-#        return m.fs.cv.test_var[t, p, j]
-#
-#    with pytest.raises(PropertyNotSupportedError):
-#        m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
-#
-#
-#def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.pp.basis_switch = 2
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-#                           m.fs.cv.phase_list_ref,
-#                           m.fs.cv.component_list_ref)
-#
-#    def custom_method(t, p, j):
-#        return m.fs.cv.test_var[t, p, j]
-#
-#    for t in m.fs.time:
-#        m.fs.cv.properties_out[t].mw = Var(
-#                m.fs.cv.properties_out[t].config.parameters.component_list)
-#
-#    mb = m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 4
-#
-#
-#def test_add_phase_component_balances_custom_molar_term_undefined_basis():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.pp.basis_switch = 3
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-#                           m.fs.cv.phase_list_ref,
-#                           m.fs.cv.component_list_ref)
-#
-#    def custom_method(t, p, j):
-#        return m.fs.cv.test_var[t, p, j]
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
-#
-#
-#def test_add_phase_component_balances_custom_mass_term():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.pp.basis_switch = 2
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-#                           m.fs.cv.phase_list_ref,
-#                           m.fs.cv.component_list_ref)
-#
-#    def custom_method(t, p, j):
-#        return m.fs.cv.test_var[t, p, j]
-#
-#    mb = m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 4
-#
-#
-#def test_add_phase_component_balances_custom_mass_term_no_mw():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.pp.basis_switch = 1
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-#                           m.fs.cv.phase_list_ref,
-#                           m.fs.cv.component_list_ref)
-#
-#    def custom_method(t, p, j):
-#        return m.fs.cv.test_var[t, p, j]
-#
-#    with pytest.raises(PropertyNotSupportedError):
-#        m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
-#
-#
-#def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.pp.basis_switch = 2
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-#                           m.fs.cv.phase_list_ref,
-#                           m.fs.cv.component_list_ref)
-#
-#    def custom_method(t, p, j):
-#        return m.fs.cv.test_var[t, p, j]
-#
-#    for t in m.fs.time:
-#        m.fs.cv.properties_out[t].mw = Var(
-#                m.fs.cv.properties_out[t].config.parameters.component_list)
-#
-#    mb = m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
-#
-#    assert isinstance(mb, Constraint)
-#    assert len(mb) == 4
-#
-#
-#def test_add_phase_component_balances_custom_mass_term_undefined_basis():
-#    m = ConcreteModel()
-#    m.fs = Flowsheet(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock()
-#    m.fs.pp.basis_switch = 3
-#    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
-#
-#    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
-#                                       "reaction_package": m.fs.rp})
-#
-#    m.fs.cv.add_geometry()
-#    m.fs.cv.add_state_blocks()
-#    m.fs.cv.add_reaction_blocks()
-#
-#    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-#                           m.fs.cv.phase_list_ref,
-#                           m.fs.cv.component_list_ref)
-#
-#    def custom_method(t, p, j):
-#        return m.fs.cv.test_var[t, p, j]
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
-#
-#
+# -----------------------------------------------------------------------------
+# Test _add_phase_fractions
+def test_add_phase_fractions():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv._add_phase_fractions()
+
+    assert isinstance(m.fs.cv.phase_fraction, Var)
+    assert len(m.fs.cv.phase_fraction) == 4
+    assert isinstance(m.fs.cv.sum_of_phase_fractions, Constraint)
+
+
+def test_add_phase_fractions_single_phase():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.del_component(m.fs.pp.phase_list)
+    m.fs.pp.phase_list = Set(initialize=["p1"])
+
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv._add_phase_fractions()
+
+    assert isinstance(m.fs.cv.phase_fraction, Expression)
+    assert len(m.fs.cv.phase_fraction) == 2
+    assert not hasattr(m.fs.cv, "sum_of_phase_fractions")
+
+
+# -----------------------------------------------------------------------------
+# Test add_phase_component_balances
+def test_add_phase_component_balances_default():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_phase_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+
+
+def test_add_phase_component_balances_dynamic():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp,
+                                       "dynamic": True})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_phase_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 8
+    assert isinstance(m.fs.cv.phase_fraction, Var)
+    assert isinstance(m.fs.cv.material_holdup, Var)
+    assert isinstance(m.fs.cv.material_accumulation, Var)
+
+
+def test_add_phase_component_balances_rate_rxns():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+    assert isinstance(m.fs.cv.rate_reaction_generation, Var)
+    assert isinstance(m.fs.cv.rate_reaction_idx_ref, Set)
+    assert isinstance(m.fs.cv.rate_reaction_extent, Var)
+    assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
+                      Constraint)
+
+
+def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
+
+
+def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp.del_component(m.fs.rp.rate_reaction_idx)
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(PropertyNotSupportedError):
+        m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
+
+
+def test_add_phase_component_balances_eq_rxns():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+
+    mb = m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+    assert isinstance(m.fs.cv.equilibrium_reaction_generation, Var)
+    assert isinstance(m.fs.cv.equilibrium_reaction_idx_ref, Set)
+    assert isinstance(m.fs.cv.equilibrium_reaction_extent, Var)
+    assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
+                      Constraint)
+
+
+def test_add_phase_component_balances_eq_rxns_not_active():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
+
+
+def test_add_phase_component_balances_eq_rxns_no_idx():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+
+    with pytest.raises(PropertyNotSupportedError):
+        m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
+
+
+def test_add_phase_component_balances_eq_rxns_no_ReactionBlock():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
+
+
+def test_add_phase_component_balances_phase_eq():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+    assert isinstance(m.fs.cv.phase_equilibrium_generation, Var)
+    assert isinstance(m.fs.cv.phase_equilibrium_idx_ref, Set)
+
+
+def test_add_phase_component_balances_phase_eq_not_active():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
+
+
+def test_add_phase_component_balances_phase_eq_no_idx():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(PropertyNotSupportedError):
+        m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
+
+
+def test_add_phase_component_balances_mass_transfer():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    mb = m.fs.cv.add_phase_component_balances(has_mass_transfer=True)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+    assert isinstance(m.fs.cv.mass_transfer_term, Var)
+
+
+def test_add_phase_component_balances_custom_molar_term():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
+
+    def custom_method(t, x, p, j):
+        return m.fs.cv.test_var[t, p, j]
+
+    mb = m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+
+
+def test_add_phase_component_balances_custom_molar_term_no_mw():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.basis_switch = 2
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
+
+    def custom_method(t, x, p, j):
+        return m.fs.cv.test_var[t, p, j]
+
+    with pytest.raises(PropertyNotSupportedError):
+        m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
+
+
+def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.basis_switch = 2
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
+
+    def custom_method(t, x, p, j):
+        return m.fs.cv.test_var[t, p, j]
+
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            m.fs.cv.properties[t, x].mw = Var(
+                m.fs.cv.properties[t, x].config.parameters.component_list)
+
+    mb = m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+
+
+def test_add_phase_component_balances_custom_molar_term_undefined_basis():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.basis_switch = 3
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
+
+    def custom_method(t, x, p, j):
+        return m.fs.cv.test_var[t, p, j]
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_phase_component_balances(custom_molar_term=custom_method)
+
+
+def test_add_phase_component_balances_custom_mass_term():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.basis_switch = 2
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
+
+    def custom_method(t, x, p, j):
+        return m.fs.cv.test_var[t, p, j]
+
+    mb = m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+
+
+def test_add_phase_component_balances_custom_mass_term_no_mw():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.basis_switch = 1
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
+
+    def custom_method(t, x, p, j):
+        return m.fs.cv.test_var[t, p, j]
+
+    with pytest.raises(PropertyNotSupportedError):
+        m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
+
+
+def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.basis_switch = 2
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
+
+    def custom_method(t, x, p, j):
+        return m.fs.cv.test_var[t, p, j]
+
+    for t in m.fs.time:
+        for x in m.fs.cv.length_domain:
+            m.fs.cv.properties[t, x].mw = Var(
+                m.fs.cv.properties[t, x].config.parameters.component_list)
+
+    mb = m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+
+
+def test_add_phase_component_balances_custom_mass_term_undefined_basis():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp.basis_switch = 3
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+                           m.fs.cv.phase_list_ref,
+                           m.fs.cv.component_list_ref)
+
+    def custom_method(t, x, p, j):
+        return m.fs.cv.test_var[t, p, j]
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_phase_component_balances(custom_mass_term=custom_method)
+
+
 ## -----------------------------------------------------------------------------
 ## Test add_total_component_balances
 #def test_add_total_component_balances_default():
