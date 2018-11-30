@@ -480,7 +480,7 @@ linked the mixed state and all outlet states,
 
             # Iterate over port members
             for s in s_vars:
-                if s_vars[s].keys() != [None]:
+                if s_vars[s].is_indexed():
                     # Is indexed, partition variables
                     for o in outlet_list:
                         p_obj = getattr(self, o)
