@@ -104,7 +104,7 @@ class ModuleClassWalker(Walker):
         if not os.path.isdir(self._root):
             raise IOError('Root directory "{}"'.format(self._root))
         self._expr = re.compile(class_expr) if class_expr else None
-        self._nowarn = suppress_warnings
+        self._warn = not suppress_warnings
         self._parent = parent_class
         # build regular expression of things to exclude
         expr_list, psep = [], os.path.sep
@@ -157,28 +157,24 @@ class ModuleClassWalker(Walker):
             _log.debug('visit module: {}'.format(modname))
             try:
                 mod = importlib.import_module(modname)
-            except ImportError as err:
-                if not self._nowarn:
-                    _log.warn('While walking modules: Could not import module:'
-                              ' {}: {}'.format(modname, err))
-                continue
             except Exception:
-                if not self._nowarn:
+                if self._warn:
                     _log.warn('Error during import of module: {}. Ignoring.'
                               .format(modname))
                 continue
             for item in dir(mod):
                 x = getattr(mod, item)
                 if inspect.isclass(x):
+                    fullname = modname + '.' + x.__name__
                     if not self._expr and not self._parent:
                         if visit(x):
-                            self._history.append(modname)
+                            self._history.append(fullname)
                     elif self._expr and self._expr.match(x.__name__):
                         if visit(x):
-                            self._history.append(modname)
+                            self._history.append(fullname)
                     elif self._parent and issubclass(x, self._parent):
                         if visit(x):
-                            self._history.append(modname)
+                            self._history.append(fullname)
 
 
 class Visitor(object):
@@ -213,7 +209,7 @@ class PropertyMetadataVisitor(Visitor):
         Returns:
             True if visit succeeded, else False
         """
-        result = True
+        result, meta = True, None
         try:
             meta = obj.get_metadata()
         except (AttributeError, TypeError) as err:
@@ -223,9 +219,9 @@ class PropertyMetadataVisitor(Visitor):
             result = False
         except NotImplementedError:
             module = obj.__module__
-            if not module.startswith('idaes.core.'):
-                _log.warn('{} in module "{}" does not define its metadata'
-                          .format(obj.__name__, module))
+#            if not module.startswith('idaes.core.'):
+            _log.warn('{} in module "{}" does not define its metadata'
+                      .format(obj.__name__, module))
             result = False
         if result:
             self.visit_metadata(obj, meta)
@@ -265,19 +261,19 @@ class _TestClass(object):
     pass
 
 
-class C1(_TestClass):
+class _TestClass1(_TestClass):
     @classmethod
     def get_metadata(cls):
         return {'x': 1}
 
 
-class C2(_TestClass):
+class _TestClass2(_TestClass):
     @classmethod
     def get_metadata(cls):
         return {'x': 2}
 
 
-class C3(_TestClass):
+class _TestClass3(_TestClass):
     @classmethod
     def get_metadata(cls):
         return {'x': 3}
