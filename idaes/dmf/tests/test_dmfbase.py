@@ -22,6 +22,7 @@ import pytest
 # package
 from idaes.dmf import resource
 from idaes.dmf import errors
+from idaes.dmf.dmfbase import DMFConfig, DMF
 from .util import init_logging, tmp_dmf
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
@@ -133,6 +134,10 @@ def test_find_propertydata(tmp_dmf):
     assert len(pdata) == n
 
 
+def test_dmf_init_minimal():
+    pytest.raises(errors.DMFError, DMF)
+
+
 def test_dmf_add(tmp_dmf):
     r = resource.Resource(value={'desc': 'test resource'})
     r.do_copy = True  # copy by default
@@ -227,3 +232,78 @@ def test_dmf_find(tmp_dmf):
     # Find with 'all'
     result = list(tmp_dmf.find({'tags!': ['all', 'batch1']}))
     assert len(result) == batchsz
+
+#########################
+# DMFConfig             #
+#########################
+
+@pytest.fixture
+def dmfconfig_tmp():
+    """Default file is in user's home directory.
+       We don't want to actually modify this with a test.
+       So switch it out and switch it back when the fixture
+       is done.
+    """
+    default_filename = DMFConfig.filename
+    tmpfile = tempfile.NamedTemporaryFile()
+    DMFConfig.filename = tmpfile.name
+    yield tmpfile
+    tmpfile.close()
+    DMFConfig.filename = default_filename
+
+
+@pytest.fixture
+def dmfconfig_none():
+    """Default file is in user's home directory.
+    Replace it with a nonexistent file.
+    """
+    default_filename = DMFConfig.filename
+    DMFConfig.filename = os.path.join(os.path.sep, 'idaes',
+                                      *map(str, range(20)))
+    yield True
+    DMFConfig.filename = default_filename
+
+
+def test_dmfconfig_init_defaults_nofile(dmfconfig_none):
+    config = DMFConfig()
+    assert config.c == DMFConfig.DEFAULTS
+
+
+def test_dmfconfig_init_defaults_emptyfile(dmfconfig_tmp):
+    config = DMFConfig()
+    assert config.c == DMFConfig.DEFAULTS
+
+
+def test_dmfconfig_init_defaults2(dmfconfig_tmp):
+    config = DMFConfig(defaults={'look': 'here'})
+    assert config.c['look'] == 'here'
+
+
+def test_dmfconfig_bad_file(dmfconfig_tmp):
+    dmfconfig_tmp.write(b'{[\n')
+    dmfconfig_tmp.file.flush()
+    pytest.raises(ValueError, DMFConfig)
+
+
+def test_dmfconfig_somefile(dmfconfig_tmp):
+    dmfconfig_tmp.write(b'workspace: foobar\n')
+    dmfconfig_tmp.file.flush()
+    config = DMFConfig()
+
+
+def test_dmfconfig_save(dmfconfig_tmp):
+    config = DMFConfig()
+    config.save()
+
+
+def test_dmfconfig_save_nofile(dmfconfig_none):
+    config = DMFConfig()
+    pytest.raises(IOError, config.save)
+
+
+def test_dmfconfig_attrs(dmfconfig_tmp):
+    config = DMFConfig()
+    assert config.workspace is not None
+
+
+

@@ -70,25 +70,31 @@ class DMFConfig(object):
 
         Args:
             defaults (dict): Default values to use if nothing is found.
-                            If the value is 'True', use self.DEFAULTS
+                            If not provided, use self.DEFAULTS
         Raises:
-            IOError: If self.filename is not openable or parse-able
+            IOError: If self.filename is not openable or readable
+            ValueError: If the file can't be parsed as YAML
         """
-        self.c, fp = {}, None
+        # init to defaults
+        self.c = {}
+        if defaults:
+            self.c.update(defaults)
+        else:
+            self.c.update(self.DEFAULTS)
+        # try to open the config file
+        fp = None
         try:
+            if not os.path.exists(self.filename):
+                raise IOError('File not found')
             fp = open(self.filename, 'rb')
-        except IOError:
-            if defaults is None:
-                raise
-            if defaults is True:
-                self.c.update(self.DEFAULTS)
-            else:
-                self.c.update(defaults)
+        except IOError as err:
+            pass
+        # if we got a config file, parse it
         if fp:
             try:
                 self._parse(fp)
             except ValueError as err:
-                raise IOError('Parsing configuration at "{}": {}'
+                raise ValueError('Parsing configuration at "{}": {}'
                               .format(self.filename, err))
 
     def save(self):
@@ -96,11 +102,7 @@ class DMFConfig(object):
             fp = open(self.filename, 'w')
         except IOError:
             raise
-        try:
-            self._write(fp)
-        except ValueError as err:
-            raise IOError('Failed to write in YAML format to <{}>: {}'
-                          .format(self.filename, err))
+        yaml.dump(self.c, fp)
 
     @property
     def workspace(self):
@@ -115,9 +117,6 @@ class DMFConfig(object):
             for k, v in six.iteritems(y):
                 if k in self._keys:
                     self.c[k] = v
-
-    def _write(self, fp):
-        yaml.dump(self.c, fp)
 
 
 class DMF(workspace.Workspace, HasTraits):
