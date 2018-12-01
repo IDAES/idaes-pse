@@ -13,6 +13,11 @@
 """
 Exception classes.
 """
+import logging
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 class DMFError(Exception):

@@ -15,17 +15,19 @@ Resource database.
 """
 # system
 from datetime import datetime
+import logging
 # third party
 import pendulum
 import six
 from tinydb import TinyDB, Query
 # local
-from .util import get_logger
 from . import errors
 from .resource import Resource
 from .resource import Triple, triple_from_resource_relations
 
-_log = get_logger('resourcedb')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 class ResourceDB(object):

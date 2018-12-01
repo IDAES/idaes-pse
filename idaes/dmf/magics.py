@@ -15,6 +15,7 @@ Jupyter magics for the DMF.
 """
 # stdlib
 import inspect
+import logging
 import os
 import webbrowser
 # third-party
@@ -23,11 +24,11 @@ from IPython.core.magic import Magics, magics_class, line_magic
 from IPython.display import display_markdown
 import six
 # local
-from . import dmfbase, util, errors, help, workspace
+from . import dmfbase, errors, help, workspace
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
-_log = util.get_logger('magics')
+_log = logging.getLogger(__name__)
 
 
 @magics_class

@@ -17,16 +17,14 @@ Search through the code and index static information in the DMF.
 import glob
 import importlib
 import inspect
+import logging
 import os
 import pprint
 import re
-# package
-from idaes.dmf import util
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
-# logging
-_log = util.get_logger('codesearch')
+_log = logging.getLogger(__name__)
 
 
 class Walker(object):

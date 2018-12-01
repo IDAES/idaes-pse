@@ -14,6 +14,7 @@
 Workspace classes and functions.
 """
 # stdlib
+import logging
 import os
 import uuid
 import yaml
@@ -23,9 +24,10 @@ import six
 # local
 from .errors import ParseError, WorkspaceError, WorkspaceNotFoundError, \
     WorkspaceConfNotFoundError, WorkspaceConfMissingField
-from .util import get_logger
 
-_log = get_logger('workspace')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -60,8 +62,8 @@ CONFIG_SCHEMA = {
 class Fields(object):
     """Workspace configuration fields.
     """
-    DOC_HTML_PATH = 'htmldocs'   # path to documentation html dir
-    LOG_CONF = 'logging'         # logging config
+    DOC_HTML_PATH = 'htmldocs'  # path to documentation html dir
+    LOG_CONF = 'logging'  # logging config
 
 
 class Workspace(object):
@@ -143,9 +145,9 @@ class Workspace(object):
     #: Name of ID field
     ID_FIELD = '_id'
 
-    CONF_NAME = 'name'          #: Configuration field for name
-    CONF_DESC = 'description'   #: Configuration field for description
-    CONF_CREATED = 'created'    #: Configuration field for created date
+    CONF_NAME = 'name'  #: Configuration field for name
+    CONF_DESC = 'description'  #: Configuration field for description
+    CONF_CREATED = 'created'  #: Configuration field for created date
     CONF_MODIFIED = 'modified'  #: Configuration field for modified date
 
     def __init__(self, path, create=False, add_defaults=False):
@@ -172,8 +174,8 @@ class Workspace(object):
                 if os.path.exists(self._conf):
                     raise WorkspaceError('Existing configuration would be '
                                          'overwritten: {}'.format(self._conf))
-                _log.warn('Using existing path for new DMF workspace: {}'
-                          .format(self._wsdir))
+                _log.warning('Using existing path for new DMF workspace: {}'
+                             .format(self._wsdir))
             self._create_new_config(add_defaults)
         else:
             # assert that the workspace exists
@@ -238,7 +240,7 @@ class Workspace(object):
                 if key in d:
                     del d[key]
                 else:
-                    _log.warn('Cannot remove "{}": no such key'.format(key))
+                    _log.warning('Cannot remove "{}": no such key'.format(key))
         d.update(values)
         self._write_conf(d)
         self._cached_conf = d
@@ -340,7 +342,6 @@ class Workspace(object):
 
 
 class WorkspaceConfig(object):
-
     DEFAULTS = {'string': '',
                 'number': 0,
                 'boolean': False,
@@ -374,8 +375,8 @@ class WorkspaceConfig(object):
             type_ = item['type']
             # morph unknown types to string
             if type_ not in self.DEFAULTS:
-                _log.warn('Unknown schema type "{}". Using "string" instead.'
-                          .format(type_))
+                _log.warning('Unknown schema type "{}".'
+                             'Using "string" instead'.format(type_))
                 type_ = 'string'
             # figure out value type, look for default values
             default_value = None

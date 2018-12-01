@@ -16,6 +16,7 @@ Data Management Framework
 # stdlib
 import logging
 import os
+import re
 import shutil
 import sys
 import uuid
@@ -28,7 +29,7 @@ import yaml
 # local
 from . import errors, workspace, resourcedb, propdata
 from . import resource
-from .util import get_logger, mkdir_p
+from .util import mkdir_p
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
@@ -234,9 +235,9 @@ class DMF(workspace.Workspace, HasTraits):
         for lognm in conf.keys():
             name = lognm.lower()
             if name == 'root':
-                log = get_logger()
+                log = self._get_logger()
             else:
-                log = get_logger(lognm)
+                log = self._get_logger(lognm)
             subconf = conf[lognm]
             if 'output' in subconf:
                 dest = subconf['output']
@@ -260,6 +261,23 @@ class DMF(workspace.Workspace, HasTraits):
                     raise ValueError('Bad level "{}" for logger "{}". Must be '
                                      'one of: {}'.format(levelnm, lognm, opt))
                 log.setLevel(level)
+
+    def _get_logger(self, name=None):
+        """Get a logger by absolute or short-hand name.
+        """
+        # idaes.<whatever> just use name as-is
+        if re.match(r'idaes\.[a-zA-Z_.]+', name):
+            fullname = name
+        # .<whatever>, root at idaes
+        elif re.match(r'\.[a-zA-Z_.]+', name):
+            fullname = 'idaes' + name
+        # some special names
+        elif name in ('dmf', 'core', 'models', 'ui'):
+            fullname = 'idaes.' + name
+        # when in doubt just take value as-is
+        else:
+            fullname = name
+        return logging.getLogger(fullname)
 
     def _validate_conf(self, c):
         if self.CONF_HELP_PATH not in c:

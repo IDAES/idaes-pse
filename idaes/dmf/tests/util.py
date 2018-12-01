@@ -30,8 +30,15 @@ scratchdir = None
 
 
 def init_logging():
+    """Init logging for tests.
+    """
+    log = logging.getLogger('idaes.dmf')
+    h = logging.StreamHandler()
+    f = logging.Formatter(
+        fmt='%(asctime)s %(name)s [%(levelname)s] %(message)s')
+    h.setFormatter(f)
+    log.addHandler(h)
     if os.environ.get('TEST_DEBUG', ''):
-        log = logging.getLogger('idaes.dmf')
         log.setLevel(logging.DEBUG)
 
 

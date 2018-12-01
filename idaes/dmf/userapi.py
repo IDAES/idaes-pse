@@ -14,6 +14,7 @@
 Data Management Framework high-level functions.
 """
 # stdlib
+import logging
 import sys
 # package
 from idaes.dmf import DMF
@@ -21,6 +22,8 @@ from idaes.dmf import errors
 from idaes.dmf import propindex
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 def get_workspace(path='', name=None, desc=None, create=False, errs=None,

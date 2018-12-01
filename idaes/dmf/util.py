@@ -26,39 +26,9 @@ import time
 # third party
 import psutil
 
-_LOG_ROOT = 'DMF'
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
-# one-time log setup
-h = logging.StreamHandler()
-f = logging.Formatter(fmt='%(asctime)s %(name)s [%(levelname)s] %(message)s')
-h.setFormatter(f)
-logging.getLogger(_LOG_ROOT).addHandler(h)
-
-
-def get_logger(name=''):
-    """Create and return a DMF logger instance.
-
-    The name should be lowercase letters like 'dmf' or 'propdb'.
-
-    Leaving the name blank will get the root logger.
-    Also, any non-string name will get the root logger.
-    """
-    if name:
-        try:
-            if name.startswith(_LOG_ROOT + '.'):
-                path, propagate = name, True
-            else:
-                path, propagate = _LOG_ROOT + '.' + name, True
-        except (AttributeError, TypeError):  # non-string name
-            path, propagate = _LOG_ROOT, False
-    else:
-        path, propagate = _LOG_ROOT, False
-    logger = logging.getLogger(path)
-    logger.propagate = propagate
-    return logger
-
-
-_log = get_logger('util')
+_log = logging.getLogger(__name__)
 
 
 def strlist(x, sep=', '):
