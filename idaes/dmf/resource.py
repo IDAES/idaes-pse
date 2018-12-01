@@ -62,6 +62,8 @@ RESOURCE_SCHEMA = {
     "id": "http://idaes.org",
     "definitions": {
         "SemanticVersion": {
+            "title": "Version",
+            "description": "Resource version using semantic versioning",
             "type": "array",
             "items": [
                 {"type": "integer"},
