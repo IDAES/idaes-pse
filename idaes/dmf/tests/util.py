@@ -29,12 +29,10 @@ from mock import MagicMock, patch
 scratchdir = None
 
 
-def get_logger():
-    log = None
+def init_logging():
     if os.environ.get('TEST_DEBUG', ''):
-        log = util.get_logger()
+        log = logging.getLogger('idaes.dmf')
         log.setLevel(logging.DEBUG)
-    return log
 
 
 def eq_(var, val, msg=None):

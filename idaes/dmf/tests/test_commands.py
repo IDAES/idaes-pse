@@ -21,14 +21,12 @@ import tempfile
 import pytest
 #
 from idaes.dmf import dmfbase, commands, errors, workspace, util
+from .util import init_logging
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
-__version__ = '0.0.1'
 
-
-if os.environ.get('TEST_DEBUG', ''):
-    util.get_logger().setLevel(logging.DEBUG)
-
+init_logging()
+_log = logging.getLogger(__name__)
 
 @pytest.fixture(scope='function')
 def wspath():

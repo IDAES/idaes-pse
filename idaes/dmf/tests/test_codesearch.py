@@ -14,6 +14,7 @@
 Tests for module 'codesearch'.
 """
 # stdlib
+import logging
 import os
 import random
 import shutil
@@ -25,8 +26,13 @@ import pytest
 import idaes
 from idaes.dmf import codesearch
 from idaes.core import property_meta
+from .util import init_logging
 
-random.seed()
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+init_logging()
+_log = logging.getLogger(__name__)
+
 
 # Helper classes and functions
 
@@ -147,6 +153,7 @@ def test_warnings():
 
 @pytest.fixture
 def dummy_package():
+    random.seed()
     saved_sys_path = sys.path.copy()
     # build a bad module in a temporary package
     d = tempfile.mkdtemp()

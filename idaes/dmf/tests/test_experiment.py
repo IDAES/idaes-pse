@@ -13,9 +13,16 @@
 """
 Tests for idaes.dmf.experiment module
 """
+import logging
 import pytest
 from idaes.dmf import experiment, errors, resource
 from .util import tmp_dmf   #noqa -- this is a fixture
+from .util import init_logging, tmp_dmf
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+init_logging()
+_log = logging.getLogger(__name__)
 
 
 def test_init(tmp_dmf):

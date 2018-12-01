@@ -20,16 +20,14 @@ import tempfile
 # third-party
 import pytest
 # package
-from idaes.dmf import util, resource
-from idaes.dmf import propdata, errors
-from .util import tmp_dmf
+from idaes.dmf import resource
+from idaes.dmf import errors
+from .util import init_logging, tmp_dmf
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
-log = None
-if os.environ.get('TEST_DEBUG', ''):
-    log = util.get_logger()
-    log.setLevel(logging.DEBUG)
+init_logging()
+_log = logging.getLogger(__name__)
 
 prop_json = [
     {
@@ -217,9 +215,9 @@ def test_dmf_find(tmp_dmf):
         ids = add_resources(tmp_dmf, num=n, tags=['all', batch],
                             version_info={'version': version})
         all_ids.extend(ids)
-    if log:
+    if _log.isEnabledFor(logging.DEBUG):
         r = tmp_dmf.fetch_one(all_ids[0])
-        log.debug("First resource:\n{}".format(r))
+        _log.debug("First resource:\n{}".format(r))
     # Find all records, 2 ways
     total_num = batchsz * numbatches
     result = list(tmp_dmf.find())

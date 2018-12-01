@@ -30,7 +30,9 @@ from . import errors, workspace, resourcedb, propdata
 from . import resource
 from .util import get_logger, mkdir_p
 
-_log = get_logger('dmf')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 class DMFConfig(object):

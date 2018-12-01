@@ -15,6 +15,7 @@ Tests for idaes.dmf.util module
 """
 import datetime
 import hashlib
+import logging
 import os
 import shutil
 import time
@@ -22,18 +23,10 @@ import time
 import pytest
 
 from idaes.dmf import util
-from .util import get_logger
+from .util import init_logging
 
-log = get_logger()
-
-
-def test_get_logger():
-    log1 = util.get_logger(None)
-    assert log1 is not None
-    log2 = util.get_logger(-1)
-    assert log2 is not None
-    log3 = util.get_logger('hello')
-    assert log3 is not None
+init_logging()
+_log = logging.getLogger(__name__)
 
 
 def test_strlist():
