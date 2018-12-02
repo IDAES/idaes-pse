@@ -161,6 +161,7 @@ class Workspace(object):
             WorkspaceNotFoundError: if ws is not found (and create is false)
             WorkspaceConfNotFoundError: if ws config is not found (& ~create)
             WorkspaceConfMissingField: if there is no ID field.
+            DMFError: Anything else
         """
         path = os.path.abspath(path)
         self._wsdir = path
@@ -176,7 +177,11 @@ class Workspace(object):
                                          'overwritten: {}'.format(self._conf))
                 _log.warning('Using existing path for new DMF workspace: {}'
                              .format(self._wsdir))
-            self._create_new_config(add_defaults)
+            try:
+                self._create_new_config(add_defaults)
+            except OSError as err:
+                raise WorkspaceError('While creating new workspace '
+                                     'configuration: {}'.format(err))
         else:
             # assert that the workspace exists
             try:
@@ -312,9 +317,16 @@ class Workspace(object):
             self._cached_conf = contents
         else:
             contents = self._cached_conf
-        return contents.copy()
+        if isinstance(contents, str):
+            raise ParseError('File contents cannot be simple str ({})'
+                             .format(contents))
+        else:
+            return contents.copy()
 
     def _expand_path(self, path):
+        # leave paths bracketed by _underscores_ alone
+        if len(path) > 2 and path[0] == '_' and path[-1] == '_':
+            return path
         return os.path.realpath(path.format(
             ws_root=self.root,
             dmf_root=self._install_dir))

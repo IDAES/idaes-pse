@@ -161,10 +161,8 @@ class DMF(workspace.Workspace, HasTraits):
             **ws_kwargs: Keyword arguments for :meth:`workspace.Workspace()`
                          constructor.
         Raises:
-            errors.DMFWorkspaceNotFoundError: If workspace is not found, and
-                 the `create` option was not given in the keyword args.
-            errors.DMFBadWorkspaceError: If workspace is found, but there
-                 are errors with its configuration.
+            WorkspaceError: Any error that could be raised by the Workspace
+                            superclass.
         """
         # get global configuration
         conf = DMFConfig(defaults={})
@@ -174,33 +172,19 @@ class DMF(workspace.Workspace, HasTraits):
         # set up workspace
         ws_kwargs['create'] = create
         try:
-            workspace.Workspace.__init__(self, path, **ws_kwargs)
-        except OSError as err:
-            raise errors.DMFBadWorkspaceError(path,
-                                              'Cannot create: {}'.format(err))
-        except errors.WorkspaceNotFoundError:
-            raise errors.DMFWorkspaceNotFoundError(path)
-        except errors.WorkspaceConfNotFoundError:
-            raise errors.DMFBadWorkspaceError(path, 'Configuration not found')
-        except errors.WorkspaceConfMissingField as err:
-            raise errors.DMFBadWorkspaceError(path, str(err))
-        try:
-            meta_dict = self.meta  # call associated code
+            super(DMF, self).__init__(path, **ws_kwargs)
         except (errors.ParseError, ValueError) as err:
-            msg = 'Configuration parse error: {}'.format(err)
-            raise errors.DMFBadWorkspaceError(path, msg)
-        try:
-            self._validate_conf(meta_dict)
-        except ValueError as err:
-            msg = 'Configuration validation error: {}'.format(err)
-            raise errors.DMFBadWorkspaceError(path, msg)
+            msg = 'Configuration "{}", parse error: {}'.format(path, err)
+            raise errors.WorkspaceError(msg)
+        self._validate_conf(self.meta)
         # set up logging
-        if workspace.Fields.LOG_CONF in meta_dict:
+        if workspace.Fields.LOG_CONF in self.meta:
             try:
-                self._configure_logging(meta_dict[workspace.Fields.LOG_CONF])
+                self._configure_logging()
             except ValueError as err:
-                msg = 'Configuration, logging section, error: {}'.format(err)
-                raise errors.DMFBadWorkspaceError(path, msg)
+                msg = 'Configuration "{}", logging section error: {}'.format(
+                    path, err)
+                raise errors.WorkspaceError(msg)
         # set up rest of DMF
         path = os.path.join(self.root, self.db_file)
         self._db = resourcedb.ResourceDB(path)
@@ -217,7 +201,7 @@ class DMF(workspace.Workspace, HasTraits):
             meta[_w.CONF_DESC] = desc
         self.set_meta(meta)
 
-    def _configure_logging(self, conf):
+    def _configure_logging(self):
         """Configure logging for DMF.
 
         Expected schema::
@@ -226,11 +210,10 @@ class DMF(workspace.Workspace, HasTraits):
                 level: <levelname>              default=NOTSET
                 output: file|_stdout_|_stderr_  default=_stderr_
 
-        Args:
-            conf (dict): Configuration dict
         Raises:
             ValueError: for bad configuration values
         """
+        conf = self.meta[workspace.Fields.LOG_CONF]
         for lognm in conf.keys():
             name = lognm.lower()
             if name == 'root':
@@ -261,11 +244,14 @@ class DMF(workspace.Workspace, HasTraits):
                                      'one of: {}'.format(levelnm, lognm, opt))
                 log.setLevel(level)
 
-    def _get_logger(self, name=None):
+    @staticmethod
+    def _get_logger(name=None):
         """Get a logger by absolute or short-hand name.
         """
+        if name is None:
+            fullname = 'idaes'
         # idaes.<whatever> just use name as-is
-        if re.match(r'idaes\.[a-zA-Z_.]+', name):
+        elif re.match(r'idaes\.[a-zA-Z_.]+', name):
             fullname = name
         # .<whatever>, root at idaes
         elif re.match(r'\.[a-zA-Z_.]+', name):
@@ -280,10 +266,10 @@ class DMF(workspace.Workspace, HasTraits):
 
     def _validate_conf(self, c):
         if self.CONF_HELP_PATH not in c:
-            _log.warn('Path to built HTML documentation is not set. '
-                      'The DMF "help" command will not work. To set '
-                      'this path, set "{}" in the DMF configuration file.'
-                      .format(self.CONF_HELP_PATH))
+            _log.warning('Path to built HTML documentation is not set. '
+                         'The DMF "help" command will not work. To set '
+                         'this path, set "{}" in the DMF configuration file.'
+                         .format(self.CONF_HELP_PATH))
 
     @default(CONF_DB_FILE)
     def _default_db_file(self):
