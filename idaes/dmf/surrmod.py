@@ -24,7 +24,7 @@ from pandas import DataFrame
 from idaes.dmf import resource, propdata
 # from idaes.dmf.experiment import Experiment
 # alamo
-from idaes.dmf import errors, util
+from idaes.dmf import errors
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 

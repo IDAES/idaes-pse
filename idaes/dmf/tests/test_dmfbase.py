@@ -350,7 +350,7 @@ def test_dmf_update_newtype(tmp_dmf):
         assert False, 'DMFError expected for update() with new type'
 
 
-def test_dmf_delete(tmp_dmf):
+def test_dmf_remove(tmp_dmf):
     n = 10
     ids = add_resources(tmp_dmf, num=n)
     assert tmp_dmf.count() == n
@@ -358,6 +358,26 @@ def test_dmf_delete(tmp_dmf):
         n = n - 1
         tmp_dmf.remove(ids[n])
         assert tmp_dmf.count() == n
+
+
+def test_dmf_remove_filter(tmp_dmf):
+    n = 10
+    ids = add_resources(tmp_dmf, num=n)
+    assert tmp_dmf.count() == n
+    # remove half of the added resources
+    print('@@ remove half')
+    tmp_dmf.remove(filter_dict={'data.i': {'$lt': n/2}})
+    n2 = tmp_dmf.count()
+    assert n2 == n / 2
+    # try to remove the same group (should do nothing
+    print('@@ remove more')
+    tmp_dmf.remove(filter_dict={'data.i': {'$lt': n/2}})
+    n2 = tmp_dmf.count()
+    assert tmp_dmf.count() == n / 2
+    # remove the rest
+    print('@@ remove the rest')
+    tmp_dmf.remove(filter_dict={'data.i': {'$ge': n/2}})
+    assert tmp_dmf.count() == 0
 
 
 def test_dmf_find(tmp_dmf):
@@ -386,6 +406,12 @@ def test_dmf_find(tmp_dmf):
     # Find with 'all'
     result = list(tmp_dmf.find({'tags!': ['all', 'batch1']}))
     assert len(result) == batchsz
+
+
+def test_dmf_str(tmp_dmf):
+    s = str(tmp_dmf)
+    assert len(s) > 0
+
 
 #########################
 # DMFConfig             #

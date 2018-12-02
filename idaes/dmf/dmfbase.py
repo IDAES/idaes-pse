@@ -88,7 +88,9 @@ class DMFConfig(object):
                 raise IOError('File not found')
             fp = open(self.filename, 'rb')
         except IOError as err:
-            pass
+            _log.warning('Unable to open configuration file for reading: {}. '
+                         'Will use default configuration values.'
+                         .format(err))
         # if we got a config file, parse it
         if fp:
             try:
@@ -386,16 +388,24 @@ class DMF(workspace.Workspace, HasTraits):
     def count(self):
         return len(self._db)
 
-    def fetch_one(self, rid):
+    def fetch_one(self, rid, id_only=False):
         """Fetch one resource, from its identifier.
 
         Args:
             rid (str): Resource identifier
+            id_only (bool): If true, return only the identifier of each
+                resource; otherwise a Resource object is returned.
         Returns:
             (resource.Resource) The found resource, or None if no match
         """
-        item = self._db.find_one({resource.Resource.ID_FIELD: rid})
-        return self._postproc_resource(item)
+        item = self._db.find_one({resource.Resource.ID_FIELD: rid},
+                                 id_only=id_only)
+        if item is None:
+            return None
+        elif id_only:
+            return item
+        else:
+            return self._postproc_resource(item)
 
     def find(self, filter_dict=None, id_only=False):
         """Find and return resources matching the filter.
@@ -482,36 +492,39 @@ class DMF(workspace.Workspace, HasTraits):
         """
         if not any((identifier, filter_dict)):
             return None
+        id_list, rid_list = None, None
         if identifier:
-            id_list = [self.fetch_one(identifier).id]
+            id_one = self.fetch_one(identifier, id_only=True)
+            id_list = None if id_one is None else [id_one]
+            rid_list = [identifier]
         else:
-            id_list = self.find(filter_dict=filter_dict, id_only=True)
+            id_list = list(self.find(filter_dict=filter_dict, id_only=True))
+            if id_list:
+                rid_list = []
+                for i in id_list:
+                    rsrc = self._db.get(i)
+                    rid_list.append(rsrc.id)
         if not id_list:
+            _log.info('Cannot remove resource-id={} filter={}: Not found'
+                      .format(identifier, filter_dict))
             return
-        self._db.delete(idlist=id_list)
-        # If requested, remove this resource from all the relations where it
-        # was a subject or object
+        self._db.delete(idlist=id_list, internal_ids=True)
+        # If requested, remove deleted resources from all the relations
+        # where it was a subject or object
         if update_relations:
+            # look at all resources in DB
             for rsrc in self.find():
-                keep = [rel for rel in rsrc.v['relations']
-                        if rel['identifier'] != identifier]
-                # if anything was removed, update the resource
+                # for each one figure out which relations to keep
+                keep = []
+                for rel in rsrc.v['relations']:
+                    # if none of the removed resource ids are present, keep it
+                    if rel['identifier'] not in rid_list:
+                        keep.append(rel)
+                # if we didn't keep all the relations, update the resource
                 if len(keep) < len(rsrc.v['relations']):
                     rsrc.v['relations'] = keep
                     # save back to DMF
                     self.update(rsrc)
-
-        if identifier is not None:
-            rsrc = self.fetch_one(identifier)
-            if rsrc is None:
-                _log.error('Cannot find resource id={} to remove'.format(
-                    identifier))
-                return None
-            self._db.delete(identifier)
-        else:
-            idlist = self.find(filter_dict=filter_dict, id_only=True)
-            for eid in idlist:
-                self.remove(identifier=eid, update_relations=update_relations)
 
     def update(self, rsrc, sync_relations=False, upsert=False):
         """Update/insert stored resource.
