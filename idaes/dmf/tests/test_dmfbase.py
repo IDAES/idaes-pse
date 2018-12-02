@@ -23,7 +23,7 @@ import pytest
 from idaes.dmf import resource
 from idaes.dmf import errors
 from idaes.dmf.dmfbase import DMFConfig, DMF
-from .util import init_logging, tmp_dmf
+from .util import init_logging, tmp_dmf, TempDir
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
@@ -136,6 +136,93 @@ def test_find_propertydata(tmp_dmf):
 
 def test_dmf_init_minimal():
     pytest.raises(errors.DMFError, DMF)
+
+
+def test_dmf_init_strfile():
+    with TempDir() as tmpdir:
+        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w').write('Hello')
+        pytest.raises(errors.WorkspaceError, DMF, path=tmpdir)
+
+
+def test_dmf_init_badfile():
+    with TempDir() as tmpdir:
+        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w')\
+            .write('Hello: There')
+        pytest.raises(errors.WorkspaceError, DMF, path=tmpdir)
+
+
+def test_dmf_init_logconf():
+    with TempDir() as tmpdir:
+        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w').write(
+            '''
+_id: this-is-a-temporary-config
+logging:
+    idaes.dmf.dmfbase:
+        level: debug
+        output: _stderr_
+    root:
+        output: _stdout_
+    dmf:
+        output: _stdout_
+    .dmf.experiment:
+        output: _stdout_
+    # equivalent to previous
+    idaes.dmf.experiment:
+        output: /tmp/experiment.log
+    # user
+    crazy.little.logger:
+        level: error
+        output: _stderr_
+        ''')
+        d = DMF(path=tmpdir)
+
+
+def test_dmf_init_logconf_badlevel():
+    with TempDir() as tmpdir:
+        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w').write(
+            '''
+_id: this-is-a-temporary-config
+logging:
+    root:
+        level: debug
+    idaes.dmf.util:
+        level: "This is not a valid level"
+        output: _stderr_
+        ''')
+        pytest.raises(errors.DMFError, DMF, path=tmpdir)
+
+
+def test_dmf_init_logconf_badfile():
+    with TempDir() as tmpdir:
+        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w').write(
+            '''
+_id: this-is-a-temporary-config
+logging:
+    root:
+        level: debug
+    idaes.dmf.util:
+        output: {}
+        '''.format(os.path.join(os.path.sep, *map(str, range(10)))))
+        pytest.raises(errors.DMFError, DMF, path=tmpdir)
+
+
+def test_dmf_init_workspace_name():
+    with TempDir() as tmpdir:
+        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w').write(
+            '_id: this-is-a-temporary-config')
+        d = DMF(path=tmpdir, name='my workspace',
+                desc='It is a great place to work')
+
+
+def test_dmf_change_traits():
+    with TempDir() as tmpdir:
+        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w').write(
+            '_id: this-is-a-temporary-config')
+        d = DMF(path=tmpdir, name='my workspace',
+                desc='It is a great place to work')
+        assert d.db_file
+        d.db_file = 'newdb.json'
+        assert d.db_file == 'newdb.json'
 
 
 def test_dmf_add(tmp_dmf):
