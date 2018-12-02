@@ -115,7 +115,7 @@ class DmfMagics(Magics):
 
         try:
             self._dmf = dmfbase.DMF(path, **kwargs)
-        except errors.DMFWorkspaceNotFoundError:
+        except errors.WorkspaceNotFoundError:
             if not create:
                 msg = 'Workspace not found at path "{}". ' \
                       'If you want to create a new workspace, add the word ' \
@@ -124,7 +124,7 @@ class DmfMagics(Magics):
             else:
                 return 'Workspace could not be created at path "{}"'\
                        .format(path)
-        except errors.DMFBadWorkspaceError as err:
+        except errors.DMFError as err:
             return 'Error initializing workspace: {}'.format(err)
 
         self._dmf.set_meta({'name': os.path.basename(path)})

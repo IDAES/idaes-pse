@@ -53,7 +53,7 @@ def get_workspace(path='', name=None, desc=None, create=False, errs=None,
         if errs is None:
             errs = sys.stdout
         msg = 'Error creating DMF workspace\n'
-        if isinstance(err, errors.DMFBadWorkspaceError) and not create:
+        if isinstance(err, errors.DMFError) and not create:
             msg += 'Directory not found, and "create" flag is False\n'
             msg += 'If you want to create the workspace, try again with ' \
                    'create=True\n'
