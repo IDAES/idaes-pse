@@ -259,6 +259,73 @@ def test_dmf_add(tmp_dmf):
     tmp_dmf.add(r)
 
 
+def test_dmf_add_duplicate(tmp_dmf):
+    r = resource.Resource(value={'desc': 'test resource'})
+    tmp_dmf.add(r)
+    pytest.raises(errors.DuplicateResourceError, tmp_dmf.add, r)
+
+
+def test_dmf_add_filesystem_err(tmp_dmf):
+    r = resource.Resource(value={'desc': 'test resource'})
+    # create datafile
+    tmpf1 = tempfile.NamedTemporaryFile(delete=False)
+    tmpf1.close()
+    r.v['datafiles'].append({'path': tmpf1.name})
+    # now, to get an error, make the DMF datafile path unwritable
+    path = os.path.join(tmp_dmf.root, tmp_dmf.datafile_dir)
+    os.chmod(path, 000)
+    # then try to add the resource, which includes copying the file into
+    # the (now unwritable) directory
+    pytest.raises(errors.DMFError, tmp_dmf.add, r)
+    # make the directory writable again so we can remove it
+    os.chmod(path, 0o777)
+
+
+def test_dmf_add_tmp_no_copy(tmp_dmf):
+    r = resource.Resource(value={'desc': 'test resource'})
+    # create datafile, with temporary-file flag turned on
+    tmpdir = tempfile.mkdtemp()
+    tmpfile = os.path.join(tmpdir, 'foo')
+    open(tmpfile, 'w')
+    r.v['datafiles'].append({'path': tmpfile, 'is_tmp': True,
+                             'do_copy': True})
+    # we want an error trying to COPY this file; to get this,
+    # change the permissions of the directory
+    os.chmod(tmpdir, 0o400)
+    ok = False
+    try:
+        tmp_dmf.add(r)
+    except errors.DMFError:
+        ok = True
+    finally:
+        # change it back and clean up
+        os.chmod(tmpdir, 0o700)
+        os.unlink(tmpfile)
+        os.rmdir(tmpdir)
+    if not ok:
+        assert False, "DMFError expected"
+
+
+def test_dmf_add_tmp_no_unlink(tmp_dmf):
+    r = resource.Resource(value={'desc': 'test resource'})
+    # create datafile, with temporary-file flag turned on
+    tmpdir = tempfile.mkdtemp()
+    tmpfile = os.path.join(tmpdir, 'foo')
+    open(tmpfile, 'w')
+    r.v['datafiles'].append({'path': tmpfile, 'is_tmp': True,
+                             'do_copy': True})
+    # we want an error trying to UNLINK this file; to get this,
+    # change the permissions of the dir read-only
+    os.chmod(tmpdir, 0o500)
+    try:
+        tmp_dmf.add(r)
+    finally:
+        # change it back and clean up
+        os.chmod(tmpdir, 0o700)
+        os.unlink(tmpfile)
+        os.rmdir(tmpdir)
+
+
 def test_dmf_update(tmp_dmf):
     ids = add_resources(tmp_dmf, 2)
     r1 = tmp_dmf.fetch_one(ids[0])

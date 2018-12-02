@@ -270,6 +270,23 @@ class ResourceDB(object):
     #     return r
     #
     def put(self, resource):
+        """Put this resource into the database.
+
+        Args:
+            resource (Resource): The resource to add
+
+        Returns:
+            None
+
+        Raises:
+            errors.DuplicateResourceError: If there is already a resource
+                in the database with the same "id".
+        """
+        # check for same id
+        qry = Query()
+        if self._db.contains(qry.id_ == resource.id):
+            raise errors.DuplicateResourceError("put", resource.id)
+        # add resource
         self._db.insert(resource.v)
 
     def delete(self, id_=None, idlist=None, filter_dict=None):

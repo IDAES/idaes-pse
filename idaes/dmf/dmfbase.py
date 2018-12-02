@@ -95,7 +95,7 @@ class DMFConfig(object):
                 self._parse(fp)
             except ValueError as err:
                 raise ValueError('Parsing configuration at "{}": {}'
-                              .format(self.filename, err))
+                                 .format(self.filename, err))
 
     def save(self):
         try:
@@ -347,7 +347,15 @@ class DMF(workspace.Workspace, HasTraits):
                 filepath = datafile['path']
                 filedir, filename = os.path.split(filepath)
                 copydir = os.path.join(ddir, filename)
-                shutil.copy2(filepath, copydir)
+                _log.debug('Copying datafile "{}" to directory "{}"'
+                           .format(filepath, copydir))
+                try:
+                    shutil.copy2(filepath, copydir)
+                except OSError as err:
+                    msg = 'Cannot copy datafile from "{}" to DMF ' \
+                          'directory "{}": {}'.format(filepath, copydir, err)
+                    _log.error(msg)
+                    raise errors.DMFError(msg)
                 # The `is_tmp` flag means to remove the original resource file
                 # after the copy is done.
                 if 'is_tmp' in datafile:
@@ -355,6 +363,8 @@ class DMF(workspace.Workspace, HasTraits):
                 else:
                     is_tmp = rsrc.is_tmp
                 if is_tmp:
+                    _log.debug('Temporary datafile flag is on, removing '
+                               'original datafile "{}"'.format(filepath))
                     try:
                         os.unlink(filepath)
                     except OSError as err:
@@ -368,8 +378,9 @@ class DMF(workspace.Workspace, HasTraits):
                     del datafile['do_copy']
             else:
                 datafile['is_copy'] = False
-            # For idempotence, turn off these flags post-copy
-            rsrc.do_copy = rsrc.is_tmp = False
+        # For idempotence, turn off these flags post-copy
+        rsrc.do_copy = rsrc.is_tmp = False
+        # Make sure datafiles dir is in sync
         rsrc.v['datafiles_dir'] = ddir
 
     def count(self):
@@ -385,18 +396,6 @@ class DMF(workspace.Workspace, HasTraits):
         """
         item = self._db.find_one({resource.Resource.ID_FIELD: rid})
         return self._postproc_resource(item)
-
-    def fetch_many(self, rid_list):
-        """Fetch multiple resources, by their identifiers.
-
-        Args:
-            rid_list (list): List of integer resource identifers
-
-        Returns:
-            (list of resource.Resource) List of found resources (may be empty)
-        """
-        for rid in rid_list:
-            yield self.fetch_one(rid)
 
     def find(self, filter_dict=None, id_only=False):
         """Find and return resources matching the filter.
