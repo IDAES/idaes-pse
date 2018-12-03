@@ -56,7 +56,7 @@ _log = logging.getLogger(__name__)
 
     ControlVolume1D should be used for any control volume with a defined volume
     and distinct inlets and outlets where there is a single spatial domain
-    parallel to the mateiral flow direction. This encompases unit operations
+    parallel to the material flow direction. This encompases unit operations
     such as plug flow reactors and pipes.""")
 class ControlVolume1dData(ControlVolumeBase):
     """
@@ -80,7 +80,7 @@ class ControlVolume1dData(ControlVolumeBase):
     def add_geometry(self,
                      length_domain=None,
                      length_domain_set=[0.0, 1.0],
-                     flow_direction=FlowDirection.forward,):
+                     flow_direction=FlowDirection.forward):
         """
         Method to create spatial domain and volume Var in ControlVolume.
 
@@ -168,7 +168,7 @@ class ControlVolume1dData(ControlVolumeBase):
         tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = False
-        
+
         self.properties = self.config.property_package.state_block_class(
                 self.time_ref,
                 self.length_domain,
@@ -331,7 +331,7 @@ class ControlVolume1dData(ControlVolumeBase):
                          self.length_domain,
                          self.phase_list_ref,
                          self.component_list_ref,
-                         doc="Mateiral flow linking constraints")
+                         doc="Material flow linking constraints")
         def material_flow_linking_constraints(b, t, x, p, j):
             return b._flow_terms[t, x, p, j] == \
                 b.properties[t, x].get_material_flow_terms(p, j)
@@ -729,7 +729,7 @@ class ControlVolume1dData(ControlVolumeBase):
                          self.length_domain,
                          self.phase_list_ref,
                          self.component_list_ref,
-                         doc="Mateiral flow linking constraints")
+                         doc="Material flow linking constraints")
         def material_flow_linking_constraints(b, t, x, p, j):
             return b._flow_terms[t, x, p, j] == \
                 b.properties[t, x].get_material_flow_terms(p, j)
@@ -1536,7 +1536,6 @@ class ControlVolume1dData(ControlVolumeBase):
                 "{} OD control volumes do not support "
                 "add_total_momentum_balances."
                 .format(self.name))
-
 
     def apply_transformation(self,
                              transformation_method="dae.finite_difference",

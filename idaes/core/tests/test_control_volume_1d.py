@@ -466,7 +466,7 @@ def test_add_reaction_blocks():
     assert len(m.fs.cv.reactions) == 2
     assert len(m.fs.cv.reactions[0, 0].config) == 3
     assert m.fs.cv.reactions[0, 0].config.state_block == m.fs.cv.properties
-    assert m.fs.cv.reactions[0, 0]._state == m.fs.cv.properties[0, 0]
+    assert m.fs.cv.reactions[0, 0].state_ref == m.fs.cv.properties[0, 0]
     assert m.fs.cv.reactions[0, 0].config.has_equilibrium is False
     assert m.fs.cv.reactions[0, 0].config.parameters == m.fs.rp
 

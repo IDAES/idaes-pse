@@ -22,8 +22,13 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, log, Param, \
-                          PositiveReals, Reals, Set, value, Var
+from pyomo.environ import (Constraint,
+                           Param,
+                           PositiveReals,
+                           Reals,
+                           Set,
+                           value,
+                           Var)
 from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
@@ -31,8 +36,7 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBase,
                         StateBlockDataBase,
                         StateBlockBase)
-from idaes.core.util.initialization import (evaluate_variable_from_constraint,
-                                            solve_indexed_blocks)
+from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 
 # Some more inforation about this module
@@ -64,8 +68,10 @@ class PhysicalParameterData(PhysicalParameterBase):
         self.phase_list = Set(initialize=['Liq'])
 
         # Component list - a list of component identifiers
-        self.component_list = Set(initialize=['H2O', 'NaOH', 'AceticAcid',
-                                              'EthylAcetate'])
+        self.component_list = Set(initialize=['H2O', 'NaOH',
+                                              'EthylAcetate',
+                                              'SodiumAcetate',
+                                              'Ethanol'])
 
         # Heat capacity of water
         self.cp_mol = Param(mutable=False,
@@ -260,7 +266,8 @@ class _StateBlock(StateBlockBase):
                              block_class=_StateBlock)
 class StateBlockData(StateBlockDataBase):
     """
-    An example property package for ideal gas properties with Gibbs energy
+    An example property package for properties for saponification of ethyl
+    acetate
     """
 
     def build(self):
@@ -297,8 +304,7 @@ class StateBlockData(StateBlockDataBase):
                              self.config.parameters.temperature_ref)
 
         # Create state variables
-        self.flow_vol = Var(self.component_list_ref,
-                            initialize=1.0,
+        self.flow_vol = Var(initialize=1.0,
                             doc='Total volumentric flowrate [m^3/s]')
         self.pressure = Var(domain=Reals,
                             initialize=101325.0,
@@ -313,6 +319,10 @@ class StateBlockData(StateBlockDataBase):
                                  initialize=100.0,
                                  doc='Component molar concentrations '
                                      '[mol/m^3]')
+
+        if self.config.defined_state is False:
+            self.conc_water_eqn = Constraint(expr=self.conc_mol_comp["H2O"] ==
+                                             self.dens_mol)
 
     def get_material_flow_terms(b, p, j):
         return b.flow_vol*b.conc_mol_comp[j]
