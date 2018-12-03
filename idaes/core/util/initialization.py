@@ -17,7 +17,10 @@ This module contains utility functions for initialization of IDAES models.
 
 from pyomo.environ import Block, value
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, John Siirola"
+
+
+EPS = 1e-8
 
 
 def evaluate_variable_from_constraint(variable, constraint):
@@ -27,21 +30,45 @@ def evaluate_variable_from_constraint(variable, constraint):
 
     Args:
         variable - Pyomo variable to be evaluated
-        constraint - Pyomo Constraint to use ot calucate variable value
+        constraint - Pyomo Constraint to use ot calculate variable value
 
     Returns:
         value of variable
     """
-    residual = value(constraint.body)
     upper = value(constraint.upper)
+    assert value(constraint.lower) == upper  # this is an equality constraint
+    residual_1 = value(constraint.body)
 
-    current_value = variable.value
+    x1 = value(variable)
+    variable.set_value(x1 - (residual_1-upper))
 
-    target_value = current_value - (residual-upper)
+    residual_2 = value(constraint.body)
 
-    variable.value = target_value
+    # if the variable appears linearly with a coefficient of 1, then we
+    # are done
+    if abs(residual_2-upper) < EPS:
+        return variable.value
 
-    return target_value
+    # Assume the variable appears linearly and calculate the coefficient
+    x2 = value(variable)
+    slope = float(residual_1 - residual_2) / (x1 - x2)
+
+    if abs(slope) < EPS:
+        raise RuntimeError(
+                "Value of variable has no effect on the residual of "
+                "constraint. This general indicates that variable is not part "
+                "of constraint, or is degenerate.")
+
+    intercept = (residual_1-upper) - slope*x1
+    variable.set_value(-intercept/slope)
+
+    if abs(value(constraint.body)-upper) > EPS:
+        print(value(constraint.body))
+        raise RuntimeError(
+            "variable does not appear linearly; cannot (easily) "
+            "calculate the variable value")
+
+    return variable.value
 
 
 # HACK, courtesy of J. Siirola
