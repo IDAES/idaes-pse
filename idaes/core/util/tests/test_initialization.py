@@ -292,5 +292,11 @@ def test_evaluate_variable_from_constraint():
 
     m.c6 = Constraint(expr=-70.0 >= m.a + 10.0)
 
-    assert evaluate_variable_from_constraint(m.a, m.c6) == -80.0
-    assert value(m.a) == -80.0
+    with pytest.raises(AssertionError):
+        evaluate_variable_from_constraint(m.a, m.c6)
+
+    m.b = Var(initialize=2.0)
+    m.c7 = Constraint(expr=10.0 == m.a*m.b)
+
+    assert evaluate_variable_from_constraint(m.a, m.c7) == 5.0
+    assert value(m.a) == 5.0
