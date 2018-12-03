@@ -63,7 +63,7 @@ def evaluate_variable_from_constraint(variable, constraint):
     variable.set_value(-intercept/slope)
 
     if abs(value(constraint.body)-upper) > EPS:
-        print value(constraint.body)
+        print(value(constraint.body))
         raise RuntimeError(
             "variable does not appear linearly; cannot (easily) "
             "calculate the variable value")
