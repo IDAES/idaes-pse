@@ -238,7 +238,6 @@ domain,
             has_rate_reactions=True,
             has_equilibrium_reactions=self.config.has_equilibrium_reactions)
 
-        # TODO : Need to add options for dh_rxn and transformation
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
             has_heat_of_reaction=self.config.has_heat_of_reaction,

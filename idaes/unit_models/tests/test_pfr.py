@@ -75,7 +75,7 @@ def test_build():
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_initialize_temperature():
+def test_initialize():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -88,6 +88,8 @@ def test_initialize_temperature():
                             "has_equilibrium_reactions": False,
                             "has_heat_transfer": False,
                             "has_pressure_change": False})
+
+    raise Exception(m.fs.pfr.control_volume.properties.display())
 
     m.fs.pfr.inlet[:].flow_vol.fix(1.0)
     m.fs.pfr.inlet[:].conc_mol_comp["H2O"].fix(55388.0)

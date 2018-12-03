@@ -175,6 +175,11 @@ class ControlVolume1dData(ControlVolumeBase):
                 doc="Material properties at inlet",
                 default=tmp_dict)
 
+        # TODO : This is the problem.
+        # In the above line, where the StateBlocks are created, we need to set
+        # the defined_state config argument to True at the inlet (as defined by
+        # the flow_direction attribute). I have no idea how to make this work
+        # properly with the new default/initialize approach.
         if information_flow == FlowDirection.forward:
             self.properties[:, 0].config.defined_state = True
         elif information_flow == FlowDirection.backward:
