@@ -20,18 +20,23 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, Reals, Var
-from pyomo.dae import DerivativeVar
+from pyomo.environ import (Constraint,
+                           Param,
+                           Reals,
+                           Reference,
+                           TransformationFactory,
+                           Var)
+from pyomo.dae import ContinuousSet, DerivativeVar
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         ControlVolumeBase,
                         FlowDirection,
+                        useDefault,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
-                                        PropertyNotSupportedError,
-                                        PropertyPackageError)
+                                        PropertyNotSupportedError)
 from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee"
@@ -40,58 +45,112 @@ __author__ = "Andrew Lee"
 _log = logging.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
-# TODO : Improve flexibility for get_material_flow_terms and associated
+# Diffusion terms need to be added
 # TODO : add support for heat of reaction terms
 
 
-@declare_process_block_class("ControlVolume0D", doc="""
-    ControlVolume0D is a specialized Pyomo block for IDAES non-discretized
-    control volume blocks, and contains instances of ControlVolume0dData.
+@declare_process_block_class("ControlVolume1D", doc="""
+    ControlVolume1D is a specialized Pyomo block for IDAES control volume
+    blocks discretized in one spatial direction, and contains instances of
+    ControlVolume1dData.
 
-    ControlVolume0D should be used for any control volume with a defined volume
-    and distinct inlets and outlets which does not require spatial
-    discretization. This encompases most basic unit models used in process
-    modeling.""")
-class ControlVolume0dData(ControlVolumeBase):
+    ControlVolume1D should be used for any control volume with a defined volume
+    and distinct inlets and outlets where there is a single spatial domain
+    parallel to the mateiral flow direction. This encompases unit operations
+    such as plug flow reactors and pipes.""")
+class ControlVolume1dData(ControlVolumeBase):
     """
-    0-Dimensional (Non-Discretised) ControlVolume Class
+    1-Dimensional ControlVolume Class
 
-    This class forms the core of all non-discretized IDAES models. It provides
+    This class forms the core of all 1-D IDAES models. It provides
     methods to build property and reaction blocks, and add mass, energy and
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
     def build(self):
         """
-        Build method for ControlVolume0D blocks.
+        Build method for ControlVolume1D blocks.
 
         Returns:
             None
         """
         # Call build method from base class
-        super(ControlVolume0dData, self).build()
+        super(ControlVolume1dData, self).build()
 
-    def add_geometry(self):
+    def add_geometry(self,
+                     length_domain=None,
+                     length_domain_set=[0.0, 1.0],
+                     flow_direction=FlowDirection.forward,):
         """
-        Method to create volume Var in ControlVolume.
+        Method to create spatial domain and volume Var in ControlVolume.
 
         Args:
-            None
+            length_domain - (optional) a ContinuousSet to use as the length
+                            domain for the ControlVolume. If not provided, a
+                            new ContinuousSet will be created (default=None).
+                            ContinuousSet should be normalized to run between
+                            0 and 1.
+            length_domain_set - (optional) list of point to use to initialize
+                            a new ContinuousSet if length_domain is not
+                            provided (default = [0.0, 1.0]).
+            flow_direction - argument indicating direction of material flow
+                            relative to length domain. Valid values:
+                                - FlowDirection.forward (default), flow goes
+                                  from 0 to 1.
+                                - FlowDirection.backward, flow goes from 1 to 0
 
         Returns:
             None
         """
         l_units = self.config.property_package.get_metadata().default_units[
                                                                       "length"]
-        self.volume = Var(self.time_ref, initialize=1.0,
+
+        if length_domain is not None:
+            # Validate domain and make a reference
+            if isinstance(length_domain, ContinuousSet):
+                add_object_reference(self, "length_domain", length_domain)
+            else:
+                raise ConfigurationError(
+                        "{} length_domain argument must be a Pyomo "
+                        "ContinuousSet object".format(self.name))
+        else:
+            # Create new length domain
+            self.length_domain = ContinuousSet(
+                                    bounds=(0.0, 1.0),
+                                    initialize=length_domain_set,
+                                    doc="Normalized length domain")
+
+        # Validated and create flow direction attribute
+        if flow_direction in FlowDirection:
+            self._flow_direction = flow_direction
+        else:
+            raise ConfigurationError("{} invliad value for flow_direction "
+                                     "argumnet. Must be a FlowDirection Enum."
+                                     .format(self.name))
+        if flow_direction is FlowDirection.forward:
+            self._flow_direction_term = -1
+        else:
+            self._flow_direction_term = 1
+
+        # Add geomerty variables and constraints
+        self.volume = Var(initialize=1.0,
                           doc='Holdup Volume [{}^3]'.format(l_units))
+        self.area = Var(initialize=1.0,
+                        doc='Cross-sectional area of Control Volume [{}^2]'
+                            .format(l_units))
+        self.length = Var(initialize=1.0,
+                          doc='Length of Control Volume [{}]'.format(l_units))
+
+        @self.Constraint(doc="Control volume geometry constraint")
+        def geometry_constraint(b):
+            return self.volume == self.area*self.length
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
                          has_phase_equilibrium=False,
                          package_arguments={}):
         """
-        This method constructs the inlet and outlet state blocks for the
+        This method constructs the state blocks for the
         control volume.
 
         Args:
@@ -108,38 +167,23 @@ class ControlVolume0dData(ControlVolumeBase):
         tmp_dict = package_arguments
         tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
         tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = False
+        
+        self.properties = self.config.property_package.state_block_class(
+                self.time_ref,
+                self.length_domain,
+                doc="Material properties at inlet",
+                default=tmp_dict)
 
         if information_flow == FlowDirection.forward:
-            tmp_dict["defined_state"] = True
+            self.properties[:, 0].config.defined_state = True
         elif information_flow == FlowDirection.backward:
-            tmp_dict["defined_state"] = False
+            self.properties[:, 1].config.defined_state = True
         else:
             raise ConfigurationError(
                     '{} invalid value for information_flow argument. '
                     'Valid values are FlowDirection.forward and '
                     'FlowDirection.backward'.format(self.name))
-
-        try:
-            self.properties_in = (
-                    self.config.property_package.state_block_class(
-                            self.time_ref,
-                            doc="Material properties at inlet",
-                            default=tmp_dict))
-
-            # Reverse defined_state
-            tmp_dict["defined_state"] = not tmp_dict["defined_state"]
-
-            self.properties_out = (
-                    self.config.property_package.state_block_class(
-                            self.time_ref,
-                            doc="Material properties at outlet",
-                            default=tmp_dict))
-        except AttributeError:
-            raise PropertyPackageError(
-                    "{} physical property package has not implemented the "
-                    "state_block_class attribute. Please contact the "
-                    "developer of the physical property package."
-                    .format(self.name))
 
     def add_reaction_blocks(self,
                             has_equilibrium=False,
@@ -157,22 +201,15 @@ class ControlVolume0dData(ControlVolumeBase):
             None
         """
         tmp_dict = package_arguments
-        tmp_dict["state_block"] = self.properties_out
+        tmp_dict["state_block"] = self.properties
         tmp_dict["has_equilibrium"] = has_equilibrium
         tmp_dict["parameters"] = self.config.reaction_package
 
-        try:
-            self.reactions = (
-                    self.config.reaction_package.reaction_block_class(
-                            self.time_ref,
-                            doc="Reaction properties in control volume",
-                            default=tmp_dict))
-        except AttributeError:
-            raise PropertyPackageError(
-                    "{} reaction property package has not implemented the "
-                    "reaction_block_class attribute. Please contact the "
-                    "developer of the reaction property package."
-                    .format(self.name))
+        self.reactions = self.config.reaction_package.reaction_block_class(
+                self.time_ref,
+                self.length_domain,
+                doc="Reaction properties in control volume",
+                default=tmp_dict)
 
     def add_phase_component_balances(self,
                                      has_rate_reactions=False,
@@ -182,8 +219,8 @@ class ControlVolume0dData(ControlVolumeBase):
                                      custom_molar_term=None,
                                      custom_mass_term=None):
         """
-        This method constructs a set of 0D material balances indexed by time,
-        phase and component.
+        This method constructs a set of 1D material balances indexed by time,
+        length, phase and component.
 
         Args:
             has_rate_reactions: whether default generation terms for rate
@@ -198,12 +235,12 @@ class ControlVolume0dData(ControlVolumeBase):
                     included in material balances
             custom_molar_term: a Pyomo Expression representing custom terms to
                     be included in material balances on a molar basis.
-                    Expression must be indexed by time, phase list and
-                    component list
+                    Expression must be indexed by time, length domain, phase
+                    list and component list
             custom_mass_term: a Pyomo Expression representing custom terms to
                     be included in material balances on a mass basis.
-                    Expression must be indexed by time, phase list and
-                    component list
+                    Expression must be indexed by time, length domain, phase
+                    list and component list
 
         Returns:
             Constraint object representing material balances
@@ -226,8 +263,9 @@ class ControlVolume0dData(ControlVolumeBase):
         if has_equilibrium_reactions:
             # Check that reaction block is set to calculate equilibrium
             for t in self.time_ref:
-                if self.reactions[t].config.has_equilibrium is False:
-                    raise ConfigurationError(
+                for x in self.length_domain:
+                    if self.reactions[t, x].config.has_equilibrium is False:
+                        raise ConfigurationError(
                             "{} material balance was set to include "
                             "equilibrium reactions, however the associated "
                             "ReactionBlock was not set to include equilibrium "
@@ -238,18 +276,11 @@ class ControlVolume0dData(ControlVolumeBase):
         if has_phase_equilibrium:
             # Check that state blocks are set to calculate equilibrium
             for t in self.time_ref:
-                if not self.properties_out[t].config.has_phase_equilibrium:
-                    raise ConfigurationError(
+                for x in self.length_domain:
+                    if not self.properties[t, x].config.has_phase_equilibrium:
+                        raise ConfigurationError(
                             "{} material balance was set to include phase "
-                            "equilibrium, however the associated outlet "
-                            "StateBlock was not set to include equilibrium "
-                            "constraints (has_phase_equilibrium=False). Please"
-                            " correct your configuration arguments."
-                            .format(self.name))
-                if not self.properties_in[t].config.has_phase_equilibrium:
-                    raise ConfigurationError(
-                            "{} material balance was set to include phase "
-                            "equilibrium, however the associated inlet "
+                            "equilibrium, however the associated "
                             "StateBlock was not set to include equilibrium "
                             "constraints (has_phase_equilibrium=False). Please"
                             " correct your configuration arguments."
@@ -264,34 +295,56 @@ class ControlVolume0dData(ControlVolumeBase):
             except KeyError:
                 units[u] = '-'
 
-        # Test for components that must exist prior to calling this method
-        if has_holdup:
-            if not hasattr(self, "volume"):
-                raise ConfigurationError(
-                        "{} control volume must have volume defined to have "
-                        "holdup and/or rate reaction terms. Please call the "
-                        "add_geometry method before adding balance equations."
-                        .format(self.name))
-
         # Material holdup and accumulation
         if has_holdup:
             self.material_holdup = Var(self.time_ref,
+                                       self.length_domain,
                                        self.phase_list_ref,
                                        self.component_list_ref,
                                        domain=Reals,
-                                       doc="Material holdup in unit [{}]"
-                                           .format(units['holdup']))
+                                       doc="Material holdup per unit length "
+                                           "[{}/{}]"
+                                           .format(units['holdup'],
+                                                   units['length']))
         if dynamic:
             self.material_accumulation = DerivativeVar(
                     self.material_holdup,
                     wrt=self.time_ref,
-                    doc="Material accumulation in unit [{}/{}]"
-                        .format(units['holdup'], units['time']))
+                    doc="Material accumulation per unit length [{}/{}.{}]"
+                        .format(units['holdup'],
+                                units['length'],
+                                units['time']))
 
         # Get phase component list(s)
         phase_component_list = self._get_phase_comp_list()
 
         # Create material balance terms as required
+        # Flow terms and derivatives
+        self._flow_terms = Var(self.time_ref,
+                               self.length_domain,
+                               self.phase_list_ref,
+                               self.component_list_ref,
+                               initialize=0,
+                               doc="Flow terms for material balance equations")
+
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         self.phase_list_ref,
+                         self.component_list_ref,
+                         doc="Mateiral flow linking constraints")
+        def material_flow_linking_constraints(b, t, x, p, j):
+            return b._flow_terms[t, x, p, j] == \
+                b.properties[t, x].get_material_flow_terms(p, j)
+
+        self.material_flow_dx = DerivativeVar(
+                                     self._flow_terms,
+                                     wrt=self.length_domain,
+                                     doc="Parital derivative of material flow "
+                                         "wrt to length {}/{}.{}"
+                                         .format(units['holdup'],
+                                                 units['length'],
+                                                 units['time']))
+
         # Kinetic reaction generation
         if has_rate_reactions:
             try:
@@ -306,6 +359,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     "rate-based reactions.".format(self.name))
             self.rate_reaction_generation = Var(
                         self.time_ref,
+                        self.length_domain,
                         self.phase_list_ref,
                         self.component_list_ref,
                         domain=Reals,
@@ -328,6 +382,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     .format(self.name))
             self.equilibrium_reaction_generation = Var(
                         self.time_ref,
+                        self.length_domain,
                         self.phase_list_ref,
                         self.component_list_ref,
                         domain=Reals,
@@ -349,6 +404,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     "not support phase equilibrium.".format(self.name))
             self.phase_equilibrium_generation = Var(
                         self.time_ref,
+                        self.length_domain,
                         self.phase_equilibrium_idx_ref,
                         domain=Reals,
                         doc="Amount of generation in unit by phase "
@@ -359,6 +415,7 @@ class ControlVolume0dData(ControlVolumeBase):
         if has_mass_transfer:
             self.mass_transfer_term = Var(
                         self.time_ref,
+                        self.length_domain,
                         self.phase_list_ref,
                         self.component_list_ref,
                         domain=Reals,
@@ -367,21 +424,21 @@ class ControlVolume0dData(ControlVolumeBase):
 
         # Create rules to substitute material balance terms
         # Accumulation term
-        def accumulation_term(b, t, p, j):
-            return b.material_accumulation[t, p, j] if dynamic else 0
+        def accumulation_term(b, t, x, p, j):
+            return b.material_accumulation[t, x, p, j] if dynamic else 0
 
-        def kinetic_term(b, t, p, j):
-            return (b.rate_reaction_generation[t, p, j] if has_rate_reactions
-                    else 0)
+        def kinetic_term(b, t, x, p, j):
+            return (b.rate_reaction_generation[t, x, p, j]
+                    if has_rate_reactions else 0)
 
-        def equilibrium_term(b, t, p, j):
-            return (b.equilibrium_reaction_generation[t, p, j]
+        def equilibrium_term(b, t, x, p, j):
+            return (b.equilibrium_reaction_generation[t, x, p, j]
                     if has_equilibrium_reactions else 0)
 
-        def phase_equilibrium_term(b, t, p, j):
+        def phase_equilibrium_term(b, t, x, p, j):
             if has_phase_equilibrium:
                 sd = {}
-                sblock = self.properties_out[t]
+                sblock = self.properties[t, x]
                 for r in b.phase_equilibrium_idx_ref:
                     if sblock.phase_equilibrium_list[r][0] == j:
                         if sblock.phase_equilibrium_list[r][1][0] == p:
@@ -393,23 +450,24 @@ class ControlVolume0dData(ControlVolumeBase):
                     else:
                         sd[r] = 0
 
-                return sum(b.phase_equilibrium_generation[t, r]*sd[r]
+                return sum(b.phase_equilibrium_generation[t, x, r]*sd[r]
                            for r in b.phase_equilibrium_idx_ref)
             else:
                 return 0
 
-        def transfer_term(b, t, p, j):
-            return (b.mass_transfer_term[t, p, j] if has_mass_transfer else 0)
+        def transfer_term(b, t, x, p, j):
+            return (b.mass_transfer_term[t, x, p, j]
+                    if has_mass_transfer else 0)
 
-        def user_term_mol(b, t, p, j):
+        def user_term_mol(b, t, x, p, j):
             if custom_molar_term is not None:
-                flow_basis = b.properties_out[t].get_material_flow_basis()
+                flow_basis = b.properties[t, x].get_material_flow_basis()
                 if flow_basis == MaterialFlowBasis.molar:
-                    return custom_molar_term(t, p, j)
+                    return custom_molar_term(t, x, p, j)
                 elif flow_basis == MaterialFlowBasis.mass:
                     try:
-                        return (custom_molar_term(t, p, j) *
-                                b.properties_out[t].mw[j])
+                        return (custom_molar_term(t, x, p, j) *
+                                b.properties[t, x].mw[j])
                     except AttributeError:
                         raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -426,15 +484,15 @@ class ControlVolume0dData(ControlVolumeBase):
             else:
                 return 0
 
-        def user_term_mass(b, t, p, j):
+        def user_term_mass(b, t, x, p, j):
             if custom_mass_term is not None:
-                flow_basis = b.properties_out[t].get_material_flow_basis()
+                flow_basis = b.properties[t, x].get_material_flow_basis()
                 if flow_basis == MaterialFlowBasis.mass:
-                    return custom_mass_term(t, p, j)
+                    return custom_mass_term(t, x, p, j)
                 elif flow_basis == MaterialFlowBasis.molar:
                     try:
-                        return (custom_mass_term(t, p, j) /
-                                b.properties_out[t].mw[j])
+                        return (custom_mass_term(t, x, p, j) /
+                                b.properties[t, x].mw[j])
                     except AttributeError:
                         raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -453,21 +511,30 @@ class ControlVolume0dData(ControlVolumeBase):
 
         # Add component balances
         @self.Constraint(self.time_ref,
+                         self.length_domain,
                          self.phase_list_ref,
                          self.component_list_ref,
                          doc="Material balances")
-        def material_balances(b, t, p, j):
-            if j in phase_component_list[p]:
-                return accumulation_term(b, t, p, j) == (
-                        b.properties_in[t].get_material_flow_terms(p, j) -
-                        b.properties_out[t].get_material_flow_terms(p, j) +
-                        kinetic_term(b, t, p, j) +
-                        equilibrium_term(b, t, p, j) +
-                        phase_equilibrium_term(b, t, p, j) +
-                        transfer_term(b, t, p, j) +
-                        user_term_mol(b, t, p, j) + user_term_mass(b, t, p, j))
-            else:
+        def material_balances(b, t, x, p, j):
+            if ((b._flow_direction is FlowDirection.forward and
+                 x == b.length_domain.first()) or
+                    (b._flow_direction is FlowDirection.backward and
+                     x == b.length_domain.last())):
                 return Constraint.Skip
+            else:
+                if j in phase_component_list[p]:
+                    return b.length*accumulation_term(b, t, x, p, j) == (
+                        b._flow_direction_term *
+                        b.material_flow_dx[t, x, p, j] +
+                        b.length*kinetic_term(b, t, x, p, j) +
+                        b.length*equilibrium_term(b, t, x, p, j) +
+                        b.length*phase_equilibrium_term(b, t, x, p, j) +
+                        b.length*transfer_term(b, t, x, p, j) +
+#                        #b.area*diffusion_term(b, t, x, p, j)/b.length +
+                        b.length*user_term_mol(b, t, x, p, j) +
+                        b.length*user_term_mass(b, t, x, p, j))
+                else:
+                    return Constraint.Skip
 
         # TODO: Need to set material_holdup = 0 for non-present component-phase
         # pairs. Not ideal, but needed to close DoF. Is there a better way?
@@ -478,35 +545,38 @@ class ControlVolume0dData(ControlVolumeBase):
                 self._add_phase_fractions()
 
             @self.Constraint(self.time_ref,
+                             self.length_domain,
                              self.phase_list_ref,
                              self.component_list_ref,
                              doc="Material holdup calculations")
-            def material_holdup_calculation(b, t, p, j):
+            def material_holdup_calculation(b, t, x, p, j):
                 if j in phase_component_list[p]:
-                    return b.material_holdup[t, p, j] == (
-                          b.volume[t]*self.phase_fraction[t, p] *
-                          b.properties_out[t].get_material_density_terms(p, j))
+                    return b.material_holdup[t, x, p, j] == (
+                          b.volume*self.phase_fraction[t, x, p] *
+                          b.properties[t, x].get_material_density_terms(p, j))
                 else:
-                    return b.material_holdup[t, p, j] == 0
+                    return b.material_holdup[t, x, p, j] == 0
 
         if has_rate_reactions:
             # Add extents of reaction and stoichiometric constraints
             self.rate_reaction_extent = Var(
                     self.time_ref,
+                    self.length_domain,
                     self.rate_reaction_idx_ref,
                     domain=Reals,
-                    doc="Extent of kinetic reactions[{}/{}]"
+                    doc="Extent of kinetic reactions at point x[{}/{}]"
                         .format(units['holdup'], units['time']))
 
             @self.Constraint(self.time_ref,
+                             self.length_domain,
                              self.phase_list_ref,
                              self.component_list_ref,
                              doc="Kinetic reaction stoichiometry constraint")
-            def rate_reaction_stoichiometry_constraint(b, t, p, j):
+            def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
-                    return b.rate_reaction_generation[t, p, j] == (
-                        sum(rblock[t].rate_reaction_stoichiometry[r, p, j] *
-                            b.rate_reaction_extent[t, r]
+                    return b.rate_reaction_generation[t, x, p, j] == (
+                        sum(rblock[t, x].rate_reaction_stoichiometry[r, p, j] *
+                            b.rate_reaction_extent[t, x, r]
                             for r in b.rate_reaction_idx_ref))
                 else:
                     return Constraint.Skip
@@ -515,21 +585,24 @@ class ControlVolume0dData(ControlVolumeBase):
             # Add extents of reaction and stoichiometric constraints
             self.equilibrium_reaction_extent = Var(
                             self.time_ref,
+                            self.length_domain,
                             self.equilibrium_reaction_idx_ref,
                             domain=Reals,
-                            doc="Extent of equilibrium reactions[{}/{}]"
-                                .format(units['holdup'], units['time']))
+                            doc="Extent of equilibrium reactions at point x "
+                                "[{}/{}]".format(units['holdup'],
+                                                 units['time']))
 
             @self.Constraint(self.time_ref,
+                             self.length_domain,
                              self.phase_list_ref,
                              self.component_list_ref,
                              doc="Equilibrium reaction stoichiometry")
-            def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
+            def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
-                    return b.equilibrium_reaction_generation[t, p, j] == (
-                            sum(rblock[t].
+                    return b.equilibrium_reaction_generation[t, x, p, j] == (
+                            sum(rblock[t, x].
                                 equilibrium_reaction_stoichiometry[r, p, j] *
-                                b.equilibrium_reaction_extent[t, r]
+                                b.equilibrium_reaction_extent[t, x, r]
                                 for r in b.equilibrium_reaction_idx_ref))
                 else:
                     return Constraint.Skip
@@ -544,27 +617,27 @@ class ControlVolume0dData(ControlVolumeBase):
                                      custom_molar_term=None,
                                      custom_mass_term=None):
         """
-        This method constructs a set of 0D material balances indexed by time
-        and component.
+        This method constructs a set of 1D material balances indexed by time
+        length and component.
 
         Args:
-            has_rate_reactions - whether default generation terms for rate
+            has_rate_reactions: whether default generation terms for rate
                     reactions should be included in material balances
-            has_equilibrium_reactions - whether generation terms should for
+            has_equilibrium_reactions: whether generation terms should for
                     chemical equilibrium reactions should be included in
                     material balances
-            has_phase_equilibrium - whether generation terms should for phase
+            has_phase_equilibrium: whether generation terms should for phase
                     equilibrium behaviour should be included in material
                     balances
-            has_mass_transfer - whether generic mass transfer terms should be
+            has_mass_transfer: whether generic mass transfer terms should be
                     included in material balances
-            custom_molar_term - a Pyomo Expression representing custom terms to
+            custom_molar_term: a Pyomo Expression representing custom terms to
                     be included in material balances on a molar basis.
-                    Expression must be indexed by time, phase list and
+                    Expression must be indexed by time, length domain and
                     component list
-            custom_mass_term - a Pyomo Expression representing custom terms to
+            custom_mass_term: a Pyomo Expression representing custom terms to
                     be included in material balances on a mass basis.
-                    Expression must be indexed by time, phase list and
+                    Expression must be indexed by time, length domain and
                     component list
 
         Returns:
@@ -588,8 +661,9 @@ class ControlVolume0dData(ControlVolumeBase):
         if has_equilibrium_reactions:
             # Check that reaction block is set to calculate equilibrium
             for t in self.time_ref:
-                if self.reactions[t].config.has_equilibrium is False:
-                    raise ConfigurationError(
+                for x in self.length_domain:
+                    if self.reactions[t, x].config.has_equilibrium is False:
+                        raise ConfigurationError(
                             "{} material balance was set to include "
                             "equilibrium reactions, however the associated "
                             "ReactionBlock was not set to include equilibrium "
@@ -600,18 +674,11 @@ class ControlVolume0dData(ControlVolumeBase):
         if has_phase_equilibrium:
             # Check that state blocks are set to calculate equilibrium
             for t in self.time_ref:
-                if not self.properties_out[t].config.has_phase_equilibrium:
-                    raise ConfigurationError(
+                for x in self.length_domain:
+                    if not self.properties[t, x].config.has_phase_equilibrium:
+                        raise ConfigurationError(
                             "{} material balance was set to include phase "
-                            "equilibrium, however the associated outlet "
-                            "StateBlock was not set to include equilibrium "
-                            "constraints (has_phase_equilibrium=False). Please"
-                            " correct your configuration arguments."
-                            .format(self.name))
-                if not self.properties_in[t].config.has_phase_equilibrium:
-                    raise ConfigurationError(
-                            "{} material balance was set to include phase "
-                            "equilibrium, however the associated inlet "
+                            "equilibrium, however the associated "
                             "StateBlock was not set to include equilibrium "
                             "constraints (has_phase_equilibrium=False). Please"
                             " correct your configuration arguments."
@@ -626,34 +693,56 @@ class ControlVolume0dData(ControlVolumeBase):
             except KeyError:
                 units[u] = '-'
 
-        # Test for components that must exist prior to calling this method
-        if has_holdup:
-            if not hasattr(self, "volume"):
-                raise ConfigurationError(
-                        "{} control volume must have volume defined to have "
-                        "holdup and/or rate reaction terms. Please call the "
-                        "add_geometry method before adding balance equations."
-                        .format(self.name))
-
         # Material holdup and accumulation
         if has_holdup:
             self.material_holdup = Var(self.time_ref,
+                                       self.length_domain,
                                        self.phase_list_ref,
                                        self.component_list_ref,
                                        domain=Reals,
-                                       doc="Material holdup in unit [{}]"
-                                           .format(units['holdup']))
+                                       doc="Material holdup per unit length "
+                                           "[{}/{}]"
+                                           .format(units['holdup'],
+                                                   units['length']))
         if dynamic:
             self.material_accumulation = DerivativeVar(
                     self.material_holdup,
                     wrt=self.time_ref,
-                    doc="Material accumulation in unit [{}/{}]"
-                        .format(units['holdup'], units['time']))
+                    doc="Material accumulation per unit length [{}/{}.{}]"
+                        .format(units['holdup'],
+                                units['length'],
+                                units['time']))
 
         # Get phase component list(s)
         phase_component_list = self._get_phase_comp_list()
 
         # Create material balance terms as required
+        # Flow terms and derivatives
+        self._flow_terms = Var(self.time_ref,
+                               self.length_domain,
+                               self.phase_list_ref,
+                               self.component_list_ref,
+                               initialize=0,
+                               doc="Flow terms for material balance equations")
+
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         self.phase_list_ref,
+                         self.component_list_ref,
+                         doc="Mateiral flow linking constraints")
+        def material_flow_linking_constraints(b, t, x, p, j):
+            return b._flow_terms[t, x, p, j] == \
+                b.properties[t, x].get_material_flow_terms(p, j)
+
+        self.material_flow_dx = DerivativeVar(
+                                     self._flow_terms,
+                                     wrt=self.length_domain,
+                                     doc="Parital derivative of material flow "
+                                         "wrt to length {}/{}.{}"
+                                         .format(units['holdup'],
+                                                 units['length'],
+                                                 units['time']))
+
         # Kinetic reaction generation
         if has_rate_reactions:
             try:
@@ -668,6 +757,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     "rate-based reactions.".format(self.name))
             self.rate_reaction_generation = Var(
                         self.time_ref,
+                        self.length_domain,
                         self.phase_list_ref,
                         self.component_list_ref,
                         domain=Reals,
@@ -690,6 +780,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     .format(self.name))
             self.equilibrium_reaction_generation = Var(
                         self.time_ref,
+                        self.length_domain,
                         self.phase_list_ref,
                         self.component_list_ref,
                         domain=Reals,
@@ -701,6 +792,7 @@ class ControlVolume0dData(ControlVolumeBase):
         if has_mass_transfer:
             self.mass_transfer_term = Var(
                         self.time_ref,
+                        self.length_domain,
                         self.phase_list_ref,
                         self.component_list_ref,
                         domain=Reals,
@@ -709,29 +801,30 @@ class ControlVolume0dData(ControlVolumeBase):
 
         # Create rules to substitute material balance terms
         # Accumulation term
-        def accumulation_term(b, t, p, j):
-            return b.material_accumulation[t, p, j] if dynamic else 0
+        def accumulation_term(b, t, x, p, j):
+            return b.material_accumulation[t, x, p, j] if dynamic else 0
 
-        def kinetic_term(b, t, p, j):
-            return (b.rate_reaction_generation[t, p, j] if has_rate_reactions
-                    else 0)
+        def kinetic_term(b, t, x, p, j):
+            return (b.rate_reaction_generation[t, x, p, j]
+                    if has_rate_reactions else 0)
 
-        def equilibrium_term(b, t, p, j):
-            return (b.equilibrium_reaction_generation[t, p, j]
+        def equilibrium_term(b, t, x, p, j):
+            return (b.equilibrium_reaction_generation[t, x, p, j]
                     if has_equilibrium_reactions else 0)
 
-        def transfer_term(b, t, p, j):
-            return (b.mass_transfer_term[t, p, j] if has_mass_transfer else 0)
+        def transfer_term(b, t, x, p, j):
+            return (b.mass_transfer_term[t, x, p, j]
+                    if has_mass_transfer else 0)
 
-        def user_term_mol(b, t, j):
+        def user_term_mol(b, t, x, j):
             if custom_molar_term is not None:
-                flow_basis = b.properties_out[t].get_material_flow_basis()
+                flow_basis = b.properties[t, x].get_material_flow_basis()
                 if flow_basis == MaterialFlowBasis.molar:
-                    return custom_molar_term(t, j)
+                    return custom_molar_term(t, x, j)
                 elif flow_basis == MaterialFlowBasis.mass:
                     try:
-                        return (custom_molar_term(t, j) *
-                                b.properties_out[t].mw[j])
+                        return (custom_molar_term(t, x, j) *
+                                b.properties[t, x].mw[j])
                     except AttributeError:
                         raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -748,15 +841,15 @@ class ControlVolume0dData(ControlVolumeBase):
             else:
                 return 0
 
-        def user_term_mass(b, t, j):
+        def user_term_mass(b, t, x, j):
             if custom_mass_term is not None:
-                flow_basis = b.properties_out[t].get_material_flow_basis()
+                flow_basis = b.properties[t, x].get_material_flow_basis()
                 if flow_basis == MaterialFlowBasis.mass:
-                    return custom_mass_term(t, j)
+                    return custom_mass_term(t, x, j)
                 elif flow_basis == MaterialFlowBasis.molar:
                     try:
-                        return (custom_mass_term(t, j) /
-                                b.properties_out[t].mw[j])
+                        return (custom_mass_term(t, x, j) /
+                                b.properties[t, x].mw[j])
                     except AttributeError:
                         raise PropertyNotSupportedError(
                                 "{} property package does not support "
@@ -775,23 +868,32 @@ class ControlVolume0dData(ControlVolumeBase):
 
         # Add component balances
         @self.Constraint(self.time_ref,
+                         self.length_domain,
                          self.component_list_ref,
                          doc="Material balances")
-        def material_balances(b, t, j):
-            cplist = []
-            for p in self.phase_list_ref:
-                if j in phase_component_list[p]:
-                    cplist.append(p)
-            return (
-                sum(accumulation_term(b, t, p, j) for p in cplist) ==
-                sum(b.properties_in[t].get_material_flow_terms(p, j)
-                    for p in cplist) -
-                sum(b.properties_out[t].get_material_flow_terms(p, j)
-                    for p in cplist) +
-                sum(kinetic_term(b, t, p, j) for p in cplist) +
-                sum(equilibrium_term(b, t, p, j) for p in cplist) +
-                sum(transfer_term(b, t, p, j) for p in cplist) +
-                user_term_mol(b, t, j) + user_term_mass(b, t, j))
+        def material_balances(b, t, x, j):
+            if ((b._flow_direction is FlowDirection.forward and
+                 x == b.length_domain.first()) or
+                    (b._flow_direction is FlowDirection.backward and
+                     x == b.length_domain.last())):
+                return Constraint.Skip
+            else:
+                cplist = []
+                for p in self.phase_list_ref:
+                    if j in phase_component_list[p]:
+                        cplist.append(p)
+                return (
+                    b.length*sum(accumulation_term(b, t, x, p, j)
+                                 for p in cplist) ==
+                    b._flow_direction_term*sum(b.material_flow_dx[t, x, p, j]
+                                               for p in cplist) +
+                    b.length*sum(kinetic_term(b, t, x, p, j) for p in cplist) +
+                    b.length*sum(equilibrium_term(b, t, x, p, j)
+                                 for p in cplist) +
+                    b.length*sum(transfer_term(b, t, x, p, j)
+                                 for p in cplist) +
+                    b.length*user_term_mol(b, t, x, j) +
+                    b.length*user_term_mass(b, t, x, j))
 
         # TODO: Need to set material_holdup = 0 for non-present component-phase
         # pairs. Not ideal, but needed to close DoF. Is there a better way?
@@ -802,35 +904,38 @@ class ControlVolume0dData(ControlVolumeBase):
                 self._add_phase_fractions()
 
             @self.Constraint(self.time_ref,
+                             self.length_domain,
                              self.phase_list_ref,
                              self.component_list_ref,
                              doc="Material holdup calculations")
-            def material_holdup_calculation(b, t, p, j):
+            def material_holdup_calculation(b, t, x, p, j):
                 if j in phase_component_list[p]:
-                    return b.material_holdup[t, p, j] == (
-                          b.volume[t]*self.phase_fraction[t, p] *
-                          b.properties_out[t].get_material_density_terms(p, j))
+                    return b.material_holdup[t, x, p, j] == (
+                          b.volume*self.phase_fraction[t, x, p] *
+                          b.properties[t, x].get_material_density_terms(p, j))
                 else:
-                    return b.material_holdup[t, p, j] == 0
+                    return b.material_holdup[t, x, p, j] == 0
 
         if has_rate_reactions:
             # Add extents of reaction and stoichiometric constraints
             self.rate_reaction_extent = Var(
                     self.time_ref,
+                    self.length_domain,
                     self.rate_reaction_idx_ref,
                     domain=Reals,
-                    doc="Extent of kinetic reactions[{}/{}]"
+                    doc="Extent of kinetic reactions at point x[{}/{}]"
                         .format(units['holdup'], units['time']))
 
             @self.Constraint(self.time_ref,
+                             self.length_domain,
                              self.phase_list_ref,
                              self.component_list_ref,
                              doc="Kinetic reaction stoichiometry constraint")
-            def rate_reaction_stoichiometry_constraint(b, t, p, j):
+            def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
-                    return b.rate_reaction_generation[t, p, j] == (
-                        sum(rblock[t].rate_reaction_stoichiometry[r, p, j] *
-                            b.rate_reaction_extent[t, r]
+                    return b.rate_reaction_generation[t, x, p, j] == (
+                        sum(rblock[t, x].rate_reaction_stoichiometry[r, p, j] *
+                            b.rate_reaction_extent[t, x, r]
                             for r in b.rate_reaction_idx_ref))
                 else:
                     return Constraint.Skip
@@ -839,21 +944,24 @@ class ControlVolume0dData(ControlVolumeBase):
             # Add extents of reaction and stoichiometric constraints
             self.equilibrium_reaction_extent = Var(
                             self.time_ref,
+                            self.length_domain,
                             self.equilibrium_reaction_idx_ref,
                             domain=Reals,
-                            doc="Extent of equilibrium reactions[{}/{}]"
-                                .format(units['holdup'], units['time']))
+                            doc="Extent of equilibrium reactions at point x "
+                                "[{}/{}]".format(units['holdup'],
+                                                 units['time']))
 
             @self.Constraint(self.time_ref,
+                             self.length_domain,
                              self.phase_list_ref,
                              self.component_list_ref,
                              doc="Equilibrium reaction stoichiometry")
-            def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
+            def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
-                    return b.equilibrium_reaction_generation[t, p, j] == (
-                            sum(rblock[t].
+                    return b.equilibrium_reaction_generation[t, x, p, j] == (
+                            sum(rblock[t, x].
                                 equilibrium_reaction_stoichiometry[r, p, j] *
-                                b.equilibrium_reaction_extent[t, r]
+                                b.equilibrium_reaction_extent[t, x, r]
                                 for r in b.equilibrium_reaction_idx_ref))
                 else:
                     return Constraint.Skip
@@ -867,7 +975,8 @@ class ControlVolume0dData(ControlVolumeBase):
                                    has_mass_transfer=False,
                                    custom_elemental_term=None):
         """
-        This method constructs a set of 0D element balances indexed by time.
+        This method constructs a set of 1D element balances indexed by time and
+        length.
 
         Args:
             has_rate_reactions - whether default generation terms for rate
@@ -882,8 +991,8 @@ class ControlVolume0dData(ControlVolumeBase):
                     included in material balances
             custom_elemental_term - a Pyomo Expression representing custom
                     terms to be included in material balances on a molar
-                    elemental basis. Expression must be indexed by time and
-                    element list
+                    elemental basis. Expression must be indexed by time, length
+                    and element list
 
         Returns:
             Constraint object representing material balances
@@ -927,8 +1036,9 @@ class ControlVolume0dData(ControlVolumeBase):
         if has_equilibrium_reactions:
             # Check that reaction block is set to calculate equilibrium
             for t in self.time_ref:
-                if self.reactions[t].config.has_equilibrium is False:
-                    raise ConfigurationError(
+                for x in self.length_domain:
+                    if self.reactions[t, x].config.has_equilibrium is False:
+                        raise ConfigurationError(
                             "{} material balance was set to include "
                             "equilibrium reactions, however the associated "
                             "ReactionBlock was not set to include equilibrium "
@@ -950,18 +1060,12 @@ class ControlVolume0dData(ControlVolumeBase):
         if has_phase_equilibrium:
             # Check that state blocks are set to calculate equilibrium
             for t in self.time_ref:
-                if not self.properties_out[t].config.has_phase_equilibrium:
-                    raise ConfigurationError(
+                for x in self.length_domain:
+                    if (not self.properties[t, x]
+                            .config.has_phase_equilibrium):
+                        raise ConfigurationError(
                             "{} material balance was set to include phase "
                             "equilibrium, however the associated outlet "
-                            "StateBlock was not set to include equilibrium "
-                            "constraints (has_phase_equilibrium=False). Please"
-                            " correct your configuration arguments."
-                            .format(self.name))
-                if not self.properties_in[t].config.has_phase_equilibrium:
-                    raise ConfigurationError(
-                            "{} material balance was set to include phase "
-                            "equilibrium, however the associated inlet "
                             "StateBlock was not set to include equilibrium "
                             "constraints (has_phase_equilibrium=False). Please"
                             " correct your configuration arguments."
@@ -978,15 +1082,6 @@ class ControlVolume0dData(ControlVolumeBase):
                         "does not support phase equilibrium."
                         .format(self.name))
 
-        # Test for components that must exist prior to calling this method
-        if has_holdup:
-            if not hasattr(self, "volume"):
-                raise ConfigurationError(
-                        "{} control volume must have volume defined to have "
-                        "holdup terms. Please call the "
-                        "add_geometry method before adding balance equations."
-                        .format(self.name))
-
         # Get units from property package
         units = {}
         for u in ['amount', 'time']:
@@ -1000,6 +1095,7 @@ class ControlVolume0dData(ControlVolumeBase):
         if has_holdup:
             self.element_holdup = Var(
                     self.time_ref,
+                    self.length_domain,
                     self.element_list_ref,
                     domain=Reals,
                     doc="Elemental holdup in unit [{}]"
@@ -1012,30 +1108,34 @@ class ControlVolume0dData(ControlVolumeBase):
                     doc="Elemental accumulation in unit [{}/{}]"
                         .format(units['amount'], units['time']))
 
-        @self.Expression(self.time_ref,
-                         self.phase_list_ref,
-                         self.element_list_ref,
-                         doc="Inlet elemental flow terms [{}/{}]"
-                             .format(units['amount'], units['time']))
-        def elemental_flow_in(b, t, p, e):
-            return sum(b.properties_in[t].get_material_flow_terms(p, j) *
-                       b.properties_out[t].config.parameters.element_comp[j][e]
-                       for j in b.component_list_ref)
+        self.elemental_flow_term = Var(self.time_ref,
+                                       self.length_domain,
+                                       self.element_list_ref,
+                                       doc="Elemental flow terms [{}/{}]"
+                                           .format(units['amount'],
+                                                   units['time']))
 
-        @self.Expression(self.time_ref,
-                         self.phase_list_ref,
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
                          self.element_list_ref,
-                         doc="Outlet elemental flow terms [{}/{}]"
-                             .format(units['amount'], units['time']))
-        def elemental_flow_out(b, t, p, e):
-            return sum(b.properties_out[t].get_material_flow_terms(p, j) *
-                       b.properties_out[t].config.parameters.element_comp[j][e]
-                       for j in b.component_list_ref)
+                         doc="Elemental flow constraints")
+        def elemental_flow_constraint(b, t, x, e):
+            return b.elemental_flow_term[t, x, e] == (
+                    sum(sum(b.properties[t, x].get_material_flow_terms(p, j) *
+                        b.properties[t, x].config.parameters.element_comp[j][e]
+                        for j in b.component_list_ref)
+                        for p in b.phase_list_ref))
+
+        self.elemental_flow_dx = DerivativeVar(self.elemental_flow_term,
+                                               wrt=self.length_domain,
+                                               doc="Partial derivative of "
+                                               "elemental flow wrt length")
 
         # Create material balance terms as needed
         if has_mass_transfer:
             self.elemental_mass_transfer_term = Var(
                             self.time_ref,
+                            self.length_domain,
                             self.element_list_ref,
                             domain=Reals,
                             doc="Element material transfer into unit [{}/{}]"
@@ -1043,33 +1143,40 @@ class ControlVolume0dData(ControlVolumeBase):
 
         # Create rules to substitute material balance terms
         # Accumulation term
-        def accumulation_term(b, t, e):
-            return b.element_accumulation[t, e] if dynamic else 0
+        def accumulation_term(b, t, x, e):
+            return b.element_accumulation[t, x, e] if dynamic else 0
 
         # Mass transfer term
-        def transfer_term(b, t, e):
-            return (b.elemental_mass_transfer_term[t, e]
+        def transfer_term(b, t, x, e):
+            return (b.elemental_mass_transfer_term[t, x, e]
                     if has_mass_transfer else 0)
 
         # Custom term
-        def user_term(t, e):
+        def user_term(t, x, e):
             if custom_elemental_term is not None:
-                return custom_elemental_term(t, e)
+                return custom_elemental_term(t, x, e)
             else:
                 return 0
 
         # Element balances
         @self.Constraint(self.time_ref,
+                         self.length_domain,
                          self.element_list_ref,
                          doc="Elemental material balances")
-        def element_balances(b, t, e):
-            return accumulation_term(b, t, e) == (
-                        sum(b.elemental_flow_in[t, p, e]
-                            for p in b.phase_list_ref) -
-                        sum(b.elemental_flow_out[t, p, e]
-                            for p in b.phase_list_ref) +
-                        transfer_term(b, t, e) +
-                        user_term(t, e))
+        def element_balances(b, t, x, e):
+            if ((b._flow_direction is FlowDirection.forward and
+                 x == b.length_domain.first()) or
+                (b._flow_direction is FlowDirection.backward and
+                 x == b.length_domain.last())):
+                return Constraint.Skip
+            else:
+                return b.length*accumulation_term(b, t, x, e) == (
+                           b._flow_direction_term *
+                           b.elemental_flow_dx[t, x, e] +
+                           b.length*transfer_term(b, t, x, e) +
+                           b.length*user_term(t, x, e))  # +
+                           # TODO : Add diffusion terms
+                           #b.area*diffusion_term(b, t, x, e)/b.length)
 
         # Elemental Holdup
         if has_holdup:
@@ -1077,15 +1184,15 @@ class ControlVolume0dData(ControlVolumeBase):
                 self._add_phase_fractions()
 
             @self.Constraint(self.time_ref,
+                             self.length_domain,
                              self.element_list_ref,
                              doc="Elemental holdup calculation")
-            def elemental_holdup_calculation(b, t, e):
-                return b.element_holdup[t, e] == (
-                    b.volume[t] *
-                    sum(b.phase_fraction[t, p] *
-                        b.properties_out[t].get_material_density_terms(p, j) *
-                        b.properties_out[t]
-                        .config.parameters.element_comp[j][e]
+            def elemental_holdup_calculation(b, t, x, e):
+                return b.element_holdup[t, x, e] == (
+                    b.volume *
+                    sum(b.phase_fraction[t, x, p] *
+                        b.properties[t, x].get_material_density_terms(p, j) *
+                        b.properties[t, x].config.parameters.element_comp[j][e]
                         for p in b.phase_list_ref
                         for j in b.component_list_ref))
 
@@ -1112,7 +1219,7 @@ class ControlVolume0dData(ControlVolumeBase):
                     included in enthalpy balances
             custom_term - a Pyomo Expression representing custom terms to
                     be included in enthalpy balances.
-                    Expression must be indexed by time and phase list
+                    Expression must be indexed by time, length and phase list
 
         Returns:
             Constraint object representing enthalpy balances
@@ -1120,15 +1227,6 @@ class ControlVolume0dData(ControlVolumeBase):
         # Get dynamic and holdup flags from config block
         dynamic = self.config.dynamic
         has_holdup = self.config.has_holdup
-
-        # Test for components that must exist prior to calling this method
-        if has_holdup:
-            if not hasattr(self, "volume"):
-                raise ConfigurationError(
-                        "{} control volume must have volume defined to have "
-                        "holdup terms. Please call the "
-                        "add_geometry method before adding balance equations."
-                        .format(self.name))
 
         # Get units from property package
         units = {}
@@ -1140,9 +1238,28 @@ class ControlVolume0dData(ControlVolumeBase):
                 units[u] = '-'
 
         # Create variables
+        self._enthalpy_flow = Var(self.time_ref,
+                                  self.length_domain,
+                                  self.phase_list_ref,
+                                  doc="Enthalpy flow terms")
+
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         self.phase_list_ref,
+                         doc="Enthapy flow linking constraints")
+        def enthalpy_flow_linking_constraint(b, t, x, p):
+            return b._enthalpy_flow[t, x, p] == \
+                    b.properties[t, x].get_enthalpy_flow_terms(p)
+
+        self.enthalpy_flow_dx = DerivativeVar(self._enthalpy_flow,
+                                              wrt=self.length_domain,
+                                              doc="Partial derivative of "
+                                              "enthalpy flow wrt length")
+
         if has_holdup:
             self.enthalpy_holdup = Var(
                         self.time_ref,
+                        self.length_domain,
                         self.phase_list_ref,
                         domain=Reals,
                         doc="Enthalpy holdup in unit [{}]"
@@ -1165,6 +1282,7 @@ class ControlVolume0dData(ControlVolumeBase):
         # Heat transfer term
         if has_heat_transfer:
             self.heat = Var(self.time_ref,
+                            self.length_domain,
                             domain=Reals,
                             initialize=0.0,
                             doc="Heat transfered in unit [{}/{}]"
@@ -1173,6 +1291,7 @@ class ControlVolume0dData(ControlVolumeBase):
         # Work transfer
         if has_work_transfer:
             self.work = Var(self.time_ref,
+                            self.length_domain,
                             domain=Reals,
                             initialize=0.0,
                             doc="Work transfered in unit [{}/{}]"
@@ -1180,36 +1299,43 @@ class ControlVolume0dData(ControlVolumeBase):
 
         # Create rules to substitute energy balance terms
         # Accumulation term
-        def accumulation_term(b, t, p):
-            return b.enthalpy_accumulation[t, p] if dynamic else 0
+        def accumulation_term(b, t, x, p):
+            return b.enthalpy_accumulation[t, x, p] if dynamic else 0
 
-        def heat_term(b, t):
-            return b.heat[t] if has_heat_transfer else 0
+        def heat_term(b, t, x):
+            return b.heat[t, x] if has_heat_transfer else 0
 
-        def work_term(b, t):
-            return b.work[t] if has_work_transfer else 0
+        def work_term(b, t, x):
+            return b.work[t, x] if has_work_transfer else 0
 
         # Custom term
-        def user_term(t):
+        def user_term(t, x):
             if custom_term is not None:
-                return custom_term(t)
+                return custom_term(t, x)
             else:
                 return 0
 
         # Energy balance equation
-        @self.Constraint(self.time_ref, doc="Energy balances")
-        def enthalpy_balances(b, t):
-            return (sum(accumulation_term(b, t, p) for p in b.phase_list_ref) *
-                    b.scaling_factor_energy) == (
-                        sum(b.properties_in[t].get_enthalpy_flow_terms(p)
-                            for p in b.phase_list_ref) *
-                        b.scaling_factor_energy -
-                        sum(self.properties_out[t].get_enthalpy_flow_terms(p)
-                            for p in b.phase_list_ref) *
-                        b.scaling_factor_energy +
-                        heat_term(b, t)*b.scaling_factor_energy +
-                        work_term(b, t)*b.scaling_factor_energy +
-                        user_term(t)*b.scaling_factor_energy)
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         doc="Energy balances")
+        def enthalpy_balances(b, t, x):
+            if ((b._flow_direction is FlowDirection.forward and
+                 x == b.length_domain.first()) or
+                (b._flow_direction is FlowDirection.backward and
+                 x == b.length_domain.last())):
+                return Constraint.Skip
+            else:
+                return (b.length*sum(accumulation_term(b, t, x, p)
+                                     for p in b.phase_list_ref) *
+                        b.scaling_factor_energy) == (
+                    b._flow_direction_term*sum(b.enthalpy_flow_dx[t, x, p]
+                                               for p in b.phase_list_ref) *
+                    b.scaling_factor_energy +
+                    heat_term(b, t, x)*b.scaling_factor_energy +
+                    work_term(b, t, x)*b.scaling_factor_energy +
+                    user_term(t, x)*b.scaling_factor_energy)
+                    # TODO : Add conduction/dispersion term
 
         # Energy Holdup
         if has_holdup:
@@ -1217,12 +1343,13 @@ class ControlVolume0dData(ControlVolumeBase):
                 self._add_phase_fractions()
 
             @self.Constraint(self.time_ref,
+                             self.length_domain,
                              self.phase_list_ref,
                              doc="Enthalpy holdup constraint")
-            def enthalpy_holdup_calculation(b, t, p):
-                return b.enthalpy_holdup[t, p] == (
-                            b.volume[t]*self.phase_fraction[t, p] *
-                            b.properties_out[t].get_enthalpy_density_terms(p))
+            def enthalpy_holdup_calculation(b, t, x, p):
+                return b.enthalpy_holdup[t, x, p] == (
+                            b.volume*self.phase_fraction[t, x, p] *
+                            b.properties[t, x].get_enthalpy_density_terms(p))
 
         return self.enthalpy_balances
 
@@ -1248,14 +1375,14 @@ class ControlVolume0dData(ControlVolumeBase):
                                     has_pressure_change=False,
                                     custom_term=None):
         """
-        This method constructs a set of 0D pressure balances indexed by time.
+        This method constructs a set of 1D pressure balances indexed by time.
 
         Args:
             has_pressure_change - whether terms for pressure change should be
                     included in enthalpy balances
             custom_term - a Pyomo Expression representing custom terms to
                     be included in pressure balances.
-                    Expression must be indexed by time
+                    Expression must be indexed by time and length domain
 
         Returns:
             Constraint object representing pressure balances
@@ -1277,28 +1404,52 @@ class ControlVolume0dData(ControlVolumeBase):
                       "will be ignored.".format(self.name))
 
         # Get units from property package
-        try:
-            p_units = (self.config.property_package.get_metadata().
-                       default_units['pressure'])
-        except KeyError:
-            p_units = '-'
+        units = {}
+        for u in ['length', 'pressure']:
+            try:
+                units[u] = \
+                   self.config.property_package.get_metadata().default_units[u]
+            except KeyError:
+                units[u] = '-'
+
+        # Create dP/dx terms
+        # TODO : Replace with Reference if possible
+        self.pressure = Var(self.time_ref,
+                            self.length_domain,
+                            initialize=1e5,
+                            doc="Pressure {}".format(units["pressure"]))
+
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         doc="Equating local pressure to StateBlocks")
+        def pressure_linking_constraint(b, t, x):
+            return b.pressure[t, x] == b.properties[t, x].pressure
+
+        self.pressure_dx = DerivativeVar(
+                                  self.pressure,
+                                  wrt=self.length_domain,
+                                  doc="Partial derivative of pressure wrt "
+                                      "normalized length domain")
 
         # Add Momentum Balance Variables as necessary
         if has_pressure_change:
             self.deltaP = Var(self.time_ref,
+                              self.length_domain,
                               domain=Reals,
-                              doc="Pressure difference across unit [{}]"
-                                  .format(p_units))
+                              doc="Pressure difference per unit length "
+                                  "of domain [{}/{}]"
+                                  .format(units["pressure"],
+                                          units["length"]))
 
         # Create rules to substitute energy balance terms
         # Pressure change term
-        def deltaP_term(b, t):
-            return b.deltaP[t] if has_pressure_change else 0
+        def deltaP_term(b, t, x):
+            return b.deltaP[t, x] if has_pressure_change else 0
 
         # Custom term
-        def user_term(t):
+        def user_term(t, x):
             if custom_term is not None:
-                return custom_term(t)
+                return custom_term(t, x)
             else:
                 return 0
 
@@ -1309,14 +1460,22 @@ class ControlVolume0dData(ControlVolumeBase):
                     doc='Momentum balance scaling parameter')
 
         # Momentum balance equation
-        @self.Constraint(self.time_ref, doc='Momentum balance')
-        def pressure_balance(b, t):
-            return 0 == (b.properties_in[t].pressure *
-                         b.scaling_factor_pressure -
-                         b.properties_out[t].pressure *
-                         b.scaling_factor_pressure +
-                         deltaP_term(b, t)*b.scaling_factor_pressure +
-                         user_term(t)*b.scaling_factor_pressure)
+        @self.Constraint(self.time_ref,
+                         self.length_domain,
+                         doc='Momentum balance')
+        def pressure_balance(b, t, x):
+            if ((b._flow_direction is "forward" and
+                 x == b.length_domain.first()) or
+                (b._flow_direction is "backward" and
+                 x == b.length_domain.last())):
+                return Constraint.Skip
+            else:
+                return 0 == (b._flow_direction_term*b.pressure_dx[t, x] *
+                             b.scaling_factor_pressure +
+                             b.length*deltaP_term(b, t, x) *
+                             b.scaling_factor_pressure +
+                             b.length*user_term(t, x) *
+                             b.scaling_factor_pressure)
 
         return self.pressure_balance
 
@@ -1338,6 +1497,54 @@ class ControlVolume0dData(ControlVolumeBase):
                 "add_total_momentum_balances."
                 .format(self.name))
 
+
+    def apply_transformation(self,
+                             transformation_method="dae.finite_difference",
+                             transformation_scheme="BACKWARD",
+                             finite_elements=20,
+                             collocation_points=3):
+        """
+        Method to apply DAE transformation to the Control Volume length domain.
+
+        Args:
+            transformation_method - method to use to transform domain. Must be
+                                    a method recognised by the Pyomo
+                                    TransformationFactory
+                                    (default = "dae.finite_difference")
+            transformation_scheme - scheme to use when transformating domain.
+                                    See Pyomo documentation for supported
+                                    schemes (default="BACKWARD")
+            finite_elements - number of finite elements to use in
+                              transformation (equivalent to Pyomo nfe argument,
+                              default = 20)
+            collocation_points - number of collocation points to use (if using
+                                 collocation, default = 3)
+
+        Returns:
+            None
+        """
+
+        if transformation_method == "dae.finite_difference":
+            self.discretizer = TransformationFactory('dae.finite_difference')
+            self.discretizer.apply_to(self,
+                                      nfe=finite_elements,
+                                      wrt=self.length_domain,
+                                      scheme=transformation_scheme)
+        elif transformation_method == "dae.collocation":
+            self.discretizer = TransformationFactory('dae.collocation')
+            self.discretizer.apply_to(
+                    self,
+                    wrt=self.length_domain,
+                    nfe=finite_elements,
+                    collocation_points=collocation_points,
+                    scheme='LAGRANGE-LEGENDRE')
+        else:
+            raise ConfigurationError("{} unrecognised transfromation_method, "
+                                     "must match one of the Transformations "
+                                     "supported by Pyomo's "
+                                     "TransformationFactory."
+                                     .format(self.name))
+
     def model_check(blk):
         """
         This method executes the model_check methods on the associated state
@@ -1352,28 +1559,24 @@ class ControlVolume0dData(ControlVolumeBase):
         """
         # Try property block model check
         for t in blk.time_ref:
-            try:
-                blk.properties_in[t].model_check()
-            except AttributeError:
-                _log.warning('{} ControlVolume inlet property block has no '
-                             'model checks. To correct this, add a model_check'
-                             ' method to the associated StateBlock class.'
-                             .format(blk.name))
-            try:
-                blk.properties_out[t].model_check()
-            except AttributeError:
-                _log.warning('{} ControlVolume outlet property block has no '
-                             'model checks. To correct this, add a '
-                             'model_check method to the associated '
-                             'StateBlock class.'.format(blk.name))
+            for x in blk.length_domain:
+                try:
+                    blk.properties[t, x].model_check()
+                except AttributeError:
+                    _log.warning(
+                            '{} ControlVolume StateBlock has no '
+                            'model checks. To correct this, add a model_check'
+                            ' method to the associated StateBlock class.'
+                            .format(blk.name))
 
-            try:
-                blk.reactions[t].model_check()
-            except AttributeError:
-                _log.warning('{} ControlVolume outlet reaction block has no '
-                             'model check. To correct this, add a '
-                             'model_check method to the associated '
-                             'ReactionBlock class.'.format(blk.name))
+                try:
+                    blk.reactions[t, x].model_check()
+                except AttributeError:
+                    _log.warning(
+                            '{} ControlVolume outlet reaction block has no '
+                            'model check. To correct this, add a '
+                            'model_check method to the associated '
+                            'ReactionBlock class.'.format(blk.name))
 
     def initialize(blk, state_args=None, outlvl=0, optarg=None,
                    solver='ipopt', hold_state=True):
@@ -1409,7 +1612,7 @@ class ControlVolume0dData(ControlVolumeBase):
         if state_args is None:
             state_args = {}
             state_dict = \
-                blk.properties_in[blk.time.first()].define_port_members()
+                blk.properties[blk.time.first(), 0].define_port_members()
 
             for k in state_dict.keys():
                 if state_dict[k].is_indexed():
@@ -1420,17 +1623,11 @@ class ControlVolume0dData(ControlVolumeBase):
                     state_args[k] = state_dict[k].value
 
         # Initialize state blocks
-        flags = blk.properties_in.initialize(outlvl=outlvl-1,
-                                             optarg=optarg,
-                                             solver=solver,
-                                             hold_state=hold_state,
-                                             **state_args)
-
-        blk.properties_out.initialize(outlvl=outlvl-1,
-                                      optarg=optarg,
-                                      solver=solver,
-                                      hold_state=False,
-                                      **state_args)
+        # TODO : Consider handling hold_state for length domain
+        flags = blk.properties.initialize(outlvl=outlvl-1,
+                                          optarg=optarg,
+                                          solver=solver,
+                                          **state_args)
 
         try:
             blk.reactions.initialize(outlvl=outlvl-1,
@@ -1458,7 +1655,7 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             None
         '''
-        blk.properties_in.release_state(flags, outlvl=outlvl-1)
+        blk.properties.release_state(flags, outlvl=outlvl-1)
 
     def _add_phase_fractions(self):
         """
@@ -1476,18 +1673,21 @@ class ControlVolume0dData(ControlVolumeBase):
         if len(self.phase_list_ref) > 1:
             self.phase_fraction = Var(
                             self.time_ref,
+                            self.length_domain,
                             self.phase_list_ref,
                             initialize=1/len(self.phase_list_ref),
                             doc='Volume fraction of holdup by phase')
 
             @self.Constraint(self.time_ref,
+                             self.length_domain,
                              doc='Sum of phase fractions == 1')
-            def sum_of_phase_fractions(self, t):
-                return 1 == sum(self.phase_fraction[t, p]
+            def sum_of_phase_fractions(b, t, x):
+                return 1 == sum(b.phase_fraction[t, x, p]
                                 for p in self.phase_list_ref)
         else:
             @self.Expression(self.time_ref,
+                             self.length_domain,
                              self.phase_list_ref,
                              doc='Volume fraction of holdup by phase')
-            def phase_fraction(self, t, p):
+            def phase_fraction(self, t, x, p):
                 return 1
