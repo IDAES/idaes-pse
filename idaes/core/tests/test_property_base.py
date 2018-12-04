@@ -41,15 +41,13 @@ def test_config_block():
 
 
 def test_PhysicalParameterBase():
-    # Test that PhysicalParameterBase gets module information
+    # Test that PhysicalParameterBase builds correctly
     m = ConcreteModel()
     m.p = ParameterBlock()
     super(_ParameterBlock, m.p).build()
 
-    assert hasattr(m.p, "_package_module")
 
-
-def test_PropertyParameter_NotImplementedErrors():
+def test_PhysicalParameter_NotImplementedErrors():
     # Test that class methods return NotImplementedError
     m = ConcreteModel()
     m.p = ParameterBlock()

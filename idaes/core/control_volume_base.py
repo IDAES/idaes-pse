@@ -29,6 +29,7 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError)
+from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee"
 
@@ -106,11 +107,11 @@ CONFIG_Template.declare("material_balance_type", ConfigValue(
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
 CONFIG_Template.declare("energy_balance_type", ConfigValue(
-    default=EnergyBalanceType.enthalpyPhase,
+    default=EnergyBalanceType.enthalpyTotal,
     domain=In(EnergyBalanceType),
     description="Energy balance construction flag",
     doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyPhase.
+**default** - EnergyBalanceType.enthalpyTotal.
 **Valid values:** {
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single ethalpy balance for material,
@@ -256,6 +257,16 @@ class ControlVolumeBase(ProcessBlockData):
 **useDefault** - get flag from parent,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model}"""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=useDefault,
+        domain=In([useDefault, True, False]),
+        description="Holdup construction flag",
+        doc="""Indicates whether holdup terms should be constructed or not.
+Must be True if dynamic = True,
+**default** - False.
+**Valid values:** {
+**True** - construct holdup terms,
+**False** - do not construct holdup terms}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -352,11 +363,6 @@ have a config block which derives from CONFIG_Base,
         Args:
             balance_type - MaterialBalanceType Enum indicating which type of
                     material balance should be constructed.
-            dynamic - argument indicating whether material balances should
-                    include temporal derivative terms. If not provided,
-                    will use the dynamic flag of the control volume block
-            has_holdup - whether material holdup terms should be included in
-                    material balances. Must be True if dynamic = True
             has_rate_reactions - whether default generation terms for rate
                     reactions should be included in material balances
             has_equilibrium_reactions - whether generation terms should for
@@ -404,11 +410,6 @@ have a config block which derives from CONFIG_Base,
         Args:
             balance_type - EnergyBalanceType Enum indicating which type of
                     energy balance should be constructed.
-            dynamic - argument indicating whether energy balances should
-                    include temporal derivative terms. If not provided,
-                    will use the dynamic flag of the control volume block
-            has_holdup - whether material holdup terms should be included in
-                    energy balances. Must be True if dynamic = True
             has_heat_transfer - whether generic heat transfer terms should be
                     included in energy balances
             has_work_transfer - whether generic mass transfer terms should be
@@ -421,10 +422,10 @@ have a config block which derives from CONFIG_Base,
         """
         if balance_type == EnergyBalanceType.none:
             eb = None
-        elif balance_type == EnergyBalanceType.enthalpyPhase:
-            eb = self.add_phase_enthalpy_balances(**kwargs)
         elif balance_type == EnergyBalanceType.enthalpyTotal:
             eb = self.add_total_enthalpy_balances(**kwargs)
+        elif balance_type == EnergyBalanceType.enthalpyPhase:
+            eb = self.add_phase_enthalpy_balances(**kwargs)
         elif balance_type == EnergyBalanceType.energyTotal:
             eb = self.add_total_energy_balances(**kwargs)
         elif balance_type == EnergyBalanceType.energyPhase:
@@ -448,11 +449,6 @@ have a config block which derives from CONFIG_Base,
         Args:
             balance_type - MomentumBalanceType Enum indicating which type of
                     momentum balance should be constructed.
-            dynamic - argument indicating whether momentum balances should
-                    include temporal derivative terms. If not provided,
-                    will use the dynamic flag of the control volume block
-            has_holdup - whether momentum holdup terms should be included in
-                    momentum balances. Must be True if dynamic = True
             has_pressure_change - whether default generation terms for pressure
                     change should be included in momentum balances
             custom_term - a Pyomo Expression representing custom terms to
@@ -499,8 +495,6 @@ have a config block which derives from CONFIG_Base,
 
         self.add_material_balances(
             material_balance_type=parent.config.material_balance_type,
-            dynamic=parent.config.dynamic,
-            has_holdup=parent.config.has_holdup,
             has_rate_reactions=parent.config.has_rate_reactions,
             has_equilibrium_reactions=parent.config.has_equilibrium_reactions,
             has_phase_equilibrium=parent.config.has_phase_equilibrium,
@@ -508,14 +502,10 @@ have a config block which derives from CONFIG_Base,
 
         self.add_energy_balances(
             energy_balance_type=parent.config.energy_balance_type,
-            dynamic=parent.config.dynamic,
-            has_holdup=parent.config.has_holdup,
             has_heat_transfer=parent.config.has_heat_transfer,
             has_work_transfer=parent.config.has_work_transfer)
 
         self.add_momentum_balances(
-            dynamic=parent.config.dynamic,
-            has_holdup=parent.config.has_holdup,
             has_pressure_change=parent.config.has_pressure_change)
 
         try:
@@ -554,20 +544,31 @@ have a config block which derives from CONFIG_Base,
 
         # Try to get reference to time object from parent
         try:
-            # TODO : replace with Reference
-            object.__setattr__(self, "time", self.parent_block().time)
+            # Guess that parent has a reference to time domain
+            add_object_reference(self,
+                                 "time_ref",
+                                 self.parent_block().time_ref)
         except AttributeError:
-            raise DynamicError('{} has a parent model '
-                               'with no time domain'.format(self.name))
+            try:
+                # Should not happen, but guess parent has actual time domain
+                add_object_reference(self,
+                                     "time_ref",
+                                     self.parent_block().time)
+            except AttributeError:
+                # Can't find time domain
+                raise DynamicError('{} has a parent model '
+                                   'with no time domain'.format(self.name))
 
-        # Check has_holdup, if present
-        if self.config.dynamic:
-            if hasattr(self.config, "has_holdup"):
-                if not self.config.has_holdup:
-                    # Dynamic model must have has_holdup = True
-                    raise ConfigurationError(
+        # Set and validate has_holdup argument
+        if self.config.has_holdup == useDefault:
+            # Default to same value as dynamic flag
+            self.config.has_holdup = self.config.dynamic
+        elif self.config.has_holdup is False:
+            if self.config.dynamic is True:
+                # Dynamic model must have has_holdup = True
+                raise ConfigurationError(
                             '{} inconsistent arguments for control volume. '
-                            'dynamic was set to True, which requires that'
+                            'dynamic was set to True, which requires that '
                             'has_holdup = True (was False). Please correct '
                             'your arguments to be consistent.'
                             .format(self.name))
