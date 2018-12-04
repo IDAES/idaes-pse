@@ -18,8 +18,8 @@ else
     CXXFLAGS = -c $(CFLAGS) -std=c++11 -fPIC -I$(BOOST)
 endif
 
-LDFLAGS = -shared -Wl,--no-as-needed -lm
-LDFLAGS_EXE = -Wl,--no-as-needed -lm
+LDFLAGS = -shared -lm
+LDFLAGS_EXE = -lm
 
 OBJECTS = iapws95.o iapws95_phi.o iapws95_asl_funcs.o iapws95_memo.o
 
