@@ -9,7 +9,7 @@ shared: &shared
     - run: tar -xf solvers.tgz
     - run: cd solvers && ./configure
     - run: cd solvers && make
-    - run: export ASL_BUILD=home/circleci/repo/solvers/sys.x86_64.Linux && cd idaes/property_models/iapws95 && make
+    - run: export ASL_BUILD=/home/circleci/repo/solvers/sys.x86_64.Linux && cd idaes/property_models/iapws95 && make
     - run: sudo pip install -qr requirements.txt
     - run: sudo python setup.py -q install
     - run: cd doc && make dep html
