@@ -12,7 +12,7 @@ shared: &shared
     - run: export ASL_BUILD=/home/circleci/repo/solvers/sys.x86_64.Linux && cd idaes/property_models/iapws95 && make
     - run: sudo pip install -qr requirements.txt
     - run: sudo python setup.py -q install
-    - run: cd doc && make dep html
+    - run: cd docs && make dep html
     - run: pytest idaes -m "not nocircleci"
     - run: codecov --token=5cf93a40-daf7-4893-a28a-0d1cf229d110
 
