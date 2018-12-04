@@ -205,13 +205,11 @@ class _ReactionParameterBlock6(ReactionParameterBase):
 
 
 def test_ReactionParameterBase_build():
-    # Test that ReactionParameterBase gets module information
+    # Test that ReactionParameterBase builds correctly
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
     m.r = ReactionParameterBlock6(default={"property_package": m.p})
     super(_ReactionParameterBlock6, m.r).build()
-
-    assert hasattr(m.r, "_package_module")
 
 
 # -----------------------------------------------------------------------------

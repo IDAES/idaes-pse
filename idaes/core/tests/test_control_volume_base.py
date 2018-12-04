@@ -76,7 +76,7 @@ def test_CONFIG_Template():
         elif i == "material_balance_type":
             assert c[i] == MaterialBalanceType.componentPhase
         elif i == "energy_balance_type":
-            assert c[i] == EnergyBalanceType.enthalpyPhase
+            assert c[i] == EnergyBalanceType.enthalpyTotal
         elif i == "momentum_balance_type":
             assert c[i] == MomentumBalanceType.pressureTotal
         elif i == "property_package":
@@ -168,8 +168,9 @@ class CVFrameData(ControlVolumeBase):
 def test_config_block():
     cv = CVFrame(concrete=True)
 
-    assert len(cv.config) == 6
+    assert len(cv.config) == 7
     assert cv.config.dynamic == useDefault
+    assert cv.config.has_holdup is useDefault
     assert cv.config.property_package == useDefault
     assert isinstance(cv.config.property_package_args, ConfigBlock)
     assert len(cv.config.property_package_args) == 0
@@ -191,7 +192,8 @@ def test_setup_dynamics_use_parent_value():
     m.fs.u.cv._setup_dynamics()
 
     assert m.fs.u.cv.config.dynamic is False
-    assert m.fs.u.cv.time == [0]
+    assert m.fs.u.cv.config.has_holdup is False
+    assert m.fs.u.cv.time_ref == [0]
 
 
 def test_setup_dynamics_use_parent_value_fail_no_dynamic():
@@ -201,7 +203,7 @@ def test_setup_dynamics_use_parent_value_fail_no_dynamic():
     # Create a Block (with no dynamic attribute)
     fs.b = Block()
     # Add a time attribute to make sure the correct failure triggers
-    fs.b.time = Set(initialize=[0])
+    fs.b.time_ref = Set(initialize=[0])
 
     fs.b.cv = CVFrame()
 
@@ -227,6 +229,22 @@ def test_setup_dynamics_use_parent_value_fail_no_time():
         fs.u.cv._setup_dynamics()
 
 
+def test_setup_dynamics_has_holdup_inconsistent():
+    # Test that dynamic = None works correctly
+    fs = Flowsheet(default={"dynamic": False}, concrete=True)
+
+    # Create a Block (with no dynamic attribute)
+    fs.b = Block()
+    # Add a time attribute to make sure the correct failure triggers
+    fs.b.time_ref = Set(initialize=[0])
+
+    fs.b.cv = CVFrame(default={"dynamic": True, "has_holdup": False})
+
+    # _setup_dynamics should return ConfigurationError
+    with pytest.raises(ConfigurationError):
+        fs.b.cv._setup_dynamics()
+
+
 # -----------------------------------------------------------------------------
 # Test _get_property_package
 @declare_process_block_class("PropertyParameterBlock")
@@ -246,8 +264,6 @@ def test_get_property_package_set():
     m.pp = PropertyParameterBlock()
     m.cv = CVFrame(default={"property_package": m.pp})
     m.cv._get_property_package()
-
-    assert m.cv._property_module == m.pp._package_module
 
 
 def test_get_property_package_default_args():
@@ -306,7 +322,7 @@ def test_get_property_package_call_to_get_default_prop_pack():
 
     m.fs.cv = CVFrame()
     m.fs.cv._get_property_package()
-    assert m.fs.cv._property_module == m.fs.pp._package_module
+    assert m.fs.cv.config.property_package == m.fs.pp
 
 
 # -----------------------------------------------------------------------------
@@ -318,8 +334,8 @@ def test_get_indexing_sets():
     m.cv._get_property_package()
     m.cv._get_indexing_sets()
 
-    assert hasattr(m.cv, "phase_list")
-    assert hasattr(m.cv, "component_list")
+    assert hasattr(m.cv, "phase_list_ref")
+    assert hasattr(m.cv, "component_list_ref")
 
 
 def test_get_indexing_sets_missing_phase_list():
@@ -342,7 +358,7 @@ def test_get_indexing_sets_missing_component_list():
 
     with pytest.raises(PropertyPackageError):
         m.cv._get_indexing_sets()
-    assert hasattr(m.cv, "phase_list")
+    assert hasattr(m.cv, "phase_list_ref")
 
 
 # -----------------------------------------------------------------------------
@@ -373,7 +389,7 @@ def test_get_reaction_package_module():
 
     m.cv._get_reaction_package()
 
-    assert m.cv._reaction_module == m.rp._package_module
+    assert m.cv.config.reaction_package == m.rp
     assert m.cv.config.reaction_package_args["test"] == "foo"
 
 
@@ -424,72 +440,6 @@ def test_auto_construct():
     with pytest.raises(NotImplementedError):
         super(CVFrameData, m.fs.cv).build()
 
-# -----------------------------------------------------------------------------
-# Test _validate_add_balance_arguments
-def test_validate_add_balance_arguments_both_false():
-    m = ConcreteModel()
-    m.fs = Flowsheet()
-    m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
-    super(CVFrameData, m.fs.cv).build()
-
-    d, h = m.fs.cv._validate_add_balance_arguments(dynamic=useDefault,
-                                                   has_holdup=False)
-
-    assert d is False
-    assert h is False
-
-
-def test_validate_add_balance_arguments_both_true():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
-    super(CVFrameData, m.fs.cv).build()
-
-    d, h = m.fs.cv._validate_add_balance_arguments(dynamic=True,
-                                                   has_holdup=True)
-
-    assert d is True
-    assert h is True
-
-
-def test_validate_add_balance_arguments_ss_with_holdup():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
-    super(CVFrameData, m.fs.cv).build()
-
-    d, h = m.fs.cv._validate_add_balance_arguments(dynamic=False,
-                                                   has_holdup=True)
-
-    assert d is False
-    assert h is True
-
-
-def test_validate_add_balance_arguments_invalid():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
-    super(CVFrameData, m.fs.cv).build()
-
-    with pytest.raises(ConfigurationError):
-        d, h = m.fs.cv._validate_add_balance_arguments(dynamic=useDefault,
-                                                       has_holdup=False)
-
-
-def test_validate_add_balance_arguments_dynamic_error():
-    m = ConcreteModel()
-    m.fs = Flowsheet()
-    m.fs.pp = PropertyParameterBlock()
-    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
-    super(CVFrameData, m.fs.cv).build()
-
-    with pytest.raises(DynamicError):
-        d, h = m.fs.cv._validate_add_balance_arguments(dynamic=True,
-                                                       has_holdup=True)
 
 # -----------------------------------------------------------------------------
 # Test NotImplementedErrors for all property and balance type methods

@@ -15,9 +15,6 @@ This module contains classes for property blocks and property parameter blocks.
 """
 from __future__ import division
 
-# Import Python libraries
-import inspect
-
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -26,8 +23,7 @@ from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import (BurntToast,
-                                        PropertyNotSupportedError,
+from idaes.core.util.exceptions import (PropertyNotSupportedError,
                                         PropertyPackageError)
 
 # Some more information about this module
@@ -65,16 +61,6 @@ class PhysicalParameterBase(ProcessBlockData,
         """
         super(PhysicalParameterBase, self).build()
 
-        # Get module reference and store on block
-        try:
-            frm = inspect.stack()[1]
-            self._package_module = inspect.getmodule(frm[0])
-        except KeyError:
-            raise BurntToast('{} an error occured when trying to retrieve '
-                             'a pointer to the reaction package module. '
-                             'Please contact the IDAES developers with this '
-                             'bug'.format(self.name))
-
 
 class StateBlockBase(ProcessBlock):
     """
@@ -83,7 +69,7 @@ class StateBlockBase(ProcessBlock):
         PropertyData objects, and contains methods that can be applied to
         multiple StateBlockData objects simultaneously.
     """
-    def initialize(self, *args):
+    def initialize(self, *args, **kwargs):
         """
         This is a default initialization routine for StateBlocks to ensure
         that a routine is present. All StateBlockData classes should
@@ -318,7 +304,7 @@ should be constructed in this state block,
             # A list of calls if one does not exist, so create one
             self.__getattrcalls = [attr]
 
-        # Get property information from get_supported_properties
+        # Get property information from properties metadata
         try:
             m = self.config.parameters.get_metadata().properties
 
@@ -329,7 +315,7 @@ should be constructed in this state block,
                         '{}. Please contact the developer of the '
                         'property package'.format(self.name, attr))
         except KeyError:
-            # If attr not in get_supported_properties, assume package does not
+            # If attr not in metadata, assume package does not
             # support property
             clear_call_list(self, attr)
             raise PropertyNotSupportedError(
