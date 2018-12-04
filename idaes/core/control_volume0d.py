@@ -41,7 +41,6 @@ _log = logging.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
 # TODO : Improve flexibility for get_material_flow_terms and associated
-# TODO : add support for heat of reaction terms
 
 
 @declare_process_block_class("ControlVolume0D", doc="""
@@ -1098,6 +1097,7 @@ class ControlVolume0dData(ControlVolumeBase):
                 .format(self.name))
 
     def add_total_enthalpy_balances(self,
+                                    has_heat_of_reaction=False,
                                     has_heat_transfer=False,
                                     has_work_transfer=False,
                                     custom_term=None):
@@ -1106,6 +1106,8 @@ class ControlVolume0dData(ControlVolumeBase):
         and phase.
 
         Args:
+            has_heat_of_reaction - whether terms for heat of reaction should
+                    be included in enthalpy balance
             has_heat_transfer - whether terms for heat transfer should be
                     included in enthalpy balances
             has_work_transfer - whether terms for work transfer should be
@@ -1129,6 +1131,14 @@ class ControlVolume0dData(ControlVolumeBase):
                         "holdup terms. Please call the "
                         "add_geometry method before adding balance equations."
                         .format(self.name))
+        if has_heat_of_reaction:
+            if not (hasattr(self, "rate_reaction_extent") or
+                    hasattr(self, "equilibrium_reaction_extent")):
+                raise ConfigurationError(
+                        "{} extent of reaction terms must exist in order to "
+                        "have heat of reaction terms. Please ensure that "
+                        "add_material_balance (or equivalent) is called before"
+                        " adding energy balances.".format(self.name))
 
         # Get units from property package
         units = {}
@@ -1178,6 +1188,28 @@ class ControlVolume0dData(ControlVolumeBase):
                             doc="Work transfered in unit [{}/{}]"
                                 .format(units['energy'], units['time']))
 
+        # Heat of Reaction
+        if has_heat_of_reaction:
+            @self.Expression(self.time_ref,
+                             doc="Heat of reaction term [{}/{}]"
+                                 .format(units['energy'], units['time']))
+            def heat_of_reaction(b, t):
+                if hasattr(self, "rate_reaction_extents"):
+                    rate_heat = sum(b.rate_reaction_extent[t, r] *
+                                    b.reactions[t].dh_rxn[r]
+                                    for r in self.rate_reaction_idx)
+                else:
+                    rate_heat = 0
+
+                if hasattr(self, "equilibrium_reaction_extents"):
+                    equil_heat = sum(b.equilibrium_reaction_extent[t, e] *
+                                     b.reactions[t].dh_rxn[e]
+                                     for e in self.equilibrium_reaction_idx)
+                else:
+                    equil_heat = 0
+
+                return rate_heat + equil_heat
+
         # Create rules to substitute energy balance terms
         # Accumulation term
         def accumulation_term(b, t, p):
@@ -1188,6 +1220,9 @@ class ControlVolume0dData(ControlVolumeBase):
 
         def work_term(b, t):
             return b.work[t] if has_work_transfer else 0
+
+        def rxn_heat_term(b, t):
+            return b.heat_of_reaction[t] if has_heat_of_reaction else 0
 
         # Custom term
         def user_term(t):
@@ -1209,6 +1244,7 @@ class ControlVolume0dData(ControlVolumeBase):
                         b.scaling_factor_energy +
                         heat_term(b, t)*b.scaling_factor_energy +
                         work_term(b, t)*b.scaling_factor_energy +
+                        rxn_heat_term(b, t)*b.scaling_factor_energy +
                         user_term(t)*b.scaling_factor_energy)
 
         # Energy Holdup

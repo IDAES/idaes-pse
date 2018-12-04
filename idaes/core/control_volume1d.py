@@ -1205,14 +1205,17 @@ class ControlVolume1dData(ControlVolumeBase):
                 .format(self.name))
 
     def add_total_enthalpy_balances(self,
+                                    has_heat_of_reaction=False,
                                     has_heat_transfer=False,
                                     has_work_transfer=False,
                                     custom_term=None):
         """
-        This method constructs a set of 0D enthalpy balances indexed by time
+        This method constructs a set of 1D enthalpy balances indexed by time
         and phase.
 
         Args:
+            has_heat_of_reaction - whether terms for heat of reaction should
+                    be included in enthalpy balance
             has_heat_transfer - whether terms for heat transfer should be
                     included in enthalpy balances
             has_work_transfer - whether terms for work transfer should be
@@ -1227,6 +1230,16 @@ class ControlVolume1dData(ControlVolumeBase):
         # Get dynamic and holdup flags from config block
         dynamic = self.config.dynamic
         has_holdup = self.config.has_holdup
+
+        # Test for components that must exist prior to calling this method
+        if has_heat_of_reaction:
+            if not (hasattr(self, "rate_reaction_extent") or
+                    hasattr(self, "equilibrium_reaction_extent")):
+                raise ConfigurationError(
+                        "{} extent of reaction terms must exist in order to "
+                        "have heat of reaction terms. Please ensure that "
+                        "add_material_balance (or equivalent) is called before"
+                        " adding energy balances.".format(self.name))
 
         # Get units from property package
         units = {}
@@ -1297,6 +1310,29 @@ class ControlVolume1dData(ControlVolumeBase):
                             doc="Work transfered in unit [{}/{}]"
                                 .format(units['energy'], units['time']))
 
+        # Heat of Reaction
+        if has_heat_of_reaction:
+            @self.Expression(self.time_ref,
+                             self.length_domain,
+                             doc="Heat of reaction term at point x [{}/{}]"
+                                 .format(units['energy'], units['time']))
+            def heat_of_reaction(b, t, x):
+                if hasattr(self, "rate_reaction_extents"):
+                    rate_heat = sum(b.rate_reaction_extent[t, x, r] *
+                                    b.reactions[t, x].dh_rxn[r]
+                                    for r in self.rate_reaction_idx)
+                else:
+                    rate_heat = 0
+
+                if hasattr(self, "equilibrium_reaction_extents"):
+                    equil_heat = sum(b.equilibrium_reaction_extent[t, x, e] *
+                                     b.reactions[t, x].dh_rxn[e]
+                                     for e in self.equilibrium_reaction_idx)
+                else:
+                    equil_heat = 0
+
+                return rate_heat + equil_heat
+
         # Create rules to substitute energy balance terms
         # Accumulation term
         def accumulation_term(b, t, x, p):
@@ -1307,6 +1343,9 @@ class ControlVolume1dData(ControlVolumeBase):
 
         def work_term(b, t, x):
             return b.work[t, x] if has_work_transfer else 0
+
+        def rxn_heat_term(b, t, x):
+            return b.heat_of_reaction[t, x] if has_heat_of_reaction else 0
 
         # Custom term
         def user_term(t, x):
@@ -1334,6 +1373,7 @@ class ControlVolume1dData(ControlVolumeBase):
                     b.scaling_factor_energy +
                     heat_term(b, t, x)*b.scaling_factor_energy +
                     work_term(b, t, x)*b.scaling_factor_energy +
+                    rxn_heat_term(b, t, x)*b.scaling_factor_energy +
                     user_term(t, x)*b.scaling_factor_energy)
                     # TODO : Add conduction/dispersion term
 
@@ -1581,7 +1621,7 @@ class ControlVolume1dData(ControlVolumeBase):
     def initialize(blk, state_args=None, outlvl=0, optarg=None,
                    solver='ipopt', hold_state=True):
         '''
-        Initialisation routine for 0D control volume (default solver ipopt)
+        Initialisation routine for 1D control volume (default solver ipopt)
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property

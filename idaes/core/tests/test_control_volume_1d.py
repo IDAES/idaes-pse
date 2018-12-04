@@ -1787,6 +1787,59 @@ def test_add_total_enthalpy_balances_custom_term():
     assert len(mb) == 1
 
 
+def test_add_total_enthalpy_balances_dh_rxn_no_extents():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
+
+
+def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
+
+    eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
+    assert isinstance(m.fs.cv.heat_of_reaction, Expression)
+
+
+def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterBlock()
+    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1D(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+    m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
+
+    eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
+    assert isinstance(m.fs.cv.heat_of_reaction, Expression)
+
+
 # -----------------------------------------------------------------------------
 # Test unsupported energy balance types
 def test_add_phase_enthalpy_balances():
