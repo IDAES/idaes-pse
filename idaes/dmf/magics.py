@@ -33,16 +33,45 @@ _log = logging.getLogger(__name__)
 
 @magics_class
 class DmfMagics(Magics):
+    """Implement "magic" commands in Jupyter/IPython for
+    interacting with the DMF and IDAES more generally.
 
+    In order to allow easier testing, the functionality is
+    broken into two classes. This class has the decorated method(s)
+    for invoking the 'magics', and :class:`DmfMagicsImpl` has the
+    state and functionality.
+    """
+    def __init__(self, shell):
+        super(DmfMagics, self).__init__(shell)
+        self._impl = DmfMagicsImpl(shell)
+
+    @line_magic
+    def dmf(self, line):
+        """DMF outer command.
+
+        Example::
+
+            %dmf <subcommand> [subcommand args..]
+        """
+        return self._impl.dmf(line)
+
+
+class DmfMagicsImpl(object):
+    """State and implementation called by DmfMagics.
+    """
     # Encoding which commands need 'init'.
+    # Also encode args required to that command.
     # Key is command, value is #args: '*'=any, '+'=1 or more.
     NEED_INIT_CMD = {'info': '*', 'help': '+'}
 
     def __init__(self, shell):
-        super(DmfMagics, self).__init__(shell)
         self._dmf = None
+        self._shell = shell
 
-    @line_magic
+    @property
+    def initialized(self):
+        return self._dmf is not None
+
     def dmf(self, line):
         """DMF outer command
         """
@@ -69,36 +98,6 @@ class DmfMagics(Magics):
             msg = 'Error in `%dmf {}`: {}'.format(subcmd, err)
             return self._dmf_markdown(msg)
 
-    @line_magic
-    def idaes(self, line):
-        """%idaes magic
-        """
-        line = line.strip()
-        if line == '':
-            tokens = ['help']
-        else:
-            tokens = line.split()
-        subcmd = tokens[0]
-        if subcmd == 'help':
-            return self.idaes_help(*tokens[1:])
-        else:
-            txt = "Unrecognized command `{}`".format(subcmd)
-            return self._dmf_markdown(txt)
-
-    def _init_required(self, subcmd, tokens):
-        """Return whether init is required before this particular
-        subcommand invocation and, if so, why.
-        """
-        req, why = False, ''
-        if subcmd in self.NEED_INIT_CMD:
-            nargs_code = self.NEED_INIT_CMD[subcmd]
-            if nargs_code == '*' or (nargs_code == '+' and len(tokens) > 1):
-                req = True
-                nwhy = '' if nargs_code == '*' else ' with 1 or more args'
-                why = 'Must call `init` before command `{}`{}'.format(
-                    subcmd, nwhy)
-        return req, why
-
     def dmf_init(self, path, *extra):
         """Initialize DMF (do this before most other commands).
 
@@ -111,7 +110,7 @@ class DmfMagics(Magics):
                 kwargs = {'create': True, 'add_defaults': True}
                 create = True
             else:
-                _log.warn('Ignoring extra argument to "init"')
+                _log.warning('Ignoring extra argument to "init"')
 
         try:
             self._dmf = dmfbase.DMF(path, **kwargs)
@@ -152,7 +151,7 @@ class DmfMagics(Magics):
                 pass  # XXX: Should we print a warning?
         if not any_good_workspaces:
             # either no paths, or all paths raised an error
-            return('ERROR: No valid workspaces found\n')
+            return 'ERROR: No valid workspaces found\n'
         else:
             lines = ['| Path | Name | Description |',
                      '| ---- | ---- | ----------- |']
@@ -209,9 +208,6 @@ class DmfMagics(Magics):
         all_info = '\n'.join((conf_info, ))
         self._dmf_markdown(all_info)
 
-    def _dmf_markdown(self, text):
-        display_markdown(text, raw=True)
-
     def dmf_help(self, *names):
         """Provide help on IDAES objects and classes.
 
@@ -228,35 +224,12 @@ class DmfMagics(Magics):
         # Check some special names first.
         # To re-use the <module>.<class> mechanism, translate them into
         # some pseudo-classes in the "dmf.help" pseudo-module.
-        if name.lower() in ('help', 'dmf'):
+        p_module = None
+        if name.lower() == 'dmf':
             p_module = 'dmf.help'
-            p_class = name.title()
-            helpfiles = help.get_html_docs(self._dmf, p_module, p_class)
-        else:
-            helpfiles = self._find_help_for_object(name)
-        if helpfiles:
-            self._show_help_in_browser(helpfiles)
-        else:
-            return 'No Sphinx docs found for "{}"'.format(name)
-
-    def idaes_help(self, *names):
-        """Provide help on IDAES objects and classes.
-
-        Invoking with no arguments gives general help.
-        Invoking with one or more arguments looks for help in the docs
-        on the given objects or classes.
-        """
-        if len(names) == 0:
-            # give some general help for magics
-            return self._magics_help()
-        if len(names) > 1:
-            raise ValueError('Only one object or class at a time')
-        name = names[0]
-        # Check some special names first.
-        # To re-use the <module>.<class> mechanism, translate them into
-        # some pseudo-classes in the "idaes.help" pseudo-module.
-        if name.lower() in ('help', 'idaes'):
+        elif name.lower in ('help', 'idaes'):
             p_module = 'idaes.help'
+        if p_module is not None:
             p_class = name.title()
             helpfiles = help.get_html_docs(self._dmf, p_module, p_class)
         else:
@@ -265,11 +238,29 @@ class DmfMagics(Magics):
             self._show_help_in_browser(helpfiles)
         else:
             return 'No Sphinx docs found for "{}"'.format(name)
+
+    def _init_required(self, subcmd, tokens):
+        """Return whether init is required before this particular
+        subcommand invocation and, if so, why.
+        """
+        req, why = False, ''
+        if subcmd in self.NEED_INIT_CMD:
+            nargs_code = self.NEED_INIT_CMD[subcmd]
+            if nargs_code == '*' or (nargs_code == '+' and len(tokens) > 1):
+                req = True
+                nwhy = '' if nargs_code == '*' else ' with 1 or more args'
+                why = 'Must call `init` before command `{}`{}'.format(
+                    subcmd, nwhy)
+        return req, why
+
+    @staticmethod
+    def _dmf_markdown(text):
+        display_markdown(text, raw=True)
 
     def _find_help_for_object(self, name):
         """Get object by evaluating name as an expression."""
         try:
-            obj = self.shell.ev(name)
+            obj = self._shell.ev(name)
         except Exception as err:
             raise errors.DmfError('Cannot evaluate object/class for help: '
                                   '{}'.format(err))
@@ -322,21 +313,10 @@ class DmfMagics(Magics):
         hdr = sentence.replace('\n', ' ')
         return hdr
 
-# def dmf_add(self, name, *params):
-#     """Add one resource
-#     """
-#     try:
-#         obj = self.shell.ev(name)
-#     except Exception as err:
-#         raise errors.DmfError('Cannot evaluate object/class for "add": {}'
-#                               .format(err))
-#     if isinstance(obj, idaes_models.core.FlowsheetBlockData):
-#         rsrc = self._rfactory.create_flowsheet(obj)
-#         self._dmf.add(rsrc)
-#     else:
-#         return 'Unknown object type "{}". Cannot add as a DMF resource.'\
-#             .format(type(obj))
 
+###############################################################################
+# Register at import time
+###############################################################################
 
 _registered = False
 

@@ -13,5 +13,31 @@
 """
 Tests for DMF Jupyter "magics"
 """
+# third-party
 import pytest
+# local
+from idaes.dmf import magics
+from .util import TempDir
 
+
+class MockShell(object):
+    """Mock object for IPython 'shell'.
+    """
+    def ev(self, name):
+        raise ValueError('Unknown object: {}'.format(name))
+
+
+@pytest.fixture
+def magics_impl():
+    shell = MockShell()
+    return magics.DmfMagicsImpl(shell)
+
+
+def test_init(magics_impl):
+    assert 1
+
+
+def test_dmf_init_create(magics_impl):
+    with TempDir() as d:
+        magics_impl.dmf_init(d, 'create')
+        assert magics_impl.initialized
