@@ -25,8 +25,8 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.core.process_block import declare_process_block_class
 from idaes.core.util.exceptions import (ConfigurationError,
-                                        DynamicError,
                                         PropertyPackageError)
+from idaes.core.util.misc import add_object_reference
 
 
 # Some more inforation about this module
@@ -113,13 +113,15 @@ class ProcessBlockData(_BlockData):
                                               descend_into=True):
                 # Try to fix material_accumulation @ first time point
                 try:
-                    obj.material_accumulation[obj.time.first(), ...].fix(0.0)
+                    obj.material_accumulation[obj.time_ref.first(),
+                                              ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix energy_accumulation @ first time point
                 try:
-                    obj.energy_accumulation[obj.time.first(), ...].fix(0.0)
+                    obj.energy_accumulation[obj.time_ref.first(),
+                                            ...].fix(0.0)
                 except AttributeError:
                     pass
 
@@ -139,13 +141,13 @@ class ProcessBlockData(_BlockData):
         for obj in self.component_objects(Block, descend_into=True):
             # Try to unfix material_accumulation @ first time point
             try:
-                obj.material_accumulation[obj.time.first(), ...].unfix()
+                obj.material_accumulation[obj.time_ref.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to unfix energy_accumulation @ first time point
             try:
-                obj.energy_accumulation[obj.time.first(), ...].unfix()
+                obj.energy_accumulation[obj.time_ref.first(), ...].unfix()
             except AttributeError:
                 pass
 
@@ -182,9 +184,6 @@ class ProcessBlockData(_BlockData):
                 self.config.property_package = parent.config.property_package
             except AttributeError:
                 self.config.property_package = self._get_default_prop_pack()
-
-        # Get module of property package
-        self._property_module = self.config.property_package._package_module
 
         # Check for any flowsheet level build arguments
         for k in self.config.property_package.config.default_arguments:
@@ -248,9 +247,8 @@ class ProcessBlockData(_BlockData):
         """
         # Get phase and component list(s)
         try:
-            # TODO : Look at ways to use Pyomo references, or create new Set
-            object.__setattr__(self, "phase_list",
-                               self.config.property_package.phase_list)
+            add_object_reference(self, "phase_list_ref",
+                                 self.config.property_package.phase_list)
         except AttributeError:
             raise PropertyPackageError(
                     '{} property_package provided does not '
@@ -258,9 +256,8 @@ class ProcessBlockData(_BlockData):
                     'Please contact the developer of the property package.'
                     .format(self.name))
         try:
-            # TODO : Look at ways to use Pyomo references, or create new Set
-            object.__setattr__(self, "component_list",
-                               self.config.property_package.component_list)
+            add_object_reference(self, "component_list_ref",
+                                 self.config.property_package.component_list)
         except AttributeError:
             raise PropertyPackageError(
                     '{} property_package provided does not '
@@ -286,48 +283,16 @@ class ProcessBlockData(_BlockData):
             None
         """
         if self.config.reaction_package is not None:
-            # Get module of reaction package
-            self._reaction_module = \
-                self.config.reaction_package._package_module
-
             # Check for any flowsheet level build arguments
             for k in self.config.reaction_package.config.default_arguments:
                 if k not in self.config.reaction_package_args:
                     self.config.reaction_package_args[k] = \
                        self.config.reaction_package.config.default_arguments[k]
 
-    def _validate_add_balance_arguments(self, dynamic, has_holdup):
-        """
-        Method to validate dynamic and has_holdup arguments used by many
-        balance equation methods.
-
-        Args:
-            dynamic, has_holdup
-
-        Returns:
-            Validated values of dynamic and has_holdup
-        """
-        # If dynamic argument not provided, try to get argument from parent
-        if dynamic == useDefault:
-            dynamic = self.config.dynamic
-        elif dynamic and not self.config.dynamic:
-            raise DynamicError("{} cannot have dynamic balance equations "
-                               "within a steady-state control volume."
-                               .format(self.name))
-
-        # If dynamic = True, has_holdup must also be True
-        if dynamic and not has_holdup:
-            raise ConfigurationError(
-                    "{} invalid arguments for dynamic and has_holdup. "
-                    "If dynamic = True, has_holdup must also be True (was "
-                    "False)".format(self.name))
-
-        return dynamic, has_holdup
-
     def _get_phase_comp_list(self):
         """
         Method to collect phase-component list from property package.
-        If property pakcage does not define a phase-component list, then it is
+        If property package does not define a phase-component list, then it is
         assumed that all components are present in all phases.
 
         Args:
@@ -343,7 +308,7 @@ class ProcessBlockData(_BlockData):
         else:
             # Otherwise assume all components in all phases
             phase_component_list = {}
-            for p in self.phase_list:
-                phase_component_list[p] = self.component_list
+            for p in self.phase_list_ref:
+                phase_component_list[p] = self.component_list_ref
 
         return phase_component_list

@@ -26,10 +26,10 @@ from idaes.core import (FlowsheetBlockData,
                         PhysicalParameterBase,
                         StateBlockBase,
                         StateBlockDataBase)
-from idaes.models.mixer import (MixerBlock,
-                                MixerBlockData,
-                                MixingType,
-                                MomentumMixingType)
+from idaes.unit_models.mixer import (Mixer,
+                                     MixerData,
+                                     MixingType,
+                                     MomentumMixingType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
@@ -51,6 +51,8 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"])
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
+
+        self.state_block_class = StateBlock
 
     @classmethod
     def define_metadata(cls, obj):
@@ -101,7 +103,7 @@ class StateBlockData(StateBlockDataBase):
     def get_enthalpy_flow_terms(b, p):
         return b.enth_mol_phase[p]
 
-    def define_port_members(self):
+    def define_state_vars(self):
         return {"component_flow": self.flow_mol_phase_comp,
                 "enthalpy": self.enth_mol_phase,
                 "pressure": self.pressure}
@@ -111,9 +113,9 @@ class StateBlockData(StateBlockDataBase):
 
 
 @declare_process_block_class("MixerFrame")
-class MixerFrameData(MixerBlockData):
+class MixerFrameData(MixerData):
     def build(self):
-        super(MixerBlockData, self).build()
+        super(MixerData, self).build()
 
 
 # -----------------------------------------------------------------------------
@@ -150,9 +152,8 @@ def test_inherited_methods():
     m.fs.mix._get_property_package()
     m.fs.mix._get_indexing_sets()
 
-    assert hasattr(m.fs.mix, "_property_module")
-    assert hasattr(m.fs.mix, "phase_list")
-    assert hasattr(m.fs.mix, "component_list")
+    assert hasattr(m.fs.mix, "phase_list_ref")
+    assert hasattr(m.fs.mix, "component_list_ref")
 
 
 def test_create_inlet_list_default():
@@ -426,7 +427,7 @@ def test_add_material_mixing_equations_equilibrium():
 
     m.fs.mix.add_material_mixing_equations(inlet_blocks, mixed_block)
 
-    assert hasattr(m.fs.mix, "phase_equilibrium_idx")
+    assert hasattr(m.fs.mix, "phase_equilibrium_idx_ref")
     assert isinstance(m.fs.mix.phase_equilibrium_generation, Var)
     assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
     assert len(m.fs.mix.material_mixing_equations) == 4
@@ -581,11 +582,11 @@ def test_build_default():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterBlock()
 
-    m.fs.mix = MixerBlock(default={"property_package": m.fs.pp})
+    m.fs.mix = Mixer(default={"property_package": m.fs.pp})
 
     assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
     assert len(m.fs.mix.material_mixing_equations) == 4
-    assert hasattr(m.fs.mix, "phase_equilibrium_idx") is False
+    assert hasattr(m.fs.mix, "phase_equilibrium_idx_ref") is False
 
     assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
     assert len(m.fs.mix.enthalpy_mixing_equations) == 1
@@ -608,12 +609,12 @@ def test_build_phase_equilibrium():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterBlock()
 
-    m.fs.mix = MixerBlock(default={"property_package": m.fs.pp,
-                                   "calculate_phase_equilibrium": True})
+    m.fs.mix = Mixer(default={"property_package": m.fs.pp,
+                              "calculate_phase_equilibrium": True})
 
     assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
     assert len(m.fs.mix.material_mixing_equations) == 4
-    assert hasattr(m.fs.mix, "phase_equilibrium_idx")
+    assert hasattr(m.fs.mix, "phase_equilibrium_idx_ref")
     assert isinstance(m.fs.mix.phase_equilibrium_generation, Var)
 
     assert isinstance(m.fs.mix.enthalpy_mixing_equations, Constraint)
@@ -637,7 +638,7 @@ def test_build_phase_pressure_equality():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterBlock()
 
-    m.fs.mix = MixerBlock(default={
+    m.fs.mix = Mixer(default={
             "property_package": m.fs.pp,
             "momentum_mixing_type": MomentumMixingType.equality})
 
@@ -662,7 +663,7 @@ def test_model_checks():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterBlock()
 
-    m.fs.mix = MixerBlock(default={
+    m.fs.mix = Mixer(default={
             "property_package": m.fs.pp,
             "momentum_mixing_type": MomentumMixingType.equality})
 
@@ -679,7 +680,7 @@ def test_initialize():
     m.fs.pp = PhysicalParameterBlock()
     m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
-    m.fs.mix = MixerBlock(default={
+    m.fs.mix = Mixer(default={
             "property_package": m.fs.pp,
             "mixed_state_block": m.fs.sb})
 
@@ -700,8 +701,8 @@ def test_initialize():
     assert m.fs.sb[0].flow_mol_phase_comp["p2", "c1"].value == 2
     assert m.fs.sb[0].flow_mol_phase_comp["p2", "c2"].value == 2
 
-    assert m.fs.sb[0].enth_mol_phase["p1"].value == 4
-    assert m.fs.sb[0].enth_mol_phase["p2"].value == 4
+    assert m.fs.sb[0].enth_mol_phase["p1"].value == 2
+    assert m.fs.sb[0].enth_mol_phase["p2"].value == 2
 
     assert m.fs.sb[0].pressure.value == 8e4
 
