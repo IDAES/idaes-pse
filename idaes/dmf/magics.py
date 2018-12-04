@@ -62,39 +62,48 @@ class DmfMagicsImpl(object):
     # Encoding which commands need 'init'.
     # Also encode args required to that command.
     # Key is command, value is #args: '*'=any, '+'=1 or more.
-    NEED_INIT_CMD = {'info': '*', 'help': '+'}
+    _NEED_INIT = {
+        'info': '*',
+        'help': '+'
+    }
 
     def __init__(self, shell):
         self._dmf = None
         self._shell = shell
+        self._last_ok = None  # last command OK? None-no cmd
 
     @property
     def initialized(self):
         return self._dmf is not None
 
+    @property
+    def last_ok(self):
+        return self._last_ok is not False  # None or True
+
     def dmf(self, line):
         """DMF outer command
         """
+        self._last_ok = True
+        # Parse input into a subcommand and other tokens
         line = line.strip()
         if line == '':
+            # No command will invoke "help"
             tokens = ['help']
         else:
             tokens = line.split()
+        # Find sub-method matching subcommand
         subcmd = tokens[0]
-        if subcmd == 'workspaces':
-            pass
-        elif self._dmf is None:
-                required, why = self._init_required(subcmd, tokens)
-                if required:
-                    return self._dmf_markdown(why)
         submeth = getattr(self, 'dmf_' + subcmd, None)
         if submeth is None:
-            txt = "Unrecognized command `{}`".format(subcmd)
+            txt = "Error: unrecognized command `{}`".format(subcmd)
+            self._last_ok = False
             return self._dmf_markdown(txt)
+        # Invoke sub-method
         params = tokens[1:]
         try:
             return submeth(*params)
         except Exception as err:
+            self._last_ok = False
             msg = 'Error in `%dmf {}`: {}'.format(subcmd, err)
             return self._dmf_markdown(msg)
 
@@ -103,8 +112,10 @@ class DmfMagicsImpl(object):
 
         Args:
             path (str): Full path to DMF home
+            extra (str): Extra tokens. If 'create', then try to create the
+                         path if it is not found.
         """
-        kwargs, create = {}, True
+        kwargs, create = {}, False
         if len(extra) > 0:
             if extra[0].lower() == 'create':
                 kwargs = {'create': True, 'add_defaults': True}
@@ -115,15 +126,18 @@ class DmfMagicsImpl(object):
         try:
             self._dmf = dmfbase.DMF(path, **kwargs)
         except errors.WorkspaceNotFoundError:
-            if not create:
-                msg = 'Workspace not found at path "{}". ' \
-                      'If you want to create a new workspace, add the word ' \
-                      '"create", after the path, to the command.'.format(path)
-                return msg
-            else:
-                return 'Workspace could not be created at path "{}"'\
-                       .format(path)
+            assert not create
+            self._last_ok = False
+            msg = 'Workspace not found at path "{}". ' \
+                  'If you want to create a new workspace, add the word ' \
+                  '"create", after the path, to the command.'.format(path)
+            return msg
+        except errors.WorkspaceCannotCreateError:
+            self._last_ok = False
+            return 'Workspace could not be created at path "{}"'\
+                   .format(path)
         except errors.DMFError as err:
+            self._last_ok = False
             return 'Error initializing workspace: {}'.format(err)
 
         self._dmf.set_meta({'name': os.path.basename(path)})
@@ -151,7 +165,8 @@ class DmfMagicsImpl(object):
                 pass  # XXX: Should we print a warning?
         if not any_good_workspaces:
             # either no paths, or all paths raised an error
-            return 'ERROR: No valid workspaces found\n'
+            self._last_ok = False
+            return 'No valid workspaces found\n'
         else:
             lines = ['| Path | Name | Description |',
                      '| ---- | ---- | ----------- |']
@@ -160,20 +175,25 @@ class DmfMagicsImpl(object):
                 lines.append(rowstr)
             listing = '\n'.join(lines)
             self._dmf_markdown(listing)
+            return '{:d} workspaces found\n'.format(len(listing))
 
     def dmf_list(self):
         """List resources in the current workspace.
         """
+        if self._init_required('list'):
+            return
         lines = ['| ID | Name(s) | Type | Modified | Description | ',
                  '| -- | ------- | ---- | -------- | ----------- |']
         for rsrc in self._dmf.find():
-            msince = pendulum.from_timestamp(rsrc.modified).diff_for_humans()
+            msince = pendulum.from_timestamp(rsrc.v['modified'])\
+                .diff_for_humans()
             rowstr = '| {id} | {names} | {type} | {mdate} | {desc} |'.format(
-                id=rsrc.id_, names=','.join(rsrc.aliases), type=rsrc.type,
-                mdate=msince, desc=rsrc.desc)
+                id=rsrc.id, names=','.join(rsrc.v['aliases']), type=rsrc.type,
+                mdate=msince, desc=rsrc.v['desc'])
             lines.append(rowstr)
         listing = '\n'.join(lines)
-        return self._dmf_markdown(listing)
+        self._dmf_markdown(listing)
+        return True
 
     def dmf_info(self, *topics):
         """Provide information about DMF current state for whatever
@@ -186,6 +206,8 @@ class DmfMagicsImpl(object):
         Returns:
             None
         """
+        if self._init_required('info'):
+            return
         if topics:
             self._dmf_markdown('Sorry, no topic-specific info yet available')
             return
@@ -215,10 +237,13 @@ class DmfMagicsImpl(object):
         Invoking with one or more arguments looks for help in the docs
         on the given objects or classes.
         """
+        if self._init_required('help'):
+            return
         if len(names) == 0:
             # give some general help for magics
             return self._magics_help()
         if len(names) > 1:
+            self._last_ok = False
             raise ValueError('Only one object or class at a time')
         name = names[0]
         # Check some special names first.
@@ -239,19 +264,16 @@ class DmfMagicsImpl(object):
         else:
             return 'No Sphinx docs found for "{}"'.format(name)
 
-    def _init_required(self, subcmd, tokens):
-        """Return whether init is required before this particular
-        subcommand invocation and, if so, why.
+    def _init_required(self, subcmd):
+        """If no DMF, display init-required message and set status to
+           not OK. Otherwise, do nothing and return False.
         """
-        req, why = False, ''
-        if subcmd in self.NEED_INIT_CMD:
-            nargs_code = self.NEED_INIT_CMD[subcmd]
-            if nargs_code == '*' or (nargs_code == '+' and len(tokens) > 1):
-                req = True
-                nwhy = '' if nargs_code == '*' else ' with 1 or more args'
-                why = 'Must call `init` before command `{}`{}'.format(
-                    subcmd, nwhy)
-        return req, why
+        if self._dmf is not None:
+            return False
+        msg = 'Must call `init` before command `{}`'.format(subcmd)
+        self._last_ok = False
+        self._dmf_markdown(msg)
+        return True
 
     @staticmethod
     def _dmf_markdown(text):

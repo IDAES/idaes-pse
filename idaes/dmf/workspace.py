@@ -22,8 +22,9 @@ import yaml
 import jsonschema
 import six
 # local
-from .errors import ParseError, WorkspaceError, WorkspaceNotFoundError, \
-    WorkspaceConfNotFoundError, WorkspaceConfMissingField
+from .errors import (ParseError, WorkspaceError, WorkspaceNotFoundError,
+                     WorkspaceConfNotFoundError, WorkspaceConfMissingField,
+                     WorkspaceCannotCreateError)
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
@@ -172,6 +173,8 @@ class Workspace(object):
             try:
                 os.mkdir(self._wsdir, 0o770)
             except OSError:
+                if not os.path.exists(self._wsdir):
+                    raise WorkspaceCannotCreateError(self._wsdir)
                 if os.path.exists(self._conf):
                     raise WorkspaceError('Existing configuration would be '
                                          'overwritten: {}'.format(self._conf))
