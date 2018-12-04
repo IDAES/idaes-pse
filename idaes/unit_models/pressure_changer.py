@@ -32,7 +32,7 @@ from idaes.core import (ControlVolume0D,
                         UnitBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block, list_of_strings
-from idaes.core.util.misc import add_object_ref
+from idaes.core.util.misc import add_object_reference
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
 
@@ -102,7 +102,7 @@ c - EnergyBalanceType.enthalpyTotal.
  **Valid values** {
  **True** - include work transfer terms,
  **False** - exclude work transfer terms.}"""))
- CONFIG.declare("has_pressure_change", ConfigValue(
+    CONFIG.declare("has_pressure_change", ConfigValue(
      default=True,
      domain=In([True, False]),
      description="Pressure change term construction flag",
@@ -197,25 +197,25 @@ see property package for documentation.}"""))
         super(PressureChangerData, self).build()
 
         # Build Holdup Block
-        self.control_volume = controlvolume0D()
+        self.control_volume = ControlVolume0D()
 
         # Set Unit Geometry and holdup Volume
-        self.add_set_geometry()
+        self.set_geometry()
 
         # Construct performance equations
-        self.add_make_performance()
+        self.add_performance()
 
         # Construct equations for thermodynamic assumption
         if self.config.thermodynamic_assumption == "isothermal":
-            self.add_make_isothermal()
+            self.add_isothermal()
         elif self.config.thermodynamic_assumption == "isentropic":
-            self.add_make_isentropic()
+            self.add_isentropic()
         elif self.config.thermodynamic_assumption == "pump":
-            self.add_make_pump()
+            self.add_pump()
         elif self.config.thermodynamic_assumption == "adiabatic":
-            self.add_make_adiabatic()
+            self.add_adiabatic()
 
-    def add_set_geometry(self):
+    def set_geometry(self):
         """
         Define the geometry of the unit as necessary, and link to control volume
 
@@ -227,9 +227,9 @@ see property package for documentation.}"""))
         """
         # For this case, just create a reference to control volume
         if self.config.has_holdup is True:
-            add_object_ref(self, "volume", self.control_volume.volume)
+            add_object_reference(self, "volume", self.control_volume.volume)
 
-    def add_make_performance(self):
+    def add_performance(self):
         """
         Define constraints which describe the behaviour of the unit model.
 
@@ -240,8 +240,8 @@ see property package for documentation.}"""))
             None
         """
         # Set references to balance terms at unit level
-        add_object_ref(self, "work_mechanical", self.control_volume.work)
-        add_object_ref(self, "deltaP", self.control_volume.deltaP)
+        add_object_reference(self, "work_mechanical", self.control_volume.work)
+        add_object_reference(self, "deltaP", self.control_volume.deltaP)
 
         # Performance Variables
         self.ratioP = Var(self.time, initialize=1.0,
@@ -251,10 +251,10 @@ see property package for documentation.}"""))
         @self.Constraint(self.time, doc="Pressure ratio constraint")
         def ratioP_calculation(b, t):
             sf = b.control_volume.scaling_factor_pressure
-            return sf*b.ratioP[t]*b.control_volume.properties_in[t].pressure == \
-                sf*b.control_volume.properties_out[t].pressure
+            return sf*b.ratioP[t]*b.control_volume.properties_in[t].pressure \
+                == sf*b.control_volume.properties_out[t].pressure
 
-    def add_make_pump(self):
+    def add_pump(self):
         """
         Add constraints for the incompresisble fluid assumption
 
@@ -291,7 +291,7 @@ see property package for documentation.}"""))
                 return sf*b.work_mechanical[t] == sf*(
                             b.work_fluid[t]*b.efficiency_pump[t])
 
-    def add_make_isothermal(self):
+    def add_isothermal(self):
         """
         Add constraints for isothermal assumption.
 
@@ -302,12 +302,13 @@ see property package for documentation.}"""))
             None
         """
         # Isothermal constraint
-        @self.Constraint(self.time, doc="Equate inlet and outlet temperature")
+        @self.Constraint(self.time, 
+                         doc="For isothermal condition: Equate inlet and outlet temperature")
         def isothermal(b, t):
             return b.control_volume.properties_in[t].temperature == \
                        b.control_volume.properties_out[t].temperature
 
-    def add_make_adiabatic(self):
+    def add_adiabatic(self):
         """
         Add constraints for adiabatic assumption.
 
@@ -318,12 +319,13 @@ see property package for documentation.}"""))
             None
         """
         # Isothermal constraint
-        @self.Constraint(self.time, doc="Equate inlet and outlet enthalpy")
+        @self.Constraint(self.time, 
+                         doc="For isothermal condition: Equate inlet and outlet enthalpy")
         def adiabatic(b, t):
             return b.control_volume.properties_in[t].enth_mol == \
                        b.control_volume.properties_out[t].enth_mol
 
-    def add_make_isentropic(self):
+    def add_isentropic(self):
         """
         Add constraints for isentropic assumption.
 
@@ -334,8 +336,8 @@ see property package for documentation.}"""))
             None
         """
         # Get indexing sets from holdup block
-        add_object_ref(self, "phase_list", self.control_volume.phase_list)
-        add_object_ref(self, "component_list", self.control_volume.component_list)
+        add_object_reference(self, "phase_list", self.control_volume.phase_list)
+        add_object_reference(self, "component_list", self.control_volume.component_list)
 
         # Add isentropic variables
         self.efficiency_isentropic = Var(self.time,
