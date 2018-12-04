@@ -4,7 +4,7 @@ shared: &shared
   working_directory: ~/repo
   steps:
     - checkout
-    - run: sudo apt-get update && sudo apt-get install -y boost
+    - run: sudo apt-get update && sudo apt-get install -y libboost-dev
     - run: wget https://ampl.com/netlib/ampl/solvers.tgz
     - run: tar -xf solvers.tgz
     - run: cd solvers && ./configure
