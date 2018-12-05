@@ -121,7 +121,7 @@ class _ReactionBlock(ReactionBlockBase):
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
-    def initialize(blk, outlvl=0):
+    def initialize(blk, outlvl=0, **kwargs):
         '''
         Initialisation routine for reaction package.
 

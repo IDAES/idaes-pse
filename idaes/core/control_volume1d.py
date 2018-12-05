@@ -165,20 +165,20 @@ class ControlVolume1dData(ControlVolumeBase):
             None
         """
         def property_rule(b, t, x):
-            b.parent_component()._block_data_config_initialize[t,x] = {}
+            fd = information_flow
+            cfg_dict = b.parent_component()._block_data_config_initialize
+            cfg_dict[t,x] = {}
             for a in package_arguments:
-                b.parent_component()._block_data_config_initialize[t,x][a] = package_arguments[a]
-            b.parent_component()._block_data_config_initialize[t,x]["has_phase_equilibrium"] = \
-                has_phase_equilibrium
-            b.parent_component()._block_data_config_initialize[t,x]["parameters"] = \
-                self.config.property_package
+                cfg_dict[t,x][a] = package_arguments[a]
+            cfg_dict[t,x]["has_phase_equilibrium"] = has_phase_equilibrium
+            cfg_dict[t,x]["parameters"] = self.config.property_package
 
-            if information_flow == FlowDirection.forward and x == self.length_domain.first():
-                b.parent_component()._block_data_config_initialize[t,x]["defined_state"] = True
-            elif information_flow == FlowDirection.backward and x == self.length_domain.last():
-                b.parent_component()._block_data_config_initialize[t,x]["defined_state"] = True
+            if fd == FlowDirection.forward and x == self.length_domain.first():
+                cfg_dict[t,x]["defined_state"] = True
+            elif fd == FlowDirection.backward and x == self.length_domain.last():
+                cfg_dict[t,x]["defined_state"] = True
             else:
-                b.parent_component()._block_data_config_initialize[t,x]["defined_state"] = False
+                cfg_dict[t,x]["defined_state"] = False
             b.build()
 
         self.properties = self.config.property_package.state_block_class(

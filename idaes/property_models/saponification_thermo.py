@@ -208,17 +208,16 @@ class _StateBlock(StateBlockBase):
 
         opt = SolverFactory(solver)
         opt.options = optarg
-
-        results = solve_indexed_blocks(opt, blk, tee=stee)
-
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info('{} Initialisation Step 1 Complete.'
-                          .format(blk.name))
-            else:
-                _log.warning('{} Initialisation Step 1 Failed.'
-                             .format(blk.name))
+        #blk.display()
+        #results = solve_indexed_blocks(opt, blk, tee=stee)
+        #if outlvl > 0:
+        #    if results.solver.termination_condition \
+        #            == TerminationCondition.optimal:
+        #        _log.info('{} Initialisation Step 1 Complete.'
+        #                  .format(blk.name))
+        #    else:
+        #        _log.warning('{} Initialisation Step 1 Failed.'
+        #                     .format(blk.name))
 
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
@@ -245,6 +244,8 @@ class _StateBlock(StateBlockBase):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
+        if flags is None:
+            return
         # Unfix state variables
         for k in blk.keys():
             if flags['Fflag'][k] is False:
