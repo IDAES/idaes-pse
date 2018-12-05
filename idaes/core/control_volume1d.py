@@ -164,9 +164,6 @@ class ControlVolume1dData(ControlVolumeBase):
         Returns:
             None
         """
-        # TODO : This is the code I thought should work
-        # The error looks like the config block has not been created yet, so this fails
-        # as __getattr__ is called repeatedly trying to find the config block.
         def property_rule(b, t, x):
             b.parent_component()._block_data_config_initialize[t,x] = {}
             for a in package_arguments:
@@ -189,33 +186,6 @@ class ControlVolume1dData(ControlVolumeBase):
             self.length_domain,
             doc="Material properties",
             rule=property_rule)
-
-        # TODO : This is the old code that ran, but didn't work
-        #tmp_dict = package_arguments
-        #tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
-        #tmp_dict["parameters"] = self.config.property_package
-        #tmp_dict["defined_state"] = False
-
-        #self.properties = self.config.property_package.state_block_class(
-        #        self.time_ref,
-        #        self.length_domain,
-        #        doc="Material properties at inlet",
-        #        default=tmp_dict)
-
-        # TODO : This is the problem.
-        # In the above line, where the StateBlocks are created, we need to set
-        # the defined_state config argument to True at the inlet (as defined by
-        # the flow_direction attribute). I have no idea how to make this work
-        # properly with the new default/initialize approach.
-        #if information_flow == FlowDirection.forward:
-        #    self.properties[:, 0].config.defined_state = True
-        #elif information_flow == FlowDirection.backward:
-        #    self.properties[:, 1].config.defined_state = True
-        #else:
-        #    raise ConfigurationError(
-        #            '{} invalid value for information_flow argument. '
-        #            'Valid values are FlowDirection.forward and '
-        #            'FlowDirection.backward'.format(self.name))
 
     def add_reaction_blocks(self,
                             has_equilibrium=False,
