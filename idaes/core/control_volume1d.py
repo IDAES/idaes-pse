@@ -167,53 +167,55 @@ class ControlVolume1dData(ControlVolumeBase):
         # TODO : This is the code I thought should work
         # The error looks like the config block has not been created yet, so this fails
         # as __getattr__ is called repeatedly trying to find the config block.
-        #def property_rule(b, t, x):
-        #    for a in package_arguments:
-        #        b.properties[t, x].config[a] = package_arguments[a]
-        #    b.properties[t, x].config.has_phase_equilibrium = has_phase_equilibrium
-        #    b.properties[t, x].config.parameters = self.config.property_package
-        #    
-        #    if information_flow == FlowDirection.forward and x == b.length_domain.first():
-        #        b.properties[t, x].config.defined_state = True
-        #    elif information_flow == FlowDirection.backward and x == b.length_domain.last():
-        #        b.properties[t, x].config.defined_state = True
-        #    else:
-        #        b.properties[t, x].config.defined_state = False
+        def property_rule(b, t, x):
+            b.parent_component()._block_data_config_initialize[t,x] = {}
+            for a in package_arguments:
+                b.parent_component()._block_data_config_initialize[t,x][a] = package_arguments[a]
+            b.parent_component()._block_data_config_initialize[t,x]["has_phase_equilibrium"] = \
+                has_phase_equilibrium
+            b.parent_component()._block_data_config_initialize[t,x]["parameters"] = \
+                self.config.property_package
 
-        #    b.properties[t, x].build()
+            if information_flow == FlowDirection.forward and x == self.length_domain.first():
+                b.parent_component()._block_data_config_initialize[t,x]["defined_state"] = True
+            elif information_flow == FlowDirection.backward and x == self.length_domain.last():
+                b.parent_component()._block_data_config_initialize[t,x]["defined_state"] = True
+            else:
+                b.parent_component()._block_data_config_initialize[t,x]["defined_state"] = False
+            b.build()
 
-        #    self.properties = self.config.property_package.state_block_class(
+        self.properties = self.config.property_package.state_block_class(
+            self.time_ref,
+            self.length_domain,
+            doc="Material properties",
+            rule=property_rule)
+
+        # TODO : This is the old code that ran, but didn't work
+        #tmp_dict = package_arguments
+        #tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
+        #tmp_dict["parameters"] = self.config.property_package
+        #tmp_dict["defined_state"] = False
+
+        #self.properties = self.config.property_package.state_block_class(
         #        self.time_ref,
         #        self.length_domain,
         #        doc="Material properties at inlet",
-        #        rule=property_rule)
-
-        # TODO : This is the old code that ran, but didn't work
-        tmp_dict = package_arguments
-        tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
-        tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = False
-
-        self.properties = self.config.property_package.state_block_class(
-                self.time_ref,
-                self.length_domain,
-                doc="Material properties at inlet",
-                default=tmp_dict)
+        #        default=tmp_dict)
 
         # TODO : This is the problem.
         # In the above line, where the StateBlocks are created, we need to set
         # the defined_state config argument to True at the inlet (as defined by
         # the flow_direction attribute). I have no idea how to make this work
         # properly with the new default/initialize approach.
-        if information_flow == FlowDirection.forward:
-            self.properties[:, 0].config.defined_state = True
-        elif information_flow == FlowDirection.backward:
-            self.properties[:, 1].config.defined_state = True
-        else:
-            raise ConfigurationError(
-                    '{} invalid value for information_flow argument. '
-                    'Valid values are FlowDirection.forward and '
-                    'FlowDirection.backward'.format(self.name))
+        #if information_flow == FlowDirection.forward:
+        #    self.properties[:, 0].config.defined_state = True
+        #elif information_flow == FlowDirection.backward:
+        #    self.properties[:, 1].config.defined_state = True
+        #else:
+        #    raise ConfigurationError(
+        #            '{} invalid value for information_flow argument. '
+        #            'Valid values are FlowDirection.forward and '
+        #            'FlowDirection.backward'.format(self.name))
 
     def add_reaction_blocks(self,
                             has_equilibrium=False,
@@ -1681,7 +1683,7 @@ class ControlVolume1dData(ControlVolumeBase):
         if state_args is None:
             state_args = {}
             state_dict = \
-                blk.properties[blk.time.first(), 0].define_port_members()
+                blk.properties[blk.time_ref.first(), 0].define_port_members()
 
             for k in state_dict.keys():
                 if state_dict[k].is_indexed():
