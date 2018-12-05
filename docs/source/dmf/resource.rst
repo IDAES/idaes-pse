@@ -16,8 +16,5 @@ Resource API
 Resource JSON schema
 ++++++++++++++++++++
 
-.. include:: schemas/resource.json
-    :code: json-object
-
-
-
+.. .. include:: schemas/resource.json
+..    :code: json-object
