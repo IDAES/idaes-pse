@@ -238,13 +238,13 @@ class UnitBlockData(ProcessBlockData):
             try:
                 state_block = block.properties_in
             except AttributeError:
-                if hasattr(block, "ldomain"):
+                if hasattr(block, "length_domain"):
                     if block.config.flow_direction == FlowDirection.forward:
-                        state_block = block.properties[:,
-                                                       block.ldomain.first()]
+                        state_block = block.properties[
+                                :, block.length_domain.first()]
                     elif block.config.flow_direction == FlowDirection.backward:
-                        state_block = block.properties[:,
-                                                       block.ldomain.last()]
+                        state_block = block.properties[
+                                :, block.length_domain.last()]
                     else:
                         raise BurntToast("{} flow_direction argument received "
                                          "invalid value. This should never "
@@ -303,13 +303,13 @@ class UnitBlockData(ProcessBlockData):
             try:
                 state_block = block.properties_out
             except AttributeError:
-                if hasattr(block, "ldomain"):
+                if hasattr(block, "length_domain"):
                     if block.config.flow_direction == FlowDirection.forward:
-                        state_block = block.properties[:,
-                                                       block.ldomain.last()]
+                        state_block = block.properties[
+                                :, block.length_domain.last()]
                     elif block.config.flow_direction == FlowDirection.backward:
-                        state_block = block.properties[:,
-                                                       block.ldomain.first()]
+                        state_block = block.properties[
+                                :, block.length_domain.first()]
                     else:
                         raise BurntToast("{} flow_direction argument received "
                                          "invalid value. This should never "
