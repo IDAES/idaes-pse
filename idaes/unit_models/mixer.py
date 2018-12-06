@@ -451,7 +451,7 @@ linked to all inlet states and the mixed state,
         """
         Add pressure minimization equations. This is done by sequential
         comparisons of each inlet to the minimum pressure so far, using
-       the IDAES smooth minimum fuction.
+        the IDAES smooth minimum fuction.
         """
         # Add variables
         self.inlet_idx = Set(initialize=range(1, len(inlet_blocks)+1),

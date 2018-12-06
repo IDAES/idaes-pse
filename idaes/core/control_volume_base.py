@@ -410,6 +410,8 @@ have a config block which derives from CONFIG_Base,
         Args:
             balance_type - EnergyBalanceType Enum indicating which type of
                     energy balance should be constructed.
+            has_heat_of_reaction - whether terms for heat of reaction
+                    should be included in energy balance
             has_heat_transfer - whether generic heat transfer terms should be
                     included in energy balances
             has_work_transfer - whether generic mass transfer terms should be

@@ -1,11 +1,12 @@
-Model Library
-=============
+Unit Model Library
+==================
 
-Model Contents
----------------
+Unit Model Contents
+-------------------
 
 .. toctree::
     :maxdepth: 1
 
+    gibbs_reactor
     mixer
-    splitter
+    separator
