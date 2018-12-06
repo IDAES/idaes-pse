@@ -15,6 +15,7 @@ Utility functions.
 """
 # stdlib
 import importlib
+import json
 import logging
 import os
 import re
@@ -115,13 +116,21 @@ class TempDir(object):
             self._d = None
 
 
-def is_jupyter_notebook(filename):
+def is_jupyter_notebook(filename, check_contents=True):
     # type: (str) -> bool
     """See if this is a Jupyter notebook.
     """
     if not filename.endswith('.ipynb'):
         return False
-    return True  # XXX: look inside?
+    if check_contents:
+        try:
+            nb = json.load(open(filename))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return False
+        for key in 'cells', 'metadata', 'nbformat':
+            if key not in nb:
+                return False
+    return True
 
 
 def is_python(filename):
@@ -134,23 +143,37 @@ def is_python(filename):
     return True  # XXX: look inside?
 
 
-def is_resource_json(filename):
-    import json
+def is_resource_json(filename, max_bytes=1e6):
+    """Is this file a JSON Resource?
 
+    Args:
+        filename (str): Full path to file
+        max_bytes (int): Max. allowable size. Since we try to parse
+             the file, this saves potential DoS issues. Large files
+             are a bad idea anyways, since this is metadata and may
+             be stored somewhere with a record size limit (like MongoDB).
+
+    Returns:
+        (bool) Whether it's a resource JSON file.
+    """
     if not filename.endswith('.json'):
         return False
-    # if it's under 1MB, try parsing it:
+    # get size
     st = os.stat(filename)
-    if st.st_size < 1e6:
+    # if it's under max_bytes, parse it
+    if st.st_size <= max_bytes:
         try:
             d = json.load(open(filename))
         except (UnicodeDecodeError, json.JSONDecodeError):
             return False
         # look for a couple distinctive keys
-        if '_id' in d and 'sources' in d:
-            return True
+        for key in 'id_', 'type':
+            if key not in d:
+                return False
+        return True
     else:
-        return False  # screw it
+        # if it's over max_bytes, it's "bad"
+        return False
 
 
 def find_process_byname(name, uid=None):
