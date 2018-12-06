@@ -22,7 +22,9 @@ __author__ = "Andrew Lee"
 from pyomo.network import Port
 from idaes.core import useDefault
 from idaes.core.util.exceptions import ConfigurationError
+import logging
 
+_log = logging.getLogger(__name__)
 
 def is_physical_parameter_block(val):
     '''Domain validator for property package attributes
@@ -35,10 +37,16 @@ def is_physical_parameter_block(val):
         or useDefault
     '''
     from idaes.core.property_base import PhysicalParameterBase
-    if (isinstance(val, PhysicalParameterBase) or
-            val == useDefault):
+    if isinstance(val, PhysicalParameterBase) or val == useDefault:
+        return val
+    elif hasattr(val, "_ComponentDataClass") and \
+        issubclass(val._ComponentDataClass, PhysicalParameterBase):
         return val
     else:
+        _log.error("Property package argument {} should == useDefault or "
+                   "be an instance of PhysicalParameterBase".format(val))
+        print("Class of data {}".format(val._ComponentDataClass.__mro__))
+        print(isinstance(PhysicalParameterBase, PhysicalParameterBase))
         raise ConfigurationError(
                 """Property package argument should be an instance
                 of a PhysicalParameterBlock or useDefault""")
