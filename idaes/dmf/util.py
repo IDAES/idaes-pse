@@ -176,64 +176,15 @@ def is_resource_json(filename, max_bytes=1e6):
         return False
 
 
-def find_process_byname(name, uid=None):
-    # type: (str, uid: int) -> Generator[int, None, None]
-    """Generate zero or more PIDs where 'name' is part of either the
-    first or second token in the command line.
-    Optionally also filter the returned PIDs to only those with
-    a 'real' user UID (UID) equal to the provided uid. If None,
-    the default, is given, then use the current process UID. Providing
-    a value of < 0 will skip the filter.
-    """
-    try:
-        proc_entries = os.listdir('/proc')
-    except OSError:
-        _log.error('Attempt to find process "{}" in /proc, but '
-                   'cannot open /proc for reading'.format(name))
-        return
-    if uid is None:
-        uid = os.getuid()
-    for pid in proc_entries:
-        try:
-            pid = int(pid)
-        except ValueError:
-            continue
-        found = None
-        try:
-            with open('/proc/{}/cmdline'.format(pid), mode='rb') as fd:
-                content = fd.read().decode().split('\x00')
-            if len(content) > 0:
-                if content[0].endswith(name):
-                    found = pid
-                elif len(content) > 1 and content[1].endswith(name):
-                    found = pid
-        except (OSError, IOError):
-            continue
-        if found:
-            if uid is None:
-                yield found
-            else:
-                found_uid = psutil.Process(pid).uids().real
-                if found_uid == uid:
-                    yield found
-    return
-
-
-def terminate_pid(pid, waitfor=1):
-    result = True
-    os.kill(pid, signal.SIGTERM)
-    time.sleep(waitfor)
-    if psutil.pid_exists(pid):
-        os.kill(pid, signal.SIGKILL)
-        time.sleep(waitfor)
-        if psutil.pid_exists(pid):
-            result = False
-    return result
-
-
 def datetime_timestamp(v):
     """Get numeric timestamp.
     This will work under both Python 2 and 3.
+
+    Args:
+        v (datetime.datetime): Date/time value
+
+    Returns:
+        (float) Floating point timestamp
     """
     if hasattr(v, 'timestamp'):  # Python 2/3 test
         # Python 2
@@ -244,6 +195,9 @@ def datetime_timestamp(v):
     return result
 
 
+#
+# XXX: Replace this with 'blessings' module
+#
 class CPrint(object):
     """Colorized terminal printing.
 
