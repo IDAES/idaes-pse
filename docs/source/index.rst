@@ -34,8 +34,8 @@ Contents
     :maxdepth: 1
 
     core/index
-    properties/index
     models/index
+    property_models/index
     dmf/index
     glossary
 
