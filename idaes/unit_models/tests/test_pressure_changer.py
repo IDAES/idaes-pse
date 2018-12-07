@@ -22,8 +22,7 @@ from pyomo.environ import ConcreteModel, SolverFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.pressure_changer import PressureChanger
-from idaes.property_models.iapws95.iapws95_wrap_ph import (
-                        Iapws95ParameterBlockData)
+from idaes.property_models import iapws95_ph
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -37,13 +36,13 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
-
+print("pressure changer tests")
 # -----------------------------------------------------------------------------
 def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = Iapws95ParameterBlockData()
+    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
 
     m.fs.presschanger = PressureChanger(default={"property_package": m.fs.properties,
                                        "has_heat_transfer": True})

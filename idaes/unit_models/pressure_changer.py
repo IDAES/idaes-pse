@@ -37,7 +37,7 @@ from idaes.core.util.misc import add_object_reference
 __author__ = "Emmanuel Ogbe, Andrew Lee"
 
 
-@declare_process_block_class("GibbsReactor")
+@declare_process_block_class("PressureChanger")
 class PressureChangerData(UnitBlockData):
     """
     Standard Compressor/Expander Unit Model Class
@@ -116,12 +116,6 @@ c - EnergyBalanceType.enthalpyTotal.
     #CONFIG.get("has_work_transfer")._default = True
     #CONFIG.get("has_pressure_change")._default = True
     # Add unit model attributes
-    CONFIG.declare("dynamic", ConfigValue(
-        domain=In([False]),
-        default=False,
-        description="Dynamic model flag - must be False",
-        doc="""Pressure changer is dynamic or not; Default is
-False."""))
     CONFIG.declare("inlet_list", ConfigValue(
         domain=list_of_strings,
         description="List of inlet names",
@@ -196,8 +190,25 @@ see property package for documentation.}"""))
         # Call UnitModel.build to setup dynamics
         super(PressureChangerData, self).build()
 
-        # Build Holdup Block
-        self.control_volume = ControlVolume0D()
+       # Add a control volume to the unit.
+        self.control_volume = ControlVolume0D(default={
+                "dynamic": self.config.dynamic,
+                "property_package": self.config.property_package,
+                "property_package_args": self.config.property_package_args})
+        # Add inlet and outlet state blocks to control volume
+        self.control_volume.add_state_blocks()
+        # Add mass balance
+        self.control_volume.add_total_component_balances()
+        self.control_volume.add_energy_balances(
+                    balance_type=self.config.energy_balance_type,
+                    has_heat_transfer=self.config.has_heat_transfer)
+        # add energy balance
+        self.control_volume.add_momentum_balances(
+            balance_type=self.config.momentum_balance_type,
+            has_pressure_change=self.config.has_pressure_change)
+        # Add Ports
+        self.add_inlet_port()
+        self.add_outlet_port()
 
         # Set Unit Geometry and holdup Volume
         self.set_geometry()
