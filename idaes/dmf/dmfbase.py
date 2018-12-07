@@ -353,7 +353,7 @@ class DMF(workspace.Workspace, HasTraits):
                            .format(filepath, copydir))
                 try:
                     shutil.copy2(filepath, copydir)
-                except OSError as err:
+                except (IOError, OSError) as err:
                     msg = 'Cannot copy datafile from "{}" to DMF ' \
                           'directory "{}": {}'.format(filepath, copydir, err)
                     _log.error(msg)

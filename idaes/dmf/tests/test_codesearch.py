@@ -154,7 +154,7 @@ def test_warnings():
 @pytest.fixture
 def dummy_package():
     random.seed()
-    saved_sys_path = sys.path.copy()
+    saved_sys_path = sys.path[:]
     # build a bad module in a temporary package
     d = tempfile.mkdtemp()
     sys.path.append(d)
