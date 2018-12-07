@@ -17,7 +17,7 @@ Author: John Eslick
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, SolverFactory
+from pyomo.environ import ConcreteModel, SolverFactory, value
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models import Heater
@@ -32,13 +32,65 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
-def test_build():
+@pytest.fixture()
+def build_heater():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
-
     m.fs.heater = Heater(default={"property_package": m.fs.properties})
+    return m
 
+def test_build_heater():
+    m = build_heater()
     assert hasattr(m.fs.heater, "inlet")
+    assert hasattr(m.fs.heater, "outlet")
     assert len(m.fs.heater.inlet[0].vars) == 3
-    assert hasattr(m.fs.heater.inlet[0], "flow_mol")
+    assert len(m.fs.heater.outlet[0].vars) == 3
+
+    for port in [m.fs.heater.inlet, m.fs.heater.outlet]:
+        assert hasattr(port[0], "flow_mol")
+        assert hasattr(port[0], "enth_mol")
+        assert hasattr(port[0], "pressure")
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_initialize_heater():
+    m = build_heater()
+    init_state = {
+        "flow_mol":100,
+        "pressure":101325,
+        "enth_mol":4000
+    }
+    m.fs.heater.initialize(state_args=init_state)
+
+    prop_in = m.fs.heater.control_volume.properties_in[0]
+    prop_out = m.fs.heater.control_volume.properties_out[0]
+    assert abs(value(prop_in.temperature) - 326.166978534) <= 1e-4
+    assert abs(value(prop_out.temperature) - 326.166978534) <= 1e-4
+    assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
+    assert abs(value(prop_out.phase_frac["Liq"]) - 1) <= 1e-6
+    assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
+    assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_heater_q1():
+    m = build_heater()
+    init_state = {
+        "flow_mol":100,
+        "pressure":101325,
+        "enth_mol":4000
+    }
+    m.fs.heater.initialize(state_args=init_state)
+    m.fs.heater.control_volume.heat[0].fix(init_state["flow_mol"]*1000)
+    prop_in = m.fs.heater.control_volume.properties_in[0]
+    prop_out = m.fs.heater.control_volume.properties_out[0]
+    prop_in.enth_mol.fix()
+    prop_in.flow_mol.fix()
+    prop_in.pressure.fix()
+    assert degrees_of_freedom(m) == 0
+    solver.solve(m)
+    assert abs(value(prop_in.temperature) - 326.166978534) <= 1e-4
+    assert abs(value(prop_out.temperature) - 333.743257954399) <= 1e-4
+    assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
+    assert abs(value(prop_out.phase_frac["Liq"]) - 1) <= 1e-6
+    assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
+    assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
