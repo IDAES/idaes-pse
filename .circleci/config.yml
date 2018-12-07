@@ -5,7 +5,8 @@ shared: &shared
   steps:
     - checkout
     - run: ./install-solvers.sh
-    - run: sudo pip install -qr requirements.txt
+    - run: sudo pip install -Iqr requirements.txt
+    - run: pyomo --version
     - run: sudo python setup.py -q install
     - run: cd docs && make html
     - run: pytest idaes -m "not nocircleci"
