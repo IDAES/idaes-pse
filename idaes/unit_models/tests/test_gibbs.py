@@ -36,6 +36,8 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
+print("gibbs reactor tests")
+
 
 # -----------------------------------------------------------------------------
 def test_build():
