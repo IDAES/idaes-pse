@@ -294,24 +294,7 @@ def test_build():
     m.rb = ReactionBlock2(default={"parameters": m.r,
                                    "state_block": m.pb})
 
-
-def test_ReactionBlock_NotImplementedErrors():
-    # Test that placeholder methods return NotImplementedErrors
-    m = ConcreteModel()
-    m.p = PropertyParameterBlock()
-
-    m.pb = StateBlock(default={"parameters": m.p})
-
-    m.r = ReactionParameterBlock6(default={"property_package": m.p})
-    super(_ReactionParameterBlock6, m.r).build()
-
-    m.rb = ReactionBlock2(default={"parameters": m.r,
-                                   "state_block": m.pb})
-
-    with pytest.raises(NotImplementedError):
-        m.rb.get_reaction_material_terms()
-    with pytest.raises(NotImplementedError):
-        m.rb.get_reaction_energy_terms()
+    assert hasattr(m.rb, "state_ref")
 
 
 # -----------------------------------------------------------------------------

@@ -7,6 +7,7 @@ Core Contents
 .. toctree::
     :maxdepth: 1
 
+    configuration
     process_block
     state_block
     reaction_block

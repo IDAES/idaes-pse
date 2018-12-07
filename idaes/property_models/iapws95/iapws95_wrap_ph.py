@@ -40,7 +40,7 @@ point.
        Ordinary Water Substance,"
        URL: http://iapws.org/relguide/visc.pdf
 """
-from __future__ import absolute_import, division, print_function
+from __future__ import division
 
 __author__ = "John Eslick"
 
@@ -56,8 +56,8 @@ from pyomo.opt import SolverFactory, TerminationCondition
 from pyutilib.misc.config import ConfigValue
 
 # Import IDAES
-from idaes.core import declare_process_block_class, StateBlockDataBase, \
-                       PhysicalParameterBase, ProcessBlock, StateBlockBase
+from idaes.core import declare_process_block_class, ProcessBlock, \
+                       StateBlockBase, StateBlockDataBase, PhysicalParameterBase
 
 # Logger
 _log = logging.getLogger(__name__)
@@ -89,7 +89,6 @@ def htpx(T, P=None, x=None):
         Psat = value(prop.func_p_sat(647.096/T))
         return value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*(x-1) +\
             value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*x
-
 
 @declare_process_block_class("Iapws95ParameterBlock")
 class Iapws95ParameterBlockData(PhysicalParameterBase):
@@ -573,34 +572,34 @@ class Iapws95StateBlockData(StateBlockDataBase):
         self.flow_vol = Expression(expr=self.flow_mol/self.dens_mol,
             doc="Total liquid + vapor volumetric flow (m3/s)")
 
-    def get_material_flow_terms(b, p, j):
+    def get_material_flow_terms(self, p, j):
         if p == "Mix":
-            return b.flow_mol
+            return self.flow_mol
         else:
-            return b.flow_mol*self.phase_frac[p]
+            return self.flow_mol*self.phase_frac[p]
 
-    def get_enthalpy_flow_terms(b, p):
+    def get_enthalpy_flow_terms(self, p):
         if p == "Mix":
             return self.enth_mol*self.flow_mol
         else:
             return self.enth_mol_phase[p]*self.phase_frac[p]*self.flow_mol
 
-    def get_material_density_terms(b, p, j):
+    def get_material_density_terms(self, p, j):
         if p == "Mix":
             return self.dens_mol
         else:
             return self.dens_mol_phase[p]
 
-    def get_enthalpy_density_terms(b, p):
+    def get_enthalpy_density_terms(self, p):
         if p == "Mix":
-            return self.dens_mol*b.enth_mol
+            return self.dens_mol*self.enth_mol
         else:
-            return self.dens_mol_phase[p]*b.enth_mol_phase[p]
+            return self.dens_mol_phase[p]*self.enth_mol_phase[p]
 
-    def define_state_vars(b):
-        return {"flow_mol": b.flow_mol,
-                "enth_mol": b.enth_mol,
-                "pressure": b.pressure}
+    def define_state_vars(self):
+        return {"flow_mol": self.flow_mol,
+                "enth_mol": self.enth_mol,
+                "pressure": self.pressure}
 
     def model_check(self):
         pass
