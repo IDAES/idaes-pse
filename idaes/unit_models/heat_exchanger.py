@@ -24,6 +24,7 @@ from idaes.core import (ControlVolume0D,
                         declare_process_block_class,
                         EnergyBalanceType,
                         MomentumBalanceType,
+                        MaterialBalanceType,
                         UnitBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
@@ -31,8 +32,35 @@ from idaes.core.util.misc import add_object_reference
 
 __author__ = "John Eslick"
 
+def _make_heater_control_volume(o, name, config):
+    """
+    This is seperated from the main model so it can be reused to different types
+    of heat exchangers and heater/cooler units.
+    """
+    control_volume = ControlVolume0D(default={
+            "dynamic": config.dynamic,
+            "property_package": config.property_package,
+            "property_package_args": config.property_package_args})
+    # we have to attach this control volume to the model for the rest of
+    # the steps to work
+    setattr(o, name, control_volume)
+    # Add inlet and outlet state blocks to control volume
+    control_volume.add_state_blocks()
+    # Add material balance
+    control_volume.add_material_balances(
+        balance_type=config.material_balance_type,
+        has_phase_equilibrium=config.calculate_phase_equilibrium)
+    # add energy balance
+    control_volume.add_energy_balances(
+        balance_type=config.energy_balance_type,
+        has_heat_transfer=config.has_heat_transfer)
+    # add momentum balance
+    control_volume.add_momentum_balances(
+        balance_type=config.momentum_balance_type,
+        has_pressure_change=config.has_pressure_change)
+    return control_volume
 
-def setup_heater_config_block(config):
+def _make_heater_config_block(config):
     """
     Declare options of a HeaterData unit.
     """
@@ -40,7 +68,29 @@ def setup_heater_config_block(config):
         domain=In([True, False]),
         default=False,
         description="Dynamic model flag",
-        doc="Indicates wheather the model is dynamic."))
+        doc="Indicates whether the model is dynamic."))
+    config.declare("has_holdup", ConfigValue(
+        default=useDefault,
+        domain=In([useDefault, True, False]),
+        description="Holdup construction flag",
+        doc="""Indicates whether holdup terms should be constructed or not.
+Must be True if dynamic = True,
+**default** - False.
+**Valid values:** {
+**True** - construct holdup terms,
+**False** - do not construct holdup terms}"""))
+    config.declare("material_balance_type", ConfigValue(
+        default=MaterialBalanceType.componentPhase,
+        domain=In(MaterialBalanceType),
+        description="Material balance construction flag",
+        doc="""Indicates what type of mass balance should be constructed,
+    **default** - MaterialBalanceType.componentPhase.
+    **Valid values:** {
+    **MaterialBalanceType.none** - exclude material balances,
+    **MaterialBalanceType.componentPhase** - use phase component balances,
+    **MaterialBalanceType.componentTotal** - use total component balances,
+    **MaterialBalanceType.elementTotal** - use total element balances,
+    **MaterialBalanceType.total** - use total material balance.}"""))
     config.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.enthalpyTotal,
         domain=In(EnergyBalanceType),
@@ -74,6 +124,16 @@ def setup_heater_config_block(config):
 **Valid values:** {
 **True** - include heat transfer terms,
 **False** - exclude heat transfer terms.}"""))
+    config.declare("calculate_phase_equilibrium", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Calculate phase equilibrium in mixed stream",
+        doc="""Argument indicating whether phase equilibrium should be
+calculated for the resulting mixed stream,
+**default** - False.
+**Valid values:** {
+**True** - calculate phase equilibrium in mixed stream,
+**False** - do not calculate equilibrium in mixed stream.}"""))
     config.declare("has_pressure_change", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -103,7 +163,7 @@ and used when constructing these,
 see property package for documentation.}"""))
 
 
-@declare_process_block_class("Heater")
+@declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
 class HeaterData(UnitBlockData):
     """
     Simple 0D heat exchange unit.
@@ -111,7 +171,7 @@ class HeaterData(UnitBlockData):
     Unit model to add or remove heat from a material.
     """
     CONFIG = ConfigBlock()
-    setup_heater_config_block(CONFIG)
+    _make_heater_config_block(CONFIG)
 
     def build(self):
         """
@@ -125,24 +185,10 @@ class HeaterData(UnitBlockData):
         """
         # Call UnitModel.build to setup dynamics
         super(HeaterData, self).build()
-        # Build Control Volume
-
-        # Add a control volune to the unit.
-        self.control_volume = ControlVolume0D(default={
-                "dynamic": self.config.dynamic,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args})
-        # Add inlet and outlet state blocks to control volume
-        self.control_volume.add_state_blocks()
-        # Add mass balance
-        self.control_volume.add_total_component_balances()
-        self.control_volume.add_energy_balances(
-                    balance_type=self.config.energy_balance_type,
-                    has_heat_transfer=self.config.has_heat_transfer)
-        # add energy balance
-        self.control_volume.add_momentum_balances(
-            balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change)
+        # Add Control Volume
+        _make_heater_control_volume(self, "control_volume", self.config)
         # Add Ports
         self.add_inlet_port()
         self.add_outlet_port()
+        # Add a convienient reference to heat duty.
+        add_object_reference(self, "heat_duty", self.control_volume.heat)
