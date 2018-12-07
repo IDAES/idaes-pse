@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Tests for idaes.dmf.dmf module
+Tests for idaes.dmf.dmfbase module
 """
 import json
 import logging
