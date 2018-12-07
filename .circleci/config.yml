@@ -10,6 +10,9 @@ shared: &shared
     - run: cd solvers && ./configure
     - run: cd solvers && make
     - run: export ASL_BUILD=/home/circleci/repo/solvers/sys.x86_64.Linux && cd idaes/property_models/iapws95 && make
+    - run: wget https://ampl.com/dl/open/ipopt/ipopt-linux64.zip
+    - run: unzip ipopt-linux64.zip
+    - run: sudo cp ipopt /usr/local/bin/
     - run: sudo pip install -qr requirements.txt
     - run: sudo python setup.py -q install
     - run: cd docs && make html
