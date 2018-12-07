@@ -56,7 +56,7 @@ _log = logging.getLogger(__name__)
 
     ControlVolume1D should be used for any control volume with a defined volume
     and distinct inlets and outlets where there is a single spatial domain
-    parallel to the mateiral flow direction. This encompases unit operations
+    parallel to the material flow direction. This encompases unit operations
     such as plug flow reactors and pipes.""")
 class ControlVolume1dData(ControlVolumeBase):
     """
@@ -80,7 +80,7 @@ class ControlVolume1dData(ControlVolumeBase):
     def add_geometry(self,
                      length_domain=None,
                      length_domain_set=[0.0, 1.0],
-                     flow_direction=FlowDirection.forward,):
+                     flow_direction=FlowDirection.forward):
         """
         Method to create spatial domain and volume Var in ControlVolume.
 
@@ -164,26 +164,28 @@ class ControlVolume1dData(ControlVolumeBase):
         Returns:
             None
         """
-        tmp_dict = package_arguments
-        tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
-        tmp_dict["parameters"] = self.config.property_package
-        tmp_dict["defined_state"] = False
-        
-        self.properties = self.config.property_package.state_block_class(
-                self.time_ref,
-                self.length_domain,
-                doc="Material properties at inlet",
-                default=tmp_dict)
+        def property_rule(b, t, x):
+            fd = information_flow
+            cfg_dict = b.parent_component()._block_data_config_initialize
+            cfg_dict[t,x] = {}
+            for a in package_arguments:
+                cfg_dict[t,x][a] = package_arguments[a]
+            cfg_dict[t,x]["has_phase_equilibrium"] = has_phase_equilibrium
+            cfg_dict[t,x]["parameters"] = self.config.property_package
 
-        if information_flow == FlowDirection.forward:
-            self.properties[:, 0].config.defined_state = True
-        elif information_flow == FlowDirection.backward:
-            self.properties[:, 1].config.defined_state = True
-        else:
-            raise ConfigurationError(
-                    '{} invalid value for information_flow argument. '
-                    'Valid values are FlowDirection.forward and '
-                    'FlowDirection.backward'.format(self.name))
+            if fd == FlowDirection.forward and x == self.length_domain.first():
+                cfg_dict[t,x]["defined_state"] = True
+            elif fd == FlowDirection.backward and x == self.length_domain.last():
+                cfg_dict[t,x]["defined_state"] = True
+            else:
+                cfg_dict[t,x]["defined_state"] = False
+            b.build()
+
+        self.properties = self.config.property_package.state_block_class(
+            self.time_ref,
+            self.length_domain,
+            doc="Material properties",
+            rule=property_rule)
 
     def add_reaction_blocks(self,
                             has_equilibrium=False,
@@ -331,7 +333,7 @@ class ControlVolume1dData(ControlVolumeBase):
                          self.length_domain,
                          self.phase_list_ref,
                          self.component_list_ref,
-                         doc="Mateiral flow linking constraints")
+                         doc="Material flow linking constraints")
         def material_flow_linking_constraints(b, t, x, p, j):
             return b._flow_terms[t, x, p, j] == \
                 b.properties[t, x].get_material_flow_terms(p, j)
@@ -729,7 +731,7 @@ class ControlVolume1dData(ControlVolumeBase):
                          self.length_domain,
                          self.phase_list_ref,
                          self.component_list_ref,
-                         doc="Mateiral flow linking constraints")
+                         doc="Material flow linking constraints")
         def material_flow_linking_constraints(b, t, x, p, j):
             return b._flow_terms[t, x, p, j] == \
                 b.properties[t, x].get_material_flow_terms(p, j)
@@ -1537,7 +1539,6 @@ class ControlVolume1dData(ControlVolumeBase):
                 "add_total_momentum_balances."
                 .format(self.name))
 
-
     def apply_transformation(self,
                              transformation_method="dae.finite_difference",
                              transformation_scheme="BACKWARD",
@@ -1652,7 +1653,7 @@ class ControlVolume1dData(ControlVolumeBase):
         if state_args is None:
             state_args = {}
             state_dict = \
-                blk.properties[blk.time.first(), 0].define_port_members()
+                blk.properties[blk.time_ref.first(), 0].define_port_members()
 
             for k in state_dict.keys():
                 if state_dict[k].is_indexed():

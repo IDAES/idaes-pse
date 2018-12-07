@@ -171,13 +171,11 @@ class UnitBlockData(ProcessBlockData):
         """
         This is a method to build Port objects in a unit model and
         connect these to a specified StateBlock.
-
         Keyword Args:
             name = name to use for Port object.
             block = an instance of a StateBlock to use as the source to
                     populate the Port object
             doc = doc string for Port object
-
         Returns:
             A Pyomo Port object and associated components.
         """
@@ -192,13 +190,9 @@ class UnitBlockData(ProcessBlockData):
         def port_rule(b, t):
             return block[t].define_port_members()
 
-        p = Port(blk.time_ref,
-                 rule=port_rule,
-                 doc=doc)
+        p = Port(blk.time_ref, rule=port_rule, doc=doc)
         setattr(blk, name, p)
-        p_obj = getattr(blk, name)
-
-        return p_obj
+        return p
 
     def add_inlet_port(blk, name=None, block=None, doc=None):
         """
@@ -234,36 +228,34 @@ class UnitBlockData(ProcessBlockData):
         if doc is None:
             doc = "Inlet Port"
 
-        if isinstance(block, ControlVolumeBase):
-            try:
-                state_block = block.properties_in
-            except AttributeError:
-                if hasattr(block, "length_domain"):
-                    if block.config.flow_direction == FlowDirection.forward:
-                        state_block = block.properties[
-                                :, block.length_domain.first()]
-                    elif block.config.flow_direction == FlowDirection.backward:
-                        state_block = block.properties[
-                                :, block.length_domain.last()]
+        def port_rule(b, t):
+            if isinstance(block, ControlVolumeBase):
+                try:
+                    return block.properties_in[t].define_port_members()
+                except AttributeError:
+                    if block._flow_direction == FlowDirection.forward:
+                        return (block.properties[t, block.length_domain.first()]
+                                .define_port_members())
+                    elif block._flow_direction == FlowDirection.backward:
+                        return (block.properties[t, block.length_domain.last()]
+                                    .define_port_members())
                     else:
                         raise BurntToast("{} flow_direction argument received "
                                          "invalid value. This should never "
                                          "happen, so please contact the IDAES "
                                          "developers with this bug."
                                          .format(blk.name))
-                else:
-                    state_block = block.properties
-        elif isinstance(block, StateBlockBase):
-            state_block = block
-        else:
-            raise ConfigurationError("{} block provided to add_inlet_port "
-                                     "method was not an instance of a "
-                                     "ControlVolume or a StateBlock."
-                                     .format(blk.name))
+            elif isinstance(block, StateBlockBase):
+                return block[t].define_port_members()
+            else:
+                raise ConfigurationError("{} block provided to add_inlet_port "
+                                         "method was not an instance of a "
+                                         "ControlVolume or a StateBlock."
+                                         .format(blk.name))
 
-        p_obj = blk.add_port(name, state_block, doc)
-
-        return p_obj
+        p = Port(blk.time_ref, rule=port_rule, doc=doc)
+        setattr(blk, name, p)
+        return p
 
     def add_outlet_port(blk, name=None, block=None, doc=None):
         """
@@ -299,36 +291,34 @@ class UnitBlockData(ProcessBlockData):
         if doc is None:
             doc = "Outlet Port"
 
-        if isinstance(block, ControlVolumeBase):
-            try:
-                state_block = block.properties_out
-            except AttributeError:
-                if hasattr(block, "length_domain"):
-                    if block.config.flow_direction == FlowDirection.forward:
-                        state_block = block.properties[
-                                :, block.length_domain.last()]
-                    elif block.config.flow_direction == FlowDirection.backward:
-                        state_block = block.properties[
-                                :, block.length_domain.first()]
+        def port_rule(b, t):
+            if isinstance(block, ControlVolumeBase):
+                try:
+                    return block.properties_out[t].define_port_members()
+                except AttributeError:
+                    if block._flow_direction == FlowDirection.forward:
+                        return (block.properties[t, block.length_domain.last()]
+                                .define_port_members())
+                    elif block._flow_direction == FlowDirection.backward:
+                        return (block.properties[t, block.length_domain.first()]
+                                .define_port_members())
                     else:
                         raise BurntToast("{} flow_direction argument received "
                                          "invalid value. This should never "
                                          "happen, so please contact the IDAES "
                                          "developers with this bug."
                                          .format(blk.name))
-                else:
-                    state_block = block.properties
-        elif isinstance(block, StateBlockBase):
-            state_block = block
-        else:
-            raise ConfigurationError("{} block provided to add_outlet_port "
-                                     "method was not an instance of a "
-                                     "ControlVolume or a StateBlock."
-                                     .format(blk.name))
+            elif isinstance(block, StateBlockBase):
+                return block[t].define_port_members()
+            else:
+                raise ConfigurationError("{} block provided to add_inlet_port "
+                                         "method was not an instance of a "
+                                         "ControlVolume or a StateBlock."
+                                         .format(blk.name))
 
-        p_obj = blk.add_port(name, state_block, doc)
-
-        return p_obj
+        p = Port(blk.time_ref, rule=port_rule, doc=doc)
+        setattr(blk, name, p)
+        return p
 
     def initialize(blk, state_args=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}):
