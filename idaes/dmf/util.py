@@ -15,16 +15,19 @@ Utility functions.
 """
 # stdlib
 import importlib
+import json
+try:  # sigh.. I hate that we have to support Python 2
+    from json import JSONDecodeError
+except ImportError:
+    # Python 2
+    JSONDecodeError = Exception
 import logging
 import os
 import re
 import shutil
-import signal
 import sys
 import tempfile
 import time
-# third party
-import psutil
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
@@ -115,13 +118,21 @@ class TempDir(object):
             self._d = None
 
 
-def is_jupyter_notebook(filename):
+def is_jupyter_notebook(filename, check_contents=True):
     # type: (str) -> bool
     """See if this is a Jupyter notebook.
     """
     if not filename.endswith('.ipynb'):
         return False
-    return True  # XXX: look inside?
+    if check_contents:
+        try:
+            nb = json.load(open(filename))
+        except (UnicodeDecodeError, JSONDecodeError):
+            return False
+        for key in 'cells', 'metadata', 'nbformat':
+            if key not in nb:
+                return False
+    return True
 
 
 def is_python(filename):
@@ -134,83 +145,48 @@ def is_python(filename):
     return True  # XXX: look inside?
 
 
-def is_resource_json(filename):
-    import json
+def is_resource_json(filename, max_bytes=1e6):
+    """Is this file a JSON Resource?
 
+    Args:
+        filename (str): Full path to file
+        max_bytes (int): Max. allowable size. Since we try to parse
+             the file, this saves potential DoS issues. Large files
+             are a bad idea anyways, since this is metadata and may
+             be stored somewhere with a record size limit (like MongoDB).
+
+    Returns:
+        (bool) Whether it's a resource JSON file.
+    """
     if not filename.endswith('.json'):
         return False
-    # if it's under 1MB, try parsing it:
+    # get size
     st = os.stat(filename)
-    if st.st_size < 1e6:
+    # if it's under max_bytes, parse it
+    if st.st_size <= max_bytes:
         try:
             d = json.load(open(filename))
-        except (UnicodeDecodeError, json.JSONDecodeError):
+        except (UnicodeDecodeError, JSONDecodeError):
             return False
         # look for a couple distinctive keys
-        if '_id' in d and 'sources' in d:
-            return True
+        for key in 'id_', 'type':
+            if key not in d:
+                return False
+        return True
     else:
-        return False  # screw it
-
-
-def find_process_byname(name, uid=None):
-    # type: (str, uid: int) -> Generator[int, None, None]
-    """Generate zero or more PIDs where 'name' is part of either the
-    first or second token in the command line.
-    Optionally also filter the returned PIDs to only those with
-    a 'real' user UID (UID) equal to the provided uid. If None,
-    the default, is given, then use the current process UID. Providing
-    a value of < 0 will skip the filter.
-    """
-    try:
-        proc_entries = os.listdir('/proc')
-    except OSError:
-        _log.error('Attempt to find process "{}" in /proc, but '
-                   'cannot open /proc for reading'.format(name))
-        return
-    if uid is None:
-        uid = os.getuid()
-    for pid in proc_entries:
-        try:
-            pid = int(pid)
-        except ValueError:
-            continue
-        found = None
-        try:
-            with open('/proc/{}/cmdline'.format(pid), mode='rb') as fd:
-                content = fd.read().decode().split('\x00')
-            if len(content) > 0:
-                if content[0].endswith(name):
-                    found = pid
-                elif len(content) > 1 and content[1].endswith(name):
-                    found = pid
-        except (OSError, IOError):
-            continue
-        if found:
-            if uid is None:
-                yield found
-            else:
-                found_uid = psutil.Process(pid).uids().real
-                if found_uid == uid:
-                    yield found
-    return
-
-
-def terminate_pid(pid, waitfor=1):
-    result = True
-    os.kill(pid, signal.SIGTERM)
-    time.sleep(waitfor)
-    if psutil.pid_exists(pid):
-        os.kill(pid, signal.SIGKILL)
-        time.sleep(waitfor)
-        if psutil.pid_exists(pid):
-            result = False
-    return result
+        # if it's over max_bytes, it's "bad"
+        return False
 
 
 def datetime_timestamp(v):
     """Get numeric timestamp.
     This will work under both Python 2 and 3.
+
+    Args:
+        v (datetime.datetime): Date/time value
+
+    Returns:
+        (float) Floating point timestamp
     """
     if hasattr(v, 'timestamp'):  # Python 2/3 test
         # Python 2
@@ -221,6 +197,9 @@ def datetime_timestamp(v):
     return result
 
 
+#
+# XXX: Replace this with 'blessings' module
+#
 class CPrint(object):
     """Colorized terminal printing.
 

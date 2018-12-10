@@ -1,5 +1,5 @@
 .. index::
-    pair: idaes.help;Idaes
+    pair: idaes;Home
 
 Institute for the Design of Advanced Energy Systems (IDAES)
 ===========================================================
