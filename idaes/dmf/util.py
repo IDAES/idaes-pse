@@ -34,8 +34,6 @@ __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 _log = logging.getLogger(__name__)
 
 
-
-
 def strlist(x, sep=', '):
     # type: (list, str) -> str
     return sep.join([str(item) for item in x])
