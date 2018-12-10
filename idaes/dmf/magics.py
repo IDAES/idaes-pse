@@ -305,21 +305,25 @@ class DmfMagicsImpl(object):
         try:
             result = help.find_html_docs(self._dmf, obj)
         except (ValueError, AttributeError):
-            result = None
+            raise DMFMagicError('Cannot find help for {}'.format(name))
+            #result = None
         return result
 
     @staticmethod
     def _show_help_in_browser(helpfiles):
         """Open help docs in the browser."""
-        first_option = webbrowser._tryorder[0]
-        if first_option in ('xdg-open', 'chromium'):
-            # for these browsers, prefixing with file:// allows
-            # the anchors in the URL to work
-            url = 'file://' + helpfiles[0]
-        else:
-            url = helpfiles[0]
-        _log.debug('Opening URL "{}"'.format(url))
-        webbrowser.open_new(url)
+        for hf in helpfiles:
+            url = 'file://' + hf
+            _log.debug('Opening URL "{}"'.format(url))
+            webbrowser.open_new(url)
+        # first_option = webbrowser.tryorder[0]
+        # if first_option in ('xdg-open', 'chromium'):
+        #     # for these browsers, prefixing with file:// allows
+        #     # the anchors in the URL to work
+        #     url = 'file://' + helpfiles[0]
+        # else:
+        #     url = helpfiles[0]
+        # webbrowser.open_new(url)
 
     def _magics_help(self):
         """Introspect to give a list of commands."""
@@ -370,7 +374,7 @@ def register():
         return
     try:
         ip = get_ipython()  # noqa: F821
-        _log.info('Registering DMF magics')
+        _log.debug('Registering DMF magics')
         ip.register_magics(DmfMagics)
     except:  # noqa: E722
         pass
