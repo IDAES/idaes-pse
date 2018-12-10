@@ -20,7 +20,7 @@ import pytest
 from pyomo.environ import ConcreteModel, SolverFactory, value
 
 from idaes.core import FlowsheetBlock
-from idaes.unit_models import Heater
+from idaes.unit_models import Heater, HeatExchanger
 from idaes.property_models import iapws95_ph
 from idaes.ui.report import degrees_of_freedom
 
@@ -40,6 +40,63 @@ def build_heater():
     m.fs.heater = Heater(default={"property_package": m.fs.properties})
     return m
 
+@pytest.fixture()
+def build_heat_exchanger():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.heat_exchanger = HeatExchanger(default={
+        "side_1":{"property_package": m.fs.properties},
+        "side_2":{"property_package": m.fs.properties}})
+    return m
+
+def test_build_heat_exchanger():
+    m = build_heat_exchanger()
+    assert hasattr(m.fs.heat_exchanger, "inlet_1")
+    assert hasattr(m.fs.heat_exchanger, "outlet_1")
+    assert hasattr(m.fs.heat_exchanger, "inlet_2")
+    assert hasattr(m.fs.heat_exchanger, "outlet_2")
+
+def test_initialize_heat_exchanger():
+    m = build_heat_exchanger()
+    init_state1 = {
+        "flow_mol":100,
+        "pressure":101325,
+        "enth_mol":4000}
+    init_state2 = {
+        "flow_mol":100,
+        "pressure":101325,
+        "enth_mol":3500}
+
+    prop_in_1 = m.fs.heat_exchanger.side_1.properties_in[0]
+    prop_out_1 = m.fs.heat_exchanger.side_1.properties_out[0]
+    prop_in_2 = m.fs.heat_exchanger.side_2.properties_in[0]
+    prop_out_2 = m.fs.heat_exchanger.side_2.properties_out[0]
+    prop_in_1.flow_mol.fix(100)
+    prop_in_1.pressure.fix(101325)
+    prop_in_1.enth_mol.fix(4000)
+    prop_in_2.flow_mol.fix(100)
+    prop_in_2.pressure.fix(101325)
+    prop_in_2.enth_mol.fix(3000)
+
+    m.fs.heat_exchanger.heat_duty.value = 10000
+    m.fs.heat_exchanger.initialize(state_args_1=init_state1,
+                                   state_args_2=init_state2,
+                                   outlvl=5)
+    solver.solve(m)
+    assert degrees_of_freedom(m) == 0
+    print(value(m.fs.heat_exchanger.delta_temperature[0]))
+    print(value(m.fs.heat_exchanger.side_1.heat[0]))
+    print(value(m.fs.heat_exchanger.side_2.heat[0]))
+    assert abs(value(prop_in_1.temperature) - 326.1667075078748) <= 1e-4
+    assert abs(value(prop_out_1.temperature) - 313.81921851031814) <= 1e-4
+    assert abs(value(prop_in_2.temperature) -  312.88896252921734) <= 1e-4
+    assert abs(value(prop_out_2.temperature) - 325.23704823703537) <= 1e-4
+    assert abs(value(prop_in_1.phase_frac["Liq"]) - 1) <= 1e-6
+    assert abs(value(prop_out_1.phase_frac["Liq"]) - 1) <= 1e-6
+    assert abs(value(prop_in_1.phase_frac["Vap"]) - 0) <= 1e-6
+    assert abs(value(prop_out_1.phase_frac["Vap"]) - 0) <= 1e-6
+
 def test_build_heater():
     m = build_heater()
     assert hasattr(m.fs.heater, "inlet")
@@ -58,8 +115,7 @@ def test_initialize_heater():
     init_state = {
         "flow_mol":100,
         "pressure":101325,
-        "enth_mol":4000
-    }
+        "enth_mol":4000}
     m.fs.heater.initialize(state_args=init_state)
 
     prop_in = m.fs.heater.control_volume.properties_in[0]
