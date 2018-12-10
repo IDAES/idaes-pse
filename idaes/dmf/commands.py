@@ -17,10 +17,10 @@ particular to the CLI.
 Call functions defined in 'api' module to handle logic
 that is common to the API and CLI.
 """
-# -- Imports --
-# Stdlib
+# stdlib
 import glob
 import json
+import logging
 import math
 import os
 import re
@@ -31,7 +31,7 @@ import jsonschema
 import pendulum
 # Local
 from .dmfbase import DMF, DMFConfig
-from .util import get_logger, strlist
+from .util import strlist
 from .util import is_jupyter_notebook, is_python, is_resource_json
 from .util import CPrint
 from .errors import (
@@ -41,7 +41,9 @@ from .errors import (
 from . import resource
 from .workspace import Workspace, find_workspaces
 
-_log = get_logger(__name__)
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 def workspace_init(dirname, metadata):

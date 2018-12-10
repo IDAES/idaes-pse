@@ -15,6 +15,7 @@ Jupyter magics for the DMF.
 """
 # stdlib
 import inspect
+import logging
 import os
 import webbrowser
 # third-party
@@ -23,11 +24,11 @@ from IPython.core.magic import Magics, magics_class, line_magic
 from IPython.display import display_markdown
 import six
 # local
-from . import dmfbase, util, errors, help, workspace
+from . import dmfbase, errors, help, workspace
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
-_log = util.get_logger('magics')
+_log = logging.getLogger(__name__)
 
 
 @magics_class
@@ -114,7 +115,7 @@ class DmfMagics(Magics):
 
         try:
             self._dmf = dmfbase.DMF(path, **kwargs)
-        except errors.DMFWorkspaceNotFoundError:
+        except errors.WorkspaceNotFoundError:
             if not create:
                 msg = 'Workspace not found at path "{}". ' \
                       'If you want to create a new workspace, add the word ' \
@@ -123,7 +124,7 @@ class DmfMagics(Magics):
             else:
                 return 'Workspace could not be created at path "{}"'\
                        .format(path)
-        except errors.DMFBadWorkspaceError as err:
+        except errors.DMFError as err:
             return 'Error initializing workspace: {}'.format(err)
 
         self._dmf.set_meta({'name': os.path.basename(path)})

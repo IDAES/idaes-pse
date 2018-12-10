@@ -14,6 +14,7 @@
 Workspace classes and functions.
 """
 # stdlib
+import logging
 import os
 import uuid
 import yaml
@@ -23,9 +24,10 @@ import six
 # local
 from .errors import ParseError, WorkspaceError, WorkspaceNotFoundError, \
     WorkspaceConfNotFoundError, WorkspaceConfMissingField
-from .util import get_logger
 
-_log = get_logger('workspace')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -60,8 +62,8 @@ CONFIG_SCHEMA = {
 class Fields(object):
     """Workspace configuration fields.
     """
-    DOC_HTML_PATH = 'htmldocs'   # path to documentation html dir
-    LOG_CONF = 'logging'         # logging config
+    DOC_HTML_PATH = 'htmldocs'  # path to documentation html dir
+    LOG_CONF = 'logging'  # logging config
 
 
 class Workspace(object):
@@ -143,9 +145,9 @@ class Workspace(object):
     #: Name of ID field
     ID_FIELD = '_id'
 
-    CONF_NAME = 'name'          #: Configuration field for name
-    CONF_DESC = 'description'   #: Configuration field for description
-    CONF_CREATED = 'created'    #: Configuration field for created date
+    CONF_NAME = 'name'  #: Configuration field for name
+    CONF_DESC = 'description'  #: Configuration field for description
+    CONF_CREATED = 'created'  #: Configuration field for created date
     CONF_MODIFIED = 'modified'  #: Configuration field for modified date
 
     def __init__(self, path, create=False, add_defaults=False):
@@ -159,6 +161,7 @@ class Workspace(object):
             WorkspaceNotFoundError: if ws is not found (and create is false)
             WorkspaceConfNotFoundError: if ws config is not found (& ~create)
             WorkspaceConfMissingField: if there is no ID field.
+            DMFError: Anything else
         """
         path = os.path.abspath(path)
         self._wsdir = path
@@ -172,9 +175,13 @@ class Workspace(object):
                 if os.path.exists(self._conf):
                     raise WorkspaceError('Existing configuration would be '
                                          'overwritten: {}'.format(self._conf))
-                _log.warn('Using existing path for new DMF workspace: {}'
-                          .format(self._wsdir))
-            self._create_new_config(add_defaults)
+                _log.warning('Using existing path for new DMF workspace: {}'
+                             .format(self._wsdir))
+            try:
+                self._create_new_config(add_defaults)
+            except OSError as err:
+                raise WorkspaceError('While creating new workspace '
+                                     'configuration: {}'.format(err))
         else:
             # assert that the workspace exists
             try:
@@ -238,7 +245,7 @@ class Workspace(object):
                 if key in d:
                     del d[key]
                 else:
-                    _log.warn('Cannot remove "{}": no such key'.format(key))
+                    _log.warning('Cannot remove "{}": no such key'.format(key))
         d.update(values)
         self._write_conf(d)
         self._cached_conf = d
@@ -310,9 +317,16 @@ class Workspace(object):
             self._cached_conf = contents
         else:
             contents = self._cached_conf
-        return contents.copy()
+        if isinstance(contents, str):
+            raise ParseError('File contents cannot be simple str ({})'
+                             .format(contents))
+        else:
+            return contents.copy()
 
     def _expand_path(self, path):
+        # leave paths bracketed by _underscores_ alone
+        if len(path) > 2 and path[0] == '_' and path[-1] == '_':
+            return path
         return os.path.realpath(path.format(
             ws_root=self.root,
             dmf_root=self._install_dir))
@@ -340,7 +354,6 @@ class Workspace(object):
 
 
 class WorkspaceConfig(object):
-
     DEFAULTS = {'string': '',
                 'number': 0,
                 'boolean': False,
@@ -374,8 +387,8 @@ class WorkspaceConfig(object):
             type_ = item['type']
             # morph unknown types to string
             if type_ not in self.DEFAULTS:
-                _log.warn('Unknown schema type "{}". Using "string" instead.'
-                          .format(type_))
+                _log.warning('Unknown schema type "{}".'
+                             'Using "string" instead'.format(type_))
                 type_ = 'string'
             # figure out value type, look for default values
             default_value = None

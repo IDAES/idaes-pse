@@ -16,6 +16,7 @@ Data Management Framework
 # stdlib
 import logging
 import os
+import re
 import shutil
 import sys
 import uuid
@@ -28,9 +29,11 @@ import yaml
 # local
 from . import errors, workspace, resourcedb, propdata
 from . import resource
-from .util import get_logger, mkdir_p
+from .util import mkdir_p
 
-_log = get_logger('dmf')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 class DMFConfig(object):
@@ -67,37 +70,41 @@ class DMFConfig(object):
 
         Args:
             defaults (dict): Default values to use if nothing is found.
-                            If the value is 'True', use self.DEFAULTS
+                            If not provided, use self.DEFAULTS
         Raises:
-            IOError: If self.filename is not openable or parse-able
+            IOError: If self.filename is not openable or readable
+            ValueError: If the file can't be parsed as YAML
         """
-        self.c, fp = {}, None
+        # init to defaults
+        self.c = {}
+        if defaults:
+            self.c.update(defaults)
+        else:
+            self.c.update(self.DEFAULTS)
+        # try to open the config file
+        fp = None
         try:
+            if not os.path.exists(self.filename):
+                raise IOError('File not found')
             fp = open(self.filename, 'rb')
-        except IOError:
-            if defaults is None:
-                raise
-            if defaults is True:
-                self.c.update(self.DEFAULTS)
-            else:
-                self.c.update(defaults)
+        except IOError as err:
+            _log.warning('Unable to open configuration file for reading: {}. '
+                         'Will use default configuration values.'
+                         .format(err))
+        # if we got a config file, parse it
         if fp:
             try:
                 self._parse(fp)
             except ValueError as err:
-                raise IOError('Parsing configuration at "{}": {}'
-                              .format(self.filename, err))
+                raise ValueError('Parsing configuration at "{}": {}'
+                                 .format(self.filename, err))
 
     def save(self):
         try:
             fp = open(self.filename, 'w')
         except IOError:
             raise
-        try:
-            self._write(fp)
-        except ValueError as err:
-            raise IOError('Failed to write in YAML format to <{}>: {}'
-                          .format(self.filename, err))
+        yaml.dump(self.c, fp)
 
     @property
     def workspace(self):
@@ -112,9 +119,6 @@ class DMFConfig(object):
             for k, v in six.iteritems(y):
                 if k in self._keys:
                     self.c[k] = v
-
-    def _write(self, fp):
-        yaml.dump(self.c, fp)
 
 
 class DMF(workspace.Workspace, HasTraits):
@@ -159,10 +163,8 @@ class DMF(workspace.Workspace, HasTraits):
             **ws_kwargs: Keyword arguments for :meth:`workspace.Workspace()`
                          constructor.
         Raises:
-            errors.DMFWorkspaceNotFoundError: If workspace is not found, and
-                 the `create` option was not given in the keyword args.
-            errors.DMFBadWorkspaceError: If workspace is found, but there
-                 are errors with its configuration.
+            WorkspaceError: Any error that could be raised by the Workspace
+                            superclass.
         """
         # get global configuration
         conf = DMFConfig(defaults={})
@@ -172,33 +174,19 @@ class DMF(workspace.Workspace, HasTraits):
         # set up workspace
         ws_kwargs['create'] = create
         try:
-            workspace.Workspace.__init__(self, path, **ws_kwargs)
-        except OSError as err:
-            raise errors.DMFBadWorkspaceError(path,
-                                              'Cannot create: {}'.format(err))
-        except errors.WorkspaceNotFoundError:
-            raise errors.DMFWorkspaceNotFoundError(path)
-        except errors.WorkspaceConfNotFoundError:
-            raise errors.DMFBadWorkspaceError(path, 'Configuration not found')
-        except errors.WorkspaceConfMissingField as err:
-            raise errors.DMFBadWorkspaceError(path, str(err))
-        try:
-            meta_dict = self.meta  # call associated code
+            super(DMF, self).__init__(path, **ws_kwargs)
         except (errors.ParseError, ValueError) as err:
-            msg = 'Configuration parse error: {}'.format(err)
-            raise errors.DMFBadWorkspaceError(path, msg)
-        try:
-            self._validate_conf(meta_dict)
-        except ValueError as err:
-            msg = 'Configuration validation error: {}'.format(err)
-            raise errors.DMFBadWorkspaceError(path, msg)
+            msg = 'Configuration "{}", parse error: {}'.format(path, err)
+            raise errors.WorkspaceError(msg)
+        self._validate_conf(self.meta)
         # set up logging
-        if workspace.Fields.LOG_CONF in meta_dict:
+        if workspace.Fields.LOG_CONF in self.meta:
             try:
-                self._configure_logging(meta_dict[workspace.Fields.LOG_CONF])
+                self._configure_logging()
             except ValueError as err:
-                msg = 'Configuration, logging section, error: {}'.format(err)
-                raise errors.DMFBadWorkspaceError(path, msg)
+                msg = 'Configuration "{}", logging section error: {}'.format(
+                    path, err)
+                raise errors.WorkspaceError(msg)
         # set up rest of DMF
         path = os.path.join(self.root, self.db_file)
         self._db = resourcedb.ResourceDB(path)
@@ -215,7 +203,7 @@ class DMF(workspace.Workspace, HasTraits):
             meta[_w.CONF_DESC] = desc
         self.set_meta(meta)
 
-    def _configure_logging(self, conf):
+    def _configure_logging(self):
         """Configure logging for DMF.
 
         Expected schema::
@@ -224,17 +212,16 @@ class DMF(workspace.Workspace, HasTraits):
                 level: <levelname>              default=NOTSET
                 output: file|_stdout_|_stderr_  default=_stderr_
 
-        Args:
-            conf (dict): Configuration dict
         Raises:
             ValueError: for bad configuration values
         """
+        conf = self.meta[workspace.Fields.LOG_CONF]
         for lognm in conf.keys():
             name = lognm.lower()
             if name == 'root':
-                log = get_logger()
+                log = self._get_logger()
             else:
-                log = get_logger(lognm)
+                log = self._get_logger(lognm)
             subconf = conf[lognm]
             if 'output' in subconf:
                 dest = subconf['output']
@@ -259,12 +246,32 @@ class DMF(workspace.Workspace, HasTraits):
                                      'one of: {}'.format(levelnm, lognm, opt))
                 log.setLevel(level)
 
+    @staticmethod
+    def _get_logger(name=None):
+        """Get a logger by absolute or short-hand name.
+        """
+        if name is None:
+            fullname = 'idaes'
+        # idaes.<whatever> just use name as-is
+        elif re.match(r'idaes\.[a-zA-Z_.]+', name):
+            fullname = name
+        # .<whatever>, root at idaes
+        elif re.match(r'\.[a-zA-Z_.]+', name):
+            fullname = 'idaes' + name
+        # some special names
+        elif name in ('dmf', 'core', 'models', 'ui'):
+            fullname = 'idaes.' + name
+        # when in doubt just take value as-is
+        else:
+            fullname = name
+        return logging.getLogger(fullname)
+
     def _validate_conf(self, c):
         if self.CONF_HELP_PATH not in c:
-            _log.warn('Path to built HTML documentation is not set. '
-                      'The DMF "help" command will not work. To set '
-                      'this path, set "{}" in the DMF configuration file.'
-                      .format(self.CONF_HELP_PATH))
+            _log.warning('Path to built HTML documentation is not set. '
+                         'The DMF "help" command will not work. To set '
+                         'this path, set "{}" in the DMF configuration file.'
+                         .format(self.CONF_HELP_PATH))
 
     @default(CONF_DB_FILE)
     def _default_db_file(self):
@@ -342,7 +349,15 @@ class DMF(workspace.Workspace, HasTraits):
                 filepath = datafile['path']
                 filedir, filename = os.path.split(filepath)
                 copydir = os.path.join(ddir, filename)
-                shutil.copy2(filepath, copydir)
+                _log.debug('Copying datafile "{}" to directory "{}"'
+                           .format(filepath, copydir))
+                try:
+                    shutil.copy2(filepath, copydir)
+                except (IOError, OSError) as err:
+                    msg = 'Cannot copy datafile from "{}" to DMF ' \
+                          'directory "{}": {}'.format(filepath, copydir, err)
+                    _log.error(msg)
+                    raise errors.DMFError(msg)
                 # The `is_tmp` flag means to remove the original resource file
                 # after the copy is done.
                 if 'is_tmp' in datafile:
@@ -350,6 +365,8 @@ class DMF(workspace.Workspace, HasTraits):
                 else:
                     is_tmp = rsrc.is_tmp
                 if is_tmp:
+                    _log.debug('Temporary datafile flag is on, removing '
+                               'original datafile "{}"'.format(filepath))
                     try:
                         os.unlink(filepath)
                     except OSError as err:
@@ -363,35 +380,32 @@ class DMF(workspace.Workspace, HasTraits):
                     del datafile['do_copy']
             else:
                 datafile['is_copy'] = False
-            # For idempotence, turn off these flags post-copy
-            rsrc.do_copy = rsrc.is_tmp = False
+        # For idempotence, turn off these flags post-copy
+        rsrc.do_copy = rsrc.is_tmp = False
+        # Make sure datafiles dir is in sync
         rsrc.v['datafiles_dir'] = ddir
 
     def count(self):
         return len(self._db)
 
-    def fetch_one(self, rid):
+    def fetch_one(self, rid, id_only=False):
         """Fetch one resource, from its identifier.
 
         Args:
             rid (str): Resource identifier
+            id_only (bool): If true, return only the identifier of each
+                resource; otherwise a Resource object is returned.
         Returns:
             (resource.Resource) The found resource, or None if no match
         """
-        item = self._db.find_one({resource.Resource.ID_FIELD: rid})
-        return self._postproc_resource(item)
-
-    def fetch_many(self, rid_list):
-        """Fetch multiple resources, by their identifiers.
-
-        Args:
-            rid_list (list): List of integer resource identifers
-
-        Returns:
-            (list of resource.Resource) List of found resources (may be empty)
-        """
-        for rid in rid_list:
-            yield self.fetch_one(rid)
+        item = self._db.find_one({resource.Resource.ID_FIELD: rid},
+                                 id_only=id_only)
+        if item is None:
+            return None
+        elif id_only:
+            return item
+        else:
+            return self._postproc_resource(item)
 
     def find(self, filter_dict=None, id_only=False):
         """Find and return resources matching the filter.
@@ -478,36 +492,39 @@ class DMF(workspace.Workspace, HasTraits):
         """
         if not any((identifier, filter_dict)):
             return None
+        id_list, rid_list = None, None
         if identifier:
-            id_list = [self.fetch_one(identifier).id]
+            id_one = self.fetch_one(identifier, id_only=True)
+            id_list = None if id_one is None else [id_one]
+            rid_list = [identifier]
         else:
-            id_list = self.find(filter_dict=filter_dict, id_only=True)
+            id_list = list(self.find(filter_dict=filter_dict, id_only=True))
+            if id_list:
+                rid_list = []
+                for i in id_list:
+                    rsrc = self._db.get(i)
+                    rid_list.append(rsrc.id)
         if not id_list:
+            _log.info('Cannot remove resource-id={} filter={}: Not found'
+                      .format(identifier, filter_dict))
             return
-        self._db.delete(idlist=id_list)
-        # If requested, remove this resource from all the relations where it
-        # was a subject or object
+        self._db.delete(idlist=id_list, internal_ids=True)
+        # If requested, remove deleted resources from all the relations
+        # where it was a subject or object
         if update_relations:
+            # look at all resources in DB
             for rsrc in self.find():
-                keep = [rel for rel in rsrc.v['relations']
-                        if rel['identifier'] != identifier]
-                # if anything was removed, update the resource
+                # for each one figure out which relations to keep
+                keep = []
+                for rel in rsrc.v['relations']:
+                    # if none of the removed resource ids are present, keep it
+                    if rel['identifier'] not in rid_list:
+                        keep.append(rel)
+                # if we didn't keep all the relations, update the resource
                 if len(keep) < len(rsrc.v['relations']):
                     rsrc.v['relations'] = keep
                     # save back to DMF
                     self.update(rsrc)
-
-        if identifier is not None:
-            rsrc = self.fetch_one(identifier)
-            if rsrc is None:
-                _log.error('Cannot find resource id={} to remove'.format(
-                    identifier))
-                return None
-            self._db.delete(identifier)
-        else:
-            idlist = self.find(filter_dict=filter_dict, id_only=True)
-            for eid in idlist:
-                self.remove(identifier=eid, update_relations=update_relations)
 
     def update(self, rsrc, sync_relations=False, upsert=False):
         """Update/insert stored resource.

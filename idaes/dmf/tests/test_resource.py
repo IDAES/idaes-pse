@@ -16,6 +16,7 @@ Tests for idaes.dmf.resource2 module
 # stdlib
 import datetime
 import json
+import logging
 import math
 import os
 import shutil
@@ -23,10 +24,15 @@ import tempfile
 # third-party
 import pendulum
 import pytest
-# package
+# local
 from idaes.dmf import resource, propdata
+# for testing
+from .util import init_logging
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+init_logging()
+_log = logging.getLogger(__name__)
 
 test_version = '1.2.3'
 

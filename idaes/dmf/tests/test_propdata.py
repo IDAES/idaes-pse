@@ -15,6 +15,7 @@ Tests for idaes.dmf.propdb.types
 """
 # stdlib
 import json
+import logging
 import os
 # third-party
 import pytest
@@ -22,6 +23,13 @@ from six import StringIO
 # local
 from idaes.dmf.propdata import PropertyTable, PropertyData, PropertyMetadata
 from idaes.dmf.util import TempDir
+# for testing
+from .util import init_logging
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+init_logging()
+_log = logging.getLogger(__name__)
 
 
 # keep minimal example first for test_Property{Data,Metadata}Parsing

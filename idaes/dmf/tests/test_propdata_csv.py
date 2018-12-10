@@ -13,11 +13,21 @@
 """
 Test CSV merging for property data
 """
+# stdlib
+import logging
+# third-party
 import pytest
 from six import StringIO
-
+# local
 from idaes.dmf.propdata import AddedCSVColumnError
 from idaes.dmf.propdata import PropertyData as PropData
+# for testing
+from .util import init_logging
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+init_logging()
+_log = logging.getLogger(__name__)
 
 # ------------------
 # Setup and teardown

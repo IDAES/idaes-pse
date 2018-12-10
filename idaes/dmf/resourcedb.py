@@ -15,17 +15,19 @@ Resource database.
 """
 # system
 from datetime import datetime
+import logging
 # third party
 import pendulum
 import six
 from tinydb import TinyDB, Query
 # local
-from .util import get_logger
 from . import errors
 from .resource import Resource
 from .resource import Triple, triple_from_resource_relations
 
-_log = get_logger('resourcedb')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 class ResourceDB(object):
@@ -259,38 +261,73 @@ class ResourceDB(object):
                         visited.add(next_id)
             q = q[n:]  # pop off all the nodes we just visited
 
-    # def _get(self, identifier):
-    #     item = self._db.get(eid=identifier)
-    #     if item is None:
-    #         return None
-    #     r = Resource(value=item)
-    #     r.set_id(identifier)
-    #     return r
-    #
+    def get(self, identifier):
+        """Get a resource by identifier.
+
+        Args:
+          identifier: Internal identifier
+
+        Returns:
+            (Resource) A resource or None
+        """
+        def as_resource(_r):
+            rsrc = Resource(value=_r)
+            rsrc.v['doc_id'] = _r.doc_id
+            return rsrc
+        item = self._db.get(doc_id=identifier)
+        if item is None:
+            return None
+        return as_resource(item)
+
     def put(self, resource):
+        """Put this resource into the database.
+
+        Args:
+            resource (Resource): The resource to add
+
+        Returns:
+            None
+
+        Raises:
+            errors.DuplicateResourceError: If there is already a resource
+                in the database with the same "id".
+        """
+        # check for same id
+        qry = Query()
+        if self._db.contains(qry.id_ == resource.id):
+            raise errors.DuplicateResourceError("put", resource.id)
+        # add resource
         self._db.insert(resource.v)
 
-    def delete(self, id_=None, idlist=None, filter_dict=None):
+    def delete(self, id_=None, idlist=None, filter_dict=None,
+               internal_ids=False):
         """Delete one or more resources with given identifiers.
 
         Args:
-            id_ (int): If given, delete this id.
+            id_ (Union[str,int]): If given, delete this id.
             idlist (list): If given, delete ids in this list
             filter_dict (dict): If given, perform a search and
                            delete ids it finds.
+            internal_ids (bool): If True, treat identifiers as numeric
+                (internal) identifiers. Otherwise treat them as
+                resource (string) indentifiers.
         Returns:
             (list[str]) Identifiers
         """
-        ID = Resource.ID_FIELD
-        if filter_dict:
-            cond = self._create_filter_expr(filter_dict)
-        elif id_:
-            cond = self._create_filter_expr({ID: id_})
-        elif idlist:
-            cond = self._create_filter_expr({ID: [idlist]})
+        if internal_ids:
+            doc_ids = idlist if idlist else [id_]
+            self._db.remove(doc_ids=doc_ids)
         else:
-            return
-        self._db.remove(cond=cond)
+            ID = Resource.ID_FIELD
+            if filter_dict:
+                cond = self._create_filter_expr(filter_dict)
+            elif id_:
+                cond = self._create_filter_expr({ID: id_})
+            elif idlist:
+                cond = self._create_filter_expr({ID: [idlist]})
+            else:
+                return
+            self._db.remove(cond=cond)
 
     def update(self, id_, new_dict):
         """Update the identified resource with new values.

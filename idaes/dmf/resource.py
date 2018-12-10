@@ -17,6 +17,7 @@ Resource representaitons.
 from collections import namedtuple
 from datetime import datetime
 import getpass
+import logging
 import os
 import pprint
 import re
@@ -26,9 +27,11 @@ import jsonschema
 import pendulum
 import six
 # local
-from .util import get_logger, datetime_timestamp
+from .util import datetime_timestamp
 
-_log = get_logger('resource')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 #: Constants for relation predicates
 PR_DERIVED = 'derived'  # derivedFrom

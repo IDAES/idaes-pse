@@ -13,10 +13,21 @@
 """
 Tests for DMF 'workspace' module.
 """
+# stdlib
+import logging
 import os
+# third-party
 import pytest
+# local
 from idaes.dmf import workspace, errors
 from idaes.dmf.util import TempDir
+# for testing
+from .util import init_logging
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+init_logging()
+_log = logging.getLogger(__name__)
 
 BADPATH = os.path.join('should', 'never', 'exist', 'seriously', 'no')
 

@@ -13,24 +13,17 @@
 """
 Exception classes.
 """
+import logging
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 class DMFError(Exception):
-    def __init__(self, detailed_error):
+    def __init__(self, detailed_error='No details'):
         msg = 'DMF Error: {}'.format(detailed_error)
         super(DMFError, self).__init__(msg)
-
-
-class DMFBadWorkspaceError(DMFError):
-    def __init__(self, path, why):
-        msg = 'Workspace invalid at path "{}": {}'.format(path, why)
-        super(DMFBadWorkspaceError, self).__init__(msg)
-
-
-class DMFWorkspaceNotFoundError(DMFError):
-    def __init__(self, path):
-        msg = 'Workspace not found at path "{}"'.format(path)
-        super(DMFWorkspaceNotFoundError, self).__init__(msg)
 
 
 class ParseError(Exception):
@@ -44,7 +37,7 @@ class CommandError(Exception):
         super(CommandError, self).__init__(msg)
 
 
-class WorkspaceError(Exception):
+class WorkspaceError(DMFError):
     pass
 
 
