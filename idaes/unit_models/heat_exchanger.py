@@ -326,7 +326,7 @@ class HeaterExchangerData(UnitBlockData):
                                                state_args=state_args_1)
 
         if outlvl > 0:
-            _log.info('{} Initialisation Step 1a (side_1) Complete.'\
+            _log.info('{} Initialization Step 1a (side_1) Complete.'\
                 .format(self.name))
 
         flags2 = self.side_2.initialize(outlvl=outlvl-1,
@@ -335,7 +335,7 @@ class HeaterExchangerData(UnitBlockData):
                                                state_args=state_args_2)
 
         if outlvl > 0:
-            _log.info('{} Initialisation Step 1b (side_2) Complete.'\
+            _log.info('{} Initialization Step 1b (side_2) Complete.'\
                 .format(self.name))
         # ---------------------------------------------------------------------
         # Solve unit
@@ -344,10 +344,10 @@ class HeaterExchangerData(UnitBlockData):
         if outlvl > 0:
             if results.solver.termination_condition == \
                     TerminationCondition.optimal:
-                _log.info('{} Initialisation Step 2 Complete.'
+                _log.info('{} Initialization Step 2 Complete.'
                           .format(self.name))
             else:
-                _log.warning('{} Initialisation Step 2 Failed.'
+                _log.warning('{} Initialization Step 2 Failed.'
                              .format(self.name))
 
         # ---------------------------------------------------------------------
@@ -356,4 +356,4 @@ class HeaterExchangerData(UnitBlockData):
         self.side_2.release_state(flags2, outlvl-1)
 
         if outlvl > 0:
-            _log.info('{} Initialisation Complete.'.format(self.name))
+            _log.info('{} Initialization Complete.'.format(self.name))
