@@ -33,6 +33,7 @@ Contents
 .. toctree::
     :maxdepth: 1
 
+    standards
     core/index
     models/index
     property_models/index
