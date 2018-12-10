@@ -18,7 +18,8 @@ import pytest
 from pyomo.environ import Block, ConcreteModel,  Constraint, \
                             Set, SolverFactory, Var, value
 from pyomo.network import Port
-from idaes.core.util.initialization import (solve_indexed_blocks,
+from idaes.core.util.initialization import (evaluate_variable_from_constraint,
+                                            solve_indexed_blocks,
                                             fix_port, unfix_port)
 
 __author__ = "Andrew Lee"
@@ -258,3 +259,44 @@ def test_unfix_port_both_indexed():
     assert m.v1[1].value == 1.0
     assert m.v1[2].value == 1.0
     assert m.v2.value == 1.0
+
+
+def test_evaluate_variable_from_constraint():
+    m = ConcreteModel()
+    m.a = Var(initialize=0.0)
+
+    m.c1 = Constraint(expr=0 == m.a - 10.0)
+
+    assert evaluate_variable_from_constraint(m.a, m.c1) == 10.0
+    assert value(m.a) == 10.0
+
+    m.c2 = Constraint(expr=20.0 == m.a)
+
+    assert evaluate_variable_from_constraint(m.a, m.c2) == 20.0
+    assert value(m.a) == 20.0
+
+    m.c3 = Constraint(expr=0 == m.a + 30.0)
+
+    assert evaluate_variable_from_constraint(m.a, m.c3) == -30.0
+    assert value(m.a) == -30.0
+
+    m.c4 = Constraint(expr=-40.0 == m.a)
+
+    assert evaluate_variable_from_constraint(m.a, m.c4) == -40.0
+    assert value(m.a) == -40.0
+
+    m.c5 = Constraint(expr=-60.0 == m.a + 10.0)
+
+    assert evaluate_variable_from_constraint(m.a, m.c5) == -70.0
+    assert value(m.a) == -70.0
+
+    m.c6 = Constraint(expr=-70.0 >= m.a + 10.0)
+
+    with pytest.raises(AssertionError):
+        evaluate_variable_from_constraint(m.a, m.c6)
+
+    m.b = Var(initialize=2.0)
+    m.c7 = Constraint(expr=10.0 == m.a*m.b)
+
+    assert evaluate_variable_from_constraint(m.a, m.c7) == 5.0
+    assert value(m.a) == 5.0
