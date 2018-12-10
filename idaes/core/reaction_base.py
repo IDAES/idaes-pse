@@ -31,6 +31,7 @@ from idaes.core.util.exceptions import (BurntToast,
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
                                     is_state_block)
+from idaes.core.util.misc import add_object_reference
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -69,16 +70,6 @@ class ReactionParameterBase(ProcessBlockData,
             None
         """
         super(ReactionParameterBase, self).build()
-
-        # Get module reference and store on block
-        try:
-            frm = inspect.stack()[1]
-            self._package_module = inspect.getmodule(frm[0])
-        except KeyError:
-            raise BurntToast('{} an error occured when trying to retrieve '
-                             'a pointer to the reaction package module. '
-                             'Please contact the IDAES developers with this '
-                             'bug'.format(self.name))
 
         # TODO: Need way to tie reaction package to a specfic property package
         self._validate_property_parameter_units()
@@ -214,14 +205,13 @@ should be constructed in this reaction block,
         PropertyParameterBlock assoicated with the ReactionParameterBlock.
         """
         # Add a reference to the corresponding state block data for later use
-        # TODO : Convert to Reference
-        object.__setattr__(self,
-                           "_state",
-                           self.config.state_block[self.index()])
+        add_object_reference(self,
+                             "state_ref",
+                             self.config.state_block[self.index()])
 
         # Validate that property package of state matches that of reaction pack
         if (self.config.parameters.config.property_package !=
-                self._state.config.parameters):
+                self.state_ref.config.parameters):
             raise PropertyPackageError(
                             '{} the StateBlock associated with this '
                             'ReactionBlock does not match with the '
@@ -230,26 +220,6 @@ should be constructed in this reaction block,
                             'does not support mixed associations of property '
                             'and reaction packages.'
                             .format(self.name))
-
-    def get_reaction_material_terms(self):
-        """
-        Method which returns a tuple containing a valid expression to use in
-        the material balances and a constant indicating the basis of this
-        expression (mass, mole or None).
-        """
-        raise NotImplementedError('{} reaction package has not implemented the'
-                                  ' get_reaction_material_terms method. Please'
-                                  ' contact the reaction package developer.')
-
-    def get_reaction_energy_terms(self):
-        """
-        Method which returns a tuple containing a valid expression to use in
-        the energy balances and a constant indicating the basis of this
-        expression (mass, mole or None).
-        """
-        raise NotImplementedError('{} reaction package has not implemented the'
-                                  ' get_reaction_energy_terms method. Please'
-                                  ' contact the reaction package developer.')
 
     def __getattr__(self, attr):
         """

@@ -12,3 +12,4 @@ from .control_volume_base import (ControlVolumeBase, CONFIG_Template,
                                   MomentumBalanceType, FlowDirection,
                                   MaterialFlowBasis)
 from .control_volume0d import ControlVolume0D
+from .control_volume1d import ControlVolume1D

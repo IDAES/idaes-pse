@@ -7,6 +7,7 @@ Core Contents
 .. toctree::
     :maxdepth: 1
 
+    configuration
     process_block
     state_block
     reaction_block
@@ -14,8 +15,8 @@ Core Contents
     unit_model
     flowsheet_model
 
-Overview
---------
+Core Overview
+-------------
 
 The ProcessBlock class is the base class of IDAES models.
 

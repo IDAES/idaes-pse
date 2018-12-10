@@ -4,13 +4,14 @@ shared: &shared
   working_directory: ~/repo
   steps:
     - checkout
+    - run: ./install-solvers.sh
     - run: sudo pip install -qr requirements.txt
+    - run: pyomo --version
     - run: sudo python setup.py -q install
-# Skip doc build until we move them over
-#    - run: cd doc && make dep html
+    - run: cd docs && make html
     - run: pytest idaes -m "not nocircleci"
     - run: codecov --token=5cf93a40-daf7-4893-a28a-0d1cf229d110
-      
+
 jobs:
   "python-2.7":
     docker:

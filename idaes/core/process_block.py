@@ -158,26 +158,25 @@ class ProcessBlock(Block):
 
 
 def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
-    """Declare a new ProcessBlock subclass.
+    """
+    Declare a new ProcessBlock subclass.
 
     This is a decorator function for a class definition, where the class is
-    derived from _BlockData. It creates a ProcessBlock subclass to contain it.
-    For example (where ProcessBlockData is a subclass of _BlockData):
-
-    @declare_process_block_class(name=MyUnitBlock)
-    class MyUnitBlockData(ProcessBlockData):
-        # This class is a _BlockData subclass contained in a Block subclass
-        # MyUnitBlock
-        ....
-
-    The only requirment is that the subclass of _BlockData contain a build()
-    method.
+    derived from Pyomo's _BlockData. It creates a ProcessBlock subclass to
+    contain the decorated class. The only requirment is that the subclass of
+    _BlockData contain a build() method. The purpose of this decorator is to
+    simplify subclassing Pyomo's block class.
 
     Args:
-        name: class name for the model.
+        name: name of class to create
         block_class: ProcessBlock or a subclass of ProcessBlock, this allows
-            you to use a subclass of ProcessBlock if needed.
+            you to use a subclass of ProcessBlock if needed. The typical use
+            case for Subclassing ProcessBlock is to impliment methods that
+            operate on elements of an indexed block.
         doc: Documentation for the class. This should play nice with sphinx.
+    Returns:
+        Decorator function
+
     """
     def proc_dec(cls):  # Decorator function
         # create a new class called name from block_class
