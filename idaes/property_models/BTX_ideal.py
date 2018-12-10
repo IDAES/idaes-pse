@@ -11,8 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Example property package for the combustion of methane in air using
-Gibbs energy minimisation.
+Example property package for the VLE calucations for a Benzene-Toluene
+system.
 """
 
 # Chages the divide behavior to not do integer division
