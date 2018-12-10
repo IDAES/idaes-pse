@@ -190,7 +190,8 @@ def test_dmf_help(magics_impl):
 def test_dmf_help_badargs(magics_impl):
     with TempDir() as wspath:
         magics_impl.dmf_init(wspath, 'create')
-        pytest.raises(DMFMagicError, magics_impl.dmf_help, 'this', 'that')
+        result = magics_impl.dmf_help('this', 'that')
+        assert result is not None  # None means "OK"
 
 
 def test_dmf_help_obj(magics_impl):
@@ -202,6 +203,4 @@ def test_dmf_help_obj(magics_impl):
         # object
         magics_impl.dmf_help('idaes.dmf.dmfbase.DMF')
         # failure
-        pytest.raises(DMFMagicError, magics_impl.dmf_help, 'FAIL')
-        # non-documented object. Not an error.
-        magics_impl.dmf_help('NODOCS')
+        assert magics_impl.dmf_help('FAIL') is not None

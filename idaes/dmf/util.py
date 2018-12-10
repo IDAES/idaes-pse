@@ -20,12 +20,9 @@ import logging
 import os
 import re
 import shutil
-import signal
 import sys
 import tempfile
 import time
-# third party
-import psutil
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 

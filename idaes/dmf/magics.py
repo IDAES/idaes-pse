@@ -260,23 +260,43 @@ class DmfMagicsImpl(object):
             # give some general help for magics
             return self._magics_help()
         if len(names) > 1:
-            raise DMFMagicError('Only one object or class at a time')
+            _log.warning('DMF Help is restricted to only one object or class '
+                         'at a time. Ignoring trailing arguments ({})'
+                         .format(' '.join(names[1:])))
         name = names[0]
         # Check some special names first.
         # To re-use the <module>.<class> mechanism, translate them into
         # some pseudo-classes in the "dmf.help" pseudo-module.
-        p_module = None
+        p_module, p_class = None, None
         if name.lower() == 'dmf':
             p_module = 'dmf.help'
-        elif name.lower() in ('help', 'idaes'):
+            p_class = 'DMF'
+        elif name.lower() in ('help',):
             p_module = 'idaes.help'
+            p_class = 'IDAES'
+        elif name.lower() in ('idaes', '*', ''):
+            p_module = 'idaes'
+            p_class = 'Home'
+        # Get the help
+        helpfiles = None
         if p_module is not None:
-            p_class = name.title()
-            helpfiles = help.get_html_docs(self._dmf, p_module, p_class)
+            try:
+                helpfiles = help.get_html_docs(self._dmf, p_module, p_class)
+            except DMFMagicError as err:
+                _log.debug('Getting help for pseudo-class {}::{}, error: {}'
+                           .format(p_module, p_class, err))
+                # for Result
+                name = 'pseudo-module {}.{}'.format(p_module, p_class)
         else:
-            helpfiles = self._find_help_for_object(name)
+            try:
+                helpfiles = self._find_help_for_object(name)
+            except DMFMagicError as err:
+                _log.debug('Getting help for object {}, error: {}'
+                           .format(name, err))
+        # Result
         if helpfiles:
             self._show_help_in_browser(helpfiles)
+            return None
         else:
             return 'No Sphinx docs found for "{}"'.format(name)
 
@@ -306,7 +326,6 @@ class DmfMagicsImpl(object):
             result = help.find_html_docs(self._dmf, obj)
         except (ValueError, AttributeError):
             raise DMFMagicError('Cannot find help for {}'.format(name))
-            #result = None
         return result
 
     @staticmethod
