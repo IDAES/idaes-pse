@@ -305,9 +305,9 @@ class _StateBlock(StateBlockBase):
             blk[k].eq_total.deactivate()
             blk[k].eq_comp.deactivate()
             blk[k].eq_sum_mol_frac.deactivate()
-            if blk[k].config.calculate_phase_equilibrium is True:
+            if blk[k].config.has_phase_equilibrium is True:
                 blk[k].eq_Keq.deactivate()
-            if (blk[k].config.has_sum_fractions is True):
+            if (blk[k].config.defined_state is False):
                 blk[k].eq_mol_frac_out.deactivate()
             blk[k].eq_h_liq.deactivate()
             blk[k].eq_h_vap.deactivate()
@@ -318,7 +318,7 @@ class _StateBlock(StateBlockBase):
             blk[k].eq_total.activate()
             blk[k].eq_comp.activate()
             blk[k].eq_sum_mol_frac.activate()
-            if blk[k].config.calculate_phase_equilibrium is True:
+            if blk[k].config.has_phase_equilibrium is True:
                 blk[k].eq_Keq.activate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
@@ -351,7 +351,7 @@ class _StateBlock(StateBlockBase):
             blk.release_state(flags)
 
         for k in blk.keys():
-            if (blk[k].config.has_sum_fractions is True):
+            if (blk[k].config.defined_state is False):
                 blk[k].eq_mol_frac_out.activate()
 
     def release_state(blk, flags, outlvl=0):
@@ -465,12 +465,12 @@ class StateBlockData(StateBlockDataBase):
 
     def _make_constraints(self):
         """Create property constraints."""
-        if self.config.has_sum_fractions is True:
+        if self.config.defined_state is False:
             self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac[i]
                                               for i in self.component_list)
                                               == 1)
 
-        if self.config.calculate_phase_equilibrium is True:
+        if self.config.has_phase_equilibrium is True:
             def rule_Keq(self, i):
                 return self.mole_frac_phase['Vap', i] * self.pressure == \
                     self.vapor_pressure[i] * self.mole_frac_phase['Liq', i]
