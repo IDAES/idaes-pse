@@ -206,12 +206,12 @@ should be constructed in this reaction block,
         """
         # Add a reference to the corresponding state block data for later use
         add_object_reference(self,
-                             "_state",
+                             "state_ref",
                              self.config.state_block[self.index()])
 
         # Validate that property package of state matches that of reaction pack
         if (self.config.parameters.config.property_package !=
-                self._state.config.parameters):
+                self.state_ref.config.parameters):
             raise PropertyPackageError(
                             '{} the StateBlock associated with this '
                             'ReactionBlock does not match with the '
@@ -220,26 +220,6 @@ should be constructed in this reaction block,
                             'does not support mixed associations of property '
                             'and reaction packages.'
                             .format(self.name))
-
-    def get_reaction_material_terms(self):
-        """
-        Method which returns a tuple containing a valid expression to use in
-        the material balances and a constant indicating the basis of this
-        expression (mass, mole or None).
-        """
-        raise NotImplementedError('{} reaction package has not implemented the'
-                                  ' get_reaction_material_terms method. Please'
-                                  ' contact the reaction package developer.')
-
-    def get_reaction_energy_terms(self):
-        """
-        Method which returns a tuple containing a valid expression to use in
-        the energy balances and a constant indicating the basis of this
-        expression (mass, mole or None).
-        """
-        raise NotImplementedError('{} reaction package has not implemented the'
-                                  ' get_reaction_energy_terms method. Please'
-                                  ' contact the reaction package developer.')
 
     def __getattr__(self, attr):
         """

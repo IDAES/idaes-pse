@@ -329,7 +329,7 @@ def test_add_reaction_blocks():
     assert hasattr(m.fs.cv, "reactions")
     assert len(m.fs.cv.reactions[0].config) == 3
     assert m.fs.cv.reactions[0].config.state_block == m.fs.cv.properties_out
-    assert m.fs.cv.reactions[0]._state == m.fs.cv.properties_out[0]
+    assert m.fs.cv.reactions[0].state_ref == m.fs.cv.properties_out[0]
     assert m.fs.cv.reactions[0].config.has_equilibrium is False
     assert m.fs.cv.reactions[0].config.parameters == m.fs.rp
 
