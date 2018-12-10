@@ -16,6 +16,11 @@ Utility functions.
 # stdlib
 import importlib
 import json
+try:  # sigh.. I hate that we have to support Python 2
+    from json import JSONDecodeError
+except ImportError:
+    # Python 2
+    JSONDecodeError = Exception
 import logging
 import os
 import re
@@ -27,6 +32,8 @@ import time
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
 _log = logging.getLogger(__name__)
+
+
 
 
 def strlist(x, sep=', '):
@@ -122,7 +129,7 @@ def is_jupyter_notebook(filename, check_contents=True):
     if check_contents:
         try:
             nb = json.load(open(filename))
-        except (UnicodeDecodeError, json.JSONDecodeError):
+        except (UnicodeDecodeError, JSONDecodeError):
             return False
         for key in 'cells', 'metadata', 'nbformat':
             if key not in nb:
@@ -161,7 +168,7 @@ def is_resource_json(filename, max_bytes=1e6):
     if st.st_size <= max_bytes:
         try:
             d = json.load(open(filename))
-        except (UnicodeDecodeError, json.JSONDecodeError):
+        except (UnicodeDecodeError, JSONDecodeError):
             return False
         # look for a couple distinctive keys
         for key in 'id_', 'type':
