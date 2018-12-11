@@ -96,7 +96,7 @@ object. Below are a couple of examples::
 
     # Initialize the DMF first
     from idaes.dmf import magics
-    %dmf init path/to/workspace
+    %dmf init path/to/workspace create
 
     # Get help on a module (imported)
     from idaes.core import control_volume1d

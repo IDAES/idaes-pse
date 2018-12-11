@@ -140,17 +140,18 @@ class DmfMagicsImpl(object):
         kwargs, create = {}, False
         if len(extra) > 0:
             if extra[0].lower() == 'create':
-                kwargs = {'create': True, 'add_defaults': True}
-                create = True
+                if os.path.exists(
+                        os.path.join(path, dmfbase.DMF.WORKSPACE_CONFIG)):
+                    self._dmf_markdown(
+                        'Cannot create new configuration at "{}": '
+                        'file "{}" exists. Will try without '
+                        '"create" option'
+                        .format(path, dmfbase.DMF.WORKSPACE_CONFIG))
+                else:
+                    kwargs = {'create': True, 'add_defaults': True}
+                    create = True
             else:
                 _log.warning('Ignoring extra argument to "init"')
-        if create and os.path.exists(
-                os.path.join(path, dmfbase.DMF.WORKSPACE_CONFIG)):
-            self._dmf_markdown('Cannot create new configuration at "{}": '
-                               'file "{}" exists. Re-try without '
-                               '"create" option'
-                               .format(path, dmfbase.DMF.WORKSPACE_CONFIG))
-            return
         try:
             self._dmf = dmfbase.DMF(path, **kwargs)
         except errors.WorkspaceNotFoundError:
@@ -170,9 +171,9 @@ class DmfMagicsImpl(object):
 
         self._dmf.set_meta({'name': os.path.basename(path)})
         if create:
-            self._dmf_markdown('Created new workspace at "{}"'.format(path))
+            self._dmf_markdown('*Success!* Created new workspace at "{}"'.format(path))
         else:
-            self._dmf_markdown('Using workspace at "{}"'.format(path))
+            self._dmf_markdown('*Success!* Using workspace at "{}"'.format(path))
 
     def dmf_workspaces(self, *paths):
         """List DMF workspaces. Optionally takes one or more paths
