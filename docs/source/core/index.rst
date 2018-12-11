@@ -5,15 +5,15 @@ Core Contents
 -------------
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
     configuration
     process_block
     flowsheet_model
-    state_block
-    reaction_block
+    properties
     unit_model
     control_volume
+    utility_methods
 
 Core Overview
 -------------

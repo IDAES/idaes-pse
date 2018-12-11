@@ -21,9 +21,6 @@ PhysicalParameterBase Class
 
 The role of the PhysicalParameterBase class is to set up the references required by the rest of the IDAES framework for constructing instances of StateBlocks and attaching these to the PhysicalParameter block for ease of use. This allows other models to be pointed to the PhysicalParameter block in order to collect the necessary information and to construct the necessary StateBlocks without the need for the user to do this manually.
 
-Required Attributes
-^^^^^^^^^^^^^^^^^^^
-
 Physical property packages form the core of any process model in the IDAES modeling framework, and are used by all of the other modeling components to inform them of what needs to be constructed. In order to do this, the IDAES modeling framework looks for a number of attributes in the PhysicalParameter block which are used to inform the construction of other components.
 
 * state_block_class - a pointer to the associated class that should be called when constructing StateBlocks.
@@ -33,8 +30,8 @@ Physical property packages form the core of any process model in the IDAES model
 * element_comp - (optional) a dict-like object which defines the elemental composition of each species in component_list. Form: component: {element_1: value, element_2: value, ...}.
 * supported properties metadata - a list of supported physical properties that the property package supports, along with instruction to the framework on how to construct the associated variables and constraints, and the units of measurement used for the property. This information is set using the add_properties attribute of the define_metadata class method.
 
-Configuration Arguments
-^^^^^^^^^^^^^^^^^^^^^^^
+Physical Parameter Configuration Arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Physical Parameter blocks have one standard configuration argument:
 
@@ -54,8 +51,8 @@ State Blocks are used within all IDAES Unit models (generally within ControlVolu
 * StateBlockDataBase forms the base class for all StateBlockData objects, which contain the instructions on how to construct each instance of a State Block.
 * StateBlockBase is used for building classes which contain methods to be applied to sets of Indexed State Blocks (or to a subset of these). See the documentation on declare_process_block_class and the IDAES tutorials and examples for more information.
 
-Construction Arguments
-^^^^^^^^^^^^^^^^^^^^^^
+State Block Construction Arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 State Blocks have the following construction arguments:
 
