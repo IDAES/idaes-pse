@@ -47,6 +47,12 @@ class WorkspaceNotFoundError(WorkspaceError):
         super(WorkspaceNotFoundError, self).__init__(msg)
 
 
+class WorkspaceCannotCreateError(WorkspaceError):
+    def __init__(self, path):
+        msg = 'Unable to create new workspace at "{}"'.format(path)
+        super(WorkspaceCannotCreateError, self).__init__(msg)
+
+
 class WorkspaceConfNotFoundError(WorkspaceError):
     def __init__(self, path):
         msg = 'Workspace config not found at path "{}" '.format(path)
