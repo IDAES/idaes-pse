@@ -131,5 +131,3 @@ def _find_refs_old(tree, module, name, sphinx_version):
     elements = tree.xpath(xpath_expr)
     hrefs = [e.get('href') for e in elements if e.text.strip() == name]
     return hrefs
-
-

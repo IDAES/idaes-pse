@@ -102,7 +102,7 @@ def test_init_goodpath(magics_impl):
 def test_dmf_cmd(magics_impl):
     pytest.raises(DMFMagicError, magics_impl.dmf, 'not a command')
     pytest.raises(DMFMagicError, magics_impl.dmf, 'list stuff')
-    pytest.raises(DMFMagicError, magics_impl.dmf, '')
+    magics_impl.dmf('')  # Empty value is OK
 
 
 def test_dmf_workspaces(magics_impl):
@@ -190,8 +190,10 @@ def test_dmf_help(magics_impl):
 def test_dmf_help_badargs(magics_impl):
     with TempDir() as wspath:
         magics_impl.dmf_init(wspath, 'create')
+        # This will generate a warning, but is OK. Only the first
+        # object is tried (which fails; another warning)
         result = magics_impl.dmf_help('this', 'that')
-        assert result is not None  # None means "OK"
+        assert result is None  # None means "OK"
 
 
 def test_dmf_help_obj(magics_impl):

@@ -332,7 +332,7 @@ class DmfMagicsImpl(object):
         try:
             obj = self._shell.ev(name)
             _log.debug('Looking for HTML docs for object: {}'.format(obj))
-        except Exception as err:
+        except Exception:
             oname = name
             _log.debug('Looking for HTML docs for object: {}'.format(oname))
         try:
