@@ -306,9 +306,9 @@ class DmfMagicsImpl(object):
         # Result
         if helpfiles:
             self._show_help_in_browser(helpfiles)
-            return None
         else:
-            return 'No Sphinx docs found for "{}"'.format(name)
+            self._dmf_markdown('No Sphinx docs found for "{}"'.format(name))
+        return None
 
     def _init_required(self, subcmd):
         """If no DMF, display init-required message and

@@ -15,6 +15,7 @@ Tests for DMF Jupyter "magics"
 """
 # stdlib
 import os
+import webbrowser
 # third-party
 import pytest
 # local
@@ -22,6 +23,9 @@ from idaes.dmf import magics, DMF
 from idaes.dmf.magics import DMFMagicError
 from idaes.dmf.resource import Resource
 from .util import TempDir
+
+# monkey-patch webbrowser to do nothing
+webbrowser.open_new = lambda url: None
 
 
 class MockShell(object):
@@ -204,5 +208,5 @@ def test_dmf_help_obj(magics_impl):
             magics_impl.dmf_help(name)
         # object
         magics_impl.dmf_help('idaes.dmf.dmfbase.DMF')
-        # failure
-        assert magics_impl.dmf_help('FAIL') is not None
+        # failure (still returns None)
+        assert magics_impl.dmf_help('FAIL') is None
