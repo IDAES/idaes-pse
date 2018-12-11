@@ -38,7 +38,12 @@ from idaes.core.util.misc import add_object_reference
 _log = logging.getLogger(__name__)
 
 def delta_temperature_lmtd_rule(b, t):
-    # lmtd will add more options
+    """
+    This is a rule for a temperaure difference expression to calculate
+    :math:`\DeltaT` in the heat exchanger model using log-mean temperature
+    difference (LMTD).  It can be supplied to "delta_temperature_rule"
+    HeatExchanger configuration option.
+    """
     dT1 = b.side_1.properties_in[t].temperature - \
         b.side_2.properties_out[t].temperature
     dT2 = b.side_1.properties_out[t].temperature - \
@@ -46,7 +51,12 @@ def delta_temperature_lmtd_rule(b, t):
     return (dT1 - dT2)/(log(dT1) - log(dT2))
 
 def delta_temperature_amtd_rule(b, t):
-    # lmtd will add more options
+    """
+    This is a rule for a temperaure difference expression to calculate
+    :math:`\DeltaT` in the heat exchanger model using arithmetic-mean temperature
+    difference (AMTD).  It can be supplied to "delta_temperature_rule"
+    HeatExchanger configuration option.
+    """
     dT1 = b.side_1.properties_in[t].temperature - \
         b.side_2.properties_out[t].temperature
     dT2 = b.side_1.properties_out[t].temperature - \
@@ -54,6 +64,10 @@ def delta_temperature_amtd_rule(b, t):
     return (dT1 + dT2)/2.0
 
 def heat_transfer_rule(b, t):
+    """
+    This is the defulat rule used by the HeatExchanger model to calculate heat
+    transfer (:math:`Q = UA\DeltaT`).
+    """
     return (b.heat_duty[t] ==
             b.heat_transfer_coefficient[t]*
             b.area*
@@ -61,8 +75,8 @@ def heat_transfer_rule(b, t):
 
 def _make_heater_control_volume(o, name, config):
     """
-    This is seperated from the main model so it can be reused to different types
-    of heat exchangers and heater/cooler units.
+    This is seperated from the main heater class so it can be reused to create
+    control volumes for different types of heat exchange models.
     """
     control_volume = ControlVolume0D(default={
             "dynamic": config.dynamic,
@@ -89,7 +103,7 @@ def _make_heater_control_volume(o, name, config):
 
 def _make_heater_config_block(config):
     """
-    Declare options of a HeaterData unit.
+    Declare configuration options for HeaterData block.
     """
     config.declare("dynamic", ConfigValue(
         domain=In([True, False]),
@@ -111,13 +125,13 @@ Must be True if dynamic = True,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
-    **default** - MaterialBalanceType.componentPhase.
-    **Valid values:** {
-    **MaterialBalanceType.none** - exclude material balances,
-    **MaterialBalanceType.componentPhase** - use phase component balances,
-    **MaterialBalanceType.componentTotal** - use total component balances,
-    **MaterialBalanceType.elementTotal** - use total element balances,
-    **MaterialBalanceType.total** - use total material balance.}"""))
+**default** - MaterialBalanceType.componentPhase.
+**Valid values:** {
+**MaterialBalanceType.none** - exclude material balances,
+**MaterialBalanceType.componentPhase** - use phase component balances,
+**MaterialBalanceType.componentTotal** - use total component balances,
+**MaterialBalanceType.elementTotal** - use total element balances,
+**MaterialBalanceType.total** - use total material balance.}"""))
     config.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.enthalpyTotal,
         domain=In(EnergyBalanceType),
@@ -191,7 +205,7 @@ see property package for documentation.}"""))
 
 def _make_heat_exchanger_config(config):
     """
-    Setup heat exchanger configuration block
+    Declare configuration options for HeatExchngerData block.
     """
     config.declare("dynamic", ConfigValue(
         domain=In([True, False]),
@@ -221,7 +235,7 @@ def _make_heat_exchanger_config(config):
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
 class HeaterData(UnitBlockData):
     """
-    Simple 0D heat exchange unit.
+    Simple 0D heater unit.
 
     Unit model to add or remove heat from a material.
     """
