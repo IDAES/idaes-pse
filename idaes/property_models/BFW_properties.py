@@ -25,7 +25,7 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import (Constraint, log, Param,
+from pyomo.environ import (Constraint, log, Param, value,
                            PositiveReals, RangeSet, Reals, Set, Var)
 from pyomo.opt import SolverFactory, TerminationCondition
 
@@ -403,27 +403,30 @@ class StateBlockData(StateBlockDataBase):
                 self.phase_list, rule=therm_cond_phase_correlation)
 
     def get_material_flow_terms(b, p, j):
+        """Define material flow terms for control volume."""
         return b.flow_mol
 
     def get_enthalpy_flow_terms(b, p):
+        """Define enthalpy flow terms for control volume."""
         return b.flow_mol * b.enth_mol_phase[p]
 
     def get_material_density_terms(b, p, j):
+        """Define material density terms for control volume."""
         return b.dens_mol_phase[p]
 
     def get_enthalpy_density_terms(b, p):
+        """Define enthalpy density terms for control volume."""
         return b.enth_mol_phase[p] * b.dens_mol_phase[p]
 
     def define_state_vars(b):
+        """Define state variables for ports."""
         return {"flow_mol": b.flow_mol,
                 "temperature": b.temperature,
                 "pressure": b.pressure,
                 "vapor_frac": b.vapor_frac}
 
     def model_check(blk):
-        """
-        Model checks for property block
-        """
+        """Model checks for property block."""
         # Check temperature bounds
         if value(blk.temperature) < blk.temperature.lb:
             _log.error('{} Temperature set below lower bound.'
