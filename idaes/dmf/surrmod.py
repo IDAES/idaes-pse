@@ -15,6 +15,7 @@ Surrogate modeling helper classes and functions.
 This is used to run ALAMO on property data.
 """
 # stdlib
+import logging
 import warnings
 # third-party
 import numpy as np
@@ -23,7 +24,11 @@ from pandas import DataFrame
 from idaes.dmf import resource, propdata
 # from idaes.dmf.experiment import Experiment
 # alamo
-from idaes.dmf import errors, util
+from idaes.dmf import errors
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 alamo_enabled = True
 
@@ -32,8 +37,6 @@ try:
 except ImportError:
     warnings.warn('Cannot import ALAMO')
     alamo_enabled = False
-
-_log = util.get_logger('surrmod')
 
 
 class SurrogateModel(object):

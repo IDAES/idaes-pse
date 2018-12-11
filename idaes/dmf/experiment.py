@@ -16,9 +16,13 @@ set of 'resources'.
 """
 # stdlib
 from copy import deepcopy
-# third-party
-# package
+import logging
+# local
 from idaes.dmf import resource, errors
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 class Experiment(resource.Resource):

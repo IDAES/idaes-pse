@@ -4,16 +4,9 @@ shared: &shared
   working_directory: ~/repo
   steps:
     - checkout
-    - run: sudo apt-get update && sudo apt-get install -y libboost-dev
-    - run: wget https://ampl.com/netlib/ampl/solvers.tgz
-    - run: tar -xf solvers.tgz
-    - run: cd solvers && ./configure
-    - run: cd solvers && make
-    - run: export ASL_BUILD=/home/circleci/repo/solvers/sys.x86_64.Linux && cd idaes/property_models/iapws95 && make
-    - run: wget https://ampl.com/dl/open/ipopt/ipopt-linux64.zip
-    - run: unzip ipopt-linux64.zip
-    - run: sudo cp ipopt /usr/local/bin/
+    - run: ./install-solvers.sh
     - run: sudo pip install -qr requirements.txt
+    - run: pyomo --version
     - run: sudo python setup.py -q install
     - run: cd docs && make html
     - run: pytest idaes -m "not nocircleci"

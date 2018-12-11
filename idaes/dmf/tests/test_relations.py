@@ -14,10 +14,20 @@
 Test the 'relations' connecting Resource instances,
 which spans the modules idaes.dmf.{dmf, resource, resourcedb}
 """
+# stdlib
+import logging
+# third-party
 import pytest
-from traitlets import HasTraits, TraitError
-from idaes.dmf import dmfbase, experiment, resource
+# local
+from idaes.dmf import experiment, resource
+# for testing
 from .util import tmp_dmf  # need for fixture
+from .util import init_logging
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+init_logging()
+_log = logging.getLogger(__name__)
 
 
 def test_create_relation_in_resource():

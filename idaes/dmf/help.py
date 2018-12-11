@@ -14,11 +14,15 @@
 Find documentation for modules and classes in the
 generated Sphinx documentation and return its location.
 """
+# stdlib
+import logging
 import os
+# third-party
 from lxml import html
-from idaes.dmf import util
 
-_log = util.get_logger('help')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 def find_html_docs(dmf, obj, **kw):

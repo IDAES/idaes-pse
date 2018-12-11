@@ -23,20 +23,20 @@ Import property database from textfile(s):
 """
 import csv
 import json
-
-# Third-party imports
+import logging
+# third-party
 try:
     import pandas as pd
     import numpy as np
 except ImportError:
     np, pd = None, None
-
-
-# Local imports
-from .util import get_logger, get_file
+# local
+from .util import get_file
 from . import tabular
 
-_log = get_logger('propdb')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 class AddedCSVColumnError(KeyError):
