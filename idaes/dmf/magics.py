@@ -171,9 +171,11 @@ class DmfMagicsImpl(object):
 
         self._dmf.set_meta({'name': os.path.basename(path)})
         if create:
-            self._dmf_markdown('*Success!* Created new workspace at "{}"'.format(path))
+            self._dmf_markdown('*Success!* Created new workspace at "{}"'
+                               .format(path))
         else:
-            self._dmf_markdown('*Success!* Using workspace at "{}"'.format(path))
+            self._dmf_markdown('*Success!* Using workspace at "{}"'
+                               .format(path))
 
     def dmf_workspaces(self, *paths):
         """List DMF workspaces. Optionally takes one or more paths
