@@ -45,9 +45,17 @@ def delta_temperature_lmtd_rule(b, t):
         b.side_2.properties_in[t].temperature
     return (dT1 - dT2)/(log(dT1) - log(dT2))
 
+def delta_temperature_amtd_rule(b, t):
+    # lmtd will add more options
+    dT1 = b.side_1.properties_in[t].temperature - \
+        b.side_2.properties_out[t].temperature
+    dT2 = b.side_1.properties_out[t].temperature - \
+        b.side_2.properties_in[t].temperature
+    return (dT1 + dT2)/2.0
+
 def heat_transfer_rule(b, t):
     return (b.heat_duty[t] ==
-            b.heat_transfer_coeffcient[t]*
+            b.heat_transfer_coefficient[t]*
             b.area*
             b.delta_temperature[t])
 
@@ -243,11 +251,11 @@ class HeaterData(UnitBlockData):
 
 @declare_process_block_class("HeatExchanger",
     doc="Simple 0D heat exchanger model.")
-class HeaterExchangerData(UnitBlockData):
+class HeatExchangerData(UnitBlockData):
     """
     Simple 0D heat exchange unit.
 
-    Unit model to add or remove heat from a material.
+    Unit model to transfer heat from one material to another.
     """
     CONFIG = ConfigBlock()
     _make_heat_exchanger_config(CONFIG)
@@ -263,9 +271,9 @@ class HeaterExchangerData(UnitBlockData):
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(HeaterExchangerData, self).build()
+        super(HeatExchangerData, self).build()
         # Add variables
-        self.heat_transfer_coeffcient = Var(
+        self.heat_transfer_coefficient = Var(
             self.time_ref,
             domain=PositiveReals,
             initialize=100,
@@ -302,15 +310,43 @@ class HeaterExchangerData(UnitBlockData):
         self.heat_transfer_equation = Constraint(self.time_ref,
             rule=self.config.heat_transfer_rule)
         if self.config.heat_transfer_coefficient_rule is not None:
-            self.heat_transfer_coeffcient_equation = Constraint(
+            self.heat_transfer_coefficient_equation = Constraint(
                 self.time_ref, rule=self.config.heat_transfer_coefficient_rule)
         else:
-            self.heat_transfer_coeffcient.fix()
+            self.heat_transfer_coefficient.fix()
 
     def initialize(self, state_args_1=None, state_args_2=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}, duty=10000):
+        """
+        Heat echanger initialization method.
+
+        Args:
+            state_args_1 : a dict of arguments to be passed to the property
+                initialization for side_1 (see documentation of the specific
+                property package) (default = {}).
+            state_args_2 : a dict of arguments to be passed to the property
+                initialization for side_2 (see documentation of the specific
+                property package) (default = {}).
+            outlvl : sets output level of initialisation routine
+
+                     * 0 = no output (default)
+                     * 1 = return solver state for each step in routine
+                     * 2 = return solver state for each step in subroutines
+                     * 3 = include solver output infomation (tee=True)
+
+            optarg : solver options dictionary object (default={'tol': 1e-6})
+            solver : str indicating which solver to use during
+                     initialization (default = 'ipopt')
+            duty : an initial guess for the amount of heat transfered
+                (default = 10000)
+
+        Returns:
+            None
+        """
 
         self.heat_duty.value = duty # probably best start with a positive duty
+        self.side_1.heat.value = duty # probably best start with a positive duty
+        self.side_2.heat.value = duty # probably best start with a positive duty
         # Set solver options
         if outlvl > 3:
             stee = True
