@@ -1,3 +1,6 @@
+.. index::
+    pair: dmf;DMF
+
 Data Management Framework
 =========================
 
@@ -36,9 +39,6 @@ Here is a very simple graphical illustration of these concepts::
     +-------------------------+  +--------------------+
 
 
-For most users the goal of the DMF is to
-provide high-level APIs or interface that don't require knowing the
-internal resource representation.
 
 Configuration
 -------------
@@ -52,13 +52,14 @@ keyword. For example::
   # global DMF configuration
   workspace: ~/data/workspaces/workspace1
 
-The per-workspace configuration has more options. MORE HERE
+The per-workspace configuration has more options. See the documentation
+in the :class:`Workspace <idaes.dmf.workspace.Workspace>` class for details.
 
 Usage
 -----
 
 You can use the DMF programmatically by instantiating the Python classes.
-For details see the :ref:`idaes.dmf package` documentation.
+For details see the :mod:`DMF package <idaes.dmf>` documentation.
 
 Jupyter notebook usage
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -79,6 +80,9 @@ workspace.
 * ``%dmf list`` - List resources in the current workspace
 * ``%dmf workspaces`` - List DMF workspaces; you can do this *before* `%dmf init`
 
+.. index::
+    pair: dmf;Help
+
 .. _dmf-help:
 
 DMF help
@@ -90,15 +94,28 @@ formatted and hyperlinked HTML pages. The ``%dmf help`` command lets you easily
 pull up this documentation for an IDAES module, class, or
 object. Below are a couple of examples::
 
-  # Need to initialize the DMF first
-  from idaes.dmf import magics
-  %dmf init path/to/workspace
-  # Get help on a module
-  Examples go HERE
-  # Get help on a class
-  EXAMPLE
-  # Get help on an object (will show help for the object's class)
-  EXAMPLE
+    # Initialize the DMF first
+    from idaes.dmf import magics
+    %dmf init path/to/workspace
+
+    # Get help on a module (imported)
+    from idaes.core import control_volume1d
+    %dmf help control_volume1d
+
+    # Get help on a module (by name, no import)
+    %dmf help idaes.core.control_volume0d
+
+    # Get help on a class
+    from idaes.core.control_volume1d import ControlVolume1D
+    %dmf help ControlVolume1D
+
+    # Get help on a class (by name, no import)
+    %dmf help idaes.core.control_volume1d.ControlVolume1D
+
+    # Get help on an object (will show help for the object's class)
+    # This will end up showing the same help as the previous two examples
+    obj = control_volume1d.ControlVolume1D()
+    %dmf help obj
 
 The help pages will open in a new window. The location of the built
 documentation that they use is configured in the per-workspace DMF
@@ -110,5 +127,5 @@ when the DMF is first initialized).
 
 Reference
 ---------
-See the :ref:`idaes.dmf package` documentation that is generated
+See the :mod:`DMF package <idaes.dmf>` documentation that is generated
 automatically from the source code.
