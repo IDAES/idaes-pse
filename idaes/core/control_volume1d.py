@@ -141,6 +141,8 @@ class ControlVolume1dData(ControlVolumeBase):
         self.length = Var(initialize=1.0,
                           doc='Length of Control Volume [{}]'.format(l_units))
 
+        # TODO: This constraint needs to be checked
+        # i.e. it should be volume = area * (length/no. of finite elements)
         @self.Constraint(doc="Control volume geometry constraint")
         def geometry_constraint(b):
             return self.volume == self.area*self.length
@@ -1566,19 +1568,23 @@ class ControlVolume1dData(ControlVolumeBase):
         """
 
         if transformation_method == "dae.finite_difference":
+            # TODO: Need to add a check that the transformation_scheme matches
+            # the transformation method being passed.
             self.discretizer = TransformationFactory('dae.finite_difference')
             self.discretizer.apply_to(self,
                                       nfe=finite_elements,
                                       wrt=self.length_domain,
                                       scheme=transformation_scheme)
         elif transformation_method == "dae.collocation":
+            # TODO: Need to add a check that the transformation_scheme matches
+            # the transformation method being passed.
             self.discretizer = TransformationFactory('dae.collocation')
             self.discretizer.apply_to(
-                    self,
-                    wrt=self.length_domain,
-                    nfe=finite_elements,
-                    collocation_points=collocation_points,
-                    scheme=transformation_scheme)
+                self,
+                wrt=self.length_domain,
+                nfe=finite_elements,
+                collocation_points=collocation_points,
+                scheme=transformation_scheme)
         else:
             raise ConfigurationError("{} unrecognised transfromation_method, "
                                      "must match one of the Transformations "
@@ -1665,13 +1671,13 @@ class ControlVolume1dData(ControlVolumeBase):
 
         # Initialize state blocks
         # TODO : Consider handling hold_state for length domain
-        flags = blk.properties.initialize(outlvl=outlvl-1,
+        flags = blk.properties.initialize(outlvl=outlvl - 1,
                                           optarg=optarg,
                                           solver=solver,
                                           **state_args)
 
         try:
-            blk.reactions.initialize(outlvl=outlvl-1,
+            blk.reactions.initialize(outlvl=outlvl - 1,
                                      optarg=optarg,
                                      solver=solver)
         except AttributeError:
@@ -1696,7 +1702,8 @@ class ControlVolume1dData(ControlVolumeBase):
         Returns:
             None
         '''
-        blk.properties.release_state(flags, outlvl=outlvl-1)
+        # TODO: Need to check this. Does not work as intended.
+        blk.properties.release_state(flags, outlvl=outlvl - 1)
 
     def _add_phase_fractions(self):
         """
