@@ -46,7 +46,7 @@ CONFIG_SCHEMA = {
                 "type": "string",
                 "description": "directory containing Sphinx HTML docs"
             },
-            "default": "{dmf_root}/doc/build/html"
+            "default": "{dmf_root}/docs/build/html"
         },
         "description": {
             "description": "A human-readable description of the workspace",

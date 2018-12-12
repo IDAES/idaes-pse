@@ -88,10 +88,9 @@ class DMFConfig(object):
                 raise IOError('File not found: {}'.format(self.filename))
             fp = open(self.filename, 'rb')
         except IOError as err:
-            _log.warning('Unable to open global DMF configuration file '
-                         'for reading: {}. '
-                         'Will use default configuration values.'
-                         .format(err))
+            _log.debug('Unable to open global DMF configuration file '
+                       'for reading: {}. Using default configuration values.'
+                       .format(err))
         # if we got a config file, parse it
         if fp:
             try:
