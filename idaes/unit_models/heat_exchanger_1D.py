@@ -457,6 +457,16 @@ tube side flows from 1 to 0"""))
                 return self.tube.heat[t, x] == -(self.shell.heat[t, x] /
                                                  self.N_tubes)
 
+        # Define tube area in terms of tube diameter
+        self.area_calc_tube = Constraint(expr=4 * self.tube_area == self.pi *
+                                         self.d_tube_inner**2)
+
+        # Define shell area in terms of shell and tube diameter
+        self.area_calc_shell = Constraint(expr=4 * self.shell_area ==
+                                          self.pi * (self.d_shell**2 -
+                                                     self.N_tubes *
+                                                     self.d_tube_outer**2))
+
     def initialize(blk, shell_state_args={}, tube_state_args={}, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}):
         """
@@ -509,8 +519,8 @@ tube side flows from 1 to 0"""))
         # Solve unit
         # Wall 0D
         if blk.config.has_wall_conduction == "none":
-            for t in blk.time:
-                for z in blk.shell.ldomain:
+            for t in blk.time_ref:
+                for z in blk.shell.length_domain:
                     blk.temperature_wall[t, z].fix(value(
                         0.5 * (blk.shell.properties[t, 0].temperature +
                                blk.tube.properties[t, 0].temperature)))
@@ -554,9 +564,10 @@ tube side flows from 1 to 0"""))
                     _log.warning('{} Initialisation Step 4 Failed.'
                                  .format(blk.name))
         # ---------------------------------------------------------------------
+        #TODO: Some weird bug with the release state loop. Needs fixing in core.
         # Release Inlet state
-        blk.shell.release_state(flags, outlvl - 1)
-        blk.tube.release_state(flags, outlvl - 1)
+        # blk.shell.release_state(flags, outlvl - 1)
+        # blk.tube.release_state(flags, outlvl - 1)
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete.'.format(blk.name))

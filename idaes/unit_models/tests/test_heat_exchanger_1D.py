@@ -11,14 +11,16 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Tests for Heat Exchanger unit model.
+Tests for Heat Exchanger 1D unit model.
 
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import ConcreteModel, SolverFactory
+from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
+                           SolverStatus)
 
-from idaes.core import FlowsheetBlock
+from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
 
 from idaes.property_models.BFW_properties import PhysicalParameterBlock
@@ -36,15 +38,32 @@ else:
 
 
 # -----------------------------------------------------------------------------
+# Create a flowsheet for test
+m = ConcreteModel()
+m.fs = FlowsheetBlock(default={"dynamic": False})
+
+m.fs.properties = PhysicalParameterBlock()
+m.fs.HX1D = HX1D(default={"shell_property_package": m.fs.properties,
+                          "tube_property_package": m.fs.properties})
+
+
 def test_build():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    m.fs.properties = PhysicalParameterBlock()
-    m.fs.HX1D = HX1D(default={"shell_property_package": m.fs.properties,
-                              "tube_property_package": m.fs.properties})
-
+    # Check for default setting for config block attributes
     assert len(m.fs.HX1D.config) == 29
+    assert not m.fs.HX1D.config.has_holdup
+    assert m.fs.HX1D.config.material_balance_type == \
+        MaterialBalanceType.componentPhase
+    assert m.fs.HX1D.config.energy_balance_type == \
+        EnergyBalanceType.enthalpyTotal
+    assert m.fs.HX1D.config.momentum_balance_type == \
+        MomentumBalanceType.pressureTotal
+    assert m.fs.HX1D.config.has_heat_transfer
+    assert not m.fs.HX1D.config.has_pressure_change
+    assert m.fs.HX1D.config.shell_has_phase_equilibrium
+    assert m.fs.HX1D.config.tube_has_phase_equilibrium
+    assert m.fs.HX1D.config.flow_type == "co_current"
+    assert m.fs.HX1D.config.has_wall_conduction == "none"
+
 
     # Check for inlets/outlets construction
     assert hasattr(m.fs.HX1D, "shell_inlet")
@@ -52,85 +71,54 @@ def test_build():
     assert hasattr(m.fs.HX1D, "tube_inlet")
     assert hasattr(m.fs.HX1D, "tube_outlet")
 
+def test_setInputs():
+    """Set inlet and operating conditions."""
+    # HX dimensions
+    m.fs.HX1D.d_shell.fix(1.04)
+    m.fs.HX1D.d_tube_outer.fix(0.01167)
+    m.fs.HX1D.d_tube_inner.fix(0.01067)
+    m.fs.HX1D.N_tubes.fix(1176)
+    m.fs.HX1D.shell_length.fix(4.85)
+    m.fs.HX1D.tube_length.fix(4.85)
+    m.fs.HX1D.shell_heat_transfer_coefficient.fix(2000)
+    m.fs.HX1D.tube_heat_transfer_coefficient.fix(51000)
 
-# # -----------------------------------------------------------------------------
-# # Test class methods
-# def test_default_config_block(m):
+    # Boundary conditions
+    for t in m.fs.time:
+        # Unit HX01
+        # NETL baseline study
+        m.fs.HX1D.shell_inlet[t].vars["flow_mol"].fix(2300)  # mol/s
+        m.fs.HX1D.shell_inlet[t].vars["temperature"].fix(676)  # K
+        m.fs.HX1D.shell_inlet[t].vars["pressure"].fix(7.38E6)  # Pa
+        m.fs.HX1D.shell_inlet[t].vars["vapor_frac"].fix(1)
 
-#     assert m.fs.hx.config.dynamic == 'use_parent_value'
-#     assert not m.fs.hx.config.include_holdup
-#     assert m.fs.hx.config.material_balance_type == 'component_phase'
-#     assert m.fs.hx.config.energy_balance_type == 'enthalpy_total'
-#     assert m.fs.hx.config.momentum_balance_type == 'pressure'
-#     assert not m.fs.hx.config.has_rate_reactions
-#     assert not m.fs.hx.config.has_equilibrium_reactions
-#     assert not m.fs.hx.config.has_mass_transfer
-#     assert m.fs.hx.config.has_heat_transfer
-#     assert not m.fs.hx.config.has_work_transfer
-#     assert not m.fs.hx.config.has_pressure_change
-#     assert m.fs.hx.config.velocity_type == 'none'
-#
-#     assert not hasattr(m.fs.hx.config, "has_phase_equilibrium")
-#
-#     assert m.fs.hx.config.shell_has_phase_equilibrium
-#     m.fs.hx.config.shell_has_phase_equilibrium = False
-#     with pytest.raises(ValueError):
-#         m.fs.hx.config.shell_has_phase_equilibrium = 'foo'
-#         m.fs.hx.config.shell_has_phase_equilibrium = 10
-#
-#     assert m.fs.hx.config.tube_has_phase_equilibrium
-#     m.fs.hx.config.tube_has_phase_equilibrium = False
-#     with pytest.raises(ValueError):
-#         m.fs.hx.config.tube_has_phase_equilibrium = 'foo'
-#         m.fs.hx.config.tube_has_phase_equilibrium = 10
-#
-#     assert m.fs.hx.config.shell_property_package == m.fs.props
-#     assert m.fs.hx.config.shell_property_package_args == {}
-#     assert m.fs.hx.config.shell_inlet_list is None
-#     assert m.fs.hx.config.shell_num_inlets is None
-#     assert m.fs.hx.config.shell_outlet_list is None
-#     assert m.fs.hx.config.shell_num_outlets is None
-#
-#     assert m.fs.hx.config.tube_property_package == m.fs.props
-#     assert m.fs.hx.config.tube_property_package_args == {}
-#     assert m.fs.hx.config.tube_inlet_list is None
-#     assert m.fs.hx.config.tube_num_inlets is None
-#     assert m.fs.hx.config.tube_outlet_list is None
-#     assert m.fs.hx.config.tube_num_outlets is None
-#
-#     assert m.fs.hx.config.shell_discretization_method == 'OCLR'
-#     assert m.fs.hx.config.tube_discretization_method == 'OCLR'
-#     assert m.fs.hx.config.finite_elements == 20
-#     assert m.fs.hx.config.collocation_points == 5
-#
-#     assert not m.fs.hx.config.shell_has_mass_diffusion
-#     m.fs.hx.config.shell_has_mass_diffusion = True
-#     with pytest.raises(ValueError):
-#         m.fs.hx.config.shell_has_mass_diffusion = 'foo'
-#     with pytest.raises(ValueError):
-#         m.fs.hx.config.shell_has_mass_diffusion = 10
-#
-#     assert not m.fs.hx.config.shell_has_energy_diffusion
-#     m.fs.hx.config.shell_has_energy_diffusion = True
-#     with pytest.raises(ValueError):
-#         m.fs.hx.config.shell_has_energy_diffusion = 'foo'
-#     with pytest.raises(ValueError):
-#         m.fs.hx.config.shell_has_energy_diffusion = 10
-#
-#     assert not m.fs.hx.config.tube_has_mass_diffusion
-#     m.fs.hx.config.tube_has_mass_diffusion = True
-#     with pytest.raises(ValueError):
-#         m.fs.hx.config.tube_has_mass_diffusion = 'foo'
-#     with pytest.raises(ValueError):
-#         m.fs.hx.config.tube_has_mass_diffusion = 10
-#
-#     assert not m.fs.hx.config.tube_has_energy_diffusion
-#     m.fs.hx.config.tube_has_energy_diffusion = True
-#     with pytest.raises(ValueError):
-#         m.fs.hx.config.tube_has_energy_diffusion = 'foo'
-#     with pytest.raises(ValueError):
-#         m.fs.hx.config.tube_has_energy_diffusion = 10
-#
-#     assert m.fs.hx.config.flow_type == 'co_current'
-#
-#     assert m.fs.hx.config.has_wall_conduction == 'none'
+        m.fs.HX1D.tube_inlet[t].vars["flow_mol"].fix(26.6)  # mol/s
+        m.fs.HX1D.tube_inlet[t].vars["temperature"].fix(529)  # K
+        m.fs.HX1D.tube_inlet[t].vars["pressure"].fix(2.65E7)  # Pa
+        m.fs.HX1D.tube_inlet[t].vars["vapor_frac"].fix(0)
+
+    assert degrees_of_freedom(m) == 0
+
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_initialization():
+    m.fs.HX1D.initialize()
+    results = solver.solve(m, tee=False)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    assert (pytest.approx(2300, abs=1e-2) ==
+            m.fs.HX1D.shell_outlet[0].vars["flow_mol"].value)
+    assert (pytest.approx(641.27, abs=1e-2) ==
+            m.fs.HX1D.shell_outlet[0].vars["temperature"].value)
+    assert (pytest.approx(7.38E6, abs=1e-2) ==
+            m.fs.HX1D.shell_outlet[0].vars["pressure"].value)
+
+    assert (pytest.approx(26.6, abs=1e-2) ==
+            m.fs.HX1D.tube_outlet[0].vars["flow_mol"].value)
+    assert (pytest.approx(533.62, abs=1e-2) ==
+            m.fs.HX1D.tube_outlet[0].vars["temperature"].value)
+    assert (pytest.approx(2.65E7, abs=1e-2) ==
+            m.fs.HX1D.tube_outlet[0].vars["pressure"].value)
