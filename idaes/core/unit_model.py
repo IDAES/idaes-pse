@@ -225,8 +225,6 @@ class UnitBlockData(ProcessBlockData):
         # Set default name and doc string if not provided
         if name is None:
             name = "inlet"
-            import sys
-            sys.exit(name)
         if doc is None:
             doc = "Inlet Port"
 
