@@ -1584,7 +1584,7 @@ class ControlVolume1dData(ControlVolumeBase):
                 wrt=self.length_domain,
                 nfe=finite_elements,
                 collocation_points=collocation_points,
-                scheme=transformation_scheme)
+                scheme='LAGRANGE-RADAU')
         else:
             raise ConfigurationError("{} unrecognised transfromation_method, "
                                      "must match one of the Transformations "
