@@ -12,7 +12,7 @@
 ##############################################################################
 """
 Tests for CSTR unit model.
-Author: Andrew Lee
+Authors: Andrew Lee, Vibhav Dabadghao
 """
 
 import pytest

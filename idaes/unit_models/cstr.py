@@ -32,7 +32,7 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     list_of_strings)
 from idaes.core.util.misc import add_object_reference
 
-__author__ = ""
+__author__ = "Andrew Lee, Vibhav Dabadghao"
 
 
 @declare_process_block_class("CSTR")
