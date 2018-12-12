@@ -85,12 +85,12 @@ class DMFConfig(object):
         fp = None
         try:
             if not os.path.exists(self.filename):
-                raise IOError('File not found')
+                raise IOError('File not found: {}'.format(self.filename))
             fp = open(self.filename, 'rb')
         except IOError as err:
-            _log.warning('Unable to open configuration file for reading: {}. '
-                         'Will use default configuration values.'
-                         .format(err))
+            _log.debug('Unable to open global DMF configuration file '
+                       'for reading: {}. Using default configuration values.'
+                       .format(err))
         # if we got a config file, parse it
         if fp:
             try:
@@ -178,7 +178,10 @@ class DMF(workspace.Workspace, HasTraits):
         except (errors.ParseError, ValueError) as err:
             msg = 'Configuration "{}", parse error: {}'.format(path, err)
             raise errors.WorkspaceError(msg)
+        # check local config
         self._validate_conf(self.meta)
+        # merge selected global config values into local
+        # XXX: not done
         # set up logging
         if workspace.Fields.LOG_CONF in self.meta:
             try:
@@ -245,6 +248,11 @@ class DMF(workspace.Workspace, HasTraits):
                     raise ValueError('Bad level "{}" for logger "{}". Must be '
                                      'one of: {}'.format(levelnm, lognm, opt))
                 log.setLevel(level)
+            if 'format' in subconf:
+                fmt = logging.Formatter(subconf['format'])
+                if log.hasHandlers():
+                    for h in log.handlers:
+                        h.setFormatter(fmt)
 
     @staticmethod
     def _get_logger(name=None):

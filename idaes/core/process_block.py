@@ -183,7 +183,7 @@ def declare_process_block_class(name, block_class=ProcessBlock, doc=""):
         try:
             cb_doc = cls.CONFIG.generate_documentation(
                 block_start="", block_end="", item_start="%s\n",
-                indent_spacing=4, item_body="%s", item_end="", width=66)
+                indent_spacing=4, item_body="%s", item_end="\n", width=66)
             cb_doc += "\n"
             cb_doc = '\n'.join(' '*12 + x for x in cb_doc.splitlines())
         except:
