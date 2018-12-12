@@ -57,6 +57,7 @@ HeatExchanger
 ^^^^^^^^^^^^^
 
 .. index:: HeatExchanger
+  module: idaes.unit_models.heat_exchanger
 
 The HeatExchanger model contains two ControlVolume0D blocks (side_1 and side_2),
 which are configure the same as the ControlVolume in the Heater model. The
