@@ -5,10 +5,11 @@ Core Contents
 -------------
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     configuration
     process_block
+    model_concepts
     flowsheet_model
     properties
     unit_model
@@ -40,9 +41,6 @@ contains material and energy holdup and flows in and out. These block contain
 energy, mass, and momentum balances, as well as state and reaction
 blocks associated with the material within the control volume.
 
-Component References
---------------------
-
-There are many situations in the IDAES modeling framework where a developer may want to make use of a modeling component (e.g. a variable or parameter) from one Block in another Block. The time domain is a good example of this - almost all Blocks within an IDAES model need to make use of the time domain, however the time domain exists only at the top level of the flowsheet structure. In order to make use of the time domain in other parts of the framework, references to the time domain are used instead. By convention, all references within the IDAES modeling framework are indicated by the suffix "_ref" attached to the name of the reference. E.g. all references to the time domain within the framework are called "time_ref".
+More detail on the different types of modeling objects is available in the Modeling Concepts section.
 
 .. include:: ../global.rst

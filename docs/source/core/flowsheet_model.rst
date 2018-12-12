@@ -1,5 +1,5 @@
-Flowsheet Models
-================
+Flowsheet Model Class
+=====================
 
 .. contents:: Contents 
     :depth: 2

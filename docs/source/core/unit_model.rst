@@ -1,5 +1,5 @@
-Unit models
-===========
+Unit Model Class
+================
 
 The UnitBlock is class is designed to form the basis of all IDAES Unit Models, and contains a number of methods which are common to all Unit Models.
 
