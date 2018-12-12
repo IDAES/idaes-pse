@@ -8,6 +8,5 @@ Unit Model Contents
     :maxdepth: 1
 
     gibbs_reactor
-    heat_exchanger
     mixer
     separator
