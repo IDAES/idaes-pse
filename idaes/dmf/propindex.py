@@ -14,15 +14,16 @@
 Index Property metadata
 """
 # stdlib
-# import enum
-# package
+import logging
+# local
 import idaes
 from idaes.dmf import codesearch
 from idaes.dmf import resource
-from idaes.dmf.util import get_logger
 from idaes.core import property_base  # noqa: F401
 
-_log = get_logger('propindex')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 def index_property_metadata(dmf, pkg=idaes, expr='_PropertyMetadata.*',

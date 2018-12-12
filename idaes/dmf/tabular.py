@@ -17,6 +17,7 @@ Tabular data handling
 import abc
 import csv
 import json
+import logging
 import re
 # third-party
 import jsonschema
@@ -27,9 +28,11 @@ except ImportError:
     np, pd = None, None
 # local
 from . import errors
-from .util import get_logger, get_file
+from .util import get_file
 
-_log = get_logger('tabular')
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+_log = logging.getLogger(__name__)
 
 
 class Fields(object):

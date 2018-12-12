@@ -14,6 +14,7 @@
 Tests for idaes.dmf.propindex module.
 """
 # stdlib
+import logging
 import shutil
 import tempfile
 # third-party
@@ -24,9 +25,13 @@ from idaes.dmf import propindex
 from idaes.dmf import DMF
 from idaes.dmf import resource
 # for testing
+from .util import init_logging
 from . import for_propindex
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+init_logging()
+_log = logging.getLogger(__name__)
 
 
 def test_dmfvisitor():

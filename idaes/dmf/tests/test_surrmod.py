@@ -13,10 +13,20 @@
 """
 Test surrogate modeling.
 """
+# stdlib
+import logging
+# third-party
 import pytest
+# local
 from idaes.dmf import surrmod, errors
 from idaes.dmf.experiment import Experiment
-from .util import tmp_dmf
+# for testing
+from .util import init_logging, tmp_dmf
+
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+init_logging()
+_log = logging.getLogger(__name__)
 
 
 @pytest.fixture

@@ -25,10 +25,13 @@ import pytest
 # package-local
 from idaes.dmf import tabular
 from idaes.dmf import util, errors
+# for testing
+from .util import init_logging
 
-if os.environ.get('TEST_DEBUG', ''):
-    log = util.get_logger()
-    log.setLevel(logging.DEBUG)
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+init_logging()
+_log = logging.getLogger(__name__)
 
 F = tabular.Fields
 

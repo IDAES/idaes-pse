@@ -1,5 +1,6 @@
 # general/core
 alabaster>=0.7.7
+bokeh==0.12.9
 bunch
 codecov
 jupyter
@@ -42,4 +43,3 @@ statistics
 # https://software.sandia.gov/svn/public/pyomo/pyomo/trunk
 git+https://github.com/PyUtilib/pyutilib
 git+https://github.com/pyomo/pyomo.git@IDAES
-bokeh==0.12.9
