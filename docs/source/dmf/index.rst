@@ -17,27 +17,16 @@ graphical interfaces for Jupyter Notebooks and stand-alone desktop apps.
 
 The DMF is designed to allow multiple separate threads of work. These are
 organized in ``workspaces``. Inside a given workspace, all the information is
-represented by generic containers called ``resources``. A resource could be
-a file, a set of files, Python code, or really anything the user wants it
-to be. A number of metadata fields are provided, but the user can add
-arbitrary other information in a "data" field, and as many files as
-they wish in a "datafiles" section.
-Resources can be connected to each other with ``relations``. There are
-four standard relations defined: derived, contains, uses, version. These may
-be expanded in the future.
+represented by containers called ``resources``. A resource describes some
+data in the system in a standard way, so it can be searched and manipulated
+by the rest of the IDAES framework.
+Resources can be connected to each other with ``relations`` such as
+"derived", "contains", "uses", and "version".
 
-Here is a very simple graphical illustration of these concepts::
+Below is an illustration of these components.
 
-    +-------------------------+  +--------------------+
-    | WORKSPACE  1            |  | WORKSPACE  2       |
-    |                         |  |                    |
-    |  (Resource)  (Resource) |  |                    |   ...
-    |     ^            ^      |  |       ...          |
-    |     | <relation> |      |  |                    |
-    |     v            /      |  |                    |
-    |   (Resource) <--^       |  |                    |
-    +-------------------------+  +--------------------+
-
+.. image:: ../_static/dmf-workspace-resource.png
+    :width: 600px
 
 
 Configuration
