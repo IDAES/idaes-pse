@@ -37,7 +37,7 @@ All Control Volume Blocks have the following configuration arguments:
 * dynamic - indicates whether this will be a dynamic (True) or steady-state (False) control volume.
 * has_holdup - indicates whether material and energy holdup terms should be calculated. If dynamic = True, this must also be True, and a ConfigurationError will be returned if it is False.
 * property_package - a pointer to the PhysicalParameterBlock instance to be used when constructing StateBlocks within this Control Volume.
-* propery_package_args - a ConfigBlock of arguments to be passed to all StateBlocks as they are instantiated.
+* property_package_args - a ConfigBlock of arguments to be passed to all StateBlocks as they are instantiated.
 * reaction_package - a pointer to the ReactionParameterBlock instance to be used when constructing ReactionBlocks within this Control Volume (if necessary). This argument is only necessary when reaction terms are to be added to the balance equations.
 * reaction_package_args - a ConfigBlock of arguments to be passed to all ReactionBlocks as they are instantiated.
 * auto_construct - flag indicating whether the Control Volume should attempt to automatically construct a set of material, energy and momentum balances based on unit model configuration arguments (True), or if the unit model will explicitly call the methods to construct the Control Volume (False). Default value is False.
@@ -85,12 +85,12 @@ To reduce the demands on unit model developers even further, Control Volumes hav
 * add_geometry
 * add_state_blocks
 * add_reaction_blocks
-* add_meterial_balances
+* add_material_balances
 * add_energy_balances
 * add_momentum_balances
 * apply_transformation
 
-To determine what terms are required for the balance equations, the Control Volume expects the Unit Model to have the following configuration argumnets, which are used as arguments to the methods above.
+To determine what terms are required for the balance equations, the Control Volume expects the Unit Model to have the following configuration arguments, which are used as arguments to the methods above.
 
 * dynamic
 * has_holdup
@@ -110,4 +110,4 @@ To determine what terms are required for the balance equations, the Control Volu
 * reaction_package
 * reaction_package_args
 
-For convenience, a template ConfigBlock (named CONIG_Template) is available in the control_volume_base.py module which contains all the necessary arguments which can be inherited by unit models wishingto use the auto-construct feature.
+For convenience, a template ConfigBlock (named CONFIG_Template) is available in the control_volume_base.py module which contains all the necessary arguments which can be inherited by unit models wishing to use the auto-construct feature.
