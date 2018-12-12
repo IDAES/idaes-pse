@@ -56,6 +56,8 @@ Heater reference documentation is provided below.
 HeatExchanger
 ^^^^^^^^^^^^^
 
+.. index:: HeatExchanger
+
 The HeatExchanger model contains two ControlVolume0D blocks (side_1 and side_2),
 which are configure the same as the ControlVolume in the Heater model. The
 HeatEchanger model contains additional constraints that calculate the amount of
@@ -88,8 +90,6 @@ By default :math:`\Delta T` is calculated as the log-mean temperature difference
 :math:`U` is fixed, and :math:`Q` is calculated as :math:`UA\Delta T`.  The
 equations for these three quantities can be changed by providing alternate
 rules to the configuration.
-
-
 
 .. autoclass:: HeatExchanger
   :members:
