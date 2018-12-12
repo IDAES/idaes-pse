@@ -76,7 +76,7 @@ class DmfMagics(Magics):
             self._last_ok = True
         except DMFMagicError as err:
             _log.error('Error with magic command: {}'.format(err))
-            result = err.message
+            result = None  # err.message
         return result
 
 
@@ -116,8 +116,8 @@ class DmfMagicsImpl(object):
         subcmd = tokens[0]
         submeth = getattr(self, 'dmf_' + subcmd, None)
         if submeth is None:
-            txt = "Error: unrecognized command `{}`".format(subcmd)
-            self._dmf_markdown(txt)
+            txt = "Unrecognized command `{}`".format(subcmd)
+            # self._dmf_markdown(txt)
             raise DMFMagicError(txt)
         # Invoke sub-method
         params = tokens[1:]
@@ -125,11 +125,12 @@ class DmfMagicsImpl(object):
             return submeth(*params)
         except Exception as err:
             msg = 'Error in `%dmf {}`: {}'.format(subcmd, err)
-            self._dmf_markdown(msg)
+            # self._dmf_markdown(msg)
             raise DMFMagicError(msg, usermsg=msg)
 
     def dmf_init(self, path, *extra):
         """Initialize DMF (do this before most other commands).
+        *Arguments*: `path ["create"]`
 
         Args:
             path (str): Full path to DMF home
@@ -139,11 +140,18 @@ class DmfMagicsImpl(object):
         kwargs, create = {}, False
         if len(extra) > 0:
             if extra[0].lower() == 'create':
-                kwargs = {'create': True, 'add_defaults': True}
-                create = True
+                if os.path.exists(
+                        os.path.join(path, dmfbase.DMF.WORKSPACE_CONFIG)):
+                    self._dmf_markdown(
+                        'Cannot create new configuration at "{}": '
+                        'file "{}" exists. Will try without '
+                        '"create" option'
+                        .format(path, dmfbase.DMF.WORKSPACE_CONFIG))
+                else:
+                    kwargs = {'create': True, 'add_defaults': True}
+                    create = True
             else:
                 _log.warning('Ignoring extra argument to "init"')
-
         try:
             self._dmf = dmfbase.DMF(path, **kwargs)
         except errors.WorkspaceNotFoundError:
@@ -151,21 +159,28 @@ class DmfMagicsImpl(object):
             msg = 'Workspace not found at path "{}". ' \
                   'If you want to create a new workspace, add the word ' \
                   '"create", after the path, to the command.'.format(path)
-            self._dmf_markdown(msg)
+            # self._dmf_markdown(msg)
             raise DMFMagicError(msg)
-        except errors.WorkspaceCannotCreateError:
-            txt = 'Workspace could not be created at path "{}"' \
-                .format(path)
+        except errors.WorkspaceCannotCreateError as err:
+            txt = 'Workspace could not be created at path "{}": {}' \
+                .format(path, err)
             raise DMFMagicError(txt, usermsg=txt)
         except errors.DMFError as err:
-            raise DMFMagicError('Error initializing workspace: {}'.format(err),
+            raise DMFMagicError('Initializing workspace: {}'.format(err),
                                 usermsg=True)
 
         self._dmf.set_meta({'name': os.path.basename(path)})
-        return None
+        if create:
+            self._dmf_markdown('*Success!* Created new workspace at "{}"'
+                               .format(path))
+        else:
+            self._dmf_markdown('*Success!* Using workspace at "{}"'
+                               .format(path))
 
     def dmf_workspaces(self, *paths):
-        """List DMF workspaces.
+        """List DMF workspaces. Optionally takes one or more paths
+        to use as a starting point. By default, start from current
+        directory. *Arguments*: `[paths..]`
 
         Args:
             paths (List[str]): Paths to search, use "." by default
@@ -198,7 +213,7 @@ class DmfMagicsImpl(object):
             return '{:d} workspaces found\n'.format(len(listing))
 
     def dmf_list(self):
-        """List resources in the current workspace.
+        """List resources in the current workspace. *Arguments*: none.
         """
         self._init_required('list')
         lines = ['| ID | Name(s) | Type | Modified | Description | ',
@@ -215,9 +230,7 @@ class DmfMagicsImpl(object):
         return True
 
     def dmf_info(self, *topics):
-        """Provide information about DMF current state for whatever
-        'topics' are provided. With no topic, provide general information
-        about the configuration.
+        """Provide information about DMF current state. *Arguments*: none
 
         Args:
             (List[str]) topics: List of topics
@@ -250,15 +263,15 @@ class DmfMagicsImpl(object):
 
     def dmf_help(self, *names):
         """Provide help on IDAES objects and classes.
-
         Invoking with no arguments gives general help.
-        Invoking with one or more arguments looks for help in the docs
-        on the given objects or classes.
+        Invoking with one argument looks for help in the docs
+        on the given object or class.
+        *Arguments*: `[name]`.
         """
-        self._init_required('help')
         if len(names) == 0:
             # give some general help for magics
             return self._magics_help()
+        self._init_required('help')
         if len(names) > 1:
             _log.warning('DMF Help is restricted to only one object or class '
                          'at a time. Ignoring trailing arguments ({})'
@@ -269,11 +282,11 @@ class DmfMagicsImpl(object):
         # some pseudo-classes in the "dmf.help" pseudo-module.
         p_module, p_class = None, None
         if name.lower() == 'dmf':
-            p_module = 'dmf.help'
+            p_module = 'dmf'
             p_class = 'DMF'
         elif name.lower() in ('help',):
-            p_module = 'idaes.help'
-            p_class = 'IDAES'
+            p_module = 'dmf'
+            p_class = 'Help'
         elif name.lower() in ('idaes', '*', ''):
             p_module = 'idaes'
             p_class = 'Home'
@@ -296,9 +309,9 @@ class DmfMagicsImpl(object):
         # Result
         if helpfiles:
             self._show_help_in_browser(helpfiles)
-            return None
         else:
-            return 'No Sphinx docs found for "{}"'.format(name)
+            self._dmf_markdown('No Sphinx docs found for "{}"'.format(name))
+        return None
 
     def _init_required(self, subcmd):
         """If no DMF, display init-required message and
@@ -315,17 +328,23 @@ class DmfMagicsImpl(object):
         display_markdown(text, raw=True)
 
     def _find_help_for_object(self, name):
-        """Get object by evaluating name as an expression."""
+        """Get object by evaluating name as an expression.
+        If that doesn't work, try just using it as a string.
+        """
+        obj, oname = None, None
         try:
             obj = self._shell.ev(name)
-        except Exception as err:
-            raise DMFMagicError('Cannot evaluate object/class for help: '
-                                '{}'.format(err))
-        _log.debug('Looking for HTML docs for object: {}'.format(obj))
+            _log.debug('Looking for HTML docs for object: {}'.format(obj))
+        except Exception:
+            oname = name
+            _log.debug('Looking for HTML docs for object: {}'.format(oname))
         try:
-            result = help.find_html_docs(self._dmf, obj)
+            result = help.find_html_docs(self._dmf, obj=obj, obj_name=oname)
         except (ValueError, AttributeError):
-            raise DMFMagicError('Cannot find help for {}'.format(name))
+            if obj is not None:
+                raise DMFMagicError('Cannot find help for {}'.format(obj))
+            else:
+                raise DMFMagicError('Cannot find help for {}'.format(oname))
         return result
 
     @staticmethod
@@ -335,14 +354,6 @@ class DmfMagicsImpl(object):
             url = 'file://' + hf
             _log.debug('Opening URL "{}"'.format(url))
             webbrowser.open_new(url)
-        # first_option = webbrowser.tryorder[0]
-        # if first_option in ('xdg-open', 'chromium'):
-        #     # for these browsers, prefixing with file:// allows
-        #     # the anchors in the URL to work
-        #     url = 'file://' + helpfiles[0]
-        # else:
-        #     url = helpfiles[0]
-        # webbrowser.open_new(url)
 
     def _magics_help(self):
         """Introspect to give a list of commands."""
@@ -357,22 +368,24 @@ class DmfMagicsImpl(object):
         # build help text from dict
         txt = ''
         for mname in 'idaes', 'dmf':
+            if len(help_dict[mname]) == 0:
+                continue
             txt_list = []
             for name in sorted(help_dict[mname].keys()):
                 cmd = name[len(mname) + 1:]
-                cmd_help = '* `%{} {}` - {}'.format(
+                cmd_help = '-  `%{} {}` - {}'.format(
                     mname, cmd, help_dict[mname][name])
                 txt_list.append(cmd_help)
-            section = '{}{} magic commands:'.format(
+            section = '{}## {} magic commands'.format(
                 '\n\n' if txt else '', mname.upper())
-            txt += section + '\n' + '\n'.join(txt_list)
+            txt += section + '\n\n' + '\n'.join(txt_list)
         return self._dmf_markdown(txt)
 
     @staticmethod
     def _extract_help_text(meth):
         doc = inspect.getdoc(meth)
         # extract first sentence (strip off period)
-        sentence = doc[:doc.find('.')]
+        sentence = doc[:doc.find('\n\n')].strip('.')
         # take out line breaks from sentence
         hdr = sentence.replace('\n', ' ')
         return hdr
