@@ -6,12 +6,7 @@ The IDAES CSTR model represents a unit operation where a material stream undergo
 Degrees of Freedom
 ------------------
 
-CSTRs generally have 2 degrees of freedom.
-
-Typically fixed variables are:
-
-* reactor volume,
-* reactor heat duty (``has_heat_transfer`` = ``True`` only)
+CSTRs generally have one degree of freedom. Typically, the fixed variable is reactor volume.
 
 Model Structure
 ---------------
