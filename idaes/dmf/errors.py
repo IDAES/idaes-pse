@@ -22,7 +22,7 @@ _log = logging.getLogger(__name__)
 
 class DMFError(Exception):
     def __init__(self, detailed_error='No details'):
-        msg = 'DMF Error: {}'.format(detailed_error)
+        msg = '{}'.format(detailed_error)
         super(DMFError, self).__init__(msg)
 
 
@@ -45,6 +45,12 @@ class WorkspaceNotFoundError(WorkspaceError):
     def __init__(self, from_dir):
         msg = 'Workspace not found for path "{}" '.format(from_dir)
         super(WorkspaceNotFoundError, self).__init__(msg)
+
+
+class WorkspaceCannotCreateError(WorkspaceError):
+    def __init__(self, path):
+        msg = 'Unable to create new workspace at "{}"'.format(path)
+        super(WorkspaceCannotCreateError, self).__init__(msg)
 
 
 class WorkspaceConfNotFoundError(WorkspaceError):

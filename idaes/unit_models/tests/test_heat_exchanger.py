@@ -112,41 +112,36 @@ def test_build_heater():
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_heater():
     m = build_heater()
-    init_state = {
-        "flow_mol":100,
-        "pressure":101325,
-        "enth_mol":4000}
-    m.fs.heater.initialize(state_args=init_state)
+    m.fs.heater.inlet[:].enth_mol.fix(4000)
+    m.fs.heater.inlet[:].flow_mol.fix(100)
+    m.fs.heater.inlet[:].pressure.fix(101325)
+    m.fs.heater.heat_duty[0].fix(100*20000)
+    m.fs.heater.initialize()
 
     prop_in = m.fs.heater.control_volume.properties_in[0]
     prop_out = m.fs.heater.control_volume.properties_out[0]
-    assert abs(value(prop_in.temperature) - 326.166978534) <= 1e-4
-    assert abs(value(prop_out.temperature) - 326.166978534) <= 1e-4
+    assert abs(value(prop_in.temperature) - 326.1667075078748) <= 1e-4
+    assert abs(value(prop_out.temperature) - 373.12429584768876) <= 1e-4
     assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Liq"]) - 1) <= 1e-6
+    assert abs(value(prop_out.phase_frac["Liq"]) - 0.5953218682380845) <= 1e-6
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
+    assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_q1():
     m = build_heater()
-    init_state = {
-        "flow_mol":100,
-        "pressure":101325,
-        "enth_mol":4000
-    }
-    m.fs.heater.initialize(state_args=init_state)
-    m.fs.heater.control_volume.heat[0].fix(init_state["flow_mol"]*1000)
-    prop_in = m.fs.heater.control_volume.properties_in[0]
-    prop_out = m.fs.heater.control_volume.properties_out[0]
-    prop_in.enth_mol.fix()
-    prop_in.flow_mol.fix()
-    prop_in.pressure.fix()
+    m.fs.heater.inlet[:].enth_mol.fix(4000)
+    m.fs.heater.inlet[:].flow_mol.fix(100)
+    m.fs.heater.inlet[:].pressure.fix(101325)
+    m.fs.heater.heat_duty[0].fix(100*20000)
+    m.fs.heater.initialize()
     assert degrees_of_freedom(m) == 0
     solver.solve(m)
-    assert abs(value(prop_in.temperature) - 326.166978534) <= 1e-4
-    assert abs(value(prop_out.temperature) - 333.743257954399) <= 1e-4
+    prop_in = m.fs.heater.control_volume.properties_in[0]
+    prop_out = m.fs.heater.control_volume.properties_out[0]
+    assert abs(value(prop_in.temperature) - 326.1667075078748) <= 1e-4
+    assert abs(value(prop_out.temperature) - 373.12429584768876) <= 1e-4
     assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Liq"]) - 1) <= 1e-6
+    assert abs(value(prop_out.phase_frac["Liq"]) - 0.5953218682380845) <= 1e-6
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
+    assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
