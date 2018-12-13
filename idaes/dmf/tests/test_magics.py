@@ -15,6 +15,7 @@ Tests for DMF Jupyter "magics"
 """
 # stdlib
 import os
+import webbrowser
 # third-party
 import pytest
 # local
@@ -22,6 +23,9 @@ from idaes.dmf import magics, DMF
 from idaes.dmf.magics import DMFMagicError
 from idaes.dmf.resource import Resource
 from .util import TempDir
+
+# monkey-patch webbrowser to do nothing
+webbrowser.open_new = lambda url: None
 
 
 class MockShell(object):
@@ -102,7 +106,7 @@ def test_init_goodpath(magics_impl):
 def test_dmf_cmd(magics_impl):
     pytest.raises(DMFMagicError, magics_impl.dmf, 'not a command')
     pytest.raises(DMFMagicError, magics_impl.dmf, 'list stuff')
-    pytest.raises(DMFMagicError, magics_impl.dmf, '')
+    magics_impl.dmf('')  # Empty value is OK
 
 
 def test_dmf_workspaces(magics_impl):
@@ -190,8 +194,10 @@ def test_dmf_help(magics_impl):
 def test_dmf_help_badargs(magics_impl):
     with TempDir() as wspath:
         magics_impl.dmf_init(wspath, 'create')
+        # This will generate a warning, but is OK. Only the first
+        # object is tried (which fails; another warning)
         result = magics_impl.dmf_help('this', 'that')
-        assert result is not None  # None means "OK"
+        assert result is None  # None means "OK"
 
 
 def test_dmf_help_obj(magics_impl):
@@ -202,5 +208,5 @@ def test_dmf_help_obj(magics_impl):
             magics_impl.dmf_help(name)
         # object
         magics_impl.dmf_help('idaes.dmf.dmfbase.DMF')
-        # failure
-        assert magics_impl.dmf_help('FAIL') is not None
+        # failure (still returns None)
+        assert magics_impl.dmf_help('FAIL') is None
