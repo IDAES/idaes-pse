@@ -22,7 +22,7 @@ _log = logging.getLogger(__name__)
 
 class DMFError(Exception):
     def __init__(self, detailed_error='No details'):
-        msg = 'DMF Error: {}'.format(detailed_error)
+        msg = '{}'.format(detailed_error)
         super(DMFError, self).__init__(msg)
 
 
