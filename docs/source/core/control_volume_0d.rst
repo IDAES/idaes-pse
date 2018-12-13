@@ -66,13 +66,13 @@ Material balances are written for each component in each phase (e.g. separate ba
 
 **Constraints**
 
-Material balances:
+`material_balances(t, p, j)`:
 
 .. math:: \frac{\partial M_{t, p, j}}{\partial t} = F_{in, t, p, j} - F_{out, t, p, j} + N_{kinetic, t, p, j} + N_{equilibrium, t, p, j} + N_{pe, t, p, j} + N_{transfer, t, p, j} + N_{custom, t, p, j}
 
 The :math:`N_{custom, t, p, j}` term allows the user to provide custom terms (variables or expressions) in both mass and molar basis which will be added into the material balances, which will be converted as necessary to the same basis as the material balance (by multiplying or dividing by the component molecular weight). The basis of the material balance is determined by the physical property package, and if undefined (or not mass or mole basis), an Exception will be returned.
 
-If `has_holdup` is True:
+If `has_holdup` is True, `material_holdup_calculation(t, p, j)`:
 
 .. math:: M_{t, p, j} = \rho_{t, p, j} \times V_{t} \times \phi_{t, p}
 
@@ -82,13 +82,13 @@ If `dynamic` is True:
 
 Numerical discretization of the derivative terms, :math:`\frac{\partial M_{t,p,j}}{\partial t}`, will be performed by Pyomo.DAE.
 
-If `has_rate_reactions` is True:
+If `has_rate_reactions` is True, `rate_reaction_stoichiometry_constraint(t, p, j)`:
 
 .. math:: N_{kinetic, t, p, j} = \alpha_{r, p, j} \times X_{kinetic, t, r}
 
 where :math:`\alpha_{r, p. j}` is the stoichiometric coefficient of component :math:`j` in phase :math:`p` for reaction :math:`r` (as defined in the PhysicalParameterBlock).
 
-If `has_equilibrium_reactions` argument is True:
+If `has_equilibrium_reactions` argument is True, `equilibrium_reaction_stoichiometry_constraint(t, p, j)`:
 
 .. math:: N_{equilibrium, t, p, j} = \alpha_{r, p, j} \times X_{equilibrium, t, r}
 
@@ -117,13 +117,13 @@ Material balances are written for each component across all phases (e.g. one bal
 
 **Constraints**
 
-Material balances:
+`material_balances(t, j)`:
 
 .. math:: \sum_p{\frac{\partial M_{t, p, j}}{\partial t}} = \sum_p{F_{in, t, p, j}} - \sum_p{F_{out, t, p, j}} + \sum_p{N_{kinetic, t, p, j}} + \sum_p{N_{equilibrium, t, p, j}} + \sum_p{N_{pe, t, p, j}} + \sum_p{N_{transfer, t, p, j}} + N_{custom, t, j}
 
 The :math:`N_{custom, t, j}` term allows the user to provide custom terms (variables or expressions) in both mass and molar basis which will be added into the material balances, which will be converted as necessary to the same basis as the material balance (by multiplying or dividing by the component molecular weight). The basis of the material balance is determined by the physical property package, and if undefined (or not mass or mole basis), an Exception will be returned.
 
-If `has_holdup` is True:
+If `has_holdup` is True, `material_holdup_calculation(t, p, j)`:
 
 .. math:: M_{t, p, j} = \rho_{t, p, j} \times V_{t} \times \phi_{t, p}
 
@@ -133,13 +133,13 @@ If `dynamic` is True:
 
 Numerical discretization of the derivative terms, :math:`\frac{\partial M_{t,p,j}}{\partial t}`, will be performed by Pyomo.DAE.
 
-If `has_rate_reactions` is True:
+If `has_rate_reactions` is True,, `rate_reaction_stoichiometry_constraint(t, p, j)`:
 
 .. math:: N_{kinetic, t, p, j} = \alpha_{r, p, j} \times X_{kinetic, t, r}
 
 where :math:`\alpha_{r, p. j}` is the stoichiometric coefficient of component :math:`j` in phase :math:`p` for reaction :math:`r` (as defined in the PhysicalParameterBlock).
 
-If `has_equilibrium_reactions` argument is True:
+If `has_equilibrium_reactions` argument is True, `equilibrium_reaction_stoichiometry_constraint(t, p, j)`:
 
 .. math:: N_{equilibrium, t, p, j} = \alpha_{r, p, j} \times X_{equilibrium, t, r}
 
@@ -163,9 +163,11 @@ Material balances are written for each element in the mixture.
 
 **Expressions**
 
-Elemental Flows:
+`elemental_flow_in(t, p, e)`:
 
 .. math:: F_{in,t,p,e} = \sum_j{F_{in, t, p, j}} \times n_{j, e}
+
+`elemental_flow_out(t, p, e)`:
 
 .. math:: F_{out,t,p,e} = \sum_j{F_{out, t, p, j}} \times n_{j, e}
 
@@ -173,13 +175,13 @@ where :math:`n_{j, e}` is the number of moles of element :math:`e` in component 
 
 **Constraints**
 
-Material balances:
+`element_balances(t, e)`:
 
 .. math:: \frac{\partial M_{t, e}}{\partial t} = \sum_p{F_{in, t, p, e}} - \sum_p{F_{out, t, p, e}} + \sum_p{N_{transfer, t, e}} + N_{custom, t, e}
 
 The :math:`N_{custom, t, e}` term allows the user to provide custom terms (variables or expressions) which will be added into the material balances.
 
-If `has_holdup` is True:
+If `has_holdup` is True, `elemental_holdup_calculation(t, e)`:
 
 .. math:: M_{t, e} = V_{t} \times \sum_{p, j}{\phi_{t, p} \times \rho_{t, p, j} \times n_{j, e}}
 
@@ -208,7 +210,7 @@ A single enthalpy balance is written for the entire mixture.
 
 **Expressions**
 
-Heat of reaction terms:
+`heat_of_reaction(t)`:
 
 .. math:: Q_{rxn, t} = sum_r{X_{kinetic, t, r} \times \Delta H_{rxn, r}} + sum_r{X_{equilibrium, t, r} \times \Delta H_{rxn, r}}
 
@@ -224,13 +226,13 @@ where :math:`Q_{rxn, t}` is the total enthalpy released by both kinetic and equi
 
 **Constraints**
 
-Enthalpy balance:
+`enthalpy_balance(t)`:
 
 .. math:: s_{energy} \times \sum_p{\frac{\partial E_{t, p}}{\partial t}} = s_{energy} \times \sum_p{H_{in, t, p}} - s_{energy} \times \sum_p{H_{out, t, p}} + s_{energy} \times Q_t + s_{energy} \times W_t + s_{energy} \times Q_{rxn, t} + s_{energy} \times E_{custom, t}
 
 The :math:`E_{custom, t}` term allows the user to provide custom terms  which will be added into the energy balance.
 
-If `has_holdup` is True:
+If `has_holdup` is True, `enthalpy_holdup_calculation(t, p)`:
 
 .. math:: E_{t, p} = h_{t, p} \times V_{t} \times \phi_{t, p}
 
@@ -263,8 +265,8 @@ A single pressure balance is written for the entire mixture.
 
 **Constraints**
 
-Pressure balance:
+`pressure_balance(t)`:
 
-.. math:: 0 = s_{pressure} \times P_{in, t} - s_{pressure} \times P_{out, t} + s_{pressure} \times \Delta P_t + _{pressure} \times \Delta P_{custom, t}
+.. math:: 0 = s_{pressure} \times P_{in, t} - s_{pressure} \times P_{out, t} + s_{pressure} \times \Delta P_t + s_{pressure} \times \Delta P_{custom, t}
 
 The :math:`\Delta P_{custom, t}` term allows the user to provide custom terms  which will be added into the pressure balance.
