@@ -28,8 +28,7 @@ from idaes.core import (ControlVolume0D,
                         UnitBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block,
-                                    list_of_strings)
+                                    is_reaction_parameter_block)
 from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee, Vibhav Dabadghao"
@@ -42,11 +41,15 @@ class CSTRData(UnitBlockData):
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([False]),
+        domain=In([True, False]),
         default=False,
-        description="Dynamic model flag - must be False",
-        doc="""Ideal CSTRs do not support dynamic models, thus this must be
-False."""))
+        description="Dynamic model flag",
+        doc="""Indicates whether this model will be dynamic or not,
+**default** = useDefault.
+**Valid values:** {
+**useDefault** - get flag from parent (default = False),
+**True** - set as a dynamic model,
+**False** - set as a steady-state model.}"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -166,34 +169,6 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see reaction package for documentation.}"""))
-    CONFIG.declare("inlet_list", ConfigValue(
-        domain=list_of_strings,
-        description="List of inlet names",
-        doc="""A list containing names of inlets (default = None)
-                - None - default single inlet
-                - list - a list of names for inlets"""))
-    CONFIG.declare("num_inlets", ConfigValue(
-        domain=int,
-        description="Number of inlets to unit",
-        doc="""Argument indication number (int) of inlets to construct
-            (default = None). Not used if inlet_list arg is provided.
-                - None - use inlet_list arg instead
-                - int - Inlets will be named with sequential numbers from 1
-                        to num_inlets"""))
-    CONFIG.declare("outlet_list", ConfigValue(
-        domain=list_of_strings,
-        description="List of outlet names",
-        doc="""A list containing names of outlets (default = None)
-                - None - default single outlet
-                - list - a list of names for outlets"""))
-    CONFIG.declare("num_outlets", ConfigValue(
-        domain=int,
-        description="Number of outlets to unit",
-        doc="""Argument indication number (int) of outlets to construct
-            (default = None). Not used if outlet_list arg is provided.
-                - None - use outlet_list arg instead
-                - int - Outlets will be named with sequential numbers from 1
-                        to num_outlets"""))
 
     def build(self):
         """
