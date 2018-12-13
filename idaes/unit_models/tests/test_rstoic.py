@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Tests for ControlVolumeBase.
+Tests for IDAES Stoichiometric reactor.
 
 Author: Chinedu Okoli, Andrew Lee
 """
