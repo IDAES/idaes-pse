@@ -35,8 +35,7 @@ from idaes.core import (ControlVolume1D, UnitBlockData,
                         FlowDirection,
                         UnitBlockData,
                         useDefault)
-from idaes.core.util.config import (is_physical_parameter_block,
-                                    list_of_strings)
+from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 
 __author__ = "Jaffer Ghouse"
@@ -50,24 +49,19 @@ class HeatExchanger1DData(UnitBlockData):
     """Standard Heat Exchanger 1D Unit Model Class."""
 
     CONFIG = UnitBlockData.CONFIG()
-
-    CONFIG.declare("shell_side",
-                   ConfigBlock(doc="Shell side config arguments"))
-    CONFIG.declare("tube_side",
-                   ConfigBlock(doc="Tube side config arguments"))
-
-    CONFIG.shell_side.declare("dynamic", ConfigValue(
+    # Template for config arguments for shell and tube side
+    _SideTemplate = ConfigBlock()
+    _SideTemplate.declare("dynamic", ConfigValue(
         default=useDefault,
         domain=In([useDefault, True, False]),
         description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic or not
-               for shell side,
+        doc="""Indicates whether this model will be dynamic or not,
 **default** = useDefault.
 **Valid values:** {
 **useDefault** - get flag from parent (default = False),
 **True** - set as a dynamic model,
 **False** - set as a steady-state model.}"""))
-    CONFIG.shell_side.declare("has_holdup", ConfigValue(
+    _SideTemplate.declare("has_holdup", ConfigValue(
         default=False,
         domain=In([True, False]),
         description="Holdup construction flag",
@@ -77,7 +71,7 @@ Must be True if dynamic = True,
 **Valid values:** {
 **True** - construct holdup terms,
 **False** - do not construct holdup terms}"""))
-    CONFIG.shell_side.declare("material_balance_type", ConfigValue(
+    _SideTemplate.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentTotal,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
@@ -89,7 +83,7 @@ Must be True if dynamic = True,
 **MaterialBalanceType.componentTotal** - use total component balances,
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
-    CONFIG.shell_side.declare("energy_balance_type", ConfigValue(
+    _SideTemplate.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.enthalpyTotal,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
@@ -101,7 +95,7 @@ Must be True if dynamic = True,
 **EnergyBalanceType.enthalpyPhase** - ethalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    CONFIG.shell_side.declare("momentum_balance_type", ConfigValue(
+    _SideTemplate.declare("momentum_balance_type", ConfigValue(
         default=MomentumBalanceType.pressureTotal,
         domain=In(MomentumBalanceType),
         description="Momentum balance construction flag",
@@ -113,7 +107,7 @@ Must be True if dynamic = True,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.shell_side.declare("has_heat_transfer", ConfigValue(
+    _SideTemplate.declare("has_heat_transfer", ConfigValue(
         default=True,
         domain=In([True]),
         description="Heat transfer term construction flag",
@@ -121,7 +115,7 @@ Must be True if dynamic = True,
 **default** - False.
 **Valid values:** {
 **True** - include heat transfer terms}"""))
-    CONFIG.shell_side.declare("has_pressure_change", ConfigValue(
+    _SideTemplate.declare("has_pressure_change", ConfigValue(
         default=False,
         domain=In([True, False]),
         description="Pressure change term construction flag",
@@ -131,22 +125,22 @@ constructed,
 **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
-    CONFIG.shell_side.declare("has_phase_equilibrium", ConfigValue(
+    _SideTemplate.declare("has_phase_equilibrium", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Phase equilibrium for shell side",
+        description="Phase equilibrium term construction flag",
         doc="""Argument to enable phase equilibrium on the shell side.
 - True - include phase equilibrium term
 - False - do not include phase equilinrium term"""))
-    CONFIG.shell_side.declare("property_package", ConfigValue(
+    _SideTemplate.declare("property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
-        description="Property package to use for shell control volume",
+        description="Property package to use for control volume",
         doc="""Property parameter object used to define property calculations
 (default = 'use_parent_value')
     - 'use_parent_value' - get package from parent (default = None)
     - a ParameterBlock object"""))
-    CONFIG.shell_side.declare("property_package_args", ConfigValue(
+    _SideTemplate.declare("property_package_args", ConfigValue(
         default={},
         description="Arguments for constructing shell property package",
         doc="""A dict of arguments to be passed to the PropertyBlockData
@@ -156,131 +150,26 @@ and used when constructing these
     - a dict (see property package for documentation)"""))
     # TODO : We should probably think about adding a consistency check for the
     # TODO : discretisation methdos as well.
-    CONFIG.shell_side.declare("transformation_method", ConfigValue(
+    _SideTemplate.declare("transformation_method", ConfigValue(
         default="dae.finite_difference",
         description="Method to use for DAE transformation",
         doc="""Method to use to transform domain. Must be a method recognised
 by the Pyomo TransformationFactory,
 **default** - "dae.finite_difference"."""))
-    CONFIG.shell_side.declare("transformation_scheme", ConfigValue(
+    _SideTemplate.declare("transformation_scheme", ConfigValue(
         default="BACKWARD",
         description="Scheme to use for DAE transformation",
         doc="""Scheme to use when transformating domain. See Pyomo
 documentation for supported schemes,
 **default** - "BACKWARD"."""))
-    # Tube side config args
-    CONFIG.tube_side.declare("dynamic", ConfigValue(
-        default=useDefault,
-        domain=In([useDefault, True, False]),
-        description="Dynamic model flag for the tube side",
-        doc="""Indicates whether the tube side will be dynamic or not,
-**default** = useDefault.
-**Valid values:** {
-**useDefault** - get flag from parent (default = False),
-**True** - set as a dynamic model,
-**False** - set as a steady-state model.}"""))
-    CONFIG.tube_side.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
-    CONFIG.tube_side.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentTotal,
-        domain=In(MaterialBalanceType),
-        description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed,
-**default** - MaterialBalanceType.componentPhase.
-**Valid values:** {
-**MaterialBalanceType.none** - exclude material balances,
-**MaterialBalanceType.componentPhase** - use phase component balances,
-**MaterialBalanceType.componentTotal** - use total component balances,
-**MaterialBalanceType.elementTotal** - use total element balances,
-**MaterialBalanceType.total** - use total material balance.}"""))
-    CONFIG.tube_side.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyTotal.
-**Valid values:** {
-**EnergyBalanceType.none** - exclude energy balances,
-**EnergyBalanceType.enthalpyTotal** - single ethalpy balance for material,
-**EnergyBalanceType.enthalpyPhase** - ethalpy balances for each phase,
-**EnergyBalanceType.energyTotal** - single energy balance for material,
-**EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    CONFIG.tube_side.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.pressureTotal.
-**Valid values:** {
-**MomentumBalanceType.none** - exclude momentum balances,
-**MomentumBalanceType.pressureTotal** - single pressure balance for material,
-**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-**MomentumBalanceType.momentumTotal** - single momentum balance for material,
-**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.tube_side.declare("has_heat_transfer", ConfigValue(
-        default=True,
-        domain=In([True]),
-        description="Heat transfer term construction flag",
-        doc="""Indicates whether terms for heat transfer should be constructed,
-    **default** - False.
-    **Valid values:** {
-    **True** - include heat transfer terms}"""))
-    CONFIG.tube_side.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-    constructed,
-    **default** - False.
-    **Valid values:** {
-    **True** - include pressure change terms,
-    **False** - exclude pressure change terms.}"""))
-    CONFIG.tube_side.declare("has_phase_equilibrium", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Phase equilibrium for shell side",
-        doc="""Argument to enable phase equilibrium on the shell side.
-    - True - include phase equilibrium term
-    - False - do not include phase equilinrium term"""))
-    CONFIG.tube_side.declare("property_package", ConfigValue(
-        default=None,
-        domain=is_physical_parameter_block,
-        description="Property package to use for shell control volume",
-        doc="""Property parameter object used to define property calculations
-    (default = 'use_parent_value')
-    - 'use_parent_value' - get package from parent (default = None)
-    - a ParameterBlock object"""))
-    CONFIG.tube_side.declare("property_package_args", ConfigValue(
-        default={},
-        description="Arguments for constructing shell property package",
-        doc="""A dict of arguments to be passed to the PropertyBlockData
-    and used when constructing these
-    (default = 'use_parent_value')
-    - 'use_parent_value' - get package from parent (default = None)
-    - a dict (see property package for documentation)"""))
-    # TODO : We should probably think about adding a consistency check for the
-    # TODO : discretisation methdos as well.
-    CONFIG.tube_side.declare("transformation_method", ConfigValue(
-        default="dae.finite_difference",
-        description="Method to use for DAE transformation",
-        doc="""Method to use to transform domain. Must be a method recognised
-    by the Pyomo TransformationFactory,
-    **default** - "dae.finite_difference"."""))
-    CONFIG.tube_side.declare("transformation_scheme", ConfigValue(
-        default="BACKWARD",
-        description="Scheme to use for DAE transformation",
-        doc="""Scheme to use when transformating domain. See Pyomo
-    documentation for supported schemes,
-    **default** - "BACKWARD"."""))
-    # Common config args for shell and tube
+
+    # Create individual config blocks for shell and tube side
+    CONFIG.declare("shell_side",
+                   _SideTemplate(doc="shell side config arguments"))
+    CONFIG.declare("tube_side",
+                   _SideTemplate(doc="tube side config arguments"))
+
+    # Common config args for both sides
     CONFIG.declare("finite_elements", ConfigValue(
         default=20,
         domain=int,
@@ -309,8 +198,6 @@ tube side flows from 1 to 0"""))
 - none - 0D wall model
 - 1D - 1D wall model along the thickness of the tube
 - 2D - 2D wall model along the lenghth and thickness of the tube"""))
-
-
 
     def build(self):
         """
