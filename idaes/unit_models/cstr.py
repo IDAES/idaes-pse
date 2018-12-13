@@ -41,8 +41,8 @@ class CSTRData(UnitBlockData):
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
-        default=False,
+        domain=In([useDefault, True, False]),
+        default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
 **default** = useDefault.
