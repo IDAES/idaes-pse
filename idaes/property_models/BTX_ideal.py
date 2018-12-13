@@ -31,8 +31,7 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBase,
                         StateBlockDataBase,
                         StateBlockBase)
-from idaes.core.util.initialization import (evaluate_variable_from_constraint,
-                                            solve_indexed_blocks)
+from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 
 # Some more inforation about this module
@@ -110,7 +109,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                                   doc='Gas Constant [J/mol.K]')
 
         # Molecular weights
-        self.mol_wt = Param(self.component_list,
+        self.mw_comp = Param(self.component_list,
                             mutable=False,
                             initialize={'benzene': 78.1136E-3,
                                         'toluene': 92.1405E-3
@@ -433,8 +432,8 @@ class StateBlockData(StateBlockDataBase):
                              self.config.parameters.temperature_critical)
 
         # Molecular weights
-        add_object_reference(self, "mol_wt",
-                             self.config.parameters.mol_wt)
+        add_object_reference(self, "mw_comp",
+                             self.config.parameters.mw_comp)
 
         # Specific Enthalpy Coefficients
         add_object_reference(self, "CpIG",

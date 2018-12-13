@@ -52,8 +52,7 @@ class FlashData(UnitBlockData):
         domain=In([True, False]),
         default=False,
         description="Dynamic model flag",
-        doc="""Gibbs reactors do not support dynamic models, thus this must be
-False."""))
+        doc="""Indicates whether the model is dynamic"""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
         domain=In([True, False]),
