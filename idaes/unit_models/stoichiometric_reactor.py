@@ -36,23 +36,22 @@ __author__ = "Chinedu Okoli, Andrew Lee"
 @declare_process_block_class("StoicReactor")
 class StoichiometricReactorData(UnitBlockData):
     """
-    Standard Stoic Reactor Unit Model Class (update this text)
-    This model assume all possible reactions reach equilibrium such that the
-    system partial molar Gibbs free energy is minimized.
-    Since some species mole flow rate might be very small,
-    the natural log of the species molar flow rate is used.
-    Instead of specifying the system Gibbs free energy as an objective
-    function, the equations for zero partial derivatives of the grand function
-    with Lagrangian multiple terms with repect to product species mole flow
-    rates and the multiples are specified as constraints.
+    Standard Stoic Reactor Unit Model Class 
+    This model assumes that all given reactions are irreversible, and that each 
+    reaction has a fixed rate_reaction extent which has to be specified by the
+    user.
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([False]),
-        default=False,
+        domain=In([useDefault, True, False]),
+        default=useDefault,
         description="Dynamic model flag - must be False",
-        doc="""Stoic reactors do not support dynamic models, thus this must be
-False."""))
+        doc="""Indicates whether this model will be dynamic or not,
+**default** = useDefault.
+**Valid values:** {
+**useDefault** - get flag from parent (default = False),
+**True** - set as a dynamic model,
+**False** - set as a steady-state model.}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
