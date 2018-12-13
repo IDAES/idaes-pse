@@ -1,5 +1,5 @@
 Stoichiometric (Yield) Reactor
-------------------------------
+==============================
 
 The IDAES Stoichiometric reactor model represents a unit operation where a single material stream undergoes some chemical reaction(s) subject to a set of extent or yield specifications.
 
