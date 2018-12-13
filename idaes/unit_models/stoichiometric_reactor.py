@@ -44,10 +44,10 @@ class StoichiometricReactorData(UnitBlockData):
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
         domain=In([useDefault, True, False]),
-        default=useDefault,
-        description="Dynamic model flag - must be False",
+        default=False,
+        description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
-**default** = useDefault.
+**default** = False.
 **Valid values:** {
 **useDefault** - get flag from parent (default = False),
 **True** - set as a dynamic model,
