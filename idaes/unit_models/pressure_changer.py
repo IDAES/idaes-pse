@@ -27,11 +27,9 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import (ControlVolume0D,
                         declare_process_block_class,
-                        ControlVolumeBase,
-                        FlowDirection,
-                        MaterialFlowBasis,
                         EnergyBalanceType,
                         MomentumBalanceType,
+                        MaterialBalanceType,
                         UnitBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block, list_of_strings
@@ -47,13 +45,16 @@ class PressureChangerData(UnitBlockData):
     Standard Compressor/Expander Unit Model Class
     """
     CONFIG = ConfigBlock()
-    # Set default values of inherited attributes
+
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([False]),
+        domain=In([True, False]),
         default=False,
-        description="Dynamic model flag - must be False",
-        doc="""Indicates whether or not dynamics should be considered. 
-        **default** is False."""))
+        description="Dynamic model flag",
+        doc="""Indicates whether or not dynamics should be considered.
+**default** - False.
+**Valid values:** {
+**True** - dynamics considered,
+**False** - no dynamics considered}"""))
     CONFIG.declare("has_holdup", ConfigValue(
          default=useDefault,
          domain=In([useDefault, True, False]),
@@ -64,6 +65,18 @@ class PressureChangerData(UnitBlockData):
  **Valid values:** {
  **True** - construct holdup terms,
 **False** - do not construct holdup terms}"""))
+    CONFIG.declare("material_balance_type", ConfigValue(
+        default=MaterialBalanceType.componentPhase,
+        domain=In(MaterialBalanceType),
+        description="Material balance construction flag",
+        doc="""Indicates what type of mass balance should be constructed,
+**default** - MaterialBalanceType.componentPhase.
+**Valid values:** {
+**MaterialBalanceType.none** - exclude material balances,
+**MaterialBalanceType.componentPhase** - use phase component balances,
+**MaterialBalanceType.componentTotal** - use total component balances,
+**MaterialBalanceType.elementTotal** - use total element balances,
+**MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.enthalpyTotal,
         domain=In(EnergyBalanceType),
@@ -88,15 +101,6 @@ c - EnergyBalanceType.enthalpyTotal.
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_heat_transfer", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Heat transfer term construction flag",
-        doc="""Indicates whether terms for heat transfer should be constructed,
-**default** - False.
-**Valid values:** {
-**True** - include heat transfer terms,
-**False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
      default=True,
      domain=In([True, False]),
@@ -107,29 +111,6 @@ c - EnergyBalanceType.enthalpyTotal.
  **Valid values:** {
  **True** - include phase equilibrium terms
 **False** - exclude phase equilibrium terms.}"""))
-    CONFIG.declare("has_work_transfer", ConfigValue(
-     default=True,
-     domain=In([True, False]),
-     description="Work transfer term construction flag",
-     doc="""Indicates whether terms for work transfer should be constructed,
- **default** - False.
- **Valid values** {
- **True** - include work transfer terms,
- **False** - exclude work transfer terms.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-     default=True,
-     domain=In([True, False]),
-     description="Pressure change term construction flag",
-     doc="""Indicates whether terms for pressure change should be
- constructed,
- **default** - False.
- **Valid values:** {
- **True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
-    #CONFIG.get("has_phase_equilibrium")._default = True	
-    #CONFIG.get("has_work_transfer")._default = True
-    #CONFIG.get("has_pressure_change")._default = True
-    # Add unit model attributes
     CONFIG.declare("inlet_list", ConfigValue(
         domain=list_of_strings,
         description="List of inlet names",
@@ -201,31 +182,34 @@ see property package for documentation.}"""))
         Returns:
             None
         """
-        # Call UnitModel.build to setup dynamics
+        # Call UnitModel.build
         super(PressureChangerData, self).build()
 
-       # Add a control volume to the unit.
+        # Add a control volume to the unit including setting up dynamics.
         self.control_volume = ControlVolume0D(default={
                 "dynamic": self.config.dynamic,
                 "has_holdup": self.config.has_holdup,
-                #"has_heat_transfer": self.config.has_heat_transfer,
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args})
+
         # Add inlet and outlet state blocks to control volume
         self.control_volume.add_state_blocks()
-        #self.control_volume.properties_in.display()
-        #import sys 
-        #sys.exit()
+
         # Add mass balance
-        self.control_volume.add_total_component_balances()
+        self.control_volume.add_material_balances(
+                    balance_type=self.config.material_balance_type,
+                    has_phase_equilibrium=False)
+
+        #Add energy balance
         self.control_volume.add_energy_balances(
                     balance_type=self.config.energy_balance_type,
-                    has_heat_transfer=self.config.has_heat_transfer,
-                    has_work_transfer=self.config.has_work_transfer)
-        # add energy balance
+                    has_work_transfer=True)
+
+        # add momentum balance
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
-            has_pressure_change=self.config.has_pressure_change)
+            has_pressure_change=True)
+
         # Add Ports
         self.add_inlet_port()
         self.add_outlet_port()
@@ -270,35 +254,18 @@ see property package for documentation.}"""))
         Returns:
             None
         """
-        # Work transfer
-        """
-        if self.config.has_work_transfer is True:
-            self.work_mechanical = Var(self.time_ref,
-                            domain=Reals,
-                            initialize=0.0,
-                            doc="Work transfered in unit [{}/{}]")
-        """
-        # Add Momentum Balance Variables as necessary
-        """
-        if self.config.has_pressure_change is True:
-            self.deltaP = Var(self.time_ref,
-                              domain=Reals,
-                              doc="Pressure difference across unit [{}]")
-        """
-        #self.control_volume.work.display()
-        #self.control_volume.phase_list_ref.display()
         
         # Set references to balance terms at unit level
+        # Add Work transfer variable 'work' as necessary
         add_object_reference(self, "work_mechanical", self.control_volume.work)
+
+        # Add Momentum balance variable 'deltaP' as necessary
         add_object_reference(self, "deltaP", self.control_volume.deltaP)
-        #add_object_reference(self, "phase_list", self.control_volume.phase_list_ref)
-        #import sys
-        #sys.exit()
 
         # Performance Variables
         self.ratioP = Var(self.time_ref, initialize=1.0,
                           doc="Pressure Ratio")
-        #self.control_volume.display()
+
         # Pressure Ratio
         @self.Constraint(self.time_ref, doc="Pressure ratio constraint")
         def ratioP_calculation(b, t):
@@ -409,7 +376,7 @@ see property package for documentation.}"""))
             return sf*b.control_volume.properties_in[t].pressure == \
                 sf*b.ratioP[t]*b.control_volume.properties_out[t].pressure
 
-        # TODO: This assumes isentropic composition is the same as outlet
+        # This assumes isentropic composition is the same as outlet
         @self.Constraint(self.time_ref,
                          self.component_list,
                          doc="Material flows for isentropic properties")

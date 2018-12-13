@@ -16,7 +16,7 @@ Tests for Pressure Changer unit model.
 Author: Andrew Lee, Emmanuel Ogbe
 """
 import pytest
-from pyomo.environ import ConcreteModel, SolverFactory, value
+from pyomo.environ import ConcreteModel, SolverFactory, value, Var, Constraint
 from idaes.core import FlowsheetBlock, declare_process_block_class, \
                         ControlVolume0D
 from idaes.unit_models.pressure_changer import PressureChanger, PressureChangerData
@@ -48,7 +48,6 @@ def build_presschanger():
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.props = pp.Iapws95ParameterBlock()
     m.fs.pc = PressureChanger(default={"property_package": m.fs.props})
-    #m.fs.pc = PressureChangerFrame(property_package=m.fs.props)
     return m
 
 def test_build_pc():
@@ -79,9 +78,6 @@ def test_make_isothermal():
     m.fs.props = pp.Iapws95ParameterBlock()
 
     m.fs.pc = PressureChanger(default={"property_package": m.fs.props,
-                            "has_phase_equilibrium": True,
-                            "has_heat_transfer": False,
-                            "has_pressure_change": True,
                             "thermodynamic_assumption":'isothermal'})
 
     assert hasattr(m.fs.pc, "isothermal")
@@ -92,9 +88,6 @@ def test_make_pump():
     m.fs.props = pp.Iapws95ParameterBlock()
 
     m.fs.pc = PressureChanger(default={"property_package": m.fs.props,
-                            "has_phase_equilibrium": True,
-                            "has_heat_transfer": False,
-                            "has_pressure_change": True,
                             "thermodynamic_assumption":'pump'})
 
     assert hasattr(m.fs.pc, "work_fluid")
@@ -108,14 +101,10 @@ def test_make_isentropic():
     m.fs.props = pp.Iapws95ParameterBlock()
 
     m.fs.pc = PressureChanger(default={"property_package": m.fs.props,
-                            "has_phase_equilibrium": True,
-                            "has_heat_transfer": False,
-                            "has_pressure_change": True,
                             "thermodynamic_assumption":'isentropic'})
 
     assert hasattr(m.fs.pc, "efficiency_isentropic")
     assert hasattr(m.fs.pc, "work_isentropic")
-    #assert hasattr(m.fs.pc, "properties_isentropic")
     assert hasattr(m.fs.pc, "isentropic_pressure")
     assert hasattr(m.fs.pc, "isentropic_material")
     assert hasattr(m.fs.pc, "isentropic")
@@ -130,16 +119,16 @@ def test_initialization_isothermal():
     m.fs.props = pp.Iapws95ParameterBlock()
 
     m.fs.pc = PressureChanger(default={"property_package": m.fs.props,
-                            "has_phase_equilibrium": True,
-                            "has_heat_transfer": False,
-                            "has_pressure_change": True,
                             "thermodynamic_assumption":'isothermal'})
     init_state = {
         "flow_mol":100,
         "pressure":101325,
         "enth_mol":4000
     }
-    m.fs.pc.initialize(state_args=init_state, outlvl=3)
+    m.fs.pc.initialize(state_args=init_state, outlvl=5)
+
+    solver.solve(m)
+
     prop_in = m.fs.pc.control_volume.properties_in[0]
     prop_out = m.fs.pc.control_volume.properties_out[0]
 
@@ -148,16 +137,20 @@ def test_initialization_isothermal():
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
 
+    assert (pytest.approx(317.6523912867851, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["flow_mol"].value)
+    assert (pytest.approx(3999.9999999994984, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["enth_mol"].value)
+    assert (pytest.approx(99999.99999999822, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["pressure"].value)
+
     m.fs.pc.deltaP.fix(-1e7)
     prop_in.enth_mol.fix()
     prop_in.flow_mol.fix()
     prop_in.pressure.fix()
+
     assert degrees_of_freedom(m) == 0
-    solver.solve(m)
-    #assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
-    #assert abs(value(prop_out.phase_frac["Liq"]) - 1) <= 1e-6
-    #assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
-    #assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
+
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_pump():
@@ -166,16 +159,27 @@ def test_initialization_pump():
     m.fs.props = pp.Iapws95ParameterBlock()
 
     m.fs.pc = PressureChanger(default={"property_package": m.fs.props,
-                            "has_phase_equilibrium": True,
-                            "has_heat_transfer": False,
-                            "has_pressure_change": True,
                             "thermodynamic_assumption":'pump'})
+    
 
     init_state = {
-        "flow_mol":27.5e3,
-        "pressure":1446.996958388618,
-        "enth_mol":961.5427361593678
+        "flow_mol":3000,
+        "pressure":101325,
+        "enth_mol":4000
     }
+
+    m.fs.pc.initialize(state_args=init_state, outlvl=5,
+                        optarg={'tol': 1e-6})
+
+    assert (pytest.approx(3751.94367345694, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["flow_mol"].value)
+    assert (pytest.approx(3460.28609772748, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["enth_mol"].value)
+    assert (pytest.approx(100000.01560129, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["pressure"].value)
+
+    solver.solve(m)
+
     m.fs.pc.inlet[:].flow_mol.fix(27.5e3)
     m.fs.pc.inlet[:].enth_mol.fix(1036.514775)
     m.fs.pc.inlet[:].pressure.fix(101325.0)
@@ -184,15 +188,6 @@ def test_initialization_pump():
 
     assert degrees_of_freedom(m) == 0
 
-    m.fs.pc.initialize(state_args=init_state, outlvl=5,
-                        optarg={'tol': 1e-6})
-
-    assert (pytest.approx(27.5e3, abs=1e-2) ==
-            m.fs.pc.outlet[0].vars["flow_mol"].value)
-    assert (pytest.approx(961.5427361593678, abs=1e-2) ==
-            m.fs.pc.outlet[0].vars["enth_mol"].value)
-    assert (pytest.approx(1446.996958388618, abs=1e-2) ==
-            m.fs.pc.outlet[0].vars["pressure"].value)
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_isentropic():
@@ -201,19 +196,8 @@ def test_initialization_isentropic():
     m.fs.props = pp.Iapws95ParameterBlock()
 
     m.fs.pc = PressureChanger(default={"property_package": m.fs.props,
-                            "has_phase_equilibrium": True,
-                            "has_heat_transfer": False,
-                            "has_pressure_change": True,
                             "thermodynamic_assumption":'isentropic'})
 
-    #m.fs.pc.inlet[:].flow_mol.fix(27.5e3)
-    #m.fs.pc.inlet[:].enth_mol.fix(4000)
-    #m.fs.pc.inlet[:].pressure.fix(101325.0)
-
-    m.fs.pc.deltaP.fix(-1e7)
-    m.fs.pc.efficiency_isentropic.fix(0.83)
-
-    assert degrees_of_freedom(m) == 0
     init_state = {
         "flow_mol":27500,
         "pressure":1e5,
@@ -221,6 +205,7 @@ def test_initialization_isentropic():
     }
     m.fs.pc.initialize(state_args=init_state, outlvl=5,
                         optarg={'tol': 1e-6})
+
 
     assert (pytest.approx(27500.0, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["flow_mol"].value)
@@ -230,4 +215,12 @@ def test_initialization_isentropic():
             m.fs.pc.outlet[0].vars["pressure"].value)
 
 
+    m.fs.pc.deltaP.fix(-1e7)
+    m.fs.pc.efficiency_isentropic.fix(0.83)
 
+    assert degrees_of_freedom(m) == 0
+    
+    solver.solve(m)
+
+
+#-------------------------------------------------------------------#
