@@ -64,6 +64,8 @@ The Dockerfile in the top-level can be used to build a docker image that include
 	        http://(305491ce063a or 127.0.0.1):8888/?token=812a290619211bef9177b0e8c0fd7e4d1f673d29909ac254
      ```
 	 Copy the URL to your browser and start a Jupyter notebook from "New -> Python3". 
+   
+   - You should also be able to browse to (and run) an example notebook from the ideas repo in the top-level of your notebook. Go to idaes -> examples -> heat_exchange_simple -> simple_hx_flowsheet_01.ipynb
 
 
 

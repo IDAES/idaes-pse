@@ -54,23 +54,37 @@ RUN conda install --quiet --yes \
 #    fix-permissions /home/$NB_USER
 
 # Add idaes directory and change permissions to the notebook user:
-ADD . /home/$NB_USER/idaes
+ADD . /home/idaes
 USER root
 RUN sudo apt-get update
 # ENV DEBIAN_FRONTEND noninteractive
 # RUN sudo DEBIAN_FRONTEND=noninteractive sudo apt-get install -y tzdata
 RUN echo "America/Los_Angeles" > /etc/timezone
-RUN chown -R $NB_UID /home/$NB_USER/idaes
+RUN chown -R $NB_UID /home/idaes
+
+# Copying part of install-solvers here:
+WORKDIR /home/idaes
+RUN sudo apt-get update && sudo apt-get install -y libboost-dev
+RUN wget https://ampl.com/netlib/ampl/solvers.tgz
+RUN tar -xf solvers.tgz
+WORKDIR /home/idaes/solvers 
+RUN ./configure && make
+ENV ASL_BUILD=/home/idaes/solvers/sys.x86_64.Linux
+WORKDIR /home/idaes/idaes/property_models/iapws95 
+RUN make
 
 # Install ipopt:
-USER $NB_UID
 RUN conda install -c conda-forge ipopt 
 
 # Install idaes requirements.txt
-WORKDIR /home/$NB_USER/idaes
+USER $NB_UID
+WORKDIR /home/idaes
 RUN pip install -r requirements.txt
 
 RUN python setup.py install
 
-WORKDIR /home/$NB_USER/
+# Hacky fix: copy over iapws95.so to where we can find it in a notebook:
+RUN cp /home/idaes/idaes/property_models/iapws95/iapws95.so /opt/conda/lib/python3.6/site-packages/idaes-*-py3.6.egg/idaes/property_models/iapws95/
+
+WORKDIR /home
 USER $NB_UID
