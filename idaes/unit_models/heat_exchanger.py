@@ -40,7 +40,7 @@ _log = logging.getLogger(__name__)
 def delta_temperature_lmtd_rule(b, t):
     """
     This is a rule for a temperaure difference expression to calculate
-    :math:`\DeltaT` in the heat exchanger model using log-mean temperature
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
     difference (LMTD).  It can be supplied to "delta_temperature_rule"
     HeatExchanger configuration option.
     """
@@ -53,7 +53,7 @@ def delta_temperature_lmtd_rule(b, t):
 def delta_temperature_amtd_rule(b, t):
     """
     This is a rule for a temperaure difference expression to calculate
-    :math:`\DeltaT` in the heat exchanger model using arithmetic-mean temperature
+    :math:`\Delta T` in the heat exchanger model using arithmetic-mean temperature
     difference (AMTD).  It can be supplied to "delta_temperature_rule"
     HeatExchanger configuration option.
     """
@@ -66,7 +66,7 @@ def delta_temperature_amtd_rule(b, t):
 def heat_transfer_rule(b, t):
     """
     This is the defulat rule used by the HeatExchanger model to calculate heat
-    transfer (:math:`Q = UA\DeltaT`).
+    transfer (:math:`Q = UA\Delta T`).
     """
     return (b.heat_duty[t] ==
             b.heat_transfer_coefficient[t]*

@@ -12,12 +12,19 @@ The Heater and HeatExchanger models can be imported from :code:`idaes.unit_model
 while additional rules and utility functions can be imported from
 :code:`idaes.unit_models.heat_exchanger`.
 
+.. index::
+  pair: idaes.unit_models.heat_exchanger;Heater
 
 Heater
-^^^^^^
+------
 
 The Heater model is a simple 0D model that removes heat from a material stream.
-A simple example of how to use a Heater model is given below.
+A simple example of how to use a Heater model is given below. A heater model
+has a standard inlet and outlet port and a :code:`heat_duty` variable which
+specifies a heat transfer rate. The Heater contains a ControlVolume0D, see the
+ControlVolume documentation for more information.
+
+The following code provides a simple Heater example.
 
 .. code-block:: python
 
@@ -45,7 +52,7 @@ A simple example of how to use a Heater model is given below.
     # Initialize the model.
     model.fs.heater.initialize()
 
-Heater reference documentation is provided below.
+Heater class reference documentation is provided below.
 
 .. autoclass:: Heater
   :members:
@@ -53,17 +60,17 @@ Heater reference documentation is provided below.
 .. autoclass:: HeaterData
   :members:
 
-HeatExchanger
-^^^^^^^^^^^^^
+.. index::
+  pair: idaes.unit_models.heat_exchanger;HeatExchanger
 
-.. index:: HeatExchanger
-  module: idaes.unit_models.heat_exchanger
+HeatExchanger
+-------------
 
 The HeatExchanger model contains two ControlVolume0D blocks (side_1 and side_2),
-which are configure the same as the ControlVolume in the Heater model. The
-HeatEchanger model contains additional constraints that calculate the amount of
-heat transfered from the side_1 control volume to the side_2 control volume. By
-default the following equation is used to calculate heat transfer:
+which are configured the same as the ControlVolume0D in the Heater model. The
+HeatExchanger model contains additional constraints that calculate the amount of
+heat transferred from side_1 to side_2. By default the following equation
+is used to calculate heat transfer:
 
 .. math::
   Q = UA\Delta T.
@@ -71,15 +78,15 @@ default the following equation is used to calculate heat transfer:
 Where:
 
 :|Q|:
-  Exchanger heat duty or heat transferred from side_1 to side_2, the
-  model attribute is "duty" with the type Pyomo Var reference to side_2.heat
+  Exchanger heat duty or heat transferred from side_1 to side_2,
+  **attribute name:** duty, **type:** Var, reference to side_2.heat
 :|A|:
-  Heat exchange area, the model attribute is area with the type Pyomo Var
+  Heat exchange area, the model attribute is "area" with the type Pyomo Var
 :|U|:
-  Heat transfer coefficient the model attribute is heat_transfer_coefficient
+  Heat transfer coefficient the model attribute is "heat_transfer_coefficient"
   with the type Pyomo Var
 :|deltaT|:
-  Temperature difference the model attribute is delta_temperature with the type
+  Temperature difference the model attribute is "delta_temperature" with the type
   Pyomo Expression
 
 .. |Q| replace:: :math:`Q`
@@ -87,13 +94,47 @@ Where:
 .. |U| replace:: :math:`U`
 .. |deltaT| replace:: :math:`\Delta T`
 
-By default :math:`\Delta T` is calculated as the log-mean temperature difference,
-:math:`U` is fixed, and :math:`Q` is calculated as :math:`UA\Delta T`.  The
-equations for these three quantities can be changed by providing alternate
-rules to the configuration.
+By default :math:`\Delta T` is calculated as the log-mean temperature difference
+and :math:`U` is fixed.  The equations for these three quantities can be changed
+by providing alternate rules to the configuration.
+
+Class Documentation
+~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: HeatExchanger
   :members:
 
 .. autoclass:: HeatExchangerData
   :members:
+
+Rules
+~~~~~
+
+A selection of functions for Pyomo rules are provided in the
+:code:`heat_exchanger` module, with provide options for different calculation
+methods. Users can also provide their own rule functions. See the source for
+the rules below for examples.
+
+
+**Rules for the :code:`delta_temperature_rule` Option**
+
+These rules provide expressions for the temperature difference used in the
+heat transfer equations.
+
+.. autofunction:: delta_temperature_lmtd_rule
+
+.. autofunction:: delta_temperature_amtd_rule
+
+
+**Rules for the :code:`heat_transfer_rule` Option**
+
+These rules provide constraints for the heat transfer rate.
+
+.. autofunction:: heat_transfer_rule
+
+
+**Rules for the :code:`heat_transfer_coefficient_rule` Option**
+
+There are currently no rules provided for heat transfer coefficient calculation.
+When the rule is set to None :code:`heat_transfer_coefficient` is a fixed Var.
+User provided heat transfer coefficient rules should return a constraint.
