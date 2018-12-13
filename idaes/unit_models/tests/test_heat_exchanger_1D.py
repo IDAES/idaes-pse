@@ -43,26 +43,41 @@ m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
 m.fs.properties = PhysicalParameterBlock()
-m.fs.HX1D = HX1D(default={"shell_property_package": m.fs.properties,
-                          "tube_property_package": m.fs.properties})
+m.fs.HX1D = HX1D(default={"shell_side": {"property_package": m.fs.properties},
+                          "tube_side": {"property_package": m.fs.properties}})
 
 
 def test_build():
     # Check for default setting for config block attributes
-    assert len(m.fs.HX1D.config) == 29
-    assert not m.fs.HX1D.config.has_holdup
-    assert m.fs.HX1D.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
-    assert m.fs.HX1D.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
-    assert m.fs.HX1D.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
-    assert m.fs.HX1D.config.has_heat_transfer
-    assert not m.fs.HX1D.config.has_pressure_change
-    assert m.fs.HX1D.config.shell_has_phase_equilibrium
-    assert m.fs.HX1D.config.tube_has_phase_equilibrium
+    assert len(m.fs.HX1D.config) == 7
     assert m.fs.HX1D.config.flow_type == "co_current"
     assert m.fs.HX1D.config.has_wall_conduction == "none"
+
+    assert len(m.fs.HX1D.config.shell_side) == 12
+    assert not m.fs.HX1D.config.shell_side.has_holdup
+    assert m.fs.HX1D.config.shell_side.material_balance_type == \
+        MaterialBalanceType.componentTotal
+    assert m.fs.HX1D.config.shell_side.energy_balance_type == \
+        EnergyBalanceType.enthalpyTotal
+    assert m.fs.HX1D.config.shell_side.momentum_balance_type == \
+        MomentumBalanceType.pressureTotal
+    assert m.fs.HX1D.config.shell_side.has_heat_transfer
+    assert not m.fs.HX1D.config.shell_side.has_pressure_change
+    assert not m.fs.HX1D.config.shell_side.has_phase_equilibrium
+
+    assert len(m.fs.HX1D.config.tube_side) == 12
+    assert not m.fs.HX1D.config.tube_side.has_holdup
+    assert m.fs.HX1D.config.tube_side.material_balance_type == \
+        MaterialBalanceType.componentTotal
+    assert m.fs.HX1D.config.tube_side.energy_balance_type == \
+        EnergyBalanceType.enthalpyTotal
+    assert m.fs.HX1D.config.tube_side.momentum_balance_type == \
+        MomentumBalanceType.pressureTotal
+    assert m.fs.HX1D.config.tube_side.has_heat_transfer
+    assert not m.fs.HX1D.config.tube_side.has_pressure_change
+    assert not m.fs.HX1D.config.tube_side.has_phase_equilibrium
+
+
 
 
     # Check for inlets/outlets construction
