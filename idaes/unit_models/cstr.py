@@ -143,7 +143,7 @@ constructed,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
-**PropertyParameterObject** - a PropertyParameterBlock object.}"""))
+**PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
     CONFIG.declare("property_package_args", ConfigBlock(
         implicit=True,
         description="Arguments to use for constructing property packages",

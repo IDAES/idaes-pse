@@ -59,7 +59,7 @@ CSTR units add the following additional Variables beyond those created by the Co
 Variable         Name   Notes
 ================ ====== =========================================================================================================================
 :math:`V_t`      volume If ``has_holdup`` = ``True`` this is a reference to ``control_volume.volume``, otherwise a Var attached to the Unit Model
-:math:`Q_t`      heat   Only ``if has_heat_transfer`` = ``True``, reference to ``control_volume.heat``
+:math:`Q_t`      heat   Only if ``has_heat_transfer`` = ``True``, reference to ``control_volume.heat``
 ================ ====== =========================================================================================================================
 
 CSTRData Class
