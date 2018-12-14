@@ -102,7 +102,7 @@ c - EnergyBalanceType.enthalpyTotal.
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
-     default=True,
+     default=False,
      domain=In([True, False]),
      description="Phase equilibrium construction flag",
      doc="""Indicates whether terms for phase equilibrium should be
@@ -198,7 +198,7 @@ see property package for documentation.}"""))
         # Add mass balance
         self.control_volume.add_material_balances(
                     balance_type=self.config.material_balance_type,
-                    has_phase_equilibrium=False)
+                    has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         #Add energy balance
         self.control_volume.add_energy_balances(
