@@ -31,7 +31,7 @@ In our Jupyterhub deployment, this image serves as the single-user image that we
 3. Run the tests directly on the docker container by using the following command. If everything went well, all tests should pass.  
 
    ```
-   docker run -it idaes/idaes_jupyterhub /bin/bash -c "cd /home/jovyan/idaes && pytest"
+   docker run -it idaes/idaes_jupyterhub /bin/bash -c "cd /home/idaes && pytest"
    ```
 
 4. There are then 2 ways to use the image: 
@@ -57,7 +57,7 @@ In our Jupyterhub deployment, this image serves as the single-user image that we
 	  [I 07:54:20.117 NotebookApp] Writing notebook server cookie secret to /home/jovyan/.local/share/jupyter/runtime/notebook_cookie_secret
 	  [I 07:54:20.414 NotebookApp] JupyterLab extension loaded from /opt/conda/lib/python3.6/site-packages/jupyterlab
 	  [I 07:54:20.414 NotebookApp] JupyterLab application directory is /opt/conda/share/jupyter/lab
-	  [I 07:54:20.424 NotebookApp] Serving notebooks from local directory: /home/jovyan
+	  [I 07:54:20.424 NotebookApp] Serving notebooks from local directory: /home
 	  [I 07:54:20.424 NotebookApp] The Jupyter Notebook is running at:
 	  [I 07:54:20.424 NotebookApp] http://(305491ce063a or 127.0.0.1):8888/?token=812a290619211bef9177b0e8c0fd7e4d1f673d29909ac254
 	  [I 07:54:20.424 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
