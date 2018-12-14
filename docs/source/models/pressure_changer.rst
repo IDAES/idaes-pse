@@ -133,3 +133,12 @@ Isentropic Pressure Changers also have an additional Property Block named `prope
 
 PressureChangerData Class
 -------------------------
+
+.. module:: idaes.unit_models.pressure_changer
+
+.. autoclass:: PressureChanger
+  :members:
+
+.. autoclass:: PressureChangerData
+  :members:
+
