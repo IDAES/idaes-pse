@@ -39,7 +39,7 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         PropertyNotSupportedError)
 from idaes.core.util.misc import add_object_reference
 
-__author__ = "Andrew Lee"
+__author__ = "Andrew Lee, Jaffer Ghouse"
 
 
 _log = logging.getLogger(__name__)
@@ -125,7 +125,7 @@ class ControlVolume1dData(ControlVolumeBase):
             self._flow_direction = flow_direction
         else:
             raise ConfigurationError("{} invliad value for flow_direction "
-                                     "argumnet. Must be a FlowDirection Enum."
+                                     "argument. Must be a FlowDirection Enum."
                                      .format(self.name))
         if flow_direction is FlowDirection.forward:
             self._flow_direction_term = -1
@@ -141,6 +141,8 @@ class ControlVolume1dData(ControlVolumeBase):
         self.length = Var(initialize=1.0,
                           doc='Length of Control Volume [{}]'.format(l_units))
 
+        # TODO: This constraint needs to be checked
+        # i.e. it should be volume = area * (length/no. of finite elements)
         @self.Constraint(doc="Control volume geometry constraint")
         def geometry_constraint(b):
             return self.volume == self.area*self.length
@@ -1543,7 +1545,7 @@ class ControlVolume1dData(ControlVolumeBase):
     def apply_transformation(self,
                              transformation_method="dae.finite_difference",
                              transformation_scheme="BACKWARD",
-                             finite_elements=20,
+                             finite_elements=10,
                              collocation_points=3):
         """
         Method to apply DAE transformation to the Control Volume length domain.
@@ -1558,7 +1560,7 @@ class ControlVolume1dData(ControlVolumeBase):
                                     schemes (default="BACKWARD")
             finite_elements - number of finite elements to use in
                               transformation (equivalent to Pyomo nfe argument,
-                              default = 20)
+                              default = 10)
             collocation_points - number of collocation points to use (if using
                                  collocation, default = 3)
 
@@ -1567,19 +1569,23 @@ class ControlVolume1dData(ControlVolumeBase):
         """
 
         if transformation_method == "dae.finite_difference":
+            # TODO: Need to add a check that the transformation_scheme matches
+            # the transformation method being passed.
             self.discretizer = TransformationFactory('dae.finite_difference')
             self.discretizer.apply_to(self,
                                       nfe=finite_elements,
                                       wrt=self.length_domain,
                                       scheme=transformation_scheme)
         elif transformation_method == "dae.collocation":
+            # TODO: Need to add a check that the transformation_scheme matches
+            # the transformation method being passed.
             self.discretizer = TransformationFactory('dae.collocation')
             self.discretizer.apply_to(
-                    self,
-                    wrt=self.length_domain,
-                    nfe=finite_elements,
-                    collocation_points=collocation_points,
-                    scheme='LAGRANGE-LEGENDRE')
+                self,
+                wrt=self.length_domain,
+                nfe=finite_elements,
+                collocation_points=collocation_points,
+                scheme='LAGRANGE-RADAU')
         else:
             raise ConfigurationError("{} unrecognised transfromation_method, "
                                      "must match one of the Transformations "
@@ -1666,13 +1672,13 @@ class ControlVolume1dData(ControlVolumeBase):
 
         # Initialize state blocks
         # TODO : Consider handling hold_state for length domain
-        flags = blk.properties.initialize(outlvl=outlvl-1,
+        flags = blk.properties.initialize(outlvl=outlvl - 1,
                                           optarg=optarg,
                                           solver=solver,
                                           **state_args)
 
         try:
-            blk.reactions.initialize(outlvl=outlvl-1,
+            blk.reactions.initialize(outlvl=outlvl - 1,
                                      optarg=optarg,
                                      solver=solver)
         except AttributeError:
@@ -1697,7 +1703,8 @@ class ControlVolume1dData(ControlVolumeBase):
         Returns:
             None
         '''
-        blk.properties.release_state(flags, outlvl=outlvl-1)
+        # TODO: Need to check this. Does not work as intended.
+        blk.properties.release_state(flags, outlvl=outlvl - 1)
 
     def _add_phase_fractions(self):
         """
