@@ -218,16 +218,12 @@ def test_initialization_isentropic():
 
     assert (pytest.approx(1000.0, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["flow_mol"].value)
-    assert (pytest.approx(40000, abs=1e-2) ==
+    assert (pytest.approx(40000.30594060754, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["enth_mol"].value)
     assert (pytest.approx(1000100, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["pressure"].value)
     
     solver.solve(m)
-
-
-    import sys
-    sys.exit("stop")
 
 
 #-------------------------------------------------------------------#
