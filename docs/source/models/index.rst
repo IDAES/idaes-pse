@@ -9,6 +9,7 @@ Unit Model Contents
 
     gibbs_reactor
     heat_exchanger
+    heat_exchanger_1D
     stoichiometric_reactor
     cstr
     mixer

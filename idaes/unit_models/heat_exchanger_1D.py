@@ -76,7 +76,7 @@ Must be True if dynamic = True,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
-**default** - MaterialBalanceType.componentPhase.
+**default** - MaterialBalanceType.componentTotal.
 **Valid values:** {
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
@@ -355,7 +355,7 @@ tube side flows from 1 to 0"""))
             def shell_heat_transfer_eq(self, t, x):
                 return self.shell.heat[t, x] == - self.N_tubes *\
                     (self.shell_heat_transfer_coefficient[t, x] *
-                     self.pi * self.d_tube_inner *
+                     self.pi * self.d_tube_outer *
                      (self.shell.properties[t, x].temperature -
                       self.temperature_wall[t, x]))
 
