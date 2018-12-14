@@ -16,7 +16,7 @@ Typical fixed variables are:
 Model Structure
 ---------------
 
-The core Pressure Changer unit model consists of a single Holdup0D (named holdup) with one Inlet Port (named inlet) and one Outlet Port (named outlet).
+The core Pressure Changer unit model consists of a single control volume (named ControlVolume0D), a state block, containing the states, one Inlet Port (named inlet) and one Outlet Port (named outlet).
 
 Construction Arguments
 ----------------------
@@ -27,11 +27,11 @@ Pressure Changers have the following construction arguments:
 * thermodynamic_assumption - indicates which thermodynamic assumption should be used when constructing the model. Options are:
 
     - 'isothermal' - (default) assumes no temperature change occurs between the inlet and outlet of the unit.
-    - 'adiabatic' - assumes no heat loss occurs between the inlet and outlet of the unit.
+    - 'adiabatic' - assumes no heat transfer occurs between the inlet and outlet of the unit.
     - 'isentropic' - assumes isentropic behavior. This requires an additional set of property calculations for the isentropic outlet conditions.
     - 'pump' - assumes that the fluid work is proportional to the pressure difference and flow rate of fluid. This is suitable for incompressible fluids.
 
-* property_package - property package to use when constructing Property Blocks (default = 'use_parent_value'). This is provided as a Property Parameter Block by the Flowsheet when creating the model. If a value is not provided, the Holdup Block will try to use the default property package if one is defined.
+* property_package - property package to use when constructing Property Blocks (default = 'use_parent_value'). This is provided as a Physical Property Block by the Flowsheet when creating the model. If a value is not provided, the Holdup Block will try to use the default property package if one is defined.
 * property_package_args - set of arguments to be passed to the Property Blocks when they are created.
 * inlet_list - list of names to be passed to the build_inlets method (default = None).
 * num_inlets - number of inlets argument to be passed to the build_inlets method (default = None).
@@ -60,7 +60,7 @@ has_pressure_change       True
 Additional Constraints
 ----------------------
 
-In addition to the Constraints written by the Holdup Block, Pressure Changer writes additional Constraints which depend on the thermodynamic assumption chosen. All Pressure Changers add the following Constraint to calculate the pressure ratio:
+In addition to the Constraints written by the control volume block, Pressure Changer writes additional Constraints which depend on the thermodynamic assumption chosen. All Pressure Changers add the following Constraint to calculate the pressure ratio:
 
 .. math:: P_{ratio,t} \times P_{in,t} = P_{out,t}
 
@@ -76,7 +76,7 @@ Adiabatic Assumption
 
 The isothermal assumption writes one additional Constraint:
 
-.. math:: Q_{out} = Q_{in}
+.. math:: H_{out} = H_{in}
 
 Isentropic Assumption
 ^^^^^^^^^^^^^^^^^^^^^
@@ -115,21 +115,21 @@ If compressor is False, :math::`W_{fluid,t} \times \eta_t = W_{mechanical,t}`
 Variables
 ---------
 
-Pressure Changers contain the following Variables (not including those contained within the Holdup Block):
+Pressure Changers contain the following Variables (not including those contained within the control volume Block):
 
 =========================== ===================== ===========================================================================
 Variable                    Name                  Notes
 =========================== ===================== ===========================================================================
 :math:`P_{ratio}`           ratioP
-:math:`V_t`                 volume                Only if has_rate_reactions = True, reference to holdup.rate_reaction_extent
-:math:`W_{mechanical,t}`    work_mechanical       Reference to holdup.work
+:math:`V_t`                 volume                Only if has_rate_reactions = True, reference to control_volume.rate_reaction_extent
+:math:`W_{mechanical,t}`    work_mechanical       Reference to control_volume.work
 :math:`W_{fluid,t}`         work_fluid            Pump assumption only
 :math:`\eta_{pump,t}`       efficiency_pump       Pump assumption only
 :math:`W_{isentropic,t}`    work_isentropic       Isentropic assumption only
 :math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only
 =========================== ===================== ===========================================================================
 
-Isentropic Pressure Changers also have an additional Property Block named `properties_isentropic` (attached to the Unit Model, not the Holdup Block).
+Isentropic Pressure Changers also have an additional Property Block named `properties_isentropic` (attached to the Unit Model, not the control volume Block).
 
 PressureChangerData Class
 -------------------------
