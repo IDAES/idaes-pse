@@ -196,6 +196,8 @@ see property package for documentation.}"""))
         self.control_volume.add_state_blocks()
 
         # Add mass balance
+        # Set has_equilibrium is False for now
+        # TO DO; set has_equilibrium to True
         self.control_volume.add_material_balances(
                     balance_type=self.config.material_balance_type,
                     has_phase_equilibrium=self.config.has_phase_equilibrium)

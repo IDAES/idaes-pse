@@ -50,7 +50,7 @@ dynamic                   False
 include_holdup            False
 has_rate_reactions        False
 has_equilibrium_reactions False
-has_phase_equilibrium     True
+has_phase_equilibrium     False
 has_mass_transfer         False
 has_heat_transfer         False
 has_work_transfer         True
