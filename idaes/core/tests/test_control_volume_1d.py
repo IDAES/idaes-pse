@@ -301,7 +301,7 @@ def test_apply_transformation_default():
     m.fs.cv.add_geometry()
     m.fs.cv.apply_transformation()
 
-    assert len(m.fs.cv.length_domain) == 21
+    assert len(m.fs.cv.length_domain) == 11
 
 
 def test_apply_transformation_FFD():
@@ -331,7 +331,7 @@ def test_apply_transformation_Lagrange_Radau():
                                  transformation_scheme="LAGRANGE_RADAU",
                                  finite_elements=10)
 
-    assert len(m.fs.cv.length_domain) == 41
+    assert len(m.fs.cv.length_domain) == 31
 
 
 def test_apply_transformation_Lagrange_Legendre():
@@ -346,7 +346,7 @@ def test_apply_transformation_Lagrange_Legendre():
                                  transformation_scheme="LAGRANGE_LEGENDRE",
                                  finite_elements=10)
 
-    assert len(m.fs.cv.length_domain) == 41
+    assert len(m.fs.cv.length_domain) == 31
 
 
 def test_apply_transformation_collocation_points():
@@ -362,7 +362,7 @@ def test_apply_transformation_collocation_points():
                                  finite_elements=20,
                                  collocation_points=5)
 
-    assert len(m.fs.cv.length_domain) == 81
+    assert len(m.fs.cv.length_domain) == 61
 
 
 # -----------------------------------------------------------------------------
