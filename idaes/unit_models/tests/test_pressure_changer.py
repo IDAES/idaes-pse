@@ -199,28 +199,35 @@ def test_initialization_isentropic():
                             "thermodynamic_assumption":'isentropic'})
 
     init_state = {
-        "flow_mol":27500,
-        "pressure":1e5,
-        "enth_mol":4000
+        "flow_mol":1e3,
+        "pressure":1e6,
+        "enth_mol":40000
     }
+
+    m.fs.pc.inlet[:].flow_mol.fix(1e3)
+    m.fs.pc.inlet[:].enth_mol.fix(40000)
+    m.fs.pc.inlet[:].pressure.fix(1e6)
+    m.fs.pc.deltaP.fix(100)
+    m.fs.pc.efficiency_isentropic.fix(0.83)
+    
+    
+    assert degrees_of_freedom(m) == 0
+
     m.fs.pc.initialize(state_args=init_state, outlvl=5,
                         optarg={'tol': 1e-6})
 
-
-    assert (pytest.approx(27500.0, abs=1e-2) ==
+    assert (pytest.approx(1000.0, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["flow_mol"].value)
-    assert (pytest.approx(4000, abs=1e-2) ==
+    assert (pytest.approx(40000, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["enth_mol"].value)
-    assert (pytest.approx(1e5, abs=1e-2) ==
+    assert (pytest.approx(1000100, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["pressure"].value)
-
-
-    m.fs.pc.deltaP.fix(-1e7)
-    m.fs.pc.efficiency_isentropic.fix(0.83)
-
-    assert degrees_of_freedom(m) == 0
     
     solver.solve(m)
+
+
+    import sys
+    sys.exit("stop")
 
 
 #-------------------------------------------------------------------#

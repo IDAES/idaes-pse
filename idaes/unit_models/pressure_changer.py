@@ -368,12 +368,21 @@ see property package for documentation.}"""))
                                    doc="Work input to unit if isentropic "
                                    "process [-]")
 
-        # Build Isentropic Property block
-        # Connect isentropic property states
+        # Build isentropic state block
+        tmp_dict={}
+        tmp_dict["has_phase_equilibrium"] = self.config.has_phase_equilibrium
+        tmp_dict["parameters"] = self.config.property_package
+        self.properties_isentropic = (
+                    self.config.property_package.state_block_class(
+                            self.time_ref,
+                            doc="isentropic properties at outlet",
+                            default=tmp_dict))
+
+        # Connect isentropic state block properties 
         @self.Constraint(self.time_ref, doc="Pressure for isentropic calculations")
         def isentropic_pressure(b, t):
             sf = b.control_volume.scaling_factor_pressure
-            return sf*b.control_volume.properties_in[t].pressure == \
+            return sf*b.properties_isentropic[t].pressure == \
                 sf*b.ratioP[t]*b.control_volume.properties_out[t].pressure
 
         # This assumes isentropic composition is the same as outlet
@@ -381,12 +390,13 @@ see property package for documentation.}"""))
                          self.component_list,
                          doc="Material flows for isentropic properties")
         def isentropic_material(b, t, j):
-            return b.control_volume.properties_in[t].flow_mol_comp[j] == \
+            return b.properties_isentropic[t].flow_mol_comp[j] == \
                         b.control_volume.properties_out[t].flow_mol_comp[j]
-
+        
+        # This assumes isentropic entropy is the same as outlet
         @self.Constraint(self.time_ref, doc="Isentropic assumption")
         def isentropic(b, t):
-            return b.control_volume.properties_in[t].entr_mol == \
+            return b.properties_isentropic[t].entr_mol == \
                        b.control_volume.properties_out[t].entr_mol
 
         # Isentropic work
@@ -394,7 +404,7 @@ see property package for documentation.}"""))
         def isentropic_energy_balance(b, t):
             sf = b.control_volume.scaling_factor_energy
             return sf*b.work_isentropic[t] == sf*(
-			sum(b.control_volume.properties_in[t].get_enthalpy_flow_terms(p)
+			sum(b.properties_isentropic[t].get_enthalpy_flow_terms(p)
                             for p in b.phase_list) -
                         sum(b.control_volume.properties_out[t].get_enthalpy_flow_terms(p)
                             for p in b.phase_list))
