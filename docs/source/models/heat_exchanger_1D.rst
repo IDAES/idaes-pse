@@ -74,13 +74,17 @@ Additional Constraints
 
 1-D Heat Exchanger models write the following additional Constraints to describe the heat transfer between the two sides of the heat exchanger. Firstly, the shell- and tube-side heat transfer is calculated as:
 
-.. math :: Q_{shell,t,x} = - N_{tubes} \times L_{shell} \times (\pi \times U_{shell,t,x} \times D_tube \times (T_{shell,t,x}-T_{wall,t,x}))
+.. math :: Q_{shell,t,x} = - N_{tubes} \times (\pi \times U_{shell,t,x} \times D_{tube,outer} \times (T_{shell,t,x}-T_{wall,t,x}))
 
 where :math:`Q_{shell,t,x}` is the shell-side heat duty at point :math:`x` and time :math:`t`, :math:`N_{tubes}` :math:`D_{tube}` are the number of and diameter of the tubes in the heat exchanger, :math:`U_{shell,t,x}` is the shell-side heat transfer coefficient, and :math:`T_{shell,t,x}` and :math:`T_{wall,t,x}` are the shell-side and tube wall temperatures respectively.
 
-.. math :: Q_{tube,t,x} = - N_{tubes} \times L_{shell} \times (\pi \times U_{tube,t,x} \times D_tube \times (T_{wall,t,x}-T_{tube,t,x}))
+.. math :: Q_{tube,t,x} = N_{tubes} \times (\pi \times U_{tube,t,x} \times D_{tube,inner} \times (T_{wall,t,x}-T_{tube,t,x}))
 
 where :math:`Q_{tube,t,x}` is the tube-side heat duty at point :math:`x` and time :math:`t`, :math:`U_{tube,t,x}` is the tube-side heat transfer coefficient and :math:`T_{tube,t,x}` is the tube-side temperature.
+
+If a OD wall model is used for the tube wall conduction, the following constraint is implemented to connect the heat terms on the shell and tube side:
+
+.. math :: N_{tubes} \times Q_{tube,t,x} =  - Q_{shell,t,x}
 
 Finally, the following Constraints are written to describe the unit geometry:
 
