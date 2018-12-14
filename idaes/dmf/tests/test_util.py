@@ -15,15 +15,16 @@ Tests for idaes.dmf.util module
 """
 import datetime
 import hashlib
+import json
 import logging
 import os
 import shutil
 import time
 
 import pytest
-
-from idaes.dmf import util
-from .util import init_logging
+#
+from idaes.dmf import util, resource
+from .util import init_logging, TempDir
 
 init_logging()
 _log = logging.getLogger(__name__)
@@ -92,3 +93,49 @@ def test_mkdir_p():
     util.mkdir_p(path)
     assert os.path.exists(path)
     shutil.rmtree(random_str)
+
+
+def test_is_jupyter_notebook():
+    nbtext = '''
+    {
+        "cells": [],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 2
+    }
+    '''
+    with TempDir() as d:
+        f = open(os.path.join(d, 'sample.txt'), 'w')
+        assert not util.is_jupyter_notebook(f.name)
+        f = open(os.path.join(d, 'null.ipynb'), 'w')
+        assert util.is_jupyter_notebook(f.name, check_contents=False)
+        assert not util.is_jupyter_notebook(f.name)
+        f = open(os.path.join(d, 'basic.ipynb'), 'w')
+        f.write(nbtext)
+        f.close()
+        assert util.is_jupyter_notebook(f.name)
+        f = open(os.path.join(d, 'random.ipynb'), 'w')
+        f.write('{"random": [1,2,3]}')
+        f.close()
+        assert not util.is_jupyter_notebook(f.name)
+
+
+def test_is_python():
+    with TempDir() as d:
+        f = open(os.path.join(d, 'sample.txt'), 'w')
+        assert not util.is_python(f.name)
+        f = open(os.path.join(d, 'sample.py'), 'w')
+        assert util.is_python(f.name)
+
+
+def test_is_resource_json():
+    with TempDir() as d:
+        f = open(os.path.join(d, 'sample.txt'), 'w')
+        assert not util.is_resource_json(f.name)
+        f = open(os.path.join(d, 'sample.json'), 'w')
+        assert not util.is_resource_json(f.name)
+        r = resource.Resource()
+        json.dump(r.v, f)
+        f.close()
+        assert util.is_resource_json(f.name)
+        assert not util.is_resource_json(f.name, max_bytes=1)

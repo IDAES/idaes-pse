@@ -11,15 +11,16 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Standard IDAES PFR model.
+Standard IDAES CSTR model.
 """
 from __future__ import division
 
 # Import Pyomo libraries
+# from pyomo.environ import Reals,  Var, NonNegativeReals
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume1D,
+from idaes.core import (ControlVolume0D,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -27,22 +28,21 @@ from idaes.core import (ControlVolume1D,
                         UnitBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block,
-                                    list_of_floats)
+                                    is_reaction_parameter_block)
 from idaes.core.util.misc import add_object_reference
 
-__author__ = "Andrew Lee, John Eslick"
+__author__ = "Andrew Lee, Vibhav Dabadghao"
 
 
-@declare_process_block_class("PFR")
-class PFRData(UnitBlockData):
+@declare_process_block_class("CSTR")
+class CSTRData(UnitBlockData):
     """
-    Standard Plug Flow Reactor Unit Model Class
+    Standard CSTR Unit Model Class
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        default=useDefault,
         domain=In([useDefault, True, False]),
+        default=useDefault,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
 **default** = useDefault.
@@ -64,7 +64,7 @@ Must be True if dynamic = True,
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed,
+        doc="""Indicates what type of material balance should be constructed,
 **default** - MaterialBalanceType.componentPhase.
 **Valid values:** {
 **MaterialBalanceType.none** - exclude material balances,
@@ -96,6 +96,25 @@ Must be True if dynamic = True,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+    CONFIG.declare("has_heat_transfer", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Heat transfer term construction flag",
+        doc="""Indicates whether terms for heat transfer should be constructed,
+**default** - False.
+**Valid values:** {
+**True** - include heat transfer terms,
+**False** - exclude heat transfer terms.}"""))
+    CONFIG.declare("has_pressure_change", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Pressure change term construction flag",
+        doc="""Indicates whether terms for pressure change should be
+constructed,
+**default** - False.
+**Valid values:** {
+**True** - include pressure change terms,
+**False** - exclude pressure change terms.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
         default=True,
         domain=In([True, False]),
@@ -116,25 +135,6 @@ constructed,
 **Valid values:** {
 **True** - include heat of reaction terms,
 **False** - exclude heat of reaction terms.}"""))
-    CONFIG.declare("has_heat_transfer", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Heat transfer term construction flag",
-        doc="""Indicates whether terms for heat transfer should be constructed,
-**default** - False.
-**Valid values:** {
-**True** - include heat transfer terms,
-**False** - exclude heat transfer terms.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -143,7 +143,7 @@ constructed,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
-**PropertyParameterObject** - a PropertyParameterBlock object.}"""))
+**PhysicalParameterObject** - a PhysicalParameterBlock object.}"""))
     CONFIG.declare("property_package_args", ConfigBlock(
         implicit=True,
         description="Arguments to use for constructing property packages",
@@ -169,55 +169,20 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see reaction package for documentation.}"""))
-    CONFIG.declare("length_domain_set", ConfigValue(
-        default=[0.0, 1.0],
-        domain=list_of_floats,
-        description="List of points to use to initialize length domain",
-        doc="""A list of values to be used when constructing the length domain
-of the reactor. Point must lie between 0.0 and 1.0,
-**default** - [0.0, 1.0].
-**Valid values:** {
-a list of floats}"""))
-    CONFIG.declare("transformation_method", ConfigValue(
-        default="dae.finite_difference",
-        description="Method to use for DAE transformation",
-        doc="""Method to use to transform domain. Must be a method recognised
-by the Pyomo TransformationFactory,
-**default** - "dae.finite_difference"."""))
-    CONFIG.declare("transformation_scheme", ConfigValue(
-        default="BACKWARD",
-        description="Scheme to use for DAE transformation",
-        doc="""Scheme to use when transformating domain. See Pyomo
-documentation for supported schemes,
-**default** - "BACKWARD"."""))
-    CONFIG.declare("finite_elements", ConfigValue(
-        default=20,
-        description="Number of finite elements to use for DAE transformation",
-        doc="""Number of finite elements to use when transforming length
-domain,
-**default** - 20."""))
-    CONFIG.declare("collocation_points", ConfigValue(
-        default=3,
-        description="No. collocation points to use for DAE transformation",
-        doc="""Number of collocation points to use when transforming length
-domain,
-**default** - 3."""))
 
     def build(self):
         """
         Begin building model (pre-DAE transformation).
-
         Args:
             None
-
         Returns:
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(PFRData, self).build()
+        super(CSTRData, self).build()
 
         # Build Control Volume
-        self.control_volume = ControlVolume1D(default={
+        self.control_volume = ControlVolume0D(default={
                 "dynamic": self.config.dynamic,
                 "has_holdup": self.config.has_holdup,
                 "property_package": self.config.property_package,
@@ -225,8 +190,7 @@ domain,
                 "reaction_package": self.config.reaction_package,
                 "reaction_package_args": self.config.reaction_package_args})
 
-        self.control_volume.add_geometry(
-                length_domain_set=self.config.length_domain_set)
+        self.control_volume.add_geometry()
 
         self.control_volume.add_state_blocks()
 
@@ -247,17 +211,14 @@ domain,
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-        self.control_volume.apply_transformation(
-                transformation_method=self.config.transformation_method,
-                transformation_scheme=self.config.transformation_scheme,
-                finite_elements=self.config.finite_elements,
-                collocation_points=self.config.collocation_points)
+        self.control_volume.add_total_pressure_balances(
+            has_pressure_change=self.config.has_pressure_change)
 
         # Add Ports
         self.add_inlet_port()
         self.add_outlet_port()
 
-        # Add performance equations
+        # Add object references
         add_object_reference(self,
                              "component_list_ref",
                              self.control_volume.component_list_ref)
@@ -265,23 +226,26 @@ domain,
                              "phase_list_ref",
                              self.control_volume.phase_list_ref)
         add_object_reference(self,
+                             "volume",
+                             self.control_volume.volume)
+        add_object_reference(self,
                              "rate_reaction_idx_ref",
-                             self.config.reaction_package.rate_reaction_idx)
+                             self.control_volume.rate_reaction_idx_ref)
 
-        # Add PFR performance equation
+        # Add CSTR performance equation
         @self.Constraint(self.time_ref,
-                         self.control_volume.length_domain,
                          self.rate_reaction_idx_ref,
-                         doc="PFR performance equation")
-        def performance_eqn(b, t, x, r):
-            return b.control_volume.rate_reaction_extent[t, x, r] == (
-                    b.control_volume.reactions[t, x].reaction_rate[r] *
-                    b.control_volume.area)
+                         doc="CSTR performance equation")
+        def cstr_performance_eqn(b, t, r):
+            return b.control_volume.rate_reaction_extent[t, r] == (
+                            b.volume[t] *
+                            b.control_volume.reactions[t].reaction_rate[r])
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and
-                self.config.energy_balance_type != 'none'):
+                self.config.energy_balance_type != EnergyBalanceType.none):
             add_object_reference(self, "heat_duty", self.control_volume.heat)
+
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
             add_object_reference(self, "deltaP", self.control_volume.deltaP)

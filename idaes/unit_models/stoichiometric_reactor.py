@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Standard IDAES PFR model.
+Standard IDAES STOICHIOMETRIC reactor model
 """
 from __future__ import division
 
@@ -19,7 +19,7 @@ from __future__ import division
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume1D,
+from idaes.core import (ControlVolume0D,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -27,39 +27,31 @@ from idaes.core import (ControlVolume1D,
                         UnitBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block,
-                                    list_of_floats)
+                                    is_reaction_parameter_block)
 from idaes.core.util.misc import add_object_reference
 
-__author__ = "Andrew Lee, John Eslick"
+__author__ = "Chinedu Okoli, Andrew Lee"
 
 
-@declare_process_block_class("PFR")
-class PFRData(UnitBlockData):
+@declare_process_block_class("StoicReactor")
+class StoichiometricReactorData(UnitBlockData):
     """
-    Standard Plug Flow Reactor Unit Model Class
+    Standard Stoic Reactor Unit Model Class 
+    This model assumes that all given reactions are irreversible, and that each 
+    reaction has a fixed rate_reaction extent which has to be specified by the
+    user.
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        default=useDefault,
         domain=In([useDefault, True, False]),
+        default=False,
         description="Dynamic model flag",
         doc="""Indicates whether this model will be dynamic or not,
-**default** = useDefault.
+**default** = False.
 **Valid values:** {
 **useDefault** - get flag from parent (default = False),
 **True** - set as a dynamic model,
 **False** - set as a steady-state model.}"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
@@ -96,16 +88,6 @@ Must be True if dynamic = True,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_equilibrium_reactions", ConfigValue(
-        default=True,
-        domain=In([True, False]),
-        description="Equilibrium reaction construction flag",
-        doc="""Indicates whether terms for equilibrium controlled reactions
-should be constructed,
-**default** - True.
-**Valid values:** {
-**True** - include equilibrium reaction terms,
-**False** - exclude equilibrium reaction terms.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -151,7 +133,7 @@ constructed,
 and used when constructing these,
 **default** - None.
 **Valid values:** {
-see property package for documentation.}"""))
+see property package for documentation.}"""))   
     CONFIG.declare("reaction_package", ConfigValue(
         default=None,
         domain=is_reaction_parameter_block,
@@ -169,89 +151,41 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see reaction package for documentation.}"""))
-    CONFIG.declare("length_domain_set", ConfigValue(
-        default=[0.0, 1.0],
-        domain=list_of_floats,
-        description="List of points to use to initialize length domain",
-        doc="""A list of values to be used when constructing the length domain
-of the reactor. Point must lie between 0.0 and 1.0,
-**default** - [0.0, 1.0].
-**Valid values:** {
-a list of floats}"""))
-    CONFIG.declare("transformation_method", ConfigValue(
-        default="dae.finite_difference",
-        description="Method to use for DAE transformation",
-        doc="""Method to use to transform domain. Must be a method recognised
-by the Pyomo TransformationFactory,
-**default** - "dae.finite_difference"."""))
-    CONFIG.declare("transformation_scheme", ConfigValue(
-        default="BACKWARD",
-        description="Scheme to use for DAE transformation",
-        doc="""Scheme to use when transformating domain. See Pyomo
-documentation for supported schemes,
-**default** - "BACKWARD"."""))
-    CONFIG.declare("finite_elements", ConfigValue(
-        default=20,
-        description="Number of finite elements to use for DAE transformation",
-        doc="""Number of finite elements to use when transforming length
-domain,
-**default** - 20."""))
-    CONFIG.declare("collocation_points", ConfigValue(
-        default=3,
-        description="No. collocation points to use for DAE transformation",
-        doc="""Number of collocation points to use when transforming length
-domain,
-**default** - 3."""))
-
+        
     def build(self):
         """
         Begin building model (pre-DAE transformation).
-
         Args:
             None
-
         Returns:
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(PFRData, self).build()
+        super(StoichiometricReactorData, self).build()
 
         # Build Control Volume
-        self.control_volume = ControlVolume1D(default={
+        self.control_volume = ControlVolume0D(default={
                 "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args,
                 "reaction_package": self.config.reaction_package,
                 "reaction_package_args": self.config.reaction_package_args})
-
-        self.control_volume.add_geometry(
-                length_domain_set=self.config.length_domain_set)
-
+    
         self.control_volume.add_state_blocks()
 
-        self.control_volume.add_reaction_blocks(
-                has_equilibrium=self.config.has_equilibrium_reactions)
+        self.control_volume.add_reaction_blocks()
 
         self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type,
-            has_rate_reactions=True,
-            has_equilibrium_reactions=self.config.has_equilibrium_reactions)
-
+            has_rate_reactions=True)
+        
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
-            has_heat_of_reaction=self.config.has_heat_of_reaction,
             has_heat_transfer=self.config.has_heat_transfer)
 
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
-
-        self.control_volume.apply_transformation(
-                transformation_method=self.config.transformation_method,
-                transformation_scheme=self.config.transformation_scheme,
-                finite_elements=self.config.finite_elements,
-                collocation_points=self.config.collocation_points)
 
         # Add Ports
         self.add_inlet_port()
@@ -267,16 +201,9 @@ domain,
         add_object_reference(self,
                              "rate_reaction_idx_ref",
                              self.config.reaction_package.rate_reaction_idx)
-
-        # Add PFR performance equation
-        @self.Constraint(self.time_ref,
-                         self.control_volume.length_domain,
-                         self.rate_reaction_idx_ref,
-                         doc="PFR performance equation")
-        def performance_eqn(b, t, x, r):
-            return b.control_volume.rate_reaction_extent[t, x, r] == (
-                    b.control_volume.reactions[t, x].reaction_rate[r] *
-                    b.control_volume.area)
+        add_object_reference(self,
+                             "rate_reaction_extent",
+                             self.control_volume.rate_reaction_extent)
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and

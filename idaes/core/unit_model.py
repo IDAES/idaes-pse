@@ -223,6 +223,9 @@ class UnitBlockData(ProcessBlockData):
                         "Port should be associated.".format(blk.name))
 
         # Set default name and doc string if not provided
+        # TODO: This does not work when the block has multiple control volumes.
+        # Better to raise exception when user does not provide a name than us
+        # setting a name automatically. 
         if name is None:
             name = "inlet"
         if doc is None:
