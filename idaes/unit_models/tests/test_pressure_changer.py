@@ -95,6 +95,7 @@ def test_make_pump():
     assert hasattr(m.fs.pc, "fluid_work_calculation")
     assert hasattr(m.fs.pc, "actual_work")
 
+
 def test_make_isentropic():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -120,37 +121,32 @@ def test_initialization_isothermal():
 
     m.fs.pc = PressureChanger(default={"property_package": m.fs.props,
                             "thermodynamic_assumption":'isothermal'})
-    init_state = {
-        "flow_mol":100,
-        "pressure":101325,
-        "enth_mol":4000
-    }
-    m.fs.pc.initialize(state_args=init_state, outlvl=5)
 
-    solver.solve(m)
 
-    prop_in = m.fs.pc.control_volume.properties_in[0]
-    prop_out = m.fs.pc.control_volume.properties_out[0]
-
-    assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Liq"]) - 1) <= 1e-6
-    assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
-    assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
-
-    assert (pytest.approx(317.6523912867851, abs=1e-2) ==
-            m.fs.pc.outlet[0].vars["flow_mol"].value)
-    assert (pytest.approx(3999.9999999994984, abs=1e-2) ==
-            m.fs.pc.outlet[0].vars["enth_mol"].value)
-    assert (pytest.approx(99999.99999999822, abs=1e-2) ==
-            m.fs.pc.outlet[0].vars["pressure"].value)
-
-    m.fs.pc.deltaP.fix(-1e7)
-    prop_in.enth_mol.fix()
-    prop_in.flow_mol.fix()
-    prop_in.pressure.fix()
+    m.fs.pc.deltaP.fix(-1e3)
+    m.fs.pc.inlet[:].flow_mol.fix(27.5e3)
+    m.fs.pc.inlet[:].enth_mol.fix(4000)
+    m.fs.pc.inlet[:].pressure.fix(2e6)
 
     assert degrees_of_freedom(m) == 0
 
+    init_state = {
+        "flow_mol":27.5e3,
+        "pressure":2e6,
+        "enth_mol":4000
+    }
+
+    m.fs.pc.initialize(state_args=init_state, outlvl=5)
+
+
+    assert (pytest.approx(27500.0, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["flow_mol"].value)
+    assert (pytest.approx(3999.984582673592, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["enth_mol"].value)
+    assert (pytest.approx(1999000.0, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["pressure"].value)
+
+    solver.solve(m)
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_pump():
@@ -160,34 +156,67 @@ def test_initialization_pump():
 
     m.fs.pc = PressureChanger(default={"property_package": m.fs.props,
                             "thermodynamic_assumption":'pump'})
-    
+
+    m.fs.pc.inlet[:].flow_mol.fix(27.5e3)
+    m.fs.pc.inlet[:].enth_mol.fix(4000)
+    m.fs.pc.inlet[:].pressure.fix(2e6)
+    m.fs.pc.deltaP.fix(-1e3)
+    m.fs.pc.efficiency_pump.fix(0.9)
+
+    assert degrees_of_freedom(m) == 0
 
     init_state = {
-        "flow_mol":3000,
-        "pressure":101325,
+        "flow_mol":27.5e3,
+        "pressure":2e6,
         "enth_mol":4000
     }
 
     m.fs.pc.initialize(state_args=init_state, outlvl=5,
                         optarg={'tol': 1e-6})
 
-    assert (pytest.approx(3751.94367345694, abs=1e-2) ==
+    assert (pytest.approx(27.5e3, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["flow_mol"].value)
-    assert (pytest.approx(3460.28609772748, abs=1e-2) ==
+    assert (pytest.approx(3999.979732728688, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["enth_mol"].value)
-    assert (pytest.approx(100000.01560129, abs=1e-2) ==
+    assert (pytest.approx(1999000.0, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["pressure"].value)
 
     solver.solve(m)
 
-    m.fs.pc.inlet[:].flow_mol.fix(27.5e3)
-    m.fs.pc.inlet[:].enth_mol.fix(1036.514775)
-    m.fs.pc.inlet[:].pressure.fix(101325.0)
-    m.fs.pc.deltaP.fix(-1e7)
-    m.fs.pc.efficiency_pump.fix(0.9)
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_initialization_adiabatic():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
 
+    m.fs.pc = PressureChanger(default={"property_package": m.fs.props,
+                            "thermodynamic_assumption":'adiabatic'})
+
+    init_state = {
+        "flow_mol":27.5e3,
+        "pressure":2e6,
+        "enth_mol":4000
+    }
+
+    m.fs.pc.inlet[:].flow_mol.fix(27.5e3)
+    m.fs.pc.inlet[:].enth_mol.fix(4000)
+    m.fs.pc.inlet[:].pressure.fix(2e6)
+    m.fs.pc.deltaP.fix(-1e3)
+    
+    
     assert degrees_of_freedom(m) == 0
 
+    m.fs.pc.initialize(state_args=init_state, outlvl=5,
+                        optarg={'tol': 1e-6})
+
+    assert (pytest.approx(27.5e3, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["flow_mol"].value)
+    assert (pytest.approx(4000, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["enth_mol"].value)
+    assert (pytest.approx(1999000.0, abs=1e-2) ==
+            m.fs.pc.outlet[0].vars["pressure"].value)
+
+    solver.solve(m)
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_isentropic():
@@ -199,15 +228,15 @@ def test_initialization_isentropic():
                             "thermodynamic_assumption":'isentropic'})
 
     init_state = {
-        "flow_mol":1e3,
-        "pressure":1e6,
-        "enth_mol":40000
+        "flow_mol":27.5e3,
+        "pressure":2e6,
+        "enth_mol":4000
     }
 
-    m.fs.pc.inlet[:].flow_mol.fix(1e3)
-    m.fs.pc.inlet[:].enth_mol.fix(40000)
-    m.fs.pc.inlet[:].pressure.fix(1e6)
-    m.fs.pc.deltaP.fix(100)
+    m.fs.pc.inlet[:].flow_mol.fix(27.5e3)
+    m.fs.pc.inlet[:].enth_mol.fix(4000)
+    m.fs.pc.inlet[:].pressure.fix(2e6)
+    m.fs.pc.deltaP.fix(-1e3)
     m.fs.pc.efficiency_isentropic.fix(0.83)
     
     
@@ -216,14 +245,16 @@ def test_initialization_isentropic():
     m.fs.pc.initialize(state_args=init_state, outlvl=5,
                         optarg={'tol': 1e-6})
 
-    assert (pytest.approx(1000.0, abs=1e-2) ==
+    assert (pytest.approx(27.5e3, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["flow_mol"].value)
-    assert (pytest.approx(40000.30594060754, abs=1e-2) ==
+    assert (pytest.approx(3999.979732728688, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["enth_mol"].value)
-    assert (pytest.approx(1000100, abs=1e-2) ==
+    assert (pytest.approx(1999000.0, abs=1e-2) ==
             m.fs.pc.outlet[0].vars["pressure"].value)
-    
+
     solver.solve(m)
 
 
 #-------------------------------------------------------------------#
+
+
