@@ -17,8 +17,6 @@ This module contains miscalaneous utility functions for use in IDAES models.
 
 __author__ = "Andrew Lee"
 
-import logging
-_log=logging.getLogger(__name__)
 
 def add_object_reference(self, local_name, remote_object):
     """
@@ -37,7 +35,6 @@ def add_object_reference(self, local_name, remote_object):
     try:
         object.__setattr__(self, local_name, remote_object)
     except AttributeError:
-        _log.exception("error adding reference")
         raise AttributeError("{} failed to construct reference to {} - remote "
                              "object does not exist.".format(self.name,
                                                              remote_object))

@@ -111,34 +111,6 @@ c - EnergyBalanceType.enthalpyTotal.
  **Valid values:** {
  **True** - include phase equilibrium terms
 **False** - exclude phase equilibrium terms.}"""))
-    CONFIG.declare("inlet_list", ConfigValue(
-        domain=list_of_strings,
-        description="List of inlet names",
-        doc="""A list containing names of inlets (default = None)
-                - None - default single inlet
-                - list - a list of names for inlets"""))
-    CONFIG.declare("num_inlets", ConfigValue(
-        domain=int,
-        description="Number of inlets to unit",
-        doc="""Argument indication number (int) of inlets to construct
-            (default = None). Not used if inlet_list arg is provided.
-                - None - use inlet_list arg instead
-                - int - Inlets will be named with sequential numbers from 1
-                        to num_inlets"""))
-    CONFIG.declare("outlet_list", ConfigValue(
-        domain=list_of_strings,
-        description="List of outlet names",
-        doc="""A list containing names of outlets (default = None)
-                - None - default single outlet
-                - list - a list of names for outlets"""))
-    CONFIG.declare("num_outlets", ConfigValue(
-        domain=int,
-        description="Number of outlets to unit",
-        doc="""Argument indication number (int) of outlets to construct
-            (default = None). Not used if outlet_list arg is provided.
-                - None - use outlet_list arg instead
-                - int - Outlets will be named with sequential numbers from 1
-                        to num_outlets"""))
     CONFIG.declare("compressor", ConfigValue(
         default=True,
         domain=In([True, False]),
