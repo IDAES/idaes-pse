@@ -145,15 +145,6 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
-    CONFIG.declare("outlet_list", ConfigValue(
-        default=["Vap", "Liq"],
-        domain=list_of_strings,
-        description="List of outlet names",
-        doc="""A list containing names of outlets (default = None)
-**default** - None.
-**Valid values:** {
-**None** - use num_outlets argument,
-**list** - a list of names to use for outlets.}"""))
 
     def build(self):
         """
@@ -174,10 +165,12 @@ see property package for documentation.}"""))
             "property_package": self.config.property_package,
             "property_package_args": self.config.property_package_args})
 
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(
+            has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_material_balances(
-            balance_type=self.config.material_balance_type)
+            balance_type=self.config.material_balance_type,
+            has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
