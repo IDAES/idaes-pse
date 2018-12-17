@@ -7,8 +7,9 @@ Unit Model Contents
 .. toctree::
     :maxdepth: 1
 
-    gibbs_reactor
     heat_exchanger
     stoichiometric_reactor
+    gibbs_reactor
+    pfr
     mixer
     separator
