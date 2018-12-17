@@ -16,8 +16,9 @@ kwargs = dict(
     install_requires=[],
     extras_require={},
     package_data={
-        # If any package contains *.template or *.json files, include them:
-        '': ['*.template', '*.json']
+        # If any package contains *.template, *.json files, *.dll files, or
+        # *.so file, include them:
+        '': ['*.template', '*.json', '*.dll', '*.so']
     },
     author='IDAES Team',
     author_email='idaes-dev@idaes.org',
