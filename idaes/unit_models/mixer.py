@@ -215,7 +215,7 @@ linked to all inlet states and the mixed state,
         if self.config.material_mixing_type == MixingType.extensive:
             self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
                                                mixed_block=mixed_block)
-        elif self.config.material_mixing_type == MixingType.extensive:
+        elif self.config.material_mixing_type == MixingType.none:
             pass
         else:
             raise ConfigurationError("{} received unrecognised value for "
@@ -227,7 +227,7 @@ linked to all inlet states and the mixed state,
         if self.config.energy_mixing_type == MixingType.extensive:
             self.add_energy_mixing_equations(inlet_blocks=inlet_blocks,
                                              mixed_block=mixed_block)
-        elif self.config.energy_mixing_type == MixingType.extensive:
+        elif self.config.energy_mixing_type == MixingType.none:
             pass
         else:
             raise ConfigurationError("{} received unrecognised value for "
@@ -391,6 +391,7 @@ linked to all inlet states and the mixed state,
             self.phase_equilibrium_generation = Var(
                         self.time_ref,
                         self.phase_equilibrium_idx_ref,
+                        self.component_list_ref,
                         domain=Reals,
                         doc="Amount of generation in unit by phase "
                             "equilibria [{}/{}]"
