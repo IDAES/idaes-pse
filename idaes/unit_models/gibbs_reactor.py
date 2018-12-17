@@ -191,3 +191,9 @@ see property package for documentation.}"""))
             add_object_reference(self,
                                  "heat_duty",
                                  self.control_volume.heat)
+        if (self.config.has_pressure_change is True and
+                self.config.momentum_balance_type != MomentumBalanceType.none):
+            add_object_reference(self,
+                                 "pressure_change",
+                                 self.control_volume.deltaP)
+
