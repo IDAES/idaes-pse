@@ -9,11 +9,11 @@ Mixer units have zero degrees of freedom.
 
 **Model Structure**
 
-The IDAES Mixer unit model does not use ControlVolumes, and instead writes a set of material, energy and momentum balances to combine the inlet streams into a singl mixed stream. Mixer models have a user-defined number of inlet Ports (by default names inlet_1, inlet_2, etc.) and one outlet Port (by default names outlet).
+The IDAES Mixer unit model does not use ControlVolumes, and instead writes a set of material, energy and momentum balances to combine the inlet streams into a single mixed stream. Mixer models have a user-defined number of inlet Ports (by default named inlet_1, inlet_2, etc.) and one outlet Port (named outlet).
 
 **Mixed State Block**
 
-If a mixed state block is provided in the construction arguments, the Mixer model will use this as the StateBlock for the mixed stream in the resulting balance equations. This allows a Mixer unit to be used as part of a larger unit operation by linking multiple inlet streams to a single exisiting StateBlock.
+If a mixed state block is provided in the construction arguments, the Mixer model will use this as the StateBlock for the mixed stream in the resulting balance equations. This allows a Mixer unit to be used as part of a larger unit operation by linking multiple inlet streams to a single existing StateBlock.
 
 **Variables**
 
