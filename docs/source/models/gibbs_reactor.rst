@@ -16,36 +16,17 @@ Typical fixed variables are:
 
 The core Gibbs reactor unit model consists of a single ControlVolume0D (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet).
 
-**Construction Arguments**
-
-Gibbs reactor units have the following construction arguments:
-
-* property_package - property package to use when constructing StateBlocks (default = 'use_parent_value'). This is provided as a Physical Parameter Block by the Flowsheet when creating the model. If a value is not provided, the Control Volume Block will try to use the default property package if one is defined.
-* property_package_args - set of arguments to be passed to the StateBlocks when they are created.
-
-Gibbs reactors also have the following configuration arguments for determining the form of the balance equations.
-
-========================= =================================
-Argument                  Default Value
-========================= =================================
-energy_balance_type       EnergyBalanceType.enthalpyTotal
-momentum_balance_type     MomentumBalanceType.pressureTotal
-dynamic                   False (cannot be True)
-has_heat_transfer         False
-has_pressure_change       False
-========================= =================================
-
 **Variables**
 
 Gibbs reactor units add the following additional Variables beyond those created by the Control Volume Block.
 
-=============== =============== =============================================
-Variable Name   Symbol          Notes
-=============== =============== =============================================
-lagrange_mult   :math:`L_{t,e}` Lagrange multipliers
-heat_duty       :math:`Q_t`     Only if has_heat_transfer = True, reference
-pressure_change :math:`Q_t`     Only if has_pressure_change = True, reference
-=============== =============== =============================================
+=============== ================== =============================================
+Variable Name   Symbol             Notes
+=============== ================== =============================================
+lagrange_mult   :math:`L_{t,e}`    Lagrange multipliers
+heat_duty       :math:`Q_t`        Only if has_heat_transfer = True, reference
+deltaP          :math:`\Delta P_t` Only if has_pressure_change = True, reference
+=============== ================== =============================================
 
 **Constraints**
 

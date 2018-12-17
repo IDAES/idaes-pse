@@ -194,6 +194,6 @@ see property package for documentation.}"""))
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != MomentumBalanceType.none):
             add_object_reference(self,
-                                 "pressure_change",
+                                 "deltaP",
                                  self.control_volume.deltaP)
 

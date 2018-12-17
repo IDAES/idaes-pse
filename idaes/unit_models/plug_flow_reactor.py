@@ -279,6 +279,15 @@ domain,
                     b.control_volume.area)
 
         # Set references to balance terms at unit level
+        add_object_reference(self,
+                             "length",
+                             self.control_volume.length)
+        add_object_reference(self,
+                             "area",
+                             self.control_volume.area)
+        add_object_reference(self,
+                             "volume",
+                             self.control_volume.volume)
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != 'none'):
             add_object_reference(self, "heat_duty", self.control_volume.heat)
