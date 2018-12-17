@@ -78,16 +78,16 @@ class PhysicalParameterData(PhysicalParameterBase):
              2: ["toluene", ("Vap", "Liq")]}
 
         # Thermodynamic reference state
-        self.pressure_ref = Param(mutable=True,
+        self.pressure_reference = Param(mutable=True,
                                   default=101325,
                                   doc='Reference pressure [Pa]')
-        self.temperature_ref = Param(mutable=True,
+        self.temperature_reference = Param(mutable=True,
                                      default=298.15,
                                      doc='Reference temperature [K]')
 
         # Critical Properties
         self.pressure_critical = Param(self.component_list,
-                                       within=PositiveReals,
+                                       within=NonNegativeReals,
                                        mutable=False,
                                        initialize={'benzene': 48.9e5,
                                                    'toluene': 41e5,
@@ -95,7 +95,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                                        doc='Critical pressure [Pa]')
 
         self.temperature_critical = Param(self.component_list,
-                                          within=PositiveReals,
+                                          within=NonNegativeReals,
                                           mutable=False,
                                           initialize={'benzene': 562.2,
                                                       'toluene': 591.8,
@@ -103,7 +103,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                                           doc='Critical temperature [K]')
 
         # Gas Constant
-        self.gas_constant = Param(within=PositiveReals,
+        self.gas_constant = Param(within=NonNegativeReals,
                                   mutable=False,
                                   default=8.314,
                                   doc='Gas Constant [J/mol.K]')
@@ -395,7 +395,6 @@ class StateBlockData(StateBlockDataBase):
         self._make_state_vars()
         self._make_constraints()
         self._make_flash_eq()
-        self._make_balance_terms()
 
     def _make_params(self):
         """Make references to the necessary parameters."""

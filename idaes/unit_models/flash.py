@@ -29,7 +29,7 @@ from idaes.core import (ControlVolume0D,
                         MomentumBalanceType,
                         UnitBlockData,
                         useDefault)
-from idaes.unit_model import Separator, SplittingType
+from idaes.unit_models.separator import Separator, SplittingType
 
 from idaes.core.util.config import is_physical_parameter_block, list_of_strings
 from idaes.core.util.misc import add_object_reference
@@ -162,6 +162,7 @@ see property package for documentation.}"""))
         # Build Control Volume
         self.control_volume = ControlVolume0D(default={
             "dynamic": self.config.dynamic,
+            "has_holdup": self.config.has_holdup,
             "property_package": self.config.property_package,
             "property_package_args": self.config.property_package_args})
 
@@ -184,8 +185,8 @@ see property package for documentation.}"""))
         self.add_inlet_port()
 
         split_map = {}
-        for p in self.phase_list_ref:
-            for j in self.component_list_ref:
+        for p in self.control_volume.properties_in[0].phase_list:
+            for j in self.control_volume.properties_in[0].component_list:
                 split_map[(p, j)] = p
 
         self.split = Separator(default={"property_package":
@@ -194,7 +195,7 @@ see property package for documentation.}"""))
                                         self.config.property_package_args,
                                         "outlet_list": ["Vap", "Liq"],
                                         "split_basis":
-                                        SplittingType.phase_flow,
+                                        SplittingType.phaseComponentFlow,
                                         "ideal_separation": True,
                                         "ideal_split_map": split_map,
                                         "mixed_state_block":
