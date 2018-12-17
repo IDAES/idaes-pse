@@ -8,6 +8,8 @@ Unit Model Contents
     :maxdepth: 1
 
     heat_exchanger
+    heat_exchanger_1D
+    cstr
     stoichiometric_reactor
     gibbs_reactor
     pfr

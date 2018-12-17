@@ -31,7 +31,7 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     list_of_floats)
 from idaes.core.util.misc import add_object_reference
 
-__author__ = "Jinliang Ma, Andrew Lee"
+__author__ = "Andrew Lee, John Eslick"
 
 
 @declare_process_block_class("PFR")
