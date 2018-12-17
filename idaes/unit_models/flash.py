@@ -19,7 +19,6 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Reals, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -30,6 +29,7 @@ from idaes.core import (ControlVolume0D,
                         MomentumBalanceType,
                         UnitBlockData,
                         useDefault)
+from idaes.unit_model import Separator, SplittingType
 
 from idaes.core.util.config import is_physical_parameter_block, list_of_strings
 from idaes.core.util.misc import add_object_reference
@@ -189,7 +189,26 @@ see property package for documentation.}"""))
 
         # Add Ports
         self.add_inlet_port()
-        self.add_outlet_port()
+
+        split_map = {}
+        for p in self.phase_list_ref:
+            for j in self.component_list_ref:
+                split_map[(p, j)] = p
+
+        self.split = Separator(default={"property_package":
+                                        self.config.property_package,
+                                        "property_package_args":
+                                        self.config.property_package_args,
+                                        "outlet_list": ["Vap", "Liq"],
+                                        "split_basis":
+                                        SplittingType.phase_flow,
+                                        "ideal_separation": True,
+                                        "ideal_split_map": split_map,
+                                        "mixed_state_block":
+                                        self.control_volume.properties_out})
+
+        add_object_reference(self, "vap_outlet", self.split.Vap)
+        add_object_reference(self, "liq_outlet", self.split.Liq)
 
         # Add references
         if (self.config.has_heat_transfer is True and

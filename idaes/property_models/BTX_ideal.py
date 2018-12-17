@@ -469,7 +469,7 @@ class StateBlockData(StateBlockDataBase):
                                               for i in self.component_list)
                                               == 1)
 
-        if self.config.has_phase_equilibrium is True:
+        if self.config.has_phase_equilibrium:
             def rule_Keq(self, i):
                 return self.mole_frac_phase['Vap', i] * self.pressure == \
                     self.vapor_pressure[i] * self.mole_frac_phase['Liq', i]
