@@ -32,7 +32,8 @@ The isothermal assumption writes one additional Constraint:
 
 .. math:: T_{out} = T_{in}
 
-*Adiabatic Assumption*
+Adiabatic Assumption
+~~~~~~~~~~~~~~~~~~~~
 
 The isothermal assumption writes one additional Constraint:
 
