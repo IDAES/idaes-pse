@@ -555,6 +555,11 @@ linked the mixed state and all outlet states,
                         e_obj = Expression(self.phase_list_ref,
                                            self.component_list_ref,
                                            rule = e_rule)
+
+                        # Add expression object to mixed state block and port
+                        setattr(mixed_block[t], "_"+s+"_expr_"+o, e_obj)
+                        p_obj[t].add(e_obj, s)
+
                     elif s.endswith("_phase"):
                         if self.config.split_basis == \
                                         SplittingType.phaseFlow:
@@ -587,6 +592,11 @@ linked the mixed state and all outlet states,
                             raise BurntToast()
                         e_obj = Expression(self.phase_list_ref,
                                            rule = e_rule)
+
+                        # Add expression object to mixed state block and port
+                        setattr(mixed_block[t], "_"+s+"_expr_"+o, e_obj)
+                        p_obj[t].add(e_obj, s)
+
                     elif s.endswith("_comp"):
                         if self.config.split_basis == \
                                         SplittingType.componentFlow:
@@ -624,50 +634,53 @@ linked the mixed state and all outlet states,
                         e_obj = Expression(self.phase_list_ref,
                                            rule = e_rule)
 
-                    # Add expression object to mixed state block and port
-                    setattr(mixed_block[t], "_"+s+"_expr_"+o, e_obj)
-                    p_obj[t].add(e_obj, s)
+                        # Add expression object to mixed state block and port
+                        setattr(mixed_block[t], "_"+s+"_expr_"+o, e_obj)
+                        p_obj[t].add(e_obj, s)
 
-                else:
-                    # Not a recognised state, check for indexing sets
-                    if s_vars[s].is_indexed():
-                        # Is indexed, assume indexes match and try to partition
-                        try:
-                            for k in split_map:
-                                p_obj = getattr(self, split_map[k])
-                                p_obj[t].add(s_vars[s][k], s)
-                        except KeyError:
-                            raise KeyError("{} Cannot use ideal splitting with"
+                    else:
+                        # Not a recognised state, check for indexing sets
+                        if s_vars[s].is_indexed():
+                            # Is indexed, assume indexes match and partition
+                            try:
+                                for k in split_map:
+                                    p_obj = getattr(self, split_map[k])
+                                    p_obj[t].add(s_vars[s][k], s)
+                            except KeyError:
+                                raise KeyError(
+                                    "{} Cannot use ideal splitting with"
                                     " this property package. Package uses "
                                     "indexed port member {} which does not "
                                     "have suitable indexing set(s)."
                                     .format(self.name, s))
 
-                    else:
-                        # Is not indexed, look for indexed equivalent
-                        try:
-                            if self.config.split_basis == \
-                                    SplittingType.phaseFlow:
-                                idx_state = getattr(mixed_block[t], s+"_phase")
-                            elif self.config.split_basis == \
-                                    SplittingType.componentFlow:
-                                idx_state = getattr(mixed_block[t], s+"_comp")
-                            elif self.config.split_basis == \
-                                    SplittingType.phaseComponentFlow:
-                                idx_state = getattr(mixed_block[t],
-                                                    s+"_phase_comp")
-                        except AttributeError:
-                            raise AttributeError(
+                        else:
+                            # Is not indexed, look for indexed equivalent
+                            try:
+                                if self.config.split_basis == \
+                                        SplittingType.phaseFlow:
+                                    idx_state = getattr(mixed_block[t],
+                                                        s+"_phase")
+                                elif self.config.split_basis == \
+                                        SplittingType.componentFlow:
+                                    idx_state = getattr(mixed_block[t],
+                                                        s+"_comp")
+                                elif self.config.split_basis == \
+                                        SplittingType.phaseComponentFlow:
+                                    idx_state = getattr(mixed_block[t],
+                                                        s+"_phase_comp")
+                            except AttributeError:
+                                raise AttributeError(
                                     "{} Cannot use ideal splitting with this "
                                     "property package. Package uses unindexed "
                                     "port member {} which does not have an "
                                     "equivalent indexed form."
                                     .format(self.name, s))
 
-                        for k in split_map:
-                            # Add indexed state member to outlet port as state
-                            p_obj = getattr(self, split_map[k])
-                            p_obj[t].add(idx_state[k], s)
+                            for k in split_map:
+                                # Add idx_state member to outlet port as state
+                                p_obj = getattr(self, split_map[k])
+                                p_obj[t].add(idx_state[k], s)
 
     def model_check(blk):
         """
