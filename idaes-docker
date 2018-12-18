@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#
+# Script to interact with IDAES docker image.
+
+function usage () {
+   printf "./idaes-docker [{-h,-help} | test | notebook | refresh]\n"
+   printf "\n"
+   printf "options:\n"
+   printf "   -h,-help            Print this message\n"
+   printf "   test          Sanity check step that runs the unit tests on the image and print results to standard output.\n"
+   printf "   notebook      Run a Jupyter notebook based on the Docker image.\n"
+   printf "   refresh       Run a docker pull to get the latest version of the IDAES docker image.\n"
+   exit 1
+}
+
+function idaes_pull() {
+  if [[ "$(docker images -q idaes/idaes_jupyterhub:latest 2> /dev/null)" == "" ]]; then
+    echo "IDAES image not found, pulling IDAES image from DockerHub..."
+    docker pull idaes/idaes_jupyterhub:latest
+  fi
+}
+
+if [ -z $1 ]; then
+  usage
+fi
+if [ "$1" = "test" ]; then
+    idaes_pull
+    echo "Running tests in container..."
+    docker run -it idaes/idaes_jupyterhub /bin/bash -c "cd /home/idaes && pytest"
+elif [ "$1" = "notebook" ]; then
+    idaes_pull
+    echo "Starting Jupyter..."
+    docker run -p 8888:8888 -it idaes/idaes_jupyterhub  
+elif [ "$1" = "refresh" ]; then
+    echo "Refreshing IDAES image from DockerHub..."
+    docker pull idaes/idaes_jupyterhub:latest
+elif [[ "$1" = "-h" || "$1" = "-help" ]]; then
+    usage
+else
+    usage
+fi
