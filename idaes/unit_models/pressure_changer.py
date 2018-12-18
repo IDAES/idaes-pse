@@ -236,6 +236,7 @@ see property package for documentation.}"""))
         # Add Momentum balance variable 'deltaP' as necessary
         add_object_reference(self, "deltaP", self.control_volume.deltaP)
 
+        # Set reference to scaling factor for pressure in control volume
         add_object_reference(self, "sfp", self.control_volume.scaling_factor_pressure)
 
         # Performance Variables
@@ -245,9 +246,8 @@ see property package for documentation.}"""))
         # Pressure Ratio
         @self.Constraint(self.time_ref, doc="Pressure ratio constraint")
         def ratioP_calculation(b, t):
-            sfp = b.control_volume.scaling_factor_pressure
-            return sfp*b.ratioP[t]*b.control_volume.properties_in[t].pressure \
-                == sfp*b.control_volume.properties_out[t].pressure
+            return self.sfp*b.ratioP[t]*b.control_volume.properties_in[t].pressure \
+                == self.sfp*b.control_volume.properties_out[t].pressure
 
     def add_pump(self):
         """
@@ -259,7 +259,7 @@ see property package for documentation.}"""))
         Returns:
             None
         """
-
+        # Set reference to scaling factor for energy in control volume
         add_object_reference(self, "sfe", self.control_volume.scaling_factor_energy)
 
         self.work_fluid = Var(
@@ -281,12 +281,11 @@ see property package for documentation.}"""))
         # Actual work
         @self.Constraint(self.time_ref, doc="Actual mechanical work calculation")
         def actual_work(b, t):
-            #sfe = b.control_volume.scaling_factor_energy
             if b.config.compressor:
-                return sfe*b.work_fluid[t] == sfe*(
+                return b.sfe*b.work_fluid[t] == b.sfe*(
                             b.work_mechanical[t]*b.efficiency_pump[t])
             else:
-                return sfe*b.work_mechanical[t] == sfe*(
+                return b.sfe*b.work_mechanical[t] == b.sfe*(
                             b.work_fluid[t]*b.efficiency_pump[t])
 
     def add_isothermal(self):
@@ -333,9 +332,11 @@ see property package for documentation.}"""))
         Returns:
             None
         """
-        # Get indexing sets from holdup block
+        # Get indexing sets from control volume
         add_object_reference(self, "phase_list", self.control_volume.phase_list_ref)
         add_object_reference(self, "component_list", self.control_volume.component_list_ref)
+
+        # Alias to scaling factor for energy and pressure
         add_object_reference(self, "sfe", self.control_volume.scaling_factor_energy)
         add_object_reference(self, "sfp", self.control_volume.scaling_factor_pressure)
 
@@ -362,9 +363,8 @@ see property package for documentation.}"""))
         # Connect isentropic state block properties 
         @self.Constraint(self.time_ref, doc="Pressure for isentropic calculations")
         def isentropic_pressure(b, t):
-            #sfp = b.control_volume.scaling_factor_pressure
-            return sfp*b.properties_isentropic[t].pressure == \
-                sfp*b.ratioP[t]*b.control_volume.properties_out[t].pressure
+            return b.sfp*b.properties_isentropic[t].pressure == \
+                b.sfp*b.ratioP[t]*b.control_volume.properties_out[t].pressure
 
         # This assumes isentropic composition is the same as outlet
         @self.Constraint(self.time_ref,
@@ -383,8 +383,7 @@ see property package for documentation.}"""))
         # Isentropic work
         @self.Constraint(self.time_ref, doc="Calculate work of isentropic process")
         def isentropic_energy_balance(b, t):
-            #sfe = b.control_volume.scaling_factor_energy
-            return sfe*b.work_isentropic[t] == sfe*(
+            return b.sfe*b.work_isentropic[t] == b.sfe*(
 			sum(b.properties_isentropic[t].get_enthalpy_flow_terms(p)
                             for p in b.phase_list) -
                         sum(b.control_volume.properties_out[t].get_enthalpy_flow_terms(p)
@@ -393,12 +392,11 @@ see property package for documentation.}"""))
         # Actual work
         @self.Constraint(self.time_ref, doc="Actual mechanical work calculation")
         def actual_work(b, t):
-            #sfe = b.control_volume.scaling_factor_energy
             if b.config.compressor:
-                return sfe*b.work_isentropic[t] == sfe*(
+                return b.sfe*b.work_isentropic[t] == b.sfe*(
                             b.work_mechanical[t]*b.efficiency_isentropic[t])
             else:
-                return sfe*b.work_mechanical[t] == sfe*(
+                return b.sfe*b.work_mechanical[t] == b.sfe*(
                         b.work_isentropic[t]*b.efficiency_isentropic[t])
 
     def model_check(blk):
