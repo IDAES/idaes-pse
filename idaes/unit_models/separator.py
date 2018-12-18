@@ -580,6 +580,10 @@ linked the mixed state and all outlet states,
                                         return s_vars[s][j]
                                     else:
                                         return 0
+
+                                e_obj = Expression(self.component_list_ref,
+                                                   rule=e_rule)
+
                             elif ((self.config.split_basis ==
                                    SplittingType.phaseFlow) or
                                   (self.config.split_basis ==
@@ -602,13 +606,14 @@ linked the mixed state and all outlet states,
                                         return idx_state[:, j]
                                     else:
                                         return 0
+
+                                e_obj = Expression(self.phase_list_ref,
+                                               rule=e_rule)
                             else:
                                 raise BurntToast(
                                         "This should not happen. Please "
                                         "report this bug to the IDAES "
                                         "developers.")
-                            e_obj = Expression(self.component_list_ref,
-                                               rule=e_rule)
 
                         # Add expression object to mixed state block and port
                         setattr(mixed_block[t], "_"+s+"_expr_"+o, e_obj)

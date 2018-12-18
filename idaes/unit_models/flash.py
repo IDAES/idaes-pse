@@ -206,9 +206,9 @@ see property package for documentation.}"""))
         # Add references
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != 'none'):
-                add_object_reference(self, "heat",
+                add_object_reference(self, "heat_duty",
                                      self.control_volume.heat)
-        if (self.config_has_pressure_change is True and
+        if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
                 add_object_reference(self, "deltaP",
                                      self.control_volume.deltaP)
