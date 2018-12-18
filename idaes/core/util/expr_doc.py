@@ -29,15 +29,22 @@ import sympy
 from IPython.display import display, Markdown
 
 import logging
+import re
 from six import iterkeys
 
 _log = logging.getLogger(__name__)
 
 #TODO<jce> Look into things like sum operator and template expressions
 
+def _add_latex_subscripts(x, s):
+    if not "_" in x:
+        return "{}_{{ {} }}".format(x, s)
+    else:
+        return re.sub(r"^(.+_)({.+}|.)", "\\1{{ \\2 ,{} }}".format(s), x)
+
 def deduplicate_symbol(x, v, used):
     """
-    Check if x is a duplicated LaTeX symbol if so add incrimenting <i>
+    Check if x is a duplicated LaTeX symbol if so add incrementing Di subscript
 
     Args:
         x: symbol string
@@ -51,8 +58,11 @@ def deduplicate_symbol(x, v, used):
     y = x
     k = 1
     while x in used and id(used[x]) != id(v):
-        x = "{} \\langle {} \\rangle".format(y, k)
+        x = _add_latex_subscripts(y, "D{}".format(k))
         k += 1
+        if k > 1000:
+            # Either the symbol string is not updating or there are lots of dupes
+            break
     used[x] = v
     return x
 
@@ -125,7 +135,7 @@ class PyomoSympyBimap(object):
                 idxl = ",".join(idx)
                 idx = "|".join(idx)
             x = "{}[{}]".format(x, idx)
-            latex_symbol = "{}[{}]".format(latex_symbol, idxl)
+            latex_symbol = _add_latex_subscripts(latex_symbol, idxl)
         sympy_obj = sympy_class(x)
         self.pyomo2sympy[pyomo_object] = sympy_obj
         self.sympy2pyomo[sympy_obj] = pyomo_object
@@ -176,10 +186,11 @@ class Pyomo2SympyVisitor(StreamBasedExpressionVisitor):
 
 def sympify_expression(expr):
     """
-    Converts Pyomo expressions to sympy.
-    This is based on the function of the same name in pyomo.core.base.symbolic,
-    but it catches named expressions with due to changes to Pyomo2SympyVisitor,
-    would not be decended into and goes into them anyway.
+    Converts Pyomo expressions to sympy expressions.
+    This is based on the function of the same name in pyomo.core.base.symbolic.
+    The difference between this and the Pymomo is that this one checks if the
+    expr argument is a named expression and expands it anyway. This allows named
+    expressions to only be expanded if they are the top level object.
     """
     #
     # Create the visitor and call it.
@@ -187,7 +198,7 @@ def sympify_expression(expr):
     object_map = PyomoSympyBimap()
     visitor = Pyomo2SympyVisitor(object_map)
     is_expr, ans = visitor.beforeChild(None, expr)
-    try: # If I explicitly ask for a named expression then descent into it.
+    try: # If I explicitly ask for a named expression then descend into it.
         if expr.is_named_expression_type():
             is_expr = True
     except:
@@ -210,7 +221,7 @@ def _add_docs(object_map, docs, typ, head):
         A new string markdown table with added doc rows.
     """
     docked = set() # components already documented, mainly for indexed compoents
-    whead = True  # write hedding before adding first item
+    whead = True  # write heading before adding first item
     for i, sc in enumerate(object_map.sympyVars()):
         c = object_map.getPyomoSymbol(sc)
         c = c.parent_component() # Document the parent for indexed comps
