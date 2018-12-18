@@ -115,7 +115,7 @@ where :math:`\alpha_{r, p. j}` is the stoichiometric coefficient of component :m
 add_total_component_balances
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Material balances are written for each component across all phase (e.g. one balance for both liquid water and steam). Physical property packages may include information to indicate that certain species do not appear in all phases, and material balances will not be written in these cases (if `has_holdup` is True holdup terms will still appear for these species, however these will be set to 0).
+Material balances are written for each component across all phases (e.g. one balance for both liquid water and steam). Physical property packages may include information to indicate that certain species do not appear in all phases, and material balances will not be written in these cases (if `has_holdup` is True holdup terms will still appear for these species, however these will be set to 0).
 
 **Variables**
 

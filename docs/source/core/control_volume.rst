@@ -55,7 +55,7 @@ Finally, the Control Volume checks that the `has_holdup` argument is consistent 
 Getting Property Package Information
 -------------------------------------
 
-If a reference to a property package was not provided by the UnitModel as an argument, the Control Volume first checks to see if the UnitModel has a property_package argument set, and uses this if present. Otherwise, the Control Volume block begins searching up the model tree looking for an argument named default_property_package and uses the first of these that it finds. If not default_property_package is found, a ConfigurationError is returned.
+If a reference to a property package was not provided by the UnitModel as an argument, the Control Volume first checks to see if the UnitModel has a property_package argument set, and uses this if present. Otherwise, the Control Volume block begins searching up the model tree looking for an argument named default_property_package and uses the first of these that it finds. If no default_property_package is found, a ConfigurationError is returned.
 
 Collecting Indexing Sets for Property Package
 ---------------------------------------------
@@ -70,7 +70,7 @@ The indexing sets the Control Volume looks for are:
 ControlVolumeBase Class
 -----------------------
 
-A key purpose of Control Volumes is to automate as much of the task of writing a unit model as possible. For this purpose, Control Volumes support a number of methods for common tasks model developers may want to perform. The specifics of these methods will different between different types of Control Volumes, and certain methods may not be applicable to some types of Control Volumes (in which case a NotImplementedError will be returned). A full list of potential methods is provided here, however users should check the documentation for the specific Control Volume they are using for more details on what methods are supported in that specific Control Volume.
+A key purpose of Control Volumes is to automate as much of the task of writing a unit model as possible. For this purpose, Control Volumes support a number of methods for common tasks model developers may want to perform. The specifics of these methods will be different between different types of Control Volumes, and certain methods may not be applicable to some types of Control Volumes (in which case a NotImplementedError will be returned). A full list of potential methods is provided here, however users should check the documentation for the specific Control Volume they are using for more details on what methods are supported in that specific Control Volume.
 
 .. module:: idaes.core.control_volume_base
 

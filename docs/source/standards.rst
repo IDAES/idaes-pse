@@ -31,7 +31,7 @@ Whilst the overall IDAES modeling framework enforces a hierarchical structure on
 
 For property packages, it is recommended that all the equations necessary for calculating a given property be grouped together, clearly separated and identified by using comments.
 
-Additionally, model developers are encouraged to consider breaking their model up into a number of smaller methods where this makes sense. This can facilitate modification of the code by allowing future users to inherit from the base model and selectively overloading sub-methods where desired.
+Additionally, model developers are encouraged to consider breaking their model up into a number of smaller methods where this makes sense. This can facilitate modification of the code by allowing future users to inherit from the base model and selectively overload sub-methods where desired.
 
 Commenting
 ^^^^^^^^^^
@@ -49,7 +49,7 @@ In order for different models to communicate information effectively, it is nece
 
 Standard Naming Format
 ^^^^^^^^^^^^^^^^^^^^^^
-There are a wide range of different variables which may be of interest to modelers, and a number of different ways in which these quantities can be expressed. In order to facilitate communication between different parts of models, a naming convention has been established to standardize the naming of variables across models. Variable names within IDAES follow to format below::
+There are a wide range of different variables which may be of interest to modelers, and a number of different ways in which these quantities can be expressed. In order to facilitate communication between different parts of models, a naming convention has been established to standardize the naming of variables across models. Variable names within IDAES follow to the format below::
 
     {property_name}_{basis}_{state}_{condition}
 
@@ -111,7 +111,7 @@ Constants
 =============================== =============
 Constant                        Standard Name
 =============================== =============
-Gas Constant	                gas_const
+Gas Constant                    gas_const
 =============================== =============
 
 Thermophysical and Transport Properties
@@ -121,40 +121,40 @@ Below is a list of all the thermophysical properties which currently have a stan
 =============================== =====================
 Variable                        Standard Name
 =============================== =====================
-Activity	                act
-Activity Coefficient	        act_coeff
-Bubble Temperature	        t_bub
-Compressibility Factor	        compress_fact
-Concentration	                conc
-Density	                        dens
-Dew Temperature	                temperature_dew
-Diffusivity	                diffus
-Diffusion Coefficient (binary)	diffus_binary
-Enthalpy	                enth
-Entropy	                        entr
-Fugacity	                fug
-Fugacity Coefficient	        fug_coeff
-Gibbs Energy	                energy_gibbs
-Heat Capacity (const. P)	cp
-Heat Capacity (const. V)	cv
-Heat Capacity Ratio	        heat_capacity_ratio
-Helmholtz Energy	        energy_helmholtz
-Henry's Constant	        henry
-Mass Fraction	                mass_frac
-Material Flow	                flow
-Molecular Weight	        mw
-Mole Fraction	                mole_frac
-pH	                        pH
-Pressure	                pressure
+Activity                        act
+Activity Coefficient            act_coeff
+Bubble Temperature              t_bub
+Compressibility Factor          compress_fact
+Concentration                   conc
+Density                         dens
+Dew Temperature                 temperature_dew
+Diffusivity                     diffus
+Diffusion Coefficient (binary)  diffus_binary
+Enthalpy                        enth
+Entropy                         entr
+Fugacity                        fug
+Fugacity Coefficient            fug_coeff
+Gibbs Energy                    energy_gibbs
+Heat Capacity (const. P)        cp
+Heat Capacity (const. V)        cv
+Heat Capacity Ratio             heat_capacity_ratio
+Helmholtz Energy                energy_helmholtz
+Henry's Constant                henry
+Mass Fraction                   mass_frac
+Material Flow                   flow
+Molecular Weight                mw
+Mole Fraction                   mole_frac
+pH                              pH
+Pressure                        pressure
 Speed of Sound                  speed_sound
-Surface Tension	                surf_tens
-Temperature	                temperature
-Thermal Conductivity	        therm_cond
-Vapor Pressure	                pressure_sat
-Viscosity (dynamic)	        visc_d
-Viscosity (kinematic)	        visc_k
+Surface Tension                 surf_tens
+Temperature                     temperature
+Thermal Conductivity            therm_cond
+Vapor Pressure                  pressure_sat
+Viscosity (dynamic)             visc_d
+Viscosity (kinematic)           visc_k
 Vapor Fraction                  vap_frac
-Volume Fraction	                vol_frac
+Volume Fraction                 vol_frac
 =============================== =====================
 
 Reaction Properties
@@ -183,13 +183,13 @@ Variable                     Standard Name
 ============================ =================
 Min. Fluidization Velocity   velocity_mf
 Min. Fluidization Voidage    voidage_mf
-Particle Size	             particle_dia
-Pore Size	             pore_dia
-Porosity	             particle_porosity
-Specific Surface Area	     area_{basis}
-Sphericity	             sphericity
-Tortuosity	             tort
-Voidage	                     bulk_voidage
+Particle Size                particle_dia
+Pore Size                    pore_dia
+Porosity                     particle_porosity
+Specific Surface Area        area_{basis}
+Sphericity                   sphericity
+Tortuosity                   tort
+Voidage                      bulk_voidage
 ============================ =================
 
 Naming Examples

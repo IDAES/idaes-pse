@@ -28,7 +28,7 @@ This section documents the variables and constraints created by each of the meth
 add_geometry
 ^^^^^^^^^^^^
 
-The add_geometry method creates a single variable within the control volume names `volume` index by time (allowing for varying volume over time). A number of other methods depend on this variable being present, thus this method should generally be called first.
+The add_geometry method creates a single variable within the control volume named `volume` indexed by time (allowing for varying volume over time). A number of other methods depend on this variable being present, thus this method should generally be called first.
 
 **Variables**
 

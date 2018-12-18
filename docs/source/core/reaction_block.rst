@@ -4,11 +4,11 @@ Reaction Property Package Classes
 .. contents:: Contents 
     :depth: 2
 
-Reaction property packages represent a collection of calculations necessary to determine the reaction behavior of a mixture at a given state. Reaction properties depend upon the state and phsycial properties of the material, and thus must be linked to a StateBlock which provides the necessary state and physical property information.
+Reaction property packages represent a collection of calculations necessary to determine the reaction behavior of a mixture at a given state. Reaction properties depend upon the state and physical properties of the material, and thus must be linked to a StateBlock which provides the necessary state and physical property information.
 
 Reaction property packages consist of two parts:
 
-* ReactionParameterBlocks, which contain a set of parameters associated with the specific reactions(s) being modeled, and
+* ReactionParameterBlocks, which contain a set of parameters associated with the specific reaction(s) being modeled, and
 * ReactionBlocks, which contain the actual calculations of the reaction behavior.
 
 Reaction Parameter Blocks
@@ -27,11 +27,11 @@ Reaction property packages are used by all of the other modeling components to i
 * phase_list - a Pyomo Set object defining the valid phases of the mixture of interest.
 * component_list - a Pyomo Set defining the names of the chemical species present in the mixture.
 * rate_reaction_idx - a Pyomo Set defining a list of names for the kinetically controlled reactions of interest.
-* rate_reaction_stoichiometry - a dict-like object defining the stoichiometry of the kinetically controled reactions. Keys should be tuples of (rate_reaction_idx, phase_list, component_list) and values equal to the stoichiometric coefficient for that index.
+* rate_reaction_stoichiometry - a dict-like object defining the stoichiometry of the kinetically controlled reactions. Keys should be tuples of (rate_reaction_idx, phase_list, component_list) and values equal to the stoichiometric coefficient for that index.
 * equilibrium_reaction_idx - a Pyomo Set defining a list of names for the equilibrium controlled reactions of interest.
-* equilibrium_reaction_stoichiometry - a dict-like object defining the stoichiometry of the equilibrium controled reactions. Keys should be tuples of (equilibrium_reaction_idx, phase_list, component_list) and values equal to the stoichiometric coefficient for that index.
+* equilibrium_reaction_stoichiometry - a dict-like object defining the stoichiometry of the equilibrium controlled reactions. Keys should be tuples of (equilibrium_reaction_idx, phase_list, component_list) and values equal to the stoichiometric coefficient for that index.
 * supported properties metadata - a list of supported reaction properties that the property package supports, along with instruction to the framework on how to construct the associated variables and constraints, and the units of measurement used for the property. This information is set using the add_properties attribute of the define_metadata class method.
-* required properties metadata - a list of physical properties that the reaction property calculations depend upon, and must be supported by the assoicated StateBlock. This information is set using the add_required_properties attribute of the define_metadata class method.
+* required properties metadata - a list of physical properties that the reaction property calculations depend upon, and must be supported by the associated StateBlock. This information is set using the add_required_properties attribute of the define_metadata class method.
 
 Reaction Parameter Configuration Arguments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -49,7 +49,7 @@ Reaction Parameter blocks have two standard configuration arguments:
 Reaction Blocks
 ---------------
 
-Reaction Blocks are used within IDAES Unit models (generally within ControlVolume Blocks) in order to calculate reaction properties given the state of the material (provided by an assoicated StateBlock). Reaction Blocks are notably different to other types of Blocks within IDAES as they are always indexed by time (and possibly space as well), and are also not fully self contained (in that they depend upon the assoicated state block for certain variables). There are two bases Classes associated with Reaction Blocks:
+Reaction Blocks are used within IDAES Unit models (generally within ControlVolume Blocks) in order to calculate reaction properties given the state of the material (provided by an associated StateBlock). Reaction Blocks are notably different to other types of Blocks within IDAES as they are always indexed by time (and possibly space as well), and are also not fully self contained (in that they depend upon the associated state block for certain variables). There are two bases Classes associated with Reaction Blocks:
 
 * ReactionBlockDataBase forms the base class for all ReactionBlockData objects, which contain the instructions on how to construct each instance of a Reaction Block.
 * ReactionBlockBase is used for building classes which contain methods to be applied to sets of Indexed Reaction Blocks (or to a subset of these). See the documentation on declare_process_block_class and the IDAES tutorials and examples for more information.
@@ -60,7 +60,7 @@ Reaction Block Construction Arguments
 Reaction Blocks have the following construction arguments:
 
 * parameters - a reference to the associated Reaction Parameter block which will be used to make references to all necessary parameters.
-* state_block - a reference to the assoicated StateBlock which will povide the necessary state and phsycial property information.
+* state_block - a reference to the associated StateBlock which will provide the necessary state and physical property information.
 * has_equilibrium - indicates whether the associated Control Volume or Unit model expects chemical equilibrium to be enforced (if applicable).
 
 ReactionBlockDataBase Class

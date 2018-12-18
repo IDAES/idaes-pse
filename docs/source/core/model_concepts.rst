@@ -7,7 +7,7 @@ IDAES Modeling Concepts
 Introduction
 ------------
 
-The purpose of this section of the documentation to explain the different parts of the IDAES modeling framework, and what components belong in each part for the hierarchy. Each component is described in greater detail later in the documentation, however this section provides a general introduction to different types of components.
+The purpose of this section of the documentation is to explain the different parts of the IDAES modeling framework, and what components belong in each part for the hierarchy. Each component is described in greater detail later in the documentation, however this section provides a general introduction to different types of components.
 
 Time Domain
 -----------
@@ -21,7 +21,7 @@ Another important thing to note is that steady-state models do contain a time do
 Flowsheets
 ----------
 
-The top level of the IDAES modeling framework is the Flowsheet model. Flowsheet models represent traditional process flowsheets, containing a number of Unit models representing process unit operations connected together into a flow network. Flowsheets generally contain three types of component:
+The top level of the IDAES modeling framework is the Flowsheet model. Flowsheet models represent traditional process flowsheets, containing a number of Unit models representing process unit operations connected together into a flow network. Flowsheets generally contain three types of components:
 
 1. Unit models, representing unit operations,
 2. Arcs, representing connections between Unit models, and,
@@ -32,7 +32,7 @@ Flowsheet models may also contain additional constraints relating to how differe
 Unit Models
 -----------
 
-Unit models generally represent individual pieces of equipment present within a process which perform a specific task. Unit models in turn are generally composed of two main types of component:
+Unit models generally represent individual pieces of equipment present within a process which perform a specific task. Unit models in turn are generally composed of two main types of components:
 
 1. Control Volume Blocks, which represent volume of material over which we wish to perform material, energy and/or momentum balances, and,
 2. StateBlocks and ReactionBlocks, which represent the thermophysical, transport and reaction properties of the material at a specific point in space and time.
@@ -43,19 +43,19 @@ Unit models will also contain Constraints describing the performance of the unit
 Control Volumes
 ^^^^^^^^^^^^^^^
 
-A key feature of the IDAES modeling framework is the use of Control Volume Blocks. As mentioned above, Control Volumes represent a volume of material over which material, energy and/or momentum balances can be performed. Control Volume Blocks contain methods to automate the task of writing common forms of these balance equations. Control Volumes Blocks can also automate the creation of StateBlocks and ReactionBlocks associated with the control volume.
+A key feature of the IDAES modeling framework is the use of Control Volume Blocks. As mentioned above, Control Volumes represent a volume of material over which material, energy and/or momentum balances can be performed. Control Volume Blocks contain methods to automate the task of writing common forms of these balance equations. Control Volume Blocks can also automate the creation of StateBlocks and ReactionBlocks associated with the control volume.
 
 Property Blocks
 ^^^^^^^^^^^^^^^
 
-Property blocks represent the state of a material at a given point in space and time within the process flowsheet, and contain the state variables, thermophsyical, transport and reaction properties of a material (which are functions solely of the local state of the material). Within the IDAES proces modeling framework, properties are divinded into two types:
+Property blocks represent the state of a material at a given point in space and time within the process flowsheet, and contain the state variables, thermophysical, transport and reaction properties of a material (which are functions solely of the local state of the material). Within the IDAES process modeling framework, properties are divided into two types:
 
-* Physcial properties (StateBlocks), including thermophysical and transport properties, and
-* Reaction properties (ReactionBlocks), which includes all properties assoicated with chemical reactions.
+* Physical properties (StateBlocks), including thermophysical and transport properties, and
+* Reaction properties (ReactionBlocks), which include all properties associated with chemical reactions.
 
 Additionally, StateBlocks contain information on the extensive flow of material at that point in space and time, which is a departure from how engineers generally think about properties. This is required to facilitate the flexible formulation of the IDAES Framework by allowing the property package to dictate what form the balance equations will take, which requires the StateBlock to know the extensive flow information.
 
-The calculations involved in property blocks of both types generally require a set of parameters which are constant across all instances of that type of property block. Rather than each property block containing its own copy of each of these parameters (thus duplicating parameters between blocks), each type of property block is associated with a Property Parameter Block (PhysicalParameterBlock or ReactionParameterBlock). Property Parameter Blocks serve as a centralized location for the constant parameters involved in property calculations, and all property blocks of the associated type link to the parameters contain in the parameter block.
+The calculations involved in property blocks of both types generally require a set of parameters which are constant across all instances of that type of property block. Rather than each property block containing its own copy of each of these parameters (thus duplicating parameters between blocks), each type of property block is associated with a Property Parameter Block (PhysicalParameterBlock or ReactionParameterBlock). Property Parameter Blocks serve as a centralized location for the constant parameters involved in property calculations, and all property blocks of the associated type link to the parameters contained in the parameter block.
 
 Component References
 --------------------
@@ -107,4 +107,3 @@ A common question with the hierarchical structure of the IDAES framework is wher
 5. Flowsheet Model - any constraints related to interaction of unit models and associated variables. Examples include:
 
     - control constraints relating behavior between different units (e.g. a constraint on valve opening based on the level in another unit).
-
