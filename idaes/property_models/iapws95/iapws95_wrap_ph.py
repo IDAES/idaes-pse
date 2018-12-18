@@ -334,6 +334,7 @@ class Iapws95StateBlockData(StateBlockDataBase):
         self.func_hvpt = ExternalFunction(library=plib, function="hvpt")
         self.func_hlpt = ExternalFunction(library=plib, function="hlpt")
         self.func_tau = ExternalFunction(library=plib, function="tau")
+        #self.func_tau.latex_symbol = "\\tau"
         self.func_vf = ExternalFunction(library=plib, function="vf")
         self.func_g = ExternalFunction(library=plib, function="g")
         self.func_f = ExternalFunction(library=plib, function="f")
