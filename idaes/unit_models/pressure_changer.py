@@ -60,10 +60,10 @@ class PressureChangerData(UnitBlockData):
          domain=In([useDefault, True, False]),
          description="Holdup construction flag",
          doc="""Indicates whether holdup terms should be constructed or not.
- Must be True if dynamic = True,
- **default** - False.
- **Valid values:** {
- **True** - construct holdup terms,
+Must be True if dynamic = True,
+**default** - False.
+**Valid values:** {
+**True** - construct holdup terms,
 **False** - do not construct holdup terms}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
@@ -82,7 +82,7 @@ class PressureChangerData(UnitBlockData):
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
-c - EnergyBalanceType.enthalpyTotal.
+**default** - EnergyBalanceType.enthalpyTotal.
 **Valid values:** {
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single ethalpy balance for material,
@@ -105,11 +105,10 @@ c - EnergyBalanceType.enthalpyTotal.
      default=False,
      domain=In([True, False]),
      description="Phase equilibrium construction flag",
-     doc="""Indicates whether terms for phase equilibrium should be
- constructed,
- **default** = False.
- **Valid values:** {
- **True** - include phase equilibrium terms
+     doc="""Indicates whether terms for phase equilibrium should be constructed,
+**default** = False.
+**Valid values:** {
+**True** - include phase equilibrium terms
 **False** - exclude phase equilibrium terms.}"""))
     CONFIG.declare("compressor", ConfigValue(
         default=True,
@@ -228,7 +227,7 @@ see property package for documentation.}"""))
         Returns:
             None
         """
-        
+
         # Set references to balance terms at unit level
         # Add Work transfer variable 'work' as necessary
         add_object_reference(self, "work_mechanical", self.control_volume.work)
@@ -300,7 +299,7 @@ see property package for documentation.}"""))
             None
         """
         # Isothermal constraint
-        @self.Constraint(self.time_ref, 
+        @self.Constraint(self.time_ref,
                          doc="For isothermal condition: Equate inlet and outlet temperature")
         def isothermal(b, t):
             return b.control_volume.properties_in[t].temperature == \
@@ -317,7 +316,7 @@ see property package for documentation.}"""))
             None
         """
         # Isothermal constraint
-        @self.Constraint(self.time_ref, 
+        @self.Constraint(self.time_ref,
                          doc="For isothermal condition: Equate inlet and outlet enthalpy")
         def adiabatic(b, t):
             return b.control_volume.properties_in[t].enth_mol == \
@@ -357,7 +356,7 @@ see property package for documentation.}"""))
                             doc="isentropic properties at outlet",
                             default=tmp_dict))
 
-        # Connect isentropic state block properties 
+        # Connect isentropic state block properties
         @self.Constraint(self.time_ref, doc="Pressure for isentropic calculations")
         def isentropic_pressure(b, t):
             return b.sfp*b.properties_isentropic[t].pressure == \
@@ -370,7 +369,7 @@ see property package for documentation.}"""))
         def isentropic_material(b, t, j):
             return b.properties_isentropic[t].flow_mol_comp[j] == \
                         b.control_volume.properties_out[t].flow_mol_comp[j]
-        
+
         # This assumes isentropic entropy is the same as outlet
         @self.Constraint(self.time_ref, doc="Isentropic assumption")
         def isentropic(b, t):

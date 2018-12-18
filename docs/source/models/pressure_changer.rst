@@ -18,37 +18,6 @@ Model Structure
 
 The core Pressure Changer unit model consists of a single control volume (named ControlVolume0D), a state block, containing the states, one Inlet Port (named inlet) and one Outlet Port (named outlet).
 
-Construction Arguments
-----------------------
-
-Pressure Changers have the following construction arguments:
-
-* compressor - argument indicates whether the unit should be considered a compressor (True, default) or an expander/turbine (False). This determines how unit efficiency is calculated.
-* thermodynamic_assumption - indicates which thermodynamic assumption should be used when constructing the model. Options are:
-
-    - 'isothermal' - (default) assumes no temperature change occurs between the inlet and outlet of the unit.
-    - 'adiabatic' - assumes no heat transfer occurs between the inlet and outlet of the unit.
-    - 'isentropic' - assumes isentropic behavior. This requires an additional set of property calculations for the isentropic outlet conditions.
-    - 'pump' - assumes that the fluid work is proportional to the pressure difference and flow rate of fluid. This is suitable for incompressible fluids.
-* The options for has_pressure_change and has_work_transfer is set to True by default for a Pressure Changer.
-* property_package - property package to use when constructing Property Blocks (default = 'useDefault'). This is provided as a Physical Property Block by the Flowsheet when creating the model. If a value is not provided, the Control Volume Block will try to use the default property package if one is defined.
-* property_package_args - set of arguments to be passed to the Property Blocks when they are created.
-
-Additionally, Pressure Changers have the following construction arguments which are passed to the Holdup Block for determining which terms to construct in the balance equations.
-
-=========================   =================
-Argument                    Default Value
-=========================   =================
-"material_balance_type"     "MaterialBalanceType.componentPhase"
-"energy_balance_type"       "EnergyBalanceType.enthalpyTotal"
-"momentum_balance_type"     "MomentumBalanceType.pressureTotal"
-"dynamic"                   "False"
-"include_holdup"            "True"
-"has_rate_reactions"        "False"
-"has_equilibrium_reactions" "False"
-"has_phase_equilibrium"     "False"
-=========================   =================
-
 Additional Constraints
 ----------------------
 
@@ -57,21 +26,21 @@ In addition to the Constraints written by the Control Volume block, Pressure Cha
 .. math:: P_{ratio,t} \times P_{in,t} = P_{out,t}
 
 Isothermal Assumption
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 The isothermal assumption writes one additional Constraint:
 
 .. math:: T_{out} = T_{in}
 
 Adiabatic Assumption
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~
 
 The isothermal assumption writes one additional Constraint:
 
 .. math:: H_{out} = H_{in}
 
 Isentropic Assumption
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 The isentropic assumption creates an additional set of Property Blocks (indexed by time) for the isentropic fluid calculations (named properties_isentropic). This requires a set of balance equations relating the inlet state to the isentropic conditions, which are shown below:
 
@@ -92,7 +61,7 @@ If compressor is True, :math:`W_{isentropic,t} = W_{mechanical,t} \times \eta_t`
 If compressor is False, :math:`W_{isentropic,t} \times \eta_t = W_{mechanical,t}`
 
 Pump (Incompressible Fluid) Assumption
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The incompressible fluid assumption writes two additional constraints. Firstly, a Constraint is written which relates fluid work to the pressure change of the fluid.
 
@@ -100,9 +69,9 @@ The incompressible fluid assumption writes two additional constraints. Firstly, 
 
 where :math:`F_{vol,t}` is the total volumetric flowrate of material at time :math:`t` (from the outlet Property Block). Secondly, a constraint which relates the fluid work to the actual mechanical work via an efficiency term :math:`\eta`.
 
-If compressor is True, :math::`W_{fluid,t} = W_{mechanical,t} \times \eta_t`
+If compressor is True, :math:`W_{fluid,t} = W_{mechanical,t} \times \eta_t`
 
-If compressor is False, :math::`W_{fluid,t} \times \eta_t = W_{mechanical,t}`
+If compressor is False, :math:`W_{fluid,t} \times \eta_t = W_{mechanical,t}`
 
 Variables
 ---------
@@ -123,14 +92,16 @@ Variable                    Name                  Notes
 
 Isentropic Pressure Changers also have an additional Property Block named `properties_isentropic` (attached to the Unit Model).
 
-PressureChangerData Class
--------------------------
+PressureChanger Class
+----------------------
 
 .. module:: idaes.unit_models.pressure_changer
 
 .. autoclass:: PressureChanger
   :members:
 
+PressureChangerData Class
+--------------------------
+
 .. autoclass:: PressureChangerData
   :members:
-
