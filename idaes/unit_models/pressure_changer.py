@@ -239,6 +239,9 @@ see property package for documentation.}"""))
         # Set reference to scaling factor for pressure in control volume
         add_object_reference(self, "sfp", self.control_volume.scaling_factor_pressure)
 
+        # Set reference to scaling factor for energy in control volume
+        add_object_reference(self, "sfe", self.control_volume.scaling_factor_energy)
+
         # Performance Variables
         self.ratioP = Var(self.time_ref, initialize=1.0,
                           doc="Pressure Ratio")
@@ -259,8 +262,6 @@ see property package for documentation.}"""))
         Returns:
             None
         """
-        # Set reference to scaling factor for energy in control volume
-        add_object_reference(self, "sfe", self.control_volume.scaling_factor_energy)
 
         self.work_fluid = Var(
                 self.time_ref,
@@ -335,10 +336,6 @@ see property package for documentation.}"""))
         # Get indexing sets from control volume
         add_object_reference(self, "phase_list", self.control_volume.phase_list_ref)
         add_object_reference(self, "component_list", self.control_volume.component_list_ref)
-
-        # Alias to scaling factor for energy and pressure
-        add_object_reference(self, "sfe", self.control_volume.scaling_factor_energy)
-        add_object_reference(self, "sfp", self.control_volume.scaling_factor_pressure)
 
         # Add isentropic variables
         self.efficiency_isentropic = Var(self.time_ref,
@@ -449,7 +446,7 @@ see property package for documentation.}"""))
                     for t in blk.time_ref):
                 logger.warning('{} Expander/turbine maybe set with pressure ',
                                'increase.'.format(blk.name))
-                # Check that work is not positive
+            # Check that work is not positive
             if any(blk.work_mechanical[t].fixed and
                    (value(blk.work_mechanical[t]) > 0.0) for t in blk.time_ref):
                 logger.warning('{} Expander/turbine set with positive work.'

@@ -30,37 +30,29 @@ Pressure Changers have the following construction arguments:
     - 'adiabatic' - assumes no heat transfer occurs between the inlet and outlet of the unit.
     - 'isentropic' - assumes isentropic behavior. This requires an additional set of property calculations for the isentropic outlet conditions.
     - 'pump' - assumes that the fluid work is proportional to the pressure difference and flow rate of fluid. This is suitable for incompressible fluids.
-
-* property_package - property package to use when constructing Property Blocks (default = 'use_parent_value'). This is provided as a Physical Property Block by the Flowsheet when creating the model. If a value is not provided, the Holdup Block will try to use the default property package if one is defined.
+* The options for has_pressure_change and has_work_transfer is set to True by default for a Pressure Changer.
+* property_package - property package to use when constructing Property Blocks (default = 'useDefault'). This is provided as a Physical Property Block by the Flowsheet when creating the model. If a value is not provided, the Control Volume Block will try to use the default property package if one is defined.
 * property_package_args - set of arguments to be passed to the Property Blocks when they are created.
-* inlet_list - list of names to be passed to the build_inlets method (default = None).
-* num_inlets - number of inlets argument to be passed to the build_inlets method (default = None).
-* outlet_list - list of names to be passed to the build_outlets method (default = None).
-* num_outlets - number of outlets argument to be passed to the build_outlets method (default = None).
 
 Additionally, Pressure Changers have the following construction arguments which are passed to the Holdup Block for determining which terms to construct in the balance equations.
 
-========================= =================
-Argument                  Default Value
-========================= =================
-material_balance_type     'component_phase'
-energy_balance_type       'total'
-momentum_balance_type     'total'
-dynamic                   False
-include_holdup            False
-has_rate_reactions        False
-has_equilibrium_reactions False
-has_phase_equilibrium     False
-has_mass_transfer         False
-has_heat_transfer         False
-has_work_transfer         True
-has_pressure_change       True
-========================= =================
+=========================   =================
+Argument                    Default Value
+=========================   =================
+"material_balance_type"     "MaterialBalanceType.componentPhase"
+"energy_balance_type"       "EnergyBalanceType.enthalpyTotal"
+"momentum_balance_type"     "MomentumBalanceType.pressureTotal"
+"dynamic"                   "False"
+"include_holdup"            "True"
+"has_rate_reactions"        "False"
+"has_equilibrium_reactions" "False"
+"has_phase_equilibrium"     "False"
+=========================   =================
 
 Additional Constraints
 ----------------------
 
-In addition to the Constraints written by the control volume block, Pressure Changer writes additional Constraints which depend on the thermodynamic assumption chosen. All Pressure Changers add the following Constraint to calculate the pressure ratio:
+In addition to the Constraints written by the Control Volume block, Pressure Changer writes additional Constraints which depend on the thermodynamic assumption chosen. All Pressure Changers add the following Constraint to calculate the pressure ratio:
 
 .. math:: P_{ratio,t} \times P_{in,t} = P_{out,t}
 
@@ -129,7 +121,7 @@ Variable                    Name                  Notes
 :math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only
 =========================== ===================== ===========================================================================
 
-Isentropic Pressure Changers also have an additional Property Block named `properties_isentropic` (attached to the Unit Model, not the control volume Block).
+Isentropic Pressure Changers also have an additional Property Block named `properties_isentropic` (attached to the Unit Model).
 
 PressureChangerData Class
 -------------------------
