@@ -466,6 +466,49 @@ linked the mixed state and all outlet states,
                                      "necessary for doing an ideal_separation."
                                      .format(self.name))
 
+        # Validate split map
+        split_map = self.config.ideal_split_map
+        idx_list = []
+        if self.config.split_basis == SplittingType.phaseFlow:
+            for p in self.phase_list_ref:
+                idx_list.append((p))
+
+            if len(idx_list) != len(split_map):
+                raise ConfigurationError(
+                        "{} ideal_split_map does not match with "
+                        "split_basis chosen. ideal_split_map must"
+                        " have a key for each phase.".format(self.name))
+
+        elif self.config.split_basis == SplittingType.componentFlow:
+            for j in self.component_list_ref:
+                idx_list.append((j))
+
+            if len(idx_list) != len(split_map):
+                raise ConfigurationError(
+                        "{} ideal_split_map does not match with "
+                        "split_basis chosen. ideal_split_map must"
+                        " have a key for each component."
+                        .format(self.name))
+        elif self.config.split_basis == SplittingType.phaseComponentFlow:
+            for p in self.phase_list_ref:
+                for j in self.component_list_ref:
+                    idx_list.append((p, j))
+
+            if len(idx_list) != len(split_map):
+                raise ConfigurationError(
+                        "{} ideal_split_map does not match with "
+                        "split_basis chosen. ideal_split_map must"
+                        " have a key for each phase-component pair."
+                        .format(self.name))
+
+        # Check that no. outlets matches split_basis
+        if len(outlet_list) != len(idx_list):
+            raise ConfigurationError(
+                        "{} Cannot perform ideal separation. Must have one "
+                        "outlet for each possible combination of the "
+                        "chosen split_basis."
+                        .format(self.name))
+
         # Add empty Port objects
         for p in outlet_list:
             p_obj = Port(self.time_ref,
@@ -473,99 +516,52 @@ linked the mixed state and all outlet states,
                          doc="Outlet Port")
             setattr(self, p, p_obj)
 
-        s_idx = self.config.ideal_split_map
         for t in self.time_ref:
             # Get port members from mixed block
             s_vars = mixed_block[t].define_port_members()
 
             # Iterate over port members
             for s in s_vars:
-                if s_vars[s].is_indexed():
-                    # Is indexed, partition variables
-                    for o in outlet_list:
-                        p_obj = getattr(self, o)
-
-                        if self.config.split_basis == SplittingType.phaseFlow:
-                            try:
-                                def expr_rule(b, p):
-                                    if s_idx[p] == o:
-                                        return s_vars[s][p]
-                                    else:
-                                        return 0
-                                e = Expression(self.phase_list_ref,
-                                               rule=expr_rule)
-                                setattr(mixed_block[t],
-                                        "_"+s+"_"+o+"_expr",
-                                        e)
-                                e_obj = getattr(mixed_block[t],
-                                                "_"+s+"_"+o+"_expr")
-                            except KeyError:
-                                raise KeyError(
-                                    "{} property package uses port members"
-                                    " with indexes which are not "
-                                    "consistent with split_basis. Indexed "
-                                    "variables must have the same indexing"
-                                    " sets as the split_basis chosen."
-                                    .format(self.name))
-                            p_obj[t].add(e_obj, s)
-                        elif self.config.split_basis == \
-                                SplittingType.componentFlow:
-                            try:
-                                def expr_rule(b, j):
-                                    if s_idx[j] == o:
-                                        return s_vars[s][j]
-                                    else:
-                                        return 0
-                                e = Expression(self.component_list_ref,
-                                               rule=expr_rule)
-                                setattr(mixed_block[t],
-                                        "_"+s+"_"+o+"_expr",
-                                        e)
-                                e_obj = getattr(mixed_block[t],
-                                                "_"+s+"_"+o+"_expr")
-                            except KeyError:
-                                raise KeyError(
-                                    "{} property package uses port members"
-                                    " with indexes which are not "
-                                    "consistent with split_basis. Indexed "
-                                    "variables must have the same indexing"
-                                    " sets as the split_basis chosen."
-                                    .format(self.name))
-                            p_obj[t].add(e_obj, s)
-                        elif self.config.split_basis == \
-                                SplittingType.phaseComponentFlow:
-                            try:
-                                def expr_rule(b, p, j):
-                                    if s_idx[p, j] == o:
-                                        return s_vars[s][p, j]
-                                    else:
-                                        return 0
-                                e = Expression(self.phase_list_ref,
-                                               self.component_list_ref,
-                                               rule=expr_rule)
-                                setattr(mixed_block[t],
-                                        "_"+s+"_"+o+"_expr",
-                                        e)
-                                e_obj = getattr(mixed_block[t],
-                                                "_"+s+"_"+o+"_expr")
-                            except KeyError:
-                                raise KeyError(
-                                    "{} property package uses port members"
-                                    " with indexes which are not "
-                                    "consistent with split_basis. Indexed "
-                                    "variables must have the same indexing"
-                                    " sets as the split_basis chosen."
-                                    .format(self.name))
-                            p_obj[t].add(e_obj, s)
-                        else:
-                            raise BurntToast("{} got unexpected value for "
-                                             "split_basis. This should not "
-                                             "happen.".format(self.name))
-                else:
-                    # Is not indexed, outlets same as mixed block
+                if s == "pressure" or s == "temperature":
+                    # Assume outlets same as mixed flow
                     for o in outlet_list:
                         p_obj = getattr(self, o)
                         p_obj[t].add(s_vars[s], s)
+#                elif recognised type
+#                   do necessary steps
+                else:
+                    # Not a recognised state, check for indexing sets
+                    if s_vars[s].is_indexed():
+                        # Is indexed, assume indexes match and try to partition
+                        for k in split_map:
+                            p_obj = getattr(self, split_map[k])
+                            p_obj[t].add(s_vars[s][k], s)
+
+                    else:
+                        # Is not indexed, look for indexed equivalent
+                        try:
+                            if self.config.split_basis == \
+                                    SplittingType.phaseFlow:
+                                idx_state = getattr(mixed_block[t], s+"_phase")
+                            elif self.config.split_basis == \
+                                    SplittingType.componentFlow:
+                                idx_state = getattr(mixed_block[t], s+"_comp")
+                            elif self.config.split_basis == \
+                                    SplittingType.phaseComponentFlow:
+                                idx_state = getattr(mixed_block[t],
+                                                    s+"_phase_comp")
+                        except AttributeError:
+                            raise AttributeError(
+                                    "{} Cannot use ideal splitting with this "
+                                    "property package. Package uses unindexed "
+                                    "port member {} which does not have an "
+                                    "equivalent indexed form."
+                                    .format(self.name, s))
+
+                        for k in split_map:
+                            # Add indexed state member to outlet port as state
+                            p_obj = getattr(self, split_map[k])
+                            p_obj[t].add(idx_state[k], s)
 
     def model_check(blk):
         """
