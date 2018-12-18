@@ -522,20 +522,126 @@ linked the mixed state and all outlet states,
 
             # Iterate over port members
             for s in s_vars:
-                if s == "pressure" or s == "temperature":
-                    # Assume outlets same as mixed flow
-                    for o in outlet_list:
-                        p_obj = getattr(self, o)
-                        p_obj[t].add(s_vars[s], s)
-#                elif recognised type
-#                   do necessary steps
+                for o in outlet_list:
+                    p_obj = getattr(self, o)
+
+                    if s == "pressure" or s == "temperature":
+                        # Assume outlets same as mixed flow
+                            p_obj[t].add(s_vars[s], s)
+                    elif s.endswith("_phase_comp"):
+                        if self.config.split_basis == \
+                                        SplittingType.phaseFlow:
+                            def e_rule(b, p, j):
+                                if split_map[p] == o:
+                                    return s_vars[s][p, j]
+                                else:
+                                    return 0
+                        elif self.config.split_basis == \
+                                        SplittingType.componentFlow:
+                            def e_rule(b, p, j):
+                                if split_map[j] == o:
+                                    return s_vars[s][p, j]
+                                else:
+                                    return 0
+                        elif self.config.split_basis == \
+                                        SplittingType.phaseComponentFlow:
+                            def e_rule(b, p, j):
+                                if split_map[p, j] == o:
+                                    return s_vars[s][p, j]
+                                else:
+                                    return 0
+                        else:
+                            raise BurntToast()
+                        e_obj = Expression(self.phase_list_ref,
+                                           self.component_list_ref,
+                                           rule = e_rule)
+                    elif s.endswith("_phase"):
+                        if self.config.split_basis == \
+                                        SplittingType.phaseFlow:
+                            def e_rule(b, p):
+                                if split_map[p] == o:
+                                    return s_vars[s][p]
+                                else:
+                                    return 0
+                        elif ((self.config.split_basis ==
+                               SplittingType.componentFlow) or
+                              (self.config.split_basis ==
+                               SplittingType.phaseComponentFlow)):
+                            try:
+                                idx_state = getattr(mixed_block[t], s+"_comp")
+                            except AttributeError:
+                                raise AttributeError(
+                                    "{} Cannot use ideal splitting with this "
+                                    "property package. Package uses indexed "
+                                    "port member {} which does not have the "
+                                    "correct indexing sets, and an equivalent "
+                                    "variable with correct indexing sets is "
+                                    "not available."
+                                    .format(self.name, s))
+                            def e_rule(b, p):
+                                if split_map[j] == o:
+                                    return idx_state[p, :]
+                                else:
+                                    return 0
+                        else:
+                            raise BurntToast()
+                        e_obj = Expression(self.phase_list_ref,
+                                           rule = e_rule)
+                    elif s.endswith("_comp"):
+                        if self.config.split_basis == \
+                                        SplittingType.componentFlow:
+                            def e_rule(b, j):
+                                if split_map[j] == o:
+                                    return s_vars[s][j]
+                                else:
+                                    return 0
+                        elif ((self.config.split_basis ==
+                               SplittingType.phaseFlow) or
+                              (self.config.split_basis ==
+                               SplittingType.phaseComponentFlow)):
+                            try:
+                                idx_state = getattr(mixed_block[t],
+                                                    "{0}_phase{1}"
+                                                    .format(s[:-5], s[-5:]))
+                            except AttributeError:
+                                raise AttributeError(
+                                    "{} Cannot use ideal splitting with this "
+                                    "property package. Package uses indexed "
+                                    "port member {} which does not have the "
+                                    "correct indexing sets, and an equivalent "
+                                    "variable with correct indexing sets is "
+                                    "not available."
+                                    .format(self.name, s))
+                            def e_rule(b, p):
+                                if split_map[j] == o:
+                                    return idx_state[p, :]
+                                else:
+                                    return 0
+                        else:
+                            raise BurntToast("This should not happen. Please "
+                                             "report this bug to the IDAES "
+                                             "developers.")
+                        e_obj = Expression(self.phase_list_ref,
+                                           rule = e_rule)
+
+                    # Add expression object to mixed state block and port
+                    setattr(mixed_block[t], "_"+s+"_expr_"+o, e_obj)
+                    p_obj[t].add(e_obj, s)
+
                 else:
                     # Not a recognised state, check for indexing sets
                     if s_vars[s].is_indexed():
                         # Is indexed, assume indexes match and try to partition
-                        for k in split_map:
-                            p_obj = getattr(self, split_map[k])
-                            p_obj[t].add(s_vars[s][k], s)
+                        try:
+                            for k in split_map:
+                                p_obj = getattr(self, split_map[k])
+                                p_obj[t].add(s_vars[s][k], s)
+                        except KeyError:
+                            raise KeyError("{} Cannot use ideal splitting with"
+                                    " this property package. Package uses "
+                                    "indexed port member {} which does not "
+                                    "have suitable indexing set(s)."
+                                    .format(self.name, s))
 
                     else:
                         # Is not indexed, look for indexed equivalent
