@@ -34,7 +34,6 @@ from six import iterkeys
 _log = logging.getLogger(__name__)
 
 #TODO<jce> Look into things like sum operator and template expressions
-#TODO<jce> ExternalFunction calls look a bit weird with an extra arg
 
 def deduplicate_symbol(x, v, used):
     """
