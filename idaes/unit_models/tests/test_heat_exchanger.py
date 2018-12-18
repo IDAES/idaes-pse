@@ -50,15 +50,15 @@ def build_heat_exchanger():
         "side_2":{"property_package": m.fs.properties}})
     return m
 
-def test_build_heat_exchanger():
-    m = build_heat_exchanger()
+def test_build_heat_exchanger(build_heat_exchanger):
+    m = build_heat_exchanger
     assert hasattr(m.fs.heat_exchanger, "inlet_1")
     assert hasattr(m.fs.heat_exchanger, "outlet_1")
     assert hasattr(m.fs.heat_exchanger, "inlet_2")
     assert hasattr(m.fs.heat_exchanger, "outlet_2")
 
-def test_initialize_heat_exchanger():
-    m = build_heat_exchanger()
+def test_initialize_heat_exchanger(build_heat_exchanger):
+    m = build_heat_exchanger
     init_state1 = {
         "flow_mol":100,
         "pressure":101325,
@@ -97,8 +97,8 @@ def test_initialize_heat_exchanger():
     assert abs(value(prop_in_1.phase_frac["Vap"]) - 0) <= 1e-6
     assert abs(value(prop_out_1.phase_frac["Vap"]) - 0) <= 1e-6
 
-def test_build_heater():
-    m = build_heater()
+def test_build_heater(build_heater):
+    m = build_heater
     assert hasattr(m.fs.heater, "inlet")
     assert hasattr(m.fs.heater, "outlet")
     assert len(m.fs.heater.inlet[0].vars) == 3
@@ -110,8 +110,8 @@ def test_build_heater():
         assert hasattr(port[0], "pressure")
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_initialize_heater():
-    m = build_heater()
+def test_initialize_heater(build_heater):
+    m = build_heater
     m.fs.heater.inlet[:].enth_mol.fix(4000)
     m.fs.heater.inlet[:].flow_mol.fix(100)
     m.fs.heater.inlet[:].pressure.fix(101325)
@@ -128,8 +128,8 @@ def test_initialize_heater():
     assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_heater_q1():
-    m = build_heater()
+def test_heater_q1(build_heater):
+    m = build_heater
     m.fs.heater.inlet[:].enth_mol.fix(4000)
     m.fs.heater.inlet[:].flow_mol.fix(100)
     m.fs.heater.inlet[:].pressure.fix(101325)
