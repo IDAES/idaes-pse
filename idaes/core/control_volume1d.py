@@ -1560,8 +1560,8 @@ class ControlVolume1dData(ControlVolumeBase):
             finite_elements - number of finite elements to use in
                               transformation (equivalent to Pyomo nfe argument,
                               default = 10)
-            collocation_points - number of collocation points to use (if using
-                                 collocation, default = 3)
+            collocation_points - number of collocation points to use (equivalent 
+                                 to Pyomo ncp argument, default = 3)
 
         Returns:
             None
@@ -1583,7 +1583,7 @@ class ControlVolume1dData(ControlVolumeBase):
                 self,
                 wrt=self.length_domain,
                 nfe=finite_elements,
-                collocation_points=collocation_points,
+                ncp=collocation_points,
                 scheme='LAGRANGE-RADAU')
         else:
             raise ConfigurationError("{} unrecognised transfromation_method, "
