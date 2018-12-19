@@ -18,8 +18,27 @@ Model Structure
 
 The core Pressure Changer unit model consists of a single control volume (named ControlVolume0D), a state block, containing the states, one Inlet Port (named inlet) and one Outlet Port (named outlet).
 
-Additional Constraints
-----------------------
+Variables
+---------
+
+Pressure Changers contain the following Variables (not including those contained within the control volume Block):
+
+=========================== ===================== ===================================================================================
+Variable                    Name                  Notes
+=========================== ===================== ===================================================================================
+:math:`P_{ratio}`           ratioP
+:math:`V_t`                 volume                Only if has_rate_reactions = True, reference to control_volume.rate_reaction_extent
+:math:`W_{mechanical,t}`    work_mechanical       Reference to control_volume.work
+:math:`W_{fluid,t}`         work_fluid            Pump assumption only
+:math:`\eta_{pump,t}`       efficiency_pump       Pump assumption only
+:math:`W_{isentropic,t}`    work_isentropic       Isentropic assumption only
+:math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only
+=========================== ===================== ===================================================================================
+
+Isentropic Pressure Changers also have an additional Property Block named `properties_isentropic` (attached to the Unit Model).
+
+Constraints
+-----------
 
 In addition to the Constraints written by the Control Volume block, Pressure Changer writes additional Constraints which depend on the thermodynamic assumption chosen. All Pressure Changers add the following Constraint to calculate the pressure ratio:
 
@@ -72,25 +91,6 @@ where :math:`F_{vol,t}` is the total volumetric flowrate of material at time :ma
 If compressor is True, :math:`W_{fluid,t} = W_{mechanical,t} \times \eta_t`
 
 If compressor is False, :math:`W_{fluid,t} \times \eta_t = W_{mechanical,t}`
-
-Variables
----------
-
-Pressure Changers contain the following Variables (not including those contained within the control volume Block):
-
-=========================== ===================== ===========================================================================
-Variable                    Name                  Notes
-=========================== ===================== ===========================================================================
-:math:`P_{ratio}`           ratioP
-:math:`V_t`                 volume                Only if has_rate_reactions = True, reference to control_volume.rate_reaction_extent
-:math:`W_{mechanical,t}`    work_mechanical       Reference to control_volume.work
-:math:`W_{fluid,t}`         work_fluid            Pump assumption only
-:math:`\eta_{pump,t}`       efficiency_pump       Pump assumption only
-:math:`W_{isentropic,t}`    work_isentropic       Isentropic assumption only
-:math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only
-=========================== ===================== ===========================================================================
-
-Isentropic Pressure Changers also have an additional Property Block named `properties_isentropic` (attached to the Unit Model).
 
 PressureChanger Class
 ----------------------

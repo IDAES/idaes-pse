@@ -20,7 +20,7 @@ import pytest
 from pyomo.environ import ConcreteModel, SolverFactory
 
 from idaes.core import FlowsheetBlock
-from idaes.unit_models.stoichiometric_reactor import StoicReactor
+from idaes.unit_models.stoichiometric_reactor import StoichiometricReactor
 from idaes.property_models.saponification_thermo import (
                         PhysicalParameterBlock)
 from idaes.property_models.saponification_reactions import (
@@ -48,7 +48,8 @@ def test_build():
     m.fs.reactions = ReactionParameterBlock(default={
                             "property_package": m.fs.properties})
 
-    m.fs.rstoic = StoicReactor(default={"property_package": m.fs.properties,
+    m.fs.rstoic = StoichiometricReactor(default={
+                            "property_package": m.fs.properties,
                             "reaction_package": m.fs.reactions,
                             "has_heat_transfer": True,
                             "has_pressure_change": True})
@@ -81,7 +82,8 @@ def test_initialize():
     m.fs.reactions = ReactionParameterBlock(default={
                             "property_package": m.fs.properties})
 
-    m.fs.rstoic = StoicReactor(default={"property_package": m.fs.properties,
+    m.fs.rstoic = StoichiometricReactor(default={
+                            "property_package": m.fs.properties,
                             "reaction_package": m.fs.reactions,
                             "has_heat_transfer": False,
                             "has_pressure_change": False})
@@ -96,18 +98,17 @@ def test_initialize():
     m.fs.rstoic.inlet[:].temperature.fix(303.15)
     m.fs.rstoic.inlet[:].pressure.fix(101325.0)
 
-    m.fs.rstoic.rate_reaction_extent[:,'R1'].fix(0.9*
-                            m.fs.rstoic.inlet[0].conc_mol_comp["NaOH"].value)
+    m.fs.rstoic.rate_reaction_extent[:, 'R1'].fix(
+            0.9*m.fs.rstoic.inlet[0].conc_mol_comp["NaOH"].value)
 
     assert degrees_of_freedom(m) == 0
 
-    
     m.fs.rstoic.initialize(outlvl=5,
-                        optarg={'tol': 1e-6})
+                           optarg={'tol': 1e-6})
 
     assert (pytest.approx(101325.0, abs=1e-2) ==
             m.fs.rstoic.outlet[0].vars["pressure"].value)
     assert (pytest.approx(303.15, abs=1e-2) ==
             m.fs.rstoic.outlet[0].vars["temperature"].value)
     assert (pytest.approx(90, abs=1e-2) ==
-            m.fs.rstoic.outlet[0].conc_mol_comp["Ethanol"].value)    
+            m.fs.rstoic.outlet[0].conc_mol_comp["Ethanol"].value)
