@@ -1,6 +1,8 @@
 Control Volume Classes
 ======================
 
+.. module:: idaes.core.control_volume_base
+
 .. toctree::
     :maxdepth: 1
 
@@ -19,43 +21,33 @@ The IDAES process modeling framework currently supports two types of Control Vol
 Common Control Volume Tasks
 ---------------------------
 
-All of the IDAES Control Volume classes are built on a common core class which defines a set of common tasks required for all Control Volumes. The more specific Control Volume classes then build upon these common tasks to provide tools appropriate for their specific application.
+All of the IDAES Control Volume classes are built on a common core (:class:`idaes.core.control_volume_base.ControlVolumeBase`) which defines a set of common tasks required for all Control Volumes. The more specific Control Volume classes then build upon these common tasks to provide tools appropriate for their specific application.
 
 All Control Volume classes begin with the following tasks:
 
-* Determining if the Control Volume should be steady-state or dynamic, getting the time domain, and determining whether material and energy holdups should be calculated.
-* Collecting the information necessary for creating StateBlocks and ReactionBlocks.
-* Creating references to the phase_list and component_list Sets from the PhysicalParameterBlock.
+* Determine if the ControlVolume should be steady-state or dynamic.
+* Get the time domain.
+* Determine whether material and energy holdups should be calculated.
+* Collect information necessary for creating StateBlocks and ReactionBlocks.
+* Create references to phase_list and component_list Sets in the PhysicalParameterBlock.
 
-More details on these steps is provided later.
-
-Control Volume Configuration Arguments
---------------------------------------
-
-All Control Volume Blocks have the following configuration arguments:
-
-* dynamic - indicates whether this will be a dynamic (True) or steady-state (False) control volume.
-* has_holdup - indicates whether material and energy holdup terms should be calculated. If dynamic = True, this must also be True, and a ConfigurationError will be returned if it is False.
-* property_package - a pointer to the PhysicalParameterBlock instance to be used when constructing StateBlocks within this Control Volume.
-* property_package_args - a ConfigBlock of arguments to be passed to all StateBlocks as they are instantiated.
-* reaction_package - a pointer to the ReactionParameterBlock instance to be used when constructing ReactionBlocks within this Control Volume (if necessary). This argument is only necessary when reaction terms are to be added to the balance equations.
-* reaction_package_args - a ConfigBlock of arguments to be passed to all ReactionBlocks as they are instantiated.
-* auto_construct - flag indicating whether the Control Volume should attempt to automatically construct a set of material, energy and momentum balances based on unit model configuration arguments (True), or if the unit model will explicitly call the methods to construct the Control Volume (False). Default value is False.
-
+More details on these steps is :ref:`provided later <time-domain-setup>`.
 
 Setting up the time domain
 --------------------------
 
-The first common task the Control Volume block performs is to determine if it should be dynamic or steady-state and to collect the time domain from the UnitModel. Control Volume blocks have an argument `dynamic` which can be provided during construction which specifies if the Control Volume should be dynamic (dynamic = True) or steady-state (dynamic = False). If the argument is not provided, the Control Volume block will inherit this argument from its parent UnitModel.
+.. _time-domain-setup:
+
+The first common task the Control Volume block performs is to determine if it should be dynamic or steady-state and to collect the time domain from the UnitModel. Control Volume blocks have an argument ``dynamic`` which can be provided during construction which specifies if the Control Volume should be dynamic (dynamic = True) or steady-state (dynamic = False). If the argument is not provided, the Control Volume block will inherit this argument from its parent UnitModel.
 
 After setting the dynamic argument, the Control Volume block then creates a reference to the time domain (time_ref) from the UnitModel. If the block containing the Control Volume block does not have an attribute named time a DynamicsError will be returned.
 
-Finally, the Control Volume checks that the `has_holdup` argument is consistent with the `dynamic` argument, and raises a ConfigurationError if it is not.
+Finally, the Control Volume checks that the ```has_holdup`` argument is consistent with the ``dynamic`` argument, and raises a ConfigurationError if it is not.
 
 Getting Property Package Information
 -------------------------------------
 
-If a reference to a property package was not provided by the UnitModel as an argument, the Control Volume first checks to see if the UnitModel has a property_package argument set, and uses this if present. Otherwise, the Control Volume block begins searching up the model tree looking for an argument named default_property_package and uses the first of these that it finds. If no default_property_package is found, a ConfigurationError is returned.
+If a reference to a property package was not provided by the UnitModel as an argument, the Control Volume first checks to see if the UnitModel has a ``property_package`` argument set, and uses this if present. Otherwise, the Control Volume block begins searching up the model tree looking for an argument named ``default_property_package`` and uses the first of these that it finds. If no ``default_property_package`` is found, a ConfigurationError is returned.
 
 Collecting Indexing Sets for Property Package
 ---------------------------------------------
@@ -67,15 +59,16 @@ The indexing sets the Control Volume looks for are:
 * component_list - used to determine what components are present, and thus what material balances are required
 * phase_list - used to determine what phases are present, and thus what balance equations are required
 
-ControlVolumeBase Class
------------------------
+ControlVolume and ControlVolumeBase Classes
+-------------------------------------------
 
 A key purpose of Control Volumes is to automate as much of the task of writing a unit model as possible. For this purpose, Control Volumes support a number of methods for common tasks model developers may want to perform. The specifics of these methods will be different between different types of Control Volumes, and certain methods may not be applicable to some types of Control Volumes (in which case a NotImplementedError will be returned). A full list of potential methods is provided here, however users should check the documentation for the specific Control Volume they are using for more details on what methods are supported in that specific Control Volume.
 
-.. module:: idaes.core.control_volume_base
+.. autoclass:: ControlVolume
+  :members:
 
 .. autoclass:: ControlVolumeBase
-    :members:
+  :members:
 
 Auto-Construct Method
 ---------------------

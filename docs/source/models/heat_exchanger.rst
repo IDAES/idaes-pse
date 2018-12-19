@@ -1,36 +1,26 @@
-Heat Exchangers (0D)
-====================
+HeatExchanger (0D)
+==================
+
+.. index::
+  pair: idaes.unit_models.heat_exchanger;HeatExchanger
 
 .. module:: idaes.unit_models.heat_exchanger
 
-The :code:`idaes.unit_models.heat_exchanger` module contains 0D models for heat
-transfer. There are two models available Heater and HeatExchanger.  Heater is a
-simple model to add or remove heat from a material.  HeatExchanger models
-transfer of heat from one material to another.
-
-The Heater and HeatExchanger models can be imported from :code:`idaes.unit_models`,
+The Heater and Exchanger models can be imported from :code:`idaes.unit_models`,
 while additional rules and utility functions can be imported from
-:code:`idaes.unit_models.heat_exchanger`.
+``idaes.unit_models.heat_exchanger``.
 
-.. index::
-  pair: idaes.unit_models.heat_exchanger;Heater
+Example
+-------
 
-Heater
-------
-
-The Heater model is a simple 0D model that removes heat from a material stream.
-A simple example of how to use a Heater model is given below. A heater model
-has a standard inlet and outlet port and a :code:`heat_duty` variable which
-specifies a heat transfer rate. The Heater contains a ControlVolume0D, see the
-ControlVolume documentation for more information.
-
-The following code provides a simple Heater example.
+The example below demonstrates how to initialize the HeatExchanger model, and
+overriding the default temperature difference calculation.
 
 .. code-block:: python
 
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlockBase
-  from idaes.unit_models import Heater, HeatExchanger
+  from idaes.unit_models import HeatExchanger
   from idaes.unit_models.heat_exchanger import delta_temperature_amtd_rule
   from idaes.property_models import iapws95_ph
 
@@ -41,68 +31,89 @@ The following code provides a simple Heater example.
     model.fs.properties = iapws95_ph.Iapws95ParameterBlock()
 
     # Add a Heater model to the flowsheet.
-    model.fs.heater = Heater(default={"property_package": model.fs.properties})
+    model.fs.heat_exchanger = HeatExchanger(default={
+            "delta_temperature_rule":delta_temperature_amtd_rule,
+            "side_1":{"property_package": model.fs.properties},
+            "side_2":{"property_package": model.fs.properties}})
 
-    # Setup the heater model by fixing the inputs and heat duty
-    model.fs.heater.inlet[:].enth_mol.fix(4000)
-    model.fs.heater.inlet[:].flow_mol.fix(100)
-    model.fs.heater.inlet[:].pressure.fix(101325)
-    model.fs.heater.heat_duty[:].fix(100*20000)
+      model.fs.heat_exchanger.area.fix(1000)
+      model.fs.heat_exchanger.heat_transfer_coefficient[0].fix(100)
+      model.fs.heat_exchanger.inlet_1[0].flow_mol.fix(100)
+      model.fs.heat_exchanger.inlet_1[0].pressure.fix(101325)
+      model.fs.heat_exchanger.inlet_1[0].enth_mol.fix(4000)
+      model.fs.heat_exchanger.inlet_2[0].flow_mol.fix(100)
+      model.fs.heat_exchanger.inlet_2[0].pressure.fix(101325)
+      model.fs.heat_exchanger.inlet_2[0].enth_mol.fix(3000)
 
-    # Initialize the model.
-    model.fs.heater.initialize()
+      model.fs.heat_exchanger.initialize()
 
-Heater class reference documentation is provided below.
+Degrees of Freedom
+------------------
 
-.. autoclass:: Heater
-  :members:
+Aside from the inlet conditions, a heat exchanger model usually has two degrees
+of freedom, which can be fixed for it to be fully specified:
 
-.. autoclass:: HeaterData
-  :members:
+* heat transfer area and
+* heat transfer coefficient.
 
-.. index::
-  pair: idaes.unit_models.heat_exchanger;HeatExchanger
+The user may also provide constants to calculate the heat transfer coefficient.
 
-HeatExchanger
--------------
+Model Structure
+---------------
 
 The HeatExchanger model contains two ControlVolume0D blocks (side_1 and side_2),
-which are configured the same as the ControlVolume0D in the Heater model. The
-HeatExchanger model contains additional constraints that calculate the amount of
-heat transferred from side_1 to side_2. By default the following equation
-is used to calculate heat transfer:
+which are configured the same as the ControlVolume0D in the
+:ref:`Heater model <models/heater:Heater>`. The HeatExchanger model contains additional
+constraints that calculate the amount of heat transferred from side_1 to side_2.
+
+The HeatExchanger has two inlet ports inlet_1 (inlet for side_1) and inlet_2
+(outlet for side_2), and two outlet ports inlet ports inlet_1 (outlet for side_1)
+and outlet_2 (outlet for side_2).
+
+If the :math:`\Delta T` calculation method requires one side to be hotter than
+the other, side_1 is assumed to be the hot side.
+
+Variables
+---------
+
+=========================== ================== =========== ======================================================================
+Variable                    Symbol             Index Sets  Doc
+=========================== ================== =========== ======================================================================
+heat_duty                   :math:`Q`          t           Heat transferred from side_1 to side_2 a reference to side_2.heat
+area                        :math:`A`          None        Heat transfer area
+heat_transfer_coefficient   :math:`U`          t           Heat transfer coefficient
+delta_temperature           :math:`\Delta T`   t           Temperature difference for heat transfer calculations defaults to LMTD
+=========================== ================== =========== ======================================================================
+
+
+Constraints
+-----------
+
+The default constants can be overridden by providing :ref:`alternative rules <models/heat_exchanger:Rules>` for
+the heat transfer equation, temperature difference, and heat transfer coefficient. The section
+describes the default constraints.
+
+Heat transfer from side_1 to side_2:
 
 .. math::
-  Q = UA\Delta T.
+  Q = UA\Delta T
 
-Where:
 
-:|Q|:
-  Exchanger heat duty or heat transferred from side_1 to side_2,
-  **attribute name:** duty, **type:** Var, reference to side_2.heat
-:|A|:
-  Heat exchange area, the model attribute is "area" with the type Pyomo Var
-:|U|:
-  Heat transfer coefficient the model attribute is "heat_transfer_coefficient"
-  with the type Pyomo Var
-:|deltaT|:
-  Temperature difference the model attribute is "delta_temperature" with the type
-  Pyomo Expression
+Temperature difference is an expression:
 
-.. |Q| replace:: :math:`Q`
-.. |A| replace:: :math:`A`
-.. |U| replace:: :math:`U`
-.. |deltaT| replace:: :math:`\Delta T`
+.. math::
+  \Delta T = \frac{\Delta T_1 - \Delta T_2}{\log_e \Delta T_1 - \log_e \Delta T_2}
 
-By default :math:`\Delta T` is calculated as the log-mean temperature difference
-and :math:`U` is fixed.  The equations for these three quantities can be changed
-by providing alternate rules to the configuration.
+The heat transfer coefficent is a variable with no associated constraints by default.
 
-Class Documentation
+HeatExchanger Class
 ~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: HeatExchanger
   :members:
+
+  HeatExchangerData Class
+  ~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: HeatExchangerData
   :members:
@@ -111,10 +122,9 @@ Rules
 ~~~~~
 
 A selection of functions for Pyomo rules are provided in the
-:code:`heat_exchanger` module, with provide options for different calculation
-methods. Users can also provide their own rule functions. See the source for
-the rules below for examples.
-
+``idaes.unit_models.heat_exchanger`` module, which provide options for different
+calculation methods. Users can also provide their own rule functions. See the
+source for the rules below for examples.
 
 **Rules for the :code:`delta_temperature_rule` Option**
 

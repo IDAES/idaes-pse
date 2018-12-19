@@ -7,12 +7,13 @@ Unit Model Contents
 .. toctree::
     :maxdepth: 1
 
+    cstr
+    gibbs_reactor
+    heater
     heat_exchanger
     heat_exchanger_1D
-    cstr
-    stoichiometric_reactor
-    gibbs_reactor
-    pfr
     mixer
-    separator
+    pfr
     pressure_changer
+    separator
+    stoichiometric_reactor

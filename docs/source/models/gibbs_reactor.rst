@@ -3,7 +3,8 @@ Gibbs Reactor
 
 The IDAES Gibbs reactor model represents a unit operation where a material stream undergoes some set of reactions such that the Gibbs energy of the resulting mixture is minimized. Gibbs reactors rely on conservation of individual elements within the system, and thus require element balances, and make use of Lagrange multipliers to find the minimum Gibbs energy state of the system.
 
-**Degrees of Freedom**
+Degrees of Freedom
+------------------
 
 Gibbs reactors generally have between 0 and 2 degrees of freedom, depending on construction arguments.
 
@@ -12,11 +13,13 @@ Typical fixed variables are:
 * reactor heat duty (has_heat_transfer = True only).
 * reactor pressure change (has_pressure_change = True only).
 
-**Model Structure**
+Model Structure
+---------------
 
 The core Gibbs reactor unit model consists of a single ControlVolume0D (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet).
 
-**Variables**
+Variables
+---------
 
 Gibbs reactor units add the following additional Variables beyond those created by the Control Volume Block.
 
@@ -28,7 +31,8 @@ heat_duty       :math:`Q_t`        Only if has_heat_transfer = True, reference
 deltaP          :math:`\Delta P_t` Only if has_pressure_change = True, reference
 =============== ================== =============================================
 
-**Constraints**
+Constraints
+-----------
 
 Gibbs reactor models write the following additional constraints to calculate the state that corresponds to the minimum Gibbs energy of the system.
 
