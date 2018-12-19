@@ -3,11 +3,13 @@ Mixer
 
 The IDAES Mixer unit model represents operations where multiple streams of material are combined into a single flow. The Mixer class can be used to create either a stand-alone mixer unit, or as part of a unit model where multiple streams need to be mixed.
 
-**Degrees of Freedom**
+Degrees of Freedom
+------------------
 
 Mixer units have zero degrees of freedom.
 
-**Model Structure**
+Model Structure
+---------------
 
 The IDAES Mixer unit model does not use ControlVolumes, and instead writes a set of material, energy and momentum balances to combine the inlet streams into a single mixed stream. Mixer models have a user-defined number of inlet Ports (by default named inlet_1, inlet_2, etc.) and one outlet Port (named outlet).
 
@@ -15,7 +17,8 @@ The IDAES Mixer unit model does not use ControlVolumes, and instead writes a set
 
 If a mixed state block is provided in the construction arguments, the Mixer model will use this as the StateBlock for the mixed stream in the resulting balance equations. This allows a Mixer unit to be used as part of a larger unit operation by linking multiple inlet streams to a single existing StateBlock.
 
-**Variables**
+Variables
+---------
 
 Mixer units have the following variables (:math:`i` indicates index by inlet):
 
@@ -26,7 +29,8 @@ phase_equilibrium_generation :math:`X_{eq, t, r}`  Only if has_phase_equilibrium
 minimum_pressure             :math:`P_{min, t, i}` Only if momentum_mixing_type = MomemntumMixingType.minimize
 ============================ ===================== ===========================================================================
 
-**Parameters**
+Parameters
+----------
 
 Mixer units have the following parameters:
 
@@ -36,7 +40,8 @@ Variable Name Symbol           Notes
 eps_pressure  :math:`\epsilon` Only if momentum_mixing_type = MomemntumMixingType.minimize, smooth minimum parameter
 ============= ================ =====================================================================================
 
-**Constraints**
+Constraints
+-----------
 
 The constraints written by the Mixer model depend upon the construction arguments chosen.
 

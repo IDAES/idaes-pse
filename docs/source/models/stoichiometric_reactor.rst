@@ -3,7 +3,8 @@ Stoichiometric (Yield) Reactor
 
 The IDAES Stoichiometric reactor model represents a unit operation where a single material stream undergoes some chemical reaction(s) subject to a set of extent or yield specifications.
 
-**Degrees of Freedom**
+Degrees of Freedom
+------------------
 
 Stoichiometric reactors generally have degrees of freedom equal to the number of reactions + 1.
 
@@ -12,11 +13,13 @@ Typical fixed variables are:
 * reaction extents or yields (1 per reaction),
 * reactor heat duty (has_heat_transfer = True only).
 
-**Model Structure**
+Model Structure
+---------------
 
 The core Stoichiometric reactor unit model consists of a single ControlVolume0D (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet).
 
-**Variables**
+Variables
+---------
 
 Stoichiometric reactors units add the following variables:
 
@@ -27,7 +30,8 @@ Variable         Name                 Notes
 :math:`deltaP_t` pressure change      Only if has_pressure_change = True, reference to control_volume.deltaP
 ================ ==================== ===========================================================================
 
-**Constraints**
+Constraints
+-----------
 
 Stoichiometric reactor units write no additional Constraints beyond those written by the control_volume Block.
 

@@ -3,7 +3,8 @@ Separator
 
 The IDAES Separator unit model represents operations where a single stream is split into multiple flows. The Separator model supports separation using split fractions, or by ideal separation of flows. The Separator class can be used to create either a stand-alone separator unit, or as part of a unit model where a flow needs to be separated.
 
-**Degrees of Freedom**
+Degrees of Freedom
+------------------
 
 Separator units have a number of degrees of freedom based on the separation type chosen.
 
@@ -16,7 +17,8 @@ Typical fixed variables are:
 
 * split fractions.
 
-**Model Structure**
+Model Structure
+---------------
 
 The IDAES Separator unit model does not use ControlVolumes, and instead writes a set of material, energy and momentum balances to split the inlet stream into a number of outlet streams. Separator models have a single inlet Port (named inlet) and a user-defined number of outlet Ports (by default named outlet_1, outlet_2, etc.).
 
@@ -24,13 +26,15 @@ The IDAES Separator unit model does not use ControlVolumes, and instead writes a
 
 If a mixed state block is provided in the construction arguments, the Mixer model will use this as the StateBlock for the mixed stream in the resulting balance equations. This allows a Mixer unit to be used as part of a larger unit operation by linking to an existing StateBlock.
 
-**Ideal Separation**
+Ideal Separation
+----------------
 
 The IDAES Separator model supports ideal separations, where all of a given subset of the mixed stream is sent to a single outlet (i.e. split fractions are equal to zero or one). In these cases, no Constraints are necessary for performing the separation, as the mixed stream states can be directly partitioned to the outlets.
 
 Ideal separations will not work for all choices of state variables, and thus will not work for all property packages. To use ideal separations, the user must provide a map of what part of the mixed flow should be partitioned to each outlet. The `ideal_split_map` should be a dict-like object with keys as tuples matching the `split_basis` argument and values indicating which outlet this subset should be partitioned to.
 
-**Variables**
+Variables
+---------
 
 Separator units have the following variables (:math:`o` indicates index by outlet):
 
@@ -40,7 +44,8 @@ Variable Name   Symbol                 Notes
 split_fraction  :math:`\phi_{t, o, *}` Indexing sets depend upon `split_basis`
 =============== ====================== ===========================================
 
-**Constraints**
+Constraints
+-----------
 
 Separator units have the following Constraints, unless `ideal_separation` is True.
 

@@ -1,7 +1,7 @@
 Physical Property Package Classes
 =================================
 
-.. contents:: Contents 
+.. contents:: Contents
     :depth: 2
 
 Physical property packages represent a collection of calculations necessary to determine the state properties of a given material. Property calculations form a critical part of any process model, and thus property packages form the core of the IDAES modeling framework.

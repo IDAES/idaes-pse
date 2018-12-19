@@ -3,7 +3,8 @@ Plug Flow Reactor
 
 The IDAES Plug Flow Reactor (PFR) model represents a unit operation where a material stream passes through a linear reactor vessel whilst undergoing some chemical reaction(s). This model requires modeling the system in one spatial dimension.
 
-**Degrees of Freedom**
+Degrees of Freedom
+------------------
 
 PFRs generally have at least 2 degrees of freedom.
 
@@ -11,11 +12,13 @@ Typical fixed variables are:
 
 * 2 of reactor length, area and volume.
 
-**Model Structure**
+Model Structure
+---------------
 
 The core PFR unit model consists of a single ControlVolume1D (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet).
 
-**Variables**
+Variables
+---------
 
 PFR units add the following additional Variables:
 
@@ -29,7 +32,8 @@ Variable               Name    Notes
 :math:`\Delta P_{t,x}` deltaP  Only if has_pressure_change = True, reference to holdup.deltaP
 ====================== ======= ===============================================================
 
-**Constraints**
+Constraints
+-----------
 
 PFR units write the following additional Constraints at all points in the spatial domain:
 
@@ -50,4 +54,3 @@ PFRData Class
 
 .. autoclass:: PFRData
     :members:
-
