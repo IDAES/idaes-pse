@@ -204,6 +204,7 @@ class ControlVolume1dData(ControlVolumeBase):
         Returns:
             None
         """
+        # TODO : Should not have ReactionBlock at inlet
         tmp_dict = package_arguments
         tmp_dict["state_block"] = self.properties
         tmp_dict["has_equilibrium"] = has_equilibrium
@@ -556,7 +557,7 @@ class ControlVolume1dData(ControlVolumeBase):
             def material_holdup_calculation(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.material_holdup[t, x, p, j] == (
-                          b.volume*self.phase_fraction[t, x, p] *
+                          b.area*self.phase_fraction[t, x, p] *
                           b.properties[t, x].get_material_density_terms(p, j))
                 else:
                     return b.material_holdup[t, x, p, j] == 0
@@ -915,7 +916,7 @@ class ControlVolume1dData(ControlVolumeBase):
             def material_holdup_calculation(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.material_holdup[t, x, p, j] == (
-                          b.volume*self.phase_fraction[t, x, p] *
+                          b.area*self.phase_fraction[t, x, p] *
                           b.properties[t, x].get_material_density_terms(p, j))
                 else:
                     return b.material_holdup[t, x, p, j] == 0
@@ -1193,7 +1194,7 @@ class ControlVolume1dData(ControlVolumeBase):
                              doc="Elemental holdup calculation")
             def elemental_holdup_calculation(b, t, x, e):
                 return b.element_holdup[t, x, e] == (
-                    b.volume *
+                    b.area *
                     sum(b.phase_fraction[t, x, p] *
                         b.properties[t, x].get_material_density_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
@@ -1375,10 +1376,10 @@ class ControlVolume1dData(ControlVolumeBase):
                     b._flow_direction_term*sum(b.enthalpy_flow_dx[t, x, p]
                                                for p in b.phase_list_ref) *
                     b.scaling_factor_energy +
-                    heat_term(b, t, x)*b.scaling_factor_energy +
-                    work_term(b, t, x)*b.scaling_factor_energy +
-                    rxn_heat_term(b, t, x)*b.scaling_factor_energy +
-                    user_term(t, x)*b.scaling_factor_energy)
+                    b.length*heat_term(b, t, x)*b.scaling_factor_energy +
+                    b.length*work_term(b, t, x)*b.scaling_factor_energy +
+                    b.length*rxn_heat_term(b, t, x)*b.scaling_factor_energy +
+                    b.length*user_term(t, x)*b.scaling_factor_energy)
                     # TODO : Add conduction/dispersion term
 
         # Energy Holdup
@@ -1392,7 +1393,7 @@ class ControlVolume1dData(ControlVolumeBase):
                              doc="Enthalpy holdup constraint")
             def enthalpy_holdup_calculation(b, t, x, p):
                 return b.enthalpy_holdup[t, x, p] == (
-                            b.volume*self.phase_fraction[t, x, p] *
+                            b.area*self.phase_fraction[t, x, p] *
                             b.properties[t, x].get_enthalpy_density_terms(p))
 
         return self.enthalpy_balances

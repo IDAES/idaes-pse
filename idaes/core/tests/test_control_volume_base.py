@@ -68,7 +68,7 @@ def testflow_direction():
 def test_CONFIG_Template():
     c = CONFIG_Template()
 
-    assert len(c) == 16
+    assert len(c) == 17
 
     for i in c:
         if i == "dynamic":
