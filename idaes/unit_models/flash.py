@@ -49,8 +49,8 @@ class FlashData(UnitBlockData):
 
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
-        default=False,
+        default=useDefault,
+        domain=In([useDefault, True, False]),
         description="Dynamic model flag",
         doc="""Indicates whether the model is dynamic"""))
     CONFIG.declare("has_holdup", ConfigValue(
