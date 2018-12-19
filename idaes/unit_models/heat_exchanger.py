@@ -292,11 +292,13 @@ class HeatExchangerData(UnitBlockData):
             domain=PositiveReals,
             initialize=100,
             doc="Overall heat transfer coefficient")
+        self.heat_transfer_coefficient.latex_symbol = "U"
         self.area = Var(
             domain=PositiveReals,
             initialize=1000,
             doc="Heat exchange area")
         self.area.fix()
+        self.area.latex_symbol = "A"
 
         # Both sides are dynamic or not, so sync to unit model level flag
         self.config.side_1.dynamic = self.config.dynamic
@@ -311,6 +313,8 @@ class HeatExchangerData(UnitBlockData):
         self.add_outlet_port(name="outlet_2", block=self.side_2)
         # Add convienient references to heat duty.
         add_object_reference(self, "heat_duty", self.side_2.heat)
+        self.side_1.heat.latex_symbol = "Q_1"
+        self.side_2.heat.latex_symbol = "Q_2"
         # Add a unit level energy balance
         def unit_heat_balance_rule(b, t):
             return 0 == self.side_1.heat[t] + self.side_2.heat[t]
@@ -321,6 +325,7 @@ class HeatExchangerData(UnitBlockData):
             self.time_ref,
             rule=self.config.delta_temperature_rule,
             doc="Temperature difference driving force for heat transfer")
+        self.delta_temperature.latex_symbol = "\\Delta T"
         self.heat_transfer_equation = Constraint(self.time_ref,
             rule=self.config.heat_transfer_rule)
         if self.config.heat_transfer_coefficient_rule is not None:

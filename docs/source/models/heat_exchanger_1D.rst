@@ -117,7 +117,11 @@ Variable               Name                            Notes
 HeatExchanger1dData Class
 -------------------------
 
-.. module:: idaes.models.heat_exchanger_1D
+.. module:: idaes.unit_models.heat_exchanger_1D
 
-.. autoclass:: HeatExchanger1dData
+.. autoclass:: HeatExchanger1D
+  :members:
+
+.. autoclass:: HeatExchanger1DData
     :members:
+
