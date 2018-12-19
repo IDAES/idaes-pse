@@ -126,14 +126,14 @@ def test_initialization():
 
     assert (pytest.approx(2300, abs=1e-3) ==
             m.fs.HX1D.shell_outlet[0].vars["flow_mol"].value)
-    assert (pytest.approx(638.3338, abs=1e-3) ==
+    assert (pytest.approx(559.220, abs=1e-3) ==
             m.fs.HX1D.shell_outlet[0].vars["temperature"].value)
     assert (pytest.approx(7.38E6, abs=1e-3) ==
             m.fs.HX1D.shell_outlet[0].vars["pressure"].value)
 
     assert (pytest.approx(26.6, abs=1e-3) ==
             m.fs.HX1D.tube_outlet[0].vars["flow_mol"].value)
-    assert (pytest.approx(533.9682, abs=1e-3) ==
+    assert (pytest.approx(541.301, abs=1e-3) ==
             m.fs.HX1D.tube_outlet[0].vars["temperature"].value)
     assert (pytest.approx(2.65E7, abs=1e-3) ==
             m.fs.HX1D.tube_outlet[0].vars["pressure"].value)
