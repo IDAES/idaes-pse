@@ -362,7 +362,7 @@ def test_apply_transformation_collocation_points():
                                  finite_elements=20,
                                  collocation_points=5)
 
-    assert len(m.fs.cv.length_domain) == 61
+    assert len(m.fs.cv.length_domain) == 101
 
 
 # -----------------------------------------------------------------------------

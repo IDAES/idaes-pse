@@ -33,6 +33,8 @@ Contents
 .. toctree::
     :maxdepth: 1
 
+    install
+    standards
     core/index
     models/index
     property_models/index
