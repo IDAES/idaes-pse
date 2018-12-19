@@ -1,7 +1,7 @@
 Mixer
 =====
 
-The IDAES Mixer unit model represents operations where multiple streams of material are combined into a single flow. The Mixer class can be used to create either a stand-alone mixer unti, or as part of a unit model where mutliple streams need to be mixed.
+The IDAES Mixer unit model represents operations where multiple streams of material are combined into a single flow. The Mixer class can be used to create either a stand-alone mixer unit, or as part of a unit model where multiple streams need to be mixed.
 
 **Degrees of Freedom**
 
@@ -74,7 +74,9 @@ The minimum pressure in all inlets is then:
 
 .. math:: P_{mix, t} = P_{min, t, i=last}
 
-If `momentum_mixing_type` is `equality`, the pressure in all inlets and the outlet are equated. **N.B.** This may result in an overspecified problem if the user is not careful.
+If `momentum_mixing_type` is `equality`, the pressure in all inlets and the outlet are equated.
+
+.. note:: This may result in an over-specified problem if the user is not careful.
 
 `pressure_equality_constraints(t, i)`:
 
@@ -87,6 +89,9 @@ Mixer Class
 
 .. autoclass:: Mixer
   :members:
+
+MixerData Class
+---------------
 
 .. autoclass:: MixerData
   :members:

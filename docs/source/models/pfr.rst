@@ -37,10 +37,16 @@ PFR units write the following additional Constraints at all points in the spatia
 
 where :math:`X_{t,x,r}` is the extent of reaction of reaction :math:`r` at point :math:`x` and time :math:`t`, :math:`A` is the cross-sectional area of the reactor and :math:`r_{t,r}` is the volumetric rate of reaction of reaction :math:`r` at point :math:`x` and time :math:`t` (from the outlet StateBlock).
 
-PFRData Class
---------------
+PFR Class
+---------
 
-.. module:: idaes.models.pfr
+.. module:: idaes.unit_models.plug_flow_reactor
+
+.. autoclass:: PFR
+    :members:
+
+PFRData Class
+-------------
 
 .. autoclass:: PFRData
     :members:

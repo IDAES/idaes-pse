@@ -46,5 +46,8 @@ GibbsReactor Class
 .. autoclass:: GibbsReactor
   :members:
 
+GibbsReactorData Class
+----------------------
+
 .. autoclass:: GibbsReactorData
   :members:

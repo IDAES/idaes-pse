@@ -391,7 +391,6 @@ linked to all inlet states and the mixed state,
             self.phase_equilibrium_generation = Var(
                         self.time_ref,
                         self.phase_equilibrium_idx_ref,
-                        self.component_list_ref,
                         domain=Reals,
                         doc="Amount of generation in unit by phase "
                             "equilibria [{}/{}]"

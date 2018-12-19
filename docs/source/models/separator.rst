@@ -1,15 +1,15 @@
-Seperator
+Separator
 =========
 
-The IDAES Separator unit model represents operations where a single stream is split into multiple flows. The Separator model supports separation using split fractions, or by ideal separation of flows. The Separator class can be used to create either a stand-alone separator unti, or as part of a unit model where a flow needs to be separated.
+The IDAES Separator unit model represents operations where a single stream is split into multiple flows. The Separator model supports separation using split fractions, or by ideal separation of flows. The Separator class can be used to create either a stand-alone separator unit, or as part of a unit model where a flow needs to be separated.
 
 **Degrees of Freedom**
 
-Separator units have a number of degrees of reedom based on the separation type chosen.
+Separator units have a number of degrees of freedom based on the separation type chosen.
 
 * If `split_basis` = 'phaseFlow', degrees of freedom are generally :math:`(no. outlets-1) \times no. phases`
 * If `split_basis` = 'componentFlow', degrees of freedom are generally :math:`(no. outlets-1) \times no. components`
-* If `split_basis` = 'phaseComponentFlow', degrees of freedom are generally :math:`(no. outlets-1) \times np. phases \times no. components`
+* If `split_basis` = 'phaseComponentFlow', degrees of freedom are generally :math:`(no. outlets-1) \times no. phases \times no. components`
 * If `split_basis` = 'totalFlow', degrees of freedom are generally :math:`(no. outlets-1) \times no. phases \times no. components`
 
 Typical fixed variables are:
@@ -26,9 +26,9 @@ If a mixed state block is provided in the construction arguments, the Mixer mode
 
 **Ideal Separation**
 
-The IDAES Separator model supports ideal separations, where all of a given subset of the mixed stream is sent a single outlet (i.e. split fractions are equal to zero or one). In these cases, no Constraints are necessary for performing the separation, as the mixed stream states can be directly partitioned to the outlets.
+The IDAES Separator model supports ideal separations, where all of a given subset of the mixed stream is sent to a single outlet (i.e. split fractions are equal to zero or one). In these cases, no Constraints are necessary for performing the separation, as the mixed stream states can be directly partitioned to the outlets.
 
-Ideal separations will not work for all choices of state variables, and thus will not wokr for all property packages. To use ideal separations, the user must provide a map of what part of the mixed flow should be partitioned to each outlet. The `ideal_split_map` should be a dict-like object with keys as tuples mathcing the `split_basis` argument and values indicating which outlet this subset should be partitioned too.
+Ideal separations will not work for all choices of state variables, and thus will not work for all property packages. To use ideal separations, the user must provide a map of what part of the mixed flow should be partitioned to each outlet. The `ideal_split_map` should be a dict-like object with keys as tuples matching the `split_basis` argument and values indicating which outlet this subset should be partitioned to.
 
 **Variables**
 
@@ -63,6 +63,9 @@ Separator Class
 
 .. autoclass:: Separator
   :members:
+
+SeparatorData Class
+-------------------
 
 .. autoclass:: SeparatorData
   :members:
