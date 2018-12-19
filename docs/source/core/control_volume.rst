@@ -42,7 +42,7 @@ The first common task the Control Volume block performs is to determine if it sh
 
 After setting the dynamic argument, the Control Volume block then creates a reference to the time domain (time_ref) from the UnitModel. If the block containing the Control Volume block does not have an attribute named time a DynamicsError will be returned.
 
-Finally, the Control Volume checks that the ```has_holdup`` argument is consistent with the ``dynamic`` argument, and raises a ConfigurationError if it is not.
+Finally, the Control Volume checks that the ``has_holdup`` argument is consistent with the ``dynamic`` argument, and raises a ConfigurationError if it is not.
 
 Getting Property Package Information
 -------------------------------------

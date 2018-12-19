@@ -6,7 +6,7 @@ HeatExchanger (0D)
 
 .. module:: idaes.unit_models.heat_exchanger
 
-The Heater and Exchanger models can be imported from :code:`idaes.unit_models`,
+The HeatExchanger model can be imported from :code:`idaes.unit_models`,
 while additional rules and utility functions can be imported from
 ``idaes.unit_models.heat_exchanger``.
 
