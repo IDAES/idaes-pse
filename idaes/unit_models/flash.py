@@ -186,8 +186,7 @@ see property package for documentation.}"""))
 
         split_map = {}
         for p in self.control_volume.properties_in[0].phase_list:
-            for j in self.control_volume.properties_in[0].component_list:
-                split_map[(p, j)] = p
+            split_map[p] = p
 
         self.split = Separator(default={"property_package":
                                         self.config.property_package,
@@ -195,7 +194,7 @@ see property package for documentation.}"""))
                                         self.config.property_package_args,
                                         "outlet_list": ["Vap", "Liq"],
                                         "split_basis":
-                                        SplittingType.phaseComponentFlow,
+                                        SplittingType.phaseFlow,
                                         "ideal_separation": True,
                                         "ideal_split_map": split_map,
                                         "mixed_state_block":
@@ -207,9 +206,9 @@ see property package for documentation.}"""))
         # Add references
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != 'none'):
-                add_object_reference(self, "heat",
+                add_object_reference(self, "heat_duty",
                                      self.control_volume.heat)
-        if (self.config_has_pressure_change is True and
+        if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
                 add_object_reference(self, "deltaP",
                                      self.control_volume.deltaP)
