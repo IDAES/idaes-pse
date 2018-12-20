@@ -466,6 +466,7 @@ class StateBlockData(StateBlockDataBase):
     def _make_constraints(self):
         """Create property constraints."""
         if self.config.defined_state is False:
+            # applied at outlet only
             self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac[i]
                                               for i in self.component_list_ref)
                                               == 1)
