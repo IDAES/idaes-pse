@@ -255,14 +255,14 @@ class _StateBlock(StateBlockBase):
                 else:
                     blk[k].flow_mol.fix(flow_mol)
 
-            for j in blk[k].component_list:
+            for j in blk[k].component_list_ref:
                 if blk[k].mole_frac[j].fixed is True:
                     Xflag[k, j] = True
                 else:
                     Xflag[k, j] = False
                     if mole_frac is None:
                         blk[k].mole_frac[j].fix(1 / len(blk[k].
-                                                component_list))
+                                                component_list_ref))
                     else:
                         blk[k].mole_frac[j].fix(mole_frac[j])
 
@@ -369,7 +369,7 @@ class _StateBlock(StateBlockBase):
         for k in blk.keys():
             if flags['Fflag'][k] is False:
                 blk[k].flow_mol.unfix()
-            for j in blk[k].component_list:
+            for j in blk[k].component_list_ref:
                 if flags['Xflag'][k, j] is False:
                     blk[k].mole_frac[j].unfix()
             if flags['Pflag'][k] is False:
