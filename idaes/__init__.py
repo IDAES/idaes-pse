@@ -1,3 +1,4 @@
+# coding: utf-8
 """ __init__.py for idaes module
 
 Set up logging for the idaes module, and import plugins.
@@ -8,6 +9,8 @@ import importlib
 import toml
 import pyomo.common.plugin
 import pyomo.common.config
+from .ver import __version__    # noqa
+
 
 _log = logging.getLogger(__name__)
 _config = pyomo.common.config.ConfigBlock("idaes", implicit=False)
