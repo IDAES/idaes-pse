@@ -576,7 +576,7 @@ linked the mixed state and all outlet states,
                             if self.config.split_basis == \
                                         SplittingType.componentFlow:
                                 def e_rule(b, j):
-                                    for p in b.phase_list_ref:
+                                    for p in self.phase_list_ref:
                                         if split_map[p] == o:
                                             return s_vars[s][j]
                                     # else:
@@ -601,7 +601,7 @@ linked the mixed state and all outlet states,
                                         .format(self.name, s))
 
                                 def e_rule(b, j):
-                                    for p in b.phase_list_ref:
+                                    for p in self.phase_list_ref:
                                         if split_map[p] == o:
                                             return idx_state[p, j]
                                     # else:
@@ -626,7 +626,7 @@ linked the mixed state and all outlet states,
                                         .format(self.name, s))
 
                                 def e_rule(b, j):
-                                    for p in b.phase_list_ref:
+                                    for p in self.phase_list_ref:
                                         if split_map[p, j] == o:
                                             return idx_state[p, j]
                                     # else:
@@ -704,7 +704,7 @@ linked the mixed state and all outlet states,
                                     .format(self.name, s))
 
                             def e_rule(b, p):
-                                for j in b.component_list_ref:
+                                for j in self.component_list_ref:
                                     if split_map[j] == o:
                                         return idx_state[p, j]
                                 # else:
@@ -725,7 +725,7 @@ linked the mixed state and all outlet states,
                                     .format(self.name, s))
 
                             def e_rule(b, p):
-                                for j in b.component_list_ref:
+                                for j in self.component_list_ref:
                                     if split_map[p, j] == o:
                                         return idx_state[p, j]
                                 # else:
@@ -768,7 +768,7 @@ linked the mixed state and all outlet states,
                                     .format(self.name, s))
 
                             def e_rule(b, j):
-                                for p in b.phase_list_ref:
+                                for p in self.phase_list_ref:
                                     if split_map[p] == o:
                                         return idx_state[p, j]
                                 # else:
@@ -791,7 +791,7 @@ linked the mixed state and all outlet states,
                                     .format(self.name, s))
 
                             def e_rule(b, j):
-                                for p in b.phase_list_ref:
+                                for p in self.phase_list_ref:
                                     if split_map[p, j] == o:
                                         return idx_state[p, j]
                                 # else:
