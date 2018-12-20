@@ -27,10 +27,10 @@ of the water at the heater outlet, for example the line below could be added.
 .. code-block:: python
 
       import pyomo.environ as pe
-      mu_l = pe.value(model.fs.heater.control_volume.properties_in[0].visc_d_phase["Liq"])
-      mu_v = pe.value(model.fs.heater.control_volume.properties_in[0].visc_d_phase["Vap"])
+      mu_l = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Liq"])
+      mu_v = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Vap"])
 
-In this case, the _d_ in the property name indicates dynamic viscosity.  For more
+For more
 information about how StateBlocks and PropertyParameterBlocks work see the :ref:`StateBlock
 documentation <core/state_block:Physical Property Package Classes>`.
 
@@ -44,8 +44,8 @@ Methods
 
 These methods use the IAPWS-95 formulation for scientific use for thermodynamic
 properties (:ref:`Wagner and Pruss, 2002 <wagner-2002>`; :ref:`IAPWS, 2016
-<iapws-2016>`). To solve the phase equilibrium the method of :ref:`Akasaka
-(2008) <akasaka-2008>` was used. For solving these equations some relations from
+<iapws-2016>`). To solve the phase equilibrium, the method of :ref:`Akasaka
+(2008) <akasaka-2008>` was used. For solving these equations, some relations from
 the IAPWS-97 formulation for industrial use are used as initial values
 (:ref:`Wagner et al., 2002 <wagner-2002>`). The industrial formulation is
 slightly discontinuous between different regions, so it may not be suitable for
@@ -60,10 +60,11 @@ External Functions
 The IAPWS-95 formulation uses density and temperature as state variables. For
 most applications those sate variables are not the most convenient choices. Using
 other state variables requires solving an equation or two to get density and
-temperature from the chosen state variables. This equation can have numerous
-roots. Rather than solve these equations as part of the full process simulation,
-external functions were developed that can solve the equations required to change
-state variables and guarantee the correct roots.
+temperature from the chosen state variables. This can have numerous solutions
+only one of which is physically meaningful. Rather than solve these equations as
+part of the full process simulation, external functions were developed that can
+solve the equations required to change state variables and guarantee the correct
+roots.
 
 The external property functions are written in C++ and complied such that they
 can be called by AMPL solvers.  See the :ref:`installation instructions
@@ -88,7 +89,7 @@ Since state variables are calculated when solving a model, and the rest of the
 properties are Expressions, any property available can be easily calculated
 after the model is solved, whether is was needed in the model or not.
 
-Although not generally used the wappers provide direct access to the
+Although not generally used the wrappers provide direct access to the
 ExternalFunctions also. For more information see section :ref:`ExternalFunctions
 <property_models/water:ExternalFunctions>`
 
@@ -100,11 +101,12 @@ pressure-enthalpy formulation treats the fluid as a single mixed phase with a
 vapor fraction.  This bypasses some of the IDAES framework phase equilibrium
 mechanisms and phase equilibrium is always calculated.
 
-The advantage of this choice of state variables is that is is very robust when
-phase changes occur, and is especially useful when it is not know if a phase
+The advantage of this choice of state variables is that it is very robust when
+phase changes occur, and is especially useful when it is not known if a phase
 change will occur.  The disadvantage of this choice of state variables is that
-for equations where temperature is included such as heat transfer equations,
-temperature is a non-smooth function with a zero derivative with respect to
+for equations like heat transfer equations that are highly dependent on
+temperature, a model could be harder to solve near regions with phase change.
+Temperature is a non-smooth function with a zero derivative with respect to
 enthalpy in the two-phase region.
 
 The variables for this form are ``flow_mol`` (mol/s), ``pressure`` (Pa), and
@@ -113,7 +115,9 @@ The variables for this form are ``flow_mol`` (mol/s), ``pressure`` (Pa), and
 Since temperature and vapor fraction are not state variables in this formulation,
 they are provided by expressions, and cannot be fixed.  For example, to set a
 temperature to a specific value, a constraint could be added which says the
-temperature expression equals the value.
+temperature expression equals a fixed value.
+
+These expressions are specific to the P-H formulation:
 
 ``temperature``
   Expression that calculates temperature by calling an ExternalFunction of
