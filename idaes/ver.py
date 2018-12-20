@@ -1,4 +1,3 @@
-# coding: utf-8
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
