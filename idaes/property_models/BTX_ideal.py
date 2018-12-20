@@ -401,11 +401,11 @@ class StateBlockData(StateBlockDataBase):
     def _make_params(self):
         """Make references to the necessary parameters."""
         # List of valid phases in property package
-        add_object_reference(self, "phase_list",
+        add_object_reference(self, "phase_list_ref",
                              self.config.parameters.phase_list)
 
         # Component list - a list of component identifiers
-        add_object_reference(self, "component_list",
+        add_object_reference(self, "component_list_ref",
                              self.config.parameters.component_list)
 
         # List of Reaction Indicies
@@ -453,9 +453,9 @@ class StateBlockData(StateBlockDataBase):
         self.flow_mol = Var(initialize=1.0,
                             domain=NonNegativeReals,
                             doc='Component molar flowrate [mol/s]')
-        self.mole_frac = Var(self.component_list,
+        self.mole_frac = Var(self.component_list_ref,
                              bounds=(0, 1),
-                             initialize=1 / len(self.component_list))
+                             initialize=1 / len(self.component_list_ref))
         self.pressure = Var(initialize=101325,
                             domain=NonNegativeReals,
                             doc='State pressure [Pa]')
@@ -467,22 +467,22 @@ class StateBlockData(StateBlockDataBase):
         """Create property constraints."""
         if self.config.defined_state is False:
             self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac[i]
-                                              for i in self.component_list)
+                                              for i in self.component_list_ref)
                                               == 1)
 
         if self.config.has_phase_equilibrium:
             def rule_Keq(self, i):
                 return self.mole_frac_phase['Vap', i] * self.pressure == \
                     self.vapor_pressure[i] * self.mole_frac_phase['Liq', i]
-            self.eq_Keq = Constraint(self.component_list, rule=rule_Keq)
+            self.eq_Keq = Constraint(self.component_list_ref, rule=rule_Keq)
 
     def _make_flash_eq(self):
-        self.flow_mol_phase = Var(self.phase_list,
+        self.flow_mol_phase = Var(self.phase_list_ref,
                                   bounds=(0, 1),
                                   initialize=0.5)
-        self.mole_frac_phase = Var(self.phase_list,
-                                   self.component_list,
-                                   initialize=1 / len(self.component_list),
+        self.mole_frac_phase = Var(self.phase_list_ref,
+                                   self.component_list_ref,
+                                   initialize=1 / len(self.component_list_ref),
                                    bounds=(0, 1))
 
         def rule_total(self):
@@ -494,27 +494,27 @@ class StateBlockData(StateBlockDataBase):
             return self.flow_mol * self.mole_frac[i] == \
                 self.flow_mol_phase['Liq'] * self.mole_frac_phase['Liq', i] + \
                 self.flow_mol_phase['Vap'] * self.mole_frac_phase['Vap', i]
-        self.eq_comp = Constraint(self.component_list, rule=rule_comp)
+        self.eq_comp = Constraint(self.component_list_ref, rule=rule_comp)
 
         # if self.config.calculate_equilibrium is False:
         def rule_mole_frac(self):
             return sum(self.mole_frac_phase['Liq', i]
-                       for i in self.component_list) -\
+                       for i in self.component_list_ref) -\
                 sum(self.mole_frac_phase['Vap', i]
-                    for i in self.component_list) == 0
+                    for i in self.component_list_ref) == 0
         self.eq_sum_mol_frac = Constraint(rule=rule_mole_frac)
 
         # def _vapor_pressure(self):
-        self.vapor_pressure = Var(self.component_list,
+        self.vapor_pressure = Var(self.component_list_ref,
                                   initialize=101325,
                                   doc="vapor pressure ")
-        self.x = Var(self.component_list, initialize=1,
+        self.x = Var(self.component_list_ref, initialize=1,
                      doc="temp_var")
 
         def rule_X(self, i):
             return self.x[i] * self.temperature_critical[i] == \
                 self.temperature_critical[i] - self.temperature
-        self.eq_X = Constraint(self.component_list, rule=rule_X)
+        self.eq_X = Constraint(self.component_list_ref, rule=rule_X)
 
         def rule_P_vap(self, j):
             return (1 - self.x[j]) * \
@@ -523,10 +523,10 @@ class StateBlockData(StateBlockDataBase):
                  self.vapor_pressure_coeff[j, 'B'] * self.x[j]**1.5 +
                  self.vapor_pressure_coeff[j, 'C'] * self.x[j]**3 +
                  self.vapor_pressure_coeff[j, 'D'] * self.x[j]**6)
-        self.eq_P_vap = Constraint(self.component_list, rule=rule_P_vap)
+        self.eq_P_vap = Constraint(self.component_list_ref, rule=rule_P_vap)
 
     def _density_mol(self):
-        self.density_mol = Var(self.phase_list, doc="Molar density")
+        self.density_mol = Var(self.phase_list_ref, doc="Molar density")
 
         def density_mol_calculation(self, p):
             if p == "Vap":
@@ -538,7 +538,7 @@ class StateBlockData(StateBlockDataBase):
         try:
             # Try to build constraint
             self.density_mol_calculation = Constraint(
-                self.phase_list, rule=density_mol_calculation)
+                self.phase_list_ref, rule=density_mol_calculation)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.density_mol)
@@ -547,7 +547,7 @@ class StateBlockData(StateBlockDataBase):
 
     def _enthalpy_comp_liq(self):
         # Liquid phase comp enthalpy
-        self.enthalpy_comp_liq = Var(self.component_list, initialize=10000)
+        self.enthalpy_comp_liq = Var(self.component_list_ref, initialize=10000)
 
         def rule_hl_ig_pc(b, j):
             return self.enthalpy_comp_liq[j] * 1E3 == \
@@ -561,7 +561,7 @@ class StateBlockData(StateBlockDataBase):
                       (self.temperature**2 - self.temperature_reference**2)
                     + self.CpIG['Liq', j, '1'] *
                       (self.temperature - self.temperature_reference))
-        self.eq_hl_ig_pc = Constraint(self.component_list, rule=rule_hl_ig_pc)
+        self.eq_hl_ig_pc = Constraint(self.component_list_ref, rule=rule_hl_ig_pc)
 
     def _enthalpy_liq(self):
             # Liquid phase enthalpy
@@ -570,12 +570,12 @@ class StateBlockData(StateBlockDataBase):
         def rule_hliq(self):
             return self.enthalpy_liq == sum(self.enthalpy_comp_liq[i] *
                                             self.mole_frac_phase['Liq', i]
-                                            for i in self.component_list)
+                                            for i in self.component_list_ref)
         self.eq_h_liq = Constraint(rule=rule_hliq)
 
     def _enthalpy_comp_vap(self):
         # Vapor comp enthalpy
-        self.enthalpy_comp_vap = Var(self.component_list, initialize=40000)
+        self.enthalpy_comp_vap = Var(self.component_list_ref, initialize=40000)
 
         def rule_hv_ig_pc(b, j):
             return self.enthalpy_comp_vap[j] == self.delH_vap[j] + \
@@ -589,7 +589,7 @@ class StateBlockData(StateBlockDataBase):
                       (self.temperature**2 - self.temperature_reference**2)
                     + self.CpIG['Vap', j, '1'] *
                       (self.temperature - self.temperature_reference))
-        self.eq_hv_ig_pc = Constraint(self.component_list, rule=rule_hv_ig_pc)
+        self.eq_hv_ig_pc = Constraint(self.component_list_ref, rule=rule_hv_ig_pc)
 
     def _enthalpy_vap(self):
         # Vapor phase enthalpy
@@ -598,14 +598,14 @@ class StateBlockData(StateBlockDataBase):
         def rule_hvap(self):
             return self.enthalpy_vap == sum(self.enthalpy_comp_vap[i] *
                                             self.mole_frac_phase['Vap', i]
-                                            for i in self.component_list)
+                                            for i in self.component_list_ref)
         self.eq_h_vap = Constraint(rule=rule_hvap)
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
-        if (p == "Vap") and (j in self.component_list):
+        if (p == "Vap") and (j in self.component_list_ref):
             return self.flow_mol_phase['Vap'] * self.mole_frac_phase['Vap', j]
-        elif (p == "Liq") and (j in self.component_list):
+        elif (p == "Liq") and (j in self.component_list_ref):
             return self.flow_mol_phase['Liq'] * self.mole_frac_phase['Liq', j]
         else:
             return 0
@@ -620,12 +620,12 @@ class StateBlockData(StateBlockDataBase):
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
         if p == "Liq":
-            if j in self.component_list:
+            if j in self.component_list_ref:
                 return self.density_mol[p] * self.mole_frac_phase['Liq', j]
             else:
                 return 0
         elif p == "Vap":
-            if j in self.component_list:
+            if j in self.component_list_ref:
                 return self.density_mol[p] * self.mole_frac_phase['Vap', j]
             else:
                 return 0

@@ -185,7 +185,7 @@ see property package for documentation.}"""))
         self.add_inlet_port()
 
         split_map = {}
-        for p in self.control_volume.properties_in[0].phase_list:
+        for p in self.config.property_package.phase_list:
             split_map[p] = p
 
         self.split = Separator(default={"property_package":

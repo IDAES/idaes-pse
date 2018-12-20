@@ -584,10 +584,8 @@ linked the mixed state and all outlet states,
                                 e_obj = Expression(self.component_list_ref,
                                                    rule=e_rule)
 
-                            elif ((self.config.split_basis ==
-                                   SplittingType.phaseFlow) or
-                                  (self.config.split_basis ==
-                                   SplittingType.phaseComponentFlow)):
+                            elif self.config.split_basis == \
+                                    SplittingType.phaseFlow:
                                 try:
                                     idx_state = getattr(mixed_block[t],
                                                         s+"_phase")
@@ -602,13 +600,39 @@ linked the mixed state and all outlet states,
                                         .format(self.name, s))
 
                                 def e_rule(b, j):
-                                    if split_map[j] == o:
-                                        return idx_state[:, j]
-                                    else:
-                                        return 0
+                                    for p in b.phase_list_ref:
+                                        if split_map[p] == o:
+                                            return idx_state[p, j]
+                                        else:
+                                            return 0
 
-                                e_obj = Expression(self.phase_list_ref,
-                                               rule=e_rule)
+                                e_obj = Expression(self.component_list_ref,
+                                                   rule=e_rule)
+
+                            elif self.config.split_basis == \
+                                    SplittingType.phaseComponentFlow:
+                                try:
+                                    idx_state = getattr(mixed_block[t],
+                                                        s+"_phase")
+                                except AttributeError:
+                                    raise AttributeError(
+                                        "{} Cannot use ideal splitting with "
+                                        "this property package. Package uses "
+                                        "indexed port member {} which does not"
+                                        " have the correct indexing sets, and "
+                                        "an equivalent variable with correct "
+                                        "indexing sets is not available."
+                                        .format(self.name, s))
+
+                                def e_rule(b, j):
+                                    for p in b.phase_list_ref:
+                                        if split_map[p, j] == o:
+                                            return idx_state[p, j]
+                                        else:
+                                            return 0
+
+                                e_obj = Expression(self.component_list_ref,
+                                                   rule=e_rule)
                             else:
                                 raise BurntToast(
                                         "This should not happen. Please "
@@ -664,10 +688,8 @@ linked the mixed state and all outlet states,
                                     return s_vars[s][p]
                                 else:
                                     return 0
-                        elif ((self.config.split_basis ==
-                               SplittingType.componentFlow) or
-                              (self.config.split_basis ==
-                               SplittingType.phaseComponentFlow)):
+                        elif self.config.split_basis == \
+                                SplittingType.componentFlow:
                             try:
                                 idx_state = getattr(mixed_block[t], s+"_comp")
                             except AttributeError:
@@ -681,10 +703,33 @@ linked the mixed state and all outlet states,
                                     .format(self.name, s))
 
                             def e_rule(b, p):
-                                if split_map[j] == o:
-                                    return idx_state[p, :]
-                                else:
-                                    return 0
+                                for j in b.component_list_ref:
+                                    if split_map[j] == o:
+                                        return idx_state[p, j]
+                                    else:
+                                        return 0
+
+                        elif self.config.split_basis == \
+                                SplittingType.phaseComponentFlow:
+                            try:
+                                idx_state = getattr(mixed_block[t], s+"_comp")
+                            except AttributeError:
+                                raise AttributeError(
+                                    "{} Cannot use ideal splitting with this "
+                                    "property package. Package uses indexed "
+                                    "port member {} which does not have the "
+                                    "correct indexing sets, and an equivalent "
+                                    "variable with correct indexing sets is "
+                                    "not available."
+                                    .format(self.name, s))
+
+                            def e_rule(b, p):
+                                for j in b.component_list_ref:
+                                    if split_map[p, j] == o:
+                                        return idx_state[p, j]
+                                    else:
+                                        return 0
+
                         else:
                             raise BurntToast("This should not happen. Please "
                                              "report this bug to the IDAES "
