@@ -576,10 +576,11 @@ linked the mixed state and all outlet states,
                             if self.config.split_basis == \
                                         SplittingType.componentFlow:
                                 def e_rule(b, j):
-                                    if split_map[p] == o:
-                                        return s_vars[s][j]
-                                    else:
-                                        return 0
+                                    for p in b.phase_list_ref:
+                                        if split_map[p] == o:
+                                            return s_vars[s][j]
+                                    # else:
+                                    return 0
 
                                 e_obj = Expression(self.component_list_ref,
                                                    rule=e_rule)
@@ -603,8 +604,8 @@ linked the mixed state and all outlet states,
                                     for p in b.phase_list_ref:
                                         if split_map[p] == o:
                                             return idx_state[p, j]
-                                        else:
-                                            return 0
+                                    # else:
+                                    return 0
 
                                 e_obj = Expression(self.component_list_ref,
                                                    rule=e_rule)
@@ -628,8 +629,8 @@ linked the mixed state and all outlet states,
                                     for p in b.phase_list_ref:
                                         if split_map[p, j] == o:
                                             return idx_state[p, j]
-                                        else:
-                                            return 0
+                                    # else:
+                                    return 0
 
                                 e_obj = Expression(self.component_list_ref,
                                                    rule=e_rule)
@@ -706,8 +707,8 @@ linked the mixed state and all outlet states,
                                 for j in b.component_list_ref:
                                     if split_map[j] == o:
                                         return idx_state[p, j]
-                                    else:
-                                        return 0
+                                # else:
+                                return 0
 
                         elif self.config.split_basis == \
                                 SplittingType.phaseComponentFlow:
@@ -727,8 +728,8 @@ linked the mixed state and all outlet states,
                                 for j in b.component_list_ref:
                                     if split_map[p, j] == o:
                                         return idx_state[p, j]
-                                    else:
-                                        return 0
+                                # else:
+                                return 0
 
                         else:
                             raise BurntToast("This should not happen. Please "
@@ -749,10 +750,9 @@ linked the mixed state and all outlet states,
                                     return s_vars[s][j]
                                 else:
                                     return 0
-                        elif ((self.config.split_basis ==
-                               SplittingType.phaseFlow) or
-                              (self.config.split_basis ==
-                               SplittingType.phaseComponentFlow)):
+
+                        elif self.config.split_basis == \
+                                SplittingType.phaseFlow:
                             try:
                                 idx_state = getattr(mixed_block[t],
                                                     "{0}_phase{1}"
@@ -768,10 +768,35 @@ linked the mixed state and all outlet states,
                                     .format(self.name, s))
 
                             def e_rule(b, j):
-                                if split_map[j] == o:
-                                    return idx_state[j, :]
-                                else:
-                                    return 0
+                                for p in b.phase_list_ref:
+                                    if split_map[p] == o:
+                                        return idx_state[p, j]
+                                # else:
+                                return 0
+
+                        elif self.config.split_basis == \
+                                SplittingType.phaseComponentFlow:
+                            try:
+                                idx_state = getattr(mixed_block[t],
+                                                    "{0}_phase{1}"
+                                                    .format(s[:-5], s[-5:]))
+                            except AttributeError:
+                                raise AttributeError(
+                                    "{} Cannot use ideal splitting with this "
+                                    "property package. Package uses indexed "
+                                    "port member {} which does not have the "
+                                    "correct indexing sets, and an equivalent "
+                                    "variable with correct indexing sets is "
+                                    "not available."
+                                    .format(self.name, s))
+
+                            def e_rule(b, j):
+                                for p in b.phase_list_ref:
+                                    if split_map[p, j] == o:
+                                        return idx_state[p, j]
+                                # else:
+                                return 0
+
                         else:
                             raise BurntToast("This should not happen. Please "
                                              "report this bug to the IDAES "
@@ -823,9 +848,10 @@ linked the mixed state and all outlet states,
                                     .format(self.name, s))
 
                             for k in split_map:
-                                # Add idx_state member to outlet port as state
-                                p_obj = getattr(self, split_map[k])
-                                p_obj[t].add(idx_state[k], s)
+                                if k == o:
+                                    # Add idx_state member to outlet port
+                                    p_obj = getattr(self, split_map[k])
+                                    p_obj[t].add(idx_state[k], s)
 
     def model_check(blk):
         """
