@@ -15,5 +15,6 @@ Unit Model Contents
     mixer
     pfr
     pressure_changer
+    flash
     separator
     stoichiometric_reactor
