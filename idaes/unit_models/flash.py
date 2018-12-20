@@ -11,9 +11,12 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Standard IDAES STOICHIOMETRIC reactor model
+Standard IDAES flash model.
 """
 from __future__ import division
+
+# Import Python libraries
+import logging
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -26,32 +29,40 @@ from idaes.core import (ControlVolume0D,
                         MomentumBalanceType,
                         UnitBlockData,
                         useDefault)
-from idaes.core.util.config import (is_physical_parameter_block,
-                                    is_reaction_parameter_block)
+from idaes.unit_models.separator import Separator, SplittingType
+
+from idaes.core.util.config import is_physical_parameter_block, list_of_strings
 from idaes.core.util.misc import add_object_reference
 
-__author__ = "Chinedu Okoli, Andrew Lee"
+__author__ = "Andrew Lee, Jaffer Ghouse"
 
 
-@declare_process_block_class("StoichiometricReactor")
-class StoichiometricReactorData(UnitBlockData):
+# Set up logger
+logger = logging.getLogger('idaes.unit_model')
+
+
+@declare_process_block_class("Flash")
+class FlashData(UnitBlockData):
     """
-    Standard Stoichiometric Reactor Unit Model Class
-    This model assumes that all given reactions are irreversible, and that each
-    reaction has a fixed rate_reaction extent which has to be specified by the
-    user.
+    Standard Flash Unit Model Class
     """
+
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
+        default=useDefault,
         domain=In([useDefault, True, False]),
-        default=False,
         description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic or not,
-**default** = False.
+        doc="""Indicates whether the model is dynamic"""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Holdup construction flag",
+        doc="""Indicates whether holdup terms should be constructed or not.
+Must be True if dynamic = True,
+**default** - False.
 **Valid values:** {
-**useDefault** - get flag from parent (default = False),
-**True** - set as a dynamic model,
-**False** - set as a steady-state model.}"""))
+**True** - construct holdup terms,
+**False** - do not construct holdup terms}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
@@ -88,18 +99,18 @@ class StoichiometricReactorData(UnitBlockData):
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_heat_of_reaction", ConfigValue(
-        default=False,
+    CONFIG.declare("has_phase_equilibrium", ConfigValue(
+        default=True,
         domain=In([True, False]),
-        description="Heat of reaction term construction flag",
-        doc="""Indicates whether terms for heat of reaction terms should be
-constructed,
-**default** - False.
+        description="Phase equilibrium term construction flag",
+        doc="""Indicates whether terms for phase equilibrium
+               should be constructed,
+**default** - True.
 **Valid values:** {
-**True** - include heat of reaction terms,
-**False** - exclude heat of reaction terms.}"""))
+**True** - include phase equilibrium term,
+**False** - exclude phase equlibirum terms.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
-        default=False,
+        default=True,
         domain=In([True, False]),
         description="Heat transfer term construction flag",
         doc="""Indicates whether terms for heat transfer should be constructed,
@@ -108,12 +119,12 @@ constructed,
 **True** - include heat transfer terms,
 **False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
+        default=True,
         domain=In([True, False]),
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
 constructed,
-**default** - False.
+**default** - True.
 **Valid values:** {
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
@@ -133,52 +144,35 @@ constructed,
 and used when constructing these,
 **default** - None.
 **Valid values:** {
-see property package for documentation.}"""))   
-    CONFIG.declare("reaction_package", ConfigValue(
-        default=None,
-        domain=is_reaction_parameter_block,
-        description="Reaction package to use for control volume",
-        doc="""Reaction parameter object used to define reaction calculations,
-**default** - None.
-**Valid values:** {
-**None** - no reaction package,
-**ReactionParameterBlock** - a ReactionParameterBlock object.}"""))
-    CONFIG.declare("reaction_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing reaction packages",
-        doc="""A ConfigBlock with arguments to be passed to a reaction block(s)
-and used when constructing these,
-**default** - None.
-**Valid values:** {
-see reaction package for documentation.}"""))
-        
+see property package for documentation.}"""))
+
     def build(self):
         """
         Begin building model (pre-DAE transformation).
+
         Args:
             None
+
         Returns:
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(StoichiometricReactorData, self).build()
+        super(FlashData, self).build()
 
         # Build Control Volume
         self.control_volume = ControlVolume0D(default={
-                "dynamic": self.config.dynamic,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args,
-                "reaction_package": self.config.reaction_package,
-                "reaction_package_args": self.config.reaction_package_args})
-    
-        self.control_volume.add_state_blocks()
+            "dynamic": self.config.dynamic,
+            "has_holdup": self.config.has_holdup,
+            "property_package": self.config.property_package,
+            "property_package_args": self.config.property_package_args})
 
-        self.control_volume.add_reaction_blocks()
+        self.control_volume.add_state_blocks(
+            has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type,
-            has_rate_reactions=True)
-        
+            has_phase_equilibrium=self.config.has_phase_equilibrium)
+
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
             has_heat_transfer=self.config.has_heat_transfer)
@@ -189,26 +183,32 @@ see reaction package for documentation.}"""))
 
         # Add Ports
         self.add_inlet_port()
-        self.add_outlet_port()
 
-        # Add performance equations
-        add_object_reference(self,
-                             "component_list_ref",
-                             self.control_volume.component_list_ref)
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.control_volume.phase_list_ref)
-        add_object_reference(self,
-                             "rate_reaction_idx_ref",
-                             self.config.reaction_package.rate_reaction_idx)
-        add_object_reference(self,
-                             "rate_reaction_extent",
-                             self.control_volume.rate_reaction_extent)
+        split_map = {}
+        for p in self.config.property_package.phase_list:
+            split_map[p] = p
 
-        # Set references to balance terms at unit level
+        self.split = Separator(default={"property_package":
+                                        self.config.property_package,
+                                        "property_package_args":
+                                        self.config.property_package_args,
+                                        "outlet_list": ["Vap", "Liq"],
+                                        "split_basis":
+                                        SplittingType.phaseFlow,
+                                        "ideal_separation": True,
+                                        "ideal_split_map": split_map,
+                                        "mixed_state_block":
+                                        self.control_volume.properties_out})
+
+        add_object_reference(self, "vap_outlet", self.split.Vap)
+        add_object_reference(self, "liq_outlet", self.split.Liq)
+
+        # Add references
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != 'none'):
-            add_object_reference(self, "heat_duty", self.control_volume.heat)
+                add_object_reference(self, "heat_duty",
+                                     self.control_volume.heat)
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+                add_object_reference(self, "deltaP",
+                                     self.control_volume.deltaP)
