@@ -17,10 +17,9 @@ def get_version(file, name='__version__'):
     executing it and extracting the given `name`.
     """
     path = os.path.realpath(file)
-    version_ns = {}
-    with io.open(path, encoding="utf8") as f:
-        exec(f.read(), {}, version_ns)
-    return version_ns[name]
+    local_namespace = {}
+    exec(open(path).read(), {}, local_namespace)
+    return local_namespace[name]
 
 
 NAME = 'idaes'
