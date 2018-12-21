@@ -21,10 +21,17 @@ __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
 
 class Version(object):
+    """This class attempts to be compliant with a subset of
+    `PEP 440 <https://www.python.org/dev/peps/pep-0440/>`_.
+
+    Pre- and post- releases, as well as "release epochs" are not
+    supported.
+    """
     _specifiers = {
         'alpha': 'a',
         'beta': 'b',
         'candidate': 'rc',
+        'development': 'dev',
         'final': ''    # this is the default
     }
 
