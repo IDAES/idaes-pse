@@ -1,0 +1,129 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes".
+##############################################################################
+"""The API in this module is mostly for internal use, e.g. from 'setup.py' to get the version of
+the package. But :class:`Version` has been written to be usable as a general
+versioning interface.
+
+Example of using the class directly::
+
+    >>> from idaes.ver import Version
+    >>> my_version = Version(1, 2, 3)
+    >>> print(my_version)
+    1.2.3
+    >>> tuple(my_version)
+    (1, 2, 3)
+    >>> my_version = Version(1, 2, 3, 'alpha')
+    >>> print(my_version)
+    1.2.3a
+    >>> tuple(my_version)
+    (1, 2, 3, 'alpha')
+    >>> my_version = Version(1, 2, 3, 'candidate', 1)
+    >>> print(my_version)
+    1.2.3rc1
+    >>> tuple(my_version)
+    (1, 2, 3, 'candidate', 1)
+
+If you want to add a version to a class, e.g. a model, then
+simply inherit from ``HasVersion`` and initialize it with the
+same arguments you would give the :class:`Version` constructor::
+
+    >>> from idaes.ver import HasVersion
+    >>> class MyClass(HasVersion):
+    ...     def __init__(self):
+    ...         super(MyClass, self).__init__(1, 2, 3, 'alpha')
+    ...
+    >>> obj = MyClass()
+    >>> print(obj.version)
+    1.2.3a
+"""
+__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+
+
+class Version(object):
+    """This class attempts to be compliant with a subset of
+    `PEP 440 <https://www.python.org/dev/peps/pep-0440/>`_.
+
+    Note: If you actually happen to read the PEP, you will notice
+    that pre- and post- releases, as well as "release epochs", are not
+    supported.
+    """
+    _specifiers = {
+        'alpha': 'a',
+        'beta': 'b',
+        'candidate': 'rc',
+        'development': 'dev',
+        'final': ''    # this is the default
+    }
+
+    def __init__(self, major, minor, micro, releaselevel='final', serial=None):
+        """Create new version object.
+
+        Provided arguments are stored in public class
+        attributes by the same name.
+
+        Args:
+            major (int): Major version
+            minor (int):  Minor version
+            micro (int):  Micro (aka patchlevel) version
+            releaselevel (str): Optional PEP 440 specifier
+            serial (int): Optional number associated with releaselevel
+        """
+        if releaselevel not in self._specifiers:
+            raise ValueError('Value "{}" for releaselevel not in ({})'
+                             .format(releaselevel,
+                                     ','.join(
+                                         sorted(self._specifiers.keys()))))
+        self.major, self.minor, self.micro = major, minor, micro
+        self.releaselevel, self.serial = releaselevel, serial
+
+    def __iter__(self):
+        """Return version information as a sequence.
+        """
+        items = [self.major, self.minor, self.micro]
+        if self.releaselevel != 'final':
+            items.append(self.releaselevel)
+            if self.serial is not None:
+                items.append(self.serial)
+        for it in items:
+            yield it
+
+    def __str__(self):
+        """Return version information as a string.
+        """
+        return '{}.{}.{}{}'.format(
+            self.major,
+            self.minor,
+            self.micro,
+            ('' if self.releaselevel == 'final'
+             else self._specifiers[self.releaselevel] +
+                  ('' if self.serial is None else str(self.serial))))
+
+
+class HasVersion(object):
+    """Interface for a versioned class.
+    """
+    def __init__(self, *args):
+        """Constructor creates a `version` attribute that is
+        an instance of :class:`Version` initialized with the provided args.
+
+        Args:
+            *args: Arguments to be passed to Version constructor.
+        """
+        self.version = Version(*args)
+
+
+#: Package's version as an object
+package_version = Version(1, 0, 0, 'candidate', 1)
+
+#: Package's version as a simple string
+__version__ = str(package_version)

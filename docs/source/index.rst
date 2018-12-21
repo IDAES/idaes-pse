@@ -39,6 +39,7 @@ Contents
     models/index
     property_models/index
     dmf/index
+    version
     glossary
 
 ..    install
