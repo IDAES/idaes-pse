@@ -314,7 +314,9 @@ class StoreSpec(object):
 
     @classmethod
     def value_isfixed(cls, only_fixed):
-        """Retur a StoreSpec object to store variable values and if fixed.
+        """
+        Retur a StoreSpec object to store variable values and if fixed.
+
         Args:
             only_fixed: Only load fixed variable values
         """
@@ -334,8 +336,10 @@ class StoreSpec(object):
 
     @classmethod
     def value_isfixed_isactive(cls, only_fixed):
-        """Retur a StoreSpec object to store variable values, if variables are
+        """
+        Retur a StoreSpec object to store variable values, if variables are
         fixed and if components are active.
+
         Args:
             only_fixed: Only load fixed variable values
         """
