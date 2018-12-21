@@ -2,7 +2,6 @@
 """
 Institute for the Design of Advanced Energy Systems
 """
-import io
 import os
 import sys
 from setuptools import setup, find_packages
