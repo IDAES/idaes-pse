@@ -40,6 +40,7 @@ Contents
     property_models/index
     dmf/index
     glossary
+    examples
 
 ..    install
 ..    core/index
