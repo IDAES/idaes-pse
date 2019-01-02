@@ -163,15 +163,17 @@ class StoreSpec(object):
             This is for component data classes.
         skip_classes: This is a list of classes to skip.  If a class appears
             in the skip list, but also appears in the classes argument, the
-            classes argument will override skip_classes.
+            classes argument will override skip_classes. The use for this is to
+            specifically exclude certain classes that would get caught by more
+            general classes (e.g. UnitModel is in the class list, but you want
+            to exclude HeatExchanger which is derived from UnitModel).
         ignore_missing: If True will ignore a component or attribute that exists
             in the model, but not in the stored state. If false an excpetion
             will be raised for things in the model that should be loaded but
             aren't in the stored state. Extra items in the stored state will not
-            raise an exception regaurdless of this arguments
+            raise an exception regaurdless of this argument.
         suffix: If True store suffixes and component ids.  If false, don't store
-            suffixes, also don't store the compoent ids because they are only
-            needed to read back suffixes.
+            suffixes.
         suffix_filter: None to store all siffixes if suffix=True, or a list of
             suffixes to store if suffix=True
     """
@@ -298,7 +300,7 @@ class StoreSpec(object):
 
     @classmethod
     def isfixed(cls):
-        """Returns a StoreSpec object to store is variables are fixed."""
+        """Returns a StoreSpec object to store if variables are fixed."""
         return cls(
             classes=((Var, ()),),
             data_classes=((pyomo.core.base.var._VarData, ("fixed",)),),
@@ -510,27 +512,37 @@ def component_data_to_dict(o, wts):
     return edict
 
 def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=False,
-            return_dict=False):
+            return_dict=False, return_json_string=False):
     """
     Save the state of a model to a Python dictionary, and optionally dump it
     to a json file.  To load a model state, a model with the same structure must
     exist.  The model itself cannot be recreated from this.
 
     Args:
+        o: The Pyomo component object to save.  Usually a Pyomo model, but could
+            also be a subcomponent of a model (usually a sub-block).
         fname: json file name to save model state, if None only create
             python dict
+        gz: If fname is given and gv is True gzip the json file. The default is
+            False.
         human_read: if True, add indents and spacing to make the json file more
             readable, if false cut out whitespace and make as compact as
             possilbe
+        metadata: A dictionary of addtional metadata to add.
         wts: is What To Save, this is a StoreSpec object that specifies what
             object types and attributes to save.  If None, the default is used
             which saves the state of the compelte model state.
         metadata: addtional metadata to save beyond the standard format_version,
             date, and time.
         return_dict: default is False if true returns a dictionary representation
+        return_json_string: default is False returns a json string
+
     Returns:
-        A Python dictionary containing the state of the model. If fname is given
-        this dictionary is also dumped to a json file.
+        If return_dict is True returns a dictionary serialization of the Pyomo
+        component.  If return_dict is False and return_json_string is True
+        returns a json string dump of the dict.  If fname is given the dictionary
+        is also written to a json file.  If gz is True and fname is given, writes
+        a gzipped json file.
     """
     suffixes = []
     lookup = {}
@@ -554,11 +566,11 @@ def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=False,
     dict_time = time.time()
     pdict["etime_make_dict"] = dict_time - start_time
     # This returns the dict but if fname is specified also save to json file
+    dump_kw = {'indent': 2} if human_read else {'separators': (',', ':')}
     if fname is not None:
-        dump_kw = {'indent': 2} if human_read else {'separators': (',', ':')}
         if gz:
             with gzip.open(fname, 'w') as f:
-                f.write(json.dumps(sd).encode('utf-8'))
+                f.write(json.dumps(sd, **dump_kw).encode('utf-8'))
         else:
             with open(fname, "w") as f:
                 json.dump(sd, f, **dump_kw)
@@ -570,6 +582,8 @@ def to_json(o, fname=None, human_read=False, wts=None, metadata={}, gz=False,
         # an extreemly large amount of stuff.  So added this option to make sure
         # it's really what you want.
         return sd
+    elif return_json_string:
+        return json.dumps(sd, **dump_kw)
     else:
         return None
 
@@ -737,14 +751,17 @@ def from_json(o, sd=None, fname=None, s=None, wts=None, gz=False):
     Args:
         o: Pyomo component to for which to load state
         sd: State dictionary to load, if None, check fname and s
-        fname: JSON file to load, if None, check for s
-        s: JSON string to load
+        fname: JSON file to load, only used if sd is None
+        s: JSON string to load only used if both sd and fname are None
         wts: StoreSpec object specifying what to load
+        gz: If True assume the file specified by fname is gzipped. The default is
+            False.
+
     Returns:
-        Dictionary with some perfomance information. The keys are:
-        * etime_load_file: how long in seconds it took to load the json file
-        * etime_read_dict: how long in seconds it took to read models state
-        * etime_read_suffixes: how long in seconds it took to read suffixes
+        Dictionary with some perfomance information. The keys are
+        "etime_load_file", how long in seconds it took to load the json file
+        "etime_read_dict", how long in seconds it took to read models state
+        "etime_read_suffixes", how long in seconds it took to read suffixes
     """
     # keeping track of elapsed time.  want to make sure I don't do anything
     # that's too slow.
