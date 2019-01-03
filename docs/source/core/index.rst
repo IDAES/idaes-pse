@@ -14,7 +14,7 @@ Core Contents
     properties
     unit_model
     control_volume
-    utility_methods
+    util/index
 
 Core Overview
 -------------
