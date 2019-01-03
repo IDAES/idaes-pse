@@ -17,11 +17,11 @@ Simplified Linux Installation Instructions
 
 The following instructions assume that
 
-    * You have sudo privilege on your system
+    * You have sudo privilege on your system.
     * You have ``apt`` or may install it, or know how to adapt the instructions to a different package manager or how to install the packages directly. ``apt`` is default on Debian-based Linux distributions, including Ubuntu.
-    * You are on a computer+network that is allowed (by your sysadmins) to access and download the various packages and tools
+    * You are on a computer+network that is allowed (by your sysadmins) to access and download the various packages and tools, including the solvers from third-party sources.
 
-Install prerequisite system applications:
+Install `prerequisite system applications <#system-prerequisites>`_:
 
 .. code-block:: sh
 
@@ -34,7 +34,7 @@ Download and install `miniconda <https://conda.io/docs/user-guide/install/linux.
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
 
-Create and activate a conda environment for the new IDAES installation (you will need to ``source activate idaes`` when you open a fresh terminal window and wish to use IDAES):
+Create and activate a conda environment for the new IDAES installation **(you will need to** ``source activate idaes`` **when you open a fresh terminal window and wish to use IDAES)**:
 
 .. code-block:: sh
     
@@ -54,13 +54,20 @@ Install the python dependencies:
     cd idaes
     pip install -r requirements.txt
 
-Install the solver dependencies:
+Install the `main solver dependencies <#other-dependencies>`_:
 
 .. code-block:: sh
 
-    ./install_solvers.sh
+    sudo apt-get update && sudo apt-get install -y libboost-dev
+    wget https://ampl.com/netlib/ampl/solvers.tgz
+    tar -xf solvers.tgz
+    ( cd solvers && ./configure && make )
+    ( export ASL_BUILD=`pwd`/solvers/sys.x86_64.Linux && cd idaes/property_models/iapws95 && make )
+    wget https://ampl.com/dl/open/ipopt/ipopt-linux64.zip
+    unzip ipopt-linux64.zip
+    sudo cp ipopt /usr/local/bin/
 
-At this point, you should be able to launch the Jupyter Notebook server and successfully run examples from the ``examples`` folder:
+At this point, you should be able to launch the Jupyter Notebook server and successfully `run examples <examples.html>`_ from the ``examples`` folder:
 
 .. code-block:: sh
 
@@ -83,6 +90,8 @@ GCC and G++ are necessary if you wish to compile and use the solver libraries. T
 .. code-block:: sh
 
     sudo apt-get install gcc g++ make
+
+Additionally, for full functionality you may wish to consult the `Other Dependencies`_.
 
 
 Install IDAES
