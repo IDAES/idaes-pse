@@ -34,12 +34,12 @@ Download and install `miniconda <https://conda.io/docs/user-guide/install/linux.
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
 
-Create and activate a conda environment for the new IDAES installation **(you will need to** ``source activate idaes`` **when you open a fresh terminal window and wish to use IDAES)**:
+Create and activate a conda environment for the new IDAES installation **(you will need to** ``conda activate idaes`` **when you open a fresh terminal window and wish to use IDAES)**:
 
 .. code-block:: sh
     
     conda create -n idaes
-    source activate idaes
+    conda activate idaes
 
 Obtain the source code for IDAES from GitHub:
 
@@ -106,7 +106,7 @@ Install IDAES
 .. code-block:: sh
 
   conda create -n idaes python=3 pyqt
-  source activate idaes
+  conda activate idaes
 
 You can replace idaes with any name you like.  PyQt is used for some IDAES
 graphical user interface elements.

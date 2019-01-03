@@ -2,6 +2,7 @@
 """
 Institute for the Design of Advanced Energy Systems
 """
+import os
 import sys
 from setuptools import setup, find_packages
 
@@ -10,8 +11,22 @@ def warn(s):
     sys.stderr.write('*** WARNING *** {}\n'.format(s))
 
 
+def get_version(file, name='__version__'):
+    """Get the version of the package from the given file by
+    executing it and extracting the given `name`.
+    """
+    path = os.path.realpath(file)
+    local_namespace = {}
+    exec(open(path).read(), {}, local_namespace)
+    return local_namespace[name]
+
+
+NAME = 'idaes'
+VERSION = get_version(os.path.join(NAME, 'ver.py'))
+
 kwargs = dict(
-    name='idaes',
+    name=NAME,
+    version=VERSION,
     packages=find_packages(),
     install_requires=[],
     extras_require={},
@@ -23,12 +38,12 @@ kwargs = dict(
     author='IDAES Team',
     author_email='idaes-dev@idaes.org',
     maintainer='Keith Beattie',
-    url="https://github.com/IDAES/idaes-tmp",
+    url='https://github.com/IDAES/idaes',
     license='BSD 3-clause',
     description="IDAES core framework",
     long_description=__doc__,
     data_files=[],
-    keywords=["idaes", "energy systems"],
+    keywords=[NAME, "energy systems"],
     classifiers=[
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.6",
@@ -40,11 +55,4 @@ kwargs = dict(
     ],
 )
 
-try:
-    setup(setup_requires=['setuptools_scm'], use_scm_version=True, **kwargs)
-except (ImportError, LookupError):
-    default_version = '1.0.0'
-    warn('Cannot use .git version: package setuptools_scm not installed '
-         'or .git directory not present.')
-    print('Defaulting to version: {}'.format(default_version))
-    setup(**kwargs)
+setup(**kwargs)
