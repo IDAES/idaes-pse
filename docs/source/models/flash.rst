@@ -86,11 +86,16 @@ heat_duty      Reference to control_volume.heat
 deltaP         Reference to control_volume.deltaP
 ============== ==================================================
 
+Flash Class
+-----------
+
+.. module:: idaes.unit_models.flash
+
+.. autoclass:: Flash
+    :members:
+
 FlashData Class
 ---------------
 
-.. module:: idaes.models.flash
-
 .. autoclass:: FlashData
     :members:
-
