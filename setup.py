@@ -33,7 +33,7 @@ kwargs = dict(
     package_data={
         # If any package contains *.template, *.json files, *.dll files, or
         # *.so file, include them:
-        '': ['*.template', '*.json', '*.dll', '*.so']
+        '': ['*.template', '*.json', '*.dll', '*.so', '*.svg']
     },
     author='IDAES Team',
     author_email='idaes-dev@idaes.org',
