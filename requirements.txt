@@ -2,7 +2,6 @@
 alabaster>=0.7.7
 bokeh==0.12.9
 bunch
-codecov
 coveralls
 jupyter
 networkx
