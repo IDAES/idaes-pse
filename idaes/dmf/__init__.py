@@ -16,15 +16,9 @@ from .dmfbase import DMF                      # noqa: F401
 from .userapi import get_workspace            # noqa: F401
 from .userapi import find_property_packages   # noqa: F401
 from .userapi import index_property_packages  # noqa: F401
+# DMF version is the same as IDAES version
+from idaes import __version__                 # noqa
 
-# Version info.
-# Uses `setuptools_scm <https://pypi.python.org/pypi/setuptools_scm>`_
-from pkg_resources import get_distribution, DistributionNotFound
-try:
-    __version__ = get_distribution(__name__).version
-except DistributionNotFound:
-    # package is not installed
-    __version__ = '0.0.0'
 
 # default log format
 h = logging.StreamHandler()
