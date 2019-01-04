@@ -34,11 +34,11 @@ Download and install `miniconda <https://conda.io/docs/user-guide/install/linux.
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
 
-Create and activate a conda environment for the new IDAES installation **(you will need to** ``conda activate idaes`` **when you open a fresh terminal window and wish to use IDAES)**:
+Create and activate a conda environment (along with its own copy of ``pip``) for the new IDAES installation **(you will need to** ``conda activate idaes`` **when you open a fresh terminal window and wish to use IDAES)**:
 
 .. code-block:: sh
     
-    conda create -n idaes
+    conda create -n idaes pip
     conda activate idaes
 
 Obtain the source code for IDAES from GitHub:
@@ -53,6 +53,12 @@ Install the python dependencies:
 
     cd idaes
     pip install -r requirements.txt
+
+`Install the IDAES framework itself <#install-idaes>`_:
+
+.. code-block:: sh
+
+    python setup.py develop
 
 Install the `main solver dependencies <#other-dependencies>`_:
 
@@ -105,11 +111,13 @@ Install IDAES
 
 .. code-block:: sh
 
-  conda create -n idaes python=3 pyqt
+  conda create -n idaes python=3 pyqt pip
   conda activate idaes
 
 You can replace idaes with any name you like.  PyQt is used for some IDAES
-graphical user interface elements.
+graphical user interface elements. ``pip`` is already installed with conda itself,
+but a copy needs to exist within the environment in order to cleanly encapsulate
+all of the requirements and IDAES itself.
 
 **Install the master branch of IDAES from GitHub:**
 
