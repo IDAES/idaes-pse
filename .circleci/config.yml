@@ -10,7 +10,8 @@ shared: &shared
     - run: sudo python setup.py -q install
     - run: cd docs && make html
     - run: pytest idaes -m "not nocircleci"
-    - run: codecov --token=5cf93a40-daf7-4893-a28a-0d1cf229d110
+    - run: coverage report
+    - run: coveralls
 
 jobs:
   "python-2.7":

@@ -2,12 +2,12 @@
 alabaster>=0.7.7
 bokeh==0.12.9
 bunch
-codecov
 jupyter
 networkx
 #pyomo
 pytest
-pytest-cov
+pytest-cov==2.5.0
+python-coveralls
 six
 snowballstemmer==1.2.1
 sympy
