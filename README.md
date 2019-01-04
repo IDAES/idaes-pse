@@ -7,13 +7,13 @@
 
 The core of the IDAES framework.
 
-# Jupyterhub deployment 
+# IDAES on Docker Containers:
 
-## Amazon EC2 cluster
+## JupyterHub instance on Amazon EC2 cluster
 
 TODO
 
-## Single-user image
+## Single-user image for development and testing
 
 The Dockerfile in the top-level can be used to build a docker image that includes the IDAES package and its dependencies. The latest image is also maintained and **can be used for development and testing purposes**. 
 

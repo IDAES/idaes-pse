@@ -18,9 +18,9 @@ RUN conda install --quiet --yes \
     # Also activate ipywidgets extension for JupyterLab
     # Check this URL for most recent compatibilities
     # https://github.com/jupyter-widgets/ipywidgets/tree/master/packages/jupyterlab-manager
-    jupyter labextension install @jupyter-widgets/jupyterlab-manager@^0.37.0 && \
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager@^0.38.1 && \
     # Pin to 0.6.2 until we can move to Lab 0.35 (jupyterlab_bokeh didn't bump to 0.7.0)
-    jupyter labextension install jupyterlab_bokeh@0.6.2 && \
+    jupyter labextension install jupyterlab_bokeh@0.6.3 && \
     npm cache clean --force && \
     rm -rf $CONDA_DIR/share/jupyter/lab/staging && \
     rm -rf /home/$NB_USER/.cache/yarn && \
@@ -44,13 +44,13 @@ RUN chown -R $NB_UID /home/idaes
 # Copying part of install-solvers here:
 WORKDIR /home/idaes
 RUN sudo apt-get update && sudo apt-get install -y libboost-dev
-RUN wget https://ampl.com/netlib/ampl/solvers.tgz
-RUN tar -xf solvers.tgz
-WORKDIR /home/idaes/solvers 
-RUN ./configure && make
-ENV ASL_BUILD=/home/idaes/solvers/sys.x86_64.Linux
-WORKDIR /home/idaes/idaes/property_models/iapws95 
-RUN make
+# RUN wget https://ampl.com/netlib/ampl/solvers.tgz
+# RUN tar -xf solvers.tgz
+# WORKDIR /home/idaes/solvers 
+# RUN ./configure && make
+# ENV ASL_BUILD=/home/idaes/solvers/sys.x86_64.Linux
+# WORKDIR /home/idaes/idaes/property_models/iapws95 
+# RUN make
 
 # Install ipopt:
 RUN conda install -c conda-forge ipopt 
@@ -59,11 +59,11 @@ RUN conda install -c conda-forge ipopt
 USER $NB_UID
 WORKDIR /home/idaes
 RUN pip install -r requirements.txt
-
+RUN make
 RUN python setup.py install
 
 # Hacky fix: copy over iapws95.so to where we can find it in a notebook:
-RUN cp /home/idaes/idaes/property_models/iapws95/iapws95.so /opt/conda/lib/python3.6/site-packages/idaes-*-py3.6.egg/idaes/property_models/iapws95/
+# RUN cp /home/idaes/idaes/property_models/iapws95/iapws95.so /opt/conda/lib/python3.6/site-packages/idaes-*-py3.6.egg/idaes/property_models/iapws95/
 
 WORKDIR /home
 USER $NB_UID
