@@ -114,10 +114,16 @@ Variable               Name                            Notes
 :math:`U_{tube,t,x}`   tube_heat_transfer_coefficient
 ====================== =============================== =========================
 
-HeatExchanger1dData Class
--------------------------
+HeatExchanger1dClass
+--------------------
 
-.. module:: idaes.models.heat_exchanger_1D
+.. module:: idaes.unit_models.heat_exchanger_1D
 
-.. autoclass:: HeatExchanger1dData
+.. autoclass:: HeatExchanger1D
+  :members:
+
+HeatExchanger1dDataClass
+------------------------
+
+.. autoclass:: HeatExchanger1DData
     :members:

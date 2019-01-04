@@ -24,7 +24,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
 # Import IDAES cores
-from idaes.core import ProcessBlockData, useDefault
+from idaes.core import ProcessBlockData, useDefault, declare_process_block_class
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
@@ -169,6 +169,15 @@ CONFIG_Template.declare("has_mass_transfer", ConfigValue(
 **Valid values:** {
 **True** - include mass transfer terms,
 **False** - exclude mass transfer terms.}"""))
+CONFIG_Template.declare("has_heat_of_reaction", ConfigValue(
+    default=False,
+    domain=In([True, False]),
+    description="Heat of reaction term construction flag",
+    doc="""Indicates whether terms for heat of reaction should be constructed,
+**default** - False.
+**Valid values** {
+**True** - include heat of reaction terms,
+**False** - exclude heat of reaction terms.}"""))
 CONFIG_Template.declare("has_heat_transfer", ConfigValue(
     default=False,
     domain=In([True, False]),
@@ -232,7 +241,8 @@ and used when constructing these,
 **Valid values:** {
 see reaction package for documentation.}"""))
 
-
+@declare_process_block_class("ControlVolume", doc="This class is not usually "
+    "used directly. Use ControlVolume0D or ControlVolume1D instead.")
 class ControlVolumeBase(ProcessBlockData):
     """
     The ControlVolumeBase Class forms the base class for all IDAES
@@ -345,7 +355,11 @@ have a config block which derives from CONFIG_Base,
             self._auto_construct()
 
     def add_geometry(self, *args, **kwargs):
-        # Placeholder method for add_geometry
+        """
+        Method for defining the geometry of the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_geometry. Please contact the "
@@ -408,16 +422,16 @@ have a config block which derives from CONFIG_Base,
         energy balance.
 
         Args:
-            balance_type - EnergyBalanceType Enum indicating which type of
-                    energy balance should be constructed.
-            has_heat_of_reaction - whether terms for heat of reaction
-                    should be included in energy balance
-            has_heat_transfer - whether generic heat transfer terms should be
-                    included in energy balances
-            has_work_transfer - whether generic mass transfer terms should be
-                    included in energy balances
-            custom_term - a Pyomo Expression representing custom terms to
-                    be included in energy balances
+            balance_type (EnergyBalanceType): Enum indicating which type of
+                energy balance should be constructed.
+            has_heat_of_reaction (bool): whether terms for heat of reaction
+                should be included in energy balance
+            has_heat_transfer (bool): whether generic heat transfer terms should
+                be included in energy balances
+            has_work_transfer (bool): whether generic mass transfer terms should
+                be included in energy balances
+            custom_term (Expression): a Pyomo Expression representing custom
+                terms to be included in energy balances
 
         Returns:
             Constraint objects constructed by sub-method
@@ -449,12 +463,12 @@ have a config block which derives from CONFIG_Base,
         momentum balance.
 
         Args:
-            balance_type - MomentumBalanceType Enum indicating which type of
-                    momentum balance should be constructed.
-            has_pressure_change - whether default generation terms for pressure
-                    change should be included in momentum balances
-            custom_term - a Pyomo Expression representing custom terms to
-                    be included in momentum balances
+            balance_type (MomentumBalanceType): Enum indicating which type of
+                momentum balance should be constructed.
+            has_pressure_change (bool): whether default generation terms for
+                pressure change should be included in momentum balances
+            custom_term (Expression): a Pyomo Expression representing custom
+                terms to be included in momentum balances
 
         Returns:
             Constraint objects constructed by sub-method
@@ -504,6 +518,7 @@ have a config block which derives from CONFIG_Base,
 
         self.add_energy_balances(
             energy_balance_type=parent.config.energy_balance_type,
+            has_heat_of_reaction=parent.config.has_heat_of_reaction,
             has_heat_transfer=parent.config.has_heat_transfer,
             has_work_transfer=parent.config.has_work_transfer)
 
@@ -577,6 +592,11 @@ have a config block which derives from CONFIG_Base,
 
     # Add placeholder methods for adding property and reaction packages
     def add_state_blocks(self, *args, **kwargs):
+        """
+        Method for adding StateBlocks to the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_state_blocks. Please contact the "
@@ -584,6 +604,11 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_reaction_blocks(self, *args, **kwargs):
+        """
+        Method for adding ReactionBlocks to the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_reaction_blocks. Please contact the "
@@ -593,6 +618,12 @@ have a config block which derives from CONFIG_Base,
     # Add placeholder methods for all types of material, energy and momentum
     # balance equations which return NotImplementedErrors
     def add_phase_component_balances(self, *args, **kwargs):
+        """
+        Method for adding material balances indexed by phase and component to
+        the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_phase_component_material_balances. Please contact the "
@@ -600,6 +631,12 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_total_component_balances(self, *args, **kwargs):
+        """
+        Method for adding material balances indexed by component to
+        the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_component_material_balances. Please contact the "
@@ -607,6 +644,12 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_total_element_balances(self, *args, **kwargs):
+        """
+        Method for adding total elemental material balances indexed to
+        the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_element_material_balances. Please contact the "
@@ -614,6 +657,12 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_total_material_balances(self, *args, **kwargs):
+        """
+        Method for adding a total material balance to
+        the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_material_balances. Please contact the "
@@ -621,6 +670,12 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_phase_enthalpy_balances(self, *args, **kwargs):
+        """
+        Method for adding enthalpy balances indexed by phase to
+        the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_phase_enthalpy_balances. Please contact the "
@@ -628,6 +683,12 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_total_enthalpy_balances(self, *args, **kwargs):
+        """
+        Method for adding a total enthalpy balance to
+        the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_enthalpy_balances. Please contact the "
@@ -635,6 +696,12 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_phase_energy_balances(self, *args, **kwargs):
+        """
+        Method for adding energy balances (including kinetic energy) indexed by
+        phase to the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_phase_energy_balances. Please contact the "
@@ -642,6 +709,12 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_total_energy_balances(self, *args, **kwargs):
+        """
+        Method for adding a total energy balance (including kinetic energy)
+        to the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_energy_balances. Please contact the "
@@ -649,6 +722,12 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_phase_pressure_balances(self, *args, **kwargs):
+        """
+        Method for adding pressure balances indexed by
+        phase to the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_phase_pressure_balances. Please contact the "
@@ -656,6 +735,11 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_total_pressure_balances(self, *args, **kwargs):
+        """
+        Method for adding a total pressure balance to the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_pressure_balances. Please contact the "
@@ -663,6 +747,12 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_phase_momentum_balances(self, *args, **kwargs):
+        """
+        Method for adding momentum balances indexed by phase to the control
+        volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_phase_momentum_balances. Please contact the "
@@ -670,6 +760,11 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_total_momentum_balances(self, *args, **kwargs):
+        """
+        Method for adding a total momentum balance to the control volume.
+
+        See specific control volume documentation for details.
+        """
         raise NotImplementedError(
                 "{} control volume class has not implemented a method for "
                 "add_total_momentum_balances. Please contact the "

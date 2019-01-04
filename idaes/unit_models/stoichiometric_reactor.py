@@ -33,11 +33,11 @@ from idaes.core.util.misc import add_object_reference
 __author__ = "Chinedu Okoli, Andrew Lee"
 
 
-@declare_process_block_class("StoicReactor")
+@declare_process_block_class("StoichiometricReactor")
 class StoichiometricReactorData(UnitBlockData):
     """
-    Standard Stoic Reactor Unit Model Class 
-    This model assumes that all given reactions are irreversible, and that each 
+    Standard Stoichiometric Reactor Unit Model Class
+    This model assumes that all given reactions are irreversible, and that each
     reaction has a fixed rate_reaction extent which has to be specified by the
     user.
     """

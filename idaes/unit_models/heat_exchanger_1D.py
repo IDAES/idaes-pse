@@ -138,16 +138,16 @@ constructed,
         description="Property package to use for control volume",
         doc="""Property parameter object used to define property calculations
 (default = 'use_parent_value')
-    - 'use_parent_value' - get package from parent (default = None)
-    - a ParameterBlock object"""))
+- 'use_parent_value' - get package from parent (default = None)
+- a ParameterBlock object"""))
     _SideTemplate.declare("property_package_args", ConfigValue(
         default={},
         description="Arguments for constructing shell property package",
         doc="""A dict of arguments to be passed to the PropertyBlockData
 and used when constructing these
 (default = 'use_parent_value')
-    - 'use_parent_value' - get package from parent (default = None)
-    - a dict (see property package for documentation)"""))
+- 'use_parent_value' - get package from parent (default = None)
+- a dict (see property package for documentation)"""))
     # TODO : We should probably think about adding a consistency check for the
     # TODO : discretisation methdos as well.
     _SideTemplate.declare("transformation_method", ConfigValue(
