@@ -136,7 +136,7 @@ real ceos_z_liq(arglist *al){
   /* This finds the liquid root for a cubic EOS
    *
    * It also calculates first and second derivative.  Returns the vapor root
-   * if the liquid pahse doesn't exist, so it is non-smooth.  The extended
+   * if the liquid pahse doesn't exist, so it is discontinuous.  The extended
    * version of this may be better, but this has the nice property that where
    * a vapor root doesn't exist any very small vapor component would have the
    * same properties as the liquid. The exisitence of a liquid root doesn't
@@ -160,7 +160,7 @@ real ceos_z_vap(arglist *al){
     /* This finds the vapor root for a cubic EOS
      *
      * It also calculates first and second derivative.  Returns the liquid root
-     * if the vapor pahse doesn't exist, so it is non-smooth.  The extended
+     * if the vapor pahse doesn't exist, so it is discontinuous.  The extended
      * version of this may be better, but this has the nice property that where
      * a vapor root doesn't exist any very small vapor component would have the
      * same properties as the liquid. The exisitence of a vapor root doesn't
