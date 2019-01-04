@@ -112,8 +112,8 @@ HeatExchanger Class
 .. autoclass:: HeatExchanger
   :members:
 
-  HeatExchangerData Class
-  ~~~~~~~~~~~~~~~~~~~~~~~
+HeatExchangerData Class
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: HeatExchangerData
   :members:

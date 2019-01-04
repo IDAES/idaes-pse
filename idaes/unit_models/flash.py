@@ -103,8 +103,7 @@ Must be True if dynamic = True,
         default=True,
         domain=In([True, False]),
         description="Phase equilibrium term construction flag",
-        doc="""Indicates whether terms for phase equilibrium
-               should be constructed,
+        doc="""Indicates whether terms for phase equilibrium should be constructed,
 **default** - True.
 **Valid values:** {
 **True** - include phase equilibrium term,
