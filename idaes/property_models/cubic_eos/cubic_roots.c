@@ -9,6 +9,238 @@
 
 #include "cubic_roots.h"
 
+
+
+/***********************************************************************
+ * CUBIC FORMULA FUNCTION
+ * The root finding approach given in CRC Standard Mathematical
+ * Tables and Formulae 32nd edition pg 68 was used to identify the
+ * roots. There maybe a mistake in it depending on your printing,
+ * if you want to check on it also check out the errata:
+ * http://www.mathtable.com/smtf/
+ **********************************************************************/
+double cubic_root2(int phase, double b, double c, double d){
+  double F, G, H, I, J, K, M, N, P, R, S, T, U;
+  double zr[3], z;
+
+  F = (3*c - b*b)/3.0;
+  G = (2*b*b*b - 9*b*c + 27*d)/27.0;
+  H = G*G/4.0 + F*F*F/27.0;
+  P = -b/3.0;
+  if(H <= 0.0){
+      //Three roots, can include double or triple roots too
+      I = sqrt(G*G/4.0 - H);
+      J = curoot(I);
+      K = acos(-G/2.0/I);
+      M = cos(K/3);
+      N = sqrt_3*sin(K/3.0);
+      zr[0] = P + 2*J*M;
+      zr[1] = P - J*(M + N);
+      zr[2] = P - J*(M - N);
+      //Sort lowest to highest, may not need this, but for saftey...
+      if(zr[0] > zr[1]){z = zr[1]; zr[1] = zr[0]; zr[0] = z;}
+      if(zr[1] > zr[2]){z = zr[2]; zr[2] = zr[1]; zr[1] = z;}
+      if(zr[0] > zr[1]){z = zr[1]; zr[1] = zr[0]; zr[0] = z;}
+      //Vapor is the highest and liquid is the lowest
+      if(phase == 0) z = zr[0]; //liquid
+      else z = zr[2]; //vapor
+  }
+  else{ //Only one root
+      R = -G/2.0 + sqrt(H);
+      T = -G/2.0 - sqrt(H);
+      S =  curoot(R);
+      U = -curoot(-T);
+      z = S + U + P;
+    }
+    return z;
+}
+
+double cubic_root(int phase, eos_indx eos, double A, double B,
+                  double *derivs, double *hes){
+    /*
+     * Find solution to the cubic equation:
+     * 0 = z^3 - (1+B-uB)z^2 + (A+wB-uB-uB^2)z - AB-wB^2 - wB^3
+     *
+     * Also using the definition below (no a, a = 1)
+     *
+     * 0 = z^3 + b*z2 + c*z + d
+     * a = 1
+     * b = -(1 + B - u*B)
+     * c =  (A + w*B - u*B - u*B^2)
+     * d = -(A*B + w*B^2 + w*B^3)
+     *
+     * Return either what should be the liquid root if phase == 0 or the
+     * vapor root if phase == 1, and the derivatives of the returned
+     * root
+     *
+     *
+     */
+    const double u = eos_u[eos];
+    const double w = eos_w[eos];
+    static double b, c, d, z;
+
+    b = -(1.0 + B - u*B);
+    c = A + w*B*B - u*B - u*B*B;
+    d = -A*B - w*B*B - w*B*B*B;
+    z = cubic_root2(phase, b, c, d);
+    if(derivs) cuderiv(eos, 0, A, B, z, derivs, hes);
+    return z;
+}
+
+double cubic_root_ext(int phase, eos_indx eos, double A, double B,
+                      double *derivs, double *hes){
+
+  const double u = eos_u[eos];
+  const double w = eos_w[eos];
+  double b, c, d, z, a;
+  double bext, cext, dext;
+  double det;
+
+  b = -(1.0 + B - u*B);
+  c = A + w*B*B - u*B - u*B*B;
+  d = -A*B - w*B*B - w*B*B*B;
+
+  det = b*b - 3*c;
+  if(det > 0){
+    // could need the extension on liquid side so check
+    a = -1.0/3.0*b - 1.0*sqrt(det)/3.0;
+    if( ((a*a*a + b*a*a + c*a + d < 0)&&(phase==liquid)) ||
+        ((a*a*a + b*a*a + c*a + d > 0)&&(phase==vapor))){
+      //use extension liquid
+      a = 2*a;
+      bext = -b - 3.0*a;
+      cext = 3*a*a + 2*b*a + c;
+      dext = d - 0.75*a*a*a - 0.5*b*a*a;
+      z = cubic_root2(!phase, bext, cext, dext);
+      if(derivs) cuderiv(eos, phase+1, A, B, z, derivs, hes);
+    }
+    else{
+      z = cubic_root2(phase, b, c, d);
+      if(derivs) cuderiv(eos, 0, A, B, z, derivs, hes);
+    }
+  }
+  else{
+    z = cubic_root2(phase, b, c, d);
+    if(derivs) cuderiv(eos, 0, A, B, z, derivs, hes);
+  }
+  return z;
+}
+
+/***********************************************************************
+ *
+ * LIQUID/VAPOR ROOT PROPERTY FUNCTIONS
+ *
+ **********************************************************************/
+
+real ceos_z_liq(arglist *al){
+  /* This finds the liquid root for a cubic EOS
+   *
+   * It also calculates first and second derivative.  Returns the vapor root
+   * if the liquid pahse doesn't exist, so it is non-smooth.  The extended
+   * version of this may be better, but this has the nice property that where
+   * a vapor root doesn't exist any very small vapor component would have the
+   * same properties as the liquid. The exisitence of a liquid root doesn't
+   * necessarily mean that liquid is present, so the non-existing liquid pahse
+   * would not always have the same properies as the vapor.
+
+   * The arguments are:
+   *     0) eos_index, specifies the specific eos (e.g. Peng-Robinson)
+   *     1) A from the general cubic eos
+   *     2) B from the general cubic eos
+   */
+    double A, B;
+    eos_indx eos;
+    eos = (eos_indx)(al->ra[al->at[0]] + 0.5);  //cast to int is floor
+    A = al->ra[al->at[1]];
+    B = al->ra[al->at[2]];
+    return cubic_root(0, eos, A, B, al->derivs, al->hes);
+}
+
+real ceos_z_vap(arglist *al){
+    /* This finds the vapor root for a cubic EOS
+     *
+     * It also calculates first and second derivative.  Returns the liquid root
+     * if the vapor pahse doesn't exist, so it is non-smooth.  The extended
+     * version of this may be better, but this has the nice property that where
+     * a vapor root doesn't exist any very small vapor component would have the
+     * same properties as the liquid. The exisitence of a vapor root doesn't
+     * necessarily mean that vapor is present, so the non-existing vapor pahse
+     * would not always have the same properies as the vapor.
+     *
+     * The arguments are:
+     *     0) eos_index, specifies the specific eos (e.g. Peng-Robinson)
+     *     1) A from the general cubic eos
+     *     2) B from the general cubic eos
+     */
+    double A, B;
+    eos_indx eos;
+    eos = (eos_indx)(al->ra[al->at[0]] + 0.5);  //cast to int is floor
+    A = al->ra[al->at[1]];
+    B = al->ra[al->at[2]];
+    return cubic_root(1, eos, A, B, al->derivs, al->hes);
+}
+
+real ceos_z_liq_extend(arglist *al){
+    /* This finds the liquid root for a cubic EOS
+     *
+     * It also calculates first and second derivative. If the liquid root
+     * doesn't exist it uses a smooth extention of the cubic to find a real
+     * fake root, which should be nice numerically, and the property
+     * calculations. Should be done in such a way that is the fake root is
+     * returned the liquid fraction will be zero (or very close to zero).
+     *
+     * The arguments are:
+     *     0) eos_index, specifies the specific eos (e.g. Peng-Robinson)
+     *     1) A from the general cubic eos
+     *     2) B from the general cubic eos
+     */
+    double A, B;
+    eos_indx eos;
+    eos = (eos_indx)(al->ra[al->at[0]] + 0.5);  //cast to int is floor
+    A = al->ra[al->at[1]];
+    B = al->ra[al->at[2]];
+    return cubic_root_ext(0, eos, A, B, al->derivs, al->hes);
+}
+
+real ceos_z_vap_extend(arglist *al){
+  /* This finds the vapor root for a cubic EOS
+   *
+   * It also calculates first and second derivative. If the vapor root
+   * doesn't exist it uses a smooth extention of the cubic to find a real
+   * fake root, which should be nice numerically, and the property
+   * calculations. Should be done in such a way that is the fake root is
+   * returned the vapor fraction will be zero (or very close to zero).
+   *
+   * The arguments are:
+   *     0) eos_index, specifies the specific eos (e.g. Peng-Robinson)
+   *     1) A from the general cubic eos
+   *     2) B from the general cubic eos
+   */
+    double A, B;
+    eos_indx eos;
+    eos = (eos_indx)(al->ra[al->at[0]] + 0.5);  //cast to int is floor
+    A = al->ra[al->at[1]];
+    B = al->ra[al->at[2]];
+    return cubic_root_ext(1, eos, A, B, al->derivs, al->hes);
+}
+
+void funcadd(AmplExports *ae){
+    /* Arguments for addfunc (this is not fully detailed see funcadd.h)
+     * 1) Name of function in AMPL
+     * 2) Function pointer to C function
+     * 3) see FUNCADD_TYPE enum in funcadd.h
+     * 4) Number of arguments (the -1 is variable arg list length)
+     * 5) Void pointer to function info
+     */
+    //Real value function, and suppress anoying warings that, I think
+    //happen when this gets called on an already loaded library.
+    int t = FUNCADD_REAL_VALUED;
+    addfunc("ceos_z_vap", (rfunc)ceos_z_vap, t, -1, NULL);
+    addfunc("ceos_z_liq", (rfunc)ceos_z_liq, t, -1, NULL);
+    addfunc("ceos_z_vap_extend", (rfunc)ceos_z_vap_extend, t, -1, NULL);
+    addfunc("ceos_z_liq_extend", (rfunc)ceos_z_liq_extend, t, -1, NULL);
+}
+
 /***********************************************************************
  *
  * helpful little functions
@@ -48,8 +280,7 @@ int cubic_derivs(double b, double c, double z, double *grad, double *hes){
       return 0;
 }
 
-int ext_cubic_derivs(int phase, double b, double c, double z,
-    double *grad, double *hes){
+int ext_cubic_derivs(int phase, double b, double c, double z, double *grad, double *hes){
       // derivatives with respect to coefficents for an extended cubic
       // that produces real root answers where real roots shouldn't exist
       // this should help numerically when solving problems with disappearing
@@ -188,8 +419,7 @@ int ext_cubic_derivs(int phase, double b, double c, double z,
 }
 
 
-int AB_derivs(eos_indx eos, char ext, double A, double B, double z, double *grad,
-  double *hes){
+int AB_derivs(eos_indx eos, char ext, double A, double B, double z, double *grad, double *hes){
     // Calculate derivatives with respect to A and B from the general cubic
     // equation of state.
 
@@ -279,250 +509,4 @@ int cuderiv(eos_indx eos, char ext, double A, double B, double z, double *derivs
     hes[5] = hes1[2];
 
     return 0;
-}
-
-/***********************************************************************
- * CUBIC FORMULA FUNCTION
- * The root finding approach given in CRC Standard Mathematical
- * Tables and Formulae 32nd edition pg 68 was used to identify the
- * roots. There maybe a mistake in it depending on your printing,
- * if you want to check on it also check out the errata:
- * http://www.mathtable.com/smtf/
- **********************************************************************/
-double cubic_root2(int phase, double b, double c, double d){
-  double F, G, H, I, J, K, M, N, P, R, S, T, U;
-  double zr[3], z;
-
-  F = (3*c - b*b)/3.0;
-  G = (2*b*b*b - 9*b*c + 27*d)/27.0;
-  H = G*G/4.0 + F*F*F/27.0;
-  P = -b/3.0;
-  if(H <= 0.0){
-      //Three roots, can include double or triple roots too
-      I = sqrt(G*G/4.0 - H);
-      J = curoot(I);
-      K = acos(-G/2.0/I);
-      M = cos(K/3);
-      N = sqrt_3*sin(K/3.0);
-      zr[0] = P + 2*J*M;
-      zr[1] = P - J*(M + N);
-      zr[2] = P - J*(M - N);
-      //Sort lowest to highest, may not need this, but for saftey...
-      if(zr[0] > zr[1]){z = zr[1]; zr[1] = zr[0]; zr[0] = z;}
-      if(zr[1] > zr[2]){z = zr[2]; zr[2] = zr[1]; zr[1] = z;}
-      if(zr[0] > zr[1]){z = zr[1]; zr[1] = zr[0]; zr[0] = z;}
-      //Vapor is the highest and liquid is the lowest
-      if(phase == 0) z = zr[0]; //liquid
-      else z = zr[2]; //vapor
-  }
-  else{ //Only one root
-      R = -G/2.0 + sqrt(H);
-      T = -G/2.0 - sqrt(H);
-      S =  curoot(R);
-      U = -curoot(-T);
-      z = S + U + P;
-    }
-    return z;
-}
-
-double cubic_root(int phase, eos_indx eos, double A, double B,
-                  double *derivs, double *hes){
-    /*
-     * Find solution to the cubic equation:
-     * 0 = z^3 - (1+B-uB)z^2 + (A+wB-uB-uB^2)z - AB-wB^2 - wB^3
-     *
-     * Also using the definition below (no a, a = 1)
-     *
-     * 0 = z^3 + b*z2 + c*z + d
-     * a = 1
-     * b = -(1 + B - u*B)
-     * c =  (A + w*B - u*B - u*B^2)
-     * d = -(A*B + w*B^2 + w*B^3)
-     *
-     * Return either what should be the liquid root if phase == 0 or the
-     * vapor root if phase == 1, and the derivatives of the returned
-     * root
-     *
-     *
-     */
-    const double u = eos_u[eos];
-    const double w = eos_w[eos];
-    static double b, c, d, z;
-
-    b = -(1.0 + B - u*B);
-    c = A + w*B*B - u*B - u*B*B;
-    d = -A*B - w*B*B - w*B*B*B;
-    z = cubic_root2(phase, b, c, d);
-    if(derivs) cuderiv(eos, 0, A, B, z, derivs, hes);
-    return z;
-}
-
-double cubic_root_ext(int phase, eos_indx eos, double A, double B,
-                      double *derivs, double *hes){
-
-  const double u = eos_u[eos];
-  const double w = eos_w[eos];
-  double b, c, d, z, a;
-  double bext, cext, dext;
-  double det;
-
-  b = -(1.0 + B - u*B);
-  c = A + w*B*B - u*B - u*B*B;
-  d = -A*B - w*B*B - w*B*B*B;
-
-  det = b*b - 3*c;
-  if(det > 0 && phase==0){
-    // could need the extension on liquid side so check
-    a = -1.0/3.0*b - 1.0*sqrt(det)/3.0;
-    if(a*a*a + b*a*a + c*a + d < 0){
-      //use extension liquid
-      a = 2*a;
-      bext = -b - 3.0*a;
-      cext = 3*a*a + 2*b*a + c;
-      dext = d - 0.75*a*a*a - 0.5*b*a*a;
-      z = cubic_root2(!phase, bext, cext, dext);
-      if(derivs) cuderiv(eos, 1, A, B, z, derivs, hes);
-    }
-    else{
-      z = cubic_root2(phase, b, c, d);
-      if(derivs) cuderiv(eos, 0, A, B, z, derivs, hes);
-    }
-  }
-  else if(det > 0 && phase==1){
-    // could need the extension of vapor side so check
-    a = -1.0/3.0*b + 1.0*sqrt(det)/3.0;
-    if(a*a*a + b*a*a + c*a + d > 0){
-      //use extension vapor
-      a = 2*a;
-      bext = -b - 3.0*a;
-      cext = 3*a*a + 2*b*a + c;
-      dext = d - 0.75*a*a*a - 0.5*b*a*a;
-      z = cubic_root2(!phase, bext, cext, dext);
-      if(derivs) cuderiv(eos, 2, A, B, z, derivs, hes);
-    }
-    else{
-      z = cubic_root2(phase, b, c, d);
-      if(derivs) cuderiv(eos, 0, A, B, z, derivs, hes);
-    }
-  }
-  else{
-    z = cubic_root2(phase, b, c, d);
-    if(derivs) cuderiv(eos, 0, A, B, z, derivs, hes);
-  }
-  return z;
-}
-
-/***********************************************************************
- *
- * LIQUID/VAPOR ROOT PROPERTY FUNCTIONS
- *
- **********************************************************************/
-
-real ceos_z_liq(arglist *al){
-  /* This finds the liquid root for a cubic EOS
-   *
-   * It also calculates first and second derivative.  Returns the vapor root
-   * if the liquid pahse doesn't exist, so it is non-smooth.  The extended
-   * version of this may be better, but this has the nice property that where
-   * a vapor root doesn't exist any very small vapor component would have the
-   * same properties as the liquid. The exisitence of a liquid root doesn't
-   * necessarily mean that liquid is present, so the non-existing liquid pahse
-   * would not always have the same properies as the vapor.
-
-   * The arguments are:
-   *     0) eos_index, specifies the specific eos (e.g. Peng-Robinson)
-   *     1) A from the general cubic eos
-   *     2) B from the general cubic eos
-   */
-    double A, B;
-    eos_indx eos;
-    eos = (eos_indx)(al->ra[al->at[0]] + 0.5);  //cast to int is floor
-    A = al->ra[al->at[1]];
-    B = al->ra[al->at[2]];
-    return cubic_root(0, eos, A, B, al->derivs, al->hes);
-}
-
-real ceos_z_vap(arglist *al){
-    /* This finds the vapor root for a cubic EOS
-     *
-     * It also calculates first and second derivative.  Returns the liquid root
-     * if the vapor pahse doesn't exist, so it is non-smooth.  The extended
-     * version of this may be better, but this has the nice property that where
-     * a vapor root doesn't exist any very small vapor component would have the
-     * same properties as the liquid. The exisitence of a vapor root doesn't
-     * necessarily mean that vapor is present, so the non-existing vapor pahse
-     * would not always have the same properies as the vapor.
-     *
-     * The arguments are:
-     *     0) eos_index, specifies the specific eos (e.g. Peng-Robinson)
-     *     1) A from the general cubic eos
-     *     2) B from the general cubic eos
-     */
-    double A, B;
-    eos_indx eos;
-    eos = (eos_indx)(al->ra[al->at[0]] + 0.5);  //cast to int is floor
-    A = al->ra[al->at[1]];
-    B = al->ra[al->at[2]];
-    return cubic_root(1, eos, A, B, al->derivs, al->hes);
-}
-
-real ceos_z_liq_extend(arglist *al){
-    /* This finds the liquid root for a cubic EOS
-     *
-     * It also calculates first and second derivative. If the liquid root
-     * doesn't exist it uses a smooth extention of the cubic to find a real
-     * fake root, which should be nice numerically, and the property
-     * calculations. Should be done in such a way that is the fake root is
-     * returned the liquid fraction will be zero (or very close to zero).
-     *
-     * The arguments are:
-     *     0) eos_index, specifies the specific eos (e.g. Peng-Robinson)
-     *     1) A from the general cubic eos
-     *     2) B from the general cubic eos
-     */
-    double A, B;
-    eos_indx eos;
-    eos = (eos_indx)(al->ra[al->at[0]] + 0.5);  //cast to int is floor
-    A = al->ra[al->at[1]];
-    B = al->ra[al->at[2]];
-    return cubic_root_ext(0, eos, A, B, al->derivs, al->hes);
-}
-
-real ceos_z_vap_extend(arglist *al){
-  /* This finds the vapor root for a cubic EOS
-   *
-   * It also calculates first and second derivative. If the vapor root
-   * doesn't exist it uses a smooth extention of the cubic to find a real
-   * fake root, which should be nice numerically, and the property
-   * calculations. Should be done in such a way that is the fake root is
-   * returned the vapor fraction will be zero (or very close to zero).
-   *
-   * The arguments are:
-   *     0) eos_index, specifies the specific eos (e.g. Peng-Robinson)
-   *     1) A from the general cubic eos
-   *     2) B from the general cubic eos
-   */
-    double A, B;
-    eos_indx eos;
-    eos = (eos_indx)(al->ra[al->at[0]] + 0.5);  //cast to int is floor
-    A = al->ra[al->at[1]];
-    B = al->ra[al->at[2]];
-    return cubic_root_ext(1, eos, A, B, al->derivs, al->hes);
-}
-
-void funcadd(AmplExports *ae){
-    /* Arguments for addfunc (this is not fully detailed see funcadd.h)
-     * 1) Name of function in AMPL
-     * 2) Function pointer to C function
-     * 3) see FUNCADD_TYPE enum in funcadd.h
-     * 4) Number of arguments (the -1 is variable arg list length)
-     * 5) Void pointer to function info
-     */
-    //Real value function, and suppress anoying warings that, I think
-    //happen when this gets called on an already loaded library.
-    int t = FUNCADD_REAL_VALUED;
-    addfunc("ceos_z_vap", (rfunc)ceos_z_vap, t, -1, NULL);
-    addfunc("ceos_z_liq", (rfunc)ceos_z_liq, t, -1, NULL);
-    addfunc("ceos_z_vap_extend", (rfunc)ceos_z_vap_extend, t, -1, NULL);
-    addfunc("ceos_z_liq_extend", (rfunc)ceos_z_liq_extend, t, -1, NULL);
 }
