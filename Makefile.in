@@ -14,12 +14,12 @@
 
 ASL=$(ASL_BUILD)
 
-
 # BOOST is a extra location to look for header files.  Depending on how BOOST is
 # obtainted the header files may not be in the default search path. This variable
 # is optional, and only needs to be set if the boost header files are not found.
 # This should be set to the path that contains the "boost" header file directory
-# not the boost header file dircetory.
+# not the boost header file dircetory.  This can be set here or with the
+# BOOST_HEADER environment variable.
 
 BOOST=$(BOOST_HEADER)
 

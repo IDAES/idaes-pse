@@ -1,4 +1,4 @@
-include ../../../Makefile.config
+include ../../../Makefile.in
 
 ifeq ($(ASL),)
     CFLAGS = -Wall -Wextra -O3
