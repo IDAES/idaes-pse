@@ -44,13 +44,11 @@ RUN chown -R $NB_UID /home/idaes
 # Copying part of install-solvers here:
 WORKDIR /home/idaes
 RUN sudo apt-get update && sudo apt-get install -y libboost-dev
-# RUN wget https://ampl.com/netlib/ampl/solvers.tgz
-# RUN tar -xf solvers.tgz
-# WORKDIR /home/idaes/solvers 
-# RUN ./configure && make
-# ENV ASL_BUILD=/home/idaes/solvers/sys.x86_64.Linux
-# WORKDIR /home/idaes/idaes/property_models/iapws95 
-# RUN make
+RUN wget https://ampl.com/netlib/ampl/solvers.tgz
+RUN tar -xf solvers.tgz
+WORKDIR /home/idaes/solvers 
+RUN ./configure && make
+ENV ASL_BUILD=/home/idaes/solvers/sys.x86_64.Linux
 
 # Install ipopt:
 RUN conda install -c conda-forge ipopt 
@@ -61,9 +59,6 @@ WORKDIR /home/idaes
 RUN pip install -r requirements.txt
 RUN make
 RUN python setup.py install
-
-# Hacky fix: copy over iapws95.so to where we can find it in a notebook:
-# RUN cp /home/idaes/idaes/property_models/iapws95/iapws95.so /opt/conda/lib/python3.6/site-packages/idaes-*-py3.6.egg/idaes/property_models/iapws95/
 
 WORKDIR /home
 USER $NB_UID
