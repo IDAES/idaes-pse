@@ -1,10 +1,4 @@
-ASL=$(ASL_BUILD)
-BOOST=$(BOOST_HEADER)
-
-CC = gcc
-CXX = g++
-RM = rm
-CP = cp
+include ../../../Makefile.in
 
 ifeq ($(ASL),)
     CFLAGS = -Wall -Wextra -O3
