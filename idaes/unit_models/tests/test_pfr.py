@@ -89,8 +89,6 @@ def test_initialize():
                             "has_heat_transfer": False,
                             "has_pressure_change": False})
 
-    #raise Exception(m.fs.pfr.control_volume.properties.display())
-
     m.fs.pfr.inlet[:].flow_vol.fix(1.0)
     m.fs.pfr.inlet[:].conc_mol_comp["H2O"].fix(55388.0)
     m.fs.pfr.inlet[:].conc_mol_comp["NaOH"].fix(100.0)
