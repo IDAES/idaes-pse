@@ -163,6 +163,10 @@ see property package for documentation.}"""))
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args})
 
+        # Add geomerty variables to control volume
+        if self.config.has_holdup:
+            self.control_volume.add_geometry()
+
         # Add inlet and outlet state blocks to control volume
         self.control_volume.add_state_blocks()
 
@@ -173,7 +177,7 @@ see property package for documentation.}"""))
                     balance_type=self.config.material_balance_type,
                     has_phase_equilibrium=self.config.has_phase_equilibrium)
 
-        #Add energy balance
+        # Add energy balance
         self.control_volume.add_energy_balances(
                     balance_type=self.config.energy_balance_type,
                     has_work_transfer=True)
