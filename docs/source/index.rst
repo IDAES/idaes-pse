@@ -41,6 +41,7 @@ Contents
     dmf/index
     version
     glossary
+    examples
 
 ..    install
 ..    core/index

@@ -12,13 +12,160 @@ The IDAES toolkit is written in Python. It should run under versions of Python 2
     of the PSE framework itself, and we plan to support Windows and Mac OSX
     installation in the not-too-distant future.
 
-Dependencies
-------------
+Simplified Linux Installation Instructions
+------------------------------------------
 
-Some of the model code depends on external solvers. All of the solvers are optional to some extent, however IPOPT is used extensively.
+The following instructions assume that
+
+    * You have sudo privilege on your system.
+    * You have ``apt`` or may install it, or know how to adapt the instructions to a different package manager or how to install the packages directly. ``apt`` is default on Debian-based Linux distributions, including Ubuntu.
+    * You are on a computer+network that is allowed (by your sysadmins) to access and download the various packages and tools, including the solvers from third-party sources.
+
+Install `prerequisite system applications <#system-prerequisites>`_:
+
+.. code-block:: sh
+
+    sudo apt-get install gcc g++ make
+
+Download and install `miniconda <https://conda.io/docs/user-guide/install/linux.html>`_ (follow the prompts in the installer; you may want to restart your Terminal window afterwards to ensure that new environment variables are set correctly):
+
+.. code-block:: sh
+    
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh
+
+Create and activate a conda environment (along with its own copy of ``pip``) for the new IDAES installation **(you will need to** ``conda activate idaes`` **when you open a fresh terminal window and wish to use IDAES)**:
+
+.. code-block:: sh
+    
+    conda create -n idaes pip
+    conda activate idaes
+
+Obtain the source code for IDAES from GitHub:
+
+.. code-block:: sh
+
+    git clone https://github.com/IDAES/idaes.git
+
+Install the python dependencies:
+
+.. code-block:: sh
+
+    cd idaes
+    pip install -r requirements.txt
+
+`Install the IDAES framework itself <#install-idaes>`_:
+
+.. code-block:: sh
+
+    python setup.py develop
+
+Install the `main solver dependencies <#other-dependencies>`_:
+
+.. code-block:: sh
+
+    sudo apt-get update && sudo apt-get install -y libboost-dev
+    wget https://ampl.com/netlib/ampl/solvers.tgz
+    tar -xf solvers.tgz
+    ( cd solvers && ./configure && make )
+    ( export ASL_BUILD=`pwd`/solvers/sys.x86_64.Linux && cd idaes/property_models/iapws95 && make )
+    wget https://ampl.com/dl/open/ipopt/ipopt-linux64.zip
+    unzip ipopt-linux64.zip
+    sudo cp ipopt /usr/local/bin/
+
+At this point, you should be able to launch the Jupyter Notebook server and successfully `run examples <examples.html>`_ from the ``examples`` folder:
+
+.. code-block:: sh
+
+    jupyter notebook
+
+Installation on Linux/Unix
+--------------------------
+
+System Prerequisites
+^^^^^^^^^^^^^^^^^^^^
+
+The following commonly-used programs must be installed:
+
+ - make
+ - gcc
+ - g++
+
+GCC and G++ are necessary if you wish to compile and use the solver libraries. The following command installs all three, and assumes you have ``apt`` installed, which is default on Debian-based systems.
+
+.. code-block:: sh
+
+    sudo apt-get install gcc g++ make
+
+Additionally, for full functionality you may wish to consult the `Other Dependencies`_.
+
+
+Install IDAES
+^^^^^^^^^^^^^^
+
+* The installation instructions assume a Python packaging system called `Conda <https://conda.io/docs/>`_ is available. Please first consult the `Conda documentation <https://conda.io/docs/user-guide/>`_ to install this on your system. You can use either Anaconda or Miniconda.
+
+* Conda allows you to to create separate environments containing files, packages and their dependencies that will not interact with other environments.
+
+**Create/switch to your preferred Python environment**
+
+.. code-block:: sh
+
+  conda create -n idaes python=3 pyqt pip
+  conda activate idaes
+
+You can replace idaes with any name you like.  PyQt is used for some IDAES
+graphical user interface elements. ``pip`` is already installed with conda itself,
+but a copy needs to exist within the environment in order to cleanly encapsulate
+all of the requirements and IDAES itself.
+
+**Install the master branch of IDAES from GitHub:**
+
+.. code-block:: sh
+
+  git clone https://github.com/IDAES/idaes.git
+  cd idaes
+
+**Install the requirements**
+
+.. code-block:: sh
+
+  pip install -r requirements.txt
+
+**Install the IDAES Framework**
+
+  To compile C functions for some property models, the location of the compiled ASL is required
+  for the commands below a location of :code:`$HOME/local/src/solvers/sys.x86_64.Linux`;
+  however, this location will depend on your system and where you put the files.
+
+  The BOOST_HEADER environment variable can be set optionally if the the build
+  fails due to not finding BOOST. This allows more flexibility for alternative
+  locations.  Setting BOOST_HEADER is usually not needed.
+
+  If make fails or you do not want to compile, you can skip to the last line, but
+  some property packages may not work.
+
+.. code-block:: sh
+
+  export ASL_BUILD=$HOME/local/src/solvers/sys.x86_64.Linux
+  make
+  python setup.py develop
+
+**OR**
+
+.. code-block:: sh
+
+  export ASL_BUILD=$HOME/local/src/solvers/sys.x86_64.Linux
+  make
+  python setup.py install
+
+Other Dependencies
+------------------
 
 Solvers
 ^^^^^^^
+
+Some of the model code depends on external solvers. All of the solvers are optional to some extent, however IPOPT is used extensively.
 
 **CPLEX**
 
@@ -59,67 +206,6 @@ commands below.
 
 The C++ Boost libraries should be available. One possibility is to use conda to
 install boost, but the best option depends on your system.
-
-
-Installation on Linux/Unix
---------------------------
-
-Install IDAES
-^^^^^^^^^^^^^^
-
-* The installation instructions assume a Python packaging system called [Conda](https://conda.io/docs/) is available. Please first consult the [Conda documentation](https://conda.io/docs/user-guide/) to install this on your system. You can use either Anaconda or Miniconda.
-
-* Conda allows you to to create separate environments containing files, packages and their dependencies that will not interact with other environments.
-
-**Create/switch to your preferred Python environment**
-
-.. code-block:: sh
-
-  conda create -n idaes python=3 pyqt
-  source activate idaes
-
-You can replace idaes with any name you like.  PyQt is used for some IDAES
-graphical user interface elements.
-
-**Install the master branch of IDAES from GitHub:**
-
-.. code-block:: sh
-
-  git clone https://github.com/IDAES/idaes.git
-  cd idaes
-
-**Install the requirements**
-
-.. code-block:: sh
-
-  pip install -r requirement.txt`
-
-**Install the IDAES Framework**
-
-  To compile C functions for some property models, the location of the compiled ASL is required
-  for the commands below a location of :code:`$HOME/local/src/solvers/sys.x86_64.Linux`;
-  however, this location will depend on your system and where you put the files.
-
-  The BOOST_HEADER environment variable can be set optionally if the the build
-  fails due to not finding BOOST. This allows more flexibility for alternative
-  locations.  Setting BOOST_HEADER is usually not needed.
-
-  If make fails or you do not want to compile, you can skip to the last line, but
-  some property packages may not work.
-
-.. code-block:: sh
-
-  export ASL_BUILD=$HOME/local/src/solvers/sys.x86_64.Linux
-  make
-  python setup.py develop
-
-**OR**
-
-.. code-block:: sh
-
-  export ASL_BUILD=$HOME/local/src/solvers/sys.x86_64.Linux
-  make
-  python setup.py install
 
 Installation on Windows
 -----------------------
@@ -220,3 +306,6 @@ Option 2: Using Git
 * Open command prompt and navigate to the folder where you extracted the contents of the IDAES repository (`cd <user>/.../<desired directory>/IDAES/`).
 
    1. Run: `python setup.py develop`
+
+
+
