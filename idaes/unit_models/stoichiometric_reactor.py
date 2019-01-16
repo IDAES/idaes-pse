@@ -170,7 +170,7 @@ see reaction package for documentation.}"""))
                 "property_package_args": self.config.property_package_args,
                 "reaction_package": self.config.reaction_package,
                 "reaction_package_args": self.config.reaction_package_args})
-    
+
         self.control_volume.add_state_blocks()
 
         self.control_volume.add_reaction_blocks()
@@ -178,7 +178,7 @@ see reaction package for documentation.}"""))
         self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type,
             has_rate_reactions=True)
-        
+
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
             has_heat_transfer=self.config.has_heat_transfer)
