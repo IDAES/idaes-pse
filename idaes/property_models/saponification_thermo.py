@@ -23,20 +23,20 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
+                           NonNegativeReals,
                            Param,
                            PositiveReals,
                            Reals,
                            Set,
                            value,
                            Var)
-from pyomo.opt import SolverFactory, TerminationCondition
+from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBase,
                         StateBlockDataBase,
                         StateBlockBase)
-from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 
 # Some more inforation about this module
@@ -306,6 +306,7 @@ class StateBlockData(StateBlockDataBase):
 
         # Create state variables
         self.flow_vol = Var(initialize=1.0,
+                            domain=NonNegativeReals,
                             doc='Total volumentric flowrate [m^3/s]')
         self.pressure = Var(domain=Reals,
                             initialize=101325.0,
@@ -316,7 +317,7 @@ class StateBlockData(StateBlockDataBase):
                                bounds=(298.15, 323.15),
                                doc='State temperature [K]')
         self.conc_mol_comp = Var(self.component_list_ref,
-                                 domain=Reals,
+                                 domain=NonNegativeReals,
                                  initialize=100.0,
                                  doc='Component molar concentrations '
                                      '[mol/m^3]')

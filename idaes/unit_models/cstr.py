@@ -211,9 +211,6 @@ see reaction package for documentation.}"""))
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-        self.control_volume.add_total_pressure_balances(
-            has_pressure_change=self.config.has_pressure_change)
-
         # Add Ports
         self.add_inlet_port()
         self.add_outlet_port()
