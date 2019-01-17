@@ -65,7 +65,7 @@ This should start up a notebook server and then pop up a tab or window in your d
 
 ### JupyterHub instance on Amazon EC2 cluster
 
-TODO
+The JupyterHub instance is currently available for demo purposes and is started only when needed. It will be made available to IDAES users in the near future.
 
 ### Single-user image for development and testing
 

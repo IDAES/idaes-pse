@@ -23,19 +23,25 @@ function idaes_pull() {
 if [ -z $1 ]; then
   usage
 fi
-if [ "$1" = "test" ]; then
-    idaes_pull
-    echo "Running tests in container..."
-    docker run -it idaes/idaes_jupyterhub /bin/bash -c "cd /home/idaes && pytest"
-elif [ "$1" = "notebook" ]; then
-    idaes_pull
-    echo "Starting Jupyter..."
-    docker run -p 8888:8888 -it idaes/idaes_jupyterhub  
-elif [ "$1" = "refresh" ]; then
-    echo "Refreshing IDAES image from DockerHub..."
-    docker pull idaes/idaes_jupyterhub:latest
-elif [[ "$1" = "-h" || "$1" = "-help" ]]; then
-    usage
-else
-    usage
-fi
+
+case $1 in
+    test)
+      idaes_pull
+      echo "Running tests in container..."
+      docker run -it idaes/idaes_jupyterhub /bin/bash -c "cd /home/idaes && pytest"
+      ;;
+    notebook)
+      idaes_pull
+      echo "Starting Jupyter..."
+      docker run -p 8888:8888 -it idaes/idaes_jupyterhub  
+      ;;
+    refresh)      
+      echo "Refreshing IDAES image from DockerHub..."
+      docker pull idaes/idaes_jupyterhub:latest
+      ;;
+    -h|-help)
+      usage
+      ;;
+    *)
+      usage
+esac
