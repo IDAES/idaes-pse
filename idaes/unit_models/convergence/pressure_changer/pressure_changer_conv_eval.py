@@ -19,13 +19,16 @@ from idaes.unit_models.pressure_changer import PressureChanger
 # Import property package for testing
 from idaes.property_models import iapws95_ph as pp
 '''
-This module contains the code for convergence testing of the PressureChanger model
+This module contains the code for convergence testing of the
+PressureChanger model
 '''
+
 
 class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
     def get_specification(self):
         """
-        Returns the convergence evaluation specification for the PressureChanger unit model
+        Returns the convergence evaluation specification for the
+        PressureChanger unit model
 
         Returns
         -------
@@ -33,16 +36,21 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
         """
         s = cb.ConvergenceEvaluationSpecification()
 
-        s.add_sampled_input(name='Inlet_Flowrate', pyomo_path='fs.pc.control_volume.properties_in[0].flow_mol',
-                  lower= 1, upper=1e6, mean=5e3, std=5e3)
+        s.add_sampled_input(
+                name='Inlet_Flowrate',
+                pyomo_path='fs.pc.control_volume.properties_in[0].flow_mol',
+                lower=1, upper=1e6, mean=5e3, std=5e3)
 
-        s.add_sampled_input(name='Inlet_Pressure', pyomo_path='fs.pc.control_volume.properties_in[0].pressure',
-                  lower= 1e5, upper=1e7, mean=1e6, std=3e6)
+        s.add_sampled_input(
+                name='Inlet_Pressure',
+                pyomo_path='fs.pc.control_volume.properties_in[0].pressure',
+                lower=1e5, upper=1e7, mean=1e6, std=3e6)
         return s
 
     def get_initialized_model(self):
         """
-        Returns an initialized model for the PressureChanger unit model convergence evaluation
+        Returns an initialized model for the PressureChanger unit model
+        convergence evaluation
 
         Returns
         -------
@@ -78,7 +86,8 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
 
     def get_solver(self):
         """
-        Returns an ipopt solver object with the desired options for convergence evaluation (and initialization)
+        Returns an ipopt solver object with the desired options for
+        convergence evaluation (and initialization)
 
         Returns
         -------
@@ -89,4 +98,3 @@ class PressureChangerConvergenceEvaluation(cb.ConvergenceEvaluation):
                        'mu_init': 1e-8,
                        'bound_push': 1e-8}
         return opt
-

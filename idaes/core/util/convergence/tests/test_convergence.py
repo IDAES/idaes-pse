@@ -16,7 +16,6 @@ Tests for the convergence testing module
 Author: Carl Laird
 """
 import pytest
-import json
 import os
 import os.path
 from pyutilib.misc import compare_json_files
@@ -25,11 +24,18 @@ import idaes.core.util.convergence.convergence_base as cb
 
 # See if ipopt is available and set up solver
 ipopt_available = pe.SolverFactory('ipopt').available()
-ceval_fixedvar_mutableparam_str = 'idaes.core.util.convergence.tests.conv_eval_classes.ConvEvalFixedVarMutableParam'
-ceval_fixedvar_immutableparam_str = 'idaes.core.util.convergence.tests.conv_eval_classes.ConvEvalFixedVarImmutableParam'
-ceval_unfixedvar_mutableparam_str = 'idaes.core.util.convergence.tests.conv_eval_classes.ConvEvalUnfixedVarMutableParam'
+ceval_fixedvar_mutableparam_str = (
+        'idaes.core.util.convergence.tests.'
+        'conv_eval_classes.ConvEvalFixedVarMutableParam')
+ceval_fixedvar_immutableparam_str = (
+        'idaes.core.util.convergence.tests.'
+        'conv_eval_classes.ConvEvalFixedVarImmutableParam')
+ceval_unfixedvar_mutableparam_str = (
+        'idaes.core.util.convergence.tests.'
+        'conv_eval_classes.ConvEvalUnfixedVarMutableParam')
 
 currdir = os.path.dirname(os.path.abspath(__file__))
+
 
 def test_convergence_evaluation_specification_file_fixedvar_mutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_mutableparam_str)
@@ -39,9 +45,12 @@ def test_convergence_evaluation_specification_file_fixedvar_mutableparam():
 
     spec = ceval.get_specification()
     fname = os.path.join(currdir, 'ceval_fixedvar_mutableparam.3.42.json')
-    cb.write_sample_file(spec, fname, ceval_fixedvar_mutableparam_str, n_points=3, seed=42)
+    cb.write_sample_file(spec, fname, ceval_fixedvar_mutableparam_str,
+                         n_points=3, seed=42)
 
-    baseline_fname = os.path.join(currdir, 'ceval_fixedvar_mutableparam.3.42.baseline.json')
+    baseline_fname = os.path.join(
+            currdir,
+            'ceval_fixedvar_mutableparam.3.42.baseline.json')
     compare_json_files(baseline_fname=baseline_fname,
                        output_fname=fname,
                        tolerance=1e-8)
@@ -57,19 +66,25 @@ def test_convergence_evaluation_specification_file_unfixedvar_mutableparam():
 
     spec = ceval.get_specification()
     fname = os.path.join(currdir, 'ceval_unfixedvar_mutableparam.3.42.json')
-    cb.write_sample_file(spec, fname, ceval_unfixedvar_mutableparam_str, n_points=3, seed=42)
+    cb.write_sample_file(spec, fname,
+                         ceval_unfixedvar_mutableparam_str,
+                         n_points=3, seed=42)
 
-    baseline_fname = os.path.join(currdir, 'ceval_unfixedvar_mutableparam.3.42.baseline.json')
+    baseline_fname = os.path.join(
+            currdir,
+            'ceval_unfixedvar_mutableparam.3.42.baseline.json')
     compare_json_files(baseline_fname=baseline_fname,
                        output_fname=fname,
                        tolerance=1e-8)
 
     # expect an exception because var is not fixed
     with pytest.raises(ValueError):
-        inputs, samples, global_results = cb.run_convergence_evaluation_from_sample_file(fname)
+        inputs, samples, global_results = \
+            cb.run_convergence_evaluation_from_sample_file(fname)
 
     if os.path.exists(fname):
         os.remove(fname)
+
 
 def test_convergence_evaluation_specification_file_fixedvar_immutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_immutableparam_str)
@@ -79,21 +94,28 @@ def test_convergence_evaluation_specification_file_fixedvar_immutableparam():
 
     spec = ceval.get_specification()
     fname = os.path.join(currdir, 'ceval_fixedvar_immutableparam.3.42.json')
-    cb.write_sample_file(spec, fname, ceval_fixedvar_immutableparam_str, n_points=3, seed=42)
+    cb.write_sample_file(spec, fname,
+                         ceval_fixedvar_immutableparam_str,
+                         n_points=3, seed=42)
 
-    baseline_fname = os.path.join(currdir, 'ceval_fixedvar_immutableparam.3.42.baseline.json')
+    baseline_fname = os.path.join(
+            currdir,
+            'ceval_fixedvar_immutableparam.3.42.baseline.json')
     compare_json_files(baseline_fname=baseline_fname,
                        output_fname=fname,
                        tolerance=1e-8)
 
     # expect an exception because param is not mutable
     with pytest.raises(ValueError):
-        inputs, samples, global_results = cb.run_convergence_evaluation_from_sample_file(fname)
+        inputs, samples, global_results = \
+            cb.run_convergence_evaluation_from_sample_file(fname)
 
     if os.path.exists(fname):
         os.remove(fname)
 
-@pytest.mark.skipif(ipopt_available == False, reason="Ipopt solver not available")
+
+@pytest.mark.skipif(ipopt_available == False,
+                    reason="Ipopt solver not available")
 def test_convergence_evaluation_fixedvar_mutableparam():
     ceval_class = cb._class_import(ceval_fixedvar_mutableparam_str)
     ceval = ceval_class()
@@ -102,13 +124,17 @@ def test_convergence_evaluation_fixedvar_mutableparam():
 
     spec = ceval.get_specification()
     fname = os.path.join(currdir, 'ceval_fixedvar_mutableparam.3.43.json')
-    cb.write_sample_file(spec, fname, ceval_fixedvar_mutableparam_str, n_points=3, seed=43)
+    cb.write_sample_file(spec, fname, ceval_fixedvar_mutableparam_str,
+                         n_points=3, seed=43)
 
-    inputs, samples, global_results = cb.run_convergence_evaluation_from_sample_file(fname)
+    inputs, samples, global_results = \
+        cb.run_convergence_evaluation_from_sample_file(fname)
 
     # put the results into a json file for comparison
-    # jsondict = dict(inputs=inputs, samples=samples, global_results=global_results)
-    # results_fname = os.path.join(currdir, 'ceval_fixedvar_mutableparam.3.43.results.json')
+    # jsondict = dict(inputs=inputs, samples=samples,
+    #                 global_results=global_results)
+    # results_fname = os.path.join(
+    #        currdir, 'ceval_fixedvar_mutableparam.3.43.results.json')
     # with open(results_fname, 'w') as fd:
     #     json.dump(jsondict, fd, indent=3)
 
