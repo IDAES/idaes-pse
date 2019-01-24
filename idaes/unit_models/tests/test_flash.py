@@ -22,7 +22,7 @@ from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType, useDefault)
 from idaes.unit_models.flash import Flash as FL
-from idaes.property_models.BTX_ideal import PhysicalParameterBlock
+from idaes.property_models.BTX_ideal_VLE import PhysicalParameterBlock
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -65,6 +65,7 @@ def test_setInputs():
     m.fs.flash.inlet[0].vars["pressure"].fix(101325)
     m.fs.flash.inlet[0].vars["mole_frac"]["benzene"].fix(0.5)
     m.fs.flash.inlet[0].vars["mole_frac"]["toluene"].fix(0.5)
+    m.fs.flash.inlet[0].vars["mole_frac"]["o-xylene"].fix(0.0)
 
     m.fs.flash.heat_duty.fix(0)
     m.fs.flash.deltaP.fix(0)
