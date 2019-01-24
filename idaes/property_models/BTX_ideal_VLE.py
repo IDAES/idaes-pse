@@ -58,23 +58,27 @@ class PhysicalParameterData(PhysicalParameterBase):
         # List of valid phases in property package
         self.phase_list = Set(initialize=['Liq', 'Vap'])
 
-        # Component list - a list of component identifiers
-        # self.component_list = Set(initialize=['benzene', 'toluene'])
+        self.component_list_master = Set(initialize=['benzene',
+                                                     'toluene',
+                                                     'o-xylene'])
 
-        self.component_list = Set(initialize=['benzene',
-                                              'toluene',
+        # Component list - a list of component identifiers
+        self.component_list = Set(initialize=['benzene', 'toluene',
                                               'o-xylene'])
 
         # List of components in each phase (optional)
         self.phase_comp = {"Liq": self.component_list,
                            "Vap": self.component_list}
 
+        self.phase_equilibrium_idx_master = Set(initialize=[1, 2, 3])
+
         self.phase_equilibrium_idx = Set(initialize=[1, 2, 3])
 
         # Reaction Stoichiometry
-        # self.phase_equilibrium_list = \
-        #     {1: ["benzene", ("Vap", "Liq")],
-        #      2: ["toluene", ("Vap", "Liq")]}
+        self.phase_equilibrium_list_master = \
+            {1: ["benzene", ("Vap", "Liq")],
+             2: ["toluene", ("Vap", "Liq")],
+             3: ["o-xylene", ("Vap", "Liq")]}
 
         self.phase_equilibrium_list = \
             {1: ["benzene", ("Vap", "Liq")],
@@ -89,37 +93,30 @@ class PhysicalParameterData(PhysicalParameterBase):
                                            default=298.15,
                                            doc='Reference temperature [K]')
 
-        # Critical Properties
-        # self.pressure_critical = Param(self.component_list,
-        #                                within=NonNegativeReals,
-        #                                mutable=False,
-        #                                initialize={'benzene': 48.9e5,
-        #                                            'toluene': 41e5},
-        #                                doc='Critical pressure [Pa]')
+        pressure_critical_data = {'benzene': 48.9e5,
+                                  'toluene': 41e5,
+                                  'o-xylene': 37.3e5
+                                  }
 
+        def rule_pressure_critical(self, i):
+            return pressure_critical_data[i]
         self.pressure_critical = Param(self.component_list,
                                        within=NonNegativeReals,
                                        mutable=False,
-                                       initialize={'benzene': 48.9e5,
-                                                   'toluene': 41e5,
-                                                   'o-xylene': 37.3e5
-                                                   },
+                                       initialize=rule_pressure_critical,
                                        doc='Critical pressure [Pa]')
 
-        # self.temperature_critical = Param(self.component_list,
-        #                                   within=NonNegativeReals,
-        #                                   mutable=False,
-        #                                   initialize={'benzene': 562.2,
-        #                                               'toluene': 591.8},
-        #                                   doc='Critical temperature [K]')
+        temperature_critical_data = {'benzene': 562.2,
+                                     'toluene': 591.8,
+                                     'o-xylene': 630.3
+                                     }
 
+        def rule_temperature_critical(self, i):
+            return temperature_critical_data[i]
         self.temperature_critical = Param(self.component_list,
                                           within=NonNegativeReals,
                                           mutable=False,
-                                          initialize={'benzene': 562.2,
-                                                      'toluene': 591.8,
-                                                      'o-xylene': 630.3
-                                                      },
+                                          initialize=rule_temperature_critical,
                                           doc='Critical temperature [K]')
 
         # Gas Constant
@@ -142,7 +139,7 @@ class PhysicalParameterData(PhysicalParameterBase):
 
         # Constants for specific heat capacity, enthalpy, entropy
         # calculations for ideal gas (from NIST)
-        self.CpIG = {('Liq', 'benzene', '1'): 1.29E5,
+        CpIG_data = {('Liq', 'benzene', '1'): 1.29E5,
                      ('Liq', 'benzene', '2'): -1.7E2,
                      ('Liq', 'benzene', '3'): 6.48E-1,
                      ('Liq', 'benzene', '4'): 0,
@@ -173,7 +170,15 @@ class PhysicalParameterData(PhysicalParameterBase):
                      ('Vap', 'o-xylene', '4'): 7.528E-8,
                      ('Vap', 'o-xylene', '5'): 0}
 
-        self.vapor_pressure_coeff = {('benzene', 'A'): -6.98273,
+        def rule_cp_ig(self, i, j, k):
+            return CpIG_data[i, j, k]
+        self.CpIG = Param(self.phase_list, self.component_list,
+                          ['1', '2', '3', '4', '5'],
+                          mutable=False,
+                          initialize=rule_cp_ig,
+                          doc="parameters to compute Cp_comp")
+
+        vapor_pressure_coeff_data = {('benzene', 'A'): -6.98273,
                                      ('benzene', 'B'): 1.33213,
                                      ('benzene', 'C'): -2.62863,
                                      ('benzene', 'D'): -3.33399,
@@ -186,8 +191,23 @@ class PhysicalParameterData(PhysicalParameterBase):
                                      ('o-xylene', 'C'): -3.10985,
                                      ('o-xylene', 'D'): -2.85992}
 
-        self.delH_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
-                         'o-xylene': 4.34584e4}
+        def rule_vap_pressure(self, i, j):
+            return vapor_pressure_coeff_data[i, j]
+        self.vapor_pressure_coeff = Param(self.component_list,
+                                          ['A', 'B', 'C', 'D'],
+                                          mutable=False,
+                                          initialize=rule_vap_pressure,
+                                          doc="parameters to compute Cp_comp")
+
+        delH_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
+                    'o-xylene': 4.34584e4}
+
+        def rule_hvap(self, i):
+            return delH_vap[i]
+        self.delH_vap = Param(self.component_list,
+                              mutable=False,
+                              initialize=rule_hvap,
+                              doc="heat of vaporization")
 
     @classmethod
     def define_metadata(cls, obj):
