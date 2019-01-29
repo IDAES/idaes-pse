@@ -3,6 +3,88 @@ Installation Instructions
 
 .. contents:: Contents
 
+Installation using Docker
+-------------------------
+The simplest way to install the IDAES PSE Framework is by using
+the pre-built Docker_ container.
+
+Install Docker on your system
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#. Install the community edition (CE) of Docker_ (website: https://docker.io).
+#. Start the Docker daemon. Depending on your system, this will vary and you need to follow through with the install instructions (linked in step 1) for your specific operating system until you reach the step that starts the docker daemon. Here are some options for common operating systems:
+
+      OS X
+         Docker should have been installed to your Applications directory. Browse to it and click on it from there.
+         You will see a small icon in your toolbar that indicates if the daemon's running successfully.
+
+      Linux
+        - Ubuntu/Debian: The Docker daemon will start automatically once Docker is installed.
+        - CentOS: Start Docker manually, e.g., run
+          ``sudo systemctl start docker``.
+
+    Windows
+        - Docker will be started automatically
+
+.. _Docker: https://docker.io/
+
+Get the IDAES Docker image
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Next you need to get the pre-built Docker "image" containing the source
+code and solvers for the IDAES PSE framework. This image is stored in
+an online service called "Docker Hub". Full details on how to do
+this are available in the `Docker Hub documentation`_
+
+.. _Docker Hub documentation: https://docs.docker.com/docker-hub/
+
+Starting a new container with only the Docker image available:
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+#. Run the following command which will pull the latest IDAES image from DockerHub:
+
+   .. code-block:: sh
+
+     docker pull idaes/idaes_jupyterhub:latest
+
+#. Run the tests directly on the docker container by using the following command. If everything went well, all tests should pass.
+
+   .. code-block:: sh
+
+     docker run -it idaes/idaes_jupyterhub /bin/bash -c "cd /home/idaes && pytest"
+
+#. There are then two basic ways to use the image:
+
+   #. Start a docker container and interact with it directly:
+
+    .. code-block:: sh
+
+      $ docker run -it idaes/idaes_jupyterhub /bin/bash
+      jovyan@10c11ca29008:~$ ls /home/
+      idaes  jovyan
+      jovyan@10c11ca29008:~$ cd idaes/
+      jovyan@10c11ca29008:~/idaes$ pytest
+      ...
+
+   #. Start a docker container and use it to run Jupyter notebooks:
+
+    .. code-block:: sh
+
+      $ docker run -p 8888:8888 -it idaes/idaes_jupyterhub
+      Container must be run with group "root" to update passwd file
+      Executing the command: jupyter notebook
+      [I 07:54:20.117 NotebookApp] Writing notebook server cookie secret to /home/jovyan/.local/share/jupyter/runtime/notebook_cookie_secret
+      [I 07:54:20.414 NotebookApp] JupyterLab extension loaded from /opt/conda/lib/python3.6/site-packages/jupyterlab
+      [I 07:54:20.414 NotebookApp] JupyterLab application directory is /opt/conda/share/jupyter/lab
+      [I 07:54:20.424 NotebookApp] Serving notebooks from local directory: /home
+      [I 07:54:20.424 NotebookApp] The Jupyter Notebook is running at:
+      [I 07:54:20.424 NotebookApp] http://(305491ce063a or 127.0.0.1):8888/?token=812a290619211bef9177b0e8c0fd7e4d1f673d29909ac254
+      [I 07:54:20.424 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+      [C 07:54:20.424 NotebookApp]
+
+        Copy/paste this URL into your browser when you connect for the first time,
+        to login with a token:
+            http://(305491ce063a or 127.0.0.1):8888/?token=812a290619211bef9177b0e8c0fd7e4d1f673d29909ac254
+
+   Browse to the URL provided in the output message (in the example above this is `http://127.0.0.1:8888/?token=348184135dacb8e7bd80f1bdcff5b34fff9012a9d79ecd0f`) and then start a new notebook from New -> Python 3 or browse to the IDAES example notebook under idaes/examples/heat_exchange_simple/simple_hx_flowsheet_01.ipynb. To shutdown the notebook server click "{Ctrl,Command} + c" in your terminal.
 
 The IDAES toolkit is written in Python. It should run under versions of Python 2.7 and 3.6, and above. The toolkit uses [Pyomo](https://www.pyomo.org), a Python-based optimization language. See the Pyomo website for details.
 
@@ -177,21 +259,6 @@ Using the latest Docker image from DockerHub:
 
 In our Jupyterhub deployment, this image serves as the single-user image that we use to spin up new containers for users to run Jupyter notebooks on. To pull the latest version of this image for development or testing, follow the steps outlined below. 
 
-Docker installation: 
-^^^^^^^^^^^^^^^^^^^^
-
-#. Install the community edition (CE) of `docker <https://docs.docker.com/install/>`_.
-
-#. Start the docker daemon. Depending on your system, this will vary and you need to follow through with the install instructions (linked in step 1) for your specific operating system until you reach the step that starts the docker daemon. Here are some options for common operating systems:
-   
-      a. **OS X** : Docker should have been installed to your Applications directory. Browse to it and click on it from there. 
-         You will see a small icon in your toolbar that indicates if the daemon's running successfully.
-   
-      b. **Ubuntu/Debian** : The Docker daemon will start automatically once Docker is installed.
-   
-      c. **CentOS** : Run `sudo systemctl start docker`.
-
-Based on whether or not you have the IDAES repository cloned on your host machine, you should follow one or the other of the set of steps outlined under "Starting a new container with the repo cloned" or "Starting a new container with only the Docker image available."
 
 Starting a new container with the repo cloned:
 """"""""""""""""""""""""""""""""""""""""""""""
