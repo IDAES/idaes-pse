@@ -8,6 +8,7 @@ Installation using Docker
 The simplest way to install the IDAES PSE Framework is by using
 the pre-built Docker_ container.
 
+
 Install Docker on your system
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #. Install the community edition (CE) of Docker_ (website: https://docker.io).
