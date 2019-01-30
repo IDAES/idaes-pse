@@ -1,6 +1,6 @@
 # Makefile for Sphinx documentation
 #
- 
+  
 # You can set these variables from the command line.
 # DATE          = $(shell date +%Y-%m-%d_%H%M%S)
 SPHINXOPTS    = -w sphinx-build.log -T 
