@@ -80,7 +80,7 @@ nbconvert:
 
 .PHONY: execute
 execute: 
-	jupyter nbconvert --to notebook --execute $(shell find ../examples -name \*.ipynb | grep -v -e executed -e tutorials -e checkpoint) --output-dir ../examples/executed
+	jupyter nbconvert --to notebook --execute $(shell find ../examples -name \*.ipynb | grep -v -e executed -e checkpoint) --output-dir ../examples/executed
 
 .PHONY: dirhtml
 dirhtml:

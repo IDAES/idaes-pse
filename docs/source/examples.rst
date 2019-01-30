@@ -10,7 +10,7 @@ Sample Models and Flowsheets
 `Simple flowsheet with a Gibbs reactor <examples/gibbs_methane.html>`_
 -------------------------------------
 
-`<examples/smooth_cubic_extension.html>`_
+`Smooth Extension for Cubic Equations of State <examples/smooth_cubic_extension.html>`_
 -----------------------------------
 
 
