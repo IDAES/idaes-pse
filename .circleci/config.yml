@@ -5,6 +5,7 @@ shared: &shared
   steps:
     - checkout
     - run: ./install-solvers.sh
+    - run: sudo pip install pip==18.0.0
     - run: sudo pip install -qr requirements.txt
     - run: pyomo --version
     - run: sudo python setup.py -q install
@@ -12,7 +13,6 @@ shared: &shared
     - run: pytest idaes -m "not nocircleci"
     - run: coverage report
     - run: coveralls
-
 jobs:
   "python-2.7":
     docker:
