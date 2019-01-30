@@ -11,8 +11,10 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Example property package for the VLE calucations for a Benzene-Toluene
-system.
+Ideal property package with VLE calucations. Correlations to compute
+Cp_comp, h_comp and vapor pressure are obtained from "The properties of gases
+and liquids by Robert C. Reid" and "Perry's Chemical Engineers Handbook by
+Robert H. Perry". SI units.
 """
 
 # Chages the divide behavior to not do integer division
@@ -374,7 +376,7 @@ class StateBlockData(StateBlockDataBase):
                 return self.pressure == (self.density_mol[p] *
                                          self.gas_constant *
                                          self.temperature)
-            elif p == "Liq":
+            elif p == "Liq":  # TODO: Add a correlation to compute liq density
                 return self.density_mol[p] == 11.1E3  # mol/m3
         try:
             # Try to build constraint
