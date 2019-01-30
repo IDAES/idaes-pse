@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Example property package for the VLE calucations for a Benzene-Toluene
+Example property package for the VLE calucations for a Benzene-Toluene-o-Xylene
 system.
 """
 
@@ -26,6 +26,7 @@ from pyomo.environ import Param, NonNegativeReals, Set
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, PhysicalParameterBase
+from idaes.core.util.misc import extract_data
 
 from idaes.property_models.ideal_prop_pack_VLE import IdealStateBlock
 
@@ -93,31 +94,31 @@ class PhysicalParameterData(PhysicalParameterBase):
                                            default=298.15,
                                            doc='Reference temperature [K]')
 
+        # Source: The Properties of Gases and Liquids - Robert C. Reid
         pressure_critical_data = {'benzene': 48.9e5,
                                   'toluene': 41e5,
                                   'o-xylene': 37.3e5
                                   }
 
-        def rule_pressure_critical(self, i):
-            return pressure_critical_data[i]
-        self.pressure_critical = Param(self.component_list,
-                                       within=NonNegativeReals,
-                                       mutable=False,
-                                       initialize=rule_pressure_critical,
-                                       doc='Critical pressure [Pa]')
+        self.pressure_critical = Param(
+            self.component_list,
+            within=NonNegativeReals,
+            mutable=False,
+            initialize=extract_data(pressure_critical_data),
+            doc='Critical pressure [Pa]')
 
+        # Source: The Properties of Gases and Liquids - Robert C. Reid
         temperature_critical_data = {'benzene': 562.2,
                                      'toluene': 591.8,
                                      'o-xylene': 630.3
                                      }
 
-        def rule_temperature_critical(self, i):
-            return temperature_critical_data[i]
-        self.temperature_critical = Param(self.component_list,
-                                          within=NonNegativeReals,
-                                          mutable=False,
-                                          initialize=rule_temperature_critical,
-                                          doc='Critical temperature [K]')
+        self.temperature_critical = Param(
+            self.component_list,
+            within=NonNegativeReals,
+            mutable=False,
+            initialize=extract_data(temperature_critical_data),
+            doc='Critical temperature [K]')
 
         # Gas Constant
         self.gas_constant = Param(within=NonNegativeReals,
@@ -125,20 +126,20 @@ class PhysicalParameterData(PhysicalParameterBase):
                                   default=8.314,
                                   doc='Gas Constant [J/mol.K]')
 
+        # Source: The Properties of Gases and Liquids - Robert C. Reid
         # Molecular weights
         mw_comp_data = {'benzene': 78.1136E-3,
                         'toluene': 92.1405E-3,
                         'o-xylene': 106.167e-3}
 
-        def rule_mw(self, i):
-            return mw_comp_data[i]
         self.mw_comp = Param(self.component_list,
                              mutable=False,
-                             initialize=rule_mw,
+                             initialize=extract_data(mw_comp_data),
                              doc="molecular weight Kg/mol")
 
-        # Constants for specific heat capacity, enthalpy, entropy
-        # calculations for ideal gas (from NIST)
+        # Constants for specific heat capacity, enthalpy
+        # Source: The Properties of Gases and Liquids - Robert C. Reid &
+        #         Perry's Chemical Engineers Handbook - Robert H. Perry
         CpIG_data = {('Liq', 'benzene', '1'): 1.29E5,
                      ('Liq', 'benzene', '2'): -1.7E2,
                      ('Liq', 'benzene', '3'): 6.48E-1,
@@ -170,14 +171,13 @@ class PhysicalParameterData(PhysicalParameterBase):
                      ('Vap', 'o-xylene', '4'): 7.528E-8,
                      ('Vap', 'o-xylene', '5'): 0}
 
-        def rule_cp_ig(self, i, j, k):
-            return CpIG_data[i, j, k]
         self.CpIG = Param(self.phase_list, self.component_list,
                           ['1', '2', '3', '4', '5'],
                           mutable=False,
-                          initialize=rule_cp_ig,
+                          initialize=extract_data(CpIG_data),
                           doc="parameters to compute Cp_comp")
 
+        # Source: The Properties of Gases and Liquids - Robert C. Reid
         vapor_pressure_coeff_data = {('benzene', 'A'): -6.98273,
                                      ('benzene', 'B'): 1.33213,
                                      ('benzene', 'C'): -2.62863,
@@ -191,22 +191,20 @@ class PhysicalParameterData(PhysicalParameterBase):
                                      ('o-xylene', 'C'): -3.10985,
                                      ('o-xylene', 'D'): -2.85992}
 
-        def rule_vap_pressure(self, i, j):
-            return vapor_pressure_coeff_data[i, j]
-        self.vapor_pressure_coeff = Param(self.component_list,
-                                          ['A', 'B', 'C', 'D'],
-                                          mutable=False,
-                                          initialize=rule_vap_pressure,
-                                          doc="parameters to compute Cp_comp")
+        self.vapor_pressure_coeff = Param(
+            self.component_list,
+            ['A', 'B', 'C', 'D'],
+            mutable=False,
+            initialize=extract_data(vapor_pressure_coeff_data),
+            doc="parameters to compute Cp_comp")
 
+        # Source: The Properties of Gases and Liquids - Robert C. Reid
         delH_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
                     'o-xylene': 4.34584e4}
 
-        def rule_hvap(self, i):
-            return delH_vap[i]
         self.delH_vap = Param(self.component_list,
                               mutable=False,
-                              initialize=rule_hvap,
+                              initialize=extract_data(delH_vap),
                               doc="heat of vaporization")
 
     @classmethod
