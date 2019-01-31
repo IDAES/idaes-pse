@@ -65,7 +65,6 @@ def test_setInputs():
     m.fs.flash.inlet[0].vars["pressure"].fix(101325)
     m.fs.flash.inlet[0].vars["mole_frac"]["benzene"].fix(0.5)
     m.fs.flash.inlet[0].vars["mole_frac"]["toluene"].fix(0.5)
-    m.fs.flash.inlet[0].vars["mole_frac"]["o-xylene"].fix(0.0)
 
     m.fs.flash.heat_duty.fix(0)
     m.fs.flash.deltaP.fix(0)

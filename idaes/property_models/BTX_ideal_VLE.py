@@ -64,18 +64,19 @@ class PhysicalParameterData(PhysicalParameterBase):
                                                      'o-xylene'])
 
         # Component list - a list of component identifiers
-        self.component_list = Set(initialize=['benzene', 'toluene',
-                                              'o-xylene'])
+        # NOTE: User needs to update this list; can be a subset or
+        # equal to the master component list
+        self.component_list = Set(initialize=['benzene', 'toluene'])
 
         # List of components in each phase (optional)
         self.phase_comp = {"Liq": self.component_list,
                            "Vap": self.component_list}
 
+        # List of phase equilibrium index
         self.phase_equilibrium_idx_master = Set(initialize=[1, 2, 3])
 
-        self.phase_equilibrium_idx = Set(initialize=[1, 2, 3])
+        self.phase_equilibrium_idx = Set(initialize=[1, 2])
 
-        # Reaction Stoichiometry
         self.phase_equilibrium_list_master = \
             {1: ["benzene", ("Vap", "Liq")],
              2: ["toluene", ("Vap", "Liq")],
@@ -83,8 +84,7 @@ class PhysicalParameterData(PhysicalParameterBase):
 
         self.phase_equilibrium_list = \
             {1: ["benzene", ("Vap", "Liq")],
-             2: ["toluene", ("Vap", "Liq")],
-             3: ["o-xylene", ("Vap", "Liq")]}
+             2: ["toluene", ("Vap", "Liq")]}
 
         # Thermodynamic reference state
         self.pressure_reference = Param(mutable=True,
@@ -94,7 +94,8 @@ class PhysicalParameterData(PhysicalParameterBase):
                                            default=298.15,
                                            doc='Reference temperature [K]')
 
-        # Source: The Properties of Gases and Liquids - Robert C. Reid
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition - Robert C. Reid
         pressure_critical_data = {'benzene': 48.9e5,
                                   'toluene': 41e5,
                                   'o-xylene': 37.3e5
@@ -107,7 +108,8 @@ class PhysicalParameterData(PhysicalParameterBase):
             initialize=extract_data(pressure_critical_data),
             doc='Critical pressure [Pa]')
 
-        # Source: The Properties of Gases and Liquids - Robert C. Reid
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition - Robert C. Reid
         temperature_critical_data = {'benzene': 562.2,
                                      'toluene': 591.8,
                                      'o-xylene': 630.3
@@ -126,8 +128,8 @@ class PhysicalParameterData(PhysicalParameterBase):
                                   default=8.314,
                                   doc='Gas Constant [J/mol.K]')
 
-        # Source: The Properties of Gases and Liquids - Robert C. Reid
-        # Molecular weights
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition - Robert C. Reid
         mw_comp_data = {'benzene': 78.1136E-3,
                         'toluene': 92.1405E-3,
                         'o-xylene': 106.167e-3}
@@ -138,7 +140,8 @@ class PhysicalParameterData(PhysicalParameterBase):
                              doc="molecular weight Kg/mol")
 
         # Constants for specific heat capacity, enthalpy
-        # Source: The Properties of Gases and Liquids - Robert C. Reid &
+        # Source: The Properties of Gases and Liquids (1987)
+        #         4th edition - Robert C. Reid
         #         Perry's Chemical Engineers Handbook - Robert H. Perry
         CpIG_data = {('Liq', 'benzene', '1'): 1.29E5,
                      ('Liq', 'benzene', '2'): -1.7E2,
@@ -177,7 +180,8 @@ class PhysicalParameterData(PhysicalParameterBase):
                           initialize=extract_data(CpIG_data),
                           doc="parameters to compute Cp_comp")
 
-        # Source: The Properties of Gases and Liquids - Robert C. Reid
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition - Robert C. Reid
         vapor_pressure_coeff_data = {('benzene', 'A'): -6.98273,
                                      ('benzene', 'B'): 1.33213,
                                      ('benzene', 'C'): -2.62863,
@@ -198,7 +202,8 @@ class PhysicalParameterData(PhysicalParameterBase):
             initialize=extract_data(vapor_pressure_coeff_data),
             doc="parameters to compute Cp_comp")
 
-        # Source: The Properties of Gases and Liquids - Robert C. Reid
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition - Robert C. Reid
         delH_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
                     'o-xylene': 4.34584e4}
 
