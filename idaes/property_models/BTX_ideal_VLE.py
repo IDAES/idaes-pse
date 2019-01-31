@@ -95,7 +95,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                                            doc='Reference temperature [K]')
 
         # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition - Robert C. Reid
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
         pressure_critical_data = {'benzene': 48.9e5,
                                   'toluene': 41e5,
                                   'o-xylene': 37.3e5
@@ -109,7 +109,7 @@ class PhysicalParameterData(PhysicalParameterBase):
             doc='Critical pressure [Pa]')
 
         # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition - Robert C. Reid
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
         temperature_critical_data = {'benzene': 562.2,
                                      'toluene': 591.8,
                                      'o-xylene': 630.3
@@ -129,7 +129,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                                   doc='Gas Constant [J/mol.K]')
 
         # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition - Robert C. Reid
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
         mw_comp_data = {'benzene': 78.1136E-3,
                         'toluene': 92.1405E-3,
                         'o-xylene': 106.167e-3}
@@ -140,9 +140,10 @@ class PhysicalParameterData(PhysicalParameterBase):
                              doc="molecular weight Kg/mol")
 
         # Constants for specific heat capacity, enthalpy
-        # Source: The Properties of Gases and Liquids (1987)
-        #         4th edition - Robert C. Reid
-        #         Perry's Chemical Engineers Handbook - Robert H. Perry
+        # Sources: The Properties of Gases and Liquids (1987)
+        #         4th edition, Chemical Engineering Series - Robert C. Reid
+        #         Perry's Chemical Engineers Handbook
+        #         - Robert H. Perry (Cp_liq)
         CpIG_data = {('Liq', 'benzene', '1'): 1.29E5,
                      ('Liq', 'benzene', '2'): -1.7E2,
                      ('Liq', 'benzene', '3'): 6.48E-1,
@@ -181,7 +182,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                           doc="parameters to compute Cp_comp")
 
         # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition - Robert C. Reid
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
         vapor_pressure_coeff_data = {('benzene', 'A'): -6.98273,
                                      ('benzene', 'B'): 1.33213,
                                      ('benzene', 'C'): -2.62863,
@@ -203,7 +204,7 @@ class PhysicalParameterData(PhysicalParameterBase):
             doc="parameters to compute Cp_comp")
 
         # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition - Robert C. Reid
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
         delH_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
                     'o-xylene': 4.34584e4}
 
