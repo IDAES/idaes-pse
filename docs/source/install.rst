@@ -1,40 +1,158 @@
-Installation Instructions
-=========================
-
+Installation
+============
+   
 .. contents:: Contents
+    :local:
 
+Installation using Docker
+-------------------------
+The simplest way to install the IDAES PSE Framework is by using
+the pre-built Docker_ image.
 
-The IDAES toolkit is written in Python. It should run under versions of Python 2.7 and 3.6, and above. The toolkit uses [Pyomo](https://www.pyomo.org), a Python-based optimization language. See the Pyomo website for details.
+A Docker image is essentially an embedded
+instance of Linux (even if you are using Windows or Mac OSX)
+that has all the code for the IDAES PSE framework
+pre-installed. You can run commands and Jupyter Notebooks in that
+image. This section describes how to set up your system, get the
+Docker image, and interact with it.
 
-.. note:: Although Python can run on most operating systems, *we are currently only
-    supporting installation of the IDAES PSE framework on Linux*. This is due largely
-    to complications of installing third-party solvers, not inherent properties
-    of the PSE framework itself, and we plan to support Windows and Mac OSX
-    installation in the not-too-distant future.
+Install Docker on your system
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+#. Install the community edition (CE) of Docker_ (website: https://docker.io).
+#. Start the Docker daemon. How to do this will depend on your operating system.
 
-Simplified Linux Installation Instructions
-------------------------------------------
+      OS X
+         You should install `Docker Desktop for Mac`_.
+         Docker should have been installed to your Applications directory. Browse to it and click on it from there.
+         You will see a small icon in your toolbar that indicates
+         that the daemon is running.
 
-The following instructions assume that
+      Linux
+         Install Docker using the package manager for your OS. Then
+         start the daemon. If you are using Ubuntu or a Debian-based Linux distro,
+         the Docker daemon will start automatically once Docker is installed.
+         For CentOS, start Docker manually, e.g., run ``sudo systemctl start docker``.
 
-    * You have sudo privilege on your system.
-    * You have ``apt`` or may install it, or know how to adapt the instructions to a different package manager or how to install the packages directly. ``apt`` is default on Debian-based Linux distributions, including Ubuntu.
-    * You are on a computer+network that is allowed (by your sysadmins) to access and download the various packages and tools, including the solvers from third-party sources.
+      Windows
+        You should install `Docker Desktop for Windows`_.
+        Docker will be started automatically.
 
-Install `prerequisite system applications <#system-prerequisites>`_:
+.. _Docker: https://docker.io/
+.. _Docker Desktop for Mac: https://docs.docker.com/docker-for-mac/install/
+.. _Docker Desktop for Windows: https://docs.docker.com/docker-for-windows/install/
+
+.. |idaesimg_org| replace:: idaes
+.. |idaesimg_name| replace:: idaes_pse
+.. |idaesimg_tag| replace:: latest
+.. |idaesimg| replace:: ``idaes/idaes_pse:latest``
+
+Get the IDAES Docker image
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+You need to get the pre-built Docker "image" containing the source
+code and solvers for the IDAES PSE framework. This image is stored in
+an online service called `Docker Hub`_. Full details on how to use
+Docker Hub are available in the `Docker Hub documentation`_. The name
+of the Docker image that you would normally pull is
+|idaesimg|. This name has three parts:
+
+    - |idaesimg_org| - means the Docker image is in the Docker Hub organization called "idaes".
+    - /|idaesimg_name| - this is the name of the Docker image for the IDAES PSE framework.
+    - :|idaesimg_tag| - this is a "tag" that will get the latest version.
+
+In a point and click interface, you can type the name of this image
+into the search box. In a command-line interface, e.g. in Linux,
+then you would run a command like:
+
+.. code-block:: console
+
+    $ docker pull idaes/idaes_pse:latest
+
+.. _Docker Hub: https://hub.docker.com/
+.. _Docker Hub documentation: https://docs.docker.com/docker-hub/
+
+.. note:: If you are a software developer, you may have "cloned" the Github repository with
+          the IDAES source code. In this case, the script `idaes-docker` can be used to
+          pull and run the Docker image. Please run ``idaes-docker -h`` to get help and
+          details on how to use this script.
+
+Run the IDAES Docker image
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To start the Docker image, use a graphical user interface or a console or shell
+command-line interface.
+
+From the command-line, if you want to start up the Jupyter Notebook server, e.g.
+to view and run the examples and tutorials, then run this command:
+
+.. code-block:: console
+
+      $ docker run -p 8888:8888 -it idaes/idaes_pse
+      ... <debugging output from Jupyter>
+      ...
+      Copy/paste this URL into your browser when you connect for the first time,
+      to login with a token:
+          http://(305491ce063a or 127.0.0.1):8888/?token=812a290619211bef9177b0e8c0fd7e4d1f673d29909ac254
+
+Copy and paste the URL provided at the end of the output into a browser window
+and you should get a working Jupyter Notebook. You can browse to the examples
+directory under ``/home/idaes/examples`` and click on the Jupyter Notebooks to
+open them.
+
+To interact with the image directly from the command-line (console), you can run the
+following command:
+
+.. code-block:: console
+
+      $ docker run -p 8888:8888 -it idaes/idaes_pse /bin/bash
+      jovyan@10c11ca29008:~$ cd /home/idaes
+      ...
+
+Installation from source code
+------------------------------
+If you want to install the IDAES PSE framework from the source code, follow the
+set of instructions below that are appropriate for your operating system.
+
+.. note:: These installation procedures are only fully tested on Debian-based Linux
+          distributions.
+
+System Requirements
+^^^^^^^^^^^^^^^^^^^
+
+    * Linux operating system
+    * Python 2.7+ or 3.6+
+    * Basic GNU/C compilation tools: make, gcc/g++
+    * `wget` (for downloading software)
+    * `git` (for getting the IDAES source code)
+    * Access to the Internet
+
+Things you must know how to do:
+
+    * Get root permissions via `sudo`.
+    * Install packages using the package manager.
+
+Installation steps
+^^^^^^^^^^^^^^^^^^
 
 .. code-block:: sh
 
     sudo apt-get install gcc g++ make
 
-Download and install `miniconda <https://conda.io/docs/user-guide/install/linux.html>`_ (follow the prompts in the installer; you may want to restart your Terminal window afterwards to ensure that new environment variables are set correctly):
+We use a Python packaging system called Conda_.
+Below are instructions for installing a minimal version of Conda, called Miniconda_.
+The full version installs a large number of scientific analysis and visualization libraries
+that are not required by the IDAES framework.
+
+.. _Conda: https://conda.io/
+.. _Miniconda: https://conda.io/en/latest/miniconda.html
 
 .. code-block:: sh
     
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
 
-Create and activate a conda environment (along with its own copy of ``pip``) for the new IDAES installation **(you will need to** ``conda activate idaes`` **when you open a fresh terminal window and wish to use IDAES)**:
+Create and activate a conda environment (along with its own copy of ``pip``)
+for the new IDAES installation **(you will need to** ``conda activate idaes`` **
+when you open a fresh terminal window and wish to use IDAES)**:
 
 .. code-block:: sh
     
@@ -47,20 +165,8 @@ Obtain the source code for IDAES from GitHub:
 
     git clone https://github.com/IDAES/idaes.git
 
-Install the python dependencies:
-
-.. code-block:: sh
-
-    cd idaes
-    pip install -r requirements.txt
-
-`Install the IDAES framework itself <#install-idaes>`_:
-
-.. code-block:: sh
-
-    python setup.py develop
-
-Install the `main solver dependencies <#other-dependencies>`_:
+Next install the main solver dependencies. You should be in the directory that
+you created with the `git clone` command (by default, called "idaes").
 
 .. code-block:: sh
 
@@ -73,294 +179,49 @@ Install the `main solver dependencies <#other-dependencies>`_:
     unzip ipopt-linux64.zip
     sudo cp ipopt /usr/local/bin/
 
+Install the Python packages:
+
+.. code-block:: sh
+
+    cd idaes
+    pip install -r requirements.txt
+    python setup.py develop  # or "install"
+
+
 At this point, you should be able to launch the Jupyter Notebook server and successfully `run examples <examples.html>`_ from the ``examples`` folder:
 
 .. code-block:: sh
 
     jupyter notebook
 
-Installation on Linux/Unix
---------------------------
-
-System Prerequisites
-^^^^^^^^^^^^^^^^^^^^
-
-The following commonly-used programs must be installed:
-
- - make
- - gcc
- - g++
-
-GCC and G++ are necessary if you wish to compile and use the solver libraries. The following command installs all three, and assumes you have ``apt`` installed, which is default on Debian-based systems.
-
-.. code-block:: sh
-
-    sudo apt-get install gcc g++ make
-
-Additionally, for full functionality you may wish to consult the `Other Dependencies`_.
-
-
-Install IDAES
-^^^^^^^^^^^^^^
-
-* The installation instructions assume a Python packaging system called `Conda <https://conda.io/docs/>`_ is available. Please first consult the `Conda documentation <https://conda.io/docs/user-guide/>`_ to install this on your system. You can use either Anaconda or Miniconda.
-
-* Conda allows you to to create separate environments containing files, packages and their dependencies that will not interact with other environments.
-
-**Create/switch to your preferred Python environment**
-
-.. code-block:: sh
-
-  conda create -n idaes python=3 pyqt pip
-  conda activate idaes
-
-You can replace idaes with any name you like.  PyQt is used for some IDAES
-graphical user interface elements. ``pip`` is already installed with conda itself,
-but a copy needs to exist within the environment in order to cleanly encapsulate
-all of the requirements and IDAES itself.
-
-**Install the master branch of IDAES from GitHub:**
-
-.. code-block:: sh
-
-  git clone https://github.com/IDAES/idaes.git
-  cd idaes
-
-**Install the requirements**
-
-.. code-block:: sh
-
-  pip install -r requirements.txt
-
-**Install the IDAES Framework**
-
-  To compile C functions for some property models, the location of the compiled ASL is required
-  for the commands below a location of :code:`$HOME/local/src/solvers/sys.x86_64.Linux`;
-  however, this location will depend on your system and where you put the files.
-
-  The BOOST_HEADER environment variable can be set optionally if the the build
-  fails due to not finding BOOST. This allows more flexibility for alternative
-  locations.  Setting BOOST_HEADER is usually not needed.
-
-  If make fails or you do not want to compile, you can skip to the last line, but
-  some property packages may not work.
-
-.. code-block:: sh
-
-  export ASL_BUILD=$HOME/local/src/solvers/sys.x86_64.Linux
-  make
-  python setup.py develop
-
-**OR**
-
-.. code-block:: sh
-
-  export ASL_BUILD=$HOME/local/src/solvers/sys.x86_64.Linux
-  make
-  python setup.py install
-
-IDAES on Docker Containers:
----------------------------
-
-JupyterHub instance on Amazon EC2 cluster
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The JupyterHub instance is currently available for demo purposes and is started only when needed. It will be made available to IDAES users in the near future.
-
-Single-user image for development and testing
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The Dockerfile in the top-level can be used to build a docker image that includes the IDAES package and its dependencies. The latest image is also maintained and **can be used for development and testing purposes**. 
-
-Using the latest Docker image from DockerHub:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-In our Jupyterhub deployment, this image serves as the single-user image that we use to spin up new containers for users to run Jupyter notebooks on. To pull the latest version of this image for development or testing, follow the steps outlined below. 
-
-Docker installation: 
-^^^^^^^^^^^^^^^^^^^^
-
-#. Install the community edition (CE) of `docker <https://docs.docker.com/install/>`_.
-
-#. Start the docker daemon. Depending on your system, this will vary and you need to follow through with the install instructions (linked in step 1) for your specific operating system until you reach the step that starts the docker daemon. Here are some options for common operating systems:
-   
-      a. **OS X** : Docker should have been installed to your Applications directory. Browse to it and click on it from there. 
-         You will see a small icon in your toolbar that indicates if the daemon's running successfully.
-   
-      b. **Ubuntu/Debian** : The Docker daemon will start automatically once Docker is installed.
-   
-      c. **CentOS** : Run `sudo systemctl start docker`.
-
-Based on whether or not you have the IDAES repository cloned on your host machine, you should follow one or the other of the set of steps outlined under "Starting a new container with the repo cloned" or "Starting a new container with only the Docker image available."
-
-Starting a new container with the repo cloned:
-""""""""""""""""""""""""""""""""""""""""""""""
-
-Use the script `idaes-docker` in the top-level directory of the repo as follows:
-
-#. As a sanity check, run the unit tests on the image (which will have the latest IDAES master baked into it):
-
-   .. code-block:: sh
-
-     hamdys-mbp:idaes helgammal$ ./idaes-docker test
-     Running tests in container...
-     =========================================================================================== test session starts ============================================================================================
-     platform linux -- Python 3.6.7, pytest-4.0.2, py-1.7.0, pluggy-0.8.0
-     rootdir: /home/idaes, inifile: pytest.ini
-     plugins: cov-2.5.0
-     collected 648 items  
-     ...
-     ================================================================================= 633 passed, 15 skipped in 89.09 seconds ==================================================================================
-
-
-#. Run a Jupyter notebook from inside the container:
-
-   .. code-block:: sh
-
-     hamdys-mbp:idaes helgammal$ ./idaes-docker notebook
-     Starting Jupyter...
-     Container must be run with group "root" to update passwd file
-     Executing the command: jupyter notebook
-     [I 19:10:08.161 NotebookApp] Writing notebook server cookie secret to /home/jovyan/.local/share/jupyter/runtime/notebook_cookie_secret
-     [I 19:10:08.452 NotebookApp] JupyterLab extension loaded from /opt/conda/lib/python3.6/site-packages/jupyterlab
-     [I 19:10:08.452 NotebookApp] JupyterLab application directory is /opt/conda/share/jupyter/lab
-     [I 19:10:08.470 NotebookApp] Serving notebooks from local directory: /home
-     [I 19:10:08.470 NotebookApp] The Jupyter Notebook is running at:
-     [I 19:10:08.470 NotebookApp] http://(a9e555672b1c or 127.0.0.1):8888/?token=348184135dacb8e7bd80f1bdcff5b34fff9012a9d79ecd0f
-     [I 19:10:08.471 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
-     [C 19:10:08.472 NotebookApp]
-     
-         Copy/paste this URL into your browser when you connect for the first time,
-         to login with a token:
-             http://(a9e555672b1c or 127.0.0.1):8888/?token=348184135dacb8e7bd80f1bdcff5b34fff9012a9d79ecd0f
-
-
-   Browse to the URL provided in the output message (in the example above this is `http://127.0.0.1:8888/?token=348184135dacb8e7bd80f1bdcff5b34fff9012a9d79ecd0f`) and then start a new notebook from New -> Python 3 or browse to the IDAES example notebook under idaes/examples/heat_exchange_simple/simple_hx_flowsheet_01.ipynb. To shutdown the notebook server click "{Ctrl,Command} + c" in your terminal.
-
-#. Refresh your IDAES docker image to the latest version from DockerHub:
-
-   .. code-block:: sh
-
-     hamdys-mbp:idaes helgammal$ ./idaes-docker refresh
-     Refreshing IDAES image from DockerHub...
-     latest: Pulling from idaes/idaes_jupyterhub
-     Digest: sha256:17e2c1d5d184cde71cd67477cac467af7d2da798e9f9a0a297f5c2f94bdeb1ac
-     Status: Image is up to date for idaes/idaes_jupyterhub:latest
-
-Starting a new container with only the Docker image available: 
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-#. Run the following command which will pull the latest IDAES image from DockerHub:
-
-   .. code-block:: sh
-
-     docker pull idaes/idaes_jupyterhub:latest
-
-#. Run the tests directly on the docker container by using the following command. If everything went well, all tests should pass.  
-
-   .. code-block:: sh
-
-     docker run -it idaes/idaes_jupyterhub /bin/bash -c "cd /home/idaes && pytest"
-
-#. There are then 2 ways to use the image: 
-
-   #. Start a docker container and interact with it directly:
- 
-    .. code-block:: sh
-
-      $ docker run -it idaes/idaes_jupyterhub /bin/bash
-      jovyan@10c11ca29008:~$ ls /home/
-      idaes  jovyan
-      jovyan@10c11ca29008:~$ cd idaes/
-      jovyan@10c11ca29008:~/idaes$ pytest
-      ...
-  
-   #. Start a docker container and use it to run Jupyter notebooks:
-
-    .. code-block:: sh
-
-      $ docker run -p 8888:8888 -it idaes/idaes_jupyterhub
-      Container must be run with group "root" to update passwd file
-      Executing the command: jupyter notebook
-      [I 07:54:20.117 NotebookApp] Writing notebook server cookie secret to /home/jovyan/.local/share/jupyter/runtime/notebook_cookie_secret
-      [I 07:54:20.414 NotebookApp] JupyterLab extension loaded from /opt/conda/lib/python3.6/site-packages/jupyterlab
-      [I 07:54:20.414 NotebookApp] JupyterLab application directory is /opt/conda/share/jupyter/lab
-      [I 07:54:20.424 NotebookApp] Serving notebooks from local directory: /home
-      [I 07:54:20.424 NotebookApp] The Jupyter Notebook is running at:
-      [I 07:54:20.424 NotebookApp] http://(305491ce063a or 127.0.0.1):8888/?token=812a290619211bef9177b0e8c0fd7e4d1f673d29909ac254
-      [I 07:54:20.424 NotebookApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
-      [C 07:54:20.424 NotebookApp]
-
-        Copy/paste this URL into your browser when you connect for the first time,
-        to login with a token:
-            http://(305491ce063a or 127.0.0.1):8888/?token=812a290619211bef9177b0e8c0fd7e4d1f673d29909ac254
-
-   Browse to the URL provided in the output message (in the example above this is `http://127.0.0.1:8888/?token=348184135dacb8e7bd80f1bdcff5b34fff9012a9d79ecd0f`) and then start a new notebook from New -> Python 3 or browse to the IDAES example notebook under idaes/examples/heat_exchange_simple/simple_hx_flowsheet_01.ipynb. To shutdown the notebook server click "{Ctrl,Command} + c" in your terminal.
-
-Build new image from Dockerfile:
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-* Run the build command from the root of the IDAES repo. This will take some time to execute: 
-
-  .. code-block:: sh
-
-    docker build .
-
-* Tag the image. You can get IMAGE_NAME from the very last line in the previous step's output, for e.g: `Successfully built 88528d8e1f11` indicates the image name is `88528d8e1f11`.
-
-  .. code-block:: sh
-
-    docker tag IMAGE_NAME idaes/idaes_jupyterhub:version_info_here
-
-* You can then run a container as described in steps 3 and after in the previous section.
-
-Other Dependencies
-------------------
-
 Solvers
 ^^^^^^^
 
-Some of the model code depends on external solvers. All of the solvers are optional to some extent, however IPOPT is used extensively.
+Some of the model code depends on external solvers. The installation instructions
+above include the free IPOPT_ solver. Most of the examples can run with this solver,
+but a significant number of more advanced problems will not be handled well. Some
+other solvers you can install that may improve (or make possible) solutions for
+these models are:
 
-**CPLEX**
+    * CPLEX: a linear optimization package from IBM.
+      `Webpage <https://www.ibm.com/analytics/cplex-optimizer`_.
+    * Gurobi: LP/MILP/MIQP, etc., solvers from a company of the same name.
+      `Webpage <http://www.gurobi.com>`_.
 
-* `Getting CPLEX <https://www.ibm.com/developerworks/community/blogs/jfp/entry/CPLEX_Is_Free_For_Students?lang=en>`_
-* `Setting up CPLEX Python <http://www.ibm.com/support/knowledgecenter/SSSA5P_12.5.1/ilog.odms.cplex.help/CPLEX/GettingStarted/topics/set_up/Python_setup.html>`_
+.. _IPOPT: https://projects.coin-or.org/Ipopt
 
-**Gurobi**
 
-* `Gurobi license <https://user.gurobi.com/download/licenses/free-academic>`_
-* `Gurobi solver <http://www.gurobi.com/downloads/gurobi-optimizer>`_
-* `Gurobi Python setup <http://www.gurobi.com/documentation/6.5/quickstart_mac/the_gurobi_python_interfac.html>`_
-
-**IPOPT**
-
-* Installing `IPOPT <https://www.coin-or.org/Ipopt/documentation/node10.html>`_
-
-Function Dependencies
-^^^^^^^^^^^^^^^^^^^^^
+ASL and AMPL
+""""""""""""
 
 In some cases, IDAES uses AMPL user-defined functions written in C for property
 models.  Compiling these functions is optional, but some models may not work
 without them.
 
-**ASL**
-
 The AMPL solver library (ASL) is required, and can be downloaded from
 from https://ampl.com/netlib/ampl/solvers.tgz.  Documentation is available at
-https://ampl.com/resources/hooking-your-solver-to-ampl/. Typically to build the
-ASL the files can be extracted, then in the directory with the ASL file run the
-commands below.
+https://ampl.com/resources/hooking-your-solver-to-ampl/.
 
-.. code-block:: sh
-
-  ./configure
-  make
-
-**Boost**
-
-The C++ Boost libraries should be available. One possibility is to use conda to
-install boost, but the best option depends on your system.
 
 Installation on Windows
 -----------------------
