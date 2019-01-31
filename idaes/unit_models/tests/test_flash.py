@@ -22,7 +22,7 @@ from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType, useDefault)
 from idaes.unit_models.flash import Flash as FL
-from idaes.property_models.BTX_ideal import PhysicalParameterBlock
+from idaes.property_models.BTX_ideal_VLE import PhysicalParameterBlock
 from idaes.ui.report import degrees_of_freedom
 
 

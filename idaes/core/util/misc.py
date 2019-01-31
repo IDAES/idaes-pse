@@ -38,3 +38,21 @@ def add_object_reference(self, local_name, remote_object):
         raise AttributeError("{} failed to construct reference to {} - remote "
                              "object does not exist.".format(self.name,
                                                              remote_object))
+
+
+__author__ = "Jaffer Ghouse"
+
+
+def extract_data(data_dict):
+    """
+    General method that returns a rule to extract data from a python
+    dictionary. This method allows the param block to have a database for
+    a parameter but extract a subset of this data to initialize a Pyomo
+    param object.
+    """
+    def _rule_initialize(m, *args):
+        if len(args) > 1:
+            return data_dict[args]
+        else:
+            return data_dict[args[0]]
+    return _rule_initialize
