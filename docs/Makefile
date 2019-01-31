@@ -47,6 +47,7 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  coverage   to run coverage check of the documentation (if enabled)"
 	@echo "  dummy      to check syntax errors of document sources"
+	@echo "  examples   to run and copy the example notebooks into html format"
 
 .PHONY: clean
 clean:
@@ -68,9 +69,18 @@ html:
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
+.PHONY: examples
+examples: execute nbconvert
+	@echo "Examples copied as HTML. The pages are located in $(BUILDDIR)/html/examples"
+
 .PHONY: nbconvert
-nbconvert:
-	$(SCRIPTDIR)/convert_notebooks.sh ../examples source/dmf/nb
+nbconvert: 
+	mkdir -p $(BUILDDIR)/html/examples
+	$(SCRIPTDIR)/convert_notebooks.sh ../examples/executed $(BUILDDIR)/html/examples
+
+.PHONY: execute
+execute: 
+	jupyter nbconvert --to notebook --execute $(shell find ../examples -name \*.ipynb | grep -v -e executed -e checkpoint) --output-dir ../examples/executed
 
 .PHONY: dirhtml
 dirhtml:
