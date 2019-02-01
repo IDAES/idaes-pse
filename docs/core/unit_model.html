@@ -1,0 +1,485 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Unit Model Class &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Control Volume Classes" href="control_volume.html" />
+    <link rel="prev" title="Reaction Property Package Classes" href="reaction_block.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Core Library</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#core-contents">Core Contents</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="configuration.html">IDAES Framework Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="process_block.html">Process Blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_concepts.html">IDAES Modeling Concepts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="flowsheet_model.html">Flowsheet Model Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="properties.html">Property Packages</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Unit Model Class</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#unitblock-construction-arguments">UnitBlock Construction Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#collecting-time-domain">Collecting Time Domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#modeling-support-methods">Modeling Support Methods</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-idaes.core.unit_model">UnitBlock Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="control_volume.html">Control Volume Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/index.html">Utility Methods</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#core-overview">Core Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Core Library</a> &raquo;</li>
+        
+      <li>Unit Model Class</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/core/unit_model.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="unit-model-class">
+<h1>Unit Model Class<a class="headerlink" href="#unit-model-class" title="Permalink to this headline">¶</a></h1>
+<p>The UnitBlock is class is designed to form the basis of all IDAES Unit Models, and contains a number of methods which are common to all Unit Models.</p>
+<div class="section" id="unitblock-construction-arguments">
+<h2>UnitBlock Construction Arguments<a class="headerlink" href="#unitblock-construction-arguments" title="Permalink to this headline">¶</a></h2>
+<p>The UnitBlock class by default has only one construction argument, which is listed below. However, most models inheriting from UnitBlock should declare their own set of configuration arguments which contain more information on how the model should be constructed.</p>
+<ul class="simple">
+<li>dynamic - indicates whether the Unit model should be dynamic or steady-state, and if dynamic = True, the unit is declared to be a dynamic model. dynamic defaults to useDefault if not provided when instantiating the Unit model (see below for more details). It is possible to declare steady-state Unit models as part of dynamic Flowsheets if desired, however the reverse is not true (cannot have dynamic Unit models within steady-state Flowsheets).</li>
+</ul>
+</div>
+<div class="section" id="collecting-time-domain">
+<h2>Collecting Time Domain<a class="headerlink" href="#collecting-time-domain" title="Permalink to this headline">¶</a></h2>
+<p>The next task of the UnitBlock class is to establish the time domain for the unit by collecting the necessary information from the parent Flowsheet model. If the dynamic construction argument is set to useDefault then the Unit model looks to its parent model for the dynamic argument, otherwise the value provided at construction is used. Next, the UnitBlock collects the time domain from its parent model and sets this as the time domain for the Unit model.</p>
+<p>Finally, if the Unit model has a construction argument named “has_holdup” (not part of the base class), then this is checked to ensure that if dynamic = True then has_holdup is also True. If this check fails then a ConfigurationError exception will be thrown.</p>
+</div>
+<div class="section" id="modeling-support-methods">
+<h2>Modeling Support Methods<a class="headerlink" href="#modeling-support-methods" title="Permalink to this headline">¶</a></h2>
+<p>The UnitBlock class also contains a number of methods designed to facilitate the construction of common components of a model, and these are described below.</p>
+<div class="section" id="build-inlets-method">
+<h3>Build Inlets Method<a class="headerlink" href="#build-inlets-method" title="Permalink to this headline">¶</a></h3>
+<p>All (or almost all) Unit Models will have inlets and outlets which allow material to flow in and out of the unit being modeled. In order to save the model developer from having to write the code for each inlet themselves, UnitBlock contains a method named build_inlet_port which can automatically create an inlet to a specified ControlVolume block (or linked to a specified StateBlock). The build_inlet_port method is described in more detail in the documentation below.</p>
+</div>
+<div class="section" id="build-outlets-method">
+<h3>Build Outlets Method<a class="headerlink" href="#build-outlets-method" title="Permalink to this headline">¶</a></h3>
+<p>Similar to build_inlet_port, UnitBlock also has a method named build_outlet_port for constructing outlets from Unit models. The build_outlets method is described in more detail in the documentation below.</p>
+</div>
+<div class="section" id="model-check-method">
+<h3>Model Check Method<a class="headerlink" href="#model-check-method" title="Permalink to this headline">¶</a></h3>
+<p>In order to support the IDAES Model Check tools, UnitBlock contains a simple model_check method which assumes a single Holdup block and calls the model_check method on this block. Model developers are encouraged to create their own model_check methods for their particular applications.</p>
+</div>
+<div class="section" id="initialization-routine">
+<h3>Initialization Routine<a class="headerlink" href="#initialization-routine" title="Permalink to this headline">¶</a></h3>
+<p>All Unit Models need to have an initialization routine, which should be customized for each Unit model, In order to ensure that all Unit models have at least a basic initialization routine, UnitBlock contains a generic initialization procedure which may be sufficient for simple models with only one Holdup Block. Model developers are strongly encouraged to write their own initialization routines rather than relying on the default method.</p>
+</div>
+</div>
+<div class="section" id="module-idaes.core.unit_model">
+<span id="unitblock-classes"></span><h2>UnitBlock Classes<a class="headerlink" href="#module-idaes.core.unit_model" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="idaes.core.unit_model.UnitBlockData">
+<em class="property">class </em><code class="descclassname">idaes.core.unit_model.</code><code class="descname">UnitBlockData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the class for process unit operations models. These are models that
+would generally appear in a process flowsheet or superstructure.</p>
+<dl class="method">
+<dt id="idaes.core.unit_model.UnitBlockData.add_inlet_port">
+<code class="descname">add_inlet_port</code><span class="sig-paren">(</span><em>name=None</em>, <em>block=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.add_inlet_port"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.add_inlet_port" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a method to build inlet Port objects in a unit model and
+connect these to a specified control volume or state block.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>= name to use for Port object</strong> (<a class="reference internal" href="../apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.name" title="idaes.dmf.workspace.Workspace.name"><em>name</em></a>) – </li>
+<li><strong>= an instance of a ControlVolume</strong><strong> or </strong><strong>StateBlock to use as the</strong> (<em>block</em>) – source to populate the Port object. If a ControlVolume is
+provided, the method will use the inlet state block as
+defined by the ControlVolume. If not provided, method will
+attempt to default to an object named control_volume.</li>
+<li><strong>= doc string for Port object</strong> (<em>doc</em>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A Pyomo Port object and associated components.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.unit_model.UnitBlockData.add_outlet_port">
+<code class="descname">add_outlet_port</code><span class="sig-paren">(</span><em>name=None</em>, <em>block=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.add_outlet_port"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.add_outlet_port" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a method to build outlet Port objects in a unit model and
+connect these to a specified control volume or state block.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>= name to use for Port object</strong> (<a class="reference internal" href="../apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.name" title="idaes.dmf.workspace.Workspace.name"><em>name</em></a>) – </li>
+<li><strong>= an instance of a ControlVolume</strong><strong> or </strong><strong>StateBlock to use as the</strong> (<em>block</em>) – source to populate the Port object. If a ControlVolume is
+provided, the method will use the outlet state block as
+defined by the ControlVolume. If not provided, method will
+attempt to default to an object named control_volume.</li>
+<li><strong>= doc string for Port object</strong> (<em>doc</em>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A Pyomo Port object and associated components.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.unit_model.UnitBlockData.add_port">
+<code class="descname">add_port</code><span class="sig-paren">(</span><em>name=None</em>, <em>block=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.add_port"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.add_port" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a method to build Port objects in a unit model and
+connect these to a specified StateBlock.
+:keyword name = name to use for Port object.:
+:keyword block = an instance of a StateBlock to use as the source to: populate the Port object
+:keyword doc = doc string for Port object:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A Pyomo Port object and associated components.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.unit_model.UnitBlockData.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>General build method for UnitBlockData. This method calls a number
+of sub-methods which automate the construction of expected attributes
+of unit models.</p>
+<p>Inheriting models should call <cite>super().build</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.unit_model.UnitBlockData.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>state_args=None</em>, <em>outlvl=0</em>, <em>solver='ipopt'</em>, <em>optarg={'tol': 1e-06}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a general purpose initialization routine for simple unit
+models. This method assumes a single ControlVolume block called
+controlVolume, and first initializes this and then attempts to solve
+the entire unit.</p>
+<p>More complex models should overload this method with their own
+initialization routines,</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>state_args</strong> – a dict of arguments to be passed to the property
+package(s) to provide an initial state for
+initialization (see documentation of the specific
+property package) (default = {}).</li>
+<li><strong>outlvl</strong> – <p>sets output level of initialisation routine</p>
+<ul>
+<li>0 = no output (default)</li>
+<li>1 = return solver state for each step in routine</li>
+<li>2 = return solver state for each step in subroutines</li>
+<li>3 = include solver output infomation (tee=True)</li>
+</ul>
+</li>
+<li><strong>optarg</strong> – solver options dictionary object (default={‘tol’: 1e-6})</li>
+<li><strong>solver</strong> – str indicating which solver to use during
+initialization (default = ‘ipopt’)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.unit_model.UnitBlockData.model_check">
+<code class="descname">model_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.model_check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.model_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a general purpose initialization routine for simple unit
+models. This method assumes a single ControlVolume block called
+controlVolume and tries to call the model_check method of the
+controlVolume block. If an AttributeError is raised, the check is
+passed.</p>
+<p>More complex models should overload this method with a model_check
+suited to the particular application, especially if there are multiple
+ControlVolume blocks present.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.core.unit_model.UnitBlock">
+<em class="property">class </em><code class="descclassname">idaes.core.unit_model.</code><code class="descname">UnitBlock</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#idaes.core.unit_model.UnitBlock" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rule</strong> (<em>function</em>) – A rule function or None. Default rule calls build().</li>
+<li><strong>concrete</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If True, make this a toplevel model. <strong>Default</strong> - False.</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Pyomo ctype of the block.  <strong>Default</strong> - “Block”</li>
+<li><strong>default</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – <p>Default ProcessBlockData config</p>
+<dl class="docutils">
+<dt>Keys</dt>
+<dd><dl class="first last docutils">
+<dt>dynamic</dt>
+<dd>Indicates whether this model will be dynamic or not,
+<strong>default</strong> = useDefault. <strong>Valid values:</strong> {
+<strong>useDefault</strong> - get flag from parent (default = False),
+<strong>True</strong> - set as a dynamic model, <strong>False</strong> - set as a
+steady-state model.}</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><strong>initialize</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – ProcessBlockData config for individual elements. Keys
+are BlockData indexes and values are dictionaries described under the
+“default” argument above.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(UnitBlock) New instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="control_volume.html" class="btn btn-neutral float-right" title="Control Volume Classes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="reaction_block.html" class="btn btn-neutral" title="Reaction Property Package Classes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

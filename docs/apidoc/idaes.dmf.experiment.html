@@ -1,0 +1,320 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.dmf.experiment module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.dmf.experiment module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.dmf.experiment.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.dmf.experiment">
+<span id="idaes-dmf-experiment-module"></span><h1>idaes.dmf.experiment module<a class="headerlink" href="#module-idaes.dmf.experiment" title="Permalink to this headline">¶</a></h1>
+<p>The ‘experiment’ is a root container for a coherent
+set of ‘resources’.</p>
+<dl class="class">
+<dt id="idaes.dmf.experiment.Experiment">
+<em class="property">class </em><code class="descclassname">idaes.dmf.experiment.</code><code class="descname">Experiment</code><span class="sig-paren">(</span><em>dmf</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/experiment.html#Experiment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.experiment.Experiment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="idaes.dmf.resource.html#idaes.dmf.resource.Resource" title="idaes.dmf.resource.Resource"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.dmf.resource.Resource</span></code></a></p>
+<p>An experiment is a way of grouping resources in a way that
+makes sense to the user.</p>
+<p>It is also a useful unit for passing as an argument to functions,
+since it has a standard ‘slot’ for the DMF instance that created it.</p>
+<dl class="method">
+<dt id="idaes.dmf.experiment.Experiment.add">
+<code class="descname">add</code><span class="sig-paren">(</span><em>rsrc</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/experiment.html#Experiment.add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.experiment.Experiment.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a resource to an experiment.</p>
+<p>This does two things:</p>
+<ol class="arabic simple">
+<li>Establishes an “experiment” type of relationship between the
+new resource and the experiment.</li>
+<li>Adds the resource to the DMF</li>
+</ol>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>rsrc</strong> (<a class="reference internal" href="idaes.dmf.resource.html#idaes.dmf.resource.Resource" title="idaes.dmf.resource.Resource"><em>resource.Resource</em></a>) – The resource to add.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Added (input) resource, for chaining calls.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="idaes.dmf.resource.html#idaes.dmf.resource.Resource" title="idaes.dmf.resource.Resource">resource.Resource</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.experiment.Experiment.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><em>new_id=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/experiment.html#Experiment.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.experiment.Experiment.copy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a copy of this experiment. The returned object will
+have been added to the DMF.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>new_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If True, generate a new unique ID for the copy.</li>
+<li><strong>kwargs</strong> – Values to set in new instance after copying.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><p>A (mostly deep) copy.</p>
+<p>Note that the DMF instance is just a reference to the
+same object as in the original, and they will share state.</p>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#idaes.dmf.experiment.Experiment" title="idaes.dmf.experiment.Experiment">Experiment</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.experiment.Experiment.dmf">
+<code class="descname">dmf</code><a class="headerlink" href="#idaes.dmf.experiment.Experiment.dmf" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.experiment.Experiment.link">
+<code class="descname">link</code><span class="sig-paren">(</span><em>subj</em>, <em>predicate='contains'</em>, <em>obj=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/experiment.html#Experiment.link"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.experiment.Experiment.link" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add and update relation triple in DMF.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>subj</strong> (<a class="reference internal" href="idaes.dmf.resource.html#idaes.dmf.resource.Resource" title="idaes.dmf.resource.Resource"><em>resource.Resource</em></a>) – Subject</li>
+<li><strong>predicate</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Predicate</li>
+<li><strong>obj</strong> (<a class="reference internal" href="idaes.dmf.resource.html#idaes.dmf.resource.Resource" title="idaes.dmf.resource.Resource"><em>resource.Resource</em></a>) – Object</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.experiment.Experiment.remove">
+<code class="descname">remove</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/experiment.html#Experiment.remove"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.experiment.Experiment.remove" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove this experiment from the associated DMF instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.experiment.Experiment.update">
+<code class="descname">update</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/experiment.html#Experiment.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.experiment.Experiment.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update experiment to current values.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

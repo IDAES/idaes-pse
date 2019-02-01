@@ -1,0 +1,725 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.control_volume1d module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.core.control_volume1d module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.core.control_volume1d.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.core.control_volume1d">
+<span id="idaes-core-control-volume1d-module"></span><h1>idaes.core.control_volume1d module<a class="headerlink" href="#module-idaes.core.control_volume1d" title="Permalink to this headline">¶</a></h1>
+<p>Base class for control volumes</p>
+<dl class="class">
+<dt id="idaes.core.control_volume1d.ControlVolume1D">
+<em class="property">class </em><code class="descclassname">idaes.core.control_volume1d.</code><code class="descname">ControlVolume1D</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../core/process_block.html#idaes.core.process_block.ProcessBlock" title="idaes.core.process_block.ProcessBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.process_block.ProcessBlock</span></code></a></p>
+<p>ControlVolume1D is a specialized Pyomo block for IDAES control volume
+blocks discretized in one spatial direction, and contains instances of
+ControlVolume1dData.</p>
+<p>ControlVolume1D should be used for any control volume with a defined volume
+and distinct inlets and outlets where there is a single spatial domain
+parallel to the material flow direction. This encompases unit operations
+such as plug flow reactors and pipes.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rule</strong> (<em>function</em>) – A rule function or None. Default rule calls build().</li>
+<li><strong>concrete</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If True, make this a toplevel model. <strong>Default</strong> - False.</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Pyomo ctype of the block.  <strong>Default</strong> - “Block”</li>
+<li><strong>default</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – <p>Default ProcessBlockData config</p>
+<dl class="docutils">
+<dt>Keys</dt>
+<dd><dl class="first last docutils">
+<dt>dynamic</dt>
+<dd>Indicates whether this model will be dynamic, <strong>default</strong>
+- useDefault. <strong>Valid values:</strong> { <strong>useDefault</strong> - get
+flag from parent, <strong>True</strong> - set as a dynamic model,
+<strong>False</strong> - set as a steady-state model}</dd>
+<dt>has_holdup</dt>
+<dd>Indicates whether holdup terms should be constructed or
+not. Must be True if dynamic = True, <strong>default</strong> - False.
+<strong>Valid values:</strong> { <strong>True</strong> - construct holdup terms,
+<strong>False</strong> - do not construct holdup terms}</dd>
+<dt>property_package</dt>
+<dd>Property parameter object used to define property
+calculations, <strong>default</strong> - useDefault. <strong>Valid values:</strong>
+{ <strong>useDefault</strong> - use default package from parent model
+or flowsheet, <strong>PropertyParameterObject</strong> - a
+PropertyParameterBlock object.}</dd>
+<dt>property_package_args</dt>
+<dd>A ConfigBlock with arguments to be passed to a property
+block(s) and used when constructing these, <strong>default</strong> -
+None. <strong>Valid values:</strong> { see property package for
+documentation.}</dd>
+<dt>reaction_package</dt>
+<dd>Reaction parameter object used to define reaction
+calculations, <strong>default</strong> - None. <strong>Valid values:</strong> {
+<strong>None</strong> - no reaction package, <strong>ReactionParameterBlock</strong>
+- a ReactionParameterBlock object.}</dd>
+<dt>reaction_package_args</dt>
+<dd>A ConfigBlock with arguments to be passed to a reaction
+block(s) and used when constructing these, <strong>default</strong> -
+None. <strong>Valid values:</strong> { see reaction package for
+documentation.}</dd>
+<dt>auto_construct</dt>
+<dd>If set to True, this argument will trigger the
+auto_construct method which will attempt to construct a
+set of material, energy and momentum balance equations
+based on the parent unit’s config block. The parent unit
+must have a config block which derives from CONFIG_Base,
+<strong>default</strong> - False. <strong>Valid values:</strong> { <strong>True</strong> - use
+automatic construction, <strong>False</strong> - do not use automatic
+construciton.}</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><strong>initialize</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – ProcessBlockData config for individual elements. Keys
+are BlockData indexes and values are dictionaries described under the
+“default” argument above.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(ControlVolume1D) New instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData">
+<em class="property">class </em><code class="descclassname">idaes.core.control_volume1d.</code><code class="descname">ControlVolume1dData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase" title="idaes.core.control_volume_base.ControlVolumeBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.control_volume_base.ControlVolumeBase</span></code></a></p>
+<p>1-Dimensional ControlVolume Class</p>
+<p>This class forms the core of all 1-D IDAES models. It provides
+methods to build property and reaction blocks, and add mass, energy and
+momentum balances. The form of the terms used in these constraints is
+specified in the chosen property package.</p>
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_geometry">
+<code class="descname">add_geometry</code><span class="sig-paren">(</span><em>length_domain=None, length_domain_set=[0.0, 1.0], flow_direction=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;, 0, 'forward')</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_geometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_geometry" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to create spatial domain and volume Var in ControlVolume.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>-</strong> (<em>length_domain_set</em>) – domain for the ControlVolume. If not provided, a
+new ContinuousSet will be created (default=None).
+ContinuousSet should be normalized to run between
+0 and 1.</li>
+<li><strong>-</strong> – a new ContinuousSet if length_domain is not
+provided (default = [0.0, 1.0]).</li>
+<li><strong>- argument indicating direction of material flow</strong> (<em>flow_direction</em>) – <dl class="docutils">
+<dt>relative to length domain. Valid values:</dt>
+<dd><ul class="first last">
+<li>FlowDirection.forward (default), flow goes
+from 0 to 1.</li>
+<li>FlowDirection.backward, flow goes from 1 to 0</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_phase_component_balances">
+<code class="descname">add_phase_component_balances</code><span class="sig-paren">(</span><em>has_rate_reactions=False</em>, <em>has_equilibrium_reactions=False</em>, <em>has_phase_equilibrium=False</em>, <em>has_mass_transfer=False</em>, <em>custom_molar_term=None</em>, <em>custom_mass_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_phase_component_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_phase_component_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method constructs a set of 1D material balances indexed by time,
+length, phase and component.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>has_rate_reactions</strong> – whether default generation terms for rate
+reactions should be included in material balances</li>
+<li><strong>has_equilibrium_reactions</strong> – whether generation terms should for
+chemical equilibrium reactions should be included in
+material balances</li>
+<li><strong>has_phase_equilibrium</strong> – whether generation terms should for phase
+equilibrium behaviour should be included in material
+balances</li>
+<li><strong>has_mass_transfer</strong> – whether generic mass transfer terms should be
+included in material balances</li>
+<li><strong>custom_molar_term</strong> – a Pyomo Expression representing custom terms to
+be included in material balances on a molar basis.
+Expression must be indexed by time, length domain, phase
+list and component list</li>
+<li><strong>custom_mass_term</strong> – a Pyomo Expression representing custom terms to
+be included in material balances on a mass basis.
+Expression must be indexed by time, length domain, phase
+list and component list</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Constraint object representing material balances</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_phase_energy_balances">
+<code class="descname">add_phase_energy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_phase_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_phase_energy_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for adding energy balances (including kinetic energy) indexed by
+phase to the control volume.</p>
+<p>See specific control volume documentation for details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_phase_enthalpy_balances">
+<code class="descname">add_phase_enthalpy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_phase_enthalpy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_phase_enthalpy_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for adding enthalpy balances indexed by phase to
+the control volume.</p>
+<p>See specific control volume documentation for details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_phase_momentum_balances">
+<code class="descname">add_phase_momentum_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_phase_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_phase_momentum_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for adding momentum balances indexed by phase to the control
+volume.</p>
+<p>See specific control volume documentation for details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_phase_pressure_balances">
+<code class="descname">add_phase_pressure_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_phase_pressure_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_phase_pressure_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for adding pressure balances indexed by
+phase to the control volume.</p>
+<p>See specific control volume documentation for details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_reaction_blocks">
+<code class="descname">add_reaction_blocks</code><span class="sig-paren">(</span><em>has_equilibrium=False</em>, <em>package_arguments={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_reaction_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_reaction_blocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method constructs the reaction block for the control volume.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>has_equilibrium</strong> – indicates whether equilibrium calculations
+will be required in reaction block</li>
+<li><strong>package_arguments</strong> – dict-like object of arguments to be passed to
+reaction block as construction arguments</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_state_blocks">
+<code class="descname">add_state_blocks</code><span class="sig-paren">(</span><em>information_flow=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;</em>, <em>0</em>, <em>'forward')</em>, <em>has_phase_equilibrium=False</em>, <em>package_arguments={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_state_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_state_blocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method constructs the state blocks for the
+control volume.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>information_flow</strong> – a FlowDirection Enum indicating whether
+information flows from inlet-to-outlet or
+outlet-to-inlet</li>
+<li><strong>has_phase_equilibrium</strong> – indicates whether equilibrium calculations
+will be required in state blocks</li>
+<li><strong>package_arguments</strong> – dict-like object of arguments to be passed to
+state blocks as construction arguments</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_component_balances">
+<code class="descname">add_total_component_balances</code><span class="sig-paren">(</span><em>has_rate_reactions=False</em>, <em>has_equilibrium_reactions=False</em>, <em>has_phase_equilibrium=False</em>, <em>has_mass_transfer=False</em>, <em>custom_molar_term=None</em>, <em>custom_mass_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_component_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_component_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method constructs a set of 1D material balances indexed by time
+length and component.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>has_rate_reactions</strong> – whether default generation terms for rate
+reactions should be included in material balances</li>
+<li><strong>has_equilibrium_reactions</strong> – whether generation terms should for
+chemical equilibrium reactions should be included in
+material balances</li>
+<li><strong>has_phase_equilibrium</strong> – whether generation terms should for phase
+equilibrium behaviour should be included in material
+balances</li>
+<li><strong>has_mass_transfer</strong> – whether generic mass transfer terms should be
+included in material balances</li>
+<li><strong>custom_molar_term</strong> – a Pyomo Expression representing custom terms to
+be included in material balances on a molar basis.
+Expression must be indexed by time, length domain and
+component list</li>
+<li><strong>custom_mass_term</strong> – a Pyomo Expression representing custom terms to
+be included in material balances on a mass basis.
+Expression must be indexed by time, length domain and
+component list</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Constraint object representing material balances</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_element_balances">
+<code class="descname">add_total_element_balances</code><span class="sig-paren">(</span><em>has_rate_reactions=False</em>, <em>has_equilibrium_reactions=False</em>, <em>has_phase_equilibrium=False</em>, <em>has_mass_transfer=False</em>, <em>custom_elemental_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_element_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_element_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method constructs a set of 1D element balances indexed by time and
+length.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>- whether default generation terms for rate</strong> (<em>has_rate_reactions</em>) – reactions should be included in material balances</li>
+<li><strong>- whether generation terms should for</strong> (<em>has_equilibrium_reactions</em>) – chemical equilibrium reactions should be included in
+material balances</li>
+<li><strong>- whether generation terms should for phase</strong> (<em>has_phase_equilibrium</em>) – equilibrium behaviour should be included in material
+balances</li>
+<li><strong>- whether generic mass transfer terms should be</strong> (<em>has_mass_transfer</em>) – included in material balances</li>
+<li><strong>- a Pyomo Expression representing custom</strong> (<em>custom_elemental_term</em>) – terms to be included in material balances on a molar
+elemental basis. Expression must be indexed by time, length
+and element list</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Constraint object representing material balances</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_energy_balances">
+<code class="descname">add_total_energy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_energy_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for adding a total energy balance (including kinetic energy)
+to the control volume.</p>
+<p>See specific control volume documentation for details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_enthalpy_balances">
+<code class="descname">add_total_enthalpy_balances</code><span class="sig-paren">(</span><em>has_heat_of_reaction=False</em>, <em>has_heat_transfer=False</em>, <em>has_work_transfer=False</em>, <em>custom_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_enthalpy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_enthalpy_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method constructs a set of 1D enthalpy balances indexed by time
+and phase.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>- whether terms for heat of reaction should</strong> (<em>has_heat_of_reaction</em>) – be included in enthalpy balance</li>
+<li><strong>- whether terms for heat transfer should be</strong> (<em>has_heat_transfer</em>) – included in enthalpy balances</li>
+<li><strong>- whether terms for work transfer should be</strong> (<em>has_work_transfer</em>) – included in enthalpy balances</li>
+<li><strong>- a Pyomo Expression representing custom terms to</strong> (<em>custom_term</em>) – be included in enthalpy balances.
+Expression must be indexed by time, length and phase list</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Constraint object representing enthalpy balances</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_material_balances">
+<code class="descname">add_total_material_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_material_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_material_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for adding a total material balance to
+the control volume.</p>
+<p>See specific control volume documentation for details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_momentum_balances">
+<code class="descname">add_total_momentum_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_momentum_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method for adding a total momentum balance to the control volume.</p>
+<p>See specific control volume documentation for details.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_pressure_balances">
+<code class="descname">add_total_pressure_balances</code><span class="sig-paren">(</span><em>has_pressure_change=False</em>, <em>custom_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_pressure_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_pressure_balances" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method constructs a set of 1D pressure balances indexed by time.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>- whether terms for pressure change should be</strong> (<em>has_pressure_change</em>) – included in enthalpy balances</li>
+<li><strong>- a Pyomo Expression representing custom terms to</strong> (<em>custom_term</em>) – be included in pressure balances.
+Expression must be indexed by time and length domain</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Constraint object representing pressure balances</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.apply_transformation">
+<code class="descname">apply_transformation</code><span class="sig-paren">(</span><em>transformation_method='dae.finite_difference'</em>, <em>transformation_scheme='BACKWARD'</em>, <em>finite_elements=10</em>, <em>collocation_points=3</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.apply_transformation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.apply_transformation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to apply DAE transformation to the Control Volume length domain.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>- method to use to transform domain. Must be</strong> (<em>transformation_method</em>) – a method recognised by the Pyomo
+TransformationFactory
+(default = “dae.finite_difference”)</li>
+<li><strong>- scheme to use when transformating domain.</strong> (<em>transformation_scheme</em>) – See Pyomo documentation for supported
+schemes (default=”BACKWARD”)</li>
+<li><strong>- number of finite elements to use in</strong> (<em>finite_elements</em>) – transformation (equivalent to Pyomo nfe argument,
+default = 10)</li>
+<li><strong>- number of collocation points to use</strong><strong> (</strong><strong>equivalent</strong> (<em>collocation_points</em>) – to Pyomo ncp argument, default = 3)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build method for ControlVolume1D blocks.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>state_args=None</em>, <em>outlvl=0</em>, <em>optarg=None</em>, <em>solver='ipopt'</em>, <em>hold_state=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialisation routine for 1D control volume (default solver ipopt)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>state_args</strong> – a dict of arguments to be passed to the property
+package(s) to provide an initial state for
+initialization (see documentation of the specific
+property package) (default = {}).</li>
+<li><strong>outlvl</strong> – sets output level of initialisation routine. <strong>Valid
+values:</strong> <strong>0</strong> - no output (default), <strong>1</strong> - return
+solver state for each step in routine, <strong>2</strong> - include
+solver output infomation (tee=True)</li>
+<li><strong>optarg</strong> – solver options dictionary object (default=None)</li>
+<li><strong>solver</strong> – str indicating whcih solver to use during
+initialization (default = ‘ipopt’)</li>
+<li><strong>hold_state</strong> – flag indicating whether the initialization routine
+should unfix any state variables fixed during
+initialization, <strong>default</strong> - True. <strong>Valid values:</strong>
+<strong>True</strong> - states variables are not unfixed, and a dict of
+returned containing flags for which states were fixed
+during initialization, <strong>False</strong> - state variables are
+unfixed after initialization by calling the release_state
+method.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">If hold_states is True, returns a dict containing flags for which
+states were fixed during initialization.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.model_check">
+<code class="descname">model_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.model_check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.model_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method executes the model_check methods on the associated state
+blocks (if they exist). This method is generally called by a unit model
+as part of the unit’s model_check method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.control_volume1d.ControlVolume1dData.release_state">
+<code class="descname">release_state</code><span class="sig-paren">(</span><em>flags</em>, <em>outlvl=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.release_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.release_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to release state variables fixed during initialisation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>flags</strong> – dict containing information of which state variables
+were fixed during initialization, and should now be
+unfixed. This dict is returned by initialize if
+hold_state = True.</li>
+<li><strong>outlvl</strong> – sets output level of logging</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

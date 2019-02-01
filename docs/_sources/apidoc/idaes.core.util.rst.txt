@@ -1,0 +1,28 @@
+idaes.core.util package
+=======================
+
+.. automodule:: idaes.core.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+
+    idaes.core.util.convergence
+
+Submodules
+----------
+
+.. toctree::
+
+   idaes.core.util.config
+   idaes.core.util.exceptions
+   idaes.core.util.expr_doc
+   idaes.core.util.initialization
+   idaes.core.util.math
+   idaes.core.util.misc
+   idaes.core.util.model_serializer
+

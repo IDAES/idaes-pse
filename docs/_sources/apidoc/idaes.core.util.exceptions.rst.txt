@@ -1,0 +1,7 @@
+idaes.core.util.exceptions module
+=================================
+
+.. automodule:: idaes.core.util.exceptions
+    :members:
+    :undoc-members:
+    :show-inheritance:

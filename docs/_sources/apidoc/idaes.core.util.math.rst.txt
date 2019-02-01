@@ -1,0 +1,7 @@
+idaes.core.util.math module
+===========================
+
+.. automodule:: idaes.core.util.math
+    :members:
+    :undoc-members:
+    :show-inheritance:

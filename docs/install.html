@@ -1,0 +1,611 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Installation &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="IDAES Modeling Standards" href="standards.html" />
+    <link rel="prev" title="Institute for the Design of Advanced Energy Systems (IDAES)" href="index.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#installation-using-docker">Installation using Docker</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#install-docker-on-your-system">Install Docker on your system</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-the-idaes-docker-image">Get the IDAES Docker image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run-the-idaes-docker-image">Run the IDAES Docker image</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-from-source-code">Installation from source code</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#system-requirements">System Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installation-steps">Installation steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#solvers">Solvers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#asl-and-ampl">ASL and AMPL</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-on-windows">Installation on Windows</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#python-distribution">Python Distribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pyomo">Pyomo</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#idaes">IDAES</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#option-1-download-zip-file">Option 1: Download zip file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#option-2-using-git">Option 2: Using Git</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Installation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/install.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#installation-using-docker" id="id2">Installation using Docker</a><ul>
+<li><a class="reference internal" href="#install-docker-on-your-system" id="id3">Install Docker on your system</a></li>
+<li><a class="reference internal" href="#get-the-idaes-docker-image" id="id4">Get the IDAES Docker image</a></li>
+<li><a class="reference internal" href="#run-the-idaes-docker-image" id="id5">Run the IDAES Docker image</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installation-from-source-code" id="id6">Installation from source code</a><ul>
+<li><a class="reference internal" href="#system-requirements" id="id7">System Requirements</a></li>
+<li><a class="reference internal" href="#installation-steps" id="id8">Installation steps</a></li>
+<li><a class="reference internal" href="#solvers" id="id9">Solvers</a><ul>
+<li><a class="reference internal" href="#asl-and-ampl" id="id10">ASL and AMPL</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installation-on-windows" id="id11">Installation on Windows</a><ul>
+<li><a class="reference internal" href="#python-distribution" id="id12">Python Distribution</a></li>
+<li><a class="reference internal" href="#pyomo" id="id13">Pyomo</a></li>
+<li><a class="reference internal" href="#idaes" id="id14">IDAES</a><ul>
+<li><a class="reference internal" href="#option-1-download-zip-file" id="id15">Option 1: Download zip file</a></li>
+<li><a class="reference internal" href="#option-2-using-git" id="id16">Option 2: Using Git</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="installation-using-docker">
+<h2><a class="toc-backref" href="#id2">Installation using Docker</a><a class="headerlink" href="#installation-using-docker" title="Permalink to this headline">¶</a></h2>
+<p>The simplest way to install the IDAES PSE Framework is by using
+the pre-built <a class="reference external" href="https://docker.io/">Docker</a> image.</p>
+<p>A Docker image is essentially an embedded
+instance of Linux (even if you are using Windows or Mac OSX)
+that has all the code for the IDAES PSE framework
+pre-installed. You can run commands and Jupyter Notebooks in that
+image. This section describes how to set up your system, get the
+Docker image, and interact with it.</p>
+<div class="section" id="install-docker-on-your-system">
+<h3><a class="toc-backref" href="#id3">Install Docker on your system</a><a class="headerlink" href="#install-docker-on-your-system" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic">
+<li><p class="first">Install the community edition (CE) of <a class="reference external" href="https://docker.io/">Docker</a> (website: <a class="reference external" href="https://docker.io">https://docker.io</a>).</p>
+</li>
+<li><p class="first">Start the Docker daemon. How to do this will depend on your operating system.</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>OS X</dt>
+<dd><p class="first last">You should install <a class="reference external" href="https://docs.docker.com/docker-for-mac/install/">Docker Desktop for Mac</a>.
+Docker should have been installed to your Applications directory. Browse to it and click on it from there.
+You will see a small icon in your toolbar that indicates
+that the daemon is running.</p>
+</dd>
+<dt>Linux</dt>
+<dd><p class="first last">Install Docker using the package manager for your OS. Then
+start the daemon. If you are using Ubuntu or a Debian-based Linux distro,
+the Docker daemon will start automatically once Docker is installed.
+For CentOS, start Docker manually, e.g., run <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">systemctl</span> <span class="pre">start</span> <span class="pre">docker</span></code>.</p>
+</dd>
+<dt>Windows</dt>
+<dd><p class="first last">You should install <a class="reference external" href="https://docs.docker.com/docker-for-windows/install/">Docker Desktop for Windows</a>.
+Docker will be started automatically.</p>
+</dd>
+</dl>
+</div></blockquote>
+</li>
+</ol>
+</div>
+<div class="section" id="get-the-idaes-docker-image">
+<h3><a class="toc-backref" href="#id4">Get the IDAES Docker image</a><a class="headerlink" href="#get-the-idaes-docker-image" title="Permalink to this headline">¶</a></h3>
+<p>You need to get the pre-built Docker “image” containing the source
+code and solvers for the IDAES PSE framework. This image is stored in
+an online service called <a class="reference external" href="https://hub.docker.com/">Docker Hub</a>. Full details on how to use
+Docker Hub are available in the <a class="reference external" href="https://docs.docker.com/docker-hub/">Docker Hub documentation</a>. The name
+of the Docker image that you would normally pull is
+<code class="docutils literal notranslate"><span class="pre">idaes/idaes_pse:latest</span></code>. This name has three parts:</p>
+<blockquote>
+<div><ul class="simple">
+<li>idaes - means the Docker image is in the Docker Hub organization called “idaes”.</li>
+<li>/idaes_pse - this is the name of the Docker image for the IDAES PSE framework.</li>
+<li>:latest - this is a “tag” that will get the latest version.</li>
+</ul>
+</div></blockquote>
+<p>In a point and click interface, you can type the name of this image
+into the search box. In a command-line interface, e.g. in Linux,
+then you would run a command like:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> docker pull idaes/idaes_pse:latest
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you are a software developer, you may have “cloned” the Github repository with
+the IDAES source code. In this case, the script <cite>idaes-docker</cite> can be used to
+pull and run the Docker image. Please run <code class="docutils literal notranslate"><span class="pre">idaes-docker</span> <span class="pre">-h</span></code> to get help and
+details on how to use this script.</p>
+</div>
+</div>
+<div class="section" id="run-the-idaes-docker-image">
+<h3><a class="toc-backref" href="#id5">Run the IDAES Docker image</a><a class="headerlink" href="#run-the-idaes-docker-image" title="Permalink to this headline">¶</a></h3>
+<p>To start the Docker image, use a graphical user interface or a console or shell
+command-line interface.</p>
+<p>From the command-line, if you want to start up the Jupyter Notebook server, e.g.
+to view and run the examples and tutorials, then run this command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> docker run -p <span class="m">8888</span>:8888 -it idaes/idaes_pse
+<span class="go">... &lt;debugging output from Jupyter&gt;</span>
+<span class="go">...</span>
+<span class="go">Copy/paste this URL into your browser when you connect for the first time,</span>
+<span class="go">to login with a token:</span>
+<span class="go">    http://(305491ce063a or 127.0.0.1):8888/?token=812a290619211bef9177b0e8c0fd7e4d1f673d29909ac254</span>
+</pre></div>
+</div>
+<p>Copy and paste the URL provided at the end of the output into a browser window
+and you should get a working Jupyter Notebook. You can browse to the examples
+directory under <code class="docutils literal notranslate"><span class="pre">/home/idaes/examples</span></code> and click on the Jupyter Notebooks to
+open them.</p>
+<p>To interact with the image directly from the command-line (console), you can run the
+following command:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> docker run -p <span class="m">8888</span>:8888 -it idaes/idaes_pse /bin/bash
+<span class="gp">jovyan@10c11ca29008:~$</span> <span class="nb">cd</span> /home/idaes
+<span class="go">...</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="installation-from-source-code">
+<h2><a class="toc-backref" href="#id6">Installation from source code</a><a class="headerlink" href="#installation-from-source-code" title="Permalink to this headline">¶</a></h2>
+<p>If you want to install the IDAES PSE framework from the source code, follow the
+set of instructions below that are appropriate for your operating system.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">These installation procedures are only fully tested on Debian-based Linux
+distributions.</p>
+</div>
+<div class="section" id="system-requirements">
+<h3><a class="toc-backref" href="#id7">System Requirements</a><a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li>Linux operating system</li>
+<li>Python 2.7+ or 3.6+</li>
+<li>Basic GNU/C compilation tools: make, gcc/g++</li>
+<li><cite>wget</cite> (for downloading software)</li>
+<li><cite>git</cite> (for getting the IDAES source code)</li>
+<li>Access to the Internet</li>
+</ul>
+</div></blockquote>
+<p>Things you must know how to do:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Get root permissions via <cite>sudo</cite>.</li>
+<li>Install packages using the package manager.</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="installation-steps">
+<h3><a class="toc-backref" href="#id8">Installation steps</a><a class="headerlink" href="#installation-steps" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>sudo apt-get install gcc g++ make
+</pre></div>
+</div>
+<p>We use a Python packaging system called <a class="reference external" href="https://conda.io/">Conda</a>.
+Below are instructions for installing a minimal version of Conda, called <a class="reference external" href="https://conda.io/en/latest/miniconda.html">Miniconda</a>.
+The full version installs a large number of scientific analysis and visualization libraries
+that are not required by the IDAES framework.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+</pre></div>
+</div>
+<p>Create and activate a conda environment (along with its own copy of <code class="docutils literal notranslate"><span class="pre">pip</span></code>)
+for the new IDAES installation <strong>(you will need to</strong> <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">activate</span> <span class="pre">idaes</span></code> **
+when you open a fresh terminal window and wish to use IDAES)**:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda create -n idaes pip
+conda activate idaes
+</pre></div>
+</div>
+<p>Obtain the source code for IDAES from GitHub:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/IDAES/idaes.git
+</pre></div>
+</div>
+<p>Next install the main solver dependencies. You should be in the directory that
+you created with the <cite>git clone</cite> command (by default, called “idaes”).</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>sudo apt-get update <span class="o">&amp;&amp;</span> sudo apt-get install -y libboost-dev
+wget https://ampl.com/netlib/ampl/solvers.tgz
+tar -xf solvers.tgz
+<span class="o">(</span> <span class="nb">cd</span> solvers <span class="o">&amp;&amp;</span> ./configure <span class="o">&amp;&amp;</span> make <span class="o">)</span>
+<span class="o">(</span> <span class="nb">export</span> <span class="nv">ASL_BUILD</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/solvers/sys.x86_64.Linux <span class="o">&amp;&amp;</span> <span class="nb">cd</span> idaes/property_models/iapws95 <span class="o">&amp;&amp;</span> make <span class="o">)</span>
+wget https://ampl.com/dl/open/ipopt/ipopt-linux64.zip
+unzip ipopt-linux64.zip
+sudo cp ipopt /usr/local/bin/
+</pre></div>
+</div>
+<p>Install the Python packages:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> idaes
+pip install -r requirements.txt
+python setup.py develop  <span class="c1"># or &quot;install&quot;</span>
+</pre></div>
+</div>
+<p>At this point, you should be able to launch the Jupyter Notebook server and successfully <a class="reference external" href="examples.html">run examples</a> from the <code class="docutils literal notranslate"><span class="pre">examples</span></code> folder:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>jupyter notebook
+</pre></div>
+</div>
+</div>
+<div class="section" id="solvers">
+<h3><a class="toc-backref" href="#id9">Solvers</a><a class="headerlink" href="#solvers" title="Permalink to this headline">¶</a></h3>
+<p>Some of the model code depends on external solvers. The installation instructions
+above include the free <a class="reference external" href="https://projects.coin-or.org/Ipopt">IPOPT</a> solver. Most of the examples can run with this solver,
+but a significant number of more advanced problems will not be handled well. Some
+other solvers you can install that may improve (or make possible) solutions for
+these models are:</p>
+<blockquote>
+<div><ul class="simple">
+<li>CPLEX: a linear optimization package from IBM.
+<a href="#id17"><span class="problematic" id="id18">`Webpage &lt;https://www.ibm.com/analytics/cplex-optimizer`_</span></a>.</li>
+<li>Gurobi: LP/MILP/MIQP, etc., solvers from a company of the same name.
+<a class="reference external" href="http://www.gurobi.com">Webpage</a>.</li>
+</ul>
+</div></blockquote>
+<div class="section" id="asl-and-ampl">
+<h4><a class="toc-backref" href="#id10">ASL and AMPL</a><a class="headerlink" href="#asl-and-ampl" title="Permalink to this headline">¶</a></h4>
+<p>In some cases, IDAES uses AMPL user-defined functions written in C for property
+models.  Compiling these functions is optional, but some models may not work
+without them.</p>
+<p>The AMPL solver library (ASL) is required, and can be downloaded from
+from <a class="reference external" href="https://ampl.com/netlib/ampl/solvers.tgz">https://ampl.com/netlib/ampl/solvers.tgz</a>.  Documentation is available at
+<a class="reference external" href="https://ampl.com/resources/hooking-your-solver-to-ampl/">https://ampl.com/resources/hooking-your-solver-to-ampl/</a>.</p>
+</div>
+</div>
+</div>
+<div class="section" id="installation-on-windows">
+<h2><a class="toc-backref" href="#id11">Installation on Windows</a><a class="headerlink" href="#installation-on-windows" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">We are NOT supporting Windows at this time. Some developers on the team have had success with the following instructions, but we do not promise that they will work for all users, nor will we prioritize helping debug problems.</p>
+</div>
+<div class="section" id="python-distribution">
+<h3><a class="toc-backref" href="#id12">Python Distribution</a><a class="headerlink" href="#python-distribution" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">Install <a class="reference external" href="https://www.anaconda.com/download/#download">Anaconda for Windows</a></p>
+</li>
+<li><p class="first">Add Anaconda and Anaconda scripts to the path “c:users&lt;user&gt;Anaconda2” and “c:users&lt;user&gt;Anaconda2Scripts”. To do this, search for “Edit system variables” in Windows search.  Click on “Edit system environment variables”. Click on “Environment Variables”. Under “System   Variables”, search for the variable “Path” and click “Edit”</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="_static/install_windows_system_properties.png"><img alt="_static/install_windows_system_properties.png" class="align-center" src="_static/install_windows_system_properties.png" /></a>
+<ol class="arabic">
+<li><p class="first">For Windows 10:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>In the new dialog box, click on “New” and add the path where you find the python.exe file. If you installed Anaconda2, this should be in “c:users&lt;user&gt;Anaconda2”. Copy the address and paste it here.</li>
+<li>Repeat for “c:users&lt;user&gt;Anaconda2Scripts”.</li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first">For earlier versions:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Add path to the existing list, use semicolon as separator</li>
+<li>Type “c:users&lt;user&gt;Anaconda2;c:users&lt;user&gt;Anaconda2Scripts”</li>
+</ol>
+</div></blockquote>
+</li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first">Restart the command prompt and type <cite>python</cite>. If the path variable was added correctly, then you should be able to see the python interpreter as shown below.</p>
+</li>
+</ul>
+<a class="reference internal image-reference" href="_static/install_windows_cmd_python.png"><img alt="_static/install_windows_cmd_python.png" class="align-center" src="_static/install_windows_cmd_python.png" /></a>
+</div>
+<div class="section" id="pyomo">
+<h3><a class="toc-backref" href="#id13">Pyomo</a><a class="headerlink" href="#pyomo" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">See <a class="reference external" href="http://www.pyomo.org/installation/">instructions</a> for pyomo installation. As mentioned, you can either use the pip or the conda install methods which come included with the Anaconda distribution but conda may be preferable if you installed Anaconda.</p>
+</li>
+<li><p class="first">To install pyomo using python’s <strong>pip</strong> package, follow these steps:</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p class="first">Launch the “Anaconda prompt”. You can find this in the start menu under Anaconda.</p>
+</li>
+<li><p class="first">Navigate to the “Scripts” folder in Anaconda. Or simply type, <cite>where pip</cite> in the prompt. This should return 1 paths and this should be in the scripts folder.</p>
+</li>
+<li><p class="first">Pip install pyomo from trunk (we recommend installing the IDAES branch of pyomo)</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p class="first">Install the master branch of PyUtilib from GitHub using pip:</p>
+<p><cite>pip.exe install git+https://github.com/PyUtilib/pyutilib</cite></p>
+</li>
+<li><p class="first">Install the master branch of Pyomo from GitHub using pip:</p>
+<p><cite>pip.exe install git+https://github.com/Pyomo/pyomo&#64;IDAES</cite></p>
+</li>
+</ol>
+</div></blockquote>
+</li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first">To install using python’s <strong>conda</strong> package, follow the following steps:</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p class="first">Launch the “Anaconda prompt”. You can find this in the start menu under Anaconda.</p>
+</li>
+<li><p class="first">Navigate to the “Scripts” folder in Anaconda. Or simply type, <cite>where conda</cite> in the prompt. This should return 2 paths and one of these should be in the scripts folder.</p>
+</li>
+<li><p class="first">In the scripts folder run the following commands:</p>
+<blockquote>
+<div><p><cite>conda.exe install -c conda-forge pyomo</cite></p>
+<p><cite>conda.exe install -c conda-forge pyomo.extras</cite></p>
+</div></blockquote>
+</li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first">If the installation was successful, you should see the pyomo executable listed in the Scripts folder. You can check this using the <cite>where pyomo</cite> command.</p>
+</li>
+</ul>
+</div>
+<div class="section" id="idaes">
+<h3><a class="toc-backref" href="#id14">IDAES</a><a class="headerlink" href="#idaes" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="option-1-download-zip-file">
+<h4><a class="toc-backref" href="#id15">Option 1: Download zip file</a><a class="headerlink" href="#option-1-download-zip-file" title="Permalink to this headline">¶</a></h4>
+<ul>
+<li><p class="first">From the <a class="reference external" href="https://github.com/IDAES/idaes">IDAES</a> repository on GitHub, click on “Clone or download” on the right in green. Click on “Download zip”.</p>
+</li>
+<li><p class="first">Extract the contents in the desired directory you want IDAES in.</p>
+</li>
+<li><p class="first">Open command prompt and navigate to the folder where you extracted the contents of the IDAES repository (<cite>cd &lt;user&gt;/…/&lt;desired directory&gt;/IDAES/</cite>).</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Run: <cite>python setup.py develop</cite></li>
+</ol>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="option-2-using-git">
+<h4><a class="toc-backref" href="#id16">Option 2: Using Git</a><a class="headerlink" href="#option-2-using-git" title="Permalink to this headline">¶</a></h4>
+<ul>
+<li><p class="first">Install <a class="reference external" href="https://git-scm.com/download/win">git</a> for Windows.</p>
+</li>
+<li><p class="first">If cloning the repository from the command line, move to a directory where you want to install the IDAES repository. Then run the following command:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><cite>git clone https://github.com/IDAES/idaes.git</cite></li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first">Enter your github user id and password. The git installation in 1 should have added the git executable to your system path and you should be able to execute git commands from the command line.</p>
+</li>
+<li><p class="first">Open command prompt and navigate to the folder where you extracted the contents of the IDAES repository (<cite>cd &lt;user&gt;/…/&lt;desired directory&gt;/IDAES/</cite>).</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>Run: <cite>python setup.py develop</cite></li>
+</ol>
+</div></blockquote>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="standards.html" class="btn btn-neutral float-right" title="IDAES Modeling Standards" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Institute for the Design of Advanced Energy Systems (IDAES)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+idaes.dmf.codesearch module
+===========================
+
+.. automodule:: idaes.dmf.codesearch
+    :members:
+    :undoc-members:
+    :show-inheritance:

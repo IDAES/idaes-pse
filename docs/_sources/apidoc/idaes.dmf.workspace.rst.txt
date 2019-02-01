@@ -1,0 +1,7 @@
+idaes.dmf.workspace module
+==========================
+
+.. automodule:: idaes.dmf.workspace
+    :members:
+    :undoc-members:
+    :show-inheritance:

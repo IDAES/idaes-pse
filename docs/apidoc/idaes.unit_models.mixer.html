@@ -1,0 +1,550 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.unit_models.mixer module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.unit_models.mixer module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.unit_models.mixer.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.unit_models.mixer">
+<span id="idaes-unit-models-mixer-module"></span><h1>idaes.unit_models.mixer module<a class="headerlink" href="#module-idaes.unit_models.mixer" title="Permalink to this headline">¶</a></h1>
+<p>General purpose mixer block for IDAES models</p>
+<dl class="class">
+<dt id="idaes.unit_models.mixer.Mixer">
+<em class="property">class </em><code class="descclassname">idaes.unit_models.mixer.</code><code class="descname">Mixer</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#idaes.unit_models.mixer.Mixer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../core/process_block.html#idaes.core.process_block.ProcessBlock" title="idaes.core.process_block.ProcessBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.process_block.ProcessBlock</span></code></a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rule</strong> (<em>function</em>) – A rule function or None. Default rule calls build().</li>
+<li><strong>concrete</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If True, make this a toplevel model. <strong>Default</strong> - False.</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Pyomo ctype of the block.  <strong>Default</strong> - “Block”</li>
+<li><strong>default</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – <p>Default ProcessBlockData config</p>
+<dl class="docutils">
+<dt>Keys</dt>
+<dd><dl class="first last docutils">
+<dt>dynamic</dt>
+<dd>Indicates whether this model will be dynamic or not,
+<strong>default</strong> = useDefault. <strong>Valid values:</strong> {
+<strong>useDefault</strong> - get flag from parent (default = False),
+<strong>True</strong> - set as a dynamic model, <strong>False</strong> - set as a
+steady-state model.}</dd>
+<dt>property_package</dt>
+<dd>Property parameter object used to define property
+calculations, <strong>default</strong> - useDefault. <strong>Valid values:</strong>
+{ <strong>useDefault</strong> - use default package from parent model
+or flowsheet, <strong>PropertyParameterObject</strong> - a
+PropertyParameterBlock object.}</dd>
+<dt>property_package_args</dt>
+<dd>A ConfigBlock with arguments to be passed to a property
+block(s) and used when constructing these, <strong>default</strong> -
+None. <strong>Valid values:</strong> { see property package for
+documentation.}</dd>
+<dt>inlet_list</dt>
+<dd>A list containing names of inlets, <strong>default</strong> - None.
+<strong>Valid values:</strong> { <strong>None</strong> - use num_inlets argument,
+<strong>list</strong> - a list of names to use for inlets.}</dd>
+<dt>num_inlets</dt>
+<dd>Argument indicating number (int) of inlets to construct,
+not used if inlet_list arg is provided, <strong>default</strong> -
+None. <strong>Valid values:</strong> { <strong>None</strong> - use inlet_list arg
+instead, or default to 2 if neither argument provided,
+<strong>int</strong> - number of inlets to create (will be named with
+sequential integers from 1 to num_inlets).}</dd>
+<dt>calculate_phase_equilibrium</dt>
+<dd>Argument indicating whether phase equilibrium should be
+calculated for the resulting mixed stream, <strong>default</strong> -
+False. <strong>Valid values:</strong> { <strong>True</strong> - calculate phase
+equilibrium in mixed stream, <strong>False</strong> - do not calculate
+equilibrium in mixed stream.}</dd>
+<dt>material_mixing_type</dt>
+<dd>Argument indicating what method to use when mixing
+material flows of incoming streams, <strong>default</strong> -
+MixingType.extensive. <strong>Valid values:</strong> {
+<strong>MixingType.none</strong> - do not include material mixing
+equations, <strong>MixingType.extensive</strong> - mix total flows of
+each phase-component pair.}</dd>
+<dt>energy_mixing_type</dt>
+<dd>Argument indicating what method to use when mixing energy
+flows of incoming streams, <strong>default</strong> -
+MixingType.extensive. <strong>Valid values:</strong> {
+<strong>MixingType.none</strong> - do not include energy mixing
+equations, <strong>MixingType.extensive</strong> - mix total enthalpy
+flows of each phase.}</dd>
+<dt>momentum_mixing_type</dt>
+<dd>Argument indicating what method to use when mixing
+momentum/ pressure of incoming streams, <strong>default</strong> -
+MomentumMixingType.minimize. <strong>Valid values:</strong> {
+<strong>MomentumMixingType.none</strong> - do not include momentum
+mixing equations, <strong>MomentumMixingType.minimize</strong> - mixed
+stream has pressure equal to the minimimum pressure of the
+incoming streams (uses smoothMin operator),
+<strong>MomentumMixingType.equality</strong> - enforces equality of
+pressure in mixed and all incoming streams.}</dd>
+<dt>mixed_state_block</dt>
+<dd>An existing state block to use as the outlet stream from
+the Mixer block, <strong>default</strong> - None. <strong>Valid values:</strong> {
+<strong>None</strong> - create a new StateBlock for the mixed stream,
+<strong>StateBlock</strong> - a StateBock to use as the destination for
+the mixed stream.}</dd>
+<dt>construct_ports</dt>
+<dd>Argument indicating whether model should construct Port
+objects linked to all inlet states and the mixed state,
+<strong>default</strong> - True. <strong>Valid values:</strong> { <strong>True</strong> -
+construct Ports for all states, <strong>False</strong> - do not
+construct Ports.</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><strong>initialize</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – ProcessBlockData config for individual elements. Keys
+are BlockData indexes and values are dictionaries described under the
+“default” argument above.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(Mixer) New instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.unit_models.mixer.MixerData">
+<em class="property">class </em><code class="descclassname">idaes.unit_models.mixer.</code><code class="descname">MixerData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../core/unit_model.html#idaes.core.unit_model.UnitBlockData" title="idaes.core.unit_model.UnitBlockData"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.unit_model.UnitBlockData</span></code></a></p>
+<p>This is a general purpose model for a Mixer block with the IDAES modeling
+framework. This block can be used either as a stand-alone Mixer unit
+operation, or as a sub-model within another unit operation.</p>
+<p>This model creates a number of StateBlocks to represent the incoming
+streams, then writes a set of phase-component material balances, an
+overall enthalpy balance and a momentum balance (2 options) linked to a
+mixed-state StateBlock. The mixed-state StateBlock can either be specified
+by the user (allowing use as a sub-model), or created by the Mixer.</p>
+<p>When being used as a sub-model, Mixer should only be used when a set
+of new StateBlocks are required for the streams to be mixed. It should not
+be used to mix streams from mutiple ControlVolumes in a single unit model -
+in these cases the unit model developer should write their own mixing
+equations.</p>
+<dl class="attribute">
+<dt id="idaes.unit_models.mixer.MixerData.CONFIG">
+<code class="descname">CONFIG</code><em class="property"> = &lt;pyutilib.misc.config.ConfigBlock object&gt;</em><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.CONFIG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.add_energy_mixing_equations">
+<code class="descname">add_energy_mixing_equations</code><span class="sig-paren">(</span><em>inlet_blocks</em>, <em>mixed_block</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.add_energy_mixing_equations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.add_energy_mixing_equations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add energy mixing equations (total enthalpy balance).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.add_inlet_state_blocks">
+<code class="descname">add_inlet_state_blocks</code><span class="sig-paren">(</span><em>inlet_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.add_inlet_state_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.add_inlet_state_blocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Construct StateBlocks for all inlet streams.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>of strings to use as StateBlock names</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">list of StateBlocks</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.add_material_mixing_equations">
+<code class="descname">add_material_mixing_equations</code><span class="sig-paren">(</span><em>inlet_blocks</em>, <em>mixed_block</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.add_material_mixing_equations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.add_material_mixing_equations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add material mixing equations (phase-component balances).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.add_mixed_state_block">
+<code class="descname">add_mixed_state_block</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.add_mixed_state_block"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.add_mixed_state_block" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs StateBlock to represent mixed stream.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">New StateBlock object</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.add_port_objects">
+<code class="descname">add_port_objects</code><span class="sig-paren">(</span><em>inlet_list</em>, <em>inlet_blocks</em>, <em>mixed_block</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.add_port_objects"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.add_port_objects" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds Port objects if required.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>list of inlet StateBlock objects</strong> (<em>a</em>) – </li>
+<li><strong>mixed state StateBlock object</strong> (<em>a</em>) – </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.add_pressure_equality_equations">
+<code class="descname">add_pressure_equality_equations</code><span class="sig-paren">(</span><em>inlet_blocks</em>, <em>mixed_block</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.add_pressure_equality_equations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.add_pressure_equality_equations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add pressure equality equations. Note that this writes a number of
+constraints equal to the number of inlets, enforcing equality between
+all inlets and the mixed stream.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.add_pressure_minimization_equations">
+<code class="descname">add_pressure_minimization_equations</code><span class="sig-paren">(</span><em>inlet_blocks</em>, <em>mixed_block</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.add_pressure_minimization_equations"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.add_pressure_minimization_equations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add pressure minimization equations. This is done by sequential
+comparisons of each inlet to the minimum pressure so far, using
+the IDAES smooth minimum fuction.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>General build method for MixerData. This method calls a number
+of sub-methods which automate the construction of expected attributes
+of unit models.</p>
+<p>Inheriting models should call <cite>super().build</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.create_inlet_list">
+<code class="descname">create_inlet_list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.create_inlet_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.create_inlet_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create list of inlet stream names based on config arguments.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of strings</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.get_mixed_state_block">
+<code class="descname">get_mixed_state_block</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.get_mixed_state_block"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.get_mixed_state_block" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates StateBlock provided in user arguments for mixed stream.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The user-provided StateBlock or an Exception</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>outlvl=0</em>, <em>optarg=None</em>, <em>solver='ipopt'</em>, <em>hold_state=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialisation routine for mixer (default solver ipopt)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>outlvl</strong> – sets output level of initialisation routine. <strong>Valid
+values:</strong> <strong>0</strong> - no output (default), <strong>1</strong> - return
+solver state for each step in routine, <strong>2</strong> - include
+solver output infomation (tee=True)</li>
+<li><strong>optarg</strong> – solver options dictionary object (default=None)</li>
+<li><strong>solver</strong> – str indicating whcih solver to use during
+initialization (default = ‘ipopt’)</li>
+<li><strong>hold_state</strong> – flag indicating whether the initialization routine
+should unfix any state variables fixed during
+initialization, <strong>default</strong> - True. <strong>Valid values:</strong>
+<strong>True</strong> - states variables are not unfixed, and a dict of
+returned containing flags for which states were fixed
+during initialization, <strong>False</strong> - state variables are
+unfixed after initialization by calling the release_state
+method.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">If hold_states is True, returns a dict containing flags for which
+states were fixed during initialization.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.model_check">
+<code class="descname">model_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.model_check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.model_check" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method executes the model_check methods on the associated state
+blocks (if they exist). This method is generally called by a unit model
+as part of the unit’s model_check method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.mixer.MixerData.release_state">
+<code class="descname">release_state</code><span class="sig-paren">(</span><em>flags</em>, <em>outlvl=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.release_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.release_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to release state variables fixed during initialisation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first simple">
+<li><strong>flags</strong> – dict containing information of which state variables
+were fixed during initialization, and should now be
+unfixed. This dict is returned by initialize if
+hold_state = True.</li>
+<li><strong>outlvl</strong> – sets output level of logging</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

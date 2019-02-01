@@ -1,0 +1,7 @@
+idaes.core.unit\_model module
+=============================
+
+.. automodule:: idaes.core.unit_model
+    :members:
+    :undoc-members:
+    :show-inheritance:

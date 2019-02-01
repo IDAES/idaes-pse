@@ -1,0 +1,7 @@
+idaes.unit\_models.pressure\_changer module
+===========================================
+
+.. automodule:: idaes.unit_models.pressure_changer
+    :members:
+    :undoc-members:
+    :show-inheritance:

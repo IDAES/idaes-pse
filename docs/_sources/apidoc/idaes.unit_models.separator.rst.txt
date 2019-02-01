@@ -1,0 +1,7 @@
+idaes.unit\_models.separator module
+===================================
+
+.. automodule:: idaes.unit_models.separator
+    :members:
+    :undoc-members:
+    :show-inheritance:

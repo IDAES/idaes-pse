@@ -1,0 +1,7 @@
+idaes.core.property\_meta module
+================================
+
+.. automodule:: idaes.core.property_meta
+    :members:
+    :undoc-members:
+    :show-inheritance:

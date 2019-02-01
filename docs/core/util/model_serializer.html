@@ -1,0 +1,784 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Model State Serialization &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Unit Model Library" href="../../models/index.html" />
+    <link rel="prev" title="Utility Methods" href="index.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Core Library</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#core-contents">Core Contents</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../configuration.html">IDAES Framework Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../process_block.html">Process Blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../model_concepts.html">IDAES Modeling Concepts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../flowsheet_model.html">Flowsheet Model Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../properties.html">Property Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../unit_model.html">Unit Model Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../control_volume.html">Control Volume Classes</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">Utility Methods</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Model State Serialization</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../index.html#core-overview">Core Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Core Library</a> &raquo;</li>
+        
+          <li><a href="index.html">Utility Methods</a> &raquo;</li>
+        
+      <li>Model State Serialization</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/core/util/model_serializer.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.core.util.model_serializer">
+<span id="model-state-serialization"></span><h1>Model State Serialization<a class="headerlink" href="#module-idaes.core.util.model_serializer" title="Permalink to this headline">¶</a></h1>
+<p>The IDAES framework has some utility functions for serializing the state of a
+Pyomo model. These functions can save and load attributes of Pyomo components,
+but cannot reconstruct the Pyomo objects (it is not a replacement for pickle).
+It does have some advantages over pickel though. Not all Pyomo models are
+picklable. Serialization and deserialization of the model state to/from json is
+more secure in that it only deals with data and not executable code.  It should
+be safe to use the <code class="docutils literal notranslate"><span class="pre">from_json()</span></code> function with data from untrusted sources,
+while, unpickeling an object from an untrusted source is not secure.  Storing a
+model state using these functions is also probably more robust against Python
+and Python package version changes, and possibly more sutable for log-term storage
+of results.</p>
+<p>Below are a few example use cases for this module.</p>
+<ul class="simple">
+<li>Some models are very complex and may take minutes to initialize.  Once a model is initialized it’s state can be saved. For future runs, the initialized state can be reloaded instead of rerunning the initialization procedure.</li>
+<li>Results can be stored for later evaluation without needed to rerun the model. These results can be archived in a data management system if needed later.</li>
+<li>These functions may be useful in writing initialization procedures. For example, a model may be constructed and ready to run but first it may need to be initialized. Which components are active and which variables are fixed can be stored.  The initialization can change which variables fixed and which components are active.  The original state can be read back after initialization, but where only values of variables that were originally fixed are read back in.  This is an easy way to ensure whatever the initialization procedure may do, the results is exactly the same problem (with only better initial values for unfixed variables).</li>
+<li>These functions can be used to send and receive model data to/from JavaScript user interface components.</li>
+</ul>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>This section provides a few very simple examples of how to use these functions.</p>
+<div class="section" id="example-models">
+<h3>Example Models<a class="headerlink" href="#example-models" title="Permalink to this headline">¶</a></h3>
+<p>This section provides some boilerplate and functions to create a couple simple
+test models.  The second model is a little more complicated and includes suffixes.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util</span> <span class="kn">import</span> <span class="n">to_json</span><span class="p">,</span> <span class="n">from_json</span><span class="p">,</span> <span class="n">StoreSpec</span>
+
+<span class="k">def</span> <span class="nf">setup_model01</span><span class="p">():</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">ConcreteModel</span><span class="p">()</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">Block</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">initialize</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">initialize</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">b</span><span class="o">==</span><span class="mi">10</span><span class="o">*</span><span class="n">a</span><span class="p">)</span>
+    <span class="n">a</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span>
+
+<span class="k">def</span> <span class="nf">setup_model02</span><span class="p">():</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">ConcreteModel</span><span class="p">()</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mutable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">mutable</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">Var</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="n">initialize</span><span class="o">=</span><span class="p">{</span><span class="mi">1</span><span class="p">:</span><span class="mf">1.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="mf">2.5</span><span class="p">},</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">f</span> <span class="o">=</span> <span class="n">Objective</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">g</span> <span class="o">=</span> <span class="n">Constraint</span><span class="p">(</span><span class="n">expr</span><span class="o">=</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">c</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">dual</span> <span class="o">=</span> <span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">ipopt_zL_out</span> <span class="o">=</span> <span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">ipopt_zU_out</span> <span class="o">=</span> <span class="n">Suffix</span><span class="p">(</span><span class="n">direction</span><span class="o">=</span><span class="n">Suffix</span><span class="o">.</span><span class="n">IMPORT</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="serialization">
+<h3>Serialization<a class="headerlink" href="#serialization" title="Permalink to this headline">¶</a></h3>
+<p>These examples can be appended to the boilerplate code above.</p>
+<p>The first example creates a model, saves the state, changes a value, then reads
+back the initial state.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">setup_model01</span><span class="p">()</span>
+<span class="n">to_json</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s2">&quot;ex.json.gz&quot;</span><span class="p">,</span> <span class="n">gzip</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">human_read</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="mf">3000.4</span>
+<span class="n">from_json</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s2">&quot;ex.json.gz&quot;</span><span class="p">,</span> <span class="n">gzip</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">a</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This next example show how to save only suffixes.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">setup_model02</span><span class="p">()</span>
+<span class="c1"># Suffixes here are read back from solver, so to have suffix data,</span>
+<span class="c1"># need to solve first</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;ipopt&quot;</span><span class="p">)</span>
+<span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">store_spec</span> <span class="o">=</span> <span class="n">StoreSpec</span><span class="o">.</span><span class="n">suffix</span><span class="p">()</span>
+<span class="n">to_json</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s2">&quot;ex.json&quot;</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="n">store_spec</span><span class="p">)</span>
+<span class="c1"># Do something and now I want my suffixes back</span>
+<span class="n">from_json</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s2">&quot;ex.json.gz&quot;</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="n">store_spec</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="to-json">
+<h2>to_json<a class="headerlink" href="#to-json" title="Permalink to this headline">¶</a></h2>
+<p>Despite the name of the <code class="docutils literal notranslate"><span class="pre">to_json</span></code> function it is capable of creating Python
+dictionaries, json files, gzipped json files, and json strings. The function
+documentation is below.  A <a class="reference internal" href="#storespec"><span class="std std-ref">StoreSpec</span></a>
+object provides the function with details on what to store and how to handle
+special cases of Pyomo component attributes.</p>
+<dl class="function">
+<dt id="idaes.core.util.model_serializer.to_json">
+<code class="descclassname">idaes.core.util.model_serializer.</code><code class="descname">to_json</code><span class="sig-paren">(</span><em>o</em>, <em>fname=None</em>, <em>human_read=False</em>, <em>wts=None</em>, <em>metadata={}</em>, <em>gz=False</em>, <em>return_dict=False</em>, <em>return_json_string=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.to_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the state of a model to a Python dictionary, and optionally dump it
+to a json file.  To load a model state, a model with the same structure must
+exist.  The model itself cannot be recreated from this.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>o</strong> – The Pyomo component object to save.  Usually a Pyomo model, but could
+also be a subcomponent of a model (usually a sub-block).</li>
+<li><strong>fname</strong> – json file name to save model state, if None only create
+python dict</li>
+<li><strong>gz</strong> – If fname is given and gv is True gzip the json file. The default is
+False.</li>
+<li><strong>human_read</strong> – if True, add indents and spacing to make the json file more
+readable, if false cut out whitespace and make as compact as
+possilbe</li>
+<li><strong>metadata</strong> – A dictionary of addtional metadata to add.</li>
+<li><strong>wts</strong> – is What To Save, this is a StoreSpec object that specifies what
+object types and attributes to save.  If None, the default is used
+which saves the state of the compelte model state.</li>
+<li><strong>metadata</strong> – addtional metadata to save beyond the standard format_version,
+date, and time.</li>
+<li><strong>return_dict</strong> – default is False if true returns a dictionary representation</li>
+<li><strong>return_json_string</strong> – default is False returns a json string</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">If return_dict is True returns a dictionary serialization of the Pyomo
+component.  If return_dict is False and return_json_string is True
+returns a json string dump of the dict.  If fname is given the dictionary
+is also written to a json file.  If gz is True and fname is given, writes
+a gzipped json file.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="from-json">
+<h2>from_json<a class="headerlink" href="#from-json" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">from_json</span></code> function puts data from Python dictionaries, json files,
+gzipped json files, and json strings back into a Pyomo model. The function
+documentation is below.  A <a class="reference internal" href="#storespec"><span class="std std-ref">StoreSpec</span></a>
+object provides the function with details on what to read and how to handle
+special cases of Pyomo component attributes.</p>
+<dl class="function">
+<dt id="idaes.core.util.model_serializer.from_json">
+<code class="descclassname">idaes.core.util.model_serializer.</code><code class="descname">from_json</code><span class="sig-paren">(</span><em>o</em>, <em>sd=None</em>, <em>fname=None</em>, <em>s=None</em>, <em>wts=None</em>, <em>gz=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#from_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.from_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the state of a Pyomo component state from a dictionary, json file, or
+json string.  Must only specify one of sd, fname, or s as a non-None value.
+This works by going through the model and loading the state of each
+sub-compoent of o. If the saved state contains extra information, it is
+ignored.  If the save state doesn’t contain an enetry for a model component
+that is to be loaded an error will be raised, unless ignore_missing = True.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>o</strong> – Pyomo component to for which to load state</li>
+<li><strong>sd</strong> – State dictionary to load, if None, check fname and s</li>
+<li><strong>fname</strong> – JSON file to load, only used if sd is None</li>
+<li><strong>s</strong> – JSON string to load only used if both sd and fname are None</li>
+<li><strong>wts</strong> – StoreSpec object specifying what to load</li>
+<li><strong>gz</strong> – If True assume the file specified by fname is gzipped. The default is
+False.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Dictionary with some perfomance information. The keys are
+“etime_load_file”, how long in seconds it took to load the json file
+“etime_read_dict”, how long in seconds it took to read models state
+“etime_read_suffixes”, how long in seconds it took to read suffixes</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="storespec">
+<h2>StoreSpec<a class="headerlink" href="#storespec" title="Permalink to this headline">¶</a></h2>
+<p>StoreSpec is a class for objects that tell the <code class="docutils literal notranslate"><span class="pre">to_json()</span></code> and <code class="docutils literal notranslate"><span class="pre">from_json()</span></code>
+functions how to read and write Pyomo component attributes.  The default
+initialization provides an object that would load and save attributes usually
+needed to save a model state.  There are several other class methods that
+provided canned objects for specific uses. Through initialization arguments, the
+behavior is highly customizable. Attributes can be read or written using callback
+functions to handle attributes that can not be directly read or written (e.g.
+a variable lower bound is set by calling setlb()). See the class documentation below.</p>
+<dl class="class">
+<dt id="idaes.core.util.model_serializer.StoreSpec">
+<em class="property">class </em><code class="descclassname">idaes.core.util.model_serializer.</code><code class="descname">StoreSpec</code><span class="sig-paren">(</span><em>classes=((&lt;class 'pyomo.core.base.param.Param'&gt;</em>, <em>('_mutable'</em>, <em>))</em>, <em>(&lt;class 'pyomo.core.base.var.Var'&gt;</em>, <em>())</em>, <em>(&lt;class 'pyomo.core.base.component.Component'&gt;</em>, <em>('active'</em>, <em>)))</em>, <em>data_classes=((&lt;class 'pyomo.core.base.var._VarData'&gt;</em>, <em>('fixed'</em>, <em>'stale'</em>, <em>'value'</em>, <em>'lb'</em>, <em>'ub'))</em>, <em>(&lt;class 'pyomo.core.base.param._ParamData'&gt;</em>, <em>('value'</em>, <em>))</em>, <em>(&lt;class 'int'&gt;</em>, <em>('value'</em>, <em>))</em>, <em>(&lt;class 'float'&gt;</em>, <em>('value'</em>, <em>))</em>, <em>(&lt;class 'pyomo.core.base.component.ComponentData'&gt;</em>, <em>('active'</em>, <em>)))</em>, <em>skip_classes=(&lt;class 'pyomo.core.base.external.ExternalFunction'&gt;</em>, <em>&lt;class 'pyomo.core.base.sets.Set'&gt;</em>, <em>&lt;class 'pyomo.network.port.Port'&gt;</em>, <em>&lt;class 'pyomo.core.base.expression.Expression'&gt;</em>, <em>&lt;class 'pyomo.core.base.rangeset.RangeSet'&gt;)</em>, <em>ignore_missing=True</em>, <em>suffix=True</em>, <em>suffix_filter=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#StoreSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.StoreSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>A StoreSpec object tells the serializer functions what to read or write.
+The default settings will produce a StoreSpec configured to load/save the
+typical attributes required to load/save a model state.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>classes</strong> – A list of classes to save.  Each class is represented by a
+list (or tupple) containing the following elements: (1) class
+(compared using isinstance) (2) attribute list or None, an emptry
+list store the object, but none of its attributes, None will not
+store objects of this class type (3) optional load filter function.
+The load filter function returns a list of attributes to read based
+on the state of an object and its saved state. The allows, for
+example, loading values for unfixed variables, or only loading
+values whoes current value is less than one. The filter function
+only applies to load not save. Filter functions take two arguments
+(a) the object (current state) and (b) the dictionary containing the
+saved state of an object.  More specific classes should come before
+more general classes.  For example if an obejct is a HeatExchanger
+and a UnitModel, and HeatExchanger is listed first, it will follow
+the HeatExchanger settings.  If UnitModel is listed first in the
+classes list, it will follow the UnitModel settings.</li>
+<li><strong>data_classes</strong> – This takes the same form as the classes argument.
+This is for component data classes.</li>
+<li><strong>skip_classes</strong> – This is a list of classes to skip.  If a class appears
+in the skip list, but also appears in the classes argument, the
+classes argument will override skip_classes. The use for this is to
+specifically exclude certain classes that would get caught by more
+general classes (e.g. UnitModel is in the class list, but you want
+to exclude HeatExchanger which is derived from UnitModel).</li>
+<li><strong>ignore_missing</strong> – If True will ignore a component or attribute that exists
+in the model, but not in the stored state. If false an excpetion
+will be raised for things in the model that should be loaded but
+aren’t in the stored state. Extra items in the stored state will not
+raise an exception regaurdless of this argument.</li>
+<li><strong>suffix</strong> – If True store suffixes and component ids.  If false, don’t store
+suffixes.</li>
+<li><strong>suffix_filter</strong> – None to store all siffixes if suffix=True, or a list of
+suffixes to store if suffix=True</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="classmethod">
+<dt id="idaes.core.util.model_serializer.StoreSpec.bound">
+<em class="property">classmethod </em><code class="descname">bound</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#StoreSpec.bound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.StoreSpec.bound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a StoreSpec object to store variable bounds only.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.util.model_serializer.StoreSpec.get_class_attr_list">
+<code class="descname">get_class_attr_list</code><span class="sig-paren">(</span><em>o</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#StoreSpec.get_class_attr_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.StoreSpec.get_class_attr_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look up what attributes to save/load for an Component object.
+:param o: Object to look up attribute list for.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of attributes and a filter function for object type</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.util.model_serializer.StoreSpec.get_data_class_attr_list">
+<code class="descname">get_data_class_attr_list</code><span class="sig-paren">(</span><em>o</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#StoreSpec.get_data_class_attr_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.StoreSpec.get_data_class_attr_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look up what attributes to save/load for an ComponentData object.
+:param o: Object to look up attribute list for.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A list of attributes and a filter function for object type</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="idaes.core.util.model_serializer.StoreSpec.isfixed">
+<em class="property">classmethod </em><code class="descname">isfixed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#StoreSpec.isfixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.StoreSpec.isfixed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a StoreSpec object to store if variables are fixed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.util.model_serializer.StoreSpec.set_read_callback">
+<code class="descname">set_read_callback</code><span class="sig-paren">(</span><em>attr</em>, <em>cb=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#StoreSpec.set_read_callback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.StoreSpec.set_read_callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a callback to set an attribute, when reading from json or dict.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.util.model_serializer.StoreSpec.set_write_callback">
+<code class="descname">set_write_callback</code><span class="sig-paren">(</span><em>attr</em>, <em>cb=None</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#StoreSpec.set_write_callback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.StoreSpec.set_write_callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set a callback to get an attribute, when writing to json or dict.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="idaes.core.util.model_serializer.StoreSpec.value">
+<em class="property">classmethod </em><code class="descname">value</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#StoreSpec.value"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.StoreSpec.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a StoreSpec object to store variable values only.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="idaes.core.util.model_serializer.StoreSpec.value_isfixed">
+<em class="property">classmethod </em><code class="descname">value_isfixed</code><span class="sig-paren">(</span><em>only_fixed</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#StoreSpec.value_isfixed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.StoreSpec.value_isfixed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retur a StoreSpec object to store variable values and if fixed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>only_fixed</strong> – Only load fixed variable values</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="idaes.core.util.model_serializer.StoreSpec.value_isfixed_isactive">
+<em class="property">classmethod </em><code class="descname">value_isfixed_isactive</code><span class="sig-paren">(</span><em>only_fixed</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/idaes/core/util/model_serializer.html#StoreSpec.value_isfixed_isactive"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.model_serializer.StoreSpec.value_isfixed_isactive" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retur a StoreSpec object to store variable values, if variables are
+fixed and if components are active.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>only_fixed</strong> – Only load fixed variable values</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="structure">
+<h2>Structure<a class="headerlink" href="#structure" title="Permalink to this headline">¶</a></h2>
+<p>Python dictionaries, json strings, or json files are generated, in any case the
+structure of the data is the same.  The current data structure version is 3.</p>
+<p>The example json below shows the top-level structure.  The
+<code class="docutils literal notranslate"><span class="pre">&quot;top_level_component&quot;</span></code> would be the name of the Pyomo component that is being
+serialized. The top level component is the only place were the component name does
+not matter when reading the serialized data.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;__metadata__&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;format_version&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="nt">&quot;date&quot;</span><span class="p">:</span> <span class="s2">&quot;2018-12-21&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;time&quot;</span><span class="p">:</span> <span class="s2">&quot;11:34:39.714323&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;other&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;__performance__&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;n_components&quot;</span><span class="p">:</span> <span class="mi">219</span><span class="p">,</span>
+            <span class="nt">&quot;etime_make_dict&quot;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;top_level_component&quot;</span><span class="p">:{</span>
+      <span class="nt">&quot;...&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The data structure of a Pyomo component is shown below.  Here <code class="docutils literal notranslate"><span class="pre">&quot;attribute_1&quot;</span></code>
+and <code class="docutils literal notranslate"><span class="pre">&quot;attribute_2&quot;</span></code> are just examples the actual attributes saved depend on
+the “wts” argument to <code class="docutils literal notranslate"><span class="pre">to_json()</span></code>. Scalar and indexed components have the
+same structure. Scalar components have one entry in <code class="docutils literal notranslate"><span class="pre">&quot;data&quot;</span></code> with an index of
+<code class="docutils literal notranslate"><span class="pre">&quot;None&quot;</span></code>.  Only components derived from Pyomo’s <code class="docutils literal notranslate"><span class="pre">_BlockData</span></code>
+have a <code class="docutils literal notranslate"><span class="pre">&quot;__pyomo_components__&quot;</span></code> field, and components appearing there are keyed
+by thier name. The data structure duplicates the hierarchical structure of the
+Pyomo model.</p>
+<p>Suffixes store extra attributes for Pyomo components that are not stored on the
+components themselves. Suffixes are a Pyomo structure that comes from the AMPL
+solver interface.  If a component is a suffix, keys in the data section are the
+serial integer component IDs generated by <code class="docutils literal notranslate"><span class="pre">to_json()</span></code>, and the value is the
+value of the suffix for the corresponding component.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;__type__&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;class &#39;some.class&#39;&gt;&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;__id__&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+      <span class="nt">&quot;index_1&quot;</span><span class="p">:{</span>
+          <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;usually a component class but for params could be float, int, ...&gt;&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;__id__&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+          <span class="nt">&quot;__pyomo_components__&quot;</span><span class="p">:{</span>
+            <span class="nt">&quot;child_component_1&quot;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="nt">&quot;...&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;attribute_1&quot;</span><span class="p">:</span> <span class="s2">&quot;... could be any number of attributes like &#39;value&#39;: 1.0,&quot;</span><span class="p">,</span>
+          <span class="nt">&quot;attribute_2&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;attribute_1&quot;</span><span class="p">:</span> <span class="s2">&quot;... could be any number of attributes like &#39;active&#39;: true,&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;attribute_2&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>As a more concrete example, here is the json generated for example model 2 in
+<a class="reference internal" href="#examples"><span class="std std-ref">Examples</span></a>.
+This code can be appended to the <a class="reference internal" href="#examples"><span class="std std-ref">example boilerplate above</span></a>.
+To generate the example json shown.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">setup_model02</span><span class="p">()</span>
+<span class="n">solver</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="s2">&quot;ipopt&quot;</span><span class="p">)</span>
+<span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+<span class="n">to_json</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="s2">&quot;ex.json&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The resulting json is shown below. The top-level component
+in this case is given as “unknown,” because the model was not given a name. The
+top level object name is not needed when reading back data, since the top level
+object is specified in the call to <code class="docutils literal notranslate"><span class="pre">from_json()</span></code>.  Types are not used when
+reading back data, they may have some future application, but at this point they
+just provide a little extra information.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;__metadata__&quot;</span><span class="p">:{</span>
+    <span class="nt">&quot;format_version&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span>
+    <span class="nt">&quot;date&quot;</span><span class="p">:</span><span class="s2">&quot;2019-01-02&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;time&quot;</span><span class="p">:</span><span class="s2">&quot;10:22:25.833501&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;other&quot;</span><span class="p">:{</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;__performance__&quot;</span><span class="p">:{</span>
+      <span class="nt">&quot;n_components&quot;</span><span class="p">:</span><span class="mi">18</span><span class="p">,</span>
+      <span class="nt">&quot;etime_make_dict&quot;</span><span class="p">:</span><span class="mf">0.0009555816650390625</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;unknown&quot;</span><span class="p">:{</span>
+    <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.PyomoModel.ConcreteModel&#39;&gt;&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">0</span><span class="p">,</span>
+    <span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+    <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+      <span class="nt">&quot;None&quot;</span><span class="p">:{</span>
+        <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.PyomoModel.ConcreteModel&#39;&gt;&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+        <span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+        <span class="nt">&quot;__pyomo_components__&quot;</span><span class="p">:{</span>
+          <span class="nt">&quot;a&quot;</span><span class="p">:{</span>
+            <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.param.SimpleParam&#39;&gt;&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span>
+            <span class="nt">&quot;_mutable&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+            <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+              <span class="nt">&quot;None&quot;</span><span class="p">:{</span>
+                <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.param.SimpleParam&#39;&gt;&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">1</span>
+              <span class="p">}</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;b&quot;</span><span class="p">:{</span>
+            <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.param.SimpleParam&#39;&gt;&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">4</span><span class="p">,</span>
+            <span class="nt">&quot;_mutable&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+            <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+              <span class="nt">&quot;None&quot;</span><span class="p">:{</span>
+                <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.param.SimpleParam&#39;&gt;&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">2</span>
+              <span class="p">}</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;c&quot;</span><span class="p">:{</span>
+            <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.param.SimpleParam&#39;&gt;&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">6</span><span class="p">,</span>
+            <span class="nt">&quot;_mutable&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span>
+            <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+              <span class="nt">&quot;None&quot;</span><span class="p">:{</span>
+                <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.param.SimpleParam&#39;&gt;&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mi">4</span>
+              <span class="p">}</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;x&quot;</span><span class="p">:{</span>
+            <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.var.IndexedVar&#39;&gt;&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">8</span><span class="p">,</span>
+            <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+              <span class="nt">&quot;1&quot;</span><span class="p">:{</span>
+                <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.var._GeneralVarData&#39;&gt;&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">9</span><span class="p">,</span>
+                <span class="nt">&quot;fixed&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span>
+                <span class="nt">&quot;stale&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mf">1.5</span><span class="p">,</span>
+                <span class="nt">&quot;lb&quot;</span><span class="p">:</span><span class="mi">-10</span><span class="p">,</span>
+                <span class="nt">&quot;ub&quot;</span><span class="p">:</span><span class="mi">10</span>
+              <span class="p">},</span>
+              <span class="nt">&quot;2&quot;</span><span class="p">:{</span>
+                <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.var._GeneralVarData&#39;&gt;&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">10</span><span class="p">,</span>
+                <span class="nt">&quot;fixed&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span>
+                <span class="nt">&quot;stale&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span>
+                <span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="mf">2.5</span><span class="p">,</span>
+                <span class="nt">&quot;lb&quot;</span><span class="p">:</span><span class="mi">-10</span><span class="p">,</span>
+                <span class="nt">&quot;ub&quot;</span><span class="p">:</span><span class="mi">10</span>
+              <span class="p">}</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;f&quot;</span><span class="p">:{</span>
+            <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.objective.SimpleObjective&#39;&gt;&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">11</span><span class="p">,</span>
+            <span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+            <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+              <span class="nt">&quot;None&quot;</span><span class="p">:{</span><span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.objective.SimpleObjective&#39;&gt;&quot;</span><span class="p">,</span>
+              <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">12</span><span class="p">,</span>
+              <span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="kc">true</span>
+              <span class="p">}</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;g&quot;</span><span class="p">:{</span>
+            <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.constraint.SimpleConstraint&#39;&gt;&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">13</span><span class="p">,</span>
+            <span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+            <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+              <span class="nt">&quot;None&quot;</span><span class="p">:{</span>
+                <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.constraint.SimpleConstraint&#39;&gt;&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">14</span><span class="p">,</span>
+                <span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="kc">true</span>
+              <span class="p">}</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;dual&quot;</span><span class="p">:{</span>
+            <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.suffix.Suffix&#39;&gt;&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">15</span><span class="p">,</span>
+            <span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+            <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+              <span class="nt">&quot;14&quot;</span><span class="p">:</span><span class="mf">0.9999999626149493</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;ipopt_zL_out&quot;</span><span class="p">:{</span>
+            <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.suffix.Suffix&#39;&gt;&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">16</span><span class="p">,</span>
+            <span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+            <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+              <span class="nt">&quot;9&quot;</span><span class="p">:</span><span class="mf">2.1791814146763388e-10</span><span class="p">,</span>
+              <span class="nt">&quot;10&quot;</span><span class="p">:</span><span class="mf">2.004834508495852e-10</span>
+            <span class="p">}</span>
+          <span class="p">},</span>
+          <span class="nt">&quot;ipopt_zU_out&quot;</span><span class="p">:{</span>
+            <span class="nt">&quot;__type__&quot;</span><span class="p">:</span><span class="s2">&quot;&lt;class &#39;pyomo.core.base.suffix.Suffix&#39;&gt;&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;__id__&quot;</span><span class="p">:</span><span class="mi">17</span><span class="p">,</span>
+            <span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span>
+            <span class="nt">&quot;data&quot;</span><span class="p">:{</span>
+              <span class="nt">&quot;9&quot;</span><span class="p">:</span><span class="mf">-2.947875485096964e-10</span><span class="p">,</span>
+              <span class="nt">&quot;10&quot;</span><span class="p">:</span><span class="mf">-3.3408951850535573e-10</span>
+            <span class="p">}</span>
+          <span class="p">}</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../models/index.html" class="btn btn-neutral float-right" title="Unit Model Library" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Utility Methods" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
