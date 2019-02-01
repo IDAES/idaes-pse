@@ -6,15 +6,15 @@
 SPHINXOPTS    = -w sphinx-build.log -T 
 SPHINXBUILD   = sphinx-build
 PAPER         =
-BUILDDIR      = build
+BUILDDIR      = ../docs
 SCRIPTDIR     = scripts
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
-ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
+ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
-I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
+I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 .PHONY: help
 help:
@@ -51,13 +51,20 @@ help:
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILDDIR)/*
 	rm -f apidoc/*
 	rm -f sphinx-build.log
 
+.PHONY: allclean
+allclean: clean
+	rm -rf $(BUILDDIR)/*
+
+# Use this target to rebuild IDAES docs
+idaes: dep examples html
+	@echo "Rebuilding IDAES documentation"
+
 .PHONY: apidoc
 apidoc:
-	sphinx-apidoc -fM --separate -o source/apidoc ../idaes ../idaes/tests "../idaes/*/tests"
+	sphinx-apidoc -fM --separate -o apidoc ../idaes ../idaes/tests "../idaes/*/tests"
 
 .PHONY: dep
 dep: apidoc
@@ -65,22 +72,24 @@ dep: apidoc
 
 .PHONY: html
 html:
-	SPHINX=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	SPHINX=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)
 	@echo
-	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+	@echo "Build finished. The HTML pages are in $(BUILDDIR)"
 
 .PHONY: examples
 examples: execute nbconvert
-	@echo "Examples copied as HTML. The pages are located in $(BUILDDIR)/html/examples"
+	@echo "Examples copied as HTML. The pages are located in $(BUILDDIR)/examples"
 
 .PHONY: nbconvert
 nbconvert: 
-	mkdir -p $(BUILDDIR)/html/examples
-	$(SCRIPTDIR)/convert_notebooks.sh ../examples/executed $(BUILDDIR)/html/examples
+	mkdir -p $(BUILDDIR)/examples
+	$(SCRIPTDIR)/convert_notebooks.sh ../examples/executed $(BUILDDIR)/examples
 
 .PHONY: execute
 execute: 
-	jupyter nbconvert --to notebook --execute $(shell find ../examples -name \*.ipynb | grep -v -e executed -e checkpoint) --output-dir ../examples/executed
+	jupyter nbconvert --to notebook --execute \
+	$(shell find ../examples -name \*.ipynb | grep -v -e executed -e checkpoint) \
+	--output-dir ../examples/executed
 
 .PHONY: dirhtml
 dirhtml:
