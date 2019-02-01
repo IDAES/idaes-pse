@@ -1,0 +1,7 @@
+idaes.dmf.propdata module
+=========================
+
+.. automodule:: idaes.dmf.propdata
+    :members:
+    :undoc-members:
+    :show-inheritance:

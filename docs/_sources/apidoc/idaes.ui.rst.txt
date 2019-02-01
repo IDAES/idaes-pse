@@ -1,0 +1,15 @@
+idaes.ui package
+================
+
+.. automodule:: idaes.ui
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+   idaes.ui.report
+

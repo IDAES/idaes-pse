@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>DMF Workspace &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>DMF Workspace</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/dmf/workspace.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.dmf.workspace">
+<span id="dmf-workspace"></span><h1>DMF Workspace<a class="headerlink" href="#module-idaes.dmf.workspace" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">idaes.dmf.workspace.</code><code class="descname">Workspace</code><span class="sig-paren">(</span><em>path</em>, <em>create=False</em>, <em>add_defaults=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/workspace.html#Workspace"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>DMF Workspace.</p>
+<p>In essence, a workspace is some information at the root of a directory
+tree, a database (currently file-based, so also in the directory tree)
+of <em>Resources</em>, and a set of files associated with these resources.</p>
+<p><strong>Workspace Configuration</strong></p>
+<p>When the DMF is initialized, the workspace is given as a path to a
+directory. In that directory is a special file named <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code>,
+that contains metadata about the workspace. The very existence of a
+file by that name is taken by the DMF code as an indication that the
+containing directory is a DMF workspace:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">dmf</span><span class="p">:</span> <span class="n">Root</span> <span class="n">DMF</span> <span class="n">directory</span>
+ <span class="o">|</span>
+ <span class="o">+-</span> <span class="n">config</span><span class="o">.</span><span class="n">yaml</span><span class="p">:</span> <span class="n">Configuration</span> <span class="n">file</span>
+ <span class="o">+-</span> <span class="n">resourcedb</span><span class="o">.</span><span class="n">json</span><span class="p">:</span> <span class="n">Resource</span> <span class="n">metadata</span> <span class="s2">&quot;database&quot;</span> <span class="p">(</span><span class="n">uses</span> <span class="n">TinyDB</span><span class="p">)</span>
+ <span class="o">+-</span> <span class="n">files</span><span class="p">:</span> <span class="n">Data</span> <span class="n">files</span> <span class="k">for</span> <span class="nb">all</span> <span class="n">resources</span>
+</pre></div>
+</div>
+<p>The configuration file is a <a class="reference external" href="http://www.yaml.org/">YAML</a> formatted file</p>
+<p>The configuration file defines the following key/value pairs:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>_id</dt>
+<dd>Unique identifier for the workspace. This is auto-generated by
+the library, of course.</dd>
+<dt>name</dt>
+<dd>Short name for the workspace.</dd>
+<dt>description</dt>
+<dd>Possibly longer text describing the workspace.</dd>
+<dt>created</dt>
+<dd>Date at which the workspace was created, as string in the
+ISO8601 format.</dd>
+<dt>modified</dt>
+<dd>Date at which the workspace was last modified, as string in the
+ISO8601 format.</dd>
+<dt>htmldocs</dt>
+<dd>Full path to the location of the built (not source) Sphinx HTML
+documentation for the <cite>idaes_dmf</cite> package. See
+DMF Help Configuration for more details.</dd>
+</dl>
+</div></blockquote>
+<p>There are many different possible “styles” of formatting a list of values
+in YAML, but we prefer the simple block-indented style, where the key is
+on its own line and the values are each indented with a dash:</p>
+<div class="highlight-YAML notranslate"><div class="highlight"><pre><span></span><span class="nt">_id</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">fe5372a7e51d498fb377da49704874eb</span>
+<span class="nt">created</span><span class="p">:</span> <span class="s">&#39;2018-07-16</span><span class="nv"> </span><span class="s">11:10:44&#39;</span>
+<span class="nt">description</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">A bottomless trashcan</span>
+<span class="nt">modified</span><span class="p">:</span> <span class="s">&#39;2018-07-16</span><span class="nv"> </span><span class="s">11:10:44&#39;</span>
+<span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Oscar the Grouch&#39;s Home</span>
+<span class="nt">htmldocs</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="s">&#39;{dmf_root}/doc/build/html/dmf&#39;</span>
+<span class="p p-Indicator">-</span> <span class="s">&#39;{dmf_root}/doc/build/html/models&#39;</span>
+</pre></div>
+</div>
+<p>Any paths in the workspace configuration, e.g., for the “htmldocs”,
+can use two special variables that will take on values relative to the
+workspace location. This avoids hardcoded paths and makes the workspace
+more portable across environments. <code class="docutils literal notranslate"><span class="pre">{ws_root}</span></code> will be replaces with
+the path to the workspace directory, and <code class="docutils literal notranslate"><span class="pre">{dmf_root}</span></code> will be replaced
+with the path to the (installed) DMF package.</p>
+<p>The <cite>config.yaml</cite> file will allow keys and values it does not know
+about. These will be accessible, loaded into a Python dictionary,
+via the <code class="docutils literal notranslate"><span class="pre">meta</span></code> attribute on the <a class="reference internal" href="../apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace" title="idaes.dmf.workspace.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">Workspace</span></code></a> instance.
+This may be useful for
+passing additional user-defined information into the DMF at startup.</p>
+<dl class="attribute">
+<dt>
+<code class="descname">CONF_CREATED</code><em class="property"> = 'created'</em></dt>
+<dd><p>Configuration field for created date</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">CONF_DESC</code><em class="property"> = 'description'</em></dt>
+<dd><p>Configuration field for description</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">CONF_MODIFIED</code><em class="property"> = 'modified'</em></dt>
+<dd><p>Configuration field for modified date</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">CONF_NAME</code><em class="property"> = 'name'</em></dt>
+<dd><p>Configuration field for name</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">ID_FIELD</code><em class="property"> = '_id'</em></dt>
+<dd><p>Name of ID field</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">WORKSPACE_CONFIG</code><em class="property"> = 'config.yaml'</em></dt>
+<dd><p>Name of configuration file placed in WORKSPACE_DIR</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">get_doc_paths</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/workspace.html#Workspace.get_doc_paths"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Get paths to generated HTML Sphinx docs.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(list) Paths or empty list if not found.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">meta</code></dt>
+<dd><p>Get metadata.</p>
+<p>This reads and parses the configuration.
+Therefore, one way to force a config refresh is to
+simply refer to this property, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dmf</span> <span class="o">=</span> <span class="n">DMF</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s1">&#39;my-workspace&#39;</span><span class="p">)</span>
+<span class="c1">#  ... do stuff that alters the config ...</span>
+<span class="n">dmf</span><span class="o">.</span><span class="n">meta</span>  <span class="c1"># re-read/parse the config</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(dict) Metadata for this workspace.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">root</code></dt>
+<dd><p>Root path for this workspace.
+This is the path containing the configuration file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">set_meta</code><span class="sig-paren">(</span><em>values</em>, <em>remove=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/workspace.html#Workspace.set_meta"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Update metadata with new values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>values</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Values to add or change</li>
+<li><strong>remove</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a>) – Keys of values to remove.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">wsid</code></dt>
+<dd><p>Get workspace identifier (from config file).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Unique identifier.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

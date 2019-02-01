@@ -1,0 +1,527 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.process_base &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>idaes.core.process_base</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for idaes.core.process_base</h1><div class="highlight"><pre>
+<span></span><span class="c1">##############################################################################</span>
+<span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># software owners: The Regents of the University of California, through</span>
+<span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
+<span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
+<span class="c1"># University Research Corporation, et al. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
+<span class="c1"># license information, respectively. Both files are also available online</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1">##############################################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Base for IDAES process model objects.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>  <span class="c1"># disable implicit relative imports</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>  <span class="c1"># No integer division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>  <span class="c1"># Python 3 style print</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">pyomo.core.base.block</span> <span class="k">import</span> <span class="n">_BlockData</span>
+<span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="n">Block</span>
+<span class="kn">from</span> <span class="nn">pyomo.common.config</span> <span class="k">import</span> <span class="n">ConfigBlock</span>
+
+<span class="kn">from</span> <span class="nn">idaes.core.process_block</span> <span class="k">import</span> <span class="n">declare_process_block_class</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.exceptions</span> <span class="k">import</span> <span class="p">(</span><span class="n">ConfigurationError</span><span class="p">,</span>
+                                        <span class="n">PropertyPackageError</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.misc</span> <span class="k">import</span> <span class="n">add_object_reference</span>
+
+
+<span class="c1"># Some more inforation about this module</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;John Eslick, Qi Chen, Andrew Lee&quot;</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ProcessBlockData&#39;</span><span class="p">]</span>
+
+
+<span class="n">useDefault</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+
+
+<span class="c1"># Set up logger</span>
+<span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ProcessBlockData"><a class="viewcode-back" href="../../../core/process_block.html#idaes.core.process_base.ProcessBlockData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;ProcessBaseBlock&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ProcessBlockData</span><span class="p">(</span><span class="n">_BlockData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for most IDAES process models and classes.</span>
+
+<span class="sd">    The primary purpose of this class is to create the local config block to</span>
+<span class="sd">    handle arguments provided by the user when constructing an object and to</span>
+<span class="sd">    ensure that these arguments are stored in the config block.</span>
+
+<span class="sd">    Additionally, this class contains a number of methods common to all IDAES</span>
+<span class="sd">    classes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">ConfigBlock</span><span class="p">(</span><span class="s2">&quot;ProcessBlockData&quot;</span><span class="p">,</span> <span class="n">implicit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a ProcessBlockData object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            component(Block): container Block instance to which this _BlockData</span>
+<span class="sd">                              belongs.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            (ProcessBlockData): A new instance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="n">component</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ProcessBlockData.build"><a class="viewcode-back" href="../../../core/process_block.html#idaes.core.process_base.ProcessBlockData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The build method is called by the default ProcessBlock rule.  If a rule</span>
+<span class="sd">        is sepecified other than the default it is important to call</span>
+<span class="sd">        ProcessBlockData&#39;s build method to put information from the &quot;default&quot;</span>
+<span class="sd">        and &quot;initialize&quot; arguments to a ProcessBlock derived class into the</span>
+<span class="sd">        BlockData object&#39;s ConfigBlock.</span>
+
+<span class="sd">        The the build method should usually be overloaded in a subclass derived</span>
+<span class="sd">        from ProcessBlockData. This method would generally add Pyomo components</span>
+<span class="sd">        such as variables, expressions, and constraints to the object. It is</span>
+<span class="sd">        important for build() methods implimented in derived classes to call</span>
+<span class="sd">        build() from the super class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_component</span><span class="p">()</span><span class="o">.</span><span class="n">_block_data_config_initialize</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_component</span><span class="p">()</span><span class="o">.</span><span class="n">_block_data_config_default</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ProcessBlockData.fix_initial_conditions"><a class="viewcode-back" href="../../../core/process_block.html#idaes.core.process_base.ProcessBlockData.fix_initial_conditions">[docs]</a>    <span class="k">def</span> <span class="nf">fix_initial_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="s2">&quot;steady-state&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method fixes the initial conditions for dynamic models.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            state : initial state to use for simulation (default =</span>
+<span class="sd">                    &#39;steady-state&#39;)</span>
+
+<span class="sd">        Returns :</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="s1">&#39;steady-state&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_objects</span><span class="p">((</span><span class="n">Block</span><span class="p">,</span> <span class="n">Disjunct</span><span class="p">),</span>
+                                              <span class="n">descend_into</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                <span class="c1"># Try to fix material_accumulation @ first time point</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">material_accumulation</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">(),</span>
+                                              <span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+                <span class="c1"># Try to fix energy_accumulation @ first time point</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">energy_accumulation</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">(),</span>
+                                            <span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unrecognised value for argument &#39;state&#39;. &quot;</span>
+                             <span class="s2">&quot;Valid values are &#39;steady-state&#39;.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ProcessBlockData.unfix_initial_conditions"><a class="viewcode-back" href="../../../core/process_block.html#idaes.core.process_base.ProcessBlockData.unfix_initial_conditions">[docs]</a>    <span class="k">def</span> <span class="nf">unfix_initial_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method unfixed the initial conditions for dynamic models.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns :</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_objects</span><span class="p">(</span><span class="n">Block</span><span class="p">,</span> <span class="n">descend_into</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="c1"># Try to unfix material_accumulation @ first time point</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">material_accumulation</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">(),</span> <span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">unfix</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="c1"># Try to unfix energy_accumulation @ first time point</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">energy_accumulation</span><span class="p">[</span><span class="n">obj</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">(),</span> <span class="o">...</span><span class="p">]</span><span class="o">.</span><span class="n">unfix</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_property_package</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gathers the necessary information about the property</span>
+<span class="sd">        package to be used in the control volume block.</span>
+
+<span class="sd">        If a property package has not been provided by the user, the method</span>
+<span class="sd">        searches up the model tree until it finds an object with the</span>
+<span class="sd">        &#39;default_property_package&#39; attribute and uses this package for the</span>
+<span class="sd">        control volume block.</span>
+
+<span class="sd">        The method also gathers any default construction arguments specified</span>
+<span class="sd">        for the property package and combines these with any arguments</span>
+<span class="sd">        specified by the user for the control volume block (user specified</span>
+<span class="sd">        arguments take priority over defaults).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get property_package block if not provided in arguments</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span> <span class="o">==</span> <span class="n">useDefault</span><span class="p">:</span>
+            <span class="c1"># Try to get property_package from parent</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span> <span class="o">=</span> \
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_prop_pack</span><span class="p">()</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_prop_pack</span><span class="p">()</span>
+
+        <span class="c1"># Check for any flowsheet level build arguments</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_arguments</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package_args</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package_args</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_arguments</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_default_prop_pack</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method is used to find a default property package defined at the</span>
+<span class="sd">        flowsheet level if a package is not provided as an argument when</span>
+<span class="sd">        instantiating the control volume block.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;default_property_package&quot;</span><span class="p">):</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                            <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> no property package provided and &#39;</span>
+                            <span class="s1">&#39;no default defined. Found end of &#39;</span>
+                            <span class="s1">&#39;parent tree.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="n">parent</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span> <span class="o">==</span> <span class="n">parent</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                            <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> no property package provided and &#39;</span>
+                            <span class="s1">&#39;no default defined. Found recursive &#39;</span>
+                            <span class="s1">&#39;loop in parent tree.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span>
+
+        <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Using default property package&#39;</span>
+                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_property_package</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                             <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> no default property package has been &#39;</span>
+                             <span class="s1">&#39;specified at flowsheet level (&#39;</span>
+                             <span class="s1">&#39;default_property_package = None)&#39;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_property_package</span>
+
+    <span class="k">def</span> <span class="nf">_get_indexing_sets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method collects all necessary indexing sets from property</span>
+<span class="sd">        parameter block and makes references to these for use within the</span>
+<span class="sd">        control volume block. Collected indexing sets are phase_list and</span>
+<span class="sd">        component_list.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get phase and component list(s)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">add_object_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;phase_list_ref&quot;</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="o">.</span><span class="n">phase_list</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PropertyPackageError</span><span class="p">(</span>
+                    <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> property_package provided does not &#39;</span>
+                    <span class="s1">&#39;contain a phase_list. &#39;</span>
+                    <span class="s1">&#39;Please contact the developer of the property package.&#39;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">add_object_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;component_list_ref&quot;</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="o">.</span><span class="n">component_list</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PropertyPackageError</span><span class="p">(</span>
+                    <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> property_package provided does not &#39;</span>
+                    <span class="s1">&#39;contain a component_list. &#39;</span>
+                    <span class="s1">&#39;Please contact the developer of the property package.&#39;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_get_reaction_package</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method gathers the necessary information about the reaction</span>
+<span class="sd">        package to be used in the control volume block (if required).</span>
+
+<span class="sd">        If a reaction package has been provided by the user, the method</span>
+<span class="sd">        gathers any default construction arguments specified</span>
+<span class="sd">        for the reaction package and combines these with any arguments</span>
+<span class="sd">        specified by the user for the control volume block (user specified</span>
+<span class="sd">        arguments take priority over defaults).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">reaction_package</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Check for any flowsheet level build arguments</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">reaction_package</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_arguments</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">reaction_package_args</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">reaction_package_args</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> \
+                       <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">reaction_package</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_arguments</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_phase_comp_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to collect phase-component list from property package.</span>
+<span class="sd">        If property package does not define a phase-component list, then it is</span>
+<span class="sd">        assumed that all components are present in all phases.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            phase_component_list</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get phase component list(s)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="p">,</span> <span class="s2">&quot;phase_component_list&quot;</span><span class="p">):</span>
+            <span class="n">phase_component_list</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="o">.</span><span class="n">phase_component_list</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Otherwise assume all components in all phases</span>
+            <span class="n">phase_component_list</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">:</span>
+                <span class="n">phase_component_list</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span>
+
+        <span class="k">return</span> <span class="n">phase_component_list</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

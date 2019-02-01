@@ -1,0 +1,634 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.unit_models.heat_exchanger module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.unit_models.heat_exchanger module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.unit_models.heat_exchanger.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.unit_models.heat_exchanger">
+<span id="idaes-unit-models-heat-exchanger-module"></span><h1>idaes.unit_models.heat_exchanger module<a class="headerlink" href="#module-idaes.unit_models.heat_exchanger" title="Permalink to this headline">¶</a></h1>
+<p>Heat Exchanger Models.</p>
+<dl class="class">
+<dt id="idaes.unit_models.heat_exchanger.HeatExchanger">
+<em class="property">class </em><code class="descclassname">idaes.unit_models.heat_exchanger.</code><code class="descname">HeatExchanger</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeatExchanger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../core/process_block.html#idaes.core.process_block.ProcessBlock" title="idaes.core.process_block.ProcessBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.process_block.ProcessBlock</span></code></a></p>
+<p>Simple 0D heat exchanger model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rule</strong> (<em>function</em>) – A rule function or None. Default rule calls build().</li>
+<li><strong>concrete</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If True, make this a toplevel model. <strong>Default</strong> - False.</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Pyomo ctype of the block.  <strong>Default</strong> - “Block”</li>
+<li><strong>default</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – <p>Default ProcessBlockData config</p>
+<dl class="docutils">
+<dt>Keys</dt>
+<dd><dl class="first last docutils">
+<dt>dynamic</dt>
+<dd>Indicates whether the model is dynamic.</dd>
+<dt>side_1</dt>
+<dd>A config block used to construct the side_1 control
+volume.<dl class="last docutils">
+<dt>dynamic</dt>
+<dd>Indicates whether the model is dynamic.</dd>
+<dt>has_holdup</dt>
+<dd>Indicates whether holdup terms should be constructed
+or not. Must be True if dynamic = True, <strong>default</strong> -
+False. <strong>Valid values:</strong> { <strong>True</strong> - construct holdup
+terms, <strong>False</strong> - do not construct holdup terms}</dd>
+<dt>material_balance_type</dt>
+<dd>Indicates what type of mass balance should be
+constructed, <strong>default</strong> -
+MaterialBalanceType.componentPhase. <strong>Valid values:</strong>
+{ <strong>MaterialBalanceType.none</strong> - exclude material
+balances, <strong>MaterialBalanceType.componentPhase</strong> - use
+phase component balances,
+<strong>MaterialBalanceType.componentTotal</strong> - use total
+component balances,
+<strong>MaterialBalanceType.elementTotal</strong> - use total
+element balances, <strong>MaterialBalanceType.total</strong> - use
+total material balance.}</dd>
+<dt>energy_balance_type</dt>
+<dd>Indicates what type of energy balance should be
+constructed, <strong>default</strong> -
+EnergyBalanceType.enthalpyTotal. <strong>Valid values:</strong> {
+<strong>EnergyBalanceType.none</strong> - exclude energy balances,
+<strong>EnergyBalanceType.enthalpyTotal</strong> - single ethalpy
+balance for material,
+<strong>EnergyBalanceType.enthalpyPhase</strong> - ethalpy balances
+for each phase, <strong>EnergyBalanceType.energyTotal</strong> -
+single energy balance for material,
+<strong>EnergyBalanceType.energyPhase</strong> - energy balances
+for each phase.}</dd>
+<dt>momentum_balance_type</dt>
+<dd>Indicates what type of momentum balance should be
+constructed, <strong>default</strong> -
+MomentumBalanceType.pressureTotal. <strong>Valid values:</strong> {
+<strong>MomentumBalanceType.none</strong> - exclude momentum
+balances, <strong>MomentumBalanceType.pressureTotal</strong> -
+single pressure balance for material,
+<strong>MomentumBalanceType.pressurePhase</strong> - pressure
+balances for each phase,
+<strong>MomentumBalanceType.momentumTotal</strong> - single
+momentum balance for material,
+<strong>MomentumBalanceType.momentumPhase</strong> - momentum
+balances for each phase.}</dd>
+<dt>has_heat_transfer</dt>
+<dd>Indicates whether terms for heat transfer should be
+constructed, <strong>default</strong> - False. <strong>Valid values:</strong> {
+<strong>True</strong> - include heat transfer terms, <strong>False</strong> -
+exclude heat transfer terms.}</dd>
+<dt>calculate_phase_equilibrium</dt>
+<dd>Argument indicating whether phase equilibrium should
+be calculated for the resulting mixed stream,
+<strong>default</strong> - False. <strong>Valid values:</strong> { <strong>True</strong> -
+calculate phase equilibrium in mixed stream, <strong>False</strong>
+- do not calculate equilibrium in mixed stream.}</dd>
+<dt>has_pressure_change</dt>
+<dd>Indicates whether terms for pressure change should be
+constructed, <strong>default</strong> - False. <strong>Valid values:</strong> {
+<strong>True</strong> - include pressure change terms, <strong>False</strong> -
+exclude pressure change terms.}</dd>
+<dt>property_package</dt>
+<dd>Property parameter object used to define property
+calculations, <strong>default</strong> - useDefault. <strong>Valid
+values:</strong> { <strong>useDefault</strong> - use default package from
+parent model or flowsheet, <strong>PropertyParameterObject</strong>
+- a PropertyParameterBlock object.}</dd>
+<dt>property_package_args</dt>
+<dd>A ConfigBlock with arguments to be passed to a
+property block(s) and used when constructing these,
+<strong>default</strong> - None. <strong>Valid values:</strong> { see property
+package for documentation.}</dd>
+</dl>
+</dd>
+<dt>side_2</dt>
+<dd>A config block used to construct the side_2 control
+volume.<dl class="last docutils">
+<dt>dynamic</dt>
+<dd>Indicates whether the model is dynamic.</dd>
+<dt>has_holdup</dt>
+<dd>Indicates whether holdup terms should be constructed
+or not. Must be True if dynamic = True, <strong>default</strong> -
+False. <strong>Valid values:</strong> { <strong>True</strong> - construct holdup
+terms, <strong>False</strong> - do not construct holdup terms}</dd>
+<dt>material_balance_type</dt>
+<dd>Indicates what type of mass balance should be
+constructed, <strong>default</strong> -
+MaterialBalanceType.componentPhase. <strong>Valid values:</strong>
+{ <strong>MaterialBalanceType.none</strong> - exclude material
+balances, <strong>MaterialBalanceType.componentPhase</strong> - use
+phase component balances,
+<strong>MaterialBalanceType.componentTotal</strong> - use total
+component balances,
+<strong>MaterialBalanceType.elementTotal</strong> - use total
+element balances, <strong>MaterialBalanceType.total</strong> - use
+total material balance.}</dd>
+<dt>energy_balance_type</dt>
+<dd>Indicates what type of energy balance should be
+constructed, <strong>default</strong> -
+EnergyBalanceType.enthalpyTotal. <strong>Valid values:</strong> {
+<strong>EnergyBalanceType.none</strong> - exclude energy balances,
+<strong>EnergyBalanceType.enthalpyTotal</strong> - single ethalpy
+balance for material,
+<strong>EnergyBalanceType.enthalpyPhase</strong> - ethalpy balances
+for each phase, <strong>EnergyBalanceType.energyTotal</strong> -
+single energy balance for material,
+<strong>EnergyBalanceType.energyPhase</strong> - energy balances
+for each phase.}</dd>
+<dt>momentum_balance_type</dt>
+<dd>Indicates what type of momentum balance should be
+constructed, <strong>default</strong> -
+MomentumBalanceType.pressureTotal. <strong>Valid values:</strong> {
+<strong>MomentumBalanceType.none</strong> - exclude momentum
+balances, <strong>MomentumBalanceType.pressureTotal</strong> -
+single pressure balance for material,
+<strong>MomentumBalanceType.pressurePhase</strong> - pressure
+balances for each phase,
+<strong>MomentumBalanceType.momentumTotal</strong> - single
+momentum balance for material,
+<strong>MomentumBalanceType.momentumPhase</strong> - momentum
+balances for each phase.}</dd>
+<dt>has_heat_transfer</dt>
+<dd>Indicates whether terms for heat transfer should be
+constructed, <strong>default</strong> - False. <strong>Valid values:</strong> {
+<strong>True</strong> - include heat transfer terms, <strong>False</strong> -
+exclude heat transfer terms.}</dd>
+<dt>calculate_phase_equilibrium</dt>
+<dd>Argument indicating whether phase equilibrium should
+be calculated for the resulting mixed stream,
+<strong>default</strong> - False. <strong>Valid values:</strong> { <strong>True</strong> -
+calculate phase equilibrium in mixed stream, <strong>False</strong>
+- do not calculate equilibrium in mixed stream.}</dd>
+<dt>has_pressure_change</dt>
+<dd>Indicates whether terms for pressure change should be
+constructed, <strong>default</strong> - False. <strong>Valid values:</strong> {
+<strong>True</strong> - include pressure change terms, <strong>False</strong> -
+exclude pressure change terms.}</dd>
+<dt>property_package</dt>
+<dd>Property parameter object used to define property
+calculations, <strong>default</strong> - useDefault. <strong>Valid
+values:</strong> { <strong>useDefault</strong> - use default package from
+parent model or flowsheet, <strong>PropertyParameterObject</strong>
+- a PropertyParameterBlock object.}</dd>
+<dt>property_package_args</dt>
+<dd>A ConfigBlock with arguments to be passed to a
+property block(s) and used when constructing these,
+<strong>default</strong> - None. <strong>Valid values:</strong> { see property
+package for documentation.}</dd>
+</dl>
+</dd>
+<dt>delta_temperature_rule</dt>
+<dd>Rule for equation for temperature difference</dd>
+<dt>heat_transfer_rule</dt>
+<dd>Rule for heat transfer rate equation</dd>
+<dt>heat_transfer_coefficient_rule</dt>
+<dd>Rule for equation for heat transfer coefficient</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><strong>initialize</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – ProcessBlockData config for individual elements. Keys
+are BlockData indexes and values are dictionaries described under the
+“default” argument above.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(HeatExchanger) New instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.unit_models.heat_exchanger.HeatExchangerData">
+<em class="property">class </em><code class="descclassname">idaes.unit_models.heat_exchanger.</code><code class="descname">HeatExchangerData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeatExchangerData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeatExchangerData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../core/unit_model.html#idaes.core.unit_model.UnitBlockData" title="idaes.core.unit_model.UnitBlockData"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.unit_model.UnitBlockData</span></code></a></p>
+<p>Simple 0D heat exchange unit.</p>
+<p>Unit model to transfer heat from one material to another.</p>
+<dl class="attribute">
+<dt id="idaes.unit_models.heat_exchanger.HeatExchangerData.CONFIG">
+<code class="descname">CONFIG</code><em class="property"> = &lt;pyutilib.misc.config.ConfigBlock object&gt;</em><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeatExchangerData.CONFIG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.heat_exchanger.HeatExchangerData.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeatExchangerData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeatExchangerData.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>Building model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.heat_exchanger.HeatExchangerData.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>state_args_1=None</em>, <em>state_args_2=None</em>, <em>outlvl=0</em>, <em>solver='ipopt'</em>, <em>optarg={'tol': 1e-06}</em>, <em>duty=10000</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeatExchangerData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeatExchangerData.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Heat echanger initialization method.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>state_args_1</strong> – a dict of arguments to be passed to the property
+initialization for side_1 (see documentation of the specific
+property package) (default = {}).</li>
+<li><strong>state_args_2</strong> – a dict of arguments to be passed to the property
+initialization for side_2 (see documentation of the specific
+property package) (default = {}).</li>
+<li><strong>outlvl</strong> – <p>sets output level of initialisation routine</p>
+<ul>
+<li>0 = no output (default)</li>
+<li>1 = return solver state for each step in routine</li>
+<li>2 = return solver state for each step in subroutines</li>
+<li>3 = include solver output infomation (tee=True)</li>
+</ul>
+</li>
+<li><strong>optarg</strong> – solver options dictionary object (default={‘tol’: 1e-6})</li>
+<li><strong>solver</strong> – str indicating which solver to use during
+initialization (default = ‘ipopt’)</li>
+<li><strong>duty</strong> – an initial guess for the amount of heat transfered
+(default = 10000)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.unit_models.heat_exchanger.Heater">
+<em class="property">class </em><code class="descclassname">idaes.unit_models.heat_exchanger.</code><code class="descname">Heater</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#idaes.unit_models.heat_exchanger.Heater" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../core/process_block.html#idaes.core.process_block.ProcessBlock" title="idaes.core.process_block.ProcessBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.process_block.ProcessBlock</span></code></a></p>
+<p>Simple 0D heater/cooler model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rule</strong> (<em>function</em>) – A rule function or None. Default rule calls build().</li>
+<li><strong>concrete</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If True, make this a toplevel model. <strong>Default</strong> - False.</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Pyomo ctype of the block.  <strong>Default</strong> - “Block”</li>
+<li><strong>default</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – <p>Default ProcessBlockData config</p>
+<dl class="docutils">
+<dt>Keys</dt>
+<dd><dl class="first last docutils">
+<dt>dynamic</dt>
+<dd>Indicates whether the model is dynamic.</dd>
+<dt>has_holdup</dt>
+<dd>Indicates whether holdup terms should be constructed or
+not. Must be True if dynamic = True, <strong>default</strong> - False.
+<strong>Valid values:</strong> { <strong>True</strong> - construct holdup terms,
+<strong>False</strong> - do not construct holdup terms}</dd>
+<dt>material_balance_type</dt>
+<dd>Indicates what type of mass balance should be constructed,
+<strong>default</strong> - MaterialBalanceType.componentPhase. <strong>Valid
+values:</strong> { <strong>MaterialBalanceType.none</strong> - exclude
+material balances, <strong>MaterialBalanceType.componentPhase</strong>
+- use phase component balances,
+<strong>MaterialBalanceType.componentTotal</strong> - use total
+component balances, <strong>MaterialBalanceType.elementTotal</strong> -
+use total element balances, <strong>MaterialBalanceType.total</strong>
+- use total material balance.}</dd>
+<dt>energy_balance_type</dt>
+<dd>Indicates what type of energy balance should be
+constructed, <strong>default</strong> -
+EnergyBalanceType.enthalpyTotal. <strong>Valid values:</strong> {
+<strong>EnergyBalanceType.none</strong> - exclude energy balances,
+<strong>EnergyBalanceType.enthalpyTotal</strong> - single ethalpy
+balance for material, <strong>EnergyBalanceType.enthalpyPhase</strong>
+- ethalpy balances for each phase,
+<strong>EnergyBalanceType.energyTotal</strong> - single energy balance
+for material, <strong>EnergyBalanceType.energyPhase</strong> - energy
+balances for each phase.}</dd>
+<dt>momentum_balance_type</dt>
+<dd>Indicates what type of momentum balance should be
+constructed, <strong>default</strong> -
+MomentumBalanceType.pressureTotal. <strong>Valid values:</strong> {
+<strong>MomentumBalanceType.none</strong> - exclude momentum balances,
+<strong>MomentumBalanceType.pressureTotal</strong> - single pressure
+balance for material,
+<strong>MomentumBalanceType.pressurePhase</strong> - pressure balances
+for each phase, <strong>MomentumBalanceType.momentumTotal</strong> -
+single momentum balance for material,
+<strong>MomentumBalanceType.momentumPhase</strong> - momentum balances
+for each phase.}</dd>
+<dt>has_heat_transfer</dt>
+<dd>Indicates whether terms for heat transfer should be
+constructed, <strong>default</strong> - False. <strong>Valid values:</strong> {
+<strong>True</strong> - include heat transfer terms, <strong>False</strong> -
+exclude heat transfer terms.}</dd>
+<dt>calculate_phase_equilibrium</dt>
+<dd>Argument indicating whether phase equilibrium should be
+calculated for the resulting mixed stream, <strong>default</strong> -
+False. <strong>Valid values:</strong> { <strong>True</strong> - calculate phase
+equilibrium in mixed stream, <strong>False</strong> - do not calculate
+equilibrium in mixed stream.}</dd>
+<dt>has_pressure_change</dt>
+<dd>Indicates whether terms for pressure change should be
+constructed, <strong>default</strong> - False. <strong>Valid values:</strong> {
+<strong>True</strong> - include pressure change terms, <strong>False</strong> -
+exclude pressure change terms.}</dd>
+<dt>property_package</dt>
+<dd>Property parameter object used to define property
+calculations, <strong>default</strong> - useDefault. <strong>Valid values:</strong>
+{ <strong>useDefault</strong> - use default package from parent model
+or flowsheet, <strong>PropertyParameterObject</strong> - a
+PropertyParameterBlock object.}</dd>
+<dt>property_package_args</dt>
+<dd>A ConfigBlock with arguments to be passed to a property
+block(s) and used when constructing these, <strong>default</strong> -
+None. <strong>Valid values:</strong> { see property package for
+documentation.}</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><strong>initialize</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – ProcessBlockData config for individual elements. Keys
+are BlockData indexes and values are dictionaries described under the
+“default” argument above.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(Heater) New instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.unit_models.heat_exchanger.HeaterData">
+<em class="property">class </em><code class="descclassname">idaes.unit_models.heat_exchanger.</code><code class="descname">HeaterData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeaterData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeaterData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../core/unit_model.html#idaes.core.unit_model.UnitBlockData" title="idaes.core.unit_model.UnitBlockData"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.unit_model.UnitBlockData</span></code></a></p>
+<p>Simple 0D heater unit.</p>
+<p>Unit model to add or remove heat from a material.</p>
+<dl class="attribute">
+<dt id="idaes.unit_models.heat_exchanger.HeaterData.CONFIG">
+<code class="descname">CONFIG</code><em class="property"> = &lt;pyutilib.misc.config.ConfigBlock object&gt;</em><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeaterData.CONFIG" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="idaes.unit_models.heat_exchanger.HeaterData.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeaterData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeaterData.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>Building model</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.unit_models.heat_exchanger.delta_temperature_amtd_rule">
+<code class="descclassname">idaes.unit_models.heat_exchanger.</code><code class="descname">delta_temperature_amtd_rule</code><span class="sig-paren">(</span><em>b</em>, <em>t</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#delta_temperature_amtd_rule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.delta_temperature_amtd_rule" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a rule for a temperaure difference expression to calculate
+<span class="math notranslate nohighlight">\(\Delta T\)</span> in the heat exchanger model using arithmetic-mean temperature
+difference (AMTD).  It can be supplied to “delta_temperature_rule”
+HeatExchanger configuration option.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.unit_models.heat_exchanger.delta_temperature_lmtd_rule">
+<code class="descclassname">idaes.unit_models.heat_exchanger.</code><code class="descname">delta_temperature_lmtd_rule</code><span class="sig-paren">(</span><em>b</em>, <em>t</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#delta_temperature_lmtd_rule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.delta_temperature_lmtd_rule" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a rule for a temperaure difference expression to calculate
+<span class="math notranslate nohighlight">\(\Delta T\)</span> in the heat exchanger model using log-mean temperature
+difference (LMTD).  It can be supplied to “delta_temperature_rule”
+HeatExchanger configuration option.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.unit_models.heat_exchanger.heat_transfer_rule">
+<code class="descclassname">idaes.unit_models.heat_exchanger.</code><code class="descname">heat_transfer_rule</code><span class="sig-paren">(</span><em>b</em>, <em>t</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#heat_transfer_rule"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.heat_transfer_rule" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the defulat rule used by the HeatExchanger model to calculate heat
+transfer (<span class="math notranslate nohighlight">\(Q = UA\Delta T\)</span>).</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

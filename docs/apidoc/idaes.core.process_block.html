@@ -1,0 +1,316 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.process_block module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.core.process_block module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.core.process_block.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.core.process_block">
+<span id="idaes-core-process-block-module"></span><h1>idaes.core.process_block module<a class="headerlink" href="#module-idaes.core.process_block" title="Permalink to this headline">¶</a></h1>
+<p>The process_block module simplifies inheritance of Pyomo blocks. The main
+reason to subclass a Pyomo block is to create a block that comes with
+pre-defined model equations. This is used in the IDAES modeling framework to
+create modular process model blocks.</p>
+<dl class="class">
+<dt id="idaes.core.process_block.ProcessBlock">
+<em class="property">class </em><code class="descclassname">idaes.core.process_block.</code><code class="descname">ProcessBlock</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/process_block.html#ProcessBlock"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.process_block.ProcessBlock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyomo.core.base.block.Block</span></code></p>
+<p>ProcessBlock is a Pyomo Block that is part of a system to make Pyomo
+Block easier to subclass. The main difference between a Pyomo Block and
+ProcessBlock from the user perspective is that a ProcessBlock has a rule
+assigned by default that calls the build() method for the contained
+ProcessBlockData objects. The default rule can be overridden, but the new
+rule should always call build() for the ProcessBlockData object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rule</strong> (<em>function</em>) – A rule function or None. Default rule calls build().</li>
+<li><strong>concrete</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If True, make this a toplevel model. <strong>Default</strong> - False.</li>
+<li><strong>ctype</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Pyomo ctype of the block.  <strong>Default</strong> - “Block”</li>
+<li><strong>default</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Default ProcessBlockData config</li>
+<li><strong>initialize</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – ProcessBlockData config for individual elements. Keys
+are BlockData indexes and values are dictionaries described under the
+“default” argument above.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(ProcessBlock) New instance</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="classmethod">
+<dt id="idaes.core.process_block.ProcessBlock.base_class_module">
+<em class="property">classmethod </em><code class="descname">base_class_module</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/process_block.html#ProcessBlock.base_class_module"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.process_block.ProcessBlock.base_class_module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return module of the associated ProcessBase class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(str) Module of the class.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><em>AttributeError, if no base class module was set, e.g. this class</em> – was <em>not</em> wrapped by the <cite>declare_process_block_class</cite> decorator.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="idaes.core.process_block.ProcessBlock.base_class_name">
+<em class="property">classmethod </em><code class="descname">base_class_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/process_block.html#ProcessBlock.base_class_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.process_block.ProcessBlock.base_class_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name given by the user to the ProcessBase class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(str) Name of the class.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><em>AttributeError, if no base class name was set, e.g. this class</em> – was <em>not</em> wrapped by the <cite>declare_process_block_class</cite>
+decorator.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.core.process_block.declare_process_block_class">
+<code class="descclassname">idaes.core.process_block.</code><code class="descname">declare_process_block_class</code><span class="sig-paren">(</span><em>name</em>, <em>block_class=&lt;class 'idaes.core.process_block.ProcessBlock'&gt;</em>, <em>doc=''</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/process_block.html#declare_process_block_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.process_block.declare_process_block_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Declare a new ProcessBlock subclass.</p>
+<p>This is a decorator function for a class definition, where the class is
+derived from Pyomo’s _BlockData. It creates a ProcessBlock subclass to
+contain the decorated class. The only requirment is that the subclass of
+_BlockData contain a build() method. The purpose of this decorator is to
+simplify subclassing Pyomo’s block class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> – name of class to create</li>
+<li><strong>block_class</strong> – ProcessBlock or a subclass of ProcessBlock, this allows
+you to use a subclass of ProcessBlock if needed. The typical use
+case for Subclassing ProcessBlock is to impliment methods that
+operate on elements of an indexed block.</li>
+<li><strong>doc</strong> – Documentation for the class. This should play nice with sphinx.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Decorator function</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

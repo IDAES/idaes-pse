@@ -1,0 +1,7 @@
+idaes.dmf.tabular module
+========================
+
+.. automodule:: idaes.dmf.tabular
+    :members:
+    :undoc-members:
+    :show-inheritance:

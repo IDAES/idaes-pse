@@ -1,0 +1,350 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.ui.report module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.ui.report module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.ui.report.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.ui.report">
+<span id="idaes-ui-report-module"></span><h1>idaes.ui.report module<a class="headerlink" href="#module-idaes.ui.report" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="idaes.ui.report.active_equalities">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">active_equalities</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#active_equalities"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.active_equalities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator returning active equality constraints in a model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>blk</strong> – a Pyomo block in which to look for variables.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.active_equality_set">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">active_equality_set</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#active_equality_set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.active_equality_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator returning active equality constraints in a model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>blk</strong> – a Pyomo block in which to look for variables.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.count_equality_constraints">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">count_equality_constraints</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#count_equality_constraints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.count_equality_constraints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count active equality constraints.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.count_free_variables">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">count_free_variables</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#count_free_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.count_free_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count free variables that are in active equality constraints.  Ignore
+inequalities, because this is used in the degrees of freedom calculations</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.degrees_of_freedom">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">degrees_of_freedom</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#degrees_of_freedom"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.degrees_of_freedom" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the degrees of freedom.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.fixed_variables">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">fixed_variables</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#fixed_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.fixed_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator returning fixed variables in a model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>blk</strong> – a Pyomo block in which to look for variables.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.free_variables">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">free_variables</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#free_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.free_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator returning free variables in a model. same as unfixed</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>blk</strong> – a Pyomo block in which to look for variables.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.free_variables_in_active_equalities_set">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">free_variables_in_active_equalities_set</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#free_variables_in_active_equalities_set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.free_variables_in_active_equalities_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a set of variables that are contined in active equalities.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.large_residuals">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">large_residuals</code><span class="sig-paren">(</span><em>blk</em>, <em>tol=1e-05</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#large_residuals"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.large_residuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator return active Pyomo constraints with residuals greater than tol.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>blk</strong> – a Pyomo block in which to look for constraints</li>
+<li><strong>tol</strong> – show constraints with residuals greated than tol</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.stale_variables">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">stale_variables</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#stale_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.stale_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator returning stale variables in a model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>blk</strong> – a Pyomo block in which to look for variables.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.unfixed_variables">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">unfixed_variables</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#unfixed_variables"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.unfixed_variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator returning free variables in a model.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>blk</strong> – a Pyomo block in which to look for variables.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.ui.report.variables_in_active_equalities_set">
+<code class="descclassname">idaes.ui.report.</code><code class="descname">variables_in_active_equalities_set</code><span class="sig-paren">(</span><em>blk</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/ui/report.html#variables_in_active_equalities_set"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.ui.report.variables_in_active_equalities_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a set of variables that are contined in active equalities.</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

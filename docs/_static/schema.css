@@ -1,0 +1,98 @@
+html {
+    background-color: #ddd;
+}
+#json-schema {
+    font-family: "Open Sans", sans-serif;
+    color: black;
+    margin: 2em;
+    padding: 1em;
+    background-color: white;
+}
+#json-schema h1 {
+  margin-left: 2em;
+}
+#json-schema ul {
+    list-style-type: none;
+}
+#json-schema ul ul {
+    list-style-type: circle;
+}
+#json-schema ul ul ul {
+    list-style-type: circle;
+}
+#json-schema ul ul ul ul {
+    list-style-type: circle;
+}
+
+#json-schema .type {
+    font-style: italic;
+    opacity: 0.6;
+    font-size: 80%;
+    padding: 0 0.5em;
+    color: black;
+}
+#json-schema span.name {
+    font-weight: 900;
+    color: #1D7226;
+}
+#json-schema span.desc {
+    font-weight: 500;
+    color: black;
+    opacity: 0.6;
+}
+#json-schema .examples {
+    color: black;
+    opacity: 0.6;
+    font-style: italic;
+    margin-left: 1em;
+    font-weight: 500;
+}
+#json-schema .examples>ul {
+    font-style: normal;
+    list-style-type: none;
+    opacity: 0.8;
+    color: darkblue;
+    margin-left: 0;
+    padding-left: 0.5em;
+    display: inline-flex;
+}
+#json-schema .examples>ul li {
+    list-style-type: none;
+   border-left: 2px solid grey;
+   padding-left: 10px;
+   padding-right: 10px;
+}
+#json-schema .examples>ul li:first-child {
+   border: none;
+   margin-left: 0;
+}
+#json-schema .enum {
+    color: black;
+    opacity: 0.6;
+    font-style: italic;
+    margin-left: 1em;
+    font-weight: 500;
+}
+#json-schema .enum>ul {
+    font-style: normal;
+    list-style: none;
+    opacity: 0.8;
+    color: darkblue;
+    margin-left: 0;
+    padding-left: 0.5em;
+    display: inline-flex;
+}
+#json-schema .enum>ul li {
+    list-style: none;
+   border-left: 2px solid grey;
+   padding-left: 10px;
+   padding-right: 10px;
+}
+#json-schema .enum>ul li:first-child {
+   border: none;
+   margin-left: 0;
+}
+#json-schema .listof {
+    color: black;
+    font-weight: 500;
+}

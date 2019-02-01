@@ -1,0 +1,415 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.process_block &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>idaes.core.process_block</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for idaes.core.process_block</h1><div class="highlight"><pre>
+<span></span><span class="c1">##############################################################################</span>
+<span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># software owners: The Regents of the University of California, through</span>
+<span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
+<span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
+<span class="c1"># University Research Corporation, et al. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
+<span class="c1"># license information, respectively. Both files are also available online</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1">##############################################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">The process_block module simplifies inheritance of Pyomo blocks. The main</span>
+<span class="sd">reason to subclass a Pyomo block is to create a block that comes with</span>
+<span class="sd">pre-defined model equations. This is used in the IDAES modeling framework to</span>
+<span class="sd">create modular process model blocks.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="n">Block</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;John Eslick&quot;</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ProcessBlock&#39;</span><span class="p">,</span> <span class="s1">&#39;declare_process_block_class&#39;</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">_rule_default</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Default rule for ProcessBlock, which calls build(). A different rule can</span>
+<span class="sd">    be specified to add additional build steps, or to not call build at all</span>
+<span class="sd">    using the normal rule argument to ProcessBlock init.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">b</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span>
+            <span class="s2">&quot;Failure in build: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="n">e</span>
+
+
+<span class="n">_process_block_docstring</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Args:</span>
+<span class="s2">        rule (function): A rule function or None. Default rule calls build().</span>
+<span class="s2">        concrete (bool): If True, make this a toplevel model. **Default** - False.</span>
+<span class="s2">        ctype (str): Pyomo ctype of the block.  **Default** - &quot;Block&quot;</span>
+<span class="s2">        default (dict): Default ProcessBlockData config</span><span class="si">{}</span><span class="s2"></span>
+<span class="s2">        initialize (dict): ProcessBlockData config for individual elements. Keys</span>
+<span class="s2">            are BlockData indexes and values are dictionaries described under the</span>
+<span class="s2">            &quot;default&quot; argument above.</span>
+<span class="s2">    Returns:</span>
+<span class="s2">        (</span><span class="si">{}</span><span class="s2">) New instance</span>
+<span class="s2">    &quot;&quot;&quot;</span>
+<span class="n">_config_block_keys_docstring</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+
+<span class="s2">            ..</span>
+
+<span class="s2">            Keys</span>
+<span class="si">{}</span><span class="s2"></span>
+<span class="s2">            ..</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">_IndexedProcessBlockMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Metaclass used to create an indexed model class.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">meta</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;rule&quot;</span><span class="p">,</span> <span class="n">_rule_default</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;initialize&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_block_data_config_default</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_block_data_config_initialize</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;initialize&quot;</span><span class="p">)</span>
+            <span class="n">bases</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">dct</span><span class="p">[</span><span class="s2">&quot;__init__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="fm">__init__</span>
+        <span class="n">dct</span><span class="p">[</span><span class="s2">&quot;__process_block__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;indexed&quot;</span>
+        <span class="k">return</span> <span class="nb">type</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">meta</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_ScalarProcessBlockMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Metaclass used to create a scalar model class.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">meta</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;rule&quot;</span><span class="p">,</span> <span class="n">_rule_default</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;initialize&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_block_data_config_default</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_block_data_config_initialize</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;initialize&quot;</span><span class="p">)</span>
+            <span class="n">bases</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="n">bases</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">dct</span><span class="p">[</span><span class="s2">&quot;__init__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="fm">__init__</span>
+        <span class="n">dct</span><span class="p">[</span><span class="s2">&quot;__process_block__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;scalar&quot;</span>
+        <span class="k">return</span> <span class="nb">type</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">meta</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ProcessBlock"><a class="viewcode-back" href="../../../core/process_block.html#idaes.core.process_block.ProcessBlock">[docs]</a><span class="k">class</span> <span class="nc">ProcessBlock</span><span class="p">(</span><span class="n">Block</span><span class="p">):</span>
+    <span class="vm">__doc__</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    ProcessBlock is a Pyomo Block that is part of a system to make Pyomo</span>
+<span class="s2">    Block easier to subclass. The main difference between a Pyomo Block and</span>
+<span class="s2">    ProcessBlock from the user perspective is that a ProcessBlock has a rule</span>
+<span class="s2">    assigned by default that calls the build() method for the contained</span>
+<span class="s2">    ProcessBlockData objects. The default rule can be overridden, but the new</span>
+<span class="s2">    rule should always call build() for the ProcessBlockData object.</span>
+<span class="s2">    &quot;&quot;&quot;</span> <span class="o">+</span> <span class="n">_process_block_docstring</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;ProcessBlock&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a new indexed or scalar ProcessBlock subclass instance</span>
+<span class="sd">        depending on whether there are args.  If there are args those should be</span>
+<span class="sd">        an indexing set.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">&quot;__process_block__&quot;</span><span class="p">):</span>
+            <span class="c1"># __process_block__ is a class attribute created when making an</span>
+            <span class="c1"># indexed or scalar subclass of ProcessBlock (or subclass thereof).</span>
+            <span class="c1"># If cls dosen&#39;t have it, the indexed or scalar class has not been</span>
+            <span class="c1"># created yet.</span>
+            <span class="c1">#</span>
+            <span class="c1"># You get here after creating a new indexed or scalar class in the</span>
+            <span class="c1"># next if below. The first time in, cls is a ProcessBlock subclass</span>
+            <span class="c1"># that is neither indexed or scalar so you go to the if below and</span>
+            <span class="c1"># create an index or scalar subclass of cls.</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Block</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">args</span> <span class="o">==</span> <span class="p">():</span> <span class="c1"># no args so make scalar class</span>
+            <span class="n">bname</span> <span class="o">=</span> <span class="s2">&quot;_Scalar</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">_ScalarProcessBlockMeta</span><span class="p">(</span><span class="n">bname</span><span class="p">,</span> <span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_ComponentDataClass</span><span class="p">,</span> <span class="bp">cls</span><span class="p">),{})</span>
+            <span class="k">return</span> <span class="n">n</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="c1">#calls this __new__() again with scalar class</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c1"># args so make indexed class</span>
+            <span class="n">bname</span> <span class="o">=</span> <span class="s2">&quot;_Indexed</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="n">_IndexedProcessBlockMeta</span><span class="p">(</span><span class="n">bname</span><span class="p">,</span> <span class="p">(</span><span class="bp">cls</span><span class="p">,),</span> <span class="p">{})</span>
+            <span class="k">return</span> <span class="n">n</span><span class="o">.</span><span class="fm">__new__</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="c1">#calls this __new__() again with indexed class</span>
+
+<div class="viewcode-block" id="ProcessBlock.base_class_name"><a class="viewcode-back" href="../../../core/process_block.html#idaes.core.process_block.ProcessBlock.base_class_name">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">base_class_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Name given by the user to the ProcessBase class.</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">           (str) Name of the class.</span>
+<span class="sd">        Raises:</span>
+<span class="sd">           AttributeError, if no base class name was set, e.g. this class</span>
+<span class="sd">               was *not* wrapped by the `declare_process_block_class`</span>
+<span class="sd">               decorator.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_orig_name</span></div>
+
+<div class="viewcode-block" id="ProcessBlock.base_class_module"><a class="viewcode-back" href="../../../core/process_block.html#idaes.core.process_block.ProcessBlock.base_class_module">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">base_class_module</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return module of the associated ProcessBase class.</span>
+
+<span class="sd">        Return:</span>
+<span class="sd">           (str) Module of the class.</span>
+<span class="sd">        Raises:</span>
+<span class="sd">           AttributeError, if no base class module was set, e.g. this class</span>
+<span class="sd">              was *not* wrapped by the `declare_process_block_class` decorator.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_orig_module</span></div></div>
+
+
+<div class="viewcode-block" id="declare_process_block_class"><a class="viewcode-back" href="../../../core/process_block.html#idaes.core.process_block.declare_process_block_class">[docs]</a><span class="k">def</span> <span class="nf">declare_process_block_class</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">block_class</span><span class="o">=</span><span class="n">ProcessBlock</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Declare a new ProcessBlock subclass.</span>
+
+<span class="sd">    This is a decorator function for a class definition, where the class is</span>
+<span class="sd">    derived from Pyomo&#39;s _BlockData. It creates a ProcessBlock subclass to</span>
+<span class="sd">    contain the decorated class. The only requirment is that the subclass of</span>
+<span class="sd">    _BlockData contain a build() method. The purpose of this decorator is to</span>
+<span class="sd">    simplify subclassing Pyomo&#39;s block class.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name: name of class to create</span>
+<span class="sd">        block_class: ProcessBlock or a subclass of ProcessBlock, this allows</span>
+<span class="sd">            you to use a subclass of ProcessBlock if needed. The typical use</span>
+<span class="sd">            case for Subclassing ProcessBlock is to impliment methods that</span>
+<span class="sd">            operate on elements of an indexed block.</span>
+<span class="sd">        doc: Documentation for the class. This should play nice with sphinx.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Decorator function</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">proc_dec</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>  <span class="c1"># Decorator function</span>
+        <span class="c1"># create a new class called name from block_class</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cb_doc</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">CONFIG</span><span class="o">.</span><span class="n">generate_documentation</span><span class="p">(</span>
+                <span class="n">block_start</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">block_end</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">item_start</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">indent_spacing</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">item_body</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">item_end</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">66</span><span class="p">)</span>
+            <span class="n">cb_doc</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">cb_doc</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="o">*</span><span class="mi">12</span> <span class="o">+</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">cb_doc</span><span class="o">.</span><span class="n">splitlines</span><span class="p">())</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">cb_doc</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cb_doc</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="n">cb_doc</span> <span class="o">=</span> <span class="n">_config_block_keys_docstring</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cb_doc</span><span class="p">)</span>
+        <span class="n">ds</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">doc</span><span class="p">,</span> <span class="n">_process_block_docstring</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cb_doc</span><span class="p">,</span> <span class="n">name</span><span class="p">)])</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">block_class</span><span class="p">,),</span>
+                <span class="p">{</span><span class="s2">&quot;__module__&quot;</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__module__</span><span class="p">,</span>
+                 <span class="s2">&quot;_ComponentDataClass&quot;</span><span class="p">:</span> <span class="bp">cls</span><span class="p">,</span>
+                 <span class="s2">&quot;__doc__&quot;</span><span class="p">:</span><span class="n">ds</span><span class="p">})</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__module__</span><span class="p">],</span> <span class="n">name</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s1">&#39;_orig_name&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s1">&#39;_orig_module&#39;</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__module__</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span>
+    <span class="k">return</span> <span class="n">proc_dec</span>  <span class="c1"># return decorator function</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

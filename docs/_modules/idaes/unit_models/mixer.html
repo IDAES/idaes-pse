@@ -1,0 +1,894 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.unit_models.mixer &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>idaes.unit_models.mixer</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for idaes.unit_models.mixer</h1><div class="highlight"><pre>
+<span></span><span class="c1">##############################################################################</span>
+<span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># software owners: The Regents of the University of California, through</span>
+<span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
+<span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
+<span class="c1"># University Research Corporation, et al. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
+<span class="c1"># license information, respectively. Both files are also available online</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1">##############################################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">General purpose mixer block for IDAES models</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>  <span class="c1"># disable implicit relative imports</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="p">(</span><span class="n">Constraint</span><span class="p">,</span>
+                           <span class="n">Param</span><span class="p">,</span>
+                           <span class="n">PositiveReals</span><span class="p">,</span>
+                           <span class="n">Reals</span><span class="p">,</span>
+                           <span class="n">Set</span><span class="p">,</span>
+                           <span class="n">SolverFactory</span><span class="p">,</span>
+                           <span class="n">TerminationCondition</span><span class="p">,</span>
+                           <span class="n">Var</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">pyomo.common.config</span> <span class="k">import</span> <span class="n">ConfigBlock</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">,</span> <span class="n">In</span>
+<span class="kn">from</span> <span class="nn">pyutilib.enum</span> <span class="k">import</span> <span class="n">Enum</span>
+
+<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">declare_process_block_class</span><span class="p">,</span>
+                        <span class="n">UnitBlockData</span><span class="p">,</span>
+                        <span class="n">useDefault</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.config</span> <span class="k">import</span> <span class="p">(</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
+                                    <span class="n">is_state_block</span><span class="p">,</span>
+                                    <span class="n">list_of_strings</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.exceptions</span> <span class="k">import</span> <span class="p">(</span><span class="n">BurntToast</span><span class="p">,</span>
+                                        <span class="n">ConfigurationError</span><span class="p">,</span>
+                                        <span class="n">PropertyNotSupportedError</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.math</span> <span class="k">import</span> <span class="n">smooth_min</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.misc</span> <span class="k">import</span> <span class="n">add_object_reference</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Andrew Lee&quot;</span>
+
+
+<span class="c1"># Set up logger</span>
+<span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># Enumerate options for balances</span>
+<span class="n">MixingType</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;extensive&#39;</span><span class="p">)</span>
+
+<span class="n">MomentumMixingType</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;minimize&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;equality&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="MixerData"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;Mixer&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">MixerData</span><span class="p">(</span><span class="n">UnitBlockData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a general purpose model for a Mixer block with the IDAES modeling</span>
+<span class="sd">    framework. This block can be used either as a stand-alone Mixer unit</span>
+<span class="sd">    operation, or as a sub-model within another unit operation.</span>
+
+<span class="sd">    This model creates a number of StateBlocks to represent the incoming</span>
+<span class="sd">    streams, then writes a set of phase-component material balances, an</span>
+<span class="sd">    overall enthalpy balance and a momentum balance (2 options) linked to a</span>
+<span class="sd">    mixed-state StateBlock. The mixed-state StateBlock can either be specified</span>
+<span class="sd">    by the user (allowing use as a sub-model), or created by the Mixer.</span>
+
+<span class="sd">    When being used as a sub-model, Mixer should only be used when a set</span>
+<span class="sd">    of new StateBlocks are required for the streams to be mixed. It should not</span>
+<span class="sd">    be used to mix streams from mutiple ControlVolumes in a single unit model -</span>
+<span class="sd">    in these cases the unit model developer should write their own mixing</span>
+<span class="sd">    equations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">UnitBlockData</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">()</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;property_package&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Property package to use for mixer&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Property parameter object used to define property calculations,</span>
+<span class="s2">**default** - useDefault.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**useDefault** - use default package from parent model or flowsheet,</span>
+<span class="s2">**PropertyParameterObject** - a PropertyParameterBlock object.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;property_package_args&quot;</span><span class="p">,</span> <span class="n">ConfigBlock</span><span class="p">(</span>
+        <span class="n">implicit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Arguments to use for constructing property packages&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;A ConfigBlock with arguments to be passed to a property block(s)</span>
+<span class="s2">and used when constructing these,</span>
+<span class="s2">**default** - None.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">see property package for documentation.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;inlet_list&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">list_of_strings</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of inlet names&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;A list containing names of inlets,</span>
+<span class="s2">**default** - None.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**None** - use num_inlets argument,</span>
+<span class="s2">**list** - a list of names to use for inlets.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;num_inlets&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">domain</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of inlets to unit&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Argument indicating number (int) of inlets to construct, not</span>
+<span class="s2">used if inlet_list arg is provided,</span>
+<span class="s2">**default** - None.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**None** - use inlet_list arg instead, or default to 2 if neither argument</span>
+<span class="s2">provided,</span>
+<span class="s2">**int** - number of inlets to create (will be named with sequential integers</span>
+<span class="s2">from 1 to num_inlets).}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;calculate_phase_equilibrium&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Calculate phase equilibrium in mixed stream&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Argument indicating whether phase equilibrium should be</span>
+<span class="s2">calculated for the resulting mixed stream,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - calculate phase equilibrium in mixed stream,</span>
+<span class="s2">**False** - do not calculate equilibrium in mixed stream.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;material_mixing_type&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">MixingType</span><span class="o">.</span><span class="n">extensive</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">MixingType</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Method to use when mixing material flows&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Argument indicating what method to use when mixing material</span>
+<span class="s2">flows of incoming streams,</span>
+<span class="s2">**default** - MixingType.extensive.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**MixingType.none** - do not include material mixing equations,</span>
+<span class="s2">**MixingType.extensive** - mix total flows of each phase-component pair.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;energy_mixing_type&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">MixingType</span><span class="o">.</span><span class="n">extensive</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">MixingType</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Method to use when mixing energy flows&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Argument indicating what method to use when mixing energy</span>
+<span class="s2">flows of incoming streams,</span>
+<span class="s2">**default** - MixingType.extensive.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**MixingType.none** - do not include energy mixing equations,</span>
+<span class="s2">**MixingType.extensive** - mix total enthalpy flows of each phase.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;momentum_mixing_type&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">MomentumMixingType</span><span class="o">.</span><span class="n">minimize</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">MomentumMixingType</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Method to use when mixing momentum/pressure&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Argument indicating what method to use when mixing momentum/</span>
+<span class="s2">pressure of incoming streams,</span>
+<span class="s2">**default** - MomentumMixingType.minimize.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**MomentumMixingType.none** - do not include momentum mixing equations,</span>
+<span class="s2">**MomentumMixingType.minimize** - mixed stream has pressure equal to the</span>
+<span class="s2">minimimum pressure of the incoming streams (uses smoothMin operator),</span>
+<span class="s2">**MomentumMixingType.equality** - enforces equality of pressure in mixed and</span>
+<span class="s2">all incoming streams.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;mixed_state_block&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">is_state_block</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Existing StateBlock to use as mixed stream&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;An existing state block to use as the outlet stream from the</span>
+<span class="s2">Mixer block,</span>
+<span class="s2">**default** - None.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**None** - create a new StateBlock for the mixed stream,</span>
+<span class="s2">**StateBlock** - a StateBock to use as the destination for the mixed stream.}</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;construct_ports&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Construct inlet and outlet Port objects&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Argument indicating whether model should construct Port objects</span>
+<span class="s2">linked to all inlet states and the mixed state,</span>
+<span class="s2">**default** - True.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - construct Ports for all states,</span>
+<span class="s2">**False** - do not construct Ports.&quot;&quot;&quot;</span><span class="p">))</span>
+
+<div class="viewcode-block" id="MixerData.build"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        General build method for MixerData. This method calls a number</span>
+<span class="sd">        of sub-methods which automate the construction of expected attributes</span>
+<span class="sd">        of unit models.</span>
+
+<span class="sd">        Inheriting models should call `super().build`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Call super.build()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MixerData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+
+        <span class="c1"># Call setup methods from ControlVolumeBase</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_property_package</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_indexing_sets</span><span class="p">()</span>
+
+        <span class="c1"># Create list of inlet names</span>
+        <span class="n">inlet_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_inlet_list</span><span class="p">()</span>
+
+        <span class="c1"># Build StateBlocks</span>
+        <span class="n">inlet_blocks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_inlet_state_blocks</span><span class="p">(</span><span class="n">inlet_list</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mixed_state_block</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mixed_block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_mixed_state_block</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mixed_block</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mixed_state_block</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">material_mixing_type</span> <span class="o">==</span> <span class="n">MixingType</span><span class="o">.</span><span class="n">extensive</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_material_mixing_equations</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="o">=</span><span class="n">inlet_blocks</span><span class="p">,</span>
+                                               <span class="n">mixed_block</span><span class="o">=</span><span class="n">mixed_block</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">material_mixing_type</span> <span class="o">==</span> <span class="n">MixingType</span><span class="o">.</span><span class="n">none</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> received unrecognised value for &quot;</span>
+                                     <span class="s2">&quot;material_mixing_type argument. This &quot;</span>
+                                     <span class="s2">&quot;should not occur, so please contact &quot;</span>
+                                     <span class="s2">&quot;the IDAES developers with this bug.&quot;</span>
+                                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">energy_mixing_type</span> <span class="o">==</span> <span class="n">MixingType</span><span class="o">.</span><span class="n">extensive</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_energy_mixing_equations</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="o">=</span><span class="n">inlet_blocks</span><span class="p">,</span>
+                                             <span class="n">mixed_block</span><span class="o">=</span><span class="n">mixed_block</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">energy_mixing_type</span> <span class="o">==</span> <span class="n">MixingType</span><span class="o">.</span><span class="n">none</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> received unrecognised value for &quot;</span>
+                                     <span class="s2">&quot;material_mixing_type argument. This &quot;</span>
+                                     <span class="s2">&quot;should not occur, so please contact &quot;</span>
+                                     <span class="s2">&quot;the IDAES developers with this bug.&quot;</span>
+                                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">momentum_mixing_type</span> <span class="o">==</span> <span class="n">MomentumMixingType</span><span class="o">.</span><span class="n">minimize</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_pressure_minimization_equations</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="o">=</span><span class="n">inlet_blocks</span><span class="p">,</span>
+                                                     <span class="n">mixed_block</span><span class="o">=</span><span class="n">mixed_block</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">momentum_mixing_type</span> <span class="o">==</span> <span class="n">MomentumMixingType</span><span class="o">.</span><span class="n">equality</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_pressure_equality_equations</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="o">=</span><span class="n">inlet_blocks</span><span class="p">,</span>
+                                                 <span class="n">mixed_block</span><span class="o">=</span><span class="n">mixed_block</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">momentum_mixing_type</span> <span class="o">==</span> <span class="n">MomentumMixingType</span><span class="o">.</span><span class="n">none</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> recieved unrecognised value for &quot;</span>
+                                     <span class="s2">&quot;momentum_mixing_type argument. This &quot;</span>
+                                     <span class="s2">&quot;should not occur, so please contact &quot;</span>
+                                     <span class="s2">&quot;the IDAES developers with this bug.&quot;</span>
+                                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_port_objects</span><span class="p">(</span><span class="n">inlet_list</span><span class="p">,</span> <span class="n">inlet_blocks</span><span class="p">,</span> <span class="n">mixed_block</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MixerData.create_inlet_list"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.create_inlet_list">[docs]</a>    <span class="k">def</span> <span class="nf">create_inlet_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create list of inlet stream names based on config arguments.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list of strings</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">inlet_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_inlets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="c1"># If both arguments provided and not consistent, raise Exception</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">inlet_list</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_inlets</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Mixer provided with both inlet_list and &quot;</span>
+                        <span class="s2">&quot;num_inlets arguments, which were not consistent (&quot;</span>
+                        <span class="s2">&quot;length of inlet_list was not equal to num_inlets). &quot;</span>
+                        <span class="s2">&quot;PLease check your arguments for consistency, and &quot;</span>
+                        <span class="s2">&quot;note that it is only necessry to provide one of &quot;</span>
+                        <span class="s2">&quot;these arguments.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">inlet_list</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_inlets</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># If no arguments provided for inlets, default to num_inlets = 2</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_inlets</span> <span class="o">=</span> <span class="mi">2</span>
+
+        <span class="c1"># Create a list of names for inlet StateBlocks</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">inlet_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">inlet_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">inlet_list</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">inlet_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;inlet_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+                          <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_inlets</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="n">inlet_list</span></div>
+
+<div class="viewcode-block" id="MixerData.add_inlet_state_blocks"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.add_inlet_state_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_inlet_state_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inlet_list</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct StateBlocks for all inlet streams.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            list of strings to use as StateBlock names</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list of StateBlocks</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Setup StateBlock argument dict</span>
+        <span class="n">tmp_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package_args</span>
+        <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;has_phase_equilibrium&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span>
+        <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;defined_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Create empty list to hold StateBlocks for return</span>
+        <span class="n">inlet_blocks</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Create an instance of StateBlock for all inlets</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inlet_list</span><span class="p">:</span>
+            <span class="n">i_obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="o">.</span><span class="n">state_block_class</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Material properties at inlet&quot;</span><span class="p">,</span>
+                        <span class="n">default</span><span class="o">=</span><span class="n">tmp_dict</span><span class="p">)</span>
+
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">,</span> <span class="n">i_obj</span><span class="p">)</span>
+
+            <span class="n">inlet_blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">inlet_blocks</span></div>
+
+<div class="viewcode-block" id="MixerData.add_mixed_state_block"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.add_mixed_state_block">[docs]</a>    <span class="k">def</span> <span class="nf">add_mixed_state_block</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructs StateBlock to represent mixed stream.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            New StateBlock object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Setup StateBlock argument dict</span>
+        <span class="n">tmp_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package_args</span>
+        <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;has_phase_equilibrium&quot;</span><span class="p">]</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">calculate_phase_equilibrium</span>
+        <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span>
+        <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;defined_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mixed_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="o">.</span><span class="n">state_block_class</span><span class="p">(</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                                <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Material properties of mixed stream&quot;</span><span class="p">,</span>
+                                <span class="n">default</span><span class="o">=</span><span class="n">tmp_dict</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixed_state</span></div>
+
+<div class="viewcode-block" id="MixerData.get_mixed_state_block"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.get_mixed_state_block">[docs]</a>    <span class="k">def</span> <span class="nf">get_mixed_state_block</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validates StateBlock provided in user arguments for mixed stream.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The user-provided StateBlock or an Exception</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Sanity check to make sure method is not called when arg missing</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mixed_state_block</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> get_mixed_state_block method called when &quot;</span>
+                             <span class="s2">&quot;mixed_state_block argument is None. This should &quot;</span>
+                             <span class="s2">&quot;not happen.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># Check that the user-provided StateBlock uses the same prop pack</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mixed_state_block</span><span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">parameters</span>
+                <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> StateBlock provided in mixed_state_block argument &quot;</span>
+                    <span class="s2">&quot; does not come from the same property package as &quot;</span>
+                    <span class="s2">&quot;provided in the property_package argument. All &quot;</span>
+                    <span class="s2">&quot;StateBlocks within a Mixer must use the same &quot;</span>
+                    <span class="s2">&quot;property package.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mixed_state_block</span></div>
+
+<div class="viewcode-block" id="MixerData.add_material_mixing_equations"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.add_material_mixing_equations">[docs]</a>    <span class="k">def</span> <span class="nf">add_material_mixing_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inlet_blocks</span><span class="p">,</span> <span class="n">mixed_block</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add material mixing equations (phase-component balances).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Create equilibrium generation term and constraints if required</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">calculate_phase_equilibrium</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># Get units from property package</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;holdup&#39;</span><span class="p">,</span> <span class="s1">&#39;time&#39;</span><span class="p">]:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">units</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span>
+                                <span class="o">.</span><span class="n">get_metadata</span><span class="p">()</span><span class="o">.</span><span class="n">default_units</span><span class="p">[</span><span class="n">u</span><span class="p">])</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="n">units</span><span class="p">[</span><span class="n">u</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">add_object_reference</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="p">,</span>
+                    <span class="s2">&quot;phase_equilibrium_idx_ref&quot;</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="o">.</span><span class="n">phase_equilibrium_idx</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PropertyNotSupportedError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Property package does not contain a list of phase &quot;</span>
+                    <span class="s2">&quot;equilibrium reactions (phase_equilibrium_idx), thus does &quot;</span>
+                    <span class="s2">&quot;not support phase equilibrium.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">phase_equilibrium_generation</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">phase_equilibrium_idx_ref</span><span class="p">,</span>
+                        <span class="n">domain</span><span class="o">=</span><span class="n">Reals</span><span class="p">,</span>
+                        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Amount of generation in unit by phase &quot;</span>
+                            <span class="s2">&quot;equilibria [</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">]&quot;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;holdup&#39;</span><span class="p">],</span> <span class="n">units</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]))</span>
+
+        <span class="c1"># Define terms to use in mixing equation</span>
+        <span class="k">def</span> <span class="nf">phase_equilibrium_term</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">calculate_phase_equilibrium</span><span class="p">:</span>
+                <span class="n">sd</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">sblock</span> <span class="o">=</span> <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">phase_equilibrium_idx_ref</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">sblock</span><span class="o">.</span><span class="n">phase_equilibrium_list</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">j</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">sblock</span><span class="o">.</span><span class="n">phase_equilibrium_list</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">p</span><span class="p">:</span>
+                            <span class="n">sd</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="k">elif</span> <span class="n">sblock</span><span class="o">.</span><span class="n">phase_equilibrium_list</span><span class="p">[</span><span class="n">r</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">p</span><span class="p">:</span>
+                            <span class="n">sd</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">sd</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">sd</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">phase_equilibrium_generation</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">r</span><span class="p">]</span><span class="o">*</span><span class="n">sd</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
+                           <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">phase_equilibrium_idx_ref</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mi">0</span>
+
+        <span class="c1"># Get phase component list(s)</span>
+        <span class="n">phase_component_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_phase_comp_list</span><span class="p">()</span>
+
+        <span class="c1"># Write phase-component balances</span>
+        <span class="nd">@self</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">,</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">,</span>
+                         <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Material mixing equations&quot;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">material_mixing_equations</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">phase_component_list</span><span class="p">[</span><span class="n">p</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="mi">0</span> <span class="o">==</span> <span class="p">(</span>
+                        <span class="nb">sum</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">get_material_flow_terms</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="p">)))</span> <span class="o">-</span>
+                        <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">get_material_flow_terms</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="o">+</span>
+                        <span class="n">phase_equilibrium_term</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Constraint</span><span class="o">.</span><span class="n">Skip</span></div>
+
+<div class="viewcode-block" id="MixerData.add_energy_mixing_equations"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.add_energy_mixing_equations">[docs]</a>    <span class="k">def</span> <span class="nf">add_energy_mixing_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inlet_blocks</span><span class="p">,</span> <span class="n">mixed_block</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add energy mixing equations (total enthalpy balance).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nd">@self</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Energy balances&quot;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">enthalpy_mixing_equations</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+            <span class="k">return</span> <span class="mi">0</span> <span class="o">==</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">get_enthalpy_flow_terms</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                                 <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">)</span>
+                             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="p">)))</span> <span class="o">-</span>
+                         <span class="nb">sum</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">get_enthalpy_flow_terms</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+                             <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">b</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="MixerData.add_pressure_minimization_equations"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.add_pressure_minimization_equations">[docs]</a>    <span class="k">def</span> <span class="nf">add_pressure_minimization_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inlet_blocks</span><span class="p">,</span> <span class="n">mixed_block</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add pressure minimization equations. This is done by sequential</span>
+<span class="sd">        comparisons of each inlet to the minimum pressure so far, using</span>
+<span class="sd">        the IDAES smooth minimum fuction.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Add variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span>
+                             <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">minimum_pressure</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span><span class="p">,</span>
+                                    <span class="n">doc</span><span class="o">=</span><span class="s1">&#39;Variable for calculating &#39;</span>
+                                        <span class="s1">&#39;minimum inlet pressure&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps_pressure</span> <span class="o">=</span> <span class="n">Param</span><span class="p">(</span><span class="n">mutable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="n">initialize</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
+                                  <span class="n">domain</span><span class="o">=</span><span class="n">PositiveReals</span><span class="p">,</span>
+                                  <span class="n">doc</span><span class="o">=</span><span class="s1">&#39;Smoothing term for &#39;</span>
+                                      <span class="s1">&#39;minimum inlet pressure&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Calculate minimum inlet pressure</span>
+        <span class="nd">@self</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span><span class="p">,</span>
+                         <span class="n">doc</span><span class="o">=</span><span class="s1">&#39;Calculation for minimum inlet pressure&#39;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">minimum_pressure_constraint</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span><span class="o">.</span><span class="n">first</span><span class="p">():</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum_pressure</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span>
+                           <span class="n">inlet_blocks</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">pressure</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum_pressure</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span>
+                        <span class="n">smooth_min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">minimum_pressure</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                                   <span class="n">inlet_blocks</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">pressure</span><span class="p">,</span>
+                                   <span class="bp">self</span><span class="o">.</span><span class="n">eps_pressure</span><span class="p">))</span>
+
+        <span class="c1"># Set inlet pressure to minimum pressure</span>
+        <span class="nd">@self</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s1">&#39;Link pressure to control volume&#39;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">mixture_pressure</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">pressure</span> <span class="o">==</span> <span class="p">(</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">minimum_pressure</span><span class="p">[</span><span class="n">t</span><span class="p">,</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span><span class="o">.</span><span class="n">last</span><span class="p">()])</span></div>
+
+<div class="viewcode-block" id="MixerData.add_pressure_equality_equations"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.add_pressure_equality_equations">[docs]</a>    <span class="k">def</span> <span class="nf">add_pressure_equality_equations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inlet_blocks</span><span class="p">,</span> <span class="n">mixed_block</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add pressure equality equations. Note that this writes a number of</span>
+<span class="sd">        constraints equal to the number of inlets, enforcing equality between</span>
+<span class="sd">        all inlets and the mixed stream.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Add indexing Set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span>
+                             <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Create equality constraints</span>
+        <span class="nd">@self</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                         <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span><span class="p">,</span>
+                         <span class="n">doc</span><span class="o">=</span><span class="s1">&#39;Calculation for minimum inlet pressure&#39;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">pressure_equality_constraints</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">pressure</span> <span class="o">==</span> <span class="n">inlet_blocks</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">pressure</span></div>
+
+<div class="viewcode-block" id="MixerData.add_port_objects"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.add_port_objects">[docs]</a>    <span class="k">def</span> <span class="nf">add_port_objects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inlet_list</span><span class="p">,</span> <span class="n">inlet_blocks</span><span class="p">,</span> <span class="n">mixed_block</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds Port objects if required.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            a list of inlet StateBlock objects</span>
+<span class="sd">            a mixed state StateBlock object</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">construct_ports</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># Add ports</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">inlet_list</span><span class="p">:</span>
+                <span class="n">i_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_port</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">p</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="n">i_state</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Inlet Port&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_port</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;outlet&quot;</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="n">mixed_block</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Outlet Port&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MixerData.model_check"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.model_check">[docs]</a>    <span class="k">def</span> <span class="nf">model_check</span><span class="p">(</span><span class="n">blk</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method executes the model_check methods on the associated state</span>
+<span class="sd">        blocks (if they exist). This method is generally called by a unit model</span>
+<span class="sd">        as part of the unit&#39;s model_check method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Try property block model check</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">blk</span><span class="o">.</span><span class="n">time_ref</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">inlet_list</span> <span class="o">=</span> <span class="n">blk</span><span class="o">.</span><span class="n">create_inlet_list</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inlet_list</span><span class="p">:</span>
+                    <span class="n">i_block</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">)</span>
+                    <span class="n">i_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">model_check</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Mixer inlet property block has no model &#39;</span>
+                             <span class="s1">&#39;checks. To correct this, add a model_check &#39;</span>
+                             <span class="s1">&#39;method to the associated StateBlock class.&#39;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">blk</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mixed_state_block</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">blk</span><span class="o">.</span><span class="n">mixed_state</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">model_check</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">blk</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mixed_state_block</span><span class="o">.</span><span class="n">model_check</span><span class="p">()</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Mixer outlet property block has no &#39;</span>
+                             <span class="s1">&#39;model checks. To correct this, add a &#39;</span>
+                             <span class="s1">&#39;model_check method to the associated &#39;</span>
+                             <span class="s1">&#39;StateBlock class.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="MixerData.initialize"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">optarg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;ipopt&#39;</span><span class="p">,</span> <span class="n">hold_state</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Initialisation routine for mixer (default solver ipopt)</span>
+
+<span class="sd">        Keyword Arguments:</span>
+<span class="sd">            outlvl : sets output level of initialisation routine. **Valid</span>
+<span class="sd">                     values:** **0** - no output (default), **1** - return</span>
+<span class="sd">                     solver state for each step in routine, **2** - include</span>
+<span class="sd">                     solver output infomation (tee=True)</span>
+<span class="sd">            optarg : solver options dictionary object (default=None)</span>
+<span class="sd">            solver : str indicating whcih solver to use during</span>
+<span class="sd">                     initialization (default = &#39;ipopt&#39;)</span>
+<span class="sd">            hold_state : flag indicating whether the initialization routine</span>
+<span class="sd">                     should unfix any state variables fixed during</span>
+<span class="sd">                     initialization, **default** - True. **Valid values:**</span>
+<span class="sd">                     **True** - states variables are not unfixed, and a dict of</span>
+<span class="sd">                     returned containing flags for which states were fixed</span>
+<span class="sd">                     during initialization, **False** - state variables are</span>
+<span class="sd">                     unfixed after initialization by calling the release_state</span>
+<span class="sd">                     method.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            If hold_states is True, returns a dict containing flags for which</span>
+<span class="sd">            states were fixed during initialization.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># Set solver options</span>
+        <span class="k">if</span> <span class="n">outlvl</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">stee</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stee</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">opt</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
+        <span class="n">opt</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">optarg</span>
+
+        <span class="c1"># Initialize inlet state blocks</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">inlet_list</span> <span class="o">=</span> <span class="n">blk</span><span class="o">.</span><span class="n">create_inlet_list</span><span class="p">()</span>
+        <span class="n">i_block_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inlet_list</span><span class="p">:</span>
+            <span class="n">i_block</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">)</span>
+            <span class="n">i_block_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i_block</span><span class="p">)</span>
+            <span class="n">flags</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">flags</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">i_block</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">outlvl</span><span class="o">=</span><span class="n">outlvl</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                                          <span class="n">optarg</span><span class="o">=</span><span class="n">optarg</span><span class="p">,</span>
+                                          <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
+                                          <span class="n">hold_state</span><span class="o">=</span><span class="n">hold_state</span><span class="p">)</span>
+
+        <span class="c1"># Initialize mixed state block</span>
+        <span class="k">if</span> <span class="n">blk</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mixed_state_block</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mblock</span> <span class="o">=</span> <span class="n">blk</span><span class="o">.</span><span class="n">mixed_state</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mblock</span> <span class="o">=</span> <span class="n">blk</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mixed_state_block</span>
+
+        <span class="c1"># Calculate initial guesses for mixed stream state</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">blk</span><span class="o">.</span><span class="n">time_ref</span><span class="p">:</span>
+            <span class="c1"># Iterate over state vars as defined by property package</span>
+            <span class="n">s_vars</span> <span class="o">=</span> <span class="n">mblock</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">define_state_vars</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">s_vars</span><span class="p">:</span>
+                <span class="n">i_vars</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">i_block_list</span><span class="p">)):</span>
+                    <span class="n">i_vars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">i_block_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">t</span><span class="p">],</span>
+                                          <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="s2">&quot;pressure&quot;</span><span class="p">:</span>
+                    <span class="c1"># If pressure, use minimum as initial guess</span>
+                    <span class="n">mblock</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                            <span class="n">i_block_list</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">value</span>
+                            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">i_block_list</span><span class="p">)))</span>
+                <span class="k">elif</span> <span class="s2">&quot;flow&quot;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">:</span>
+                    <span class="c1"># If a &quot;flow&quot; variable (i.e. extensive), sum inlets</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">]:</span>
+                        <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">i_vars</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                                                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span>
+                                                         <span class="nb">len</span><span class="p">(</span><span class="n">i_block_list</span><span class="p">)))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Otherwise use average of inlets</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">]:</span>
+                        <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">i_vars</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                                                  <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span>
+                                                         <span class="nb">len</span><span class="p">(</span><span class="n">i_block_list</span><span class="p">)))</span> <span class="o">/</span>
+                                              <span class="nb">len</span><span class="p">(</span><span class="n">i_block_list</span><span class="p">))</span>
+
+        <span class="n">mblock</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">outlvl</span><span class="o">=</span><span class="n">outlvl</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                          <span class="n">optarg</span><span class="o">=</span><span class="n">optarg</span><span class="p">,</span>
+                          <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
+                          <span class="n">hold_state</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">blk</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">mixed_state_block</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="n">stee</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">outlvl</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> \
+                        <span class="n">TerminationCondition</span><span class="o">.</span><span class="n">optimal</span><span class="p">:</span>
+                    <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Initialisation Complete.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Initialisation Failed.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Initialisation Complete.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">flags</span></div>
+
+<div class="viewcode-block" id="MixerData.release_state"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.release_state">[docs]</a>    <span class="k">def</span> <span class="nf">release_state</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Method to release state variables fixed during initialisation.</span>
+
+<span class="sd">        Keyword Arguments:</span>
+<span class="sd">            flags : dict containing information of which state variables</span>
+<span class="sd">                    were fixed during initialization, and should now be</span>
+<span class="sd">                    unfixed. This dict is returned by initialize if</span>
+<span class="sd">                    hold_state = True.</span>
+<span class="sd">            outlvl : sets output level of logging</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">inlet_list</span> <span class="o">=</span> <span class="n">blk</span><span class="o">.</span><span class="n">create_inlet_list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inlet_list</span><span class="p">:</span>
+            <span class="n">i_block</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">)</span>
+            <span class="n">i_block</span><span class="o">.</span><span class="n">release_state</span><span class="p">(</span><span class="n">flags</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">outlvl</span><span class="o">=</span><span class="n">outlvl</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

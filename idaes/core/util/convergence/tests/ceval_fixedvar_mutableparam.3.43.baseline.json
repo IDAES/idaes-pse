@@ -1,0 +1,70 @@
+{
+   "samples": {
+      "Sample-1": {
+         "var_a": 1.0643499813361734,
+         "param_b": 90.91518567219339,
+         "_name": "Sample-1"
+      },
+      "Sample-2": {
+         "var_a": 0.9053742234852942,
+         "param_b": 94.65084401224429,
+         "_name": "Sample-2"
+      },
+      "Sample-3": {
+         "var_a": 1.2145183365179064,
+         "param_b": 95.86990017685272,
+         "_name": "Sample-3"
+      }
+   },
+   "inputs": {
+      "var_a": {
+         "pyomo_path": "var_a",
+         "lower": 0.1,
+         "upper": 1.9,
+         "mean": 1.0,
+         "std": 0.25
+      },
+      "param_b": {
+         "pyomo_path": "param_b",
+         "lower": 50,
+         "upper": 150,
+         "mean": 100,
+         "std": 10
+      }
+   },
+   "global_results": [
+      {
+         "name": "Sample-1",
+         "sample_point": {
+            "var_a": 1.0643499813361734,
+            "param_b": 90.91518567219339,
+            "_name": "Sample-1"
+         },
+         "solved": true,
+         "iters": 14,
+         "time": 0.004
+      },
+      {
+         "name": "Sample-2",
+         "sample_point": {
+            "var_a": 0.9053742234852942,
+            "param_b": 94.65084401224429,
+            "_name": "Sample-2"
+         },
+         "solved": true,
+         "iters": 15,
+         "time": 0.006
+      },
+      {
+         "name": "Sample-3",
+         "sample_point": {
+            "var_a": 1.2145183365179064,
+            "param_b": 95.86990017685272,
+            "_name": "Sample-3"
+         },
+         "solved": true,
+         "iters": 12,
+         "time": 0.003
+      }
+   ]
+}

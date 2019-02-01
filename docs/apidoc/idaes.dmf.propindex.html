@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.dmf.propindex module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.dmf.propindex module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.dmf.propindex.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.dmf.propindex">
+<span id="idaes-dmf-propindex-module"></span><h1>idaes.dmf.propindex module<a class="headerlink" href="#module-idaes.dmf.propindex" title="Permalink to this headline">¶</a></h1>
+<p>Index Property metadata</p>
+<dl class="class">
+<dt id="idaes.dmf.propindex.DMFVisitor">
+<em class="property">class </em><code class="descclassname">idaes.dmf.propindex.</code><code class="descname">DMFVisitor</code><span class="sig-paren">(</span><em>dmf</em>, <em>default_version=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/propindex.html#DMFVisitor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.propindex.DMFVisitor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="idaes.dmf.codesearch.html#idaes.dmf.codesearch.PropertyMetadataVisitor" title="idaes.dmf.codesearch.PropertyMetadataVisitor"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.dmf.codesearch.PropertyMetadataVisitor</span></code></a></p>
+<dl class="attribute">
+<dt id="idaes.dmf.propindex.DMFVisitor.INDEXED_PROPERTY_TAG">
+<code class="descname">INDEXED_PROPERTY_TAG</code><em class="property"> = 'indexed-property'</em><a class="headerlink" href="#idaes.dmf.propindex.DMFVisitor.INDEXED_PROPERTY_TAG" title="Permalink to this definition">¶</a></dt>
+<dd><p>Added to resource ‘tags’, so easier to find later</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.propindex.DMFVisitor.visit_metadata">
+<code class="descname">visit_metadata</code><span class="sig-paren">(</span><em>obj</em>, <em>meta</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/propindex.html#DMFVisitor.visit_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.propindex.DMFVisitor.visit_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Called for each property class encountered during the “walk”</dt>
+<dd>initiated by <cite>index_property_metadata()</cite>.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>obj</strong> (<em>property_base.PropertyParameterBase</em>) – Property class instance</li>
+<li><strong>meta</strong> (<em>property_base.PropertyClassMetadata</em>) – Associated metadata</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">None</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#AttributeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">AttributeError</span></code></a> – if</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.dmf.propindex.index_property_metadata">
+<code class="descclassname">idaes.dmf.propindex.</code><code class="descname">index_property_metadata</code><span class="sig-paren">(</span><em>dmf</em>, <em>pkg=&lt;module 'idaes' from '/home/ksb/Projects/IDAES/github/ksbeattie/idaes-dev/idaes/__init__.py'&gt;</em>, <em>expr='_PropertyMetadata.*'</em>, <em>default_version='0.0.1'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/propindex.html#index_property_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.propindex.index_property_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Index all the PropertyMetadata classes in this package.</p>
+<p>Usually the defaults will be correct, but you can modify the package
+explored and set of classes indexed.</p>
+<p>When you re-index the same class (in the same module), whether or
+not that is a “duplicate” will depend on the version found in the
+containing module. If there is no version in the containing module,
+the default version is used (so it is always the same). If it is
+a duplicate, nothing is done, this is not considered an error. If a new
+version is added, it will be explicitly connected to the highest version
+of the same module/code. So, for example,</p>
+<ol class="arabic">
+<li><p class="first">Starting with (a.module.ClassName version=0.1.2)</p>
+</li>
+<li><p class="first">If you then find a new version (a.module.ClassName version=1.2.3)
+There will be 2 resources, and you will have the relation:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">ClassName</span><span class="o">/</span><span class="mf">1.2</span><span class="o">.</span><span class="mi">3</span> <span class="o">--</span><span class="n">version</span><span class="o">---&gt;</span> <span class="n">a</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">ClassName</span><span class="o">/</span><span class="mf">0.1</span><span class="o">.</span><span class="mi">2</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">If you add another version (a.module.ClassName version=1.2.4), you
+will have two relations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">ClassName</span><span class="o">/</span><span class="mf">1.2</span><span class="o">.</span><span class="mi">3</span> <span class="o">--</span><span class="n">version</span><span class="o">---&gt;</span> <span class="n">a</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">ClassName</span><span class="o">/</span><span class="mf">0.1</span><span class="o">.</span><span class="mi">2</span>
+<span class="n">a</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">ClassName</span><span class="o">/</span><span class="mf">1.2</span><span class="o">.</span><span class="mi">4</span> <span class="o">--</span><span class="n">version</span><span class="o">---&gt;</span> <span class="n">a</span><span class="o">.</span><span class="n">module</span><span class="o">.</span><span class="n">ClassName</span><span class="o">/</span><span class="mf">1.2</span><span class="o">.</span><span class="mi">3</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dmf</strong> (<em>idaes.dmf.DMF</em>) – Data Management Framework instance in which
+to record the found metadata.</li>
+<li><strong>pkg</strong> (<em>module</em>) – Root module (i.e. package root) from which to find
+the classes containing metadata.</li>
+<li><strong>expr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Regular expression pattern for the names of the classes
+in which to look for metadata.</li>
+<li><strong>default_version</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Default version to use for modules
+with no explicit version.</li>
+<li><strong>kwargs</strong> – Other keyword arguments passed to
+<code class="xref py py-class docutils literal notranslate"><span class="pre">codesearch.ModuleClassWalker</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>Class that walked through the modules.</dt>
+<dd><p class="first last">You can call <cite>.get_indexed_classes()</cite> to see the list of classes
+walked, or <cite>.walk()</cite> to walk the modules again.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="idaes.dmf.codesearch.html#idaes.dmf.codesearch.ModuleClassWalker" title="idaes.dmf.codesearch.ModuleClassWalker">codesearch.ModuleClassWalker</a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li>This instantiated a <cite>DMFVisitor</cite> and calls its <cite>walk()</cite> method to</li>
+<li>walk/visit each found class, so any exception raised by the constructor</li>
+<li>or <cite>DMFVisitor.visit_metadata()</cite>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
