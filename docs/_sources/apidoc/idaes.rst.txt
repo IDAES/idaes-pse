@@ -1,0 +1,26 @@
+idaes package
+=============
+
+.. automodule:: idaes
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+
+    idaes.core
+    idaes.dmf
+    idaes.property_models
+    idaes.ui
+    idaes.unit_models
+
+Submodules
+----------
+
+.. toctree::
+
+   idaes.ver
+

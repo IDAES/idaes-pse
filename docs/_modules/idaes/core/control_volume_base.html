@@ -1,0 +1,985 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.control_volume_base &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>idaes.core.control_volume_base</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for idaes.core.control_volume_base</h1><div class="highlight"><pre>
+<span></span><span class="c1">##############################################################################</span>
+<span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># software owners: The Regents of the University of California, through</span>
+<span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
+<span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
+<span class="c1"># University Research Corporation, et al. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
+<span class="c1"># license information, respectively. Both files are also available online</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1">##############################################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Base class for control volumes</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+
+<span class="c1"># Import Python libraries</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="c1"># Import Pyomo libraries</span>
+<span class="kn">from</span> <span class="nn">pyomo.common.config</span> <span class="k">import</span> <span class="n">ConfigBlock</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">,</span> <span class="n">In</span>
+<span class="kn">from</span> <span class="nn">pyutilib.enum</span> <span class="k">import</span> <span class="n">Enum</span>
+
+<span class="c1"># Import IDAES cores</span>
+<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="n">ProcessBlockData</span><span class="p">,</span> <span class="n">useDefault</span><span class="p">,</span> <span class="n">declare_process_block_class</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.config</span> <span class="k">import</span> <span class="p">(</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
+                                    <span class="n">is_reaction_parameter_block</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.exceptions</span> <span class="k">import</span> <span class="p">(</span><span class="n">ConfigurationError</span><span class="p">,</span>
+                                        <span class="n">DynamicError</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.misc</span> <span class="k">import</span> <span class="n">add_object_reference</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Andrew Lee&quot;</span>
+
+<span class="c1"># Set up logger</span>
+<span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="c1"># Enumerate options for material balances</span>
+<span class="n">MaterialBalanceType</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;componentPhase&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;componentTotal&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;elementTotal&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;total&#39;</span><span class="p">)</span>
+
+<span class="c1"># Enumerate options for energy balances</span>
+<span class="n">EnergyBalanceType</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;enthalpyPhase&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;enthalpyTotal&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;energyPhase&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;energyTotal&#39;</span><span class="p">)</span>
+
+<span class="c1"># Enumerate options for momentum balances</span>
+<span class="n">MomentumBalanceType</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="s1">&#39;none&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;pressureTotal&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;pressurePhase&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;momentumTotal&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;momentumPhase&#39;</span><span class="p">)</span>
+
+<span class="c1"># Enumerate options for flow direction</span>
+<span class="n">FlowDirection</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="s1">&#39;forward&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;backward&#39;</span><span class="p">)</span>
+
+<span class="c1"># Enumerate options for material flow basis</span>
+<span class="n">MaterialFlowBasis</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="s1">&#39;molar&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;mass&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;other&#39;</span><span class="p">)</span>
+
+<span class="c1"># Set up example ConfigBlock that will work with ControlVolume autobuild method</span>
+<span class="n">CONFIG_Template</span> <span class="o">=</span> <span class="n">ProcessBlockData</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">()</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;dynamic&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="n">useDefault</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Dynamic model flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether this model will be dynamic,</span>
+<span class="s2">**default** - useDefault.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**useDefault** - get flag from parent,</span>
+<span class="s2">**True** - set as a dynamic model,</span>
+<span class="s2">**False** - set as a steady-state model}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_holdup&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Holdup construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether holdup terms should be constructed or not.</span>
+<span class="s2">Must be True if dynamic = True,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - construct holdup terms,</span>
+<span class="s2">**False** - do not construct holdup terms}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;material_balance_type&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="n">MaterialBalanceType</span><span class="o">.</span><span class="n">componentPhase</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">(</span><span class="n">MaterialBalanceType</span><span class="p">),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Material balance construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates what type of mass balance should be constructed,</span>
+<span class="s2">**default** - MaterialBalanceType.componentPhase.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**MaterialBalanceType.none** - exclude material balances,</span>
+<span class="s2">**MaterialBalanceType.componentPhase** - use phase component balances,</span>
+<span class="s2">**MaterialBalanceType.componentTotal** - use total component balances,</span>
+<span class="s2">**MaterialBalanceType.elementTotal** - use total element balances,</span>
+<span class="s2">**MaterialBalanceType.total** - use total material balance.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;energy_balance_type&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="n">EnergyBalanceType</span><span class="o">.</span><span class="n">enthalpyTotal</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">(</span><span class="n">EnergyBalanceType</span><span class="p">),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Energy balance construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates what type of energy balance should be constructed,</span>
+<span class="s2">**default** - EnergyBalanceType.enthalpyTotal.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**EnergyBalanceType.none** - exclude energy balances,</span>
+<span class="s2">**EnergyBalanceType.enthalpyTotal** - single ethalpy balance for material,</span>
+<span class="s2">**EnergyBalanceType.enthalpyPhase** - ethalpy balances for each phase,</span>
+<span class="s2">**EnergyBalanceType.energyTotal** - single energy balance for material,</span>
+<span class="s2">**EnergyBalanceType.energyPhase** - energy balances for each phase.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;momentum_balance_type&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="n">MomentumBalanceType</span><span class="o">.</span><span class="n">pressureTotal</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">(</span><span class="n">MomentumBalanceType</span><span class="p">),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Momentum balance construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates what type of momentum balance should be constructed,</span>
+<span class="s2">**default** - MomentumBalanceType.pressureTotal.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**MomentumBalanceType.none** - exclude momentum balances,</span>
+<span class="s2">**MomentumBalanceType.pressureTotal** - single pressure balance for material,</span>
+<span class="s2">**MomentumBalanceType.pressurePhase** - pressure balances for each phase,</span>
+<span class="s2">**MomentumBalanceType.momentumTotal** - single momentum balance for material,</span>
+<span class="s2">**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_rate_reactions&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rate reaction construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether terms for rate controlled reactions should be</span>
+<span class="s2">constructed,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - include kinetic reaction terms,</span>
+<span class="s2">**False** - exclude kinetic reaction terms.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_equilibrium_reactions&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Equilibrium reaction construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether terms for equilibrium controlled reactions</span>
+<span class="s2">should be constructed,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - include equilibrium reaction terms,</span>
+<span class="s2">**False** - exclude equilibrium reaction terms.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_phase_equilibrium&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Phase equilibrium construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether terms for phase equilibrium should be</span>
+<span class="s2">constructed,</span>
+<span class="s2">**default** = False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - include phase equilibrium terms</span>
+<span class="s2">**False** - exclude phase equilibrium terms.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_mass_transfer&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Mass transfer term construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether terms for mass transfer should be constructed,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - include mass transfer terms,</span>
+<span class="s2">**False** - exclude mass transfer terms.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_heat_of_reaction&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Heat of reaction term construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether terms for heat of reaction should be constructed,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values** {</span>
+<span class="s2">**True** - include heat of reaction terms,</span>
+<span class="s2">**False** - exclude heat of reaction terms.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_heat_transfer&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Heat transfer term construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether terms for heat transfer should be constructed,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - include heat transfer terms,</span>
+<span class="s2">**False** - exclude heat transfer terms.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_work_transfer&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Work transfer term construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether terms for work transfer should be constructed,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values** {</span>
+<span class="s2">**True** - include work transfer terms,</span>
+<span class="s2">**False** - exclude work transfer terms.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_pressure_change&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Pressure change term construction flag&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether terms for pressure change should be</span>
+<span class="s2">constructed,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - include pressure change terms,</span>
+<span class="s2">**False** - exclude pressure change terms.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;property_package&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Property package to use for control volume&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Property parameter object used to define property calculations,</span>
+<span class="s2">**default** - useDefault.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**useDefault** - use default package from parent model or flowsheet,</span>
+<span class="s2">**PropertyParameterObject** - a PropertyParameterBlock object.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;property_package_args&quot;</span><span class="p">,</span> <span class="n">ConfigBlock</span><span class="p">(</span>
+    <span class="n">implicit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Arguments to use for constructing property packages&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;A ConfigBlock with arguments to be passed to a property block(s)</span>
+<span class="s2">and used when constructing these,</span>
+<span class="s2">**default** - None.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">see property package for documentation.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;reaction_package&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+    <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="n">is_reaction_parameter_block</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Reaction package to use for control volume&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Reaction parameter object used to define reaction calculations,</span>
+<span class="s2">**default** - None.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**None** - no reaction package,</span>
+<span class="s2">**ReactionParameterBlock** - a ReactionParameterBlock object.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="n">CONFIG_Template</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;reaction_package_args&quot;</span><span class="p">,</span> <span class="n">ConfigBlock</span><span class="p">(</span>
+    <span class="n">implicit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Arguments to use for constructing reaction packages&quot;</span><span class="p">,</span>
+    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;A ConfigBlock with arguments to be passed to a reaction block(s)</span>
+<span class="s2">and used when constructing these,</span>
+<span class="s2">**default** - None.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">see reaction package for documentation.}&quot;&quot;&quot;</span><span class="p">))</span>
+
+<div class="viewcode-block" id="ControlVolumeBase"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;ControlVolume&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;This class is not usually &quot;</span>
+    <span class="s2">&quot;used directly. Use ControlVolume0D or ControlVolume1D instead.&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ControlVolumeBase</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The ControlVolumeBase Class forms the base class for all IDAES</span>
+<span class="sd">    ControlVolume models. The purpose of this class is to automate the tasks</span>
+<span class="sd">    common to all control volume blockss and ensure that the necessary</span>
+<span class="sd">    attributes of a control volume block are present.</span>
+
+<span class="sd">    The most signfiicant role of the ControlVolumeBase class is to set up the</span>
+<span class="sd">    bconstruction arguments for the control volume block, automatically link to</span>
+<span class="sd">    the time domain of the parent block, and to get the information about the</span>
+<span class="sd">    property and reaction packages.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">ProcessBlockData</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">()</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;dynamic&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="n">useDefault</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Dynamic model flag&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether this model will be dynamic,</span>
+<span class="s2">**default** - useDefault.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**useDefault** - get flag from parent,</span>
+<span class="s2">**True** - set as a dynamic model,</span>
+<span class="s2">**False** - set as a steady-state model}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_holdup&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="n">useDefault</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Holdup construction flag&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether holdup terms should be constructed or not.</span>
+<span class="s2">Must be True if dynamic = True,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - construct holdup terms,</span>
+<span class="s2">**False** - do not construct holdup terms}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;property_package&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Property package to use for control volume&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Property parameter object used to define property calculations,</span>
+<span class="s2">**default** - useDefault.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**useDefault** - use default package from parent model or flowsheet,</span>
+<span class="s2">**PropertyParameterObject** - a PropertyParameterBlock object.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;property_package_args&quot;</span><span class="p">,</span> <span class="n">ConfigBlock</span><span class="p">(</span>
+        <span class="n">implicit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Arguments to use for constructing property packages&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;A ConfigBlock with arguments to be passed to a property block(s)</span>
+<span class="s2">and used when constructing these, **default** - None. **Valid values:** {</span>
+<span class="s2">see property package for documentation.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;reaction_package&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">is_reaction_parameter_block</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Reaction package to use for control volume&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Reaction parameter object used to define reaction calculations,</span>
+<span class="s2">**default** - None.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**None** - no reaction package,</span>
+<span class="s2">**ReactionParameterBlock** - a ReactionParameterBlock object.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;reaction_package_args&quot;</span><span class="p">,</span> <span class="n">ConfigBlock</span><span class="p">(</span>
+        <span class="n">implicit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Arguments to use for constructing reaction packages&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;A ConfigBlock with arguments to be passed to a reaction block(s)</span>
+<span class="s2">and used when constructing these,</span>
+<span class="s2">**default** - None.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">see reaction package for documentation.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;auto_construct&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Argument indicating whether ControlVolume should &quot;</span>
+                    <span class="s2">&quot;automatically construct balance equations&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;If set to True, this argument will trigger the auto_construct</span>
+<span class="s2">method which will attempt to construct a set of material, energy and momentum</span>
+<span class="s2">balance equations based on the parent unit&#39;s config block. The parent unit must</span>
+<span class="s2">have a config block which derives from CONFIG_Base,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - use automatic construction,</span>
+<span class="s2">**False** - do not use automatic construciton.}&quot;&quot;&quot;</span><span class="p">))</span>
+
+<div class="viewcode-block" id="ControlVolumeBase.build"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        General build method for Control Volumes blocks. This method calls a</span>
+<span class="sd">        number of sub-methods which automate the construction of expected</span>
+<span class="sd">        attributes of all ControlVolume blocks.</span>
+
+<span class="sd">        Inheriting models should call `super().build`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ControlVolumeBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+
+        <span class="c1"># Setup dynamics flag and time domain</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_dynamics</span><span class="p">()</span>
+
+        <span class="c1"># Get property package details</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_property_package</span><span class="p">()</span>
+
+        <span class="c1"># Get indexing sets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_indexing_sets</span><span class="p">()</span>
+
+        <span class="c1"># Get reaction package details (as necessary)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_reaction_package</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_construct</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_auto_construct</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_geometry"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_geometry">[docs]</a>    <span class="k">def</span> <span class="nf">add_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for defining the geometry of the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_geometry. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_material_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_material_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_material_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                              <span class="n">balance_type</span><span class="o">=</span><span class="n">MaterialBalanceType</span><span class="o">.</span><span class="n">componentPhase</span><span class="p">,</span>
+                              <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        General method for adding material balances to a control volume.</span>
+<span class="sd">        This method makes calls to specialised sub-methods for each type of</span>
+<span class="sd">        material balance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            balance_type - MaterialBalanceType Enum indicating which type of</span>
+<span class="sd">                    material balance should be constructed.</span>
+<span class="sd">            has_rate_reactions - whether default generation terms for rate</span>
+<span class="sd">                    reactions should be included in material balances</span>
+<span class="sd">            has_equilibrium_reactions - whether generation terms should for</span>
+<span class="sd">                    chemical equilibrium reactions should be included in</span>
+<span class="sd">                    material balances</span>
+<span class="sd">            has_phase_equilibrium - whether generation terms should for phase</span>
+<span class="sd">                    equilibrium behaviour should be included in material</span>
+<span class="sd">                    balances</span>
+<span class="sd">            has_mass_transfer - whether generic mass transfer terms should be</span>
+<span class="sd">                    included in material balances</span>
+<span class="sd">            custom_molar_term - a Pyomo Expression representing custom terms to</span>
+<span class="sd">                    be included in material balances on a molar basis.</span>
+<span class="sd">            custom_mass_term - a Pyomo Expression representing custom terms to</span>
+<span class="sd">                    be included in material balances on a mass basis.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Constraint objects constructed by sub-method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">MaterialBalanceType</span><span class="o">.</span><span class="n">none</span><span class="p">:</span>
+            <span class="n">mb</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">MaterialBalanceType</span><span class="o">.</span><span class="n">componentPhase</span><span class="p">:</span>
+            <span class="n">mb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_phase_component_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">MaterialBalanceType</span><span class="o">.</span><span class="n">componentTotal</span><span class="p">:</span>
+            <span class="n">mb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_total_component_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">MaterialBalanceType</span><span class="o">.</span><span class="n">elementTotal</span><span class="p">:</span>
+            <span class="n">mb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_total_element_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">MaterialBalanceType</span><span class="o">.</span><span class="n">total</span><span class="p">:</span>
+            <span class="n">mb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_total_material_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> invalid balance_type for add_material_balances.&quot;</span>
+                    <span class="s2">&quot;Please contact the unit model developer with this bug.&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">mb</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_energy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                            <span class="n">balance_type</span><span class="o">=</span><span class="n">EnergyBalanceType</span><span class="o">.</span><span class="n">enthalpyPhase</span><span class="p">,</span>
+                            <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        General method for adding energy balances to a control volume.</span>
+<span class="sd">        This method makes calls to specialised sub-methods for each type of</span>
+<span class="sd">        energy balance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            balance_type (EnergyBalanceType): Enum indicating which type of</span>
+<span class="sd">                energy balance should be constructed.</span>
+<span class="sd">            has_heat_of_reaction (bool): whether terms for heat of reaction</span>
+<span class="sd">                should be included in energy balance</span>
+<span class="sd">            has_heat_transfer (bool): whether generic heat transfer terms should</span>
+<span class="sd">                be included in energy balances</span>
+<span class="sd">            has_work_transfer (bool): whether generic mass transfer terms should</span>
+<span class="sd">                be included in energy balances</span>
+<span class="sd">            custom_term (Expression): a Pyomo Expression representing custom</span>
+<span class="sd">                terms to be included in energy balances</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Constraint objects constructed by sub-method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">EnergyBalanceType</span><span class="o">.</span><span class="n">none</span><span class="p">:</span>
+            <span class="n">eb</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">EnergyBalanceType</span><span class="o">.</span><span class="n">enthalpyTotal</span><span class="p">:</span>
+            <span class="n">eb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_total_enthalpy_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">EnergyBalanceType</span><span class="o">.</span><span class="n">enthalpyPhase</span><span class="p">:</span>
+            <span class="n">eb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_phase_enthalpy_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">EnergyBalanceType</span><span class="o">.</span><span class="n">energyTotal</span><span class="p">:</span>
+            <span class="n">eb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_total_energy_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">EnergyBalanceType</span><span class="o">.</span><span class="n">energyPhase</span><span class="p">:</span>
+            <span class="n">eb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_phase_energy_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> invalid balance_type for add_energy_balances.&quot;</span>
+                    <span class="s2">&quot;Please contact the unit model developer with this bug.&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">eb</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                              <span class="n">balance_type</span><span class="o">=</span><span class="n">MomentumBalanceType</span><span class="o">.</span><span class="n">pressureTotal</span><span class="p">,</span>
+                              <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        General method for adding momentum balances to a control volume.</span>
+<span class="sd">        This method makes calls to specialised sub-methods for each type of</span>
+<span class="sd">        momentum balance.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            balance_type (MomentumBalanceType): Enum indicating which type of</span>
+<span class="sd">                momentum balance should be constructed.</span>
+<span class="sd">            has_pressure_change (bool): whether default generation terms for</span>
+<span class="sd">                pressure change should be included in momentum balances</span>
+<span class="sd">            custom_term (Expression): a Pyomo Expression representing custom</span>
+<span class="sd">                terms to be included in momentum balances</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Constraint objects constructed by sub-method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">MomentumBalanceType</span><span class="o">.</span><span class="n">none</span><span class="p">:</span>
+            <span class="n">mb</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">MomentumBalanceType</span><span class="o">.</span><span class="n">pressureTotal</span><span class="p">:</span>
+            <span class="n">mb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_total_pressure_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">MomentumBalanceType</span><span class="o">.</span><span class="n">pressurePhase</span><span class="p">:</span>
+            <span class="n">mb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_phase_pressure_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">MomentumBalanceType</span><span class="o">.</span><span class="n">momentumTotal</span><span class="p">:</span>
+            <span class="n">mb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_total_momentum_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">balance_type</span> <span class="o">==</span> <span class="n">MomentumBalanceType</span><span class="o">.</span><span class="n">momentumPhase</span><span class="p">:</span>
+            <span class="n">mb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_phase_momentum_balances</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> invalid balance_type for add_momentum_balances.&quot;</span>
+                    <span class="s2">&quot;Please contact the unit model developer with this bug.&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">mb</span></div>
+
+    <span class="k">def</span> <span class="nf">_auto_construct</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Placeholder _auto_construct method to ensure a useful exception is</span>
+<span class="sd">        returned if auto_build is set to True but something breaks in the</span>
+<span class="sd">        process. Derived ControlVolume classes should overload this.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_geometry</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_state_blocks</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_reaction_blocks</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_material_balances</span><span class="p">(</span>
+            <span class="n">material_balance_type</span><span class="o">=</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">material_balance_type</span><span class="p">,</span>
+            <span class="n">has_rate_reactions</span><span class="o">=</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_rate_reactions</span><span class="p">,</span>
+            <span class="n">has_equilibrium_reactions</span><span class="o">=</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_equilibrium_reactions</span><span class="p">,</span>
+            <span class="n">has_phase_equilibrium</span><span class="o">=</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_phase_equilibrium</span><span class="p">,</span>
+            <span class="n">has_mass_transfer</span><span class="o">=</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_mass_transfer</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_energy_balances</span><span class="p">(</span>
+            <span class="n">energy_balance_type</span><span class="o">=</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">energy_balance_type</span><span class="p">,</span>
+            <span class="n">has_heat_of_reaction</span><span class="o">=</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_heat_of_reaction</span><span class="p">,</span>
+            <span class="n">has_heat_transfer</span><span class="o">=</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_heat_transfer</span><span class="p">,</span>
+            <span class="n">has_work_transfer</span><span class="o">=</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_work_transfer</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_momentum_balances</span><span class="p">(</span>
+            <span class="n">has_pressure_change</span><span class="o">=</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_pressure_change</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">apply_transformation</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_setup_dynamics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method automates the setting of the dynamic flag and time domain</span>
+<span class="sd">        for control volume blocks.</span>
+
+<span class="sd">        If dynamic flag is &#39;use_parent_value&#39;, method attempts to get the value</span>
+<span class="sd">        of the dynamic flag from the parent model, otherwise the local value is</span>
+<span class="sd">        used. The time domain is always collected from the parent model.</span>
+
+<span class="sd">        Finally, the method checks the has_holdup argument (if present), and</span>
+<span class="sd">        ensures that has_holdup is True if dynamic is True.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check the dynamic flag, and retrieve if necessary</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span> <span class="o">==</span> <span class="n">useDefault</span><span class="p">:</span>
+            <span class="c1"># Get dynamic flag from parent</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="c1"># If parent does not have dynamic flag, raise Exception</span>
+                <span class="k">raise</span> <span class="n">DynamicError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> has a parent model &#39;</span>
+                                   <span class="s1">&#39;with no dynamic attribute.&#39;</span>
+                                   <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># Try to get reference to time object from parent</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Guess that parent has a reference to time domain</span>
+            <span class="n">add_object_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                 <span class="s2">&quot;time_ref&quot;</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span><span class="o">.</span><span class="n">time_ref</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Should not happen, but guess parent has actual time domain</span>
+                <span class="n">add_object_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                     <span class="s2">&quot;time_ref&quot;</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="c1"># Can&#39;t find time domain</span>
+                <span class="k">raise</span> <span class="n">DynamicError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> has a parent model &#39;</span>
+                                   <span class="s1">&#39;with no time domain&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># Set and validate has_holdup argument</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_holdup</span> <span class="o">==</span> <span class="n">useDefault</span><span class="p">:</span>
+            <span class="c1"># Default to same value as dynamic flag</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_holdup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_holdup</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="c1"># Dynamic model must have has_holdup = True</span>
+                <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                            <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> inconsistent arguments for control volume. &#39;</span>
+                            <span class="s1">&#39;dynamic was set to True, which requires that &#39;</span>
+                            <span class="s1">&#39;has_holdup = True (was False). Please correct &#39;</span>
+                            <span class="s1">&#39;your arguments to be consistent.&#39;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+    <span class="c1"># Add placeholder methods for adding property and reaction packages</span>
+<div class="viewcode-block" id="ControlVolumeBase.add_state_blocks"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_state_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_state_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding StateBlocks to the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_state_blocks. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_reaction_blocks"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_reaction_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_reaction_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding ReactionBlocks to the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_reaction_blocks. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+    <span class="c1"># Add placeholder methods for all types of material, energy and momentum</span>
+    <span class="c1"># balance equations which return NotImplementedErrors</span>
+<div class="viewcode-block" id="ControlVolumeBase.add_phase_component_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_component_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_component_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding material balances indexed by phase and component to</span>
+<span class="sd">        the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_phase_component_material_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_total_component_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_component_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_component_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding material balances indexed by component to</span>
+<span class="sd">        the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_total_component_material_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_total_element_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_element_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_element_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding total elemental material balances indexed to</span>
+<span class="sd">        the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_total_element_material_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_total_material_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_material_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_material_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding a total material balance to</span>
+<span class="sd">        the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_total_material_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_phase_enthalpy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_enthalpy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_enthalpy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding enthalpy balances indexed by phase to</span>
+<span class="sd">        the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_phase_enthalpy_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_total_enthalpy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_enthalpy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_enthalpy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding a total enthalpy balance to</span>
+<span class="sd">        the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_total_enthalpy_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_phase_energy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding energy balances (including kinetic energy) indexed by</span>
+<span class="sd">        phase to the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_phase_energy_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_total_energy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding a total energy balance (including kinetic energy)</span>
+<span class="sd">        to the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_total_energy_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_phase_pressure_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_pressure_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_pressure_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding pressure balances indexed by</span>
+<span class="sd">        phase to the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_phase_pressure_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_total_pressure_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_pressure_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_pressure_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding a total pressure balance to the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_total_pressure_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_phase_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding momentum balances indexed by phase to the control</span>
+<span class="sd">        volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_phase_momentum_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ControlVolumeBase.add_total_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method for adding a total momentum balance to the control volume.</span>
+
+<span class="sd">        See specific control volume documentation for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> control volume class has not implemented a method for &quot;</span>
+                <span class="s2">&quot;add_total_momentum_balances. Please contact the &quot;</span>
+                <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

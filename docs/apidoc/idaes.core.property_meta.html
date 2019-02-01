@@ -1,0 +1,499 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.property_meta module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.core.property_meta module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.core.property_meta.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.core.property_meta">
+<span id="idaes-core-property-meta-module"></span><h1>idaes.core.property_meta module<a class="headerlink" href="#module-idaes.core.property_meta" title="Permalink to this headline">¶</a></h1>
+<p>These classes handle the metadata aspects of classes representing
+property packages.</p>
+<p>Implementors of property packages need to do the following:</p>
+<ol class="arabic simple">
+<li>Create a new class that inherits from
+<a class="reference internal" href="../core/state_block.html#idaes.core.property_base.PhysicalParameterBase" title="idaes.core.property_base.PhysicalParameterBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.property_base.PhysicalParameterBase</span></code></a>, which in turn
+inherits from <a class="reference internal" href="#idaes.core.property_meta.HasPropertyClassMetadata" title="idaes.core.property_meta.HasPropertyClassMetadata"><code class="xref py py-class docutils literal notranslate"><span class="pre">HasPropertyClassMetadata</span></code></a>, in this module.</li>
+<li>In that class, implement the <cite>define_metadata()</cite> method, inherited from
+<a class="reference internal" href="#idaes.core.property_meta.HasPropertyClassMetadata" title="idaes.core.property_meta.HasPropertyClassMetadata"><code class="xref py py-class docutils literal notranslate"><span class="pre">HasPropertyClassMetadata</span></code></a>. This method is called
+automatically, once, when the <cite>get_metadata()</cite> method is first invoked.
+An empty metadata object (an instance of <a class="reference internal" href="#idaes.core.property_meta.PropertyClassMetadata" title="idaes.core.property_meta.PropertyClassMetadata"><code class="xref py py-class docutils literal notranslate"><span class="pre">PropertyClassMetadata</span></code></a>)
+will be passed in, which the method should populate with information about
+properties and default units.</li>
+</ol>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">idaes.core.property_base</span> <span class="k">import</span> <span class="n">PhysicalParameterBase</span>
+
+<span class="k">class</span> <span class="nc">MyPropParams</span><span class="p">(</span><span class="n">PhysicalParameterBase</span><span class="p">):</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">define_metadata</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">meta</span><span class="p">):</span>
+        <span class="n">meta</span><span class="o">.</span><span class="n">add_default_units</span><span class="p">({</span><span class="n">foo</span><span class="o">.</span><span class="n">U</span><span class="o">.</span><span class="n">TIME</span><span class="p">:</span> <span class="s1">&#39;fortnights&#39;</span><span class="p">,</span>
+                               <span class="n">foo</span><span class="o">.</span><span class="n">U</span><span class="o">.</span><span class="n">MASS</span><span class="p">:</span> <span class="s1">&#39;stones&#39;</span><span class="p">})</span>
+        <span class="n">meta</span><span class="o">.</span><span class="n">add_properties</span><span class="p">({</span><span class="s1">&#39;under_sea&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;leagues&#39;</span><span class="p">},</span>
+                            <span class="s1">&#39;tentacle_size&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;yards&#39;</span><span class="p">}})</span>
+        <span class="n">meta</span><span class="o">.</span><span class="n">add_required_properties</span><span class="p">({</span><span class="s1">&#39;under_sea&#39;</span><span class="p">:</span> <span class="s1">&#39;leagues&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;tentacle_size&#39;</span><span class="p">:</span> <span class="s1">&#39;yards&#39;</span><span class="p">})</span>
+
+    <span class="c1"># Also, of course, implement the non-metadata methods that</span>
+    <span class="c1"># do the work of the class.</span>
+</pre></div>
+</div>
+<dl class="class">
+<dt id="idaes.core.property_meta.HasPropertyClassMetadata">
+<em class="property">class </em><code class="descclassname">idaes.core.property_meta.</code><code class="descname">HasPropertyClassMetadata</code><a class="reference internal" href="../_modules/idaes/core/property_meta.html#HasPropertyClassMetadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_meta.HasPropertyClassMetadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Interface for classes that have PropertyClassMetadata.</p>
+<dl class="classmethod">
+<dt id="idaes.core.property_meta.HasPropertyClassMetadata.define_metadata">
+<em class="property">classmethod </em><code class="descname">define_metadata</code><span class="sig-paren">(</span><em>pcm</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_meta.html#HasPropertyClassMetadata.define_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_meta.HasPropertyClassMetadata.define_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set all the metadata for properties and units.</p>
+<p>This method should be implemented by subclasses.
+In the implementation, they should set information into the
+object provided as an argument.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pcm</strong> (<a class="reference internal" href="#idaes.core.property_meta.PropertyClassMetadata" title="idaes.core.property_meta.PropertyClassMetadata"><em>PropertyClassMetadata</em></a>) – Add metadata to this object.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="idaes.core.property_meta.HasPropertyClassMetadata.get_metadata">
+<em class="property">classmethod </em><code class="descname">get_metadata</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_meta.html#HasPropertyClassMetadata.get_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_meta.HasPropertyClassMetadata.get_metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get property parameter metadata.</p>
+<p>If the metadata is not defined, this will instantiate a new
+metadata object and call <cite>define_metadata()</cite> to set it up.</p>
+<p>If the metadata is already defined, it will be simply returned.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The metadata</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#idaes.core.property_meta.PropertyClassMetadata" title="idaes.core.property_meta.PropertyClassMetadata">PropertyClassMetadata</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.core.property_meta.PropertyClassMetadata">
+<em class="property">class </em><code class="descclassname">idaes.core.property_meta.</code><code class="descname">PropertyClassMetadata</code><a class="reference internal" href="../_modules/idaes/core/property_meta.html#PropertyClassMetadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_meta.PropertyClassMetadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="docutils">
+<dt>Container for metadata about the property class, which includes</dt>
+<dd>default units and properties.</dd>
+</dl>
+<p>Example usage:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foo</span> <span class="o">=</span> <span class="n">PropertyClassMetadata</span><span class="p">()</span>
+<span class="n">foo</span><span class="o">.</span><span class="n">add_default_units</span><span class="p">({</span><span class="n">foo</span><span class="o">.</span><span class="n">U</span><span class="o">.</span><span class="n">TIME</span><span class="p">:</span> <span class="s1">&#39;fortnights&#39;</span><span class="p">,</span>
+                       <span class="n">foo</span><span class="o">.</span><span class="n">U</span><span class="o">.</span><span class="n">MASS</span><span class="p">:</span> <span class="s1">&#39;stones&#39;</span><span class="p">})</span>
+<span class="n">foo</span><span class="o">.</span><span class="n">add_properties</span><span class="p">({</span><span class="s1">&#39;under_sea&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;leagues&#39;</span><span class="p">},</span>
+                    <span class="s1">&#39;tentacle_size&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;units&#39;</span><span class="p">:</span> <span class="s1">&#39;yards&#39;</span><span class="p">}})</span>
+<span class="n">foo</span><span class="o">.</span><span class="n">add_required_properties</span><span class="p">({</span><span class="s1">&#39;under_sea&#39;</span><span class="p">:</span> <span class="s1">&#39;leagues&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;tentacle_size&#39;</span><span class="p">:</span> <span class="s1">&#39;yards&#39;</span><span class="p">})</span>
+</pre></div>
+</div>
+<dl class="attribute">
+<dt id="idaes.core.property_meta.PropertyClassMetadata.U">
+<code class="descname">U</code><a class="headerlink" href="#idaes.core.property_meta.PropertyClassMetadata.U" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for class enumerating supported/known unit types</p>
+<p>alias of <a class="reference internal" href="#idaes.core.property_meta.UnitNames" title="idaes.core.property_meta.UnitNames"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitNames</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_meta.PropertyClassMetadata.add_default_units">
+<code class="descname">add_default_units</code><span class="sig-paren">(</span><em>u</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_meta.html#PropertyClassMetadata.add_default_units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_meta.PropertyClassMetadata.add_default_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a dict with keys for the
+quantities used in the property package (as strings) and values of
+their default units as strings.</p>
+<p>The quantities used by the framework are in constants
+defined in <a class="reference internal" href="#idaes.core.property_meta.UnitNames" title="idaes.core.property_meta.UnitNames"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnitNames</span></code></a>, aliased here in the class
+attribute <cite>U</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>u</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Key=property, Value=units</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_meta.PropertyClassMetadata.add_properties">
+<code class="descname">add_properties</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_meta.html#PropertyClassMetadata.add_properties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_meta.PropertyClassMetadata.add_properties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add properties to the metadata.</p>
+<p>For each property, the value should be another dict which may contain
+the following keys:</p>
+<ul class="simple">
+<li><dl class="first docutils">
+<dt>‘method’: (required) the name of a method to construct the</dt>
+<dd>property as a str, or None if the property will be
+constructed by default.</dd>
+</dl>
+</li>
+<li>‘units’: (optional) units of measurement for the property.</li>
+</ul>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Key=property, Value=PropertyMetadata or equiv. dict</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_meta.PropertyClassMetadata.add_required_properties">
+<code class="descname">add_required_properties</code><span class="sig-paren">(</span><em>p</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_meta.html#PropertyClassMetadata.add_required_properties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_meta.PropertyClassMetadata.add_required_properties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add required properties to the metadata.</p>
+<p>For each property, the value should be the expected units of
+measurement for the property.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>p</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Key=property, Value=units</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.PropertyClassMetadata.default_units">
+<code class="descname">default_units</code><a class="headerlink" href="#idaes.core.property_meta.PropertyClassMetadata.default_units" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.PropertyClassMetadata.properties">
+<code class="descname">properties</code><a class="headerlink" href="#idaes.core.property_meta.PropertyClassMetadata.properties" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.PropertyClassMetadata.required_properties">
+<code class="descname">required_properties</code><a class="headerlink" href="#idaes.core.property_meta.PropertyClassMetadata.required_properties" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.core.property_meta.PropertyMetadata">
+<em class="property">class </em><code class="descclassname">idaes.core.property_meta.</code><code class="descname">PropertyMetadata</code><span class="sig-paren">(</span><em>name=None</em>, <em>method=None</em>, <em>units=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_meta.html#PropertyMetadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_meta.PropertyMetadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></p>
+<p>Container for property parameter metadata.</p>
+<p>Instances of this class are exactly dictionaries, with the
+only difference being some guidance on the values expected in the
+dictionary from the constructor.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.core.property_meta.UnitNames">
+<em class="property">class </em><code class="descclassname">idaes.core.property_meta.</code><code class="descname">UnitNames</code><a class="reference internal" href="../_modules/idaes/core/property_meta.html#UnitNames"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_meta.UnitNames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Names for recognized units.</p>
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.AM">
+<code class="descname">AM</code><em class="property"> = 'amount'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.AM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.AMOUNT">
+<code class="descname">AMOUNT</code><em class="property"> = 'amount'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.AMOUNT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.CU">
+<code class="descname">CU</code><em class="property"> = 'current'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.CU" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.CURRENT">
+<code class="descname">CURRENT</code><em class="property"> = 'current'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.CURRENT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.EN">
+<code class="descname">EN</code><em class="property"> = 'energy'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.EN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.ENERGY">
+<code class="descname">ENERGY</code><em class="property"> = 'energy'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.ENERGY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.LENGTH">
+<code class="descname">LENGTH</code><em class="property"> = 'length'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.LENGTH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.LI">
+<code class="descname">LI</code><em class="property"> = 'luminous intensity'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.LI" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.LN">
+<code class="descname">LN</code><em class="property"> = 'length'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.LN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.LUMINOUS_INTENSITY">
+<code class="descname">LUMINOUS_INTENSITY</code><em class="property"> = 'luminous intensity'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.LUMINOUS_INTENSITY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.MA">
+<code class="descname">MA</code><em class="property"> = 'mass'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.MA" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.MASS">
+<code class="descname">MASS</code><em class="property"> = 'mass'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.MASS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.TE">
+<code class="descname">TE</code><em class="property"> = 'temperature'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.TE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.TEMPERATURE">
+<code class="descname">TEMPERATURE</code><em class="property"> = 'temperature'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.TEMPERATURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.TIME">
+<code class="descname">TIME</code><em class="property"> = 'time'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.TIME" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.property_meta.UnitNames.TM">
+<code class="descname">TM</code><em class="property"> = 'time'</em><a class="headerlink" href="#idaes.core.property_meta.UnitNames.TM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

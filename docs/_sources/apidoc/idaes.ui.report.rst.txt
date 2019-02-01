@@ -1,0 +1,7 @@
+idaes.ui.report module
+======================
+
+.. automodule:: idaes.ui.report
+    :members:
+    :undoc-members:
+    :show-inheritance:

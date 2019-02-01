@@ -1,0 +1,7 @@
+idaes.core.util.model\_serializer module
+========================================
+
+.. automodule:: idaes.core.util.model_serializer
+    :members:
+    :undoc-members:
+    :show-inheritance:

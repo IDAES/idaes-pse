@@ -1,0 +1,1012 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.util.model_serializer &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+
+  
+  <script src="../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>idaes.core.util.model_serializer</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for idaes.core.util.model_serializer</h1><div class="highlight"><pre>
+<span></span><span class="c1">##############################################################################</span>
+<span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># software owners: The Regents of the University of California, through</span>
+<span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
+<span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
+<span class="c1"># University Research Corporation, et al. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
+<span class="c1"># license information, respectively. Both files are also available online</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1">##############################################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Functions for saving and loading Pyomo objects to json</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># Changes the divide behavior to not do integer division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span> <span class="c1">#disable implicit relative imports</span>
+
+<span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">pyomo.network</span> <span class="k">import</span> <span class="n">Port</span><span class="p">,</span> <span class="n">Arc</span>
+<span class="kn">from</span> <span class="nn">pyomo.dae</span> <span class="k">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">pyomo.core.base.component</span> <span class="k">import</span> <span class="n">ComponentData</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+
+<span class="c1"># Some more inforation about this module</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;John Eslick&quot;</span>
+<span class="n">__format_version__</span> <span class="o">=</span> <span class="mi">3</span>
+
+
+<span class="k">def</span> <span class="nf">_set_active</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set if component is active, used for read active attribute callback.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        o: object whoes attribute is to be set</span>
+<span class="sd">        d: attribute value</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">d</span><span class="p">:</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">activate</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">deactivate</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">_set_fixed</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set if variable is fixed, used for read fixed attribute callback.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        o: object whoes attribute is to be set</span>
+<span class="sd">        d: attribute value</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">d</span><span class="p">:</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">fix</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">unfix</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">_get_value</span><span class="p">(</span><span class="n">o</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get object value attribute callback.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        o: object whoes attribute is to be set</span>
+<span class="sd">        d: attribute value</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">value</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_set_value</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set object value attribute callback. This doen&#39;t allow the value of an</span>
+<span class="sd">    immutable paramter to be set (which would raise an exeption in Pyomo)</span>
+<span class="sd">    Args:</span>
+<span class="sd">        o: object whoes attribute is to be set</span>
+<span class="sd">        d: attribute value</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">Param</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">o</span><span class="o">.</span><span class="n">_mutable</span><span class="p">:</span>
+        <span class="k">return</span> <span class="c1">#ignore requests to set immutable params</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">o</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">d</span>
+
+<span class="k">def</span> <span class="nf">_set_lb</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set variable lower bound, used for read lb attribute callback.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        o: object whoes attribute is to be set</span>
+<span class="sd">        d: attribute value</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">o</span><span class="o">.</span><span class="n">setlb</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_set_ub</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set variable upper bound, use for read ub attribute callback.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        o: object whoes attribute is to be set</span>
+<span class="sd">        d: attribute value</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">o</span><span class="o">.</span><span class="n">setub</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_only_fixed</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns a list of attributes to read for a variable, only whether it is</span>
+<span class="sd">    fixed for non-fixed variables and if it is fixed and the value for fixed</span>
+<span class="sd">    variables.  The allows you to set up a serializer that only reads fixed</span>
+<span class="sd">    variable values.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        o: Pyomo component being loaded</span>
+<span class="sd">        d: State dictionary for the component o.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        An attribute list to read. Loads fixed for either fixed or un-fixed</span>
+<span class="sd">        variables, but only reads in values for unfixed variables.  This is</span>
+<span class="sd">        useful for intialization functions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;fixed&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;fixed&quot;</span><span class="p">,)</span>
+
+<div class="viewcode-block" id="Counter"><a class="viewcode-back" href="../../../../apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.Counter">[docs]</a><span class="k">class</span> <span class="nc">Counter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a counter object, which is an easy way to pass an interger pointer</span>
+<span class="sd">    around between methods.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="StoreSpec"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec">[docs]</a><span class="k">class</span> <span class="nc">StoreSpec</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A StoreSpec object tells the serializer functions what to read or write.</span>
+<span class="sd">    The default settings will produce a StoreSpec configured to load/save the</span>
+<span class="sd">    typical attributes required to load/save a model state.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        classes: A list of classes to save.  Each class is represented by a</span>
+<span class="sd">            list (or tupple) containing the following elements: (1) class</span>
+<span class="sd">            (compared using isinstance) (2) attribute list or None, an emptry</span>
+<span class="sd">            list store the object, but none of its attributes, None will not</span>
+<span class="sd">            store objects of this class type (3) optional load filter function.</span>
+<span class="sd">            The load filter function returns a list of attributes to read based</span>
+<span class="sd">            on the state of an object and its saved state. The allows, for</span>
+<span class="sd">            example, loading values for unfixed variables, or only loading</span>
+<span class="sd">            values whoes current value is less than one. The filter function</span>
+<span class="sd">            only applies to load not save. Filter functions take two arguments</span>
+<span class="sd">            (a) the object (current state) and (b) the dictionary containing the</span>
+<span class="sd">            saved state of an object.  More specific classes should come before</span>
+<span class="sd">            more general classes.  For example if an obejct is a HeatExchanger</span>
+<span class="sd">            and a UnitModel, and HeatExchanger is listed first, it will follow</span>
+<span class="sd">            the HeatExchanger settings.  If UnitModel is listed first in the</span>
+<span class="sd">            classes list, it will follow the UnitModel settings.</span>
+<span class="sd">        data_classes: This takes the same form as the classes argument.</span>
+<span class="sd">            This is for component data classes.</span>
+<span class="sd">        skip_classes: This is a list of classes to skip.  If a class appears</span>
+<span class="sd">            in the skip list, but also appears in the classes argument, the</span>
+<span class="sd">            classes argument will override skip_classes. The use for this is to</span>
+<span class="sd">            specifically exclude certain classes that would get caught by more</span>
+<span class="sd">            general classes (e.g. UnitModel is in the class list, but you want</span>
+<span class="sd">            to exclude HeatExchanger which is derived from UnitModel).</span>
+<span class="sd">        ignore_missing: If True will ignore a component or attribute that exists</span>
+<span class="sd">            in the model, but not in the stored state. If false an excpetion</span>
+<span class="sd">            will be raised for things in the model that should be loaded but</span>
+<span class="sd">            aren&#39;t in the stored state. Extra items in the stored state will not</span>
+<span class="sd">            raise an exception regaurdless of this argument.</span>
+<span class="sd">        suffix: If True store suffixes and component ids.  If false, don&#39;t store</span>
+<span class="sd">            suffixes.</span>
+<span class="sd">        suffix_filter: None to store all siffixes if suffix=True, or a list of</span>
+<span class="sd">            suffixes to store if suffix=True</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">classes</span><span class="o">=</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">Param</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;_mutable&quot;</span><span class="p">,)),</span>
+            <span class="p">(</span><span class="n">Var</span><span class="p">,</span> <span class="p">()),</span>
+            <span class="p">(</span><span class="n">Component</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;active&quot;</span><span class="p">,))),</span>
+        <span class="n">data_classes</span><span class="o">=</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">_VarData</span><span class="p">,</span>
+                <span class="p">(</span><span class="s2">&quot;fixed&quot;</span><span class="p">,</span> <span class="s2">&quot;stale&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;lb&quot;</span><span class="p">,</span> <span class="s2">&quot;ub&quot;</span><span class="p">)),</span>
+            <span class="p">(</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">_ParamData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,)),</span>
+            <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,)),</span>
+            <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,)),</span>
+            <span class="p">(</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">component</span><span class="o">.</span><span class="n">ComponentData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;active&quot;</span><span class="p">,))),</span>
+        <span class="n">skip_classes</span><span class="o">=</span><span class="p">(</span><span class="n">ExternalFunction</span><span class="p">,</span> <span class="n">Set</span><span class="p">,</span> <span class="n">Port</span><span class="p">,</span> <span class="n">Expression</span><span class="p">,</span> <span class="n">RangeSet</span><span class="p">),</span>
+        <span class="n">ignore_missing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">suffix</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">suffix_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        (see above)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Callbacks are used for attributes that cannont be directly get or set</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_cbs</span><span class="o">=</span><span class="p">{</span> <span class="c1"># Write callbacks (writing state so get attr)</span>
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span><span class="n">_get_value</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_cbs</span><span class="o">=</span><span class="p">{</span> <span class="c1"># Reads callbacks (reading in state so set attr)</span>
+            <span class="s2">&quot;_mutable&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;active&quot;</span><span class="p">:</span><span class="n">_set_active</span><span class="p">,</span>
+            <span class="s2">&quot;fixed&quot;</span><span class="p">:</span><span class="n">_set_fixed</span><span class="p">,</span>
+            <span class="s2">&quot;lb&quot;</span><span class="p">:</span><span class="n">_set_lb</span><span class="p">,</span>
+            <span class="s2">&quot;ub&quot;</span><span class="p">:</span><span class="n">_set_ub</span><span class="p">,</span>
+            <span class="s2">&quot;value&quot;</span><span class="p">:</span><span class="n">_set_value</span><span class="p">}</span>
+        <span class="c1"># Add skip classes to classes list, with None as attr list to skip</span>
+        <span class="n">skip_classes2</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1">#need to put skips at front of list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">skip_classes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="p">:</span>
+                <span class="n">skip_classes2</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">i</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="n">classes</span> <span class="o">=</span> <span class="n">skip_classes2</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">classes</span><span class="p">)</span> <span class="c1"># comined classes with skips</span>
+        <span class="c1"># Create lists of classes, attribute lists, and filter functions</span>
+        <span class="c1"># Can get class index from class list the use it to get associated items</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_classes</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data_classes</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">class_attrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_class_attrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data_classes</span><span class="p">]</span>
+        <span class="c1"># Create filter function lists, use None if not supplied</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">class_filter</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">class_filter</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">class_filter</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_class_filter</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data_classes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data_class_filter</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data_class_filter</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_missing</span> <span class="o">=</span> <span class="n">ignore_missing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">include_suffix</span> <span class="o">=</span> <span class="n">suffix</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">suffix_filter</span> <span class="o">=</span> <span class="n">suffix_filter</span>
+
+<div class="viewcode-block" id="StoreSpec.set_read_callback"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.set_read_callback">[docs]</a>    <span class="k">def</span> <span class="nf">set_read_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">cb</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a callback to set an attribute, when reading from json or dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_cbs</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">cb</span></div>
+
+<div class="viewcode-block" id="StoreSpec.set_write_callback"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.set_write_callback">[docs]</a>    <span class="k">def</span> <span class="nf">set_write_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">cb</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a callback to get an attribute, when writing to json or dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_cbs</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">cb</span></div>
+
+<div class="viewcode-block" id="StoreSpec.get_class_attr_list"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.get_class_attr_list">[docs]</a>    <span class="k">def</span> <span class="nf">get_class_attr_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Look up what attributes to save/load for an Component object.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            o: Object to look up attribute list for.</span>
+<span class="sd">        Return:</span>
+<span class="sd">            A list of attributes and a filter function for object type</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">alist</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Attributes to store</span>
+        <span class="n">ff</span> <span class="o">=</span> <span class="kc">None</span>   <span class="c1"># Load filter function</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cl</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">classes</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">cl</span><span class="p">):</span>
+                <span class="n">alist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_attrs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">ff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">class_filter</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">break</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">alist</span><span class="p">,</span> <span class="n">ff</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StoreSpec.get_data_class_attr_list"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.get_data_class_attr_list">[docs]</a>    <span class="k">def</span> <span class="nf">get_data_class_attr_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Look up what attributes to save/load for an ComponentData object.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            o: Object to look up attribute list for.</span>
+<span class="sd">        Return:</span>
+<span class="sd">            A list of attributes and a filter function for object type</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">alist</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Attributes to store</span>
+        <span class="n">ff</span> <span class="o">=</span> <span class="kc">None</span>   <span class="c1"># Load filter function</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cl</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_classes</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">cl</span><span class="p">):</span>
+                <span class="n">alist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_class_attrs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">ff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_class_filter</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">break</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">alist</span><span class="p">,</span> <span class="n">ff</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StoreSpec.bound"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.bound">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">bound</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a StoreSpec object to store variable bounds only.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">classes</span><span class="o">=</span><span class="p">((</span><span class="n">Var</span><span class="p">,</span> <span class="p">()),),</span>
+            <span class="n">data_classes</span><span class="o">=</span><span class="p">((</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">_VarData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;lb&quot;</span><span class="p">,</span> <span class="s2">&quot;ub&quot;</span><span class="p">)),),</span>
+            <span class="n">suffix</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StoreSpec.value"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a StoreSpec object to store variable values only.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">classes</span><span class="o">=</span><span class="p">((</span><span class="n">Var</span><span class="p">,</span> <span class="p">()),),</span>
+            <span class="n">data_classes</span><span class="o">=</span><span class="p">((</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">_VarData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,)),),</span>
+            <span class="n">suffix</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StoreSpec.isfixed"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.isfixed">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">isfixed</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a StoreSpec object to store if variables are fixed.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">classes</span><span class="o">=</span><span class="p">((</span><span class="n">Var</span><span class="p">,</span> <span class="p">()),),</span>
+            <span class="n">data_classes</span><span class="o">=</span><span class="p">((</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">_VarData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;fixed&quot;</span><span class="p">,)),),</span>
+            <span class="n">suffix</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StoreSpec.suffix"><a class="viewcode-back" href="../../../../apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.suffix">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">suffix</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">suffix_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">classes</span><span class="o">=</span><span class="p">((</span><span class="n">Suffix</span><span class="p">,</span> <span class="p">()),),</span>
+            <span class="n">data_classes</span><span class="o">=</span><span class="p">(),</span>
+            <span class="n">suffix</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">suffix_filter</span><span class="o">=</span><span class="n">suffix_filter</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StoreSpec.value_isfixed"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value_isfixed">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">value_isfixed</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">only_fixed</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retur a StoreSpec object to store variable values and if fixed.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            only_fixed: Only load fixed variable values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">only_fixed</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+                <span class="n">classes</span><span class="o">=</span><span class="p">((</span><span class="n">Var</span><span class="p">,</span> <span class="p">()),),</span>
+                <span class="n">data_classes</span><span class="o">=</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">_VarData</span><span class="p">,</span>
+                        <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;fixed&quot;</span><span class="p">),</span> <span class="n">_only_fixed</span><span class="p">),),</span>
+                <span class="n">suffix</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+                <span class="n">classes</span><span class="o">=</span><span class="p">((</span><span class="n">Var</span><span class="p">,</span> <span class="p">()),),</span>
+                <span class="n">data_classes</span><span class="o">=</span><span class="p">((</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">_VarData</span><span class="p">,</span>
+                    <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;fixed&quot;</span><span class="p">)),),</span>
+                <span class="n">suffix</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StoreSpec.value_isfixed_isactive"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value_isfixed_isactive">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">value_isfixed_isactive</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">only_fixed</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retur a StoreSpec object to store variable values, if variables are</span>
+<span class="sd">        fixed and if components are active.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            only_fixed: Only load fixed variable values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">only_fixed</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+                <span class="n">classes</span><span class="o">=</span><span class="p">((</span><span class="n">Var</span><span class="p">,</span> <span class="p">()),</span> <span class="p">(</span><span class="n">Param</span><span class="p">,</span> <span class="p">()),</span> <span class="p">(</span><span class="n">Component</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;active&quot;</span><span class="p">,))),</span>
+                <span class="n">data_classes</span><span class="o">=</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">_VarData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;fixed&quot;</span><span class="p">),</span> <span class="n">_only_fixed</span><span class="p">),</span>
+                    <span class="p">(</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">_ParamData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,)),</span>
+                    <span class="p">(</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">component</span><span class="o">.</span><span class="n">ComponentData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;active&quot;</span><span class="p">,))))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+                <span class="n">classes</span><span class="o">=</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">Var</span><span class="p">,</span> <span class="p">()),</span>
+                    <span class="p">(</span><span class="n">Param</span><span class="p">,</span> <span class="p">()),</span>
+                    <span class="p">(</span><span class="n">Component</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;active&quot;</span><span class="p">,))),</span>
+                <span class="n">data_classes</span><span class="o">=</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">_VarData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="s2">&quot;fixed&quot;</span><span class="p">)),</span>
+                    <span class="p">(</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">param</span><span class="o">.</span><span class="n">_ParamData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">,)),</span>
+                    <span class="p">(</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">component</span><span class="o">.</span><span class="n">ComponentData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;active&quot;</span><span class="p">,))))</span></div></div>
+
+<span class="k">def</span> <span class="nf">_may_have_subcomponents</span><span class="p">(</span><span class="n">o</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Args:</span>
+<span class="sd">        o: an object.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        True if the object has a callable component_objects method, otherwise</span>
+<span class="sd">        False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="s2">&quot;component_objects&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">component_objects</span><span class="p">,</span> <span class="s2">&quot;__call__&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+<span class="k">def</span> <span class="nf">_write_component</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="p">{},</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Writes a component state to the save dictionary under a key given by the</span>
+<span class="sd">    components name.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sd: dictionary to to save the object into, will create a key that is the</span>
+<span class="sd">            object name (not fully qualified)</span>
+<span class="sd">        o: object to save</span>
+<span class="sd">        wts: a StoreSpec object indicating what object attributes to write</span>
+<span class="sd">        count: count the number of Pyomo componets written also used for ids</span>
+<span class="sd">        lookup: is a lookup table for compoent ids from components</span>
+<span class="sd">        suffixes: is a list of suffixes, that we are delaying writing</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Get list of attributes to save, also returns ff, which is a filter</span>
+    <span class="c1"># function and only used in reading stuff back in.</span>
+    <span class="n">alist</span><span class="p">,</span> <span class="n">ff</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="n">get_class_attr_list</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">alist</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="c1">#alist is none means skip this component type</span>
+    <span class="c1"># Get the componet name, doesn&#39;t need to be fully quified or unique because</span>
+    <span class="c1"># we are storing the state in a hierarchy structure</span>
+    <span class="n">oname</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">getname</span><span class="p">(</span><span class="n">fully_qualified</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="c1"># Create a dictionary for this component, if storing suffixes assign it</span>
+    <span class="c1"># a sequential id number and create a lookup table that takes the component</span>
+    <span class="c1"># and returns its id for use later in writing suffix data</span>
+    <span class="n">sd</span><span class="p">[</span><span class="n">oname</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;__type__&quot;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">o</span><span class="p">))}</span>
+    <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">include_suffix</span><span class="p">:</span>
+        <span class="n">sd</span><span class="p">[</span><span class="n">oname</span><span class="p">][</span><span class="s2">&quot;__id__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span><span class="o">.</span><span class="n">count</span>
+        <span class="n">lookup</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">o</span><span class="p">)]</span> <span class="o">=</span> <span class="n">count</span><span class="o">.</span><span class="n">count</span> <span class="c1">#used python id() here for efficency</span>
+    <span class="k">if</span> <span class="n">count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">count</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span> <span class="c1"># incriment the componet counter</span>
+    <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">alist</span><span class="p">:</span> <span class="c1"># store the desired attributes</span>
+        <span class="k">if</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">wts</span><span class="o">.</span><span class="n">write_cbs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">write_cbs</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">sd</span><span class="p">[</span><span class="n">oname</span><span class="p">][</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">sd</span><span class="p">[</span><span class="n">oname</span><span class="p">][</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="n">write_cbs</span><span class="p">[</span><span class="n">a</span><span class="p">](</span><span class="n">o</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sd</span><span class="p">[</span><span class="n">oname</span><span class="p">][</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">sd</span><span class="p">[</span><span class="n">oname</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># create a dict for compoent data and subcomponents</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">Suffix</span><span class="p">):</span> <span class="c1"># if is a suffix, make a list and delay writing</span>
+        <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">include_suffix</span><span class="p">:</span>        <span class="c1"># data until all compoents have an assigned id</span>
+            <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">suffix_filter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">oname</span> <span class="ow">in</span> <span class="n">wts</span><span class="o">.</span><span class="n">suffix_filter</span><span class="p">:</span>
+                <span class="n">suffixes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">{</span><span class="s1">&#39;sd&#39;</span><span class="p">:</span><span class="n">sd</span><span class="p">[</span><span class="n">oname</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="s1">&#39;o&#39;</span><span class="p">:</span><span class="n">o</span><span class="p">,</span> <span class="s1">&#39;wts&#39;</span><span class="p">:</span><span class="n">wts</span><span class="p">,</span> <span class="s1">&#39;lookup&#39;</span><span class="p">:</span><span class="n">lookup</span><span class="p">})</span>
+    <span class="k">else</span><span class="p">:</span> <span class="c1"># if not suffix go ahead and write the data</span>
+        <span class="n">_write_component_data</span><span class="p">(</span><span class="n">sd</span><span class="o">=</span><span class="n">sd</span><span class="p">[</span><span class="n">oname</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="n">o</span><span class="o">=</span><span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="n">wts</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">,</span>
+                              <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="n">suffixes</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_write_component_data</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="p">{},</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">[]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Iterate through the component data and write to the sd dictionary. The keys</span>
+<span class="sd">    for the data items are added to the dictionary. If the component has</span>
+<span class="sd">    subcomponents they are written by a recursive call to _write_component under</span>
+<span class="sd">    the __pyomo_components__ key.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sd: dictionary to to save the object into, will create keys that are the</span>
+<span class="sd">            data object indexes repn.</span>
+<span class="sd">        o: object to save</span>
+<span class="sd">        wts: a StoreSpec object indicating what object attributes to write</span>
+<span class="sd">        count: count the number of Pyomo componets written also used for ids</span>
+<span class="sd">        lookup: is a lookup table for compoent ids from components</span>
+<span class="sd">        suffixes: is a list of suffixes, that we are delaying writing</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">include_suffix</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">Suffix</span><span class="p">):</span>
+        <span class="c1"># make special provision for writing suffixes.</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">o</span><span class="p">:</span>
+            <span class="n">el</span> <span class="o">=</span> <span class="n">o</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">sd</span><span class="p">[</span><span class="n">lookup</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">key</span><span class="p">)]]</span> <span class="o">=</span> <span class="n">el</span> <span class="c1"># Asssume keys are Pyomo model components</span>
+    <span class="k">else</span><span class="p">:</span> <span class="c1"># rest of compoents with normal componet data structure</span>
+        <span class="n">frst</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1"># on first item when true</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">item_keys</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">item_keys</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">item_keys</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">ComponentData</span><span class="p">)</span> \
+                <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">Component</span><span class="p">):</span>
+                <span class="n">el</span> <span class="o">=</span> <span class="n">o</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">el</span> <span class="o">=</span> <span class="n">o</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">frst</span><span class="p">:</span> <span class="c1"># assume all item are same type, use first to get alist</span>
+                <span class="n">alist</span><span class="p">,</span> <span class="n">ff</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="n">get_data_class_attr_list</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="c1"># get attributes</span>
+                <span class="k">if</span> <span class="n">alist</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="c1"># if None then skip writing</span>
+            <span class="n">frst</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># done with first only stuff</span>
+            <span class="n">edict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;__type__&quot;</span><span class="p">:</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">el</span><span class="p">))}</span>
+            <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">include_suffix</span><span class="p">:</span> <span class="c1"># if writing suffixes give data compoents an id</span>
+                <span class="n">edict</span><span class="p">[</span><span class="s2">&quot;__id__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span><span class="o">.</span><span class="n">count</span>
+                <span class="n">lookup</span><span class="p">[</span><span class="nb">id</span><span class="p">(</span><span class="n">el</span><span class="p">)]</span> <span class="o">=</span> <span class="n">count</span><span class="o">.</span><span class="n">count</span> <span class="c1"># and add to lookup table</span>
+            <span class="k">if</span> <span class="n">count</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">count</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span> <span class="c1"># inciment component counter</span>
+            <span class="n">sd</span><span class="p">[</span><span class="nb">repr</span><span class="p">(</span><span class="n">key</span><span class="p">)]</span> <span class="o">=</span> <span class="n">edict</span> <span class="c1"># stick item dict into component data dict</span>
+            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">alist</span><span class="p">:</span> <span class="c1"># store desired attributes</span>
+                <span class="k">if</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">wts</span><span class="o">.</span><span class="n">write_cbs</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">write_cbs</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">edict</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">el</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">edict</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="n">write_cbs</span><span class="p">[</span><span class="n">a</span><span class="p">](</span><span class="n">el</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">edict</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">el</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+            <span class="n">hascomps</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># Has sub-components (like a Block would have)</span>
+            <span class="k">if</span> <span class="n">_may_have_subcomponents</span><span class="p">(</span><span class="n">el</span><span class="p">):</span> <span class="c1"># block or block like component</span>
+                <span class="k">for</span> <span class="n">o2</span> <span class="ow">in</span> <span class="n">el</span><span class="o">.</span><span class="n">component_objects</span><span class="p">(</span><span class="n">descend_into</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                    <span class="c1"># loop through sub-components</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">hascomps</span><span class="p">:</span> <span class="c1"># if here it does have sub-components</span>
+                        <span class="n">cdict</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># so store those in __pyomo_components__</span>
+                        <span class="n">edict</span><span class="p">[</span><span class="s2">&quot;__pyomo_components__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cdict</span>
+                    <span class="n">hascomps</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1"># only make __pyomo_components__ dict once</span>
+                    <span class="c1"># write each sub-component</span>
+                    <span class="n">_write_component</span><span class="p">(</span><span class="n">sd</span><span class="o">=</span><span class="n">cdict</span><span class="p">,</span> <span class="n">o</span><span class="o">=</span><span class="n">o2</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="n">wts</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">,</span>
+                                     <span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="n">suffixes</span><span class="p">)</span>
+
+<div class="viewcode-block" id="component_data_to_dict"><a class="viewcode-back" href="../../../../apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.component_data_to_dict">[docs]</a><span class="k">def</span> <span class="nf">component_data_to_dict</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Component data to a dict.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">el</span> <span class="o">=</span> <span class="n">o</span>
+    <span class="n">alist</span><span class="p">,</span> <span class="n">ff</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="n">get_data_class_attr_list</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="c1"># get attributes</span>
+    <span class="k">if</span> <span class="n">alist</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="c1"># if None then skip writing</span>
+    <span class="n">edict</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># if not writing suffixes don&#39;t need ids</span>
+    <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">alist</span><span class="p">:</span> <span class="c1"># store desired attributes</span>
+        <span class="n">edict</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">el</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+    <span class="n">hascomps</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># Has sub-components (like a Block would have)</span>
+    <span class="k">if</span> <span class="n">_may_have_subcomponents</span><span class="p">(</span><span class="n">el</span><span class="p">):</span> <span class="c1"># block or block like component</span>
+        <span class="k">for</span> <span class="n">o2</span> <span class="ow">in</span> <span class="n">el</span><span class="o">.</span><span class="n">component_objects</span><span class="p">(</span><span class="n">descend_into</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="c1"># loop through sub-components</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">hascomps</span><span class="p">:</span> <span class="c1"># if here it does have sub-components</span>
+                <span class="n">cdict</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># so store those in __pyomo_components__</span>
+                <span class="n">edict</span><span class="p">[</span><span class="s2">&quot;__pyomo_components__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cdict</span>
+            <span class="n">hascomps</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1"># only make __pyomo_components__ dict once</span>
+            <span class="c1"># write each sub-component</span>
+            <span class="n">_write_component</span><span class="p">(</span><span class="n">sd</span><span class="o">=</span><span class="n">cdict</span><span class="p">,</span> <span class="n">o</span><span class="o">=</span><span class="n">o2</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="n">wts</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">edict</span></div>
+
+<div class="viewcode-block" id="to_json"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.to_json">[docs]</a><span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">human_read</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{},</span> <span class="n">gz</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">return_dict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">return_json_string</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Save the state of a model to a Python dictionary, and optionally dump it</span>
+<span class="sd">    to a json file.  To load a model state, a model with the same structure must</span>
+<span class="sd">    exist.  The model itself cannot be recreated from this.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        o: The Pyomo component object to save.  Usually a Pyomo model, but could</span>
+<span class="sd">            also be a subcomponent of a model (usually a sub-block).</span>
+<span class="sd">        fname: json file name to save model state, if None only create</span>
+<span class="sd">            python dict</span>
+<span class="sd">        gz: If fname is given and gv is True gzip the json file. The default is</span>
+<span class="sd">            False.</span>
+<span class="sd">        human_read: if True, add indents and spacing to make the json file more</span>
+<span class="sd">            readable, if false cut out whitespace and make as compact as</span>
+<span class="sd">            possilbe</span>
+<span class="sd">        metadata: A dictionary of addtional metadata to add.</span>
+<span class="sd">        wts: is What To Save, this is a StoreSpec object that specifies what</span>
+<span class="sd">            object types and attributes to save.  If None, the default is used</span>
+<span class="sd">            which saves the state of the compelte model state.</span>
+<span class="sd">        metadata: addtional metadata to save beyond the standard format_version,</span>
+<span class="sd">            date, and time.</span>
+<span class="sd">        return_dict: default is False if true returns a dictionary representation</span>
+<span class="sd">        return_json_string: default is False returns a json string</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        If return_dict is True returns a dictionary serialization of the Pyomo</span>
+<span class="sd">        component.  If return_dict is False and return_json_string is True</span>
+<span class="sd">        returns a json string dump of the dict.  If fname is given the dictionary</span>
+<span class="sd">        is also written to a json file.  If gz is True and fname is given, writes</span>
+<span class="sd">        a gzipped json file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">suffixes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lookup</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">wts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">wts</span> <span class="o">=</span> <span class="n">StoreSpec</span><span class="p">()</span>
+    <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">sd</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;__metadata__&quot;</span><span class="p">:{</span>
+            <span class="s2">&quot;format_version&quot;</span><span class="p">:</span><span class="n">__format_version__</span><span class="p">,</span>
+            <span class="s2">&quot;date&quot;</span><span class="p">:</span><span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="n">now</span><span class="o">.</span><span class="n">date</span><span class="p">()),</span>
+            <span class="s2">&quot;time&quot;</span><span class="p">:</span><span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="n">now</span><span class="o">.</span><span class="n">time</span><span class="p">()),</span>
+            <span class="s2">&quot;other&quot;</span><span class="p">:</span><span class="n">metadata</span><span class="p">}}</span>
+    <span class="c1"># first write the component</span>
+    <span class="n">_write_component</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="n">suffixes</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">suffixes</span><span class="p">:</span>
+        <span class="n">_write_component_data</span><span class="p">(</span><span class="o">**</span><span class="n">s</span><span class="p">)</span>
+    <span class="n">pdict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">sd</span><span class="p">[</span><span class="s2">&quot;__metadata__&quot;</span><span class="p">][</span><span class="s2">&quot;__performance__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pdict</span>
+    <span class="n">pdict</span><span class="p">[</span><span class="s2">&quot;n_components&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span><span class="o">.</span><span class="n">count</span>
+    <span class="n">dict_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">pdict</span><span class="p">[</span><span class="s2">&quot;etime_make_dict&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict_time</span> <span class="o">-</span> <span class="n">start_time</span>
+    <span class="c1"># This returns the dict but if fname is specified also save to json file</span>
+    <span class="n">dump_kw</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;indent&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span> <span class="k">if</span> <span class="n">human_read</span> <span class="k">else</span> <span class="p">{</span><span class="s1">&#39;separators&#39;</span><span class="p">:</span> <span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="s1">&#39;:&#39;</span><span class="p">)}</span>
+    <span class="k">if</span> <span class="n">fname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">gz</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="o">**</span><span class="n">dump_kw</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="o">**</span><span class="n">dump_kw</span><span class="p">)</span>
+    <span class="n">file_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="c1"># unfortunatly I can&#39;t write how long it took to write the file in the file</span>
+    <span class="n">pdict</span><span class="p">[</span><span class="s2">&quot;etime_write_file&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_time</span> <span class="o">-</span> <span class="n">dict_time</span>
+    <span class="k">if</span> <span class="n">return_dict</span><span class="p">:</span>
+        <span class="c1"># In interactive environments returning the dict can cuase it to print</span>
+        <span class="c1"># an extreemly large amount of stuff.  So added this option to make sure</span>
+        <span class="c1"># it&#39;s really what you want.</span>
+        <span class="k">return</span> <span class="n">sd</span>
+    <span class="k">elif</span> <span class="n">return_json_string</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="o">**</span><span class="n">dump_kw</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<span class="k">def</span> <span class="nf">_read_component</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="p">{},</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a component dictionary into a model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">alist</span><span class="p">,</span> <span class="n">ff</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="n">get_class_attr_list</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">alist</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span>
+    <span class="n">oname</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">getname</span><span class="p">(</span><span class="n">fully_qualified</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">odict</span> <span class="o">=</span> <span class="n">sd</span><span class="p">[</span><span class="n">oname</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">ignore_missing</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ff</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">alist</span> <span class="o">=</span> <span class="n">ff</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">odict</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">include_suffix</span><span class="p">:</span>
+        <span class="n">lookup</span><span class="p">[</span><span class="n">odict</span><span class="p">[</span><span class="s1">&#39;__id__&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">o</span>
+    <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">alist</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">wts</span><span class="o">.</span><span class="n">read_cbs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">read_cbs</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">wts</span><span class="o">.</span><span class="n">read_cbs</span><span class="p">[</span><span class="n">a</span><span class="p">](</span><span class="n">o</span><span class="p">,</span> <span class="n">odict</span><span class="p">[</span><span class="n">a</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">odict</span><span class="p">[</span><span class="n">a</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">ignore_missing</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">Suffix</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">include_suffix</span><span class="p">:</span> <span class="c1"># make a dict of suffixes to read at the end</span>
+            <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">suffix_filter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">oname</span> <span class="ow">in</span> <span class="n">wts</span><span class="o">.</span><span class="n">suffix_filter</span><span class="p">:</span>
+                <span class="n">suffixes</span><span class="p">[</span><span class="n">odict</span><span class="p">[</span><span class="s1">&#39;__id__&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">odict</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="c1"># is populated</span>
+    <span class="k">else</span><span class="p">:</span> <span class="c1"># read nonsufix component data</span>
+        <span class="n">_read_component_data</span><span class="p">(</span><span class="n">odict</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">,</span>
+                             <span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="n">suffixes</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_read_component_data</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="p">{},</span> <span class="n">suffixes</span><span class="o">=</span><span class="p">{}):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a Pyomo component&#39;s data in from a dict.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sd: dictionary to read from</span>
+<span class="sd">        o: Pyomo component whoes data to read</span>
+<span class="sd">        wts: StoreSpec object specifying what to read in</span>
+<span class="sd">        lookup: a lookup table for id to componet for reading suffixes</span>
+<span class="sd">        suffixes: a list of suffixes put off reading until end</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">alist</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># list of attributes to read</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="mi">0</span> <span class="c1"># counter of data items in component</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">item_keys</span> <span class="o">=</span> <span class="n">o</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="n">item_keys</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">item_keys</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">ComponentData</span><span class="p">)</span> \
+            <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">Component</span><span class="p">):</span>
+            <span class="n">el</span> <span class="o">=</span> <span class="n">o</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">el</span> <span class="o">=</span> <span class="n">o</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># if first data item assume all itmes are same and get alist</span>
+            <span class="n">alist</span><span class="p">,</span> <span class="n">ff</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="n">get_data_class_attr_list</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="c1">#ff is fileter function</span>
+            <span class="k">if</span> <span class="n">alist</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="c1">#skip reading this type</span>
+        <span class="n">c</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">try</span><span class="p">:</span> <span class="c1"># get data from dict</span>
+            <span class="n">edict</span> <span class="o">=</span> <span class="n">sd</span><span class="p">[</span><span class="nb">repr</span><span class="p">(</span><span class="n">key</span><span class="p">)]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span> <span class="c1"># data was missing either ignore or raise except</span>
+            <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">ignore_missing</span><span class="p">:</span>
+                <span class="k">return</span> <span class="c1"># if ignore missing option its okay</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="c1"># else raise exception</span>
+        <span class="k">if</span> <span class="n">ff</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># if a filer function was given, use it to make a</span>
+            <span class="c1"># new a list based on the model and whats stored for the state</span>
+            <span class="c1"># this lets you contionally load things, for example only load</span>
+            <span class="c1"># values for unfixed variables.</span>
+            <span class="n">alist</span> <span class="o">=</span> <span class="n">ff</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">edict</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">include_suffix</span><span class="p">:</span> <span class="c1"># if loading suffixes make lookup table id to item</span>
+            <span class="n">lookup</span><span class="p">[</span><span class="n">edict</span><span class="p">[</span><span class="s1">&#39;__id__&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">el</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">alist</span><span class="p">:</span> <span class="c1"># read in desired attributes</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">wts</span><span class="o">.</span><span class="n">read_cbs</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">read_cbs</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">wts</span><span class="o">.</span><span class="n">read_cbs</span><span class="p">[</span><span class="n">a</span><span class="p">](</span><span class="n">el</span><span class="p">,</span> <span class="n">edict</span><span class="p">[</span><span class="n">a</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span> <span class="c1"># directly set an attribute</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">el</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">edict</span><span class="p">[</span><span class="n">a</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span> <span class="c1"># attribute missing</span>
+                <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">ignore_missing</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="c1"># if ignore option then is okay</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="c1"># otherwise raise an exception</span>
+        <span class="k">if</span> <span class="n">_may_have_subcomponents</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;__pyomo_components__&quot;</span> <span class="ow">in</span> <span class="n">edict</span><span class="p">:</span>
+            <span class="c1"># read sub-components of block-like</span>
+            <span class="k">for</span> <span class="n">o2</span> <span class="ow">in</span> <span class="n">el</span><span class="o">.</span><span class="n">component_objects</span><span class="p">(</span><span class="n">descend_into</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+                <span class="c1"># recursive read here</span>
+                <span class="n">_read_component</span><span class="p">(</span><span class="n">edict</span><span class="p">[</span><span class="s2">&quot;__pyomo_components__&quot;</span><span class="p">],</span> <span class="n">o2</span><span class="p">,</span> <span class="n">wts</span><span class="p">,</span>
+                                <span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="n">suffixes</span><span class="p">)</span>
+
+<div class="viewcode-block" id="component_data_from_dict"><a class="viewcode-back" href="../../../../apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.component_data_from_dict">[docs]</a><span class="k">def</span> <span class="nf">component_data_from_dict</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Component data to a dict.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">el</span> <span class="o">=</span> <span class="n">o</span>
+    <span class="n">alist</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># list of attributes to read</span>
+    <span class="n">alist</span><span class="p">,</span> <span class="n">ff</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="n">get_data_class_attr_list</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="c1">#ff is fileter function</span>
+    <span class="k">if</span> <span class="n">alist</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="c1">#skip reading this type</span>
+    <span class="n">edict</span> <span class="o">=</span> <span class="n">sd</span>
+    <span class="k">if</span> <span class="n">ff</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">alist</span> <span class="o">=</span> <span class="n">ff</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">edict</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">alist</span><span class="p">:</span> <span class="c1"># read in desired attributes</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">wts</span><span class="o">.</span><span class="n">read_cbs</span><span class="p">:</span> <span class="c1"># use a callback</span>
+                <span class="n">wts</span><span class="o">.</span><span class="n">read_cbs</span><span class="p">[</span><span class="n">a</span><span class="p">](</span><span class="n">el</span><span class="p">,</span> <span class="n">edict</span><span class="p">[</span><span class="n">a</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span> <span class="c1"># directly set an attribute</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="n">el</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">edict</span><span class="p">[</span><span class="n">a</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span> <span class="c1"># attribute missing</span>
+            <span class="k">if</span> <span class="n">wts</span><span class="o">.</span><span class="n">ignore_missing</span><span class="p">:</span>
+                <span class="k">return</span> <span class="c1"># if ignore option then is okay</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="c1"># otherwise raise an exception</span>
+    <span class="k">if</span> <span class="n">_may_have_subcomponents</span><span class="p">(</span><span class="n">el</span><span class="p">):</span> <span class="c1"># read sub-components of block-like</span>
+        <span class="k">for</span> <span class="n">o2</span> <span class="ow">in</span> <span class="n">el</span><span class="o">.</span><span class="n">component_objects</span><span class="p">(</span><span class="n">descend_into</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="c1"># recursive read here</span>
+            <span class="n">_read_component</span><span class="p">(</span><span class="n">edict</span><span class="p">[</span><span class="s2">&quot;__pyomo_components__&quot;</span><span class="p">],</span> <span class="n">o2</span><span class="p">,</span> <span class="n">wts</span><span class="p">)</span></div>
+
+<span class="k">def</span> <span class="nf">_read_suffixes</span><span class="p">(</span><span class="n">lookup</span><span class="p">,</span> <span class="n">suffixes</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Go through the list of suffixes and read the data back in.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        lookup: a lookup table to go from id to component</span>
+<span class="sd">        suffixes: a dictionary with suffix id keys and value dict value</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">uid</span> <span class="ow">in</span> <span class="n">suffixes</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">suffixes</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">lookup</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="c1"># suffixes keys are ids, so get suffix component</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span> <span class="c1"># set values from value dict</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">kc</span> <span class="o">=</span> <span class="n">lookup</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">key</span><span class="p">)]</span> <span class="c1"># use int because json turn keys to string</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">s</span><span class="p">[</span><span class="n">kc</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+<div class="viewcode-block" id="from_json"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.from_json">[docs]</a><span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">sd</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gz</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load the state of a Pyomo component state from a dictionary, json file, or</span>
+<span class="sd">    json string.  Must only specify one of sd, fname, or s as a non-None value.</span>
+<span class="sd">    This works by going through the model and loading the state of each</span>
+<span class="sd">    sub-compoent of o. If the saved state contains extra information, it is</span>
+<span class="sd">    ignored.  If the save state doesn&#39;t contain an enetry for a model component</span>
+<span class="sd">    that is to be loaded an error will be raised, unless ignore_missing = True.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        o: Pyomo component to for which to load state</span>
+<span class="sd">        sd: State dictionary to load, if None, check fname and s</span>
+<span class="sd">        fname: JSON file to load, only used if sd is None</span>
+<span class="sd">        s: JSON string to load only used if both sd and fname are None</span>
+<span class="sd">        wts: StoreSpec object specifying what to load</span>
+<span class="sd">        gz: If True assume the file specified by fname is gzipped. The default is</span>
+<span class="sd">            False.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary with some perfomance information. The keys are</span>
+<span class="sd">        &quot;etime_load_file&quot;, how long in seconds it took to load the json file</span>
+<span class="sd">        &quot;etime_read_dict&quot;, how long in seconds it took to read models state</span>
+<span class="sd">        &quot;etime_read_suffixes&quot;, how long in seconds it took to read suffixes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># keeping track of elapsed time.  want to make sure I don&#39;t do anything</span>
+    <span class="c1"># that&#39;s too slow.</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="c1"># Get the model state dict from one of three sources</span>
+    <span class="k">if</span> <span class="n">sd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># Existing Python dict (for in-memory stuff).</span>
+        <span class="k">pass</span>
+    <span class="k">elif</span> <span class="n">fname</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># Read in from a json file</span>
+        <span class="k">if</span> <span class="n">gz</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">fr</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="n">sd</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">fr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">sd</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="c1">#json file</span>
+    <span class="k">elif</span> <span class="n">s</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># Use a json string (not really sure if useful)</span>
+        <span class="n">sd</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="c1">#json string</span>
+    <span class="k">else</span><span class="p">:</span> <span class="c1"># Didn&#39;t specify at least one source</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Need to specify a data source to load from&quot;</span><span class="p">)</span>
+    <span class="n">dict_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="c1"># To calculate how long it took to read file</span>
+    <span class="k">if</span> <span class="n">wts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="c1"># if no StoreSpec object given use the default, which should</span>
+        <span class="n">wts</span> <span class="o">=</span> <span class="n">StoreSpec</span><span class="p">()</span> <span class="c1"># be the typlical save everything important</span>
+    <span class="n">lookup</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># A dict to use for a lookup tables</span>
+    <span class="n">suffixes</span><span class="o">=</span><span class="p">{}</span> <span class="c1"># A list of suffixes delayed to end so lookup is complete</span>
+    <span class="c1"># Read toplevel componet (is recursive)</span>
+    <span class="n">_read_component</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">,</span> <span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="n">suffixes</span><span class="p">)</span>
+    <span class="n">read_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="c1"># to calc time to read model state minus suffixes</span>
+    <span class="c1"># Now read in the suffixes</span>
+    <span class="n">_read_suffixes</span><span class="p">(</span><span class="n">lookup</span><span class="p">,</span> <span class="n">suffixes</span><span class="p">)</span>
+    <span class="n">suffix_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="c1"># to calculate time to read suffixes</span>
+    <span class="n">pdict</span> <span class="o">=</span> <span class="p">{}</span> <span class="c1"># return some perfomance information, to make sure not too slow</span>
+    <span class="n">pdict</span><span class="p">[</span><span class="s2">&quot;etime_load_file&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dict_time</span> <span class="o">-</span> <span class="n">start_time</span>
+    <span class="n">pdict</span><span class="p">[</span><span class="s2">&quot;etime_read_dict&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">read_time</span> <span class="o">-</span> <span class="n">dict_time</span>
+    <span class="n">pdict</span><span class="p">[</span><span class="s2">&quot;etime_read_suffixes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">suffix_time</span> <span class="o">-</span> <span class="n">read_time</span>
+    <span class="k">return</span> <span class="n">pdict</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

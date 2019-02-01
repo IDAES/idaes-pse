@@ -1,0 +1,317 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.util.math module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.core.util.math module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.core.util.math.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.core.util.math">
+<span id="idaes-core-util-math-module"></span><h1>idaes.core.util.math module<a class="headerlink" href="#module-idaes.core.util.math" title="Permalink to this headline">¶</a></h1>
+<p>This module contains utility functions for mathematical operators of use in
+equation oriented models.</p>
+<dl class="function">
+<dt id="idaes.core.util.math.smooth_abs">
+<code class="descclassname">idaes.core.util.math.</code><code class="descname">smooth_abs</code><span class="sig-paren">(</span><em>a</em>, <em>eps=0.0001</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/math.html#smooth_abs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.math.smooth_abs" title="Permalink to this definition">¶</a></dt>
+<dd><p>General function for creating an expression for a smooth minimum or
+maximum.</p>
+<div class="math notranslate nohighlight">
+\[|a| = sqrt(a^2 + eps^2)\]</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>a</strong> – term to get absolute value from (Pyomo component, float or int)</li>
+<li><strong>eps</strong> – smoothing parameter (Param, float or int) (default=1e-4)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An expression for the smoothed absolute value operation.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.core.util.math.smooth_max">
+<code class="descclassname">idaes.core.util.math.</code><code class="descname">smooth_max</code><span class="sig-paren">(</span><em>a</em>, <em>b</em>, <em>eps=0.0001</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/math.html#smooth_max"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.math.smooth_max" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smooth maximum operator, using smooth_abs operator.</p>
+<div class="math notranslate nohighlight">
+\[max(a, b) = 0.5*(a+b + |a-b|)\]</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>a</strong> – first term in max function</li>
+<li><strong>b</strong> – second term in max function</li>
+<li><strong>eps</strong> – smoothing parameter (Param or float, default = 1e-4)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An expression for the smoothed maximum operation.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.core.util.math.smooth_min">
+<code class="descclassname">idaes.core.util.math.</code><code class="descname">smooth_min</code><span class="sig-paren">(</span><em>a</em>, <em>b</em>, <em>eps=0.0001</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/math.html#smooth_min"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.math.smooth_min" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smooth minimum operator, using smooth_abs operator.</p>
+<div class="math notranslate nohighlight">
+\[max(a, b) = 0.5*(a+b - |a-b|)\]</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>a</strong> – first term in min function</li>
+<li><strong>b</strong> – second term in min function</li>
+<li><strong>eps</strong> – smoothing parameter (Param or float, default = 1e-4)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An expression for the smoothed minimum operation.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.core.util.math.smooth_minmax">
+<code class="descclassname">idaes.core.util.math.</code><code class="descname">smooth_minmax</code><span class="sig-paren">(</span><em>a</em>, <em>b</em>, <em>eps=0.0001</em>, <em>sense='max'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/math.html#smooth_minmax"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.math.smooth_minmax" title="Permalink to this definition">¶</a></dt>
+<dd><p>General function for creating an expression for a smooth minimum or
+maximum. Uses the smooth_abs operator.</p>
+<div class="math notranslate nohighlight">
+\[minmax(a, b) = 0.5*(a+b +- |a-b|)\]</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>a</strong> – first term in mix or max function (Pyomo component, float or int)</li>
+<li><strong>b</strong> – second term in min or max function (Pyomo component, float or int)</li>
+<li><strong>eps</strong> – smoothing parameter (Param, float or int) (default=1e-4)</li>
+<li><strong>sense</strong> – ‘mim’ or ‘max’ (default = ‘max’)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">An expression for the smoothed minimum or maximum operation.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

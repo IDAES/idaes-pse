@@ -1,0 +1,7 @@
+idaes.core.util.expr\_doc module
+================================
+
+.. automodule:: idaes.core.util.expr_doc
+    :members:
+    :undoc-members:
+    :show-inheritance:

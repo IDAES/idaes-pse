@@ -1,0 +1,376 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>IDAES Modeling Concepts &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Flowsheet Model Class" href="flowsheet_model.html" />
+    <link rel="prev" title="Process Blocks" href="process_block.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Core Library</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#core-contents">Core Contents</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="configuration.html">IDAES Framework Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="process_block.html">Process Blocks</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">IDAES Modeling Concepts</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#time-domain">Time Domain</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#flowsheets">Flowsheets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#unit-models">Unit Models</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#component-references">Component References</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#what-belongs-in-each-type-of-block">What Belongs in Each Type of Block?</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="flowsheet_model.html">Flowsheet Model Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="properties.html">Property Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="unit_model.html">Unit Model Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_volume.html">Control Volume Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/index.html">Utility Methods</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#core-overview">Core Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Core Library</a> &raquo;</li>
+        
+      <li>IDAES Modeling Concepts</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/core/model_concepts.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="idaes-modeling-concepts">
+<h1><a class="toc-backref" href="#id1">IDAES Modeling Concepts</a><a class="headerlink" href="#idaes-modeling-concepts" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#idaes-modeling-concepts" id="id1">IDAES Modeling Concepts</a><ul>
+<li><a class="reference internal" href="#introduction" id="id2">Introduction</a></li>
+<li><a class="reference internal" href="#time-domain" id="id3">Time Domain</a></li>
+<li><a class="reference internal" href="#flowsheets" id="id4">Flowsheets</a></li>
+<li><a class="reference internal" href="#unit-models" id="id5">Unit Models</a></li>
+<li><a class="reference internal" href="#component-references" id="id6">Component References</a></li>
+<li><a class="reference internal" href="#what-belongs-in-each-type-of-block" id="id7">What Belongs in Each Type of Block?</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The purpose of this section of the documentation is to explain the different parts of the IDAES modeling framework, and what components belong in each part for the hierarchy. Each component is described in greater detail later in the documentation, however this section provides a general introduction to different types of components.</p>
+</div>
+<div class="section" id="time-domain">
+<h2><a class="toc-backref" href="#id3">Time Domain</a><a class="headerlink" href="#time-domain" title="Permalink to this headline">¶</a></h2>
+<p>Before starting on the different types of models present in the IDAES framework, it is important to discuss how time is handled by the framework. When a user first declares a Flowsheet model a time domain is created, the form of which depends on whether the Flowsheet is declared to be dynamic or steady-state (see FlowsheetBlock documentation). When other models are added to the Flowsheet, or to a descendant of the Flowsheet, that model makes a reference to the original time domain. This is handled automatically by the framework so that the user does not need to worry about it. This ensures that all models within the Flowsheet have a consistent time domain.</p>
+<p>Different models may handle the time domain differently, but in general all IDAES models contain a component named time, which is a reference to the original time domain. The only exception to this are blocks associated with Property calculations. PropertyBlocks represent the state of the material at a single point in space and time, and thus do not contain the time domain. Instead, PropertyBlocks are index by time (and space where applicable) - i.e. there is a separate PropertyBlock for each point in time. The user should keep this in mind when working with IDAES models, as it is important for understanding where the time index appears within a model.</p>
+<p>Another important thing to note is that steady-state models do contain a time domain, however this is generally a single point at time = 0.0. However, models still contain a reference to the time domain, and any components are still indexed by time even in a steady-state model (e.g. PropertyBlocks).</p>
+</div>
+<div class="section" id="flowsheets">
+<h2><a class="toc-backref" href="#id4">Flowsheets</a><a class="headerlink" href="#flowsheets" title="Permalink to this headline">¶</a></h2>
+<p>The top level of the IDAES modeling framework is the Flowsheet model. Flowsheet models represent traditional process flowsheets, containing a number of Unit models representing process unit operations connected together into a flow network. Flowsheets generally contain three types of components:</p>
+<ol class="arabic simple">
+<li>Unit models, representing unit operations,</li>
+<li>Arcs, representing connections between Unit models, and,</li>
+<li>Property Parameter blocks, representing the parameters associated with different materials present within the flowsheet.</li>
+</ol>
+<p>Flowsheet models may also contain additional constraints relating to how different Unit models behave and interact, such as control and operational constraints. Generally speaking, if a Constraint is purely internal to a single unit, and does not depend on information from other units in the flowsheet, then the Constraint should be placed inside the relevant Unit model. Otherwise, the Constraint should be placed at the Flowsheet level.</p>
+</div>
+<div class="section" id="unit-models">
+<h2><a class="toc-backref" href="#id5">Unit Models</a><a class="headerlink" href="#unit-models" title="Permalink to this headline">¶</a></h2>
+<p>Unit models generally represent individual pieces of equipment present within a process which perform a specific task. Unit models in turn are generally composed of two main types of components:</p>
+<ol class="arabic simple">
+<li>Control Volume Blocks, which represent volume of material over which we wish to perform material, energy and/or momentum balances, and,</li>
+<li>StateBlocks and ReactionBlocks, which represent the thermophysical, transport and reaction properties of the material at a specific point in space and time.</li>
+<li>Inlets and Outlets, which allow Unit models to connect to other Unit models.</li>
+</ol>
+<p>Unit models will also contain Constraints describing the performance of the unit, which will relate terms in the balance equations to different phenomena.</p>
+<div class="section" id="control-volumes">
+<h3>Control Volumes<a class="headerlink" href="#control-volumes" title="Permalink to this headline">¶</a></h3>
+<p>A key feature of the IDAES modeling framework is the use of Control Volume Blocks. As mentioned above, Control Volumes represent a volume of material over which material, energy and/or momentum balances can be performed. Control Volume Blocks contain methods to automate the task of writing common forms of these balance equations. Control Volume Blocks can also automate the creation of StateBlocks and ReactionBlocks associated with the control volume.</p>
+</div>
+<div class="section" id="property-blocks">
+<h3>Property Blocks<a class="headerlink" href="#property-blocks" title="Permalink to this headline">¶</a></h3>
+<p>Property blocks represent the state of a material at a given point in space and time within the process flowsheet, and contain the state variables, thermophysical, transport and reaction properties of a material (which are functions solely of the local state of the material). Within the IDAES process modeling framework, properties are divided into two types:</p>
+<ul class="simple">
+<li>Physical properties (StateBlocks), including thermophysical and transport properties, and</li>
+<li>Reaction properties (ReactionBlocks), which include all properties associated with chemical reactions.</li>
+</ul>
+<p>Additionally, StateBlocks contain information on the extensive flow of material at that point in space and time, which is a departure from how engineers generally think about properties. This is required to facilitate the flexible formulation of the IDAES Framework by allowing the property package to dictate what form the balance equations will take, which requires the StateBlock to know the extensive flow information.</p>
+<p>The calculations involved in property blocks of both types generally require a set of parameters which are constant across all instances of that type of property block. Rather than each property block containing its own copy of each of these parameters (thus duplicating parameters between blocks), each type of property block is associated with a Property Parameter Block (PhysicalParameterBlock or ReactionParameterBlock). Property Parameter Blocks serve as a centralized location for the constant parameters involved in property calculations, and all property blocks of the associated type link to the parameters contained in the parameter block.</p>
+</div>
+</div>
+<div class="section" id="component-references">
+<h2><a class="toc-backref" href="#id6">Component References</a><a class="headerlink" href="#component-references" title="Permalink to this headline">¶</a></h2>
+<p>There are many situations in the IDAES modeling framework where a developer may want to make use of a modeling component (e.g. a variable or parameter) from one Block in another Block. The time domain is a good example of this - almost all Blocks within an IDAES model need to make use of the time domain, however the time domain exists only at the top level of the flowsheet structure. In order to make use of the time domain in other parts of the framework, references to the time domain are used instead. By convention, all references within the IDAES modeling framework are indicated by the suffix “_ref” attached to the name of the reference. E.g. all references to the time domain within the framework are called “time_ref”.</p>
+</div>
+<div class="section" id="what-belongs-in-each-type-of-block">
+<h2><a class="toc-backref" href="#id7">What Belongs in Each Type of Block?</a><a class="headerlink" href="#what-belongs-in-each-type-of-block" title="Permalink to this headline">¶</a></h2>
+<p>A common question with the hierarchical structure of the IDAES framework is where does a specific variable or constraint belong (or conversely, where can I find a specific variable or constraint). In general, variables and constraints are divided based on the following guidelines:</p>
+<ol class="arabic">
+<li><p class="first">Property Parameter Blocks - any parameter or quantity that is consistent across all instances of a Property Block belongs in the Property Parameter Block. This includes:</p>
+<blockquote>
+<div><ul class="simple">
+<li>component lists,</li>
+<li>lists of valid phases,</li>
+<li>universal constants (e.g. R, <span class="math notranslate nohighlight">\(\pi\)</span>),</li>
+<li>constants used in calculating properties (e.g. coefficients for calculating <span class="math notranslate nohighlight">\(c_p\)</span>,</li>
+<li>reference states (e.g. <span class="math notranslate nohighlight">\(P_{ref}\)</span> and <span class="math notranslate nohighlight">\(T_{ref}\)</span>),</li>
+<li>lists of reaction identifiers,</li>
+<li>reaction stoichiometry.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Property Blocks - all state variables (including extensive flow information) and any quantity that is a function only of state variables plus the constraints required to calculate these. These include:</p>
+<blockquote>
+<div><ul class="simple">
+<li>flow rates (can be of different forms, e.g. mass or molar flow, on a total or component basis),</li>
+<li>temperature,</li>
+<li>pressure,</li>
+<li>intensive and extensive state functions (e.g. enthalpy); both variables and constraints.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Control Volume Blocks - material, energy and momentum balances and the associated terms. These include:</p>
+<blockquote>
+<div><ul class="simple">
+<li>balance equations,</li>
+<li>holdup volume,</li>
+<li>material and energy holdups; both variables and constraints,</li>
+<li>material and energy accumulation terms (Pyomo.dae handles the creation of the associated derivative constraints),</li>
+<li>material generation terms (kinetic reactions, chemical and phase equilibrium, mass transfer),</li>
+<li>extent of reaction terms and constraints relating these to the equivalent generation terms,</li>
+<li>phase fraction within the holdup volume and constrain on the sum of phase fractions,</li>
+<li>heat and work transfer terms,</li>
+<li>pressure change term</li>
+<li>diffusion and conduction terms (where applicable) and associated constraints,</li>
+<li>Mixer and Splitter blocks for handling multiple inlets/outlets.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Unit Model - any unit performance constraints and associated variables, such as:</p>
+<blockquote>
+<div><ul class="simple">
+<li>constraints relating balance terms to physical phenomena or properties (e.g. relating extent of reaction to reaction rate and volume),</li>
+<li>constraints describing flow of material into or out of unit (e.g. pressure driven flow constraints),</li>
+<li>unit level efficiency constraints (e.g. relating mechanical work to fluid work).</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Flowsheet Model - any constraints related to interaction of unit models and associated variables. Examples include:</p>
+<blockquote>
+<div><ul class="simple">
+<li>control constraints relating behavior between different units (e.g. a constraint on valve opening based on the level in another unit).</li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="flowsheet_model.html" class="btn btn-neutral float-right" title="Flowsheet Model Class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="process_block.html" class="btn btn-neutral" title="Process Blocks" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

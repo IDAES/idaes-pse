@@ -1,0 +1,959 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.util.convergence.convergence_base &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+
+  
+  <script src="../../../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../../../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>idaes.core.util.convergence.convergence_base</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for idaes.core.util.convergence.convergence_base</h1><div class="highlight"><pre>
+<span></span><span class="c1">##############################################################################</span>
+<span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># software owners: The Regents of the University of California, through</span>
+<span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
+<span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
+<span class="c1"># University Research Corporation, et al. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
+<span class="c1"># license information, respectively. Both files are also available online</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1">##############################################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides the base classes and methods for running convergence</span>
+<span class="sd">evaluations on IDAES models. The convergence evaluation runs a given model over</span>
+<span class="sd">a set of sample points to ensure reliable convergence over the parameter space.</span>
+
+<span class="sd">The module requires the user to provide:</span>
+<span class="sd">  - a set of inputs along with their lower bound, upper bound, mean,</span>
+<span class="sd">and standard deviation.</span>
+<span class="sd">  - an initialized Pyomo model</span>
+<span class="sd">  - a Pyomo solver with appropriate options</span>
+
+<span class="sd">The module executes convergence evaluation in two steps. In the first step, a</span>
+<span class="sd">json file is created that containsa set of points sampled from the provided</span>
+<span class="sd">inputs. This step only needs to be done once - up front. The second step, which</span>
+<span class="sd">should be executed any time there is a major code change that could impact the</span>
+<span class="sd">model, takes that set of sampled points and solves the model at each of the</span>
+<span class="sd">points, collecting convergence statistics (success/failure, iterations, and</span>
+<span class="sd">solution time).</span>
+
+<span class="sd">This can be used as a tool to evaluate model convergence reliability over the</span>
+<span class="sd">defined input space, or to verify that convergence performance is not</span>
+<span class="sd">decreasing with framework and/or model changes.</span>
+
+<span class="sd">In order to write a convergence evaluation for your model, you must inherit a</span>
+<span class="sd">class from ConvergenceEvaluation, and implement three methods:</span>
+<span class="sd">   - get_specification: This method should create and return a</span>
+<span class="sd">     ConvergenceEvaluationSpecification object. There are methods on</span>
+<span class="sd">     ConvergenceEvaluationSpecification to add inputs. These inputs contain a</span>
+<span class="sd">     string that identifies a Pyomo Param or Var object, the lower and upper</span>
+<span class="sd">     bounds, and the mean and standard deviation to be used for sampling. When</span>
+<span class="sd">     samples are generated, they are drawn from a normal distribution, and then</span>
+<span class="sd">     truncated by the lower or upper bounds.</span>
+<span class="sd">   - get_initialized_model: This method should create and return a Pyomo model</span>
+<span class="sd">     object that is already initialized and ready to be solved. This model will</span>
+<span class="sd">     be modified according to the sampled inputs, and then it will be solved.</span>
+<span class="sd">   - get_solver: This method should return an instance of the Pyomo solver that</span>
+<span class="sd">     will be used for the analysis.</span>
+
+<span class="sd">There are methods to create the sample points file (on</span>
+<span class="sd">ConvergenceEvaluationSpecification), to run a convergence evaluation</span>
+<span class="sd">(run_convergence_evaluation), and print the results in table form</span>
+<span class="sd">(print_convergence_statistics).</span>
+
+<span class="sd">However, this package can also be executed using the command-line interface.</span>
+<span class="sd">See the documentation in convergence.py for more information.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+<span class="kn">import</span> <span class="nn">importlib</span> <span class="k">as</span> <span class="nn">il</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="c1"># third-party</span>
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="c1"># pyomo</span>
+<span class="kn">import</span> <span class="nn">pyutilib.services</span>
+<span class="kn">from</span> <span class="nn">pyutilib.misc</span> <span class="k">import</span> <span class="n">capture_output</span>
+<span class="kn">from</span> <span class="nn">pyomo.core</span> <span class="k">import</span> <span class="n">Param</span><span class="p">,</span> <span class="n">Var</span>
+<span class="kn">from</span> <span class="nn">pyomo.opt</span> <span class="k">import</span> <span class="n">TerminationCondition</span>
+<span class="kn">from</span> <span class="nn">pyomo.common.log</span> <span class="k">import</span> <span class="n">LoggingIntercept</span>
+<span class="c1"># idaes</span>
+<span class="kn">import</span> <span class="nn">idaes.core.util.convergence.mpi_utils</span> <span class="k">as</span> <span class="nn">mpiu</span>
+<span class="kn">from</span> <span class="nn">idaes.dmf</span> <span class="k">import</span> <span class="n">resource</span>
+
+
+<div class="viewcode-block" id="ConvergenceEvaluationSpecification"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification">[docs]</a><span class="k">class</span> <span class="nc">ConvergenceEvaluationSpecification</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ConvergenceEvaluationSpecification.add_sampled_input"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification.add_sampled_input">[docs]</a>    <span class="k">def</span> <span class="nf">add_sampled_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">pyomo_path</span><span class="p">,</span> <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">,</span> <span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add an input that should be sampled when forming the set of</span>
+<span class="sd">        specific points that need to be run for the convergence evaluation</span>
+
+<span class="sd">        The input will be sampled assuming a normal distribution</span>
+<span class="sd">        (with given mean and standard devation)</span>
+<span class="sd">        truncated to the values given by lower and upper bounds</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name : str</span>
+<span class="sd">           The name of the input.</span>
+<span class="sd">        pyomo_path : str</span>
+<span class="sd">           A string representation of the path to the variable or parameter to</span>
+<span class="sd">           be sampled. This string will be executed to retrieve the Pyomo</span>
+<span class="sd">           component.</span>
+<span class="sd">        lower : float</span>
+<span class="sd">           A lower bound on the input variable or parameter.</span>
+<span class="sd">        upper : float</span>
+<span class="sd">           An upper bound on the input variable or parameter</span>
+<span class="sd">        mean : float</span>
+<span class="sd">           The mean value to use when generating samples</span>
+<span class="sd">        std : float</span>
+<span class="sd">           The standard deviation to use when generating samples</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">           N/A</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># ToDo: put some error checking here ... Maybe we should have the model</span>
+        <span class="c1"># ToDo: already? Can use to check if the pyomo_path is valid? check if</span>
+        <span class="c1"># ToDo: bounds will be violated?</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;pyomo_path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pyomo_path</span>
+        <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lower</span>
+        <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">upper</span>
+        <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean</span>
+        <span class="n">spec</span><span class="p">[</span><span class="s1">&#39;std&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">std</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inputs</span></div>
+
+
+<div class="viewcode-block" id="ConvergenceEvaluation"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation">[docs]</a><span class="k">class</span> <span class="nc">ConvergenceEvaluation</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sampling_specifications</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ConvergenceEvaluation.get_specification"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_specification">[docs]</a>    <span class="k">def</span> <span class="nf">get_specification</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        User should override this method to return an instance of the</span>
+<span class="sd">        ConvergenceEvaluationSpecification for this particular model and test</span>
+<span class="sd">        set.</span>
+
+<span class="sd">        The basic flow for this method is:</span>
+<span class="sd">           - Create a ConvergenceEvaluationSpecification</span>
+<span class="sd">           - Call add_sampled_input for every input that should be varied.</span>
+<span class="sd">           - return the ConvergenceEvaluationSpecification</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">           ConvergenceEvaluationSpecification</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Not implemented in the base class. This&#39;</span>
+                                  <span class="s1">&#39; should be overridden in the derived class&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvergenceEvaluation.get_initialized_model"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_initialized_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_initialized_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        User should override this method to return an initialized model that is</span>
+<span class="sd">        ready to solve. The convergence evaluation methods will change the</span>
+<span class="sd">        values of parameters or variables according to the sampling</span>
+<span class="sd">        specifications.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">           Pyomo model : return a Pyomo model object that is initialized and</span>
+<span class="sd">                        ready to solve. This is the model object that will be</span>
+<span class="sd">                        used in the evaluation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Not implemented in the base class. This&#39;</span>
+                                  <span class="s1">&#39; should be overridden in the derived class&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ConvergenceEvaluation.get_solver"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_solver">[docs]</a>    <span class="k">def</span> <span class="nf">get_solver</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        User should create and return the solver that will be used for the</span>
+<span class="sd">        convergence evaluation (including any necessary options)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">           Pyomo solver</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># ToDo: We may want this to be standardized across all the models</span>
+        <span class="c1"># within IDAES (should not need different solver options for different</span>
+        <span class="c1"># unit models)</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Not implemented in the base class. This&#39;</span>
+                                  <span class="s1">&#39; should be overridden in the derived class&#39;</span><span class="p">)</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">_class_import</span><span class="p">(</span><span class="n">class_path</span><span class="p">):</span>
+    <span class="c1"># Note, this method assumes that everything in front</span>
+    <span class="c1"># of the last dot is a module, followed by one class</span>
+    <span class="c1"># I don&#39;t think this will work for nested classes</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">class_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+    <span class="n">modpath</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">il</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">modpath</span><span class="p">)</span>
+    <span class="n">ret_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="n">tokens</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">ret_class</span>
+
+
+<span class="k">def</span> <span class="nf">_run_ipopt_with_stats</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">max_cpu_time</span><span class="o">=</span><span class="mi">120</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run the solver (must be ipopt) and return the convergence statistics</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : Pyomo model</span>
+<span class="sd">       The pyomo model to be solved</span>
+
+<span class="sd">    solver : Pyomo solver</span>
+<span class="sd">       The pyomo solver to use - it must be ipopt, but with whichever options</span>
+<span class="sd">       are preferred</span>
+
+<span class="sd">    max_iter : int</span>
+<span class="sd">       The maximum number of iterations to allow for ipopt</span>
+
+<span class="sd">    max_cpu_time : int</span>
+<span class="sd">       The maximum cpu time to allow for ipopt (in seconds)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">       Returns a tuple with (solve status object, bool (solve successful or</span>
+<span class="sd">       not), number of iters, solve time)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># ToDo: Check that the &quot;solver&quot; is, in fact, IPOPT</span>
+
+    <span class="n">pyutilib</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">TempfileManager</span><span class="o">.</span><span class="n">push</span><span class="p">()</span>
+    <span class="n">tempfile</span> <span class="o">=</span> <span class="n">pyutilib</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">TempfileManager</span><span class="o">.</span><span class="n">create_tempfile</span><span class="p">(</span>
+                        <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;ipopt_out&#39;</span><span class="p">,</span>
+                        <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">opts</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;output_file&#39;</span><span class="p">:</span> <span class="n">tempfile</span><span class="p">,</span>
+            <span class="s1">&#39;max_iter&#39;</span><span class="p">:</span> <span class="n">max_iter</span><span class="p">,</span>
+            <span class="s1">&#39;max_cpu_time&#39;</span><span class="p">:</span> <span class="n">max_cpu_time</span><span class="p">}</span>
+
+    <span class="n">status_obj</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">opts</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">solved</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">status_obj</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">!=</span> <span class="n">TerminationCondition</span><span class="o">.</span><span class="n">optimal</span><span class="p">:</span>
+        <span class="n">solved</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="n">iters</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># parse the output file to get the iteration count, solver times, etc.</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tempfile</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Number of Iterations....:&#39;</span><span class="p">):</span>
+                <span class="n">tokens</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="n">iters</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span>
+                    <span class="s1">&#39;Total CPU secs in IPOPT (w/o function evaluations)   =&#39;</span><span class="p">):</span>
+                <span class="n">tokens</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="n">time</span> <span class="o">+=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">9</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span>
+                    <span class="s1">&#39;Total CPU secs in NLP function evaluations           =&#39;</span><span class="p">):</span>
+                <span class="n">tokens</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="n">time</span> <span class="o">+=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">8</span><span class="p">])</span>
+
+    <span class="n">pyutilib</span><span class="o">.</span><span class="n">services</span><span class="o">.</span><span class="n">TempfileManager</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">remove</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">status_obj</span><span class="p">,</span> <span class="n">solved</span><span class="p">,</span> <span class="n">iters</span><span class="p">,</span> <span class="n">time</span>
+
+
+<span class="k">def</span> <span class="nf">_progress_bar</span><span class="p">(</span><span class="n">fraction</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+    <span class="n">length</span> <span class="o">=</span> <span class="n">length</span> <span class="o">-</span> <span class="mi">2</span>
+    <span class="n">n_complete</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">length</span><span class="o">*</span><span class="n">fraction</span><span class="p">)</span>
+    <span class="n">n_remaining</span> <span class="o">=</span> <span class="n">length</span> <span class="o">-</span> <span class="n">n_complete</span>
+    <span class="n">characters</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;*&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">n_complete</span>         <span class="c1"># [&#39;*&#39; for i in range(n_complete)]</span>
+    <span class="n">characters</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s1">&#39;-&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">n_remaining</span><span class="p">)</span>  <span class="c1"># [&#39;-&#39; for i in range(n_remaining)])</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%5.1f%s</span><span class="s1"> [</span><span class="si">%s</span><span class="s1">] </span><span class="si">%s</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                            <span class="n">fraction</span><span class="o">*</span><span class="mf">100.0</span><span class="p">,</span> <span class="s1">&#39;%&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">characters</span><span class="p">),</span> <span class="n">msg</span><span class="p">))</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">_set_model_parameters_from_sample</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">sample_point</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This method takes the parameter values in sample_points and sets them on</span>
+<span class="sd">    the model to prepare it for the new solve</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : Pyomo model</span>
+<span class="sd">       The pyomo model that will be modified with values from the new</span>
+<span class="sd">       sample_points</span>
+
+<span class="sd">    inputs : dict</span>
+<span class="sd">       The inputs dictionary from the sample-file</span>
+
+<span class="sd">    sample_point : dict</span>
+<span class="sd">       The dictionary of var and/or parameter values for the sample point</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">       N/A</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">sample_point</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;_name&#39;</span><span class="p">:</span>
+            <span class="c1"># because parallel task manager does not handle dictionaries,</span>
+            <span class="c1"># we add an _name entry to the sample point dictionary</span>
+            <span class="c1"># ToDo: remove this when parallel task manager is fixed</span>
+            <span class="k">continue</span>
+        <span class="c1"># k stores the &quot;name&quot; of the input</span>
+        <span class="c1"># need to get the pyomo path of the input from the inputs structure</span>
+        <span class="n">pyomo_path</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;pyomo_path&#39;</span><span class="p">]</span>
+
+        <span class="n">comp</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">find_component</span><span class="p">(</span><span class="n">pyomo_path</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ctype</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">type</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">ctype</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">ctype</span> <span class="ow">is</span> <span class="n">Param</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">is_constant</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s1">&#39;Convergence testing found an input of type Param that&#39;</span>
+                        <span class="s1">&#39;was not mutable. Please make sure all sampled inputs&#39;</span>
+                        <span class="s1">&#39; are either mutable params or fixed vars.&#39;</span><span class="p">)</span>
+            <span class="n">comp</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="c1"># print(&#39;Just set&#39;, comp,&#39;to&#39;, float(v))</span>
+
+        <span class="k">elif</span> <span class="n">ctype</span> <span class="ow">is</span> <span class="n">Var</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">comp</span><span class="o">.</span><span class="n">is_fixed</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s1">&#39;Convergence testing found an input of type Var that&#39;</span>
+                        <span class="s1">&#39;was not fixed. Please make sure all sampled inputs&#39;</span>
+                        <span class="s1">&#39; are either mutable params or fixed vars.&#39;</span><span class="p">)</span>
+            <span class="n">comp</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+            <span class="c1"># print(&#39;Just set&#39;, comp,&#39;to&#39;, float(v))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Failed to find a valid input component (must be&#39;</span>
+                             <span class="s1">&#39; a fixed Var or a mutable Param). Instead,&#39;</span>
+                             <span class="s1">&#39; pyomo_path: </span><span class="si">{}</span><span class="s1"> returned: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pyomo_path</span><span class="p">,</span> <span class="n">comp</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="write_sample_file"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.write_sample_file">[docs]</a><span class="k">def</span> <span class="nf">write_sample_file</span><span class="p">(</span><span class="n">eval_spec</span><span class="p">,</span>
+                      <span class="n">filename</span><span class="p">,</span>
+                      <span class="n">convergence_evaluation_class_str</span><span class="p">,</span>
+                      <span class="n">n_points</span><span class="p">,</span>
+                      <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Samples the space of the inputs defined in the eval_spec, and creates a</span>
+<span class="sd">    json file with all the points to be used in executing a convergence</span>
+<span class="sd">    evaluation</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filename : str</span>
+<span class="sd">       The filename for the json file that will be created containing all the</span>
+<span class="sd">       points to be run</span>
+<span class="sd">    eval_spec : ConvergenceEvaluationSpecification</span>
+<span class="sd">       The convergence evaluation specification object that we would like to</span>
+<span class="sd">       sample</span>
+<span class="sd">    convergence_evaluation_class_str : str</span>
+<span class="sd">       Python string that identifies the convergence evaluation class for this</span>
+<span class="sd">       specific evaluation. This is usually in the form of module.class_name.</span>
+<span class="sd">    n_points : int</span>
+<span class="sd">       The total number of points that should be created</span>
+<span class="sd">    seed : int or None</span>
+<span class="sd">       The seed to be used when generating samples. If set to None, then the</span>
+<span class="sd">       seed is not set</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">       N/A</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+
+    <span class="c1"># build the samples</span>
+    <span class="n">samples</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_points</span><span class="p">):</span>
+        <span class="n">sample</span> <span class="o">=</span> <span class="n">samples</span><span class="p">[</span><span class="s1">&#39;Sample-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">eval_spec</span><span class="o">.</span><span class="n">inputs</span><span class="p">):</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">],</span> <span class="n">scale</span><span class="o">=</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;std&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">s</span> <span class="o">&gt;</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">]:</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;upper&#39;</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">s</span> <span class="o">&lt;</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">]:</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;lower&#39;</span><span class="p">]</span>
+            <span class="n">sample</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span>
+
+    <span class="c1"># create the dictionary storing all the necessary information</span>
+    <span class="n">jsondict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="n">jsondict</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">eval_spec</span><span class="o">.</span><span class="n">inputs</span><span class="p">)</span>
+    <span class="n">jsondict</span><span class="p">[</span><span class="s1">&#39;n_points&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">n_points</span>
+    <span class="n">jsondict</span><span class="p">[</span><span class="s1">&#39;seed&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">seed</span>
+    <span class="n">jsondict</span><span class="p">[</span><span class="s1">&#39;samples&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">samples</span>
+    <span class="n">jsondict</span><span class="p">[</span><span class="s1">&#39;convergence_evaluation_class_str&#39;</span><span class="p">]</span> <span class="o">=</span> \
+        <span class="n">convergence_evaluation_class_str</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fd</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">jsondict</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="run_convergence_evaluation_from_sample_file"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.run_convergence_evaluation_from_sample_file">[docs]</a><span class="k">def</span> <span class="nf">run_convergence_evaluation_from_sample_file</span><span class="p">(</span><span class="n">sample_file</span><span class="p">):</span>
+    <span class="c1"># load the sample file</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">sample_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fd</span><span class="p">:</span>
+            <span class="n">jsondict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">object_pairs_hook</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error reading json file: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Problem reading json file: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sample_file</span><span class="p">))</span>
+
+    <span class="c1"># create the convergence evaluation object</span>
+    <span class="n">convergence_evaluation_class_str</span> <span class="o">=</span> <span class="n">jsondict</span><span class="p">[</span>
+            <span class="s1">&#39;convergence_evaluation_class_str&#39;</span><span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">convergence_evaluation_class</span> <span class="o">=</span> <span class="n">_class_import</span><span class="p">(</span>
+                                            <span class="n">convergence_evaluation_class_str</span><span class="p">)</span>
+        <span class="n">conv_eval</span> <span class="o">=</span> <span class="n">convergence_evaluation_class</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error creating the class: </span><span class="si">{}</span><span class="s1">. Error returned: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">convergence_evaluation_class_str</span><span class="p">,</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid value specified for convergence_evaluation_class_str:&#39;</span>
+                <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> in sample file: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">convergence_evaluation_class_str</span><span class="p">,</span> <span class="n">sample_file</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">run_convergence_evaluation</span><span class="p">(</span><span class="n">jsondict</span><span class="p">,</span> <span class="n">conv_eval</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="run_convergence_evaluation"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.run_convergence_evaluation">[docs]</a><span class="k">def</span> <span class="nf">run_convergence_evaluation</span><span class="p">(</span><span class="n">sample_file_dict</span><span class="p">,</span> <span class="n">conv_eval</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Run convergence evaluation and generate the statistics based on information</span>
+<span class="sd">    in the sample_file.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sample_file_dict : dict</span>
+<span class="sd">        Dictionary created by ConvergenceEvaluationSpecification that contains</span>
+<span class="sd">        the input and sample point information</span>
+
+<span class="sd">    conv_eval : ConvergenceEvaluation</span>
+<span class="sd">        The ConvergenceEvaluation object that should be used</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">       N/A</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">sample_file_dict</span><span class="p">[</span><span class="s1">&#39;inputs&#39;</span><span class="p">]</span>
+    <span class="n">samples</span> <span class="o">=</span> <span class="n">sample_file_dict</span><span class="p">[</span><span class="s1">&#39;samples&#39;</span><span class="p">]</span>
+
+    <span class="c1"># current parallel task manager code does not work with dictionaries, so</span>
+    <span class="c1"># convert samples to a list</span>
+    <span class="c1"># ToDo: fix and test parallel task manager with dictionaries and change</span>
+    <span class="c1"># this</span>
+    <span class="n">samples_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">samples</span><span class="p">):</span>
+        <span class="n">v</span><span class="p">[</span><span class="s1">&#39;_name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">k</span>
+        <span class="n">samples_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="n">n_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples_list</span><span class="p">)</span>
+
+    <span class="n">task_mgr</span> <span class="o">=</span> <span class="n">mpiu</span><span class="o">.</span><span class="n">ParallelTaskManager</span><span class="p">(</span><span class="n">n_samples</span><span class="p">)</span>
+    <span class="n">local_samples_list</span> <span class="o">=</span> <span class="n">task_mgr</span><span class="o">.</span><span class="n">global_to_local_data</span><span class="p">(</span><span class="n">samples_list</span><span class="p">)</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">si</span><span class="p">,</span> <span class="n">ss</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">local_samples_list</span><span class="p">):</span>
+        <span class="n">sample_name</span> <span class="o">=</span> <span class="n">ss</span><span class="p">[</span><span class="s1">&#39;_name&#39;</span><span class="p">]</span>
+        <span class="c1"># print progress on the rank-0 process</span>
+        <span class="k">if</span> <span class="n">task_mgr</span><span class="o">.</span><span class="n">is_root</span><span class="p">():</span>
+            <span class="n">_progress_bar</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">si</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">local_samples_list</span><span class="p">)),</span>
+                          <span class="s1">&#39;Root Process: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sample_name</span><span class="p">))</span>
+
+        <span class="c1"># capture the output</span>
+        <span class="c1"># ToDo: make this an option and turn off for single sample execution</span>
+        <span class="n">output_buffer</span> <span class="o">=</span> <span class="n">six</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">LoggingIntercept</span><span class="p">(</span><span class="n">output_buffer</span><span class="p">,</span> <span class="s1">&#39;idaes&#39;</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">capture_output</span><span class="p">():</span>  <span class="c1"># as str_out:</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">conv_eval</span><span class="o">.</span><span class="n">get_initialized_model</span><span class="p">()</span>
+                <span class="n">_set_model_parameters_from_sample</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">ss</span><span class="p">)</span>
+                <span class="n">solver</span> <span class="o">=</span> <span class="n">conv_eval</span><span class="o">.</span><span class="n">get_solver</span><span class="p">()</span>
+                <span class="p">(</span><span class="n">status_obj</span><span class="p">,</span> <span class="n">solved</span><span class="p">,</span> <span class="n">iters</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span> <span class="o">=</span> \
+                    <span class="n">_run_ipopt_with_stats</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">solver</span><span class="p">)</span>
+
+        <span class="c1"># run without output capture</span>
+        <span class="c1"># model = conv_eval.get_initialized_model()</span>
+        <span class="c1"># _set_model_parameters_from_sample(model, inputs, ss)</span>
+        <span class="c1"># solver = conv_eval.get_solver()</span>
+        <span class="c1"># (status_obj, solved, iters, time) = \</span>
+        <span class="c1">#        _run_ipopt_with_stats(model, solver)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">solved</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Sample: </span><span class="si">{}</span><span class="s1"> failed to converge.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sample_name</span><span class="p">))</span>
+
+        <span class="n">results_dict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">results_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_name</span>
+        <span class="n">results_dict</span><span class="p">[</span><span class="s1">&#39;sample_point&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ss</span>
+        <span class="n">results_dict</span><span class="p">[</span><span class="s1">&#39;solved&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">solved</span>
+        <span class="n">results_dict</span><span class="p">[</span><span class="s1">&#39;iters&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iters</span>
+        <span class="n">results_dict</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">results_dict</span><span class="p">)</span>
+
+    <span class="n">global_results</span> <span class="o">=</span> <span class="n">task_mgr</span><span class="o">.</span><span class="n">gather_global_data</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">global_results</span></div>
+
+
+<div class="viewcode-block" id="save_convergence_statistics"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.save_convergence_statistics">[docs]</a><span class="k">def</span> <span class="nf">save_convergence_statistics</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">dmf</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">Stats</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dmf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">print_convergence_statistics</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">save_results_to_dmf</span><span class="p">(</span><span class="n">dmf</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Stats"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.Stats">[docs]</a><span class="k">class</span> <span class="nc">Stats</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">results</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">notable_cases</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">failed_cases</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iters_successful</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_successful</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+
+        <span class="c1"># loop through and gather some data</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;solved&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">iters_successful</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;iters&#39;</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time_successful</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">failed_cases</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="c1"># data for summary table</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iters_min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iters_mean</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iters_std</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">iters_max</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iters_successful</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iters_min</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iters_successful</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iters_mean</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iters_successful</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iters_std</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iters_successful</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">iters_max</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iters_successful</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_min</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_mean</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_std</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_max</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_successful</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_successful</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_successful</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_std</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_successful</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_successful</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="print_convergence_statistics"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.print_convergence_statistics">[docs]</a><span class="k">def</span> <span class="nf">print_convergence_statistics</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Print the statistics returned from run_convergence_evaluation in a set of</span>
+<span class="sd">    tables</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    inputs : dict</span>
+<span class="sd">       The inputs dictionary returned by run_convergence_evaluation</span>
+<span class="sd">    results : dict</span>
+<span class="sd">       The results dictionary returned by run_convergence_evaluation</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">       N/A</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;==== Scenario Statistics ====&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%20s</span><span class="s1"> </span><span class="si">%10s</span><span class="s1"> </span><span class="si">%10s</span><span class="s1"> </span><span class="si">%10s</span><span class="s1"> </span><span class="si">%10s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39;Parameter&#39;</span><span class="p">,</span> <span class="s1">&#39;Min&#39;</span><span class="p">,</span> <span class="s1">&#39;Mean&#39;</span><span class="p">,</span>
+                                        <span class="s1">&#39;StdDev&#39;</span><span class="p">,</span> <span class="s1">&#39;Max&#39;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">64</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">inputs</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;sample_point&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">))]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%20s</span><span class="s1"> </span><span class="si">%10g</span><span class="s1"> </span><span class="si">%10g</span><span class="s1"> </span><span class="si">%10g</span><span class="s1"> </span><span class="si">%10g</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">values</span><span class="p">),</span>
+                                            <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span>
+                                            <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span>
+                                            <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">values</span><span class="p">))))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="o">*</span><span class="mi">64</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;==== Summary ====&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Number of Successful Cases (solved=True): </span><span class="si">%.0f</span><span class="s1">/</span><span class="si">%.0f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">failed_cases</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;... Iterations      (min, -1std, mean, +1std, max):&#39;</span>
+          <span class="s1">&#39;</span><span class="si">%5.0f</span><span class="s1">, </span><span class="si">%5f</span><span class="s1">, </span><span class="si">%5f</span><span class="s1">, </span><span class="si">%5f</span><span class="s1">, </span><span class="si">%5.0f</span><span class="s1">&#39;</span>
+          <span class="o">%</span> <span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">iters_min</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">iters_mean</span> <span class="o">-</span> <span class="n">s</span><span class="o">.</span><span class="n">iters_std</span><span class="p">,</span>
+             <span class="n">s</span><span class="o">.</span><span class="n">iters_mean</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">iters_mean</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">iters_std</span><span class="p">,</span>
+             <span class="n">s</span><span class="o">.</span><span class="n">iters_max</span><span class="p">))</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;... Solver Time (s) (min, -1std, mean, +1std, max):&#39;</span>
+          <span class="s1">&#39;</span><span class="si">%5f</span><span class="s1">, </span><span class="si">%5f</span><span class="s1">, </span><span class="si">%5f</span><span class="s1">, </span><span class="si">%5f</span><span class="s1">, </span><span class="si">%5f</span><span class="s1">&#39;</span>
+          <span class="o">%</span> <span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">time_min</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">time_mean</span> <span class="o">-</span> <span class="n">s</span><span class="o">.</span><span class="n">time_std</span><span class="p">,</span>
+             <span class="n">s</span><span class="o">.</span><span class="n">time_mean</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">time_mean</span> <span class="o">+</span> <span class="n">s</span><span class="o">.</span><span class="n">time_std</span><span class="p">,</span>
+             <span class="n">s</span><span class="o">.</span><span class="n">time_max</span><span class="p">))</span>
+
+    <span class="c1"># print the detailed table</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;==== Table of Results ====&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%4s</span><span class="s1"> </span><span class="si">%20s</span><span class="s1"> </span><span class="si">%10s</span><span class="s1"> </span><span class="si">%10s</span><span class="s1"> </span><span class="si">%10s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="s1">&#39;Flag&#39;</span><span class="p">,</span> <span class="s1">&#39;Name&#39;</span><span class="p">,</span> <span class="s1">&#39;Solved&#39;</span><span class="p">,</span>
+                                       <span class="s1">&#39;Iters&#39;</span><span class="p">,</span> <span class="s1">&#39;Time&#39;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&#39;</span> <span class="o">*</span> <span class="mi">58</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="n">flag</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;solved&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">flag</span> <span class="o">=</span> <span class="s1">&#39;F&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">time_mean</span> <span class="o">+</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">s</span><span class="o">.</span><span class="n">time_std</span> <span class="ow">and</span> \
+                    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">time_mean</span> <span class="o">+</span> <span class="mf">5.0</span><span class="p">:</span>
+                <span class="c1"># add a more absolute check when s.time_std is small</span>
+                <span class="n">flag</span> <span class="o">+=</span> <span class="s1">&#39;T&#39;</span>
+            <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;iters&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">iters_mean</span> <span class="o">+</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">s</span><span class="o">.</span><span class="n">iters_std</span> <span class="ow">and</span> \
+                    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;iters&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">iters_mean</span> <span class="o">+</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="c1"># add a more absolute check when s.iters_std is small</span>
+                <span class="n">flag</span> <span class="o">+=</span> <span class="s1">&#39;I&#39;</span>
+
+        <span class="k">if</span> <span class="n">flag</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">r</span><span class="p">[</span><span class="s1">&#39;flag&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flag</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">notable_cases</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%4s</span><span class="s1"> </span><span class="si">%20s</span><span class="s1"> </span><span class="si">%10s</span><span class="s1"> </span><span class="si">%10.0f</span><span class="s1"> </span><span class="si">%10.2f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">flag</span><span class="p">,</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;solved&#39;</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;iters&#39;</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;solved&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">failed_cases</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">iters_successful</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;iters&#39;</span><span class="p">])</span>
+            <span class="n">s</span><span class="o">.</span><span class="n">time_successful</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">])</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&#39;</span> <span class="o">*</span> <span class="mi">58</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;==== Notable Cases ====&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">notable_cases</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;... None&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">s</span><span class="o">.</span><span class="n">notable_cases</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="s1">&#39;flag&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;F&#39;</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;failed solve&#39;</span>
+        <span class="k">elif</span> <span class="n">c</span><span class="p">[</span><span class="s1">&#39;flag&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;T&#39;</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;long runtime&#39;</span>
+        <span class="k">elif</span> <span class="n">c</span><span class="p">[</span><span class="s1">&#39;flag&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;I&#39;</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;high iteration count&#39;</span>
+        <span class="k">elif</span> <span class="n">c</span><span class="p">[</span><span class="s1">&#39;flag&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;TI&#39;</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;high iteration count; long runtime&#39;</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s1">&#39;sample_point&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;_name&#39;</span><span class="p">:</span>
+                <span class="c1"># we need this because the parallel task manager does not</span>
+                <span class="c1"># handle dicts  and we add _name to identify the sample name</span>
+                <span class="c1"># ToDo: fix this when the parallel task manager is extended to</span>
+                <span class="c1"># handle dicts</span>
+                <span class="k">continue</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span>
+            <span class="n">std</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;std&#39;</span><span class="p">]</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;       </span><span class="si">%20s</span><span class="s1">: </span><span class="si">%10g</span><span class="s1"> (</span><span class="si">%5.2f</span><span class="s1"> standard deviations&#39;</span>
+                  <span class="s1">&#39; above/below the mean)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">alpha</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="save_results_to_dmf"><a class="viewcode-back" href="../../../../../apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.save_results_to_dmf">[docs]</a><span class="k">def</span> <span class="nf">save_results_to_dmf</span><span class="p">(</span><span class="n">dmf</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">results</span><span class="p">,</span> <span class="n">stats</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Save results of run, along with stats, to DMF.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dmf (DMF): Data management framework object</span>
+<span class="sd">        inputs (dict): Run inputs</span>
+<span class="sd">        results (dict): Run results</span>
+<span class="sd">        stats (Stats): Calculated result statistics</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># data</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">inputs</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">results</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;sample_point&#39;</span><span class="p">][</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">))]</span>
+        <span class="n">x</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span>
+            <span class="s1">&#39;mean&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span>
+            <span class="s1">&#39;stdev&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">values</span><span class="p">))</span>
+        <span class="p">}</span>
+    <span class="n">d</span><span class="p">[</span><span class="s1">&#39;scenarios&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="n">d</span><span class="p">[</span><span class="s1">&#39;summary&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;cases_success&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">failed_cases</span><span class="p">),</span>
+        <span class="s1">&#39;cases_total&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">),</span>
+        <span class="s1">&#39;iters&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="o">.</span><span class="n">iters_min</span><span class="p">,</span>
+            <span class="s1">&#39;-1std&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="o">.</span><span class="n">iters_mean</span> <span class="o">-</span> <span class="n">stats</span><span class="o">.</span><span class="n">iters_std</span><span class="p">,</span>
+            <span class="s1">&#39;mean&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="o">.</span><span class="n">iters_mean</span><span class="p">,</span>
+            <span class="s1">&#39;+1std&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="o">.</span><span class="n">iters_mean</span> <span class="o">+</span> <span class="n">stats</span><span class="o">.</span><span class="n">iters_std</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="o">.</span><span class="n">iters_max</span>
+        <span class="p">},</span>
+        <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s1">&#39;min&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="o">.</span><span class="n">time_min</span><span class="p">,</span>
+            <span class="s1">&#39;-1std&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="o">.</span><span class="n">time_mean</span> <span class="o">-</span> <span class="n">stats</span><span class="o">.</span><span class="n">time_std</span><span class="p">,</span>
+            <span class="s1">&#39;mean&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="o">.</span><span class="n">time_mean</span><span class="p">,</span>
+            <span class="s1">&#39;+1std&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="o">.</span><span class="n">time_mean</span> <span class="o">+</span> <span class="n">stats</span><span class="o">.</span><span class="n">time_std</span><span class="p">,</span>
+            <span class="s1">&#39;max&#39;</span><span class="p">:</span> <span class="n">stats</span><span class="o">.</span><span class="n">time_max</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">tbl</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="n">notable</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">solved</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;solved&#39;</span><span class="p">]</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;solved&#39;</span><span class="p">:</span> <span class="n">solved</span><span class="p">,</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;iters&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;iters&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">vtype</span> <span class="ow">in</span> <span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;iters&#39;</span><span class="p">:</span>
+            <span class="n">mean</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">stats</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_mean&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vtype</span><span class="p">),</span>
+                                                     <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_std&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vtype</span><span class="p">))]</span>
+            <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="n">vtype</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">mean</span> <span class="o">+</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">std</span> <span class="ow">and</span> <span class="n">r</span><span class="p">[</span><span class="n">vtype</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">mean</span> <span class="o">+</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="n">item</span><span class="p">[</span><span class="s1">&#39;outlier_</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vtype</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">notable</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">solved</span><span class="p">:</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">failed_cases</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+            <span class="n">notable</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">iters_successful</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;iters&#39;</span><span class="p">])</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">time_successful</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">])</span>
+        <span class="n">tbl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">notable</span><span class="p">:</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">notable_cases</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+    <span class="n">d</span><span class="p">[</span><span class="s1">&#39;results_table&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tbl</span>
+    <span class="c1"># notable cases</span>
+    <span class="n">cases</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">stats</span><span class="o">.</span><span class="n">notable_cases</span><span class="p">:</span>
+        <span class="n">msg</span><span class="p">,</span> <span class="n">is_outlier</span> <span class="o">=</span> <span class="p">[],</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;solved&#39;</span><span class="p">]:</span>
+            <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;failed solve&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">is_outlier</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;outlier_time&#39;</span><span class="p">]:</span>
+                <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;long runtime&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;outlier_iters&#39;</span><span class="p">]:</span>
+                <span class="n">msg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;high iteration count&#39;</span><span class="p">)</span>
+        <span class="n">case</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;messages&#39;</span><span class="p">:</span> <span class="n">msg</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">is_outlier</span><span class="p">:</span>
+            <span class="n">outliers</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;sample_point&#39;</span><span class="p">]):</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s1">&#39;_name&#39;</span><span class="p">:</span>
+                    <span class="c1"># we need this because the parallel task manager does not</span>
+                    <span class="c1"># handle dicts and we add _name to identify the sample name</span>
+                    <span class="c1"># TODO: Fix this when the parallel task manager is extended</span>
+                    <span class="c1"># TODO: to handle dicts</span>
+                    <span class="k">continue</span>
+                <span class="n">mean</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span>
+                <span class="n">std</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;std&#39;</span><span class="p">]</span>
+                <span class="n">alpha</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
+                <span class="n">outliers</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+            <span class="n">case</span><span class="p">[</span><span class="s1">&#39;outliers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">outliers</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">case</span><span class="p">[</span><span class="s1">&#39;outliers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cases</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">case</span><span class="p">)</span>
+    <span class="n">d</span><span class="p">[</span><span class="s1">&#39;notable_cases&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cases</span>
+    <span class="c1"># Build and save resource object</span>
+    <span class="n">rsrc</span> <span class="o">=</span> <span class="n">resource</span><span class="o">.</span><span class="n">Resource</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="p">{</span>
+        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;convergence_results&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;statistics returned from run_convergence_evaluation&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;creator&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getuser</span><span class="p">()},</span>
+        <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">d</span><span class="p">},</span> <span class="n">type_</span><span class="o">=</span><span class="n">resource</span><span class="o">.</span><span class="n">TY_DATA</span><span class="p">)</span>
+    <span class="n">dmf</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">rsrc</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

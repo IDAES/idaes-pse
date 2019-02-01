@@ -1,0 +1,7 @@
+idaes.unit\_models.flash module
+===============================
+
+.. automodule:: idaes.unit_models.flash
+    :members:
+    :undoc-members:
+    :show-inheritance:

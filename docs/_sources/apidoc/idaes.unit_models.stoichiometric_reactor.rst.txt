@@ -1,0 +1,7 @@
+idaes.unit\_models.stoichiometric\_reactor module
+=================================================
+
+.. automodule:: idaes.unit_models.stoichiometric_reactor
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -1,0 +1,7 @@
+idaes.unit\_models.cstr module
+==============================
+
+.. automodule:: idaes.unit_models.cstr
+    :members:
+    :undoc-members:
+    :show-inheritance:

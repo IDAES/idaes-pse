@@ -1,0 +1,7 @@
+idaes.property\_models.BFW\_properties module
+=============================================
+
+.. automodule:: idaes.property_models.BFW_properties
+    :members:
+    :undoc-members:
+    :show-inheritance:

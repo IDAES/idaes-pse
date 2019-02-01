@@ -1,0 +1,277 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Core Library &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="IDAES Framework Configuration" href="configuration.html" />
+    <link rel="prev" title="IDAES Modeling Standards" href="../standards.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Core Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#core-contents">Core Contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html">IDAES Framework Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="process_block.html">Process Blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_concepts.html">IDAES Modeling Concepts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="flowsheet_model.html">Flowsheet Model Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="properties.html">Property Packages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="unit_model.html">Unit Model Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_volume.html">Control Volume Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/index.html">Utility Methods</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#core-overview">Core Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>Core Library</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/core/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="core-library">
+<h1>Core Library<a class="headerlink" href="#core-library" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="core-contents">
+<h2>Core Contents<a class="headerlink" href="#core-contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">IDAES Framework Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="process_block.html">Process Blocks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_concepts.html">IDAES Modeling Concepts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flowsheet_model.html">Flowsheet Model Class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="properties.html">Property Packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="unit_model.html">Unit Model Class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control_volume.html">Control Volume Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="util/index.html">Utility Methods</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="core-overview">
+<h2>Core Overview<a class="headerlink" href="#core-overview" title="Permalink to this headline">¶</a></h2>
+<p>All components of the IDAES process modeling framework are built of Pyomo Block components (see Pyomo documentation).</p>
+<p>The ProcessBlock class is the base class of IDAES models, and provides the common foundation for all other components.</p>
+<p>FlowsheetModel objects represent the top level of the IDAES modeling hierarchy, and contain connected networks of unit models, or even contain other flowsheet models, which are connected by Pyomo Arcs.</p>
+<p>Physical property packages supply information about a material’s state including physical
+properties and flow rates. Reaction property packages are used in systems where chemical
+reactions may take place, and supply information on reaction rates and stoichiometry, based on a
+material’s state.</p>
+<p>Equipment models are derived from UnitModel. Unit models contain control volumes
+and have ports which can be used to connect material and energy flows between
+unit models. On top of the balance equations usually contained in control
+volumes unit models contain additional performance equations that may calculate
+things like heat and mass transfer or efficiency curves.</p>
+<p>ControlVolumes are the basic building block used to construct unit models that
+contain material and energy holdup and flows in and out. These blocks contain
+energy, mass, and momentum balances, as well as state and reaction
+blocks associated with the material within the control volume.</p>
+<p>More detail on the different types of modeling objects is available in the Modeling Concepts section.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="configuration.html" class="btn btn-neutral float-right" title="IDAES Framework Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../standards.html" class="btn btn-neutral" title="IDAES Modeling Standards" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

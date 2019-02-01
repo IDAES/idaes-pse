@@ -1,0 +1,7 @@
+idaes.dmf.help module
+=====================
+
+.. automodule:: idaes.dmf.help
+    :members:
+    :undoc-members:
+    :show-inheritance:

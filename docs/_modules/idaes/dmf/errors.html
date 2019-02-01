@@ -1,0 +1,352 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.dmf.errors &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>idaes.dmf.errors</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for idaes.dmf.errors</h1><div class="highlight"><pre>
+<span></span><span class="c1">##############################################################################</span>
+<span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># software owners: The Regents of the University of California, through</span>
+<span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
+<span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
+<span class="c1"># University Research Corporation, et al. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
+<span class="c1"># license information, respectively. Both files are also available online</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1">##############################################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Exception classes.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s1">&#39;Dan Gunter &lt;dkgunter@lbl.gov&gt;&#39;</span>
+
+<span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="DMFError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.DMFError">[docs]</a><span class="k">class</span> <span class="nc">DMFError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detailed_error</span><span class="o">=</span><span class="s1">&#39;No details&#39;</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">detailed_error</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DMFError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ParseError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.ParseError">[docs]</a><span class="k">class</span> <span class="nc">ParseError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="CommandError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.CommandError">[docs]</a><span class="k">class</span> <span class="nc">CommandError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">operation</span><span class="p">,</span> <span class="n">details</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Operation &quot;</span><span class="si">{op}</span><span class="s1">&quot; in command &quot;</span><span class="si">{c}</span><span class="s1">&quot; failed: </span><span class="si">{d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">op</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">command</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="n">details</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CommandError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WorkspaceError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.WorkspaceError">[docs]</a><span class="k">class</span> <span class="nc">WorkspaceError</span><span class="p">(</span><span class="n">DMFError</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="WorkspaceNotFoundError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.WorkspaceNotFoundError">[docs]</a><span class="k">class</span> <span class="nc">WorkspaceNotFoundError</span><span class="p">(</span><span class="n">WorkspaceError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_dir</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Workspace not found for path &quot;</span><span class="si">{}</span><span class="s1">&quot; &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">from_dir</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WorkspaceNotFoundError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WorkspaceCannotCreateError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.WorkspaceCannotCreateError">[docs]</a><span class="k">class</span> <span class="nc">WorkspaceCannotCreateError</span><span class="p">(</span><span class="n">WorkspaceError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Unable to create new workspace at &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WorkspaceCannotCreateError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WorkspaceConfNotFoundError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.WorkspaceConfNotFoundError">[docs]</a><span class="k">class</span> <span class="nc">WorkspaceConfNotFoundError</span><span class="p">(</span><span class="n">WorkspaceError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Workspace config not found at path &quot;</span><span class="si">{}</span><span class="s1">&quot; &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WorkspaceConfNotFoundError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WorkspaceConfMissingField"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.WorkspaceConfMissingField">[docs]</a><span class="k">class</span> <span class="nc">WorkspaceConfMissingField</span><span class="p">(</span><span class="n">WorkspaceError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">desc</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Workspace config at path &quot;</span><span class="si">{}</span><span class="s1">&quot; missing </span><span class="si">{}</span><span class="s1"> field &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span>\
+            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WorkspaceConfMissingField</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FileError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.FileError">[docs]</a><span class="k">class</span> <span class="nc">FileError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ResourceError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.ResourceError">[docs]</a><span class="k">class</span> <span class="nc">ResourceError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="NoSuchResourceError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.NoSuchResourceError">[docs]</a><span class="k">class</span> <span class="nc">NoSuchResourceError</span><span class="p">(</span><span class="n">ResourceError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">id_</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">id_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;No resource of type &quot;</span><span class="si">{}</span><span class="s1">&quot; found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">id_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;No resource &quot;</span><span class="si">{}</span><span class="s1">&quot; found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">id_</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">id_</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Resource not found&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;No resource &quot;</span><span class="si">{}</span><span class="s1">&quot; of type &quot;</span><span class="si">{}</span><span class="s1">&quot; found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">id_</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NoSuchResourceError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DuplicateResourceError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.DuplicateResourceError">[docs]</a><span class="k">class</span> <span class="nc">DuplicateResourceError</span><span class="p">(</span><span class="n">ResourceError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">id_</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;While executing &quot;</span><span class="si">{}</span><span class="s1">&quot;: Duplicate resource &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span>\
+            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">id_</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DuplicateResourceError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BadResourceError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.BadResourceError">[docs]</a><span class="k">class</span> <span class="nc">BadResourceError</span><span class="p">(</span><span class="n">ResourceError</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="SearchError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.SearchError">[docs]</a><span class="k">class</span> <span class="nc">SearchError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">problem</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Search &quot;</span><span class="si">{}</span><span class="s1">&quot; failed: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SearchError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ModuleFormatError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.ModuleFormatError">[docs]</a><span class="k">class</span> <span class="nc">ModuleFormatError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">what</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Python module &quot;</span><span class="si">{}</span><span class="s1">&quot; does not conform to conventions for a &#39;</span>\
+              <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> module: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">module_name</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">what</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ModuleFormatError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DmfError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.DmfError">[docs]</a><span class="k">class</span> <span class="nc">DmfError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="InvalidRelationError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.InvalidRelationError">[docs]</a><span class="k">class</span> <span class="nc">InvalidRelationError</span><span class="p">(</span><span class="n">DmfError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subj</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Invalid relation: </span><span class="si">{}</span><span class="s1"> --(</span><span class="si">{}</span><span class="s1">)--&gt; </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">subj</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">InvalidRelationError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DataFormatError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.DataFormatError">[docs]</a><span class="k">class</span> <span class="nc">DataFormatError</span><span class="p">(</span><span class="n">DmfError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">err</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Bad data format for type &quot;</span><span class="si">{}</span><span class="s1">&quot;:</span><span class="se">\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DataFormatError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+<span class="c1"># Alamo</span>
+
+
+<div class="viewcode-block" id="AlamoError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.AlamoError">[docs]</a><span class="k">class</span> <span class="nc">AlamoError</span><span class="p">(</span><span class="n">DmfError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AlamoError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;ALAMO Error: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="AlamoDisabledError"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.errors.html#idaes.dmf.errors.AlamoDisabledError">[docs]</a><span class="k">class</span> <span class="nc">AlamoDisabledError</span><span class="p">(</span><span class="n">AlamoError</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">AlamoDisabledError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="s1">&#39;ALAMO is disabled&#39;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

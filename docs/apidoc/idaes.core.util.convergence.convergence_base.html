@@ -1,0 +1,505 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.util.convergence.convergence_base module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.core.util.convergence.convergence_base module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.core.util.convergence.convergence_base.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.core.util.convergence.convergence_base">
+<span id="idaes-core-util-convergence-convergence-base-module"></span><h1>idaes.core.util.convergence.convergence_base module<a class="headerlink" href="#module-idaes.core.util.convergence.convergence_base" title="Permalink to this headline">¶</a></h1>
+<p>This module provides the base classes and methods for running convergence
+evaluations on IDAES models. The convergence evaluation runs a given model over
+a set of sample points to ensure reliable convergence over the parameter space.</p>
+<dl class="docutils">
+<dt>The module requires the user to provide:</dt>
+<dd><ul class="first last simple">
+<li>a set of inputs along with their lower bound, upper bound, mean,</li>
+</ul>
+</dd>
+<dt>and standard deviation.</dt>
+<dd><ul class="first last simple">
+<li>an initialized Pyomo model</li>
+<li>a Pyomo solver with appropriate options</li>
+</ul>
+</dd>
+</dl>
+<p>The module executes convergence evaluation in two steps. In the first step, a
+json file is created that containsa set of points sampled from the provided
+inputs. This step only needs to be done once - up front. The second step, which
+should be executed any time there is a major code change that could impact the
+model, takes that set of sampled points and solves the model at each of the
+points, collecting convergence statistics (success/failure, iterations, and
+solution time).</p>
+<p>This can be used as a tool to evaluate model convergence reliability over the
+defined input space, or to verify that convergence performance is not
+decreasing with framework and/or model changes.</p>
+<p>In order to write a convergence evaluation for your model, you must inherit a
+class from ConvergenceEvaluation, and implement three methods:</p>
+<blockquote>
+<div><ul class="simple">
+<li>get_specification: This method should create and return a
+ConvergenceEvaluationSpecification object. There are methods on
+ConvergenceEvaluationSpecification to add inputs. These inputs contain a
+string that identifies a Pyomo Param or Var object, the lower and upper
+bounds, and the mean and standard deviation to be used for sampling. When
+samples are generated, they are drawn from a normal distribution, and then
+truncated by the lower or upper bounds.</li>
+<li>get_initialized_model: This method should create and return a Pyomo model
+object that is already initialized and ready to be solved. This model will
+be modified according to the sampled inputs, and then it will be solved.</li>
+<li>get_solver: This method should return an instance of the Pyomo solver that
+will be used for the analysis.</li>
+</ul>
+</div></blockquote>
+<p>There are methods to create the sample points file (on
+ConvergenceEvaluationSpecification), to run a convergence evaluation
+(run_convergence_evaluation), and print the results in table form
+(print_convergence_statistics).</p>
+<p>However, this package can also be executed using the command-line interface.
+See the documentation in convergence.py for more information.</p>
+<dl class="class">
+<dt id="idaes.core.util.convergence.convergence_base.ConvergenceEvaluation">
+<em class="property">class </em><code class="descclassname">idaes.core.util.convergence.convergence_base.</code><code class="descname">ConvergenceEvaluation</code><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#ConvergenceEvaluation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_initialized_model">
+<code class="descname">get_initialized_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#ConvergenceEvaluation.get_initialized_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_initialized_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>User should override this method to return an initialized model that is
+ready to solve. The convergence evaluation methods will change the
+values of parameters or variables according to the sampling
+specifications.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Pyomo model</strong> – ready to solve. This is the model object that will be
+used in the evaluation.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">return a Pyomo model object that is initialized and</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_solver">
+<code class="descname">get_solver</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#ConvergenceEvaluation.get_solver"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_solver" title="Permalink to this definition">¶</a></dt>
+<dd><p>User should create and return the solver that will be used for the
+convergence evaluation (including any necessary options)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Pyomo solver</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_specification">
+<code class="descname">get_specification</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#ConvergenceEvaluation.get_specification"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_specification" title="Permalink to this definition">¶</a></dt>
+<dd><p>User should override this method to return an instance of the
+ConvergenceEvaluationSpecification for this particular model and test
+set.</p>
+<dl class="docutils">
+<dt>The basic flow for this method is:</dt>
+<dd><ul class="first last simple">
+<li>Create a ConvergenceEvaluationSpecification</li>
+<li>Call add_sampled_input for every input that should be varied.</li>
+<li>return the ConvergenceEvaluationSpecification</li>
+</ul>
+</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification" title="idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification">ConvergenceEvaluationSpecification</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification">
+<em class="property">class </em><code class="descclassname">idaes.core.util.convergence.convergence_base.</code><code class="descname">ConvergenceEvaluationSpecification</code><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#ConvergenceEvaluationSpecification"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="method">
+<dt id="idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification.add_sampled_input">
+<code class="descname">add_sampled_input</code><span class="sig-paren">(</span><em>name</em>, <em>pyomo_path</em>, <em>lower</em>, <em>upper</em>, <em>mean</em>, <em>std</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#ConvergenceEvaluationSpecification.add_sampled_input"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification.add_sampled_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an input that should be sampled when forming the set of
+specific points that need to be run for the convergence evaluation</p>
+<p>The input will be sampled assuming a normal distribution
+(with given mean and standard devation)
+truncated to the values given by lower and upper bounds</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the input.</li>
+<li><strong>pyomo_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – A string representation of the path to the variable or parameter to
+be sampled. This string will be executed to retrieve the Pyomo
+component.</li>
+<li><strong>lower</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – A lower bound on the input variable or parameter.</li>
+<li><strong>upper</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – An upper bound on the input variable or parameter</li>
+<li><strong>mean</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – The mean value to use when generating samples</li>
+<li><strong>std</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – The standard deviation to use when generating samples</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">N/A</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification.inputs">
+<code class="descname">inputs</code><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification.inputs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.core.util.convergence.convergence_base.Stats">
+<em class="property">class </em><code class="descclassname">idaes.core.util.convergence.convergence_base.</code><code class="descname">Stats</code><span class="sig-paren">(</span><em>results</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#Stats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.Stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.core.util.convergence.convergence_base.print_convergence_statistics">
+<code class="descclassname">idaes.core.util.convergence.convergence_base.</code><code class="descname">print_convergence_statistics</code><span class="sig-paren">(</span><em>inputs</em>, <em>results</em>, <em>s</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#print_convergence_statistics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.print_convergence_statistics" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the statistics returned from run_convergence_evaluation in a set of
+tables</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inputs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – The inputs dictionary returned by run_convergence_evaluation</li>
+<li><strong>results</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – The results dictionary returned by run_convergence_evaluation</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">N/A</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.core.util.convergence.convergence_base.run_convergence_evaluation">
+<code class="descclassname">idaes.core.util.convergence.convergence_base.</code><code class="descname">run_convergence_evaluation</code><span class="sig-paren">(</span><em>sample_file_dict</em>, <em>conv_eval</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#run_convergence_evaluation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.run_convergence_evaluation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run convergence evaluation and generate the statistics based on information
+in the sample_file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sample_file_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Dictionary created by ConvergenceEvaluationSpecification that contains
+the input and sample point information</li>
+<li><strong>conv_eval</strong> (<a class="reference internal" href="#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation" title="idaes.core.util.convergence.convergence_base.ConvergenceEvaluation"><em>ConvergenceEvaluation</em></a>) – The ConvergenceEvaluation object that should be used</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">N/A</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.core.util.convergence.convergence_base.run_convergence_evaluation_from_sample_file">
+<code class="descclassname">idaes.core.util.convergence.convergence_base.</code><code class="descname">run_convergence_evaluation_from_sample_file</code><span class="sig-paren">(</span><em>sample_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#run_convergence_evaluation_from_sample_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.run_convergence_evaluation_from_sample_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="idaes.core.util.convergence.convergence_base.save_convergence_statistics">
+<code class="descclassname">idaes.core.util.convergence.convergence_base.</code><code class="descname">save_convergence_statistics</code><span class="sig-paren">(</span><em>inputs</em>, <em>results</em>, <em>dmf=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#save_convergence_statistics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.save_convergence_statistics" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="idaes.core.util.convergence.convergence_base.save_results_to_dmf">
+<code class="descclassname">idaes.core.util.convergence.convergence_base.</code><code class="descname">save_results_to_dmf</code><span class="sig-paren">(</span><em>dmf</em>, <em>inputs</em>, <em>results</em>, <em>stats</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#save_results_to_dmf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.save_results_to_dmf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save results of run, along with stats, to DMF.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dmf</strong> (<a class="reference internal" href="idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF" title="idaes.dmf.dmfbase.DMF"><em>DMF</em></a>) – Data management framework object</li>
+<li><strong>inputs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Run inputs</li>
+<li><strong>results</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Run results</li>
+<li><strong>stats</strong> (<a class="reference internal" href="#idaes.core.util.convergence.convergence_base.Stats" title="idaes.core.util.convergence.convergence_base.Stats"><em>Stats</em></a>) – Calculated result statistics</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="idaes.core.util.convergence.convergence_base.write_sample_file">
+<code class="descclassname">idaes.core.util.convergence.convergence_base.</code><code class="descname">write_sample_file</code><span class="sig-paren">(</span><em>eval_spec</em>, <em>filename</em>, <em>convergence_evaluation_class_str</em>, <em>n_points</em>, <em>seed=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/util/convergence/convergence_base.html#write_sample_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.util.convergence.convergence_base.write_sample_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Samples the space of the inputs defined in the eval_spec, and creates a
+json file with all the points to be used in executing a convergence
+evaluation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The filename for the json file that will be created containing all the
+points to be run</li>
+<li><strong>eval_spec</strong> (<a class="reference internal" href="#idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification" title="idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification"><em>ConvergenceEvaluationSpecification</em></a>) – The convergence evaluation specification object that we would like to
+sample</li>
+<li><strong>convergence_evaluation_class_str</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Python string that identifies the convergence evaluation class for this
+specific evaluation. This is usually in the form of module.class_name.</li>
+<li><strong>n_points</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The total number of points that should be created</li>
+<li><strong>seed</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.7)"><em>None</em></a>) – The seed to be used when generating samples. If set to None, then the
+seed is not set</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">N/A</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
