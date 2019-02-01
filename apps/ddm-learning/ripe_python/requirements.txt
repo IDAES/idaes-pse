@@ -1,0 +1,16 @@
+# calculations
+alamopy
+numpy
+pytest
+sympy
+rbfopt
+# docs & QA
+pytest
+codecov
+pytest-cov
+sphinx
+sphinx-rtd-theme>=0.1.9
+sphinxcontrib-napoleon>=0.5.0
+# pyomo
+git+https://github.com/PyUtilib/pyutilib
+git+https://github.com/pyomo/pyomo.git@IDAES
