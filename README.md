@@ -1,5 +1,5 @@
 <!-- BEGIN Status badges -->
-[![CircleCI](https://circleci.com/gh/IDAES/idaes.svg?style=svg&circle-token=1c18c546ab1e9e63002a6c37593f1f9efa03d587)](https://circleci.com/gh/IDAES/idaes)
+[![CircleCI](https://circleci.com/gh/IDAES/idaes.svg?style=svg&circle-token=863b50f5cba60e880ef338300fa545a3a140973c)](https://circleci.com/gh/IDAES/idaes)
 [![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes/badge.svg?branch=master&t=9GISoZ)](https://coveralls.io/github/IDAES/idaes?branch=master)
 <!-- END Status badges -->
 
