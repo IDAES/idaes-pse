@@ -1,5 +1,5 @@
 <!-- BEGIN Status badges -->
-[![CircleCI](https://circleci.com/gh/dangunter/idaes-tmp.svg?style=svg&circle-token=1c18c546ab1e9e63002a6c37593f1f9efa03d587)](https://circleci.com/gh/dangunter/idaes-tmp)
+[![CircleCI](https://circleci.com/gh/IDAES/idaes.svg?style=svg&circle-token=1c18c546ab1e9e63002a6c37593f1f9efa03d587)](https://circleci.com/gh/IDAES/idaes)
 [![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes/badge.svg?branch=master&t=9GISoZ)](https://coveralls.io/github/IDAES/idaes?branch=master)
 <!-- END Status badges -->
 
@@ -15,10 +15,7 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 in the LICENSE.txt and COPYRIGHT.txt files in this directory.**
 
 ## Getting Started
-For installation instructions, please refer to the documentation.
-
-A pre-built PDF version of the IDAES documentation is in the file
-`docs/IDAES.pdf`.
+For installation instructions, please refer to the [online documentation](https://idaes.github.io/idaes-pse/).
 
 The documentation for IDAES is built using [Sphinx](http://www.sphinx-doc.org/). To generate the HTML version of the documentation, first make sure Sphinx is installed for your version of Python, then go to the "docs/" subdirectory and run the _Makefile_:
 
