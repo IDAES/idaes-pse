@@ -1,0 +1,7 @@
+idaes.core.util.config module
+=============================
+
+.. automodule:: idaes.core.util.config
+    :members:
+    :undoc-members:
+    :show-inheritance:

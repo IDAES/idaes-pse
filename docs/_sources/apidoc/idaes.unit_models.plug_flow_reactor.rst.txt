@@ -1,0 +1,7 @@
+idaes.unit\_models.plug\_flow\_reactor module
+=============================================
+
+.. automodule:: idaes.unit_models.plug_flow_reactor
+    :members:
+    :undoc-members:
+    :show-inheritance:

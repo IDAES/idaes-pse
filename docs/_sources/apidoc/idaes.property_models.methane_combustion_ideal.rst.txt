@@ -1,0 +1,7 @@
+idaes.property\_models.methane\_combustion\_ideal module
+========================================================
+
+.. automodule:: idaes.property_models.methane_combustion_ideal
+    :members:
+    :undoc-members:
+    :show-inheritance:

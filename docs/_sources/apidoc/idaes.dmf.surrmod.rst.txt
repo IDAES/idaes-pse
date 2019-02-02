@@ -1,0 +1,7 @@
+idaes.dmf.surrmod module
+========================
+
+.. automodule:: idaes.dmf.surrmod
+    :members:
+    :undoc-members:
+    :show-inheritance:

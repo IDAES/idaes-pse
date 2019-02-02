@@ -1,0 +1,1238 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>pyutilib.misc.config &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>pyutilib.misc.config</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for pyutilib.misc.config</h1><div class="highlight"><pre>
+<span></span><span class="c1">#  _________________________________________________________________________</span>
+<span class="c1">#</span>
+<span class="c1">#  PyUtilib: A Python utility library.</span>
+<span class="c1">#  Copyright (c) 2008 Sandia Corporation.</span>
+<span class="c1">#  This software is distributed under the BSD License.</span>
+<span class="c1">#  Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,</span>
+<span class="c1">#  the U.S. Government retains certain rights in this software.</span>
+<span class="c1">#  _________________________________________________________________________</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="k">import</span> <span class="n">exc_info</span><span class="p">,</span> <span class="n">stdout</span>
+<span class="kn">from</span> <span class="nn">textwrap</span> <span class="k">import</span> <span class="n">wrap</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="k">import</span> <span class="n">xrange</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">yaml</span> <span class="k">import</span> <span class="n">dump</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="c1">#dump = lambda x,**y: str(x)</span>
+    <span class="c1"># YAML uses lowercase True/False</span>
+    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">argparse</span>
+    <span class="n">argparse_is_available</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">argparse_is_available</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;ConfigBlock&#39;</span><span class="p">,</span> <span class="s1">&#39;ConfigList&#39;</span><span class="p">,</span> <span class="s1">&#39;ConfigValue&#39;</span><span class="p">)</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;pyutilib.misc.config&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_munge_name</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">space_to_dash</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">space_to_dash</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^a-zA-Z0-9-_]&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+
+<span class="n">_leadingSpace</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s1">&#39;^([ </span><span class="se">\n\t</span><span class="s1">]*)&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_strip_indentation</span><span class="p">(</span><span class="n">doc</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">doc</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">doc</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+    <span class="k">while</span> <span class="n">lines</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">doc</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span>
+    <span class="n">minIndent</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_leadingSpace</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">l</span><span class="p">)</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_leadingSpace</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">minIndent</span><span class="p">:</span>
+        <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">minIndent</span><span class="p">:]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+        <span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="n">minIndent</span><span class="p">:]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_UnpickleableDomain</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+<span class="sd">&quot;&quot;&quot;%s %s was pickled with an unpicklable domain.</span>
+<span class="sd">    The domain was stripped and lost during the pickle process.  Setting</span>
+<span class="sd">    new values on the restored object cannot be mapped into the correct</span>
+<span class="sd">    domain.</span>
+<span class="sd">&quot;&quot;&quot;</span> <span class="o">%</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">arg</span>
+
+<span class="k">def</span> <span class="nf">_picklable</span><span class="p">(</span><span class="n">field</span><span class="p">,</span><span class="n">obj</span><span class="p">):</span>
+    <span class="n">ftype</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ftype</span> <span class="ow">in</span> <span class="n">_picklable</span><span class="o">.</span><span class="n">known</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">field</span> <span class="k">if</span> <span class="n">_picklable</span><span class="o">.</span><span class="n">known</span><span class="p">[</span><span class="n">ftype</span><span class="p">]</span> <span class="k">else</span> <span class="n">_UnpickleableDomain</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+        <span class="n">_picklable</span><span class="o">.</span><span class="n">known</span><span class="p">[</span><span class="n">ftype</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">field</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="c1"># Contrary to the documentation, Python is not at all consistent</span>
+        <span class="c1"># with the exception that is raised when pickling an object</span>
+        <span class="c1"># fails:</span>
+        <span class="c1">#</span>
+        <span class="c1">#    Python 2.6 - 3.4:  pickle.PicklingError</span>
+        <span class="c1">#    Python 3.5 - 3.6:  AttributeError</span>
+        <span class="c1">#    Python 2.6 - 2.7 (cPickle):  TypeError</span>
+        <span class="c1">#</span>
+        <span class="c1"># What we are concerned about is masking things like recursion</span>
+        <span class="c1"># errors.  Unfortunately, Python is not quite consistent there,</span>
+        <span class="c1"># either: exceeding recursion depth raises a RuntimeError</span>
+        <span class="c1"># through 3.4, then switches to a RecursionError (a derivative</span>
+        <span class="c1"># of RuntimeError).</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc_info</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="ne">RuntimeError</span><span class="p">):</span>
+            <span class="k">raise</span>
+        <span class="n">_picklable</span><span class="o">.</span><span class="n">known</span><span class="p">[</span><span class="n">ftype</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">_UnpickleableDomain</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+<span class="n">_picklable</span><span class="o">.</span><span class="n">known</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">class</span> <span class="nc">ConfigBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_parent&#39;</span><span class="p">,</span> <span class="s1">&#39;_name&#39;</span><span class="p">,</span> <span class="s1">&#39;_userSet&#39;</span><span class="p">,</span> <span class="s1">&#39;_userAccessed&#39;</span><span class="p">,</span> <span class="s1">&#39;_data&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;_default&#39;</span><span class="p">,</span> <span class="s1">&#39;_domain&#39;</span><span class="p">,</span> <span class="s1">&#39;_description&#39;</span><span class="p">,</span> <span class="s1">&#39;_doc&#39;</span><span class="p">,</span> <span class="s1">&#39;_visibility&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;_argparse&#39;</span><span class="p">)</span>
+
+    <span class="c1"># This just needs to be any singleton-like object; we use it so that</span>
+    <span class="c1"># we can tell if an argument is provided (and we can&#39;t use None as</span>
+    <span class="c1"># None is a valid user-specified argument).  Making it a class helps</span>
+    <span class="c1"># when Config objects are pickled.</span>
+    <span class="k">class</span> <span class="nc">NoArgument</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span> <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">domain</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">visibility</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parent</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userSet</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default</span> <span class="o">=</span> <span class="n">default</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="o">=</span> <span class="n">domain</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_description</span> <span class="o">=</span> <span class="n">_strip_indentation</span><span class="p">(</span><span class="n">description</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_doc</span> <span class="o">=</span> <span class="n">_strip_indentation</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_visibility</span> <span class="o">=</span> <span class="n">visibility</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_argparse</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Nominally, __getstate__() should return:</span>
+        <span class="c1">#</span>
+        <span class="c1"># state = super(Class, self).__getstate__()</span>
+        <span class="c1"># for i in Class.__slots__:</span>
+        <span class="c1">#    state[i] = getattr(self,i)</span>
+        <span class="c1"># return state</span>
+        <span class="c1">#</span>
+        <span class="c1"># Hoewever, in this case, the (nominal) parent class is</span>
+        <span class="c1"># &#39;object&#39;, and object does not implement __getstate__.  Since</span>
+        <span class="c1"># super() doesn&#39;t actually return a class, we are going to check</span>
+        <span class="c1"># the *derived class*&#39;s MRO and see if this is the second to</span>
+        <span class="c1"># last class (the last is always &#39;object&#39;).  If it is, then we</span>
+        <span class="c1"># can allocate the state dictionary.  If it is not, then we call</span>
+        <span class="c1"># the super-class&#39;s __getstate__ (since that class is NOT</span>
+        <span class="c1"># &#39;object&#39;).</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__mro__</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__getstate__</span><span class="p">()</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="vm">__slots__</span><span class="p">)</span>
+        <span class="n">state</span><span class="p">[</span><span class="s1">&#39;_domain&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_picklable</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;_domain&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="n">state</span><span class="p">[</span><span class="s1">&#39;_parent&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">state</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+            <span class="c1"># Note: per the Python data model docs, we explicitly</span>
+            <span class="c1"># set the attribute using object.__setattr__() instead</span>
+            <span class="c1"># of setting self.__dict__[key] = val.</span>
+            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">NoArgument</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">NoArgument</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">NoArgument</span><span class="p">,</span>
+                 <span class="n">description</span><span class="o">=</span><span class="n">NoArgument</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">NoArgument</span><span class="p">,</span> <span class="n">visibility</span><span class="o">=</span><span class="n">NoArgument</span><span class="p">,</span>
+                 <span class="n">implicit</span><span class="o">=</span><span class="n">NoArgument</span><span class="p">,</span> <span class="n">implicit_domain</span><span class="o">=</span><span class="n">NoArgument</span><span class="p">,</span>
+                 <span class="n">preserve_implicit</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># We will pass through overriding arguments to the constructor.</span>
+        <span class="c1"># This way if the constructor does special processing of any of</span>
+        <span class="c1"># the arguments (like implicit_domain), we don&#39;t have to repeat</span>
+        <span class="c1"># that code here.  Unfortunately, it means we need to do a bit</span>
+        <span class="c1"># of logic to be sure we only pass through appropriate</span>
+        <span class="c1"># arguments.</span>
+        <span class="n">kwds</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_description</span>
+                                <span class="k">if</span> <span class="n">description</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span> <span class="k">else</span>
+                                <span class="n">description</span> <span class="p">)</span>
+        <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;doc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_doc</span>
+                        <span class="k">if</span> <span class="n">doc</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span> <span class="k">else</span>
+                        <span class="n">doc</span> <span class="p">)</span>
+        <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;visibility&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibility</span>
+                               <span class="k">if</span> <span class="n">visibility</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span> <span class="k">else</span>
+                               <span class="n">visibility</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ConfigBlock</span><span class="p">):</span>
+            <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;implicit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_declaration</span>
+                                 <span class="k">if</span> <span class="n">implicit</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span> <span class="k">else</span>
+                                 <span class="n">implicit</span> <span class="p">)</span>
+            <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;implicit_domain&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_domain</span>
+                <span class="k">if</span> <span class="n">implicit_domain</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span> <span class="k">else</span>
+                <span class="n">implicit_domain</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="n">domain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;domain ignored by __call__(): &quot;</span>
+                            <span class="s2">&quot;class is a ConfigBlock&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">),))</span>
+            <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;default ignored by __call__(): &quot;</span>
+                            <span class="s2">&quot;class is a ConfigBlock&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">),))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;default&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+                                <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span> <span class="k">else</span>
+                                <span class="n">default</span> <span class="p">)</span>
+            <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span>
+                               <span class="k">if</span> <span class="n">domain</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span> <span class="k">else</span>
+                               <span class="n">domain</span> <span class="p">)</span>
+            <span class="k">if</span> <span class="n">implicit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;implicit ignored by __call__(): &quot;</span>
+                            <span class="s2">&quot;class </span><span class="si">%s</span><span class="s2"> is not a ConfigBlock&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">),))</span>
+            <span class="k">if</span> <span class="n">implicit_domain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;implicit_domain ignored by __call__(): &quot;</span>
+                            <span class="s2">&quot;class </span><span class="si">%s</span><span class="s2"> is not a ConfigBlock&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">),))</span>
+
+        <span class="c1"># Copy over any other object-specific information (mostly Block</span>
+        <span class="c1"># definitions)</span>
+        <span class="n">ans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ConfigBlock</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">preserve_implicit</span> <span class="ow">or</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_declared</span><span class="p">:</span>
+                    <span class="n">v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+                    <span class="n">ans</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">_tmp</span> <span class="o">=</span> <span class="n">v</span><span class="p">(</span><span class="n">preserve_implicit</span><span class="o">=</span><span class="n">preserve_implicit</span><span class="p">)</span>
+                    <span class="n">ans</span><span class="o">.</span><span class="n">_decl_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_declared</span><span class="p">:</span>
+                        <span class="n">ans</span><span class="o">.</span><span class="n">_declared</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+                    <span class="n">_tmp</span><span class="o">.</span><span class="n">_parent</span> <span class="o">=</span> <span class="n">ans</span>
+                    <span class="n">_tmp</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">_name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ans</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="c1"># ... and set the value, if appropriate</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">:</span>
+            <span class="n">ans</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ans</span>
+
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fully_qualified</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="c1"># Special case for the top-level block</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">elif</span> <span class="n">fully_qualified</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pName</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parent</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="n">fully_qualified</span><span class="p">)</span>
+            <span class="c1"># Special case for ConfigList indexing and the top-level entries</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">pName</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pName</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pName</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+
+    <span class="k">def</span> <span class="nf">set_default_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_default</span> <span class="o">=</span> <span class="n">default</span>
+
+    <span class="k">def</span> <span class="nf">set_domain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="o">=</span> <span class="n">domain</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">accessValue</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_cast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="p">()</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">err</span> <span class="o">=</span> <span class="n">exc_info</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="p">,</span> <span class="s1">&#39;__name__&#39;</span><span class="p">):</span>
+                    <span class="n">_dom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="o">.</span><span class="vm">__name__</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">_dom</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;invalid value for configuration &#39;</span><span class="si">%s</span><span class="s2">&#39;:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                                 <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Failed casting </span><span class="si">%s</span><span class="se">\n\t</span><span class="s2">to </span><span class="si">%s</span><span class="se">\n\t</span><span class="s2">Error: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+                                 <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span> <span class="n">value</span><span class="p">,</span> <span class="n">_dom</span><span class="p">,</span> <span class="n">err</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">#</span>
+        <span class="c1"># This is a dangerous construct, the failure in the first try block</span>
+        <span class="c1"># can mask a real problem.</span>
+        <span class="c1">#</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_default</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_default</span><span class="p">,</span> <span class="s1">&#39;__call__&#39;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_default</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userSet</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">declare_as_argument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Map this Config item to an argparse argument.</span>
+
+<span class="sd">Valid arguments include all valid arguments to argparse&#39;s</span>
+<span class="sd">ArgumentParser.add_argument() with the exception of &#39;default&#39;.  In addition,</span>
+<span class="sd">you may provide a group keyword argument can be used to either pass in a</span>
+<span class="sd">pre-defined option group or subparser, or else pass in the title of a</span>
+<span class="sd">group, subparser, or (subparser, group).&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="s1">&#39;default&#39;</span> <span class="ow">in</span> <span class="n">kwds</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;You cannot specify an argparse default value with &quot;</span>
+                <span class="s2">&quot;ConfigBase.declare_as_argument().  The default value is &quot;</span>
+                <span class="s2">&quot;supplied automatically from the Config definition.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s1">&#39;action&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwds</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default</span><span class="p">:</span>
+                <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;action&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;store_true&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;action&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;store_false&#39;</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="p">:</span>
+                    <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;--disable-&#39;</span> <span class="o">+</span> <span class="n">_munge_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">()),)</span>
+                <span class="k">if</span> <span class="s1">&#39;help&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwds</span><span class="p">:</span>
+                    <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;help&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;[DON&#39;T] &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_description</span>
+        <span class="k">if</span> <span class="s1">&#39;help&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwds</span><span class="p">:</span>
+            <span class="n">kwds</span><span class="p">[</span><span class="s1">&#39;help&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_description</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;--&#39;</span> <span class="o">+</span> <span class="n">_munge_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">()),)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_argparse</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_argparse</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_argparse</span> <span class="o">+</span> <span class="p">((</span><span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">),)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_argparse</span> <span class="o">=</span> <span class="p">((</span><span class="n">args</span><span class="p">,</span> <span class="n">kwds</span><span class="p">),)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">initialize_argparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">):</span>
+
+        <span class="k">def</span> <span class="nf">_get_subparser_or_group</span><span class="p">(</span><span class="n">_parser</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="c1"># Note: strings also have a &#39;title()&#39; method.  We are</span>
+            <span class="c1"># looking for things that look like argparse</span>
+            <span class="c1"># groups/subparsers, so just checking for the attribute</span>
+            <span class="c1"># is insufficient: it needs to be a string attribute as</span>
+            <span class="c1"># well</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">argparse</span><span class="o">.</span><span class="n">_ActionsContainer</span><span class="p">):</span>
+                <span class="c1">#hasattr(_group, &#39;title&#39;) and \</span>
+                <span class="c1">#    isinstance(_group.title, six.string_types):</span>
+                <span class="k">return</span> <span class="mi">2</span><span class="p">,</span> <span class="n">name</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="s1">&#39;Unknown datatype (</span><span class="si">%s</span><span class="s1">) for argparse group on &#39;</span>
+                    <span class="s1">&#39;configuration definition </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span>
+                    <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">)))</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">_grp</span> <span class="ow">in</span> <span class="n">_parser</span><span class="o">.</span><span class="n">_subparsers</span><span class="o">.</span><span class="n">_group_actions</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_grp</span><span class="o">.</span><span class="n">_name_parser_map</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="mi">1</span><span class="p">,</span> <span class="n">_grp</span><span class="o">.</span><span class="n">_name_parser_map</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+            <span class="k">for</span> <span class="n">_grp</span> <span class="ow">in</span> <span class="n">_parser</span><span class="o">.</span><span class="n">_action_groups</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">_grp</span><span class="o">.</span><span class="n">title</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="n">_grp</span>
+            <span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="n">_parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">_process_argparse_def</span><span class="p">(</span><span class="n">_args</span><span class="p">,</span> <span class="n">_kwds</span><span class="p">):</span>
+            <span class="n">_parser</span> <span class="o">=</span> <span class="n">parser</span>
+            <span class="c1"># shallow copy the dict so we can remove the group flag and</span>
+            <span class="c1"># add things like documentation, etc.</span>
+            <span class="n">_kwds</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">_kwds</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;group&#39;</span> <span class="ow">in</span> <span class="n">_kwds</span><span class="p">:</span>
+                <span class="n">_group</span> <span class="o">=</span> <span class="n">_kwds</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;group&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_group</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">_idx</span><span class="p">,</span> <span class="n">_grp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">_group</span><span class="p">):</span>
+                        <span class="n">_issub</span><span class="p">,</span> <span class="n">_parser</span> <span class="o">=</span> <span class="n">_get_subparser_or_group</span><span class="p">(</span><span class="n">_parser</span><span class="p">,</span> <span class="n">_grp</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">_issub</span> <span class="ow">and</span> <span class="n">_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">_group</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                                <span class="s2">&quot;Could not find argparse subparser &#39;</span><span class="si">%s</span><span class="s2">&#39; for &quot;</span>
+                                <span class="s2">&quot;Config item </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">_grp</span><span class="p">,</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">)))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">_issub</span><span class="p">,</span> <span class="n">_parser</span> <span class="o">=</span> <span class="n">_get_subparser_or_group</span><span class="p">(</span><span class="n">_parser</span><span class="p">,</span> <span class="n">_group</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;dest&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_kwds</span><span class="p">:</span>
+                <span class="n">_kwds</span><span class="p">[</span><span class="s1">&#39;dest&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;CONFIGBLOCK.&#39;</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;metavar&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_kwds</span> <span class="ow">and</span> \
+                   <span class="n">_kwds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;action&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span><span class="s1">&#39;store_false&#39;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">_domain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> \
+                       <span class="n">obj</span><span class="o">.</span><span class="n">_domain</span><span class="o">.</span><span class="vm">__class__</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">:</span>
+                        <span class="n">_kwds</span><span class="p">[</span><span class="s1">&#39;metavar&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">_domain</span><span class="o">.</span><span class="vm">__name__</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">_kwds</span><span class="p">[</span><span class="s1">&#39;metavar&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_munge_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span>
+                                                       <span class="kc">False</span><span class="p">)</span>
+            <span class="n">_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="o">*</span><span class="n">_args</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">SUPPRESS</span><span class="p">,</span> <span class="o">**</span><span class="n">_kwds</span><span class="p">)</span>
+
+        <span class="k">assert</span> <span class="p">(</span><span class="n">argparse_is_available</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">level</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_collector</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">_argparse</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">_args</span><span class="p">,</span> <span class="n">_kwds</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">_argparse</span><span class="p">:</span>
+                <span class="n">_process_argparse_def</span><span class="p">(</span><span class="n">_args</span><span class="p">,</span> <span class="n">_kwds</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">import_argparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parsed_args</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">level</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_collector</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">_argparse</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">_args</span><span class="p">,</span> <span class="n">_kwds</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">_argparse</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s1">&#39;dest&#39;</span> <span class="ow">in</span> <span class="n">_kwds</span><span class="p">:</span>
+                    <span class="n">_dest</span> <span class="o">=</span> <span class="n">_kwds</span><span class="p">[</span><span class="s1">&#39;dest&#39;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">_dest</span> <span class="ow">in</span> <span class="n">parsed_args</span><span class="p">:</span>
+                        <span class="n">obj</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">parsed_args</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">_dest</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">_dest</span> <span class="o">=</span> <span class="s1">&#39;CONFIGBLOCK.&#39;</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">_dest</span> <span class="ow">in</span> <span class="n">parsed_args</span><span class="p">:</span>
+                        <span class="n">obj</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">parsed_args</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">_dest</span><span class="p">])</span>
+                        <span class="k">del</span> <span class="n">parsed_args</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">_dest</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">parsed_args</span>
+
+    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">indent_spacing</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ostream</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">content_filter</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ConfigBlock</span><span class="o">.</span><span class="n">content_filters</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;unknown content filter &#39;</span><span class="si">%s</span><span class="s2">&#39;; valid values are </span><span class="si">%s</span><span class="s2">&quot;</span>
+                             <span class="o">%</span> <span class="p">(</span><span class="n">content_filter</span><span class="p">,</span> <span class="n">ConfigBlock</span><span class="o">.</span><span class="n">content_filters</span><span class="p">))</span>
+
+        <span class="n">_blocks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">ostream</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ostream</span><span class="o">=</span><span class="n">stdout</span>
+
+        <span class="k">for</span> <span class="n">level</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_collector</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">content_filter</span> <span class="o">==</span> <span class="s1">&#39;userdata&#39;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">obj</span><span class="o">.</span><span class="n">_userSet</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">_blocks</span><span class="p">[</span><span class="n">level</span><span class="p">:]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">indent_spacing</span> <span class="o">*</span> <span class="n">level</span> <span class="o">+</span> <span class="n">value</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,]</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">_blocks</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">ostream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                    <span class="n">_blocks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">generate_yaml_template</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indent_spacing</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">78</span><span class="p">,</span> <span class="n">visibility</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="n">minDocWidth</span> <span class="o">=</span> <span class="mi">20</span>
+        <span class="n">comment</span> <span class="o">=</span> <span class="s2">&quot;  # &quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data_collector</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">visibility</span><span class="p">))</span>
+        <span class="n">level_info</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">lvl</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">lvl</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">level_info</span><span class="p">:</span>
+                <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;off&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;line&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;over&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+            <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">_description</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">lvl</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">level_info</span><span class="p">):</span>
+            <span class="n">indent</span> <span class="o">=</span> <span class="n">lvl</span> <span class="o">*</span> <span class="n">indent_spacing</span>
+            <span class="n">_ok</span> <span class="o">=</span> <span class="n">width</span> <span class="o">-</span> <span class="n">indent</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span> <span class="o">-</span> <span class="n">minDocWidth</span>
+            <span class="n">offset</span> <span class="o">=</span> \
+                <span class="nb">max</span><span class="p">(</span> <span class="n">val</span> <span class="k">if</span> <span class="n">val</span> <span class="o">&lt;</span> <span class="n">_ok</span> <span class="k">else</span> <span class="n">key</span>
+                     <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">val</span><span class="p">,</span><span class="n">doc</span> <span class="ow">in</span> <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="p">)</span>
+            <span class="n">offset</span> <span class="o">+=</span> <span class="n">indent</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+            <span class="n">over</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+                       <span class="k">if</span> <span class="n">doc</span> <span class="o">+</span> <span class="n">offset</span> <span class="o">&gt;</span> <span class="n">width</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">])</span> <span class="o">-</span> <span class="n">over</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">offset</span> <span class="o">+</span> <span class="n">doc</span>
+                           <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+                           <span class="k">if</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">doc</span> <span class="o">&lt;=</span> <span class="n">width</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">width</span>
+            <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">offset</span>
+            <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;line&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line</span>
+            <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;over&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">over</span>
+        <span class="n">maxLvl</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">maxDoc</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">pad</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">lvl</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">level_info</span><span class="p">):</span>
+            <span class="n">_pad</span> <span class="o">=</span> <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;off&#39;</span><span class="p">]</span>
+            <span class="n">_doc</span> <span class="o">=</span> <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;line&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">_pad</span>
+            <span class="k">if</span> <span class="n">_pad</span> <span class="o">&gt;</span> <span class="n">pad</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">maxDoc</span> <span class="o">+</span> <span class="n">_pad</span> <span class="o">&lt;=</span> <span class="n">width</span><span class="p">:</span>
+                    <span class="n">pad</span> <span class="o">=</span> <span class="n">_pad</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="n">_doc</span> <span class="o">+</span> <span class="n">pad</span> <span class="o">&gt;</span> <span class="n">width</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">_doc</span> <span class="o">&gt;</span> <span class="n">maxDoc</span><span class="p">:</span>
+                <span class="n">maxDoc</span> <span class="o">=</span> <span class="n">_doc</span>
+            <span class="n">maxLvl</span> <span class="o">=</span> <span class="n">lvl</span>
+        <span class="n">os</span> <span class="o">=</span> <span class="n">six</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_description</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">comment</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_description</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">lvl</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span><span class="o">.</span><span class="n">_description</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">indent_spacing</span> <span class="o">*</span> <span class="n">lvl</span> <span class="o">+</span> <span class="n">val</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">lvl</span> <span class="o">&lt;=</span> <span class="n">maxLvl</span><span class="p">:</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">pad</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">level_info</span><span class="p">[</span><span class="n">lvl</span><span class="p">][</span><span class="s1">&#39;off&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">indent_spacing</span> <span class="o">*</span> <span class="n">lvl</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">width</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)</span> <span class="o">-</span> <span class="n">minDocWidth</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%%</span><span class="s1">-</span><span class="si">%d</span><span class="s1">s&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">field</span> <span class="o">-</span> <span class="n">indent_spacing</span> <span class="o">*</span> <span class="n">lvl</span><span class="p">)</span> <span class="o">%</span> <span class="n">val</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">val</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">field</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">comment</span><span class="p">)</span>
+            <span class="n">txtArea</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">width</span> <span class="o">-</span> <span class="n">field</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">comment</span><span class="p">),</span> <span class="n">minDocWidth</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">((</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">field</span> <span class="o">+</span> <span class="n">comment</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="n">wrap</span><span class="p">(</span>
+                    <span class="n">obj</span><span class="o">.</span><span class="n">_description</span><span class="p">,</span> <span class="n">txtArea</span><span class="p">,</span> <span class="n">subsequent_indent</span><span class="o">=</span><span class="s1">&#39;  &#39;</span><span class="p">)))</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">generate_documentation</span>\
+            <span class="p">(</span> <span class="bp">self</span><span class="p">,</span>
+              <span class="n">block_start</span><span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">begin</span><span class="si">{description}</span><span class="s2">[topsep=0pt,parsep=0.5em,itemsep=-0.4em]</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span>
+              <span class="n">block_end</span><span class="o">=</span>   <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">end</span><span class="si">{description}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span>
+              <span class="n">item_start</span><span class="o">=</span>  <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">item[{</span><span class="si">%s</span><span class="s2">}]</span><span class="se">\\</span><span class="s2">hfill</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span>
+              <span class="n">item_body</span><span class="o">=</span>   <span class="s2">&quot;</span><span class="se">\\\\</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+              <span class="n">item_end</span><span class="o">=</span>    <span class="s2">&quot;&quot;</span><span class="p">,</span>
+              <span class="n">indent_spacing</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+              <span class="n">width</span><span class="o">=</span><span class="mi">78</span><span class="p">,</span>
+              <span class="n">visibility</span><span class="o">=</span><span class="mi">0</span>
+              <span class="p">):</span>
+        <span class="n">os</span> <span class="o">=</span> <span class="n">six</span><span class="o">.</span><span class="n">StringIO</span><span class="p">()</span>
+        <span class="n">level</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">lastObj</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="n">indent</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">lvl</span><span class="p">,</span> <span class="n">val</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_collector</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">visibility</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="c1">#print len(level), lvl, val, obj</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">level</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">lvl</span><span class="p">:</span>
+                <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">level</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">lvl</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">level</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="n">level</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lastObj</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">block_start</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">block_start</span> <span class="o">%</span> <span class="n">lastObj</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+                <span class="k">elif</span> <span class="n">block_start</span><span class="p">:</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">block_start</span><span class="p">)</span>
+                <span class="n">indent</span> <span class="o">+=</span> <span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">indent_spacing</span>
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">level</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">lvl</span><span class="p">:</span>
+                <span class="n">_last</span> <span class="o">=</span> <span class="n">level</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">_last</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">indent</span> <span class="o">=</span> <span class="n">indent</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">indent_spacing</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">block_end</span><span class="p">:</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">block_end</span> <span class="o">%</span> <span class="n">_last</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+                    <span class="k">elif</span> <span class="n">block_end</span><span class="p">:</span>
+                        <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">block_end</span><span class="p">)</span>
+
+            <span class="n">lastObj</span> <span class="o">=</span> <span class="n">obj</span>
+            <span class="k">if</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">item_start</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">item_start</span> <span class="o">%</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+            <span class="k">elif</span> <span class="n">item_start</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">item_start</span><span class="p">)</span>
+            <span class="n">_doc</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">_doc</span> <span class="ow">or</span> <span class="n">obj</span><span class="o">.</span><span class="n">_description</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">_doc</span><span class="p">:</span>
+                <span class="n">_wrapLines</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1"> &#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_doc</span>
+                <span class="k">if</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">item_body</span><span class="p">:</span>
+                    <span class="n">_doc</span> <span class="o">=</span> <span class="n">item_body</span> <span class="o">%</span> <span class="p">(</span><span class="n">_doc</span><span class="p">,)</span>
+                <span class="k">elif</span> <span class="n">_doc</span><span class="p">:</span>
+                    <span class="n">_doc</span> <span class="o">=</span> <span class="n">item_body</span>
+                <span class="k">if</span> <span class="n">_wrapLines</span><span class="p">:</span>
+                    <span class="n">doc_lines</span> <span class="o">=</span> <span class="n">wrap</span><span class="p">(</span>
+                        <span class="n">_doc</span><span class="p">,</span>
+                        <span class="n">width</span><span class="p">,</span>
+                        <span class="n">initial_indent</span><span class="o">=</span><span class="n">indent</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">indent_spacing</span><span class="p">,</span>
+                        <span class="n">subsequent_indent</span><span class="o">=</span><span class="n">indent</span> <span class="o">+</span> <span class="s1">&#39; &#39;</span> <span class="o">*</span> <span class="n">indent_spacing</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">doc_lines</span> <span class="o">=</span> <span class="p">(</span><span class="n">_doc</span><span class="p">,)</span>
+                <span class="c1"># Write things out</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">doc_lines</span><span class="p">))</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">doc_lines</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">item_end</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">item_end</span> <span class="o">%</span> <span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+            <span class="k">elif</span> <span class="n">item_end</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">item_end</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">level</span><span class="p">:</span>
+            <span class="n">indent</span> <span class="o">=</span> <span class="n">indent</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">indent_spacing</span><span class="p">]</span>
+            <span class="n">_last</span> <span class="o">=</span> <span class="n">level</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="ow">in</span> <span class="n">block_end</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">block_end</span> <span class="o">%</span> <span class="n">_last</span><span class="o">.</span><span class="n">name</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">indent</span> <span class="o">+</span> <span class="n">block_end</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">user_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_userSet</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="bp">self</span>
+        <span class="k">for</span> <span class="n">level</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_collector</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">_userSet</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">obj</span>
+
+    <span class="k">def</span> <span class="nf">unused_user_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_userSet</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="bp">self</span>
+        <span class="k">for</span> <span class="n">level</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_collector</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">_userSet</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">obj</span><span class="o">.</span><span class="n">_userAccessed</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">obj</span>
+
+
+<span class="k">class</span> <span class="nc">ConfigValue</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="n">ConfigBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accessValue</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">accessValue</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+
+    <span class="k">def</span> <span class="nf">set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cast</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userSet</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">_data_collector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">visibility</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">docMode</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">visibility</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">visibility</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibility</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">_str</span> <span class="o">=</span> <span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">,</span> <span class="n">default_flow_style</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">_str</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;...&quot;</span><span class="p">):</span>
+            <span class="n">_str</span> <span class="o">=</span> <span class="n">_str</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span>
+        <span class="k">yield</span> <span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">_str</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ConfigList</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="n">ConfigBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="o">=</span> <span class="n">ConfigValue</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="p">,</span> <span class="n">ConfigBase</span><span class="p">):</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="o">=</span> <span class="n">ConfigValue</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ConfigList</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__setstate__</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">_parent</span> <span class="o">=</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">val</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">val</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">):</span>
+        <span class="c1"># Note: get() is borrowed from ConfigBlock for cases where we</span>
+        <span class="c1"># want the raw stored object (and to aviod the implicit</span>
+        <span class="c1"># conversion of ConfigValue members to their stored data).</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">return</span> <span class="n">val</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ConfigValue</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="c1"># Note: this will fail if the element doesn&#39;t exist in _data.</span>
+        <span class="c1"># As a result, *this* list doesn&#39;t change when someone tries to</span>
+        <span class="c1"># change an element; instead, the *element* gets its _userSet</span>
+        <span class="c1"># flag set.</span>
+        <span class="c1">#self._userSet = True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="fm">__len__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accessValue</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">accessValue</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">config</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">accessValue</span><span class="p">)</span> <span class="k">for</span> <span class="n">config</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="c1"># If the set_value fails part-way through the list values, we</span>
+        <span class="c1"># want to restore a deterministic state.  That is, either</span>
+        <span class="c1"># set_value succeeds completely, or else nothing happens.</span>
+        <span class="n">_old</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> \
+               <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ConfigList</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">_old</span>
+            <span class="k">raise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userSet</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ConfigBase</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="c1"># Because the base reset() calls set_value, any deefault list</span>
+        <span class="c1"># entries will get their userSet flag set.  This is wrong, as</span>
+        <span class="c1"># reset() should conceptually reset teh object to it&#39;s default</span>
+        <span class="c1"># state (e.g., before the user ever had a chance to mess with</span>
+        <span class="c1"># things).  As the list could contain a ConfigBlock, this is a</span>
+        <span class="c1"># recursive operation to put the userSet values back.</span>
+        <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_values</span><span class="p">():</span>
+            <span class="n">val</span><span class="o">.</span><span class="n">_userSet</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">):</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cast</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="c1">#print self._data[-1], type(self._data[-1])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">_parent</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="s1">&#39;[</span><span class="si">%s</span><span class="s1">]&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">_userSet</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userSet</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;DEPRECATED: ConfigList.add() has been deprecated.  Use append()&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_data_collector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">visibility</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">docMode</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">visibility</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">visibility</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibility</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">docMode</span><span class="p">:</span>
+            <span class="c1"># In documentation mode, we do NOT list the documentation</span>
+            <span class="c1"># for any sub-data, and instead document the *domain*</span>
+            <span class="c1"># information (as all the entries should share the same</span>
+            <span class="c1"># domain, potentially duplicating that documentation is</span>
+            <span class="c1"># somewhat redundant, and worse, if the list is empty, then</span>
+            <span class="c1"># no documentation is generated at all!)</span>
+            <span class="k">yield</span> <span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">prefix</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(),</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="n">subDomain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_domain</span><span class="o">.</span><span class="n">_data_collector</span><span class="p">(</span><span class="n">level</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;- &#39;</span><span class="p">,</span>
+                                                     <span class="n">visibility</span><span class="p">,</span> <span class="n">docMode</span><span class="p">)</span>
+            <span class="c1"># Pop off the (empty) block entry</span>
+            <span class="n">six</span><span class="o">.</span><span class="n">next</span><span class="p">(</span><span class="n">subDomain</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">subDomain</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">v</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">prefix</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">prefix</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39; []&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">prefix</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(),</span> <span class="bp">self</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">level</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">_data_collector</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="s1">&#39;- &#39;</span><span class="p">,</span> <span class="n">visibility</span><span class="p">,</span> <span class="n">docMode</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">v</span>
+
+
+<span class="k">class</span> <span class="nc">ConfigBlock</span><span class="p">(</span><span class="n">ConfigBase</span><span class="p">):</span>
+    <span class="n">content_filters</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="s1">&#39;userdata&#39;</span><span class="p">)</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;_decl_order&#39;</span><span class="p">,</span> <span class="s1">&#39;_declared&#39;</span><span class="p">,</span> <span class="s1">&#39;_implicit_declaration&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;_implicit_domain&#39;</span><span class="p">)</span>
+    <span class="n">_all_slots</span> <span class="o">=</span> <span class="vm">__slots__</span> <span class="o">+</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="vm">__slots__</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">implicit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">implicit_domain</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">visibility</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_declared</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_declaration</span> <span class="o">=</span> <span class="n">implicit</span>
+        <span class="k">if</span> <span class="n">implicit_domain</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">implicit_domain</span><span class="p">,</span> <span class="n">ConfigBase</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_domain</span> <span class="o">=</span> <span class="n">implicit_domain</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_domain</span> <span class="o">=</span> <span class="n">ConfigValue</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">implicit_domain</span><span class="p">)</span>
+        <span class="n">ConfigBase</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="p">{},</span> <span class="n">description</span><span class="p">,</span> <span class="n">doc</span><span class="p">,</span> <span class="n">visibility</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ConfigBlock</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__getstate__</span><span class="p">()</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">update</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">))</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ConfigBlock</span><span class="o">.</span><span class="vm">__slots__</span><span class="p">)</span>
+        <span class="n">state</span><span class="p">[</span><span class="s1">&#39;_implicit_domain&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_picklable</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s1">&#39;_implicit_domain&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">state</span>
+
+    <span class="k">def</span> <span class="nf">__setstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">ConfigBlock</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__setstate__</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">itervalues</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">):</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">_parent</span> <span class="o">=</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">ConfigValue</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_domain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_domain</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ConfigValue</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">setdefault</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="n">ConfigBase</span><span class="o">.</span><span class="n">NoArgument</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="c1">#self._userAccessed = True</span>
+
+    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="c1"># Note that this will produce a KeyError if the key is not valid</span>
+        <span class="c1"># for this ConfigBlock.</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="c1"># Clean up the other data structures</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_declared</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="o">.</span><span class="fm">__len__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="c1"># Note: __getattr__ is only called after all &quot;usual&quot; attribute</span>
+        <span class="c1"># lookup methods have failed.  So, if we get here, we already</span>
+        <span class="c1"># know that key is not a __slot__ or a method, etc...</span>
+        <span class="c1">#if name in ConfigBlock._all_slots:</span>
+        <span class="c1">#    return super(ConfigBlock,self).__getattribute__(name)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+            <span class="n">_name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Unknown attribute &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">_name</span>
+        <span class="k">return</span> <span class="n">ConfigBlock</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ConfigBlock</span><span class="o">.</span><span class="n">_all_slots</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">(</span><span class="n">ConfigBlock</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+            <span class="n">ConfigBlock</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">iterkeys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">itervalues</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">itervalues</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">iteritems</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">_parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;config &#39;</span><span class="si">%s</span><span class="s2">&#39; is already assigned to Config Block &#39;</span><span class="si">%s</span><span class="s2">&#39;; &quot;</span>
+                <span class="s2">&quot;cannot reassign to &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span>
+                <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">_parent</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;duplicate config &#39;</span><span class="si">%s</span><span class="s2">&#39; defined for Config Block &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span> <span class="o">%</span>
+                <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">name</span> <span class="ow">or</span> <span class="s1">&#39;[&#39;</span> <span class="ow">in</span> <span class="n">name</span> <span class="ow">or</span> <span class="s1">&#39;]&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Illegal character in config &#39;</span><span class="si">%s</span><span class="s2">&#39; for config Block &#39;</span><span class="si">%s</span><span class="s2">&#39;: &quot;</span>
+                <span class="s2">&quot;&#39;.[]&#39; are not allowed.&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">_parent</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="n">config</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">return</span> <span class="n">config</span>
+
+    <span class="k">def</span> <span class="nf">declare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="n">ans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_declared</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ans</span>
+
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_declaration</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Key &#39;</span><span class="si">%s</span><span class="s2">&#39; not defined in Config Block &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span>
+                             <span class="s2">&quot; and Block disallows implicit entries&quot;</span> <span class="o">%</span>
+                             <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_domain</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">ConfigBase</span><span class="p">):</span>
+                <span class="n">ans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span><span class="n">config</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_domain</span><span class="p">(</span><span class="n">config</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userSet</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">ans</span>
+
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">accessValue</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">accessValue</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">((</span><span class="n">name</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">accessValue</span><span class="p">))</span>
+                    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> \
+           <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ConfigBlock</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Expected dict value for </span><span class="si">%s</span><span class="s2">.set_value, found </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span>
+                             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">),</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="n">_implicit</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">_decl_map</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+            <span class="n">_key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+                <span class="c1"># str(key) may not be key... store the mapping so that</span>
+                <span class="c1"># when we later iterate over the _decl_order, we can map</span>
+                <span class="c1"># the local keys back to the incoming value keys.</span>
+                <span class="n">_decl_map</span><span class="p">[</span><span class="n">_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_key</span> <span class="o">=</span> <span class="n">_key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span>
+                    <span class="n">_decl_map</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">_key</span><span class="p">)]</span> <span class="o">=</span> <span class="n">key</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_declaration</span><span class="p">:</span>
+                        <span class="n">_implicit</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="s2">&quot;key &#39;</span><span class="si">%s</span><span class="s2">&#39; not defined for Config Block &#39;</span><span class="si">%s</span><span class="s2">&#39; and &quot;</span>
+                            <span class="s2">&quot;implicit (undefined) keys are not allowed&quot;</span> <span class="o">%</span>
+                            <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="kc">True</span><span class="p">)))</span>
+
+        <span class="c1"># If the set_value fails part-way through the new values, we</span>
+        <span class="c1"># want to restore a deterministic state.  That is, either</span>
+        <span class="c1"># set_value succeeds completely, or else nothing happens.</span>
+        <span class="n">_old_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># We want to set the values in declaration order (so that</span>
+            <span class="c1"># things are deterministic and in case a validation depends</span>
+            <span class="c1"># on the order)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_decl_map</span><span class="p">:</span>
+                    <span class="c1">#print &quot;Setting&quot;, key, &quot; = &quot;, value</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="n">_decl_map</span><span class="p">[</span><span class="n">key</span><span class="p">]])</span>
+            <span class="c1"># implicit data is declared at the end (in sorted order)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">_implicit</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">_old_data</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userSet</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Reset the values in the order they were declared.  This</span>
+        <span class="c1"># allows reset functions to have a deterministic ordering.</span>
+        <span class="k">def</span> <span class="nf">_keep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+            <span class="n">keep</span> <span class="o">=</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_declared</span>
+            <span class="k">if</span> <span class="n">keep</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">keep</span>
+        <span class="c1"># this is an in-place slice of a list...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span> <span class="k">if</span> <span class="n">_keep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userAccessed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_userSet</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_data_collector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">visibility</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">docMode</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">visibility</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">visibility</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibility</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">prefix</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">prefix</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(),</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">level</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_decl_order</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">_data_collector</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">key</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span><span class="p">,</span>
+                                                     <span class="n">visibility</span><span class="p">,</span> <span class="n">docMode</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">v</span>
+
+<span class="c1"># Future-proofing: We will be renaming the ConfigBlock to ConfigDict in</span>
+<span class="c1"># the future</span>
+<span class="n">ConfigDict</span> <span class="o">=</span> <span class="n">ConfigBlock</span>
+
+<span class="c1"># In Python3, the items(), etc methods of dict-like things return</span>
+<span class="c1"># generator-like objects.</span>
+<span class="k">if</span> <span class="n">six</span><span class="o">.</span><span class="n">PY3</span><span class="p">:</span>
+    <span class="n">ConfigBlock</span><span class="o">.</span><span class="n">keys</span> <span class="o">=</span> <span class="n">ConfigBlock</span><span class="o">.</span><span class="n">iterkeys</span>
+    <span class="n">ConfigBlock</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">ConfigBlock</span><span class="o">.</span><span class="n">itervalues</span>
+    <span class="n">ConfigBlock</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="n">ConfigBlock</span><span class="o">.</span><span class="n">iteritems</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+idaes.core.reaction\_base module
+================================
+
+.. automodule:: idaes.core.reaction_base
+    :members:
+    :undoc-members:
+    :show-inheritance:

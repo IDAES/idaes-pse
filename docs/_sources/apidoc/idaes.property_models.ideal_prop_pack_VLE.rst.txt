@@ -1,0 +1,7 @@
+idaes.property\_models.ideal\_prop\_pack\_VLE module
+====================================================
+
+.. automodule:: idaes.property_models.ideal_prop_pack_VLE
+    :members:
+    :undoc-members:
+    :show-inheritance:

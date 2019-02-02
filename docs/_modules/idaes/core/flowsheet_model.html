@@ -1,0 +1,454 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.core.flowsheet_model &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>idaes.core.flowsheet_model</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for idaes.core.flowsheet_model</h1><div class="highlight"><pre>
+<span></span><span class="c1">##############################################################################</span>
+<span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># software owners: The Regents of the University of California, through</span>
+<span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
+<span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
+<span class="c1"># University Research Corporation, et al. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
+<span class="c1"># license information, respectively. Both files are also available online</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1">##############################################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module contains the base class for constructing flowsheet models in the</span>
+<span class="sd">IDAES modeling framework.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span>
+
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="k">as</span> <span class="nn">pe</span>
+<span class="kn">from</span> <span class="nn">pyomo.dae</span> <span class="k">import</span> <span class="n">ContinuousSet</span>
+<span class="kn">from</span> <span class="nn">pyomo.common.config</span> <span class="k">import</span> <span class="n">ConfigValue</span><span class="p">,</span> <span class="n">In</span>
+
+<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">,</span> <span class="n">declare_process_block_class</span><span class="p">,</span>
+                        <span class="n">UnitBlockData</span><span class="p">,</span> <span class="n">useDefault</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.config</span> <span class="k">import</span> <span class="n">is_physical_parameter_block</span><span class="p">,</span> <span class="n">list_of_floats</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.exceptions</span> <span class="k">import</span> <span class="n">ConfigurationError</span><span class="p">,</span> <span class="n">DynamicError</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.misc</span> <span class="k">import</span> <span class="n">add_object_reference</span>
+
+<span class="c1"># Some more information about this module</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;John Eslick, Qi Chen, Andrew Lee&quot;</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;FlowsheetBlock&#39;</span><span class="p">,</span> <span class="s1">&#39;FlowsheetBlockData&#39;</span><span class="p">]</span>
+
+<span class="c1"># Set up logger</span>
+<span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="FlowsheetBlockData"><a class="viewcode-back" href="../../../core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;FlowsheetBlock&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    FlowsheetBlock is a specialized Pyomo block for IDAES flowsheet models, and</span>
+<span class="s2">    contains instances of FlowsheetBlockData.&quot;&quot;&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">FlowsheetBlockData</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The FlowsheetBlockData Class forms the base class for all IDAES process</span>
+<span class="sd">    flowsheet models. The main purpose of this class is to automate the tasks</span>
+<span class="sd">    common to all flowsheet models and ensure that the necessary attributes of</span>
+<span class="sd">    a flowsheet model are present.</span>
+
+<span class="sd">    The most signfiicant role of the FlowsheetBlockData class is to</span>
+<span class="sd">    automatically create the time domain for the flowsheet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Create Class ConfigBlock</span>
+    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">ProcessBlockData</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">()</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;dynamic&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="n">useDefault</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Dynamic model flag&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether this model will be dynamic,</span>
+<span class="s2">**default** - useDefault.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**useDefault** - get flag from parent or False,</span>
+<span class="s2">**True** - set as a dynamic model,</span>
+<span class="s2">**False** - set as a steady-state model.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;time_set&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">list_of_floats</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Set of points for initializing time domain&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Set of points for initializing time domain. This should be a</span>
+<span class="s2">list of floating point numbers,</span>
+<span class="s2">**default** - [0].&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;default_property_package&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Default property package to use in flowsheet&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates the default property package to be used by models</span>
+<span class="s2">within this flowsheet if not otherwise specified,</span>
+<span class="s2">**default** - None.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**None** - no default property package,</span>
+<span class="s2">**a ParameterBlock object**.}&quot;&quot;&quot;</span><span class="p">))</span>
+
+<div class="viewcode-block" id="FlowsheetBlockData.build"><a class="viewcode-back" href="../../../core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        General build method for FlowsheetBlockData. This method calls a number</span>
+<span class="sd">        of sub-methods which automate the construction of expected attributes</span>
+<span class="sd">        of flowsheets.</span>
+
+<span class="sd">        Inheriting models should call `super().build`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FlowsheetBlockData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+
+        <span class="c1"># Set up dynamic flag and time domain</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_dynamics</span><span class="p">()</span></div>
+
+    <span class="c1"># TODO [Qi]: this should be implemented as a transformation</span>
+<div class="viewcode-block" id="FlowsheetBlockData.model_check"><a class="viewcode-back" href="../../../core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.model_check">[docs]</a>    <span class="k">def</span> <span class="nf">model_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method runs model checks on all unit models in a flowsheet.</span>
+
+<span class="sd">        This method searches for objects which inherit from UnitBlockData and</span>
+<span class="sd">        executes the model_check method if it exists.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Executing model checks.&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_objects</span><span class="p">(</span><span class="n">descend_into</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">UnitBlockData</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">o</span><span class="o">.</span><span class="n">model_check</span><span class="p">()</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Model/block has no model check. To &#39;</span>
+                                 <span class="s1">&#39;correct this, add a model_check method to &#39;</span>
+                                 <span class="s1">&#39;the associated unit model class&#39;</span>
+                                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">o</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">_setup_dynamics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method automates the setting of the dynamic flag and time domain</span>
+<span class="sd">        for flowsheet models.</span>
+
+<span class="sd">        Performs the following:</span>
+<span class="sd">         1) Determines if this is a top level flowsheet</span>
+<span class="sd">         2) Gets dynamic flag from parent if not top level, or checks validity</span>
+<span class="sd">            of argument provided</span>
+<span class="sd">         3) Gets time domain from parent, or creates domain if top level model</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Test to ensure model is constructed</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_constructed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> flowsheet has no parent object but &#39;</span>
+                                     <span class="s1">&#39;has not yet been constructed. Either &#39;</span>
+                                     <span class="s1">&#39;attach the flowsheet to a ConcreteModel &#39;</span>
+                                     <span class="s1">&#39;or use the argument concrete = True.&#39;</span>
+                                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># Determine if this is top level flowsheet</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Flowsheet has no parent, so top level model</span>
+            <span class="n">top_level</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">(),</span> <span class="n">pe</span><span class="o">.</span><span class="n">ConcreteModel</span><span class="p">):</span>
+            <span class="c1"># If flowsheet is attached to a ConcreteModel, this is a top level</span>
+            <span class="c1"># flowsheet. However, check if the ConcreteModel has time</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># If parent has time, it must be a ContinuousSet or Set</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>
+                              <span class="p">(</span><span class="n">ContinuousSet</span><span class="p">,</span> <span class="n">pe</span><span class="o">.</span><span class="n">Set</span><span class="p">)):</span>
+                    <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> parent ConcreteModel has an attribute &#39;</span>
+                                 <span class="s1">&#39;time. Flowsheet will use this as its time &#39;</span>
+                                 <span class="s1">&#39;domain, however this may be unexpected &#39;</span>
+                                 <span class="s1">&#39;behaviour&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                    <span class="n">top_level</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">DynamicError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> has an attribute time which is not &#39;</span>
+                                       <span class="s1">&#39;a Set or ContinuousSet.&#39;</span>
+                                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="c1"># Set top level flag</span>
+                <span class="n">top_level</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">top_level</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Check the dynamic flag, and retrieve if necessary</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span> <span class="o">==</span> <span class="n">useDefault</span><span class="p">:</span>
+            <span class="c1"># Check to see if this is a top level model</span>
+            <span class="k">if</span> <span class="n">top_level</span><span class="p">:</span>
+                <span class="c1"># If there is no parent, set dynamic to False by default and</span>
+                <span class="c1"># warn the user</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> is a top level flowhseet, but dynamic flag &#39;</span>
+                             <span class="s1">&#39;set to useDefault. Dynamic &#39;</span>
+                             <span class="s1">&#39;flag set to False by default&#39;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Get dynamic flag from parent</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="c1"># If parent does not have dynamic flag, raise Exception</span>
+                    <span class="k">raise</span> <span class="n">DynamicError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> has a parent model &#39;</span>
+                                       <span class="s1">&#39;with no dynamic attribute.&#39;</span>
+                                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># Check for case when dynamic=True, but parent dynamic=False</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">top_level</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">and</span>
+                <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">DynamicError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> trying to declare a dynamic model within &#39;</span>
+                               <span class="s1">&#39;a steady-state flowsheet. This is not &#39;</span>
+                               <span class="s1">&#39;supported by the IDAES framework. Try &#39;</span>
+                               <span class="s1">&#39;creating a dynamic flowsheet instead, and &#39;</span>
+                               <span class="s1">&#39;declaring some models as  steady-state.&#39;</span>
+                               <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># Set up time domain</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">top_level</span><span class="p">:</span>
+            <span class="c1"># Try to get reference to time object from parent</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">add_object_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                     <span class="s2">&quot;time_ref&quot;</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">DynamicError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> has a parent model &#39;</span>
+                                   <span class="s1">&#39;with no time domain&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Create time domain</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span><span class="p">:</span>
+                <span class="c1"># Check if time_set has at least two points</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">time_set</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="c1"># Check if time_set is at default value</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">time_set</span> <span class="o">==</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]:</span>
+                        <span class="c1"># If default, set default end point to be 1.0</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">time_set</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># Invalid user input, raise Excpetion</span>
+                        <span class="k">raise</span> <span class="n">DynamicError</span><span class="p">(</span><span class="s2">&quot;Flowsheet provided with invalid &quot;</span>
+                                           <span class="s2">&quot;time_set attribute - must have at &quot;</span>
+                                           <span class="s2">&quot;least two values (start and end).&quot;</span><span class="p">)</span>
+                <span class="c1"># For dynamics, need a ContinuousSet</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">ContinuousSet</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">time_set</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># For steady-state, use an ordered Set</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">pe</span><span class="o">.</span><span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">time_set</span><span class="p">,</span>
+                                   <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

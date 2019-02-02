@@ -1,0 +1,780 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.dmf.resource &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../../../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>idaes.dmf.resource</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for idaes.dmf.resource</h1><div class="highlight"><pre>
+<span></span><span class="c1">##############################################################################</span>
+<span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># software owners: The Regents of the University of California, through</span>
+<span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
+<span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
+<span class="c1"># University Research Corporation, et al. All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
+<span class="c1"># license information, respectively. Both files are also available online</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1">##############################################################################</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Resource representaitons.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">getpass</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pprint</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="c1"># third-party</span>
+<span class="kn">import</span> <span class="nn">jsonschema</span>
+<span class="kn">import</span> <span class="nn">pendulum</span>
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="c1"># local</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">datetime_timestamp</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s1">&#39;Dan Gunter &lt;dkgunter@lbl.gov&gt;&#39;</span>
+
+<span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1">#: Constants for relation predicates</span>
+<span class="n">PR_DERIVED</span> <span class="o">=</span> <span class="s1">&#39;derived&#39;</span>  <span class="c1"># derivedFrom</span>
+<span class="n">PR_CONTAINS</span> <span class="o">=</span> <span class="s1">&#39;contains&#39;</span>
+<span class="n">PR_USES</span> <span class="o">=</span> <span class="s1">&#39;uses&#39;</span>
+<span class="n">PR_VERSION</span> <span class="o">=</span> <span class="s1">&#39;version&#39;</span>
+<span class="n">RELATION_PREDICATES</span> <span class="o">=</span> <span class="p">{</span><span class="n">PR_DERIVED</span><span class="p">,</span> <span class="n">PR_CONTAINS</span><span class="p">,</span> <span class="n">PR_USES</span><span class="p">,</span> <span class="n">PR_VERSION</span><span class="p">}</span>
+
+<span class="c1">#: Constants for resource &#39;types&#39;</span>
+<span class="n">TY_EXPERIMENT</span> <span class="o">=</span> <span class="s1">&#39;experiment&#39;</span>
+<span class="n">TY_TABULAR</span> <span class="o">=</span> <span class="s1">&#39;tabular_data&#39;</span>
+<span class="n">TY_PROPERTY</span> <span class="o">=</span> <span class="s1">&#39;propertydb&#39;</span>
+<span class="n">TY_FLOWSHEET</span> <span class="o">=</span> <span class="s1">&#39;flowsheet&#39;</span>
+<span class="n">TY_NOTEBOOK</span> <span class="o">=</span> <span class="s1">&#39;notebook&#39;</span>
+<span class="n">TY_CODE</span> <span class="o">=</span> <span class="s1">&#39;code&#39;</span>
+<span class="n">TY_SURRMOD</span> <span class="o">=</span> <span class="s1">&#39;surrogate_model&#39;</span>
+<span class="n">TY_DATA</span> <span class="o">=</span> <span class="s1">&#39;data&#39;</span>
+<span class="n">TY_OTHER</span> <span class="o">=</span> <span class="s1">&#39;other&#39;</span>
+<span class="n">RESOURCE_TYPES</span> <span class="o">=</span> <span class="p">{</span><span class="n">TY_EXPERIMENT</span><span class="p">,</span> <span class="n">TY_TABULAR</span><span class="p">,</span> <span class="n">TY_PROPERTY</span><span class="p">,</span> <span class="n">TY_FLOWSHEET</span><span class="p">,</span>
+                  <span class="n">TY_NOTEBOOK</span><span class="p">,</span> <span class="n">TY_CODE</span><span class="p">,</span> <span class="n">TY_SURRMOD</span><span class="p">,</span> <span class="n">TY_DATA</span><span class="p">,</span> <span class="n">TY_OTHER</span><span class="p">}</span>
+
+<span class="c1"># Constants for fields in stored relations</span>
+<span class="n">RR_PRED</span> <span class="o">=</span> <span class="s1">&#39;predicate&#39;</span>
+<span class="n">RR_SUBJ</span> <span class="o">=</span> <span class="s1">&#39;subject&#39;</span>
+<span class="n">RR_OBJ</span> <span class="o">=</span> <span class="s1">&#39;object&#39;</span>
+<span class="n">RR_ID</span> <span class="o">=</span> <span class="s1">&#39;identifier&#39;</span>
+<span class="n">RR_ROLE</span> <span class="o">=</span> <span class="s1">&#39;role&#39;</span>
+
+<span class="n">RESOURCE_SCHEMA</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;$schema&quot;</span><span class="p">:</span> <span class="s2">&quot;http://json-schema.org/draft-04/schema#&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;http://idaes.org&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;definitions&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;SemanticVersion&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Version&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Resource version using semantic versioning&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+                <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+                <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">},</span>
+                <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">}</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;minItems&quot;</span><span class="p">:</span> <span class="mi">4</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;aliases&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;codes&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;enum&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="s2">&quot;function&quot;</span><span class="p">,</span> <span class="s2">&quot;module&quot;</span><span class="p">,</span> <span class="s2">&quot;class&quot;</span><span class="p">,</span>
+                                 <span class="s2">&quot;file&quot;</span><span class="p">,</span>
+                                 <span class="s2">&quot;package&quot;</span><span class="p">,</span> <span class="s2">&quot;repository&quot;</span><span class="p">,</span> <span class="s2">&quot;notebook&quot;</span><span class="p">]</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;desc&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;language&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;idhash&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/SemanticVersion&quot;</span><span class="p">}</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;collaborators&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;email&quot;</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">}</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;created&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;creator&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;email&quot;</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">}</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;datafiles&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;desc&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;mimetype&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;is_copy&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;boolean&quot;</span><span class="p">}</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;path&quot;</span><span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;datafiles_dir&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;desc&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;id_&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;modified&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;relations&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="n">RR_PRED</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;enum&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">RELATION_PREDICATES</span><span class="p">)</span>
+                    <span class="p">},</span>
+                    <span class="n">RR_ID</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="n">RR_ROLE</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;enum&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">RR_SUBJ</span><span class="p">,</span> <span class="n">RR_OBJ</span><span class="p">]</span>
+                    <span class="p">}</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">RR_PRED</span><span class="p">,</span> <span class="n">RR_ID</span><span class="p">,</span> <span class="n">RR_ROLE</span><span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;sources&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;doi&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;isbn&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;language&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                    <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;array&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;enum&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">RESOURCE_TYPES</span><span class="p">)</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;version_info&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;created&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;number&quot;</span><span class="p">},</span>
+                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+                <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$ref&quot;</span><span class="p">:</span> <span class="s2">&quot;#/definitions/SemanticVersion&quot;</span><span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;id_&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;additionalProperties&quot;</span><span class="p">:</span> <span class="kc">False</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="Dict"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Dict">[docs]</a><span class="k">class</span> <span class="nc">Dict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Subclass of dict that has a &#39;dirty&#39; bit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Dict</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Dict</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Dict.set_clean"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Dict.set_clean">[docs]</a>    <span class="k">def</span> <span class="nf">set_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="Dict.is_dirty"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Dict.is_dirty">[docs]</a>    <span class="k">def</span> <span class="nf">is_dirty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span></div></div>
+
+
+<div class="viewcode-block" id="Resource"><a class="viewcode-back" href="../../../dmf/resource.html#idaes.dmf.resource.Resource">[docs]</a><span class="k">class</span> <span class="nc">Resource</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Core object for the Data Management Framework.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ID_FIELD</span> <span class="o">=</span> <span class="s1">&#39;id_&#39;</span>     <span class="c1">#: Identifier field name constant</span>
+    <span class="n">TYPE_FIELD</span> <span class="o">=</span> <span class="s1">&#39;type&#39;</span>  <span class="c1">#: Resource type field name constant</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">type_</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_defaults</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">value</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">type_</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">TYPE_FIELD</span><span class="p">]</span> <span class="o">=</span> <span class="n">type_</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validator</span> <span class="o">=</span> <span class="n">jsonschema</span><span class="o">.</span><span class="n">Draft4Validator</span><span class="p">(</span><span class="n">RESOURCE_SCHEMA</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validations</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># count validations; mostly for testing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">do_copy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_tmp</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># flags for copying datafiles</span>
+
+    <span class="k">def</span> <span class="nf">_set_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">date_float</span><span class="p">(</span><span class="n">pendulum</span><span class="o">.</span><span class="n">utcnow</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">({</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ID_FIELD</span><span class="p">:</span> <span class="n">identifier_str</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">TYPE_FIELD</span><span class="p">:</span> <span class="n">TY_OTHER</span><span class="p">,</span>
+            <span class="s1">&#39;aliases&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;codes&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;collaborators&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;created&#39;</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span>
+            <span class="s1">&#39;modified&#39;</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span>
+            <span class="s1">&#39;creator&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getuser</span><span class="p">()},</span>
+            <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s1">&#39;datafiles&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;datafiles_dir&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;desc&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;relations&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;sources&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;tags&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;version_info&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s1">&#39;created&#39;</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span>
+                <span class="s1">&#39;version&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span>
+            <span class="p">}</span>
+        <span class="p">})</span>
+
+    <span class="k">def</span> <span class="nf">_massage_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># convert dates</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;sources&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">],</span> <span class="nb">float</span><span class="p">):</span>
+                    <span class="n">item</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">date_float</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;created&#39;</span><span class="p">],</span> <span class="nb">float</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;created&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">date_float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;created&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;modified&#39;</span><span class="p">],</span> <span class="nb">float</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;modified&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">date_float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;modified&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;version_info&#39;</span><span class="p">][</span><span class="s1">&#39;created&#39;</span><span class="p">],</span> <span class="nb">float</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;version_info&#39;</span><span class="p">][</span><span class="s1">&#39;created&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">date_float</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;version_info&#39;</span><span class="p">][</span><span class="s1">&#39;created&#39;</span><span class="p">])</span>
+            <span class="c1"># convert versions</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;version_info&#39;</span><span class="p">][</span><span class="s1">&#39;version&#39;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;version_info&#39;</span><span class="p">][</span><span class="s1">&#39;version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">version_list</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;version_info&#39;</span><span class="p">][</span><span class="s1">&#39;version&#39;</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;codes&#39;</span><span class="p">]):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="n">code</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">version_list</span><span class="p">(</span><span class="n">code</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">])</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;codes&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">code</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;While converting resource values: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">err</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">set_clean</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Resource.validate"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_massage_values</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validator</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validations</span> <span class="o">+=</span> <span class="mi">1</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get resource identifier.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ID_FIELD</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Resource.set_id"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.set_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ID_FIELD</span><span class="p">]</span> <span class="o">=</span> <span class="n">identifier_str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get resource type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">TYPE_FIELD</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get JSON data for this resource.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span>
+
+    <span class="nd">@data</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set JSON data for this resource.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="Resource.get_datafiles"><a class="viewcode-back" href="../../../dmf/resource.html#idaes.dmf.resource.Resource.get_datafiles">[docs]</a>    <span class="k">def</span> <span class="nf">get_datafiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate readable file objects for &#39;datafiles&#39; in resource.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            mode (str): Mode for ``open()``</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            generator: Generates ``file`` objects.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dfdir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;datafiles_dir&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">datafile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;datafiles&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">dfdir</span><span class="p">:</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">datafile</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dfdir</span><span class="p">,</span> <span class="n">datafile</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">])</span>
+            <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">fp</span></div>
+
+    <span class="k">def</span> <span class="nf">_repr_text_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pprint</span><span class="o">.</span><span class="n">pformat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+<span class="c1">#</span>
+<span class="c1"># Function(s) to help creating [two-way] relations</span>
+<span class="c1"># between resources</span>
+<span class="c1">#</span>
+
+
+<span class="c1">#: Provide attribute access to an RDF subject, predicate, object triple</span>
+<span class="n">Triple</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;Triple&#39;</span><span class="p">,</span> <span class="s1">&#39;subject predicate object&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="create_relation"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.create_relation">[docs]</a><span class="k">def</span> <span class="nf">create_relation</span><span class="p">(</span><span class="n">rel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create a relationship between two Resource instances.</span>
+
+<span class="sd">    Relations are stored in both the `subject` and `object` resources, in</span>
+<span class="sd">    the following way::</span>
+
+<span class="sd">        If R = (subject)S, (predicate)P, and (object)O</span>
+<span class="sd">        then store the following:</span>
+<span class="sd">          In S.relations: {predicate: P, identifier:O.id, role:subject}</span>
+<span class="sd">          In O.relations: {predicate: P, identifier:S.id, role:object}</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        rel (Triple): Relation triple. The &#39;subject&#39; and &#39;object&#39; parts</span>
+<span class="sd">                    should be :class:`Resource`, and the &#39;predicate&#39; should</span>
+<span class="sd">                    be a simple string.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: if this relation already exists in the subject or</span>
+<span class="sd">                    object resource, or the predicate is not in the list</span>
+<span class="sd">                    of valid ones in RELATION_PREDICATES</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">rel</span><span class="o">.</span><span class="n">predicate</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">RELATION_PREDICATES</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Bad predicate: &quot;</span><span class="si">{}</span><span class="s1">&quot; not in: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">rel</span><span class="o">.</span><span class="n">predicate</span><span class="p">,</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">RELATION_PREDICATES</span><span class="p">))))</span>
+    <span class="n">rel_d</span> <span class="o">=</span> <span class="p">{</span><span class="n">RR_PRED</span><span class="p">:</span> <span class="n">rel</span><span class="o">.</span><span class="n">predicate</span><span class="p">,</span>
+             <span class="n">RR_ID</span><span class="p">:</span> <span class="n">rel</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">Resource</span><span class="o">.</span><span class="n">ID_FIELD</span><span class="p">],</span>
+             <span class="n">RR_ROLE</span><span class="p">:</span> <span class="n">RR_SUBJ</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">rel_d</span> <span class="ow">in</span> <span class="n">rel</span><span class="o">.</span><span class="n">subject</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;relations&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Duplicate relation for subject: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rel</span><span class="p">))</span>
+    <span class="n">rel</span><span class="o">.</span><span class="n">subject</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;relations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rel_d</span><span class="p">)</span>
+    <span class="n">rel_d</span> <span class="o">=</span> <span class="p">{</span><span class="n">RR_PRED</span><span class="p">:</span> <span class="n">rel</span><span class="o">.</span><span class="n">predicate</span><span class="p">,</span>
+             <span class="n">RR_ID</span><span class="p">:</span> <span class="n">rel</span><span class="o">.</span><span class="n">subject</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="n">Resource</span><span class="o">.</span><span class="n">ID_FIELD</span><span class="p">],</span>
+             <span class="n">RR_ROLE</span><span class="p">:</span> <span class="n">RR_OBJ</span><span class="p">}</span>
+    <span class="c1"># note: hard for this to happen unless the relation was added manually</span>
+    <span class="k">if</span> <span class="n">rel_d</span> <span class="ow">in</span> <span class="n">rel</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;relations&#39;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Duplicate relation for object: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rel</span><span class="p">))</span>
+    <span class="n">rel</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;relations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rel_d</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="create_relation_args"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.create_relation_args">[docs]</a><span class="k">def</span> <span class="nf">create_relation_args</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Syntactic sugar to take 3 args instead of a Triple.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">create_relation</span><span class="p">(</span><span class="n">Triple</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="triple_from_resource_relations"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.triple_from_resource_relations">[docs]</a><span class="k">def</span> <span class="nf">triple_from_resource_relations</span><span class="p">(</span><span class="n">id_</span><span class="p">,</span> <span class="n">rrel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create a Triple from one entry in resource[&#39;relations&#39;].</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        id_ (str): Identifier of the containing resource.</span>
+<span class="sd">        rrel (dict): Stored relation with three keys, see `create_relation()`.</span>
+<span class="sd">    Return:</span>
+<span class="sd">        Triple: A triple</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">rrel</span><span class="p">[</span><span class="n">RR_ROLE</span><span class="p">]</span> <span class="o">==</span> <span class="n">RR_SUBJ</span><span class="p">:</span>
+        <span class="n">rel</span> <span class="o">=</span> <span class="n">Triple</span><span class="p">(</span><span class="n">id_</span><span class="p">,</span> <span class="n">rrel</span><span class="p">[</span><span class="n">RR_PRED</span><span class="p">],</span> <span class="n">rrel</span><span class="p">[</span><span class="n">RR_ID</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">rel</span> <span class="o">=</span> <span class="n">Triple</span><span class="p">(</span><span class="n">rrel</span><span class="p">[</span><span class="n">RR_ID</span><span class="p">],</span> <span class="n">rrel</span><span class="p">[</span><span class="n">RR_PRED</span><span class="p">],</span> <span class="n">id_</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rel</span></div>
+
+
+<span class="c1">#</span>
+<span class="c1"># Some handy-dandy conversion functions.</span>
+<span class="c1">#</span>
+
+
+<div class="viewcode-block" id="date_float"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.date_float">[docs]</a><span class="k">def</span> <span class="nf">date_float</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">bad_date</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot convert date &quot;</span><span class="si">{}</span><span class="s1">&quot; to float: </span><span class="si">{}</span><span class="s1">&#39;</span>
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+    <span class="n">dt</span><span class="p">,</span> <span class="n">usec</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">pendulum</span><span class="o">.</span><span class="n">Pendulum</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="o">*</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">bad_date</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">pendulum</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">pendulum</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ParserError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">bad_date</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">bad_date</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot convert date, value is &quot;None&quot;&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">datetime_timestamp</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span> <span class="o">+</span> <span class="n">usec</span>  <span class="c1"># just a float</span></div>
+
+
+<span class="c1"># def isoformat(ts):</span>
+<span class="c1">#     return datetime.fromtimestamp(ts).isoformat()</span>
+
+
+<div class="viewcode-block" id="version_list"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.version_list">[docs]</a><span class="k">def</span> <span class="nf">version_list</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Semantic version.</span>
+
+<span class="sd">    Three numeric identifiers, separated by a dot.</span>
+<span class="sd">    Trailing non-numeric characters allowed.</span>
+
+<span class="sd">    Inputs, string or tuple, may have less than three numeric</span>
+<span class="sd">    identifiers, but internally the value will be padded with</span>
+<span class="sd">    zeros to always be of length four.</span>
+
+<span class="sd">    A leading dash or underscore in the trailing non-numeric characters</span>
+<span class="sd">    is removed.</span>
+
+<span class="sd">    Some examples:</span>
+
+<span class="sd">    - 1           =&gt; valid    =&gt; (1, 0, 0, &#39;&#39;)</span>
+<span class="sd">    - rc3         =&gt; invalid: no number</span>
+<span class="sd">    - 1.1         =&gt; valid    =&gt; (1, 1, 0, &#39;&#39;)</span>
+<span class="sd">    - 1a          =&gt; valid    =&gt; (1, 0, 0, &#39;a&#39;)</span>
+<span class="sd">    - 1.a.1       =&gt; invalid: non-numeric can only go at end</span>
+<span class="sd">    - 1.12.1      =&gt; valid    =&gt; (1, 12, 1, &#39;&#39;)</span>
+<span class="sd">    - 1.12.13-1   =&gt; valid    =&gt; (1, 12, 13, &#39;1&#39;)</span>
+<span class="sd">    - 1.12.13.x   =&gt; invalid: too many parts</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: [major:int, minor:int, debug:int, release-type:str]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">bad_version</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Bad version: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">v</span><span class="p">))</span>
+    <span class="n">ver</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">ver</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">ver</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">ver</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">bad_version</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ver</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">bad_version</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">verlist</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># leading version numbers</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ver</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">verlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">ver</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">bad_version</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="c1"># last version number</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">ver</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">extra</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">verlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">verlist</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">s</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="s1">&#39;([0-9]+)?(.*)&#39;</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">verlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)))</span>
+            <span class="n">extra</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># last version must be int or str</span>
+        <span class="n">bad_version</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="c1"># must have at least one numbered version</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">verlist</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">bad_version</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="c1"># pad with zeros, and add non-numeric ID</span>
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">verlist</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">verlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">extra</span> <span class="ow">and</span> <span class="n">extra</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;.&#39;</span><span class="p">:</span>
+        <span class="c1"># cannot start extra version with &#39;.&#39;</span>
+        <span class="n">bad_version</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">extra</span> <span class="ow">and</span> <span class="n">extra</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">):</span>
+        <span class="n">extra</span> <span class="o">=</span> <span class="n">extra</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="n">verlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">extra</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">verlist</span></div>
+
+
+<div class="viewcode-block" id="format_version"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.format_version">[docs]</a><span class="k">def</span> <span class="nf">format_version</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">values</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">values</span><span class="p">[</span><span class="mi">3</span><span class="p">]:</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39;-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">s</span></div>
+
+
+<div class="viewcode-block" id="identifier_str"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.identifier_str">[docs]</a><span class="k">def</span> <span class="nf">identifier_str</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Unique identifier.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        value (str): If given, validate that it is a 32-byte str</span>
+<span class="sd">                     If not given or None, set new random value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># regular expression for identifier: hex string len=32</span>
+    <span class="n">id_expr</span> <span class="o">=</span> <span class="s1">&#39;[0-9a-f]</span><span class="si">{32}</span><span class="s1">&#39;</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">id_expr</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Bad format for identifier &quot;</span><span class="si">{}</span><span class="s1">&quot;, must match &#39;</span>
+                         <span class="s1">&#39;regular exprresion &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">id_expr</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">value</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

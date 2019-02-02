@@ -1,0 +1,7 @@
+idaes.dmf.resourcedb module
+===========================
+
+.. automodule:: idaes.dmf.resourcedb
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -1,0 +1,456 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Physical Property Package Classes &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Reaction Property Package Classes" href="reaction_block.html" />
+    <link rel="prev" title="Property Packages" href="properties.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Core Library</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#core-contents">Core Contents</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="configuration.html">IDAES Framework Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="process_block.html">Process Blocks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="model_concepts.html">IDAES Modeling Concepts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="flowsheet_model.html">Flowsheet Model Class</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="properties.html">Property Packages</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Physical Property Package Classes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="reaction_block.html">Reaction Property Package Classes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="properties.html#idaes-property-packages">IDAES Property Packages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="properties.html#as-needed-properties">As Needed Properties</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="unit_model.html">Unit Model Class</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_volume.html">Control Volume Classes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/index.html">Utility Methods</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#core-overview">Core Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Core Library</a> &raquo;</li>
+        
+          <li><a href="properties.html">Property Packages</a> &raquo;</li>
+        
+      <li>Physical Property Package Classes</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/core/state_block.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="physical-property-package-classes">
+<h1><a class="toc-backref" href="#id1">Physical Property Package Classes</a><a class="headerlink" href="#physical-property-package-classes" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#physical-property-package-classes" id="id1">Physical Property Package Classes</a><ul>
+<li><a class="reference internal" href="#physical-parameter-blocks" id="id2">Physical Parameter Blocks</a></li>
+<li><a class="reference internal" href="#state-blocks" id="id3">State Blocks</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>Physical property packages represent a collection of calculations necessary to determine the state properties of a given material. Property calculations form a critical part of any process model, and thus property packages form the core of the IDAES modeling framework.</p>
+<p>Physical property packages consist of two parts:</p>
+<ul class="simple">
+<li>PhysicalParameterBlocks, which contain a set of parameters associated with the specific material(s) being modeled, and</li>
+<li>StateBlocks, which contain the actual calculations of the state variables and functions.</li>
+</ul>
+<div class="section" id="physical-parameter-blocks">
+<h2><a class="toc-backref" href="#id2">Physical Parameter Blocks</a><a class="headerlink" href="#physical-parameter-blocks" title="Permalink to this headline">¶</a></h2>
+<p>Physical Parameter blocks serve as a central location for linking to a property package, and contain all the parameters and indexing sets used by a given property package.</p>
+<div class="section" id="physicalparameterbase-class">
+<h3>PhysicalParameterBase Class<a class="headerlink" href="#physicalparameterbase-class" title="Permalink to this headline">¶</a></h3>
+<p>The role of the PhysicalParameterBase class is to set up the references required by the rest of the IDAES framework for constructing instances of StateBlocks and attaching these to the PhysicalParameter block for ease of use. This allows other models to be pointed to the PhysicalParameter block in order to collect the necessary information and to construct the necessary StateBlocks without the need for the user to do this manually.</p>
+<p>Physical property packages form the core of any process model in the IDAES modeling framework, and are used by all of the other modeling components to inform them of what needs to be constructed. In order to do this, the IDAES modeling framework looks for a number of attributes in the PhysicalParameter block which are used to inform the construction of other components.</p>
+<ul class="simple">
+<li>state_block_class - a pointer to the associated class that should be called when constructing StateBlocks.</li>
+<li>phase_list - a Pyomo Set object defining the valid phases of the mixture of interest.</li>
+<li>component_list - a Pyomo Set defining the names of the chemical species present in the mixture.</li>
+<li>element_list - (optional) a Pyomo Set defining the names of the chemical elements that make up the species within the mixture. This is used when doing elemental material balances.</li>
+<li>element_comp - (optional) a dict-like object which defines the elemental composition of each species in component_list. Form: component: {element_1: value, element_2: value, …}.</li>
+<li>supported properties metadata - a list of supported physical properties that the property package supports, along with instruction to the framework on how to construct the associated variables and constraints, and the units of measurement used for the property. This information is set using the add_properties attribute of the define_metadata class method.</li>
+</ul>
+</div>
+<div class="section" id="physical-parameter-configuration-arguments">
+<h3>Physical Parameter Configuration Arguments<a class="headerlink" href="#physical-parameter-configuration-arguments" title="Permalink to this headline">¶</a></h3>
+<p>Physical Parameter blocks have one standard configuration argument:</p>
+<ul class="simple">
+<li>default_arguments - this allows the user to provide a set of default values for construction arguments in associated StateBlocks, which will be passed to all StateBlocks when they are constructed.</li>
+</ul>
+<span class="target" id="module-idaes.core.property_base"></span><dl class="class">
+<dt id="idaes.core.property_base.PhysicalParameterBase">
+<em class="property">class </em><code class="descclassname">idaes.core.property_base.</code><code class="descname">PhysicalParameterBase</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#PhysicalParameterBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.PhysicalParameterBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the base class for thermophysical parameter blocks. These are
+blocks that contain a set of parameters associated with a specific
+thermophysical property package, and are linked to by all instances of
+that property package.</p>
+<dl class="method">
+<dt id="idaes.core.property_base.PhysicalParameterBase.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#PhysicalParameterBase.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.PhysicalParameterBase.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>General build method for PropertyParameterBlocks. Inheriting models
+should call super().build.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="state-blocks">
+<h2><a class="toc-backref" href="#id3">State Blocks</a><a class="headerlink" href="#state-blocks" title="Permalink to this headline">¶</a></h2>
+<p>State Blocks are used within all IDAES Unit models (generally within ControlVolume Blocks) in order to calculate physical properties given the state of the material. State Blocks are notably different to other types of Blocks within IDAES as they are always indexed by time (and possibly space as well). There are two base Classes associated with State Blocks:</p>
+<ul class="simple">
+<li>StateBlockDataBase forms the base class for all StateBlockData objects, which contain the instructions on how to construct each instance of a State Block.</li>
+<li>StateBlockBase is used for building classes which contain methods to be applied to sets of Indexed State Blocks (or to a subset of these). See the documentation on declare_process_block_class and the IDAES tutorials and examples for more information.</li>
+</ul>
+<div class="section" id="state-block-construction-arguments">
+<h3>State Block Construction Arguments<a class="headerlink" href="#state-block-construction-arguments" title="Permalink to this headline">¶</a></h3>
+<p>State Blocks have the following construction arguments:</p>
+<ul class="simple">
+<li>parameters - a reference to the associated Physical Parameter block which will be used to make references to all necessary parameters.</li>
+<li>defined_state - this argument indicates whether the State Block should expect the material state to be fully defined by another part of the flowsheet (such as by an upstream unit operation). This argument is used to determine whether constraints such as sums of mole fractions should be enforced.</li>
+<li>has_phase_equilibrium - indicates whether the associated Control Volume or Unit model expects phase equilibrium to be enforced (if applicable).</li>
+</ul>
+</div>
+<div class="section" id="stateblockdatabase-class">
+<h3>StateBlockDataBase Class<a class="headerlink" href="#stateblockdatabase-class" title="Permalink to this headline">¶</a></h3>
+<p>StateBlockDataBase contains the code necessary for implementing the as needed construction of variables and constraints.</p>
+<dl class="class">
+<dt id="idaes.core.property_base.StateBlockDataBase">
+<em class="property">class </em><code class="descclassname">idaes.core.property_base.</code><code class="descname">StateBlockDataBase</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockDataBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockDataBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the base class for state block data objects. These are
+blocks that contain the Pyomo components associated with calculating a
+set of thermophysical and transport properties for a given material.</p>
+<dl class="method">
+<dt id="idaes.core.property_base.StateBlockDataBase.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockDataBase.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockDataBase.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>General build method for StateBlockDatas.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_base.StateBlockDataBase.define_port_members">
+<code class="descname">define_port_members</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockDataBase.define_port_members"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockDataBase.define_port_members" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method used to specific components to populate Ports with. Defaults to
+define_state_vars, and developers should overload as required.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_base.StateBlockDataBase.define_state_vars">
+<code class="descname">define_state_vars</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockDataBase.define_state_vars"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockDataBase.define_state_vars" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method that returns a dictionary of state variables used in property
+package. Implement a placeholder method which returns an Exception to
+force users to overload this.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_base.StateBlockDataBase.get_energy_diffusion_terms">
+<code class="descname">get_energy_diffusion_terms</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockDataBase.get_energy_diffusion_terms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockDataBase.get_energy_diffusion_terms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method which returns a tuple containing a valid expression to use in
+the energy balances and a constant indicating the basis of this
+expression (mass, mole or None).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_base.StateBlockDataBase.get_enthalpy_density_terms">
+<code class="descname">get_enthalpy_density_terms</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockDataBase.get_enthalpy_density_terms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockDataBase.get_enthalpy_density_terms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method which returns a tuple containing a valid expression to use in
+the energy balances and a constant indicating the basis of this
+expression (mass, mole or None).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_base.StateBlockDataBase.get_enthalpy_flow_terms">
+<code class="descname">get_enthalpy_flow_terms</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockDataBase.get_enthalpy_flow_terms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockDataBase.get_enthalpy_flow_terms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method which returns a tuple containing a valid expression to use in
+the energy balances and a constant indicating the basis of this
+expression (mass, mole or None).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_base.StateBlockDataBase.get_material_density_terms">
+<code class="descname">get_material_density_terms</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockDataBase.get_material_density_terms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockDataBase.get_material_density_terms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method which returns a tuple containing a valid expression to use in
+the material balances and a constant indicating the basis of this
+expression (mass, mole or None).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_base.StateBlockDataBase.get_material_diffusion_terms">
+<code class="descname">get_material_diffusion_terms</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockDataBase.get_material_diffusion_terms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockDataBase.get_material_diffusion_terms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method which returns a tuple containing a valid expression to use in
+the material balances and a constant indicating the basis of this
+expression (mass, mole or None).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.core.property_base.StateBlockDataBase.get_material_flow_terms">
+<code class="descname">get_material_flow_terms</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockDataBase.get_material_flow_terms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockDataBase.get_material_flow_terms" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method which returns a tuple containing a valid expression to use in
+the material balances and a constant indicating the basis of this
+expression (mass, mole or None).</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="stateblockbase-class">
+<h3>StateBlockBase Class<a class="headerlink" href="#stateblockbase-class" title="Permalink to this headline">¶</a></h3>
+<dl class="class">
+<dt id="idaes.core.property_base.StateBlockBase">
+<em class="property">class </em><code class="descclassname">idaes.core.property_base.</code><code class="descname">StateBlockBase</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockBase" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the base class for state block objects. These are used when
+constructing the SimpleBlock or IndexedBlock which will contain the
+PropertyData objects, and contains methods that can be applied to
+multiple StateBlockData objects simultaneously.</p>
+<dl class="method">
+<dt id="idaes.core.property_base.StateBlockBase.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/property_base.html#StateBlockBase.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.property_base.StateBlockBase.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a default initialization routine for StateBlocks to ensure
+that a routine is present. All StateBlockData classes should
+overload this method with one suited to the particular property package</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="reaction_block.html" class="btn btn-neutral float-right" title="Reaction Property Package Classes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="properties.html" class="btn btn-neutral" title="Property Packages" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,7 @@
+idaes.core.util.misc module
+===========================
+
+.. automodule:: idaes.core.util.misc
+    :members:
+    :undoc-members:
+    :show-inheritance:

@@ -1,0 +1,17 @@
+idaes.core.util.convergence package
+===================================
+
+.. automodule:: idaes.core.util.convergence
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+.. toctree::
+
+   idaes.core.util.convergence.convergence
+   idaes.core.util.convergence.convergence_base
+   idaes.core.util.convergence.mpi_utils
+

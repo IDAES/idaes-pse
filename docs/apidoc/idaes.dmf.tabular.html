@@ -1,0 +1,738 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>idaes.dmf.tabular module &mdash; IDAES v1.0.0</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/idaes-logo.ico"/>
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> IDAES
+          
+
+          
+            
+            <img src="../_static/idaes-logo-100x100.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../standards.html">IDAES Modeling Standards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../core/index.html">Core Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/index.html">Unit Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">IDAES</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>idaes.dmf.tabular module</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/apidoc/idaes.dmf.tabular.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-idaes.dmf.tabular">
+<span id="idaes-dmf-tabular-module"></span><h1>idaes.dmf.tabular module<a class="headerlink" href="#module-idaes.dmf.tabular" title="Permalink to this headline">¶</a></h1>
+<p>Tabular data handling</p>
+<dl class="class">
+<dt id="idaes.dmf.tabular.Column">
+<em class="property">class </em><code class="descclassname">idaes.dmf.tabular.</code><code class="descname">Column</code><span class="sig-paren">(</span><em>name</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Column"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Column" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Generic, abstract column</p>
+<dl class="method">
+<dt id="idaes.dmf.tabular.Column.data">
+<code class="descname">data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Column.data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Column.data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Column.type_name">
+<code class="descname">type_name</code><em class="property"> = 'generic'</em><a class="headerlink" href="#idaes.dmf.tabular.Column.type_name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.dmf.tabular.Fields">
+<em class="property">class </em><code class="descclassname">idaes.dmf.tabular.</code><code class="descname">Fields</code><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Constants for field names.</p>
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.AUTH">
+<code class="descname">AUTH</code><em class="property"> = 'authors'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.AUTH" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.COLTYPE">
+<code class="descname">COLTYPE</code><em class="property"> = 'type'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.COLTYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.DATA">
+<code class="descname">DATA</code><em class="property"> = 'data'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.DATA" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.DATA_ERRORS">
+<code class="descname">DATA_ERRORS</code><em class="property"> = 'errors'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.DATA_ERRORS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.DATA_ERRTYPE">
+<code class="descname">DATA_ERRTYPE</code><em class="property"> = 'error_type'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.DATA_ERRTYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.DATA_NAME">
+<code class="descname">DATA_NAME</code><em class="property"> = 'name'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.DATA_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keys for data mapping</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.DATA_UNITS">
+<code class="descname">DATA_UNITS</code><em class="property"> = 'units'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.DATA_UNITS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.DATA_VALUES">
+<code class="descname">DATA_VALUES</code><em class="property"> = 'values'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.DATA_VALUES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.DATE">
+<code class="descname">DATE</code><em class="property"> = 'date'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.DATE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.DTYPE">
+<code class="descname">DTYPE</code><em class="property"> = 'datatype'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.DTYPE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.INFO">
+<code class="descname">INFO</code><em class="property"> = 'info'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.INFO" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.META">
+<code class="descname">META</code><em class="property"> = 'meta'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.META" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.ROWS">
+<code class="descname">ROWS</code><em class="property"> = 'rows'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.ROWS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.TITLE">
+<code class="descname">TITLE</code><em class="property"> = 'title'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.TITLE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Fields.VALS">
+<code class="descname">VALS</code><em class="property"> = 'values'</em><a class="headerlink" href="#idaes.dmf.tabular.Fields.VALS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.dmf.tabular.Metadata">
+<em class="property">class </em><code class="descclassname">idaes.dmf.tabular.</code><code class="descname">Metadata</code><span class="sig-paren">(</span><em>values=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class to import metadata.</p>
+<dl class="method">
+<dt id="idaes.dmf.tabular.Metadata.as_dict">
+<code class="descname">as_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Metadata.as_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Metadata.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Metadata.author">
+<code class="descname">author</code><a class="headerlink" href="#idaes.dmf.tabular.Metadata.author" title="Permalink to this definition">¶</a></dt>
+<dd><p>Publication author(s).</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Metadata.datatype">
+<code class="descname">datatype</code><a class="headerlink" href="#idaes.dmf.tabular.Metadata.datatype" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Metadata.date">
+<code class="descname">date</code><a class="headerlink" href="#idaes.dmf.tabular.Metadata.date" title="Permalink to this definition">¶</a></dt>
+<dd><p>Publication date</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="idaes.dmf.tabular.Metadata.from_csv">
+<em class="property">static </em><code class="descname">from_csv</code><span class="sig-paren">(</span><em>file_or_path</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Metadata.from_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Metadata.from_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import metadata from simple text format.</p>
+<p>Example input:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Source</span><span class="p">,</span><span class="n">Han</span><span class="p">,</span> <span class="n">J</span><span class="o">.</span><span class="p">,</span> <span class="n">Jin</span><span class="p">,</span> <span class="n">J</span><span class="o">.</span><span class="p">,</span> <span class="n">Eimer</span><span class="p">,</span> <span class="n">D</span><span class="o">.</span><span class="n">A</span><span class="o">.</span><span class="p">,</span> <span class="n">Melaaen</span><span class="p">,</span> <span class="n">M</span><span class="o">.</span><span class="n">C</span><span class="o">.</span><span class="p">,</span><span class="s2">&quot;Density of             Water(1) + Monoethanolamine(2) + CO2(3) from (298.15 to 413.15) K            and Surface Tension of Water(1) + Monethanolamine(2) from (             303.15 to 333.15)K&quot;</span><span class="p">,</span> <span class="n">J</span><span class="o">.</span> <span class="n">Chem</span><span class="o">.</span> <span class="n">Eng</span><span class="o">.</span> <span class="n">Data</span><span class="p">,</span> <span class="mi">2012</span><span class="p">,</span> <span class="n">Vol</span><span class="o">.</span> <span class="mi">57</span><span class="p">,</span>             <span class="n">pg</span><span class="o">.</span> <span class="mi">1095</span><span class="o">-</span><span class="mi">1103</span><span class="s2">&quot;</span>
+<span class="n">Retrieval</span><span class="p">,</span><span class="s2">&quot;J. Morgan, date unknown&quot;</span>
+<span class="n">Notes</span><span class="p">,</span><span class="n">r</span> <span class="ow">is</span> <span class="n">MEA</span> <span class="n">weight</span> <span class="n">fraction</span> <span class="ow">in</span> <span class="n">aqueous</span> <span class="n">soln</span><span class="o">.</span> <span class="p">(</span><span class="n">CO2</span><span class="o">-</span><span class="n">free</span> <span class="n">basis</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>file_or_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em> or </em><em>file</em>) – Input file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">(PropertyMetadata) New instance</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Metadata.info">
+<code class="descname">info</code><a class="headerlink" href="#idaes.dmf.tabular.Metadata.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Publication venue, etc.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Metadata.line_expr">
+<code class="descname">line_expr</code><em class="property"> = re.compile('\\s*(\\w+)\\s*,\\s*(.*)\\s*')</em><a class="headerlink" href="#idaes.dmf.tabular.Metadata.line_expr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Metadata.source">
+<code class="descname">source</code><a class="headerlink" href="#idaes.dmf.tabular.Metadata.source" title="Permalink to this definition">¶</a></dt>
+<dd><p>Full publication info.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Metadata.source_expr">
+<code class="descname">source_expr</code><em class="property"> = re.compile('\\s*(.*)\\s*,\\s*&quot;(.*)&quot;\\s*,\\s*(.*)\\s*')</em><a class="headerlink" href="#idaes.dmf.tabular.Metadata.source_expr" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Metadata.title">
+<code class="descname">title</code><a class="headerlink" href="#idaes.dmf.tabular.Metadata.title" title="Permalink to this definition">¶</a></dt>
+<dd><p>Publication title.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.dmf.tabular.Table">
+<em class="property">class </em><code class="descclassname">idaes.dmf.tabular.</code><code class="descname">Table</code><span class="sig-paren">(</span><em>data=None</em>, <em>metadata=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Table" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#idaes.dmf.tabular.TabularObject" title="idaes.dmf.tabular.TabularObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.dmf.tabular.TabularObject</span></code></a></p>
+<p>Tabular data and metadata together (at last!)</p>
+<dl class="method">
+<dt id="idaes.dmf.tabular.Table.add_metadata">
+<code class="descname">add_metadata</code><span class="sig-paren">(</span><em>m</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Table.add_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Table.add_metadata" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.tabular.Table.as_dict">
+<code class="descname">as_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Table.as_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Table.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represent as a Python dictionary.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(dict) Dictionary representation</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Table.data">
+<code class="descname">data</code><a class="headerlink" href="#idaes.dmf.tabular.Table.data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.tabular.Table.dump">
+<code class="descname">dump</code><span class="sig-paren">(</span><em>fp</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Table.dump"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Table.dump" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump to file as JSON.
+Convenience method, equivalent to converting to a
+dict and calling <code class="xref py py-meth docutils literal notranslate"><span class="pre">json.dump()</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fp</strong> (<em>file</em>) – Write output to this file</li>
+<li><strong>**kwargs</strong> – Keywords passed to json.dump()</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">see json.dump()</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.tabular.Table.dumps">
+<code class="descname">dumps</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Table.dumps"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Table.dumps" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump to string as JSON.
+Convenience method, equivalent to converting to a
+dict and calling <code class="xref py py-meth docutils literal notranslate"><span class="pre">json.dumps()</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>**kwargs</strong> – Keywords passed to json.dumps()</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">(str) JSON-formatted data</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="idaes.dmf.tabular.Table.load">
+<em class="property">classmethod </em><code class="descname">load</code><span class="sig-paren">(</span><em>file_or_path</em>, <em>validate=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#Table.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.Table.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create from JSON input.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>file_or_path</strong> (<em>file</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Filename or file object
+from which to read the JSON-formatted data.</li>
+<li><strong>validate</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If true, apply validation to input JSON data.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Example input:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;meta&quot;</span><span class="p">:</span> <span class="p">[{</span>
+        <span class="s2">&quot;datatype&quot;</span><span class="p">:</span> <span class="s2">&quot;MEA&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;info&quot;</span><span class="p">:</span> <span class="s2">&quot;J. Chem. Eng. Data, 2009, Vol 54, pg. 3096-30100&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;notes&quot;</span><span class="p">:</span> <span class="s2">&quot;r is MEA weight fraction in aqueous soln.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;authors&quot;</span><span class="p">:</span> <span class="s2">&quot;Amundsen, T.G., Lars, E.O., Eimer, D.A.&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Density and Viscosity of Monoethanolamine + etc.&quot;</span>
+    <span class="p">}],</span>
+    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Viscosity Value&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;mPa-s&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">2.6</span><span class="p">,</span> <span class="mf">6.2</span><span class="p">],</span>
+            <span class="s2">&quot;error_type&quot;</span><span class="p">:</span> <span class="s2">&quot;absolute&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.06</span><span class="p">,</span> <span class="mf">0.004</span><span class="p">],</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;property&quot;</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.Table.metadata">
+<code class="descname">metadata</code><a class="headerlink" href="#idaes.dmf.tabular.Table.metadata" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.dmf.tabular.TabularData">
+<em class="property">class </em><code class="descclassname">idaes.dmf.tabular.</code><code class="descname">TabularData</code><span class="sig-paren">(</span><em>data</em>, <em>error_column=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class representing tabular data that knows how to
+construct itself from a CSV file.</p>
+<p>You can build objects from multiple CSV files as well.
+See the property database section of the API docs for
+details, or read the code in <code class="xref py py-meth docutils literal notranslate"><span class="pre">add_csv()</span></code> and the
+tests in <code class="xref py py-mod docutils literal notranslate"><span class="pre">idaes_dmf.propdb.tests.test_mergecsv</span></code>.</p>
+<dl class="method">
+<dt id="idaes.dmf.tabular.TabularData.as_arr">
+<code class="descname">as_arr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularData.as_arr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularData.as_arr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export property data as arrays.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(values[M,N], errors[M,N]) Two arrays of floats,
+each with M columns having N values.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body">ValueError if the columns are not all the same length</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.tabular.TabularData.as_list">
+<code class="descname">as_list</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularData.as_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularData.as_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Export the data as a list.</p>
+<p>Output will be in same form as data passed to constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(list) List of dicts</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.TabularData.columns">
+<code class="descname">columns</code><a class="headerlink" href="#idaes.dmf.tabular.TabularData.columns" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.TabularData.embedded_units">
+<code class="descname">embedded_units</code><em class="property"> = '(.*)\\((.*)\\)'</em><a class="headerlink" href="#idaes.dmf.tabular.TabularData.embedded_units" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.tabular.TabularData.errors_dataframe">
+<code class="descname">errors_dataframe</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularData.errors_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularData.errors_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get errors as a dataframe.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Pandas dataframe for values.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">pd.DataFrame</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ImportError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ImportError</span></code></a> – If <cite>pandas</cite> or <cite>numpy</cite> were never
+successfully imported.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="idaes.dmf.tabular.TabularData.from_csv">
+<em class="property">static </em><code class="descname">from_csv</code><span class="sig-paren">(</span><em>file_or_path</em>, <em>error_column=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularData.from_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularData.from_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Import the CSV data.</p>
+<p>Expected format of the  files is a header plus data rows.</p>
+<p>Header: Index-column,  Column-name(1), Error-column(1),                  Column-name(2), Error-column(2), ..
+Data: &lt;index&gt;, &lt;val&gt;, &lt;errval&gt;, &lt;val&gt;, &lt;errval&gt;, ..</p>
+<p>Column-name is in the format “Name (units)”</p>
+<p>Error-column is in the format “&lt;type&gt; Error”, where “&lt;type&gt;” is
+the error type.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>file_or_path</strong> (<em>file-like</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Input file</li>
+<li><strong>error_column</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If True, look for an error column after each
+value column. Otherwise, all columns are
+assumed to be values.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">New table of data</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#idaes.dmf.tabular.TabularData" title="idaes.dmf.tabular.TabularData">TabularData</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.tabular.TabularData.get_column">
+<code class="descname">get_column</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularData.get_column"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularData.get_column" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an object for the given named column.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Name of column</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">(TabularColumn) Column object.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> – No column by that name.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.tabular.TabularData.get_column_index">
+<code class="descname">get_column_index</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularData.get_column_index"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularData.get_column_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an index for the given named column.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Name of column</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">(int) Column number.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">KeyError</span></code></a> – No column by that name.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.tabular.TabularData.names">
+<code class="descname">names</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularData.names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularData.names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get column names.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">List of column names.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.TabularData.num_columns">
+<code class="descname">num_columns</code><a class="headerlink" href="#idaes.dmf.tabular.TabularData.num_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of columns in this table.</p>
+<p>A “column” is defined as data + error. So if there
+are two columns of data, each with an associated
+error column, then <cite>num_columns</cite> is 2 (not 4).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Number of columns.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)">int</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="idaes.dmf.tabular.TabularData.num_rows">
+<code class="descname">num_rows</code><a class="headerlink" href="#idaes.dmf.tabular.TabularData.num_rows" title="Permalink to this definition">¶</a></dt>
+<dd><p>Number of rows in this table.</p>
+<p>obj.num_rows is a synonym for len(obj)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Number of rows.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)">int</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="idaes.dmf.tabular.TabularData.values_dataframe">
+<code class="descname">values_dataframe</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularData.values_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularData.values_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get values as a dataframe.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(pd.DataFrame) Pandas dataframe for values.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ImportError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ImportError</span></code></a> – If <cite>pandas</cite> or <cite>numpy</cite> were never
+successfully imported.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="idaes.dmf.tabular.TabularObject">
+<em class="property">class </em><code class="descclassname">idaes.dmf.tabular.</code><code class="descname">TabularObject</code><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Abstract Property data class.</p>
+<dl class="method">
+<dt id="idaes.dmf.tabular.TabularObject.as_dict">
+<code class="descname">as_dict</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/tabular.html#TabularObject.as_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.dmf.tabular.TabularObject.as_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return Python dict representation.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016-2019, David Miller et al.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
