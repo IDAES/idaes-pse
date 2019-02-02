@@ -3,9 +3,9 @@
 [![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes/badge.svg?branch=master&t=9GISoZ)](https://coveralls.io/github/IDAES/idaes?branch=master)
 <!-- END Status badges -->
 
-# IDAES Toolkit
+# IDAES PSE Framework
 
-The IDAES Toolkit aims to provide multi-scale, simulation-based, open source
+The IDAES PSE Framwork aims to provide multi-scale, simulation-based, open source
 computational tools and models to support the design, analysis, optimization,
 scale-up, operation and troubleshooting of innovative, advanced energy systems.
 
