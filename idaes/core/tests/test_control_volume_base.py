@@ -26,7 +26,7 @@ from idaes.core import (ControlVolumeBase, CONFIG_Template,
                         FlowsheetBlockData, UnitBlockData, useDefault,
                         PhysicalParameterBase, ReactionParameterBase)
 from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
-                                        PropertyPackageError)
+                                        PropertyPackageError, BurntToast)
 
 
 # -----------------------------------------------------------------------------
@@ -310,7 +310,7 @@ def test_get_default_prop_pack_no_default():
     m.fs = Flowsheet()
 
     m.fs.cv = CVFrame()
-    with pytest.raises(ConfigurationError):
+    with pytest.raises(BurntToast):
         m.fs.cv._get_default_prop_pack()
 
 
