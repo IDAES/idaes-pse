@@ -9,7 +9,7 @@ shared: &shared
     - run: sudo pip install -qr requirements.txt
     - run: pyomo --version
     - run: sudo python setup.py -q install
-    - run: cd docs && make html
+    - run: cd docs_rst && make html
     - run: pytest idaes -m "not nocircleci"
     - run: coverage report
     - run: coveralls
