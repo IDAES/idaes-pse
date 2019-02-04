@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.0.1
               </div>
             
           
@@ -121,7 +121,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
 </ul>
 
             
@@ -542,7 +542,7 @@ of unit models.</p>
 
 <dl class="method">
 <dt id="idaes.unit_models.mixer.MixerData.initialize">
-<code class="descname">initialize</code><span class="sig-paren">(</span><em>outlvl=0</em>, <em>optarg=None</em>, <em>solver='ipopt'</em>, <em>hold_state=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.initialize" title="Permalink to this definition">¶</a></dt>
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>outlvl=0</em>, <em>optarg={}</em>, <em>solver='ipopt'</em>, <em>hold_state=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/mixer.html#MixerData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.mixer.MixerData.initialize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialisation routine for mixer (default solver ipopt)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -554,7 +554,7 @@ of unit models.</p>
 values:</strong> <strong>0</strong> - no output (default), <strong>1</strong> - return
 solver state for each step in routine, <strong>2</strong> - include
 solver output infomation (tee=True)</li>
-<li><strong>optarg</strong> – solver options dictionary object (default=None)</li>
+<li><strong>optarg</strong> – solver options dictionary object (default={})</li>
 <li><strong>solver</strong> – str indicating whcih solver to use during
 initialization (default = ‘ipopt’)</li>
 <li><strong>hold_state</strong> – flag indicating whether the initialization routine
