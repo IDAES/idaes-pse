@@ -1,3 +1,12 @@
+Tutorials
+=========
+
+The following examples can also be found as executable Python code in the directory idaes/examples/tutorials folder.
+
+1. `Basic Flowsheets Tutorial <examples/Tutorial_1_Basic_Flowsheets.html>`_
+2. `Basic Flowsheet Optimization Tutorial <examples/Tutorial_2_Basic_Flowsheet_Optimization.html>`_
+
+
 Sample Models and Flowsheets
 ============================
 
