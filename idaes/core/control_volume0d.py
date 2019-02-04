@@ -1195,7 +1195,6 @@ class ControlVolume0dData(ControlVolumeBase):
                                  .format(units['energy'], units['time']))
             def heat_of_reaction(b, t):
                 if hasattr(self, "rate_reaction_extent"):
-                    print("Hmm?")
                     rate_heat = -sum(b.rate_reaction_extent[t, r] *
                                     b.reactions[t].dh_rxn[r]
                                     for r in self.rate_reaction_idx_ref)
