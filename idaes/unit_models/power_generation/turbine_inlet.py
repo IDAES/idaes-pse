@@ -24,7 +24,10 @@ __Author__ = "John Eslick"
 import logging
 _log = logging.getLogger(__name__)
 
+from pyomo.common.config import In
 from pyomo.environ import Var, Expression, Constraint, sqrt
+from idaes.core import declare_process_block_class
+from idaes.unit_models.pressure_changer import PressureChangerData
 
 @declare_process_block_class("TurbineInletStage")
 class TurbineInletStageData(PressureChangerData):
@@ -77,16 +80,15 @@ class TurbineInletStageData(PressureChangerData):
             return (flow*mw*sqrt(Tin - 273.15) ==
                 Cf*Pin*sqrt(g/(g - 1)*(Pratio**(2/g) - Pratio**((g + 1)/g))))
 
-            @self.Constraint(self.time,
-                doc="Calculation of isentropic specific enthalpy change")
-                def isentropic_enthalpy(b, t):
-                    return b.work_isentropic[t] == (-b.delta_enth_isentropic[t]*
-                        b.holdup.properties_in[t].flow_mol)
+        @self.Constraint(self.time, doc="Equation: Isentropic enthalpy change")
+        def isentropic_enthalpy(b, t):
+            return b.work_isentropic[t] == (-b.delta_enth_isentropic[t]*
+                b.holdup.properties_in[t].flow_mol)
 
-            @self.Constraint(self.time, doc="Efficiency correaltion")
-                def efficiency_correlation(b, t):
-                Vr = b.blade_velocity/b.steam_entering_velocity[t]
-                eff = b.efficiency_isentropic[t]
-                R = b.blade_reaction
-                return eff == 2*Vr*((sqrt(1 - R) - Vr) +
-                                     sqrt((sqrt(1 - R) - Vr)**2 + R))
+        @self.Constraint(self.time, doc="Equation: Efficiency")
+        def efficiency_correlation(b, t):
+            Vr = b.blade_velocity/b.steam_entering_velocity[t]
+            eff = b.efficiency_isentropic[t]
+            R = b.blade_reaction
+            return eff == 2*Vr*((sqrt(1 - R) - Vr) +
+                                 sqrt((sqrt(1 - R) - Vr)**2 + R))

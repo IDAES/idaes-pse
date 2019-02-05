@@ -1,1 +1,1 @@
-from tubine_inlet import TurbineInletStage
+from .turbine_inlet import TurbineInletStage
