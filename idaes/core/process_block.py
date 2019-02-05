@@ -39,7 +39,6 @@ def _rule_default(b, *args):
             "Failure in build: {}".format(b))
         raise e
 
-
 _process_block_docstring = """
     Args:
         rule (function): A rule function or None. Default rule calls build().
@@ -49,6 +48,11 @@ _process_block_docstring = """
         initialize (dict): ProcessBlockData config for individual elements. Keys
             are BlockData indexes and values are dictionaries described under the
             "default" argument above.
+        idx_map (function): Function to take the index of a BlockData element and
+            return the index in initialize to read arguments from. This can be
+            provided to overide the default behavior of matching the BlockData
+            index exaclty to the index in intialize.  See the documentation for
+            example use cases.
     Returns:
         ({}) New instance
     """
@@ -61,17 +65,22 @@ _config_block_keys_docstring = """
             ..
 """
 
+def _process_kwargs(o, kwargs):
+    kwargs.setdefault("rule", _rule_default)
+    kwargs.setdefault("default", {})
+    kwargs.setdefault("initialize", {})
+    kwargs.setdefault("idx_map", None)
+    o._block_data_config_default = kwargs.pop("default")
+    o._block_data_config_initialize = kwargs.pop("initialize")
+    o._idx_map = kwargs.pop("idx_map")
+
 
 class _IndexedProcessBlockMeta(type):
     """Metaclass used to create an indexed model class."""
 
     def __new__(meta, name, bases, dct):
         def __init__(self, *args, **kwargs):
-            kwargs.setdefault("rule", _rule_default)
-            kwargs.setdefault("default", {})
-            kwargs.setdefault("initialize", {})
-            self._block_data_config_default = kwargs.pop("default")
-            self._block_data_config_initialize = kwargs.pop("initialize")
+            _process_kwargs(self, kwargs)
             bases[0].__init__(self, *args, **kwargs)
         dct["__init__"] = __init__
         dct["__process_block__"] = "indexed"
@@ -83,11 +92,7 @@ class _ScalarProcessBlockMeta(type):
 
     def __new__(meta, name, bases, dct):
         def __init__(self, *args, **kwargs):
-            kwargs.setdefault("rule", _rule_default)
-            kwargs.setdefault("default", {})
-            kwargs.setdefault("initialize", {})
-            self._block_data_config_default = kwargs.pop("default")
-            self._block_data_config_initialize = kwargs.pop("initialize")
+            _process_kwargs(self, kwargs)
             bases[0].__init__(self, component=self)
             bases[1].__init__(self, *args, **kwargs)
         dct["__init__"] = __init__

@@ -70,6 +70,7 @@ class ProcessBlockData(_BlockData):
             (ProcessBlockData): A new instance
         """
         super(ProcessBlockData, self).__init__(component=component)
+        self._pb_configured = False
 
     def build(self):
         """
@@ -91,11 +92,23 @@ class ProcessBlockData(_BlockData):
         Returns:
             None
         """
+        self._get_config_args()
+
+    def _get_config_args(self):
+        """
+        Get config arguments for this element and put them in the ConfigBlock
+        """
+        if self._pb_configured:
+            return
+        self._pb_configured = True
+        idx_map = self.parent_component()._idx_map # index map function
         try:
             idx = self.index()
         except:
             idx = None
-        kwargs = self.parent_component()._block_data_config_initialize.get(
+        if idx_map is not None:
+            idx = idx_map(idx)
+        kwargs =  self.parent_component()._block_data_config_initialize.get(
             idx, self.parent_component()._block_data_config_default)
         self.config = self.CONFIG(kwargs)
 
