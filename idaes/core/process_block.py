@@ -49,10 +49,9 @@ _process_block_docstring = """
             are BlockData indexes and values are dictionaries described under the
             "default" argument above.
         idx_map (function): Function to take the index of a BlockData element and
-            return the index in initialize to read arguments from. This can be
-            provided to overide the default behavior of matching the BlockData
-            index exaclty to the index in intialize.  See the documentation for
-            example use cases.
+            return the index in initialize from which to read arguments. This can
+            be provided to overide the default behavior of matching the BlockData
+            index exaclty to the index in intialize.
     Returns:
         ({}) New instance
     """
