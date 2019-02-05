@@ -200,24 +200,8 @@ class _StateBlock(StateBlockBase):
                 else:
                     blk[k].temperature.fix(temperature)
 
-        # Set solver options
-        if outlvl > 1:
-            stee = True
-        else:
-            stee = False
-
         opt = SolverFactory(solver)
         opt.options = optarg
-        #blk.display()
-        #results = solve_indexed_blocks(opt, blk, tee=stee)
-        #if outlvl > 0:
-        #    if results.solver.termination_condition \
-        #            == TerminationCondition.optimal:
-        #        _log.info('{} Initialisation Step 1 Complete.'
-        #                  .format(blk.name))
-        #    else:
-        #        _log.warning('{} Initialisation Step 1 Failed.'
-        #                     .format(blk.name))
 
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state

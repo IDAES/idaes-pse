@@ -25,6 +25,7 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.core.process_block import declare_process_block_class
 from idaes.core.util.exceptions import (ConfigurationError,
+                                        BurntToast,
                                         PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
 
@@ -177,7 +178,7 @@ class ProcessBlockData(_BlockData):
         if self.config.property_package == useDefault:
             # Try to get property_package from parent
             try:
-                if parent.config.property_package is None:
+                if parent.config.property_package in [None, useDefault]:
                     parent.config.property_package = \
                         self._get_default_prop_pack()
 
@@ -205,8 +206,16 @@ class ProcessBlockData(_BlockData):
         """
         parent = self.parent_block()
         while True:
+            if not hasattr(parent, "config"):
+                raise BurntToast(
+                            '{} found parent object without a config block. '
+                            'This implies that no Flowsheet object is present '
+                            'in the parent tree.'.format(self.name))
             if hasattr(parent.config, "default_property_package"):
-                break
+                if parent.config.default_property_package is not None:
+                    break
+                else:
+                    parent = parent.parent_block()
             else:
                 if parent.parent_block() is None:
                     raise ConfigurationError(
@@ -222,13 +231,6 @@ class ProcessBlockData(_BlockData):
 
         _log.info('{} Using default property package'
                   .format(self.name))
-
-        if parent.config.default_property_package is None:
-            raise ConfigurationError(
-                             '{} no default property package has been '
-                             'specified at flowsheet level ('
-                             'default_property_package = None)'
-                             .format(self.name))
 
         return parent.config.default_property_package
 

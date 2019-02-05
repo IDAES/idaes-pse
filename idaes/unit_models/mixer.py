@@ -559,7 +559,7 @@ linked to all inlet states and the mixed state,
                              'model_check method to the associated '
                              'StateBlock class.'.format(blk.name))
 
-    def initialize(blk, outlvl=0, optarg=None,
+    def initialize(blk, outlvl=0, optarg={},
                    solver='ipopt', hold_state=True):
         '''
         Initialisation routine for mixer (default solver ipopt)
@@ -569,7 +569,7 @@ linked to all inlet states and the mixed state,
                      values:** **0** - no output (default), **1** - return
                      solver state for each step in routine, **2** - include
                      solver output infomation (tee=True)
-            optarg : solver options dictionary object (default=None)
+            optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
             hold_state : flag indicating whether the initialization routine

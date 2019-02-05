@@ -31,7 +31,7 @@ from idaes.core import (ControlVolume0D,
                         useDefault)
 from idaes.unit_models.separator import Separator, SplittingType
 
-from idaes.core.util.config import is_physical_parameter_block, list_of_strings
+from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
