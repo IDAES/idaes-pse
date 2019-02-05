@@ -1,3 +1,31 @@
+
+Skip to content
+
+    Pull requests
+    Issues
+    Marketplace
+    Explore
+
+    @jghouse88
+
+18
+0
+
+    7
+
+jghouse88/idaes-dev Private forked from IDAES/idaes-dev
+Code
+Pull requests 0
+Projects 0
+Wiki
+Insights
+Settings
+idaes-dev/idaes/unit_models/heat_exchanger.py
+9b26b69 6 minutes ago
+@jghouse88 jghouse88 garbage
+@eslickj
+@jghouse88
+425 lines (379 sloc) 17 KB
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
@@ -37,6 +65,7 @@ from idaes.core.util.misc import add_object_reference
 
 _log = logging.getLogger(__name__)
 
+
 def delta_temperature_lmtd_rule(b, t):
     """
     This is a rule for a temperaure difference expression to calculate
@@ -48,7 +77,8 @@ def delta_temperature_lmtd_rule(b, t):
         b.side_2.properties_out[t].temperature
     dT2 = b.side_1.properties_out[t].temperature - \
         b.side_2.properties_in[t].temperature
-    return (dT1 - dT2)/(log(dT1) - log(dT2))
+    return (dT1 - dT2) / (log(dT1) - log(dT2))
+
 
 def delta_temperature_amtd_rule(b, t):
     """
@@ -61,7 +91,8 @@ def delta_temperature_amtd_rule(b, t):
         b.side_2.properties_out[t].temperature
     dT2 = b.side_1.properties_out[t].temperature - \
         b.side_2.properties_in[t].temperature
-    return (dT1 + dT2)/2.0
+    return (dT1 + dT2) * 0.5
+
 
 def heat_transfer_rule(b, t):
     """
@@ -69,9 +100,9 @@ def heat_transfer_rule(b, t):
     transfer (:math:`Q = UA\Delta T`).
     """
     return (b.heat_duty[t] ==
-            b.heat_transfer_coefficient[t]*
-            b.area*
-            b.delta_temperature[t])
+            b.heat_transfer_coefficient[t] *
+            b.area * b.delta_temperature[t])
+
 
 def _make_heater_control_volume(o, name, config):
     """
@@ -79,14 +110,17 @@ def _make_heater_control_volume(o, name, config):
     control volumes for different types of heat exchange models.
     """
     control_volume = ControlVolume0D(default={
-            "dynamic": config.dynamic,
-            "property_package": config.property_package,
-            "property_package_args": config.property_package_args})
+        "dynamic": config.dynamic,
+        "property_package": config.property_package,
+        "property_package_args": config.property_package_args})
     # we have to attach this control volume to the model for the rest of
     # the steps to work
     setattr(o, name, control_volume)
     # Add inlet and outlet state blocks to control volume
-    control_volume.add_state_blocks()
+    control_volume.add_state_blocks(
+        has_phase_equilibrium=config.calculate_phase_equilibrium,
+        package_arguments=config.property_package_args)
+
     # Add material balance
     control_volume.add_material_balances(
         balance_type=config.material_balance_type,
@@ -100,6 +134,7 @@ def _make_heater_control_volume(o, name, config):
         balance_type=config.momentum_balance_type,
         has_pressure_change=config.has_pressure_change)
     return control_volume
+
 
 def _make_heater_config_block(config):
     """
@@ -203,6 +238,7 @@ and used when constructing these,
 **Valid values:** {
 see property package for documentation.}"""))
 
+
 def _make_heat_exchanger_config(config):
     """
     Declare configuration options for HeatExchngerData block.
@@ -232,11 +268,11 @@ def _make_heat_exchanger_config(config):
         default=None,
         description="Rule for equation for heat transfer coefficient"))
 
+
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
 class HeaterData(UnitBlockData):
     """
     Simple 0D heater unit.
-
     Unit model to add or remove heat from a material.
     """
     CONFIG = ConfigBlock()
@@ -245,10 +281,8 @@ class HeaterData(UnitBlockData):
     def build(self):
         """
         Building model
-
         Args:
             None
-
         Returns:
             None
         """
@@ -264,11 +298,10 @@ class HeaterData(UnitBlockData):
 
 
 @declare_process_block_class("HeatExchanger",
-    doc="Simple 0D heat exchanger model.")
+                             doc="Simple 0D heat exchanger model.")
 class HeatExchangerData(UnitBlockData):
     """
     Simple 0D heat exchange unit.
-
     Unit model to transfer heat from one material to another.
     """
     CONFIG = ConfigBlock()
@@ -277,10 +310,8 @@ class HeatExchangerData(UnitBlockData):
     def build(self):
         """
         Building model
-
         Args:
             None
-
         Returns:
             None
         """
@@ -315,6 +346,7 @@ class HeatExchangerData(UnitBlockData):
         add_object_reference(self, "heat_duty", self.side_2.heat)
         self.side_1.heat.latex_symbol = "Q_1"
         self.side_2.heat.latex_symbol = "Q_2"
+
         # Add a unit level energy balance
         def unit_heat_balance_rule(b, t):
             return 0 == self.side_1.heat[t] + self.side_2.heat[t]
@@ -326,8 +358,8 @@ class HeatExchangerData(UnitBlockData):
             rule=self.config.delta_temperature_rule,
             doc="Temperature difference driving force for heat transfer")
         self.delta_temperature.latex_symbol = "\\Delta T"
-        self.heat_transfer_equation = Constraint(self.time_ref,
-            rule=self.config.heat_transfer_rule)
+        self.heat_transfer_equation = Constraint(
+            self.time_ref, rule=self.config.heat_transfer_rule)
         if self.config.heat_transfer_coefficient_rule is not None:
             self.heat_transfer_coefficient_equation = Constraint(
                 self.time_ref, rule=self.config.heat_transfer_coefficient_rule)
@@ -338,7 +370,6 @@ class HeatExchangerData(UnitBlockData):
                    solver='ipopt', optarg={'tol': 1e-6}, duty=10000):
         """
         Heat echanger initialization method.
-
         Args:
             state_args_1 : a dict of arguments to be passed to the property
                 initialization for side_1 (see documentation of the specific
@@ -347,25 +378,22 @@ class HeatExchangerData(UnitBlockData):
                 initialization for side_2 (see documentation of the specific
                 property package) (default = {}).
             outlvl : sets output level of initialisation routine
-
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = return solver state for each step in subroutines
                      * 3 = include solver output infomation (tee=True)
-
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
             duty : an initial guess for the amount of heat transfered
                 (default = 10000)
-
         Returns:
             None
         """
 
-        self.heat_duty.value = duty # probably best start with a positive duty
-        self.side_1.heat.value = duty # probably best start with a positive duty
-        self.side_2.heat.value = duty # probably best start with a positive duty
+        self.heat_duty.value = duty  # probably best start with a positive duty
+        self.side_1.heat.value = duty  # probably best start with a positive duty
+        self.side_2.heat.value = duty  # probably best start with a positive duty
         # Set solver options
         if outlvl > 3:
             stee = True
@@ -375,23 +403,23 @@ class HeatExchangerData(UnitBlockData):
         opt = SolverFactory(solver)
         opt.options = optarg
 
-        flags1 = self.side_1.initialize(outlvl=outlvl-1,
-                                               optarg=optarg,
-                                               solver=solver,
-                                               state_args=state_args_1)
+        flags1 = self.side_1.initialize(outlvl=outlvl - 1,
+                                        optarg=optarg,
+                                        solver=solver,
+                                        state_args=state_args_1)
 
         if outlvl > 0:
-            _log.info('{} Initialization Step 1a (side_1) Complete.'\
-                .format(self.name))
+            _log.info('{} Initialization Step 1a (side_1) Complete.'
+                      .format(self.name))
 
-        flags2 = self.side_2.initialize(outlvl=outlvl-1,
-                                               optarg=optarg,
-                                               solver=solver,
-                                               state_args=state_args_2)
+        flags2 = self.side_2.initialize(outlvl=outlvl - 1,
+                                        optarg=optarg,
+                                        solver=solver,
+                                        state_args=state_args_2)
 
         if outlvl > 0:
-            _log.info('{} Initialization Step 1b (side_2) Complete.'\
-                .format(self.name))
+            _log.info('{} Initialization Step 1b (side_2) Complete.'
+                      .format(self.name))
         # ---------------------------------------------------------------------
         # Solve unit
         results = opt.solve(self, tee=stee)
@@ -407,8 +435,8 @@ class HeatExchangerData(UnitBlockData):
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        self.side_1.release_state(flags1, outlvl-1)
-        self.side_2.release_state(flags2, outlvl-1)
+        self.side_1.release_state(flags1, outlvl - 1)
+        self.side_2.release_state(flags2, outlvl - 1)
 
         if outlvl > 0:
             _log.info('{} Initialization Complete.'.format(self.name))
