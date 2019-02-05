@@ -1,31 +1,3 @@
-
-Skip to content
-
-    Pull requests
-    Issues
-    Marketplace
-    Explore
-
-    @jghouse88
-
-18
-0
-
-    7
-
-jghouse88/idaes-dev Private forked from IDAES/idaes-dev
-Code
-Pull requests 0
-Projects 0
-Wiki
-Insights
-Settings
-idaes-dev/idaes/unit_models/heat_exchanger.py
-9b26b69 6 minutes ago
-@jghouse88 jghouse88 garbage
-@eslickj
-@jghouse88
-425 lines (379 sloc) 17 KB
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
 # Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
