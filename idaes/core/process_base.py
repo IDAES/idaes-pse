@@ -108,8 +108,11 @@ class ProcessBlockData(_BlockData):
             idx = None
         if idx_map is not None:
             idx = idx_map(idx)
-        kwargs =  self.parent_component()._block_data_config_initialize.get(
-            idx, self.parent_component()._block_data_config_default)
+        initialize = self.parent_component()._block_data_config_initialize
+        if idx in initialize:
+            kwargs = initialize[idx]
+        else:
+            kwargs = self.parent_component()._block_data_config_default
         self.config = self.CONFIG(kwargs)
 
     def fix_initial_conditions(self, state="steady-state"):

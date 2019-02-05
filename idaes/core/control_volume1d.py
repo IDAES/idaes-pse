@@ -18,6 +18,7 @@ from __future__ import division
 
 # Import Python libraries
 import logging
+import copy
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
@@ -166,28 +167,31 @@ class ControlVolume1dData(ControlVolumeBase):
         Returns:
             None
         """
-        def property_rule(b, t, x):
-            fd = information_flow
-            cfg_dict = b.parent_component()._block_data_config_initialize
-            cfg_dict[t,x] = {}
-            for a in package_arguments:
-                cfg_dict[t,x][a] = package_arguments[a]
-            cfg_dict[t,x]["has_phase_equilibrium"] = has_phase_equilibrium
-            cfg_dict[t,x]["parameters"] = self.config.property_package
-
-            if fd == FlowDirection.forward and x == self.length_domain.first():
-                cfg_dict[t,x]["defined_state"] = True
-            elif fd == FlowDirection.backward and x == self.length_domain.last():
-                cfg_dict[t,x]["defined_state"] = True
+        # d0 is config for defined state d1 is config for not defined state
+        d0 = copy.copy(package_arguments)
+        d0.update(has_phase_equilibrium=has_phase_equilibrium,
+                  parameters=self.config.property_package,
+                  defined_state=True)
+        d1 = copy.copy(d0)
+        d1["defined_state"] = False
+        init_dict = {0:d0, 1:d1}
+        def idx_map(i):
+            (t, x) = i
+            if information_flow == FlowDirection.forward and \
+                x == self.length_domain.first():
+                return 0
+            elif information_flow == FlowDirection.backward and \
+                x == self.length_domain.last():
+                return 0
             else:
-                cfg_dict[t,x]["defined_state"] = False
-            b.build()
+                return 1
 
         self.properties = self.config.property_package.state_block_class(
             self.time_ref,
             self.length_domain,
             doc="Material properties",
-            rule=property_rule)
+            initialize=init_dict,
+            idx_map=idx_map)
 
     def add_reaction_blocks(self,
                             has_equilibrium=False,
@@ -1562,7 +1566,7 @@ class ControlVolume1dData(ControlVolumeBase):
             finite_elements - number of finite elements to use in
                               transformation (equivalent to Pyomo nfe argument,
                               default = 10)
-            collocation_points - number of collocation points to use (equivalent 
+            collocation_points - number of collocation points to use (equivalent
                                  to Pyomo ncp argument, default = 3)
 
         Returns:

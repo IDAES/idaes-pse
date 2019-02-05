@@ -107,7 +107,6 @@ class TestProcessBlock(object):
         m.b = MyBlock(
             [0,1,2,3,4],
             idx_map = new_imap,
-            default={"xinit":1, "yinit":2},
             initialize={0:{"xinit":2001, "yinit":2002},
                         1:{"xinit":5001, "yinit":5002},
                         2:{"xinit":6001, "yinit":6002},
@@ -116,7 +115,7 @@ class TestProcessBlock(object):
         assert(value(m.b[0].y) == 2002)
         assert(value(m.b[1].x) == 5001)
         assert(value(m.b[1].y) == 5002)
-        assert(value(m.b[2].x) == 5001) # although this index (2) is in initilize
+        assert(value(m.b[2].x) == 5001) # although this index (2) is in initialize
         assert(value(m.b[2].y) == 5002) # the idx_map function maps it to 1
         assert(value(m.b[3].x) == 5001)
         assert(value(m.b[3].y) == 5002)

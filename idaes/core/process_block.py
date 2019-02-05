@@ -20,6 +20,8 @@ from __future__ import absolute_import, division, print_function
 
 import sys
 import logging
+
+from pyomo.common.config import ConfigBlock
 from pyomo.environ import Block
 
 __author__ = "John Eslick"
@@ -51,7 +53,7 @@ _process_block_docstring = """
         idx_map (function): Function to take the index of a BlockData element and
             return the index in the initialize dict from which to read arguments.
             This can be provided to overide the default behavior of matching the
-            BlockData index exactly to the index in intialize.
+            BlockData index exactly to the index in initialize.
     Returns:
         ({}) New instance
     """
@@ -68,7 +70,8 @@ _config_block_keys_docstring = """
 def _process_kwargs(o, kwargs):
     kwargs.setdefault("rule", _rule_default)
     o._block_data_config_default = kwargs.pop("default", {})
-    o._block_data_config_initialize = kwargs.pop("initialize", {})
+    o._block_data_config_initialize = ConfigBlock(implicit=True)
+    o._block_data_config_initialize.set_value(kwargs.pop("initialize", {}))
     o._idx_map = kwargs.pop("idx_map", None)
 
 
