@@ -23,6 +23,7 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Param, NonNegativeReals, Set
+from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, PhysicalParameterBase
@@ -43,11 +44,24 @@ _log = logging.getLogger(__name__)
 class PhysicalParameterData(PhysicalParameterBase):
     """
     Property Parameter Block Class
-
     Contains parameters and indexing sets associated with properties for
-    superheated steam.
-
+    BTX system.
     """
+    # Config block for the _IdealStateBlock
+    CONFIG = PhysicalParameterBase.CONFIG()
+
+    CONFIG.declare("valid_phase", ConfigValue(
+        default='VL',
+        domain=In(['L', 'V', 'VL']),
+        description="Flag indicating the valid phase",
+        doc="""Flag indicating the valid phase for a given set of
+conditions, and thus corresponding constraints  should be included,
+**default** - 'VL'.
+**Valid values:** {
+**'L'** - Liquid only,
+**'V'** - Vapor only,
+**'VL'** - Vapor-liquid equilibrium.}"""))
+
     def build(self):
         '''
         Callable method for Block construction.
@@ -57,7 +71,12 @@ class PhysicalParameterData(PhysicalParameterBase):
         self.state_block_class = IdealStateBlock
 
         # List of valid phases in property package
-        self.phase_list = Set(initialize=['Liq', 'Vap'])
+        if self.config.valid_phase == "VL":
+            self.phase_list = Set(initialize=['Liq', 'Vap'])
+        elif self.config.valid_phase == "L":
+            self.phase_list = Set(initialize=['Liq'])
+        else:
+            self.phase_list = Set(initialize=['Vap'])
 
         self.component_list_master = Set(initialize=['benzene',
                                                      'toluene',
