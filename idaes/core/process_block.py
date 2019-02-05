@@ -66,12 +66,9 @@ _config_block_keys_docstring = """
 
 def _process_kwargs(o, kwargs):
     kwargs.setdefault("rule", _rule_default)
-    kwargs.setdefault("default", {})
-    kwargs.setdefault("initialize", {})
-    kwargs.setdefault("idx_map", None)
-    o._block_data_config_default = kwargs.pop("default")
-    o._block_data_config_initialize = kwargs.pop("initialize")
-    o._idx_map = kwargs.pop("idx_map")
+    o._block_data_config_default = kwargs.pop("default", {})
+    o._block_data_config_initialize = kwargs.pop("initialize", {})
+    o._idx_map = kwargs.pop("idx_map", None)
 
 
 class _IndexedProcessBlockMeta(type):
