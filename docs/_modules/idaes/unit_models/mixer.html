@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.0.1
               </div>
             
           
@@ -94,7 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
 </ul>
 
             
@@ -719,7 +719,7 @@
                              <span class="s1">&#39;model_check method to the associated &#39;</span>
                              <span class="s1">&#39;StateBlock class.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="MixerData.initialize"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">optarg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="MixerData.initialize"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">optarg</span><span class="o">=</span><span class="p">{},</span>
                    <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;ipopt&#39;</span><span class="p">,</span> <span class="n">hold_state</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Initialisation routine for mixer (default solver ipopt)</span>
@@ -729,7 +729,7 @@
 <span class="sd">                     values:** **0** - no output (default), **1** - return</span>
 <span class="sd">                     solver state for each step in routine, **2** - include</span>
 <span class="sd">                     solver output infomation (tee=True)</span>
-<span class="sd">            optarg : solver options dictionary object (default=None)</span>
+<span class="sd">            optarg : solver options dictionary object (default={})</span>
 <span class="sd">            solver : str indicating whcih solver to use during</span>
 <span class="sd">                     initialization (default = &#39;ipopt&#39;)</span>
 <span class="sd">            hold_state : flag indicating whether the initialization routine</span>

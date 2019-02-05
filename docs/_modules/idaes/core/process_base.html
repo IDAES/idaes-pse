@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.0.1
               </div>
             
           
@@ -94,7 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
 </ul>
 
             
@@ -185,6 +185,7 @@
 
 <span class="kn">from</span> <span class="nn">idaes.core.process_block</span> <span class="k">import</span> <span class="n">declare_process_block_class</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.exceptions</span> <span class="k">import</span> <span class="p">(</span><span class="n">ConfigurationError</span><span class="p">,</span>
+                                        <span class="n">BurntToast</span><span class="p">,</span>
                                         <span class="n">PropertyPackageError</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.misc</span> <span class="k">import</span> <span class="n">add_object_reference</span>
 
@@ -337,7 +338,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span> <span class="o">==</span> <span class="n">useDefault</span><span class="p">:</span>
             <span class="c1"># Try to get property_package from parent</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">useDefault</span><span class="p">]:</span>
                     <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span> <span class="o">=</span> \
                         <span class="bp">self</span><span class="o">.</span><span class="n">_get_default_prop_pack</span><span class="p">()</span>
 
@@ -365,8 +366,16 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
+                            <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> found parent object without a config block. &#39;</span>
+                            <span class="s1">&#39;This implies that no Flowsheet object is present &#39;</span>
+                            <span class="s1">&#39;in the parent tree.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;default_property_package&quot;</span><span class="p">):</span>
-                <span class="k">break</span>
+                <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_property_package</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">parent</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">parent_block</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
@@ -382,13 +391,6 @@
 
         <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Using default property package&#39;</span>
                   <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
-
-        <span class="k">if</span> <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_property_package</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
-                             <span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> no default property package has been &#39;</span>
-                             <span class="s1">&#39;specified at flowsheet level (&#39;</span>
-                             <span class="s1">&#39;default_property_package = None)&#39;</span>
-                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">parent</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">default_property_package</span>
 
