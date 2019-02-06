@@ -110,7 +110,7 @@ class TurbineInletStageData(PressureChangerData):
             optarg (dict): Solver arguments dictionary
         """
         stee = True if outlvl >= 3 else False
-        # sp is What to save the make sure state after init is same as start
+        # sp is what to save to make sure state after init is same as the start
         #   saves value, fixed, and active state, doesn't load originally free
         #   values, this makes sure original problem spec is same but initializes
         #   the values of free vars
