@@ -174,23 +174,20 @@ class ControlVolume1dData(ControlVolumeBase):
                   defined_state=True)
         d1 = copy.copy(d0)
         d1["defined_state"] = False
-        init_dict = {0:d0, 1:d1}
-        def idx_map(i):
-            (t, x) = i
+        def idx_map(i): # i = (t, x)
             if information_flow == FlowDirection.forward and \
-                x == self.length_domain.first():
+                i[1] == self.length_domain.first():
                 return 0
             elif information_flow == FlowDirection.backward and \
-                x == self.length_domain.last():
+                i[1] == self.length_domain.last():
                 return 0
             else:
                 return 1
-
         self.properties = self.config.property_package.state_block_class(
             self.time_ref,
             self.length_domain,
             doc="Material properties",
-            initialize=init_dict,
+            initialize={0:d0, 1:d1},
             idx_map=idx_map)
 
     def add_reaction_blocks(self,
