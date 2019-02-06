@@ -31,7 +31,8 @@ from idaes.unit_models.pressure_changer import PressureChangerData
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.ui.report import degrees_of_freedom
 
-@declare_process_block_class("TurbineInletStage")
+@declare_process_block_class("TurbineInletStage",
+    doc="Inlet stage steam turbine model")
 class TurbineInletStageData(PressureChangerData):
     # Same setings as the default pressure changer, but force to expander with
     # isentroic efficiency
