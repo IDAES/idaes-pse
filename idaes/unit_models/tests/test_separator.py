@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, Constraint, Param, Set, Var
+from pyomo.environ import ConcreteModel, Constraint, Set, Var
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 
@@ -30,8 +30,7 @@ from idaes.unit_models.separator import (Separator,
                                          SeparatorData,
                                          SplittingType)
 from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError,
-                                        PropertyNotSupportedError)
+                                        ConfigurationError)
 
 
 # -----------------------------------------------------------------------------
