@@ -101,7 +101,7 @@ class TurbineInletStageData(PressureChangerData):
         """
         Initialize the inlet turbine stage model.  This deactivates the
         specialized constraints, then does the isentropic turbine initialization,
-        the reactivates the constraints and solves.
+        then reactivates the constraints and solves.
 
         Args:
             state_args (dict): Initial state for property initialization
