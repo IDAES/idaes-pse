@@ -72,7 +72,7 @@ class TurbineInletStageData(PressureChangerData):
 
         @self.Constraint(self.time_ref, doc="Equation: Turbine inlet flow")
         def inlet_flow_constraint(b, t):
-            # Some local vars to make the euqation more readable
+            # Some local vars to make the equation more readable
             g = b.control_volume.properties_in[t].heat_capacity_ratio
             mw = b.control_volume.properties_in[t].mw
             flow = b.control_volume.properties_in[t].flow_mol
@@ -112,7 +112,7 @@ class TurbineInletStageData(PressureChangerData):
         stee = True if outlvl >= 3 else False
         # sp is What to save the make sure state after init is same as start
         #   saves value, fixed, and active state, doesn't load originally free
-        #   values, this makes sure original problem spec is same but initalizes
+        #   values, this makes sure original problem spec is same but initializes
         #   the values of free vars
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)

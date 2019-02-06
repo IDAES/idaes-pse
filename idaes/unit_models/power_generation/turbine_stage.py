@@ -12,7 +12,7 @@
 ##############################################################################
 #TODO<JCE> Track down the source of this model and put the reference in
 """
-Steam turbine inlet stage model.  This model is based on:
+Steam turbine stage model.  This model is based on:
 
 
 """
