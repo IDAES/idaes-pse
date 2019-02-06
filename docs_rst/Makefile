@@ -78,7 +78,7 @@ html:
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)"
 
 .PHONY: examples
-examples: #execute nbconvert
+examples: execute nbconvert
 	cp $(EXAMPLEDIR)/tutorials/*.png $(BUILDDIR)/examples/
 	@echo "Examples copied as HTML. The pages are located in $(BUILDDIR)/examples"
 
