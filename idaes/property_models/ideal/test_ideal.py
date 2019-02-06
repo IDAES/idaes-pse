@@ -1,0 +1,89 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes".
+##############################################################################
+"""
+Tests for ideal state block; only tests for construction
+Author: Jaffer Ghouse
+"""
+from pyomo.environ import ConcreteModel
+
+from idaes.core import FlowsheetBlock
+from idaes.property_models.ideal.BTX_ideal_VLE import PhysicalParameterBlock
+
+
+# -----------------------------------------------------------------------------
+# Create a flowsheet for test
+m = ConcreteModel()
+m.fs = FlowsheetBlock(default={"dynamic": False})
+
+# vapor-liquid
+m.fs.properties_vl = PhysicalParameterBlock(default={"valid_phase": 'VL'})
+m.fs.state_block_vl = m.fs.properties_vl.state_block_class(
+    default={"parameters": m.fs.properties_vl})
+
+# liquid only
+m.fs.properties_l = PhysicalParameterBlock(default={"valid_phase": 'L'})
+m.fs.state_block_l = m.fs.properties_l.state_block_class(
+    default={"parameters": m.fs.properties_l,
+             "has_phase_equilibrium": False})
+
+# vapor only
+m.fs.properties_v = PhysicalParameterBlock(default={"valid_phase": 'V'})
+m.fs.state_block_v = m.fs.properties_v.state_block_class(
+    default={"parameters": m.fs.properties_v,
+             "has_phase_equilibrium": False})
+
+
+def test_build():
+    assert len(m.fs.properties_vl.config) == 2
+
+    # vapor-liquid
+    assert m.fs.properties_vl.config.valid_phase == "VL"
+    assert len(m.fs.properties_vl.phase_list) == 2
+    assert m.fs.properties_vl.phase_list == ["Liq", "Vap"]
+    assert hasattr(m.fs.state_block_vl, "eq_Keq")
+
+    # liquid only
+    assert m.fs.properties_l.config.valid_phase == "L"
+    assert len(m.fs.properties_l.phase_list) == 1
+    assert m.fs.properties_l.phase_list == ["Liq"]
+    assert not hasattr(m.fs.state_block_l, "eq_Keq")
+
+    # vapor only
+    assert m.fs.properties_v.config.valid_phase == "V"
+    assert len(m.fs.properties_v.phase_list) == 1
+    assert m.fs.properties_v.phase_list == ["Vap"]
+    assert not hasattr(m.fs.state_block_v, "eq_Keq")
+
+
+def test_setInputs():
+
+    # vapor-liquid
+    m.fs.state_block_vl.flow_mol.fix(1)
+    m.fs.state_block_vl.temperature.fix(368)
+    m.fs.state_block_vl.pressure.fix(101325)
+    m.fs.state_block_vl.mole_frac["benzene"].fix(0.5)
+    m.fs.state_block_vl.mole_frac["toluene"].fix(0.5)
+
+    # liquid only
+    m.fs.state_block_l.flow_mol.fix(1)
+    m.fs.state_block_l.temperature.fix(362)
+    m.fs.state_block_l.pressure.fix(101325)
+    m.fs.state_block_l.mole_frac["benzene"].fix(0.5)
+    m.fs.state_block_l.mole_frac["toluene"].fix(0.5)
+
+    # vapor only
+    m.fs.state_block_v.flow_mol.fix(1)
+    m.fs.state_block_v.temperature.fix(375)
+    m.fs.state_block_v.pressure.fix(101325)
+    m.fs.state_block_v.mole_frac["benzene"].fix(0.5)
+    m.fs.state_block_v.mole_frac["toluene"].fix(0.5)

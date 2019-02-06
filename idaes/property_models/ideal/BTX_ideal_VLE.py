@@ -72,7 +72,8 @@ conditions, and thus corresponding constraints  should be included,
 
         # List of valid phases in property package
         if self.config.valid_phase == "VL":
-            self.phase_list = Set(initialize=['Liq', 'Vap'])
+            self.phase_list = Set(initialize=['Liq', 'Vap'],
+                                  ordered=True)
         elif self.config.valid_phase == "L":
             self.phase_list = Set(initialize=['Liq'])
         else:
