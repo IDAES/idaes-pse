@@ -51,11 +51,13 @@ def main():
     m.fs.Tank1 = CSTR(default={"property_package": m.fs.thermo_params,
                                "reaction_package": m.fs.reaction_params,
                                "has_equilibrium_reactions": False,
+                               "has_heat_of_reaction": True,
                                "has_heat_transfer": True,
                                "has_pressure_change": False})
     m.fs.Tank2 = CSTR(default={"property_package": m.fs.thermo_params,
                                "reaction_package": m.fs.reaction_params,
                                "has_equilibrium_reactions": False,
+                               "has_heat_of_reaction": True,
                                "has_heat_transfer": True,
                                "has_pressure_change": False})
 

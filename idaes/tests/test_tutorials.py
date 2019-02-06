@@ -47,19 +47,19 @@ def test_tutorial_1():
     assert (m.fs.Tank2.outlet[0].flow_vol.value ==
             pytest.approx(1.0, abs=1e-2))
     assert (m.fs.Tank2.outlet[0].conc_mol_comp["Ethanol"].value ==
-            pytest.approx(89.257, abs=1e-2))
+            pytest.approx(89.628, abs=1e-2))
     assert (m.fs.Tank2.outlet[0].conc_mol_comp["EthylAcetate"].value ==
-            pytest.approx(10.743, abs=1e-2))
+            pytest.approx(10.372, abs=1e-2))
     assert (m.fs.Tank2.outlet[0].conc_mol_comp["NaOH"].value ==
-            pytest.approx(10.743, abs=1e-2))
+            pytest.approx(10.372, abs=1e-2))
     assert (m.fs.Tank2.outlet[0].conc_mol_comp["SodiumAcetate"].value ==
-            pytest.approx(89.257, abs=1e-2))
+            pytest.approx(89.628, abs=1e-2))
     assert (m.fs.Tank2.outlet[0].conc_mol_comp["H2O"].value ==
             pytest.approx(55388.0, abs=1))
     assert (m.fs.Tank2.outlet[0].pressure.value ==
             pytest.approx(101325, abs=1))
     assert (m.fs.Tank2.outlet[0].temperature.value ==
-            pytest.approx(303.15, abs=1e-1))
+            pytest.approx(304.20, abs=1e-1))
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -76,19 +76,19 @@ def test_tutorial_2():
     assert (m.fs.Tank2.outlet[0].flow_vol.value ==
             pytest.approx(1.0, abs=1e-2))
     assert (m.fs.Tank2.outlet[0].conc_mol_comp["Ethanol"].value ==
-            pytest.approx(91.806, abs=1e-2))
+            pytest.approx(92.106, abs=1e-2))
     assert (m.fs.Tank2.outlet[0].conc_mol_comp["EthylAcetate"].value ==
-            pytest.approx(8.194, abs=1e-2))
+            pytest.approx(7.894, abs=1e-2))
     assert (m.fs.Tank2.outlet[0].conc_mol_comp["NaOH"].value ==
-            pytest.approx(8.194, abs=1e-2))
+            pytest.approx(7.894, abs=1e-2))
     assert (m.fs.Tank2.outlet[0].conc_mol_comp["SodiumAcetate"].value ==
-            pytest.approx(91.806, abs=1e-2))
+            pytest.approx(92.106, abs=1e-2))
     assert (m.fs.Tank2.outlet[0].conc_mol_comp["H2O"].value ==
             pytest.approx(55388.0, abs=1))
     assert (m.fs.Tank2.outlet[0].pressure.value ==
             pytest.approx(101325, abs=1))
     assert (m.fs.Tank2.outlet[0].temperature.value ==
-            pytest.approx(303.15, abs=1e-1))
+            pytest.approx(304.23, abs=1e-1))
 
-    assert (m.fs.Tank1.volume[0].value == pytest.approx(1.214, abs=1e-2))
-    assert (m.fs.Tank2.volume[0].value == pytest.approx(1.786, abs=1e-2))
+    assert (m.fs.Tank1.volume[0].value == pytest.approx(1.215, abs=1e-2))
+    assert (m.fs.Tank2.volume[0].value == pytest.approx(1.785, abs=1e-2))

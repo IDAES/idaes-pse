@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.0.1
               </div>
             
           
@@ -95,7 +95,7 @@
 <li class="toctree-l1"><a class="reference internal" href="dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="version.html">IDAES versioning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="examples.html">Sample Models and Flowsheets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Tutorials</a></li>
 </ul>
 
             
@@ -167,22 +167,17 @@
  | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
- | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
- | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
- | <a href="#N"><strong>N</strong></a>
- | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
  | <a href="#V"><strong>V</strong></a>
- | <a href="#W"><strong>W</strong></a>
  
 </div>
 <h2 id="_">_</h2>
@@ -208,241 +203,185 @@
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.active_equalities">active_equalities() (in module idaes.ui.report)</a>
+      <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_adiabatic">add_adiabatic() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.active_equality_set">active_equality_set() (in module idaes.ui.report)</a>
+      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_energy_balances">add_energy_balances() (idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.add">add() (idaes.dmf.dmfbase.DMF method)</a>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_energy_mixing_equations">add_energy_mixing_equations() (idaes.unit_models.mixer.MixerData method)</a>
+</li>
+      <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_energy_splitting_constraints">add_energy_splitting_constraints() (idaes.unit_models.separator.SeparatorData method)</a>
+</li>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_geometry">add_geometry() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.dmf.experiment.html#idaes.dmf.experiment.Experiment.add">(idaes.dmf.experiment.Experiment method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_geometry">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+</li>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_geometry">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_adiabatic">add_adiabatic() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_adiabatic">[1]</a>
+      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_inlet_port">add_inlet_port() (idaes.core.unit_model.UnitBlockData method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.add_csv">add_csv() (idaes.dmf.propdata.PropertyData method)</a>
+      <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_inlet_port_objects">add_inlet_port_objects() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.PropertyClassMetadata.add_default_units">add_default_units() (idaes.core.property_meta.PropertyClassMetadata method)</a>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_inlet_state_blocks">add_inlet_state_blocks() (idaes.unit_models.mixer.MixerData method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_energy_balances">add_energy_balances() (idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_energy_balances">[1]</a>
+      <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_isentropic">add_isentropic() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.add_energy_mixing_equations">add_energy_mixing_equations() (idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_energy_mixing_equations">[1]</a>
+      <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_isothermal">add_isothermal() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.add_energy_splitting_constraints">add_energy_splitting_constraints() (idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_energy_splitting_constraints">[1]</a>
+      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_material_balances">add_material_balances() (idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_geometry">add_geometry() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_geometry">[1]</a>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_material_mixing_equations">add_material_mixing_equations() (idaes.unit_models.mixer.MixerData method)</a>
+</li>
+      <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_material_splitting_constraints">add_material_splitting_constraints() (idaes.unit_models.separator.SeparatorData method)</a>
+</li>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_mixed_state_block">add_mixed_state_block() (idaes.unit_models.mixer.MixerData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_geometry">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_geometry">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_geometry">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_geometry">[1]</a>
+        <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_mixed_state_block">(idaes.unit_models.separator.SeparatorData method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.unit_model.html#idaes.core.unit_model.UnitBlockData.add_inlet_port">add_inlet_port() (idaes.core.unit_model.UnitBlockData method)</a>, <a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_inlet_port">[1]</a>
+      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_momentum_balances">add_momentum_balances() (idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.add_inlet_port_objects">add_inlet_port_objects() (idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_inlet_port_objects">[1]</a>
+      <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_momentum_splitting_constraints">add_momentum_splitting_constraints() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.add_inlet_state_blocks">add_inlet_state_blocks() (idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_inlet_state_blocks">[1]</a>
+      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_outlet_port">add_outlet_port() (idaes.core.unit_model.UnitBlockData method)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_isentropic">add_isentropic() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_isentropic">[1]</a>
+      <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_outlet_port_objects">add_outlet_port_objects() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_isothermal">add_isothermal() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_isothermal">[1]</a>
+      <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_outlet_state_blocks">add_outlet_state_blocks() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_material_balances">add_material_balances() (idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_material_balances">[1]</a>
+      <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_performance">add_performance() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.add_material_mixing_equations">add_material_mixing_equations() (idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_material_mixing_equations">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.add_material_splitting_constraints">add_material_splitting_constraints() (idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_material_splitting_constraints">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Table.add_metadata">add_metadata() (idaes.dmf.tabular.Table method)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.add_mixed_state_block">add_mixed_state_block() (idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_mixed_state_block">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_component_balances">add_phase_component_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.add_mixed_state_block">(idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_mixed_state_block">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_component_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+</li>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_component_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_momentum_balances">add_momentum_balances() (idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_momentum_balances">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.add_momentum_splitting_constraints">add_momentum_splitting_constraints() (idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_momentum_splitting_constraints">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.misc.html#idaes.core.util.misc.add_object_reference">add_object_reference() (in module idaes.core.util.misc)</a>
-</li>
-      <li><a href="apidoc/idaes.core.unit_model.html#idaes.core.unit_model.UnitBlockData.add_outlet_port">add_outlet_port() (idaes.core.unit_model.UnitBlockData method)</a>, <a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_outlet_port">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.add_outlet_port_objects">add_outlet_port_objects() (idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_outlet_port_objects">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.add_outlet_state_blocks">add_outlet_state_blocks() (idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_outlet_state_blocks">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_performance">add_performance() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_performance">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_component_balances">add_phase_component_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_component_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_energy_balances">add_phase_energy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_component_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_component_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_energy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_component_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_component_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_energy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_energy_balances">add_phase_energy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_energy_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_enthalpy_balances">add_phase_enthalpy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_energy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_energy_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_enthalpy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_energy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_energy_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_enthalpy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_enthalpy_balances">add_phase_enthalpy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_enthalpy_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_momentum_balances">add_phase_momentum_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_enthalpy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_enthalpy_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_momentum_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_enthalpy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_enthalpy_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_momentum_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_momentum_balances">add_phase_momentum_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_momentum_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_pressure_balances">add_phase_pressure_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_momentum_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_momentum_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_pressure_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_momentum_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_momentum_balances">[1]</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_pressure_balances">add_phase_pressure_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_pressure_balances">[1]</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_pressure_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_pressure_balances">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_pressure_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_pressure_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_pressure_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.unit_model.html#idaes.core.unit_model.UnitBlockData.add_port">add_port() (idaes.core.unit_model.UnitBlockData method)</a>, <a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_port">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.add_port_objects">add_port_objects() (idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_port_objects">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.add_pressure_equality_equations">add_pressure_equality_equations() (idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_pressure_equality_equations">[1]</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.add_pressure_minimization_equations">add_pressure_minimization_equations() (idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_pressure_minimization_equations">[1]</a>
+      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_port">add_port() (idaes.core.unit_model.UnitBlockData method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.PropertyClassMetadata.add_properties">add_properties() (idaes.core.property_meta.PropertyClassMetadata method)</a>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_port_objects">add_port_objects() (idaes.unit_models.mixer.MixerData method)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_pump">add_pump() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_pump">[1]</a>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_pressure_equality_equations">add_pressure_equality_equations() (idaes.unit_models.mixer.MixerData method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_reaction_blocks">add_reaction_blocks() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_reaction_blocks">[1]</a>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_pressure_minimization_equations">add_pressure_minimization_equations() (idaes.unit_models.mixer.MixerData method)</a>
+</li>
+      <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_pump">add_pump() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
+</li>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_reaction_blocks">add_reaction_blocks() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_reaction_blocks">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_reaction_blocks">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_reaction_blocks">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_reaction_blocks">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_reaction_blocks">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_reaction_blocks">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.PropertyClassMetadata.add_required_properties">add_required_properties() (idaes.core.property_meta.PropertyClassMetadata method)</a>
+      <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_split_fractions">add_split_fractions() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification.add_sampled_input">add_sampled_input() (idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification method)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.add_split_fractions">add_split_fractions() (idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_split_fractions">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_state_blocks">add_state_blocks() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_state_blocks">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_state_blocks">add_state_blocks() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_state_blocks">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_state_blocks">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_state_blocks">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_state_blocks">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_state_blocks">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_state_blocks">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_component_balances">add_total_component_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_component_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_component_balances">add_total_component_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_component_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_component_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_component_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_component_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_component_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_component_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_element_balances">add_total_element_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_element_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_element_balances">add_total_element_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_element_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_element_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_element_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_element_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_element_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_element_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_energy_balances">add_total_energy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_energy_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_energy_balances">add_total_energy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_energy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_energy_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_energy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_energy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_energy_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_energy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_enthalpy_balances">add_total_enthalpy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_enthalpy_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_enthalpy_balances">add_total_enthalpy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_enthalpy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_enthalpy_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_enthalpy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_enthalpy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_enthalpy_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_enthalpy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_material_balances">add_total_material_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_material_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_material_balances">add_total_material_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_material_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_material_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_material_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_material_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_material_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_material_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_momentum_balances">add_total_momentum_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_momentum_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_momentum_balances">add_total_momentum_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_momentum_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_momentum_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_momentum_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_momentum_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_momentum_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_momentum_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_pressure_balances">add_total_pressure_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_pressure_balances">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_pressure_balances">add_total_pressure_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_pressure_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_pressure_balances">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_pressure_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_pressure_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_pressure_balances">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_pressure_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.AddedCSVColumnError">AddedCSVColumnError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.AlamoDisabledError">AlamoDisabledError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.AlamoError">AlamoError</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#idaes.core.util.convergence.mpi_utils.ParallelTaskManager.allgather_global_data">allgather_global_data() (idaes.core.util.convergence.mpi_utils.ParallelTaskManager method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.AM">AM (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.AMOUNT">AMOUNT (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
       <li><a href="glossary.html#term-api"><strong>API</strong></a>
 </li>
-      <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.apply_transformation">apply_transformation() (idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.apply_transformation">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.as_arr">as_arr() (idaes.dmf.propdata.PropertyData method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.as_arr">(idaes.dmf.tabular.TabularData method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata.as_dict">as_dict() (idaes.dmf.tabular.Metadata method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Table.as_dict">(idaes.dmf.tabular.Table method)</a>
-</li>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularObject.as_dict">(idaes.dmf.tabular.TabularObject method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.as_list">as_list() (idaes.dmf.tabular.TabularData method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.AUTH">AUTH (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata.author">author (idaes.dmf.tabular.Metadata attribute)</a>
+      <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.apply_transformation">apply_transformation() (idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -450,223 +389,83 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.BadResourceError">BadResourceError</a>
+      <li><a href="core/process_block.html#idaes.core.process_block.ProcessBlock.base_class_module">base_class_module() (idaes.core.process_block.ProcessBlock class method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.exceptions.html#idaes.core.util.exceptions.BalanceTypeNotSupportedError">BalanceTypeNotSupportedError</a>
+      <li><a href="core/process_block.html#idaes.core.process_block.ProcessBlock.base_class_name">base_class_name() (idaes.core.process_block.ProcessBlock class method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.process_block.html#idaes.core.process_block.ProcessBlock.base_class_module">base_class_module() (idaes.core.process_block.ProcessBlock class method)</a>, <a href="core/process_block.html#idaes.core.process_block.ProcessBlock.base_class_module">[1]</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.bound">bound() (idaes.core.util.model_serializer.StoreSpec class method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.process_block.html#idaes.core.process_block.ProcessBlock.base_class_name">base_class_name() (idaes.core.process_block.ProcessBlock class method)</a>, <a href="core/process_block.html#idaes.core.process_block.ProcessBlock.base_class_name">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.Pyomo2SympyVisitor.beforeChild">beforeChild() (idaes.core.util.expr_doc.Pyomo2SympyVisitor method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.bound">bound() (idaes.core.util.model_serializer.StoreSpec class method)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.bound">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.build">build() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.build">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.build">build() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.build">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.build">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.build">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.build">(idaes.core.control_volume_base.ControlVolumeBase method)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.build">[1]</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.build">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.build">(idaes.core.flowsheet_model.FlowsheetBlockData method)</a>, <a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.build">[1]</a>
+        <li><a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.build">(idaes.core.flowsheet_model.FlowsheetBlockData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.process_base.html#idaes.core.process_base.ProcessBlockData.build">(idaes.core.process_base.ProcessBlockData method)</a>, <a href="core/process_block.html#idaes.core.process_base.ProcessBlockData.build">[1]</a>
+        <li><a href="core/process_block.html#idaes.core.process_base.ProcessBlockData.build">(idaes.core.process_base.ProcessBlockData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.PhysicalParameterBase.build">(idaes.core.property_base.PhysicalParameterBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.PhysicalParameterBase.build">[1]</a>
+        <li><a href="core/state_block.html#idaes.core.property_base.PhysicalParameterBase.build">(idaes.core.property_base.PhysicalParameterBase method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase.build">(idaes.core.property_base.StateBlockDataBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.build">[1]</a>
+        <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.build">(idaes.core.property_base.StateBlockDataBase method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.reaction_base.html#idaes.core.reaction_base.ReactionBlockDataBase.build">(idaes.core.reaction_base.ReactionBlockDataBase method)</a>, <a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockDataBase.build">[1]</a>
+        <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockDataBase.build">(idaes.core.reaction_base.ReactionBlockDataBase method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.reaction_base.html#idaes.core.reaction_base.ReactionParameterBase.build">(idaes.core.reaction_base.ReactionParameterBase method)</a>, <a href="core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBase.build">[1]</a>
+        <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBase.build">(idaes.core.reaction_base.ReactionParameterBase method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.unit_model.html#idaes.core.unit_model.UnitBlockData.build">(idaes.core.unit_model.UnitBlockData method)</a>, <a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.build">[1]</a>
+        <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.build">(idaes.core.unit_model.UnitBlockData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.PhysicalParameterData.build">(idaes.property_models.BFW_properties.PhysicalParameterData method)</a>
+        <li><a href="models/cstr.html#idaes.unit_models.cstr.CSTRData.build">(idaes.unit_models.cstr.CSTRData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlockData.build">(idaes.property_models.BFW_properties.StateBlockData method)</a>
+        <li><a href="models/flash.html#idaes.unit_models.flash.FlashData.build">(idaes.unit_models.flash.FlashData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.BTX_ideal_VLE.html#idaes.property_models.BTX_ideal_VLE.PhysicalParameterData.build">(idaes.property_models.BTX_ideal_VLE.PhysicalParameterData method)</a>
+        <li><a href="models/gibbs_reactor.html#idaes.unit_models.gibbs_reactor.GibbsReactorData.build">(idaes.unit_models.gibbs_reactor.GibbsReactorData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95ParameterBlockData.build">(idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95ParameterBlockData method)</a>
+        <li><a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData.build">(idaes.unit_models.heat_exchanger.HeatExchangerData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData.build">(idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData method)</a>
+        <li><a href="models/heater.html#idaes.unit_models.heat_exchanger.HeaterData.build">(idaes.unit_models.heat_exchanger.HeaterData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.ideal_prop_pack_VLE.html#idaes.property_models.ideal_prop_pack_VLE.StateBlockData.build">(idaes.property_models.ideal_prop_pack_VLE.StateBlockData method)</a>
+        <li><a href="models/heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData.build">(idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.PhysicalParameterData.build">(idaes.property_models.methane_combustion_ideal.PhysicalParameterData method)</a>
+        <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.build">(idaes.unit_models.mixer.MixerData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.StateBlockData.build">(idaes.property_models.methane_combustion_ideal.StateBlockData method)</a>
+        <li><a href="models/pfr.html#idaes.unit_models.plug_flow_reactor.PFRData.build">(idaes.unit_models.plug_flow_reactor.PFRData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.saponification_reactions.html#idaes.property_models.saponification_reactions.ReactionBlockData.build">(idaes.property_models.saponification_reactions.ReactionBlockData method)</a>
+        <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.build">(idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.saponification_reactions.html#idaes.property_models.saponification_reactions.ReactionParameterData.build">(idaes.property_models.saponification_reactions.ReactionParameterData method)</a>
+        <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.build">(idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.PhysicalParameterData.build">(idaes.property_models.saponification_thermo.PhysicalParameterData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.StateBlockData.build">(idaes.property_models.saponification_thermo.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.cstr.html#idaes.unit_models.cstr.CSTRData.build">(idaes.unit_models.cstr.CSTRData method)</a>, <a href="models/cstr.html#idaes.unit_models.cstr.CSTRData.build">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.flash.html#idaes.unit_models.flash.FlashData.build">(idaes.unit_models.flash.FlashData method)</a>, <a href="models/flash.html#idaes.unit_models.flash.FlashData.build">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.gibbs_reactor.html#idaes.unit_models.gibbs_reactor.GibbsReactorData.build">(idaes.unit_models.gibbs_reactor.GibbsReactorData method)</a>, <a href="models/gibbs_reactor.html#idaes.unit_models.gibbs_reactor.GibbsReactorData.build">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData.build">(idaes.unit_models.heat_exchanger.HeatExchangerData method)</a>, <a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData.build">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.HeaterData.build">(idaes.unit_models.heat_exchanger.HeaterData method)</a>, <a href="models/heater.html#idaes.unit_models.heat_exchanger.HeaterData.build">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData.build">(idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData method)</a>, <a href="models/heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData.build">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.build">(idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.build">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.plug_flow_reactor.html#idaes.unit_models.plug_flow_reactor.PFRData.build">(idaes.unit_models.plug_flow_reactor.PFRData method)</a>, <a href="models/pfr.html#idaes.unit_models.plug_flow_reactor.PFRData.build">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.build">(idaes.unit_models.pressure_changer.PressureChangerData method)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.build">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.build">(idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.build">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData.build">(idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData method)</a>, <a href="models/stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData.build">[1]</a>
+        <li><a href="models/stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData.build">(idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.util.exceptions.html#idaes.core.util.exceptions.BurntToast">BurntToast</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.Fields.C_PROP">C_PROP (idaes.dmf.propdata.Fields attribute)</a>
+      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolume">ControlVolume (class in idaes.core.control_volume_base)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.Fields.C_STATE">C_STATE (idaes.dmf.propdata.Fields attribute)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0D">ControlVolume0D (class in idaes.core.control_volume0d)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.commands.html#idaes.dmf.commands.cat_resources">cat_resources() (in module idaes.dmf.commands)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData">ControlVolume0dData (class in idaes.core.control_volume0d)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.CPrint.colorize">colorize() (idaes.dmf.util.CPrint method)</a>
+      <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1D">ControlVolume1D (class in idaes.core.control_volume1d)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.CPrint.COLORS">COLORS (idaes.dmf.util.CPrint attribute)</a>
+      <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData">ControlVolume1dData (class in idaes.core.control_volume1d)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.COLTYPE">COLTYPE (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Column">Column (class in idaes.dmf.tabular)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.columns">columns (idaes.dmf.tabular.TabularData attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#idaes.core.util.convergence.mpi_utils.MPIInterface.comm">comm (idaes.core.util.convergence.mpi_utils.MPIInterface attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.CommandError">CommandError</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.component_data_from_dict">component_data_from_dict() (in module idaes.core.util.model_serializer)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.component_data_to_dict">component_data_to_dict() (in module idaes.core.util.model_serializer)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.CONF_CREATED">CONF_CREATED (idaes.dmf.workspace.Workspace attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.CONF_DATA_DIR">CONF_DATA_DIR (idaes.dmf.dmfbase.DMF attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.CONF_DB_FILE">CONF_DB_FILE (idaes.dmf.dmfbase.DMF attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.CONF_DESC">CONF_DESC (idaes.dmf.workspace.Workspace attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.CONF_HELP_PATH">CONF_HELP_PATH (idaes.dmf.dmfbase.DMF attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.CONF_MODIFIED">CONF_MODIFIED (idaes.dmf.workspace.Workspace attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.CONF_NAME">CONF_NAME (idaes.dmf.workspace.Workspace attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase.CONFIG">CONFIG (idaes.core.control_volume_base.ControlVolumeBase attribute)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.core.flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.CONFIG">(idaes.core.flowsheet_model.FlowsheetBlockData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.core.process_base.html#idaes.core.process_base.ProcessBlockData.CONFIG">(idaes.core.process_base.ProcessBlockData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.PhysicalParameterBase.CONFIG">(idaes.core.property_base.PhysicalParameterBase attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase.CONFIG">(idaes.core.property_base.StateBlockDataBase attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.core.reaction_base.html#idaes.core.reaction_base.ReactionBlockDataBase.CONFIG">(idaes.core.reaction_base.ReactionBlockDataBase attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.core.reaction_base.html#idaes.core.reaction_base.ReactionParameterBase.CONFIG">(idaes.core.reaction_base.ReactionParameterBase attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.core.unit_model.html#idaes.core.unit_model.UnitBlockData.CONFIG">(idaes.core.unit_model.UnitBlockData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.cstr.html#idaes.unit_models.cstr.CSTRData.CONFIG">(idaes.unit_models.cstr.CSTRData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.flash.html#idaes.unit_models.flash.FlashData.CONFIG">(idaes.unit_models.flash.FlashData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.gibbs_reactor.html#idaes.unit_models.gibbs_reactor.GibbsReactorData.CONFIG">(idaes.unit_models.gibbs_reactor.GibbsReactorData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData.CONFIG">(idaes.unit_models.heat_exchanger.HeatExchangerData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.HeaterData.CONFIG">(idaes.unit_models.heat_exchanger.HeaterData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData.CONFIG">(idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.CONFIG">(idaes.unit_models.mixer.MixerData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.plug_flow_reactor.html#idaes.unit_models.plug_flow_reactor.PFRData.CONFIG">(idaes.unit_models.plug_flow_reactor.PFRData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.CONFIG">(idaes.unit_models.pressure_changer.PressureChangerData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.CONFIG">(idaes.unit_models.separator.SeparatorData attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData.CONFIG">(idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData attribute)</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.util.exceptions.html#idaes.core.util.exceptions.ConfigurationError">ConfigurationError</a>
+      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase">ControlVolumeBase (class in idaes.core.control_volume_base)</a>
 </li>
-      <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolume">ControlVolume (class in idaes.core.control_volume_base)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolume">[1]</a>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.create_inlet_list">create_inlet_list() (idaes.unit_models.mixer.MixerData method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0D">ControlVolume0D (class in idaes.core.control_volume0d)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0D">[1]</a>
+      <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.create_outlet_list">create_outlet_list() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData">ControlVolume0dData (class in idaes.core.control_volume0d)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData">[1]</a>
+      <li><a href="models/cstr.html#idaes.unit_models.cstr.CSTR">CSTR (class in idaes.unit_models.cstr)</a>
 </li>
-      <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1D">ControlVolume1D (class in idaes.core.control_volume1d)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1D">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData">ControlVolume1dData (class in idaes.core.control_volume1d)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume_base.html#idaes.core.control_volume_base.ControlVolumeBase">ControlVolumeBase (class in idaes.core.control_volume_base)</a>, <a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation">ConvergenceEvaluation (class in idaes.core.util.convergence.convergence_base)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification">ConvergenceEvaluationSpecification (class in idaes.core.util.convergence.convergence_base)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.convert_csv">convert_csv() (in module idaes.dmf.propdata)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.experiment.html#idaes.dmf.experiment.Experiment.copy">copy() (idaes.dmf.experiment.Experiment method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.count">count() (idaes.dmf.dmfbase.DMF method)</a>
-</li>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.count_equality_constraints">count_equality_constraints() (in module idaes.ui.report)</a>
-</li>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.count_free_variables">count_free_variables() (in module idaes.ui.report)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.Counter">Counter (class in idaes.core.util.model_serializer)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.CPrint">CPrint (class in idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.create_inlet_list">create_inlet_list() (idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.create_inlet_list">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.create_outlet_list">create_outlet_list() (idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.create_outlet_list">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.create_relation">create_relation() (in module idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.create_relation_args">create_relation_args() (in module idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.cstr.html#idaes.unit_models.cstr.CSTR">CSTR (class in idaes.unit_models.cstr)</a>, <a href="models/cstr.html#idaes.unit_models.cstr.CSTR">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.cstr.html#idaes.unit_models.cstr.CSTRData">CSTRData (class in idaes.unit_models.cstr)</a>, <a href="models/cstr.html#idaes.unit_models.cstr.CSTRData">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.CU">CU (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.CURRENT">CURRENT (idaes.core.property_meta.UnitNames attribute)</a>
+      <li><a href="models/cstr.html#idaes.unit_models.cstr.CSTRData">CSTRData (class in idaes.unit_models.cstr)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -674,104 +473,18 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.data">data (idaes.dmf.resource.Resource attribute)</a>
+      <li><a href="core/process_block.html#idaes.core.process_block.declare_process_block_class">declare_process_block_class() (in module idaes.core.process_block)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.DATA">DATA (idaes.dmf.tabular.Fields attribute)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.define_port_members">define_port_members() (idaes.core.property_base.StateBlockDataBase method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Table.data">data (idaes.dmf.tabular.Table attribute)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.define_state_vars">define_state_vars() (idaes.core.property_base.StateBlockDataBase method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyColumn.data">data() (idaes.dmf.propdata.PropertyColumn method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.StateColumn.data">(idaes.dmf.propdata.StateColumn method)</a>
+      <li><a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.delta_temperature_amtd_rule">delta_temperature_amtd_rule() (in module idaes.unit_models.heat_exchanger)</a>
 </li>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Column.data">(idaes.dmf.tabular.Column method)</a>
+      <li><a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.delta_temperature_lmtd_rule">delta_temperature_lmtd_rule() (in module idaes.unit_models.heat_exchanger)</a>
 </li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.DATA_ERRORS">DATA_ERRORS (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.DATA_ERRTYPE">DATA_ERRTYPE (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.DATA_NAME">DATA_NAME (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.DATA_UNITS">DATA_UNITS (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.DATA_VALUES">DATA_VALUES (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.datafile_dir">datafile_dir (idaes.dmf.dmfbase.DMF attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.DataFormatError">DataFormatError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata.datatype">datatype (idaes.dmf.tabular.Metadata attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.DATE">DATE (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata.date">date (idaes.dmf.tabular.Metadata attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.date_float">date_float() (in module idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.datetime_timestamp">datetime_timestamp() (in module idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.db_file">db_file (idaes.dmf.dmfbase.DMF attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.process_block.html#idaes.core.process_block.declare_process_block_class">declare_process_block_class() (in module idaes.core.process_block)</a>, <a href="core/process_block.html#idaes.core.process_block.declare_process_block_class">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.deduplicate_symbol">deduplicate_symbol() (in module idaes.core.util.expr_doc)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.PropertyClassMetadata.default_units">default_units (idaes.core.property_meta.PropertyClassMetadata attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMFConfig.DEFAULTS">DEFAULTS (idaes.dmf.dmfbase.DMFConfig attribute)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.WorkspaceConfig.DEFAULTS">(idaes.dmf.workspace.WorkspaceConfig attribute)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.HasPropertyClassMetadata.define_metadata">define_metadata() (idaes.core.property_meta.HasPropertyClassMetadata class method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.PhysicalParameterData.define_metadata">(idaes.property_models.BFW_properties.PhysicalParameterData class method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.BTX_ideal_VLE.html#idaes.property_models.BTX_ideal_VLE.PhysicalParameterData.define_metadata">(idaes.property_models.BTX_ideal_VLE.PhysicalParameterData class method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95ParameterBlockData.define_metadata">(idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95ParameterBlockData class method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.PhysicalParameterData.define_metadata">(idaes.property_models.methane_combustion_ideal.PhysicalParameterData class method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_reactions.html#idaes.property_models.saponification_reactions.ReactionParameterData.define_metadata">(idaes.property_models.saponification_reactions.ReactionParameterData class method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.PhysicalParameterData.define_metadata">(idaes.property_models.saponification_thermo.PhysicalParameterData class method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase.define_port_members">define_port_members() (idaes.core.property_base.StateBlockDataBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.define_port_members">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase.define_state_vars">define_state_vars() (idaes.core.property_base.StateBlockDataBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.define_state_vars">[1]</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlockData.define_state_vars">(idaes.property_models.BFW_properties.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData.define_state_vars">(idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.ideal_prop_pack_VLE.html#idaes.property_models.ideal_prop_pack_VLE.StateBlockData.define_state_vars">(idaes.property_models.ideal_prop_pack_VLE.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.StateBlockData.define_state_vars">(idaes.property_models.methane_combustion_ideal.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.StateBlockData.define_state_vars">(idaes.property_models.saponification_thermo.StateBlockData method)</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.degrees_of_freedom">degrees_of_freedom() (in module idaes.ui.report)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resourcedb.html#idaes.dmf.resourcedb.ResourceDB.delete">delete() (idaes.dmf.resourcedb.ResourceDB method)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.delta_temperature_amtd_rule">delta_temperature_amtd_rule() (in module idaes.unit_models.heat_exchanger)</a>, <a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.delta_temperature_amtd_rule">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.delta_temperature_lmtd_rule">delta_temperature_lmtd_rule() (in module idaes.unit_models.heat_exchanger)</a>, <a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.delta_temperature_lmtd_rule">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.description">description (idaes.dmf.workspace.Workspace attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Dict">Dict (class in idaes.dmf.resource)</a>
-</li>
       <li>
     DMF
 
@@ -788,137 +501,17 @@
         <li><a href="dmf/index.html#index-1">Help</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF">DMF (class in idaes.dmf.dmfbase)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.experiment.html#idaes.dmf.experiment.Experiment.dmf">dmf (idaes.dmf.experiment.Experiment attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagics.dmf">dmf() (idaes.dmf.magics.DmfMagics method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagicsImpl.dmf">(idaes.dmf.magics.DmfMagicsImpl method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagicsImpl.dmf_help">dmf_help() (idaes.dmf.magics.DmfMagicsImpl method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagicsImpl.dmf_info">dmf_info() (idaes.dmf.magics.DmfMagicsImpl method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagicsImpl.dmf_init">dmf_init() (idaes.dmf.magics.DmfMagicsImpl method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagicsImpl.dmf_list">dmf_list() (idaes.dmf.magics.DmfMagicsImpl method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagicsImpl.dmf_workspaces">dmf_workspaces() (idaes.dmf.magics.DmfMagicsImpl method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMFConfig">DMFConfig (class in idaes.dmf.dmfbase)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.DMFError">DMFError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.DmfError">DmfError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DMFMagicError">DMFMagicError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagics">DmfMagics (class in idaes.dmf.magics)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagicsImpl">DmfMagicsImpl (class in idaes.dmf.magics)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propindex.html#idaes.dmf.propindex.DMFVisitor">DMFVisitor (class in idaes.dmf.propindex)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Fields.DOC_HTML_PATH">DOC_HTML_PATH (idaes.dmf.workspace.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.document_constraints">document_constraints() (in module idaes.core.util.expr_doc)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.DTYPE">DTYPE (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Table.dump">dump() (idaes.dmf.tabular.Table method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Table.dumps">dumps() (idaes.dmf.tabular.Table method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.DuplicateResourceError">DuplicateResourceError</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.exceptions.html#idaes.core.util.exceptions.DynamicError">DynamicError</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="E">E</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.embedded_units">embedded_units (idaes.dmf.propdata.PropertyData attribute)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.embedded_units">(idaes.dmf.tabular.TabularData attribute)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.EN">EN (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.ENERGY">ENERGY (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.errors_dataframe">errors_dataframe() (idaes.dmf.propdata.PropertyData method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.errors_dataframe">(idaes.dmf.tabular.TabularData method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.util.initialization.html#idaes.core.util.initialization.evaluate_variable_from_constraint">evaluate_variable_from_constraint() (in module idaes.core.util.initialization)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.Pyomo2SympyVisitor.exitNode">exitNode() (idaes.core.util.expr_doc.Pyomo2SympyVisitor method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.experiment.html#idaes.dmf.experiment.Experiment">Experiment (class in idaes.dmf.experiment)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.misc.html#idaes.core.util.misc.extract_data">extract_data() (in module idaes.core.util.misc)</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.fetch_one">fetch_one() (idaes.dmf.dmfbase.DMF method)</a>
+      <li><a href="core/process_block.html#idaes.core.process_base.ProcessBlockData.fix_initial_conditions">fix_initial_conditions() (idaes.core.process_base.ProcessBlockData method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.Fields">Fields (class in idaes.dmf.propdata)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields">(class in idaes.dmf.tabular)</a>
+      <li><a href="models/flash.html#idaes.unit_models.flash.Flash">Flash (class in idaes.unit_models.flash)</a>
 </li>
-        <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Fields">(class in idaes.dmf.workspace)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.FileError">FileError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMFConfig.filename">filename (idaes.dmf.dmfbase.DMFConfig attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.find">find() (idaes.dmf.dmfbase.DMF method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.resourcedb.html#idaes.dmf.resourcedb.ResourceDB.find">(idaes.dmf.resourcedb.ResourceDB method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.help.html#idaes.dmf.help.find_html_docs">find_html_docs() (in module idaes.dmf.help)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resourcedb.html#idaes.dmf.resourcedb.ResourceDB.find_one">find_one() (idaes.dmf.resourcedb.ResourceDB method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.userapi.html#idaes.dmf.userapi.find_property_packages">find_property_packages() (in module idaes.dmf.userapi)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.find_related">find_related() (idaes.dmf.dmfbase.DMF method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.resourcedb.html#idaes.dmf.resourcedb.ResourceDB.find_related">(idaes.dmf.resourcedb.ResourceDB method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.find_workspaces">find_workspaces() (in module idaes.dmf.workspace)</a>
-</li>
-      <li><a href="apidoc/idaes.core.process_base.html#idaes.core.process_base.ProcessBlockData.fix_initial_conditions">fix_initial_conditions() (idaes.core.process_base.ProcessBlockData method)</a>, <a href="core/process_block.html#idaes.core.process_base.ProcessBlockData.fix_initial_conditions">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.initialization.html#idaes.core.util.initialization.fix_port">fix_port() (in module idaes.core.util.initialization)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.fixed_variables">fixed_variables() (in module idaes.ui.report)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.flash.html#idaes.unit_models.flash.Flash">Flash (class in idaes.unit_models.flash)</a>, <a href="models/flash.html#idaes.unit_models.flash.Flash">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.flash.html#idaes.unit_models.flash.FlashData">FlashData (class in idaes.unit_models.flash)</a>, <a href="models/flash.html#idaes.unit_models.flash.FlashData">[1]</a>
+      <li><a href="models/flash.html#idaes.unit_models.flash.FlashData">FlashData (class in idaes.unit_models.flash)</a>
 </li>
       <li>
     FlowsheetBlock
@@ -927,7 +520,9 @@
         <li><a href="core/flowsheet_model.html#index-0">idaes.core.flowsheet_model</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlock">FlowsheetBlock (class in idaes.core.flowsheet_model)</a>, <a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlock">[1]</a>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlock">FlowsheetBlock (class in idaes.core.flowsheet_model)</a>
 </li>
       <li>
     FlowsheetBlockData
@@ -936,23 +531,9 @@
         <li><a href="core/flowsheet_model.html#index-0">idaes.core.flowsheet_model</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData">FlowsheetBlockData (class in idaes.core.flowsheet_model)</a>, <a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData">[1]</a>
+      <li><a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData">FlowsheetBlockData (class in idaes.core.flowsheet_model)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.format_version">format_version() (in module idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.free_variables">free_variables() (in module idaes.ui.report)</a>
-</li>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.free_variables_in_active_equalities_set">free_variables_in_active_equalities_set() (in module idaes.ui.report)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.from_csv">from_csv() (idaes.dmf.propdata.PropertyData static method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata.from_csv">(idaes.dmf.tabular.Metadata static method)</a>
-</li>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.from_csv">(idaes.dmf.tabular.TabularData static method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.from_json">from_json() (in module idaes.core.util.model_serializer)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.from_json">[1]</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.from_json">from_json() (in module idaes.core.util.model_serializer)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -960,131 +541,33 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#idaes.core.util.convergence.mpi_utils.ParallelTaskManager.gather_global_data">gather_global_data() (idaes.core.util.convergence.mpi_utils.ParallelTaskManager method)</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.get_class_attr_list">get_class_attr_list() (idaes.core.util.model_serializer.StoreSpec method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.resourcedb.html#idaes.dmf.resourcedb.ResourceDB.get">get() (idaes.dmf.resourcedb.ResourceDB method)</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.get_data_class_attr_list">get_data_class_attr_list() (idaes.core.util.model_serializer.StoreSpec method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.get_class_attr_list">get_class_attr_list() (idaes.core.util.model_serializer.StoreSpec method)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.get_class_attr_list">[1]</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_energy_diffusion_terms">get_energy_diffusion_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.get_column">get_column() (idaes.dmf.tabular.TabularData method)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_enthalpy_density_terms">get_enthalpy_density_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.get_column_index">get_column_index() (idaes.dmf.tabular.TabularData method)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_enthalpy_flow_terms">get_enthalpy_flow_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.get_data_class_attr_list">get_data_class_attr_list() (idaes.core.util.model_serializer.StoreSpec method)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.get_data_class_attr_list">[1]</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_density_terms">get_material_density_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.get_datafiles">get_datafiles() (idaes.dmf.resource.Resource method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.get_doc_paths">get_doc_paths() (idaes.dmf.workspace.Workspace method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase.get_energy_diffusion_terms">get_energy_diffusion_terms() (idaes.core.property_base.StateBlockDataBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_energy_diffusion_terms">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase.get_enthalpy_density_terms">get_enthalpy_density_terms() (idaes.core.property_base.StateBlockDataBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_enthalpy_density_terms">[1]</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlockData.get_enthalpy_density_terms">(idaes.property_models.BFW_properties.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData.get_enthalpy_density_terms">(idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.ideal_prop_pack_VLE.html#idaes.property_models.ideal_prop_pack_VLE.StateBlockData.get_enthalpy_density_terms">(idaes.property_models.ideal_prop_pack_VLE.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.StateBlockData.get_enthalpy_density_terms">(idaes.property_models.methane_combustion_ideal.StateBlockData method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase.get_enthalpy_flow_terms">get_enthalpy_flow_terms() (idaes.core.property_base.StateBlockDataBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_enthalpy_flow_terms">[1]</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlockData.get_enthalpy_flow_terms">(idaes.property_models.BFW_properties.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData.get_enthalpy_flow_terms">(idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.ideal_prop_pack_VLE.html#idaes.property_models.ideal_prop_pack_VLE.StateBlockData.get_enthalpy_flow_terms">(idaes.property_models.ideal_prop_pack_VLE.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.StateBlockData.get_enthalpy_flow_terms">(idaes.property_models.methane_combustion_ideal.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.StateBlockData.get_enthalpy_flow_terms">(idaes.property_models.saponification_thermo.StateBlockData method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.WorkspaceConfig.get_fields">get_fields() (idaes.dmf.workspace.WorkspaceConfig method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.get_file">get_file() (in module idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.help.html#idaes.dmf.help.get_html_docs">get_html_docs() (in module idaes.dmf.help)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.ModuleClassWalker.get_indexed_classes">get_indexed_classes() (idaes.dmf.codesearch.ModuleClassWalker method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_initialized_model">get_initialized_model() (idaes.core.util.convergence.convergence_base.ConvergenceEvaluation method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.html#idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.PressureChangerConvergenceEvaluation.get_initialized_model">(idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.PressureChangerConvergenceEvaluation method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase.get_material_density_terms">get_material_density_terms() (idaes.core.property_base.StateBlockDataBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_density_terms">[1]</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlockData.get_material_density_terms">(idaes.property_models.BFW_properties.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData.get_material_density_terms">(idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.ideal_prop_pack_VLE.html#idaes.property_models.ideal_prop_pack_VLE.StateBlockData.get_material_density_terms">(idaes.property_models.ideal_prop_pack_VLE.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.StateBlockData.get_material_density_terms">(idaes.property_models.methane_combustion_ideal.StateBlockData method)</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase.get_material_diffusion_terms">get_material_diffusion_terms() (idaes.core.property_base.StateBlockDataBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_diffusion_terms">[1]</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_diffusion_terms">get_material_diffusion_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
 </li>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase.get_material_flow_terms">get_material_flow_terms() (idaes.core.property_base.StateBlockDataBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_flow_terms">[1]</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_flow_terms">get_material_flow_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
+</li>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.get_mixed_state_block">get_mixed_state_block() (idaes.unit_models.mixer.MixerData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlockData.get_material_flow_terms">(idaes.property_models.BFW_properties.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData.get_material_flow_terms">(idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.ideal_prop_pack_VLE.html#idaes.property_models.ideal_prop_pack_VLE.StateBlockData.get_material_flow_terms">(idaes.property_models.ideal_prop_pack_VLE.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.StateBlockData.get_material_flow_terms">(idaes.property_models.methane_combustion_ideal.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.StateBlockData.get_material_flow_terms">(idaes.property_models.saponification_thermo.StateBlockData method)</a>
+        <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.get_mixed_state_block">(idaes.unit_models.separator.SeparatorData method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.HasPropertyClassMetadata.get_metadata">get_metadata() (idaes.core.property_meta.HasPropertyClassMetadata class method)</a>
+      <li><a href="models/gibbs_reactor.html#idaes.unit_models.gibbs_reactor.GibbsReactor">GibbsReactor (class in idaes.unit_models.gibbs_reactor)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.get_mixed_state_block">get_mixed_state_block() (idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.get_mixed_state_block">[1]</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.get_mixed_state_block">(idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.get_mixed_state_block">[1]</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.get_module_author">get_module_author() (in module idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.get_module_version">get_module_version() (in module idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.get_propertydb_table">get_propertydb_table() (in module idaes.dmf.dmfbase)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_solver">get_solver() (idaes.core.util.convergence.convergence_base.ConvergenceEvaluation method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.html#idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.PressureChangerConvergenceEvaluation.get_solver">(idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.PressureChangerConvergenceEvaluation method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluation.get_specification">get_specification() (idaes.core.util.convergence.convergence_base.ConvergenceEvaluation method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.html#idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.PressureChangerConvergenceEvaluation.get_specification">(idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.PressureChangerConvergenceEvaluation method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.userapi.html#idaes.dmf.userapi.get_workspace">get_workspace() (in module idaes.dmf.userapi)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.PyomoSympyBimap.getPyomoSymbol">getPyomoSymbol() (idaes.core.util.expr_doc.PyomoSympyBimap method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.PyomoSympyBimap.getSympySymbol">getSympySymbol() (idaes.core.util.expr_doc.PyomoSympyBimap method)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.gibbs_reactor.html#idaes.unit_models.gibbs_reactor.GibbsReactor">GibbsReactor (class in idaes.unit_models.gibbs_reactor)</a>, <a href="models/gibbs_reactor.html#idaes.unit_models.gibbs_reactor.GibbsReactor">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.gibbs_reactor.html#idaes.unit_models.gibbs_reactor.GibbsReactorData">GibbsReactorData (class in idaes.unit_models.gibbs_reactor)</a>, <a href="models/gibbs_reactor.html#idaes.unit_models.gibbs_reactor.GibbsReactorData">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#idaes.core.util.convergence.mpi_utils.ParallelTaskManager.global_to_local_data">global_to_local_data() (idaes.core.util.convergence.mpi_utils.ParallelTaskManager method)</a>
+      <li><a href="models/gibbs_reactor.html#idaes.unit_models.gibbs_reactor.GibbsReactorData">GibbsReactorData (class in idaes.unit_models.gibbs_reactor)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1092,13 +575,9 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.HasPropertyClassMetadata">HasPropertyClassMetadata (class in idaes.core.property_meta)</a>
+      <li><a href="version.html#idaes.ver.HasVersion">HasVersion (class in idaes.ver)</a>
 </li>
-      <li><a href="apidoc/idaes.ver.html#idaes.ver.HasVersion">HasVersion (class in idaes.ver)</a>, <a href="version.html#idaes.ver.HasVersion">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#idaes.core.util.convergence.mpi_utils.MPIInterface.have_mpi">have_mpi (idaes.core.util.convergence.mpi_utils.MPIInterface attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.heat_transfer_rule">heat_transfer_rule() (in module idaes.unit_models.heat_exchanger)</a>, <a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.heat_transfer_rule">[1]</a>
+      <li><a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.heat_transfer_rule">heat_transfer_rule() (in module idaes.unit_models.heat_exchanger)</a>
 </li>
       <li>
     Heater
@@ -1107,9 +586,9 @@
         <li><a href="models/heater.html#index-0">idaes.unit_models.heat_exchanger</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.Heater">Heater (class in idaes.unit_models.heat_exchanger)</a>, <a href="models/heater.html#idaes.unit_models.heat_exchanger.Heater">[1]</a>
+      <li><a href="models/heater.html#idaes.unit_models.heat_exchanger.Heater">Heater (class in idaes.unit_models.heat_exchanger)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.HeaterData">HeaterData (class in idaes.unit_models.heat_exchanger)</a>, <a href="models/heater.html#idaes.unit_models.heat_exchanger.HeaterData">[1]</a>
+      <li><a href="models/heater.html#idaes.unit_models.heat_exchanger.HeaterData">HeaterData (class in idaes.unit_models.heat_exchanger)</a>
 </li>
       <li>
     HeatExchanger
@@ -1120,13 +599,13 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchanger">HeatExchanger (class in idaes.unit_models.heat_exchanger)</a>, <a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchanger">[1]</a>
+      <li><a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchanger">HeatExchanger (class in idaes.unit_models.heat_exchanger)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1D">HeatExchanger1D (class in idaes.unit_models.heat_exchanger_1D)</a>, <a href="models/heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1D">[1]</a>
+      <li><a href="models/heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1D">HeatExchanger1D (class in idaes.unit_models.heat_exchanger_1D)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData">HeatExchanger1DData (class in idaes.unit_models.heat_exchanger_1D)</a>, <a href="models/heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData">[1]</a>
+      <li><a href="models/heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData">HeatExchanger1DData (class in idaes.unit_models.heat_exchanger_1D)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData">HeatExchangerData (class in idaes.unit_models.heat_exchanger)</a>, <a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData">[1]</a>
+      <li><a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData">HeatExchangerData (class in idaes.unit_models.heat_exchanger)</a>
 </li>
       <li>
     Help
@@ -1142,30 +621,12 @@
         <li><a href="index.html#index-0">idaes</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.htpx">htpx() (in module idaes.property_models.iapws95.iapws95_wrap_ph)</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95ParameterBlock">Iapws95ParameterBlock (class in idaes.property_models.iapws95.iapws95_wrap_ph)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95ParameterBlockData">Iapws95ParameterBlockData (class in idaes.property_models.iapws95.iapws95_wrap_ph)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlock">Iapws95StateBlock (class in idaes.property_models.iapws95.iapws95_wrap_ph)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData">Iapws95StateBlockData (class in idaes.property_models.iapws95.iapws95_wrap_ph)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.id">id (idaes.dmf.resource.Resource attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.ID_FIELD">ID_FIELD (idaes.dmf.resource.Resource attribute)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.ID_FIELD">(idaes.dmf.workspace.Workspace attribute)</a>
-</li>
-      </ul></li>
       <li>
     idaes
 
@@ -1173,15 +634,11 @@
         <li><a href="index.html#index-0">Home</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.html#module-idaes">idaes (module)</a>
+      <li><a href="core/control_volume_0d.html#module-idaes.core.control_volume0d">idaes.core.control_volume0d (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.html#module-idaes.core">idaes.core (module)</a>
+      <li><a href="core/control_volume_1d.html#module-idaes.core.control_volume1d">idaes.core.control_volume1d (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#module-idaes.core.control_volume0d">idaes.core.control_volume0d (module)</a>, <a href="core/control_volume_0d.html#module-idaes.core.control_volume0d">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume1d.html#module-idaes.core.control_volume1d">idaes.core.control_volume1d (module)</a>, <a href="core/control_volume_1d.html#module-idaes.core.control_volume1d">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume_base.html#module-idaes.core.control_volume_base">idaes.core.control_volume_base (module)</a>, <a href="core/control_volume.html#module-idaes.core.control_volume_base">[1]</a>
+      <li><a href="core/control_volume.html#module-idaes.core.control_volume_base">idaes.core.control_volume_base (module)</a>
 </li>
       <li>
     idaes.core.flowsheet_model
@@ -1192,115 +649,31 @@
         <li><a href="core/flowsheet_model.html#index-0">FlowsheetBlockData</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.flowsheet_model.html#module-idaes.core.flowsheet_model">idaes.core.flowsheet_model (module)</a>, <a href="core/flowsheet_model.html#module-idaes.core.flowsheet_model">[1]</a>
+      <li><a href="core/flowsheet_model.html#module-idaes.core.flowsheet_model">idaes.core.flowsheet_model (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.process_base.html#module-idaes.core.process_base">idaes.core.process_base (module)</a>, <a href="core/process_block.html#module-idaes.core.process_base">[1]</a>
+      <li><a href="core/process_block.html#module-idaes.core.process_base">idaes.core.process_base (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.process_block.html#module-idaes.core.process_block">idaes.core.process_block (module)</a>, <a href="core/process_block.html#module-idaes.core.process_block">[1]</a>
+      <li><a href="core/process_block.html#module-idaes.core.process_block">idaes.core.process_block (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.property_base.html#module-idaes.core.property_base">idaes.core.property_base (module)</a>, <a href="core/state_block.html#module-idaes.core.property_base">[1]</a>
+      <li><a href="core/state_block.html#module-idaes.core.property_base">idaes.core.property_base (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.property_meta.html#module-idaes.core.property_meta">idaes.core.property_meta (module)</a>
+      <li><a href="core/reaction_block.html#module-idaes.core.reaction_base">idaes.core.reaction_base (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.reaction_base.html#module-idaes.core.reaction_base">idaes.core.reaction_base (module)</a>, <a href="core/reaction_block.html#module-idaes.core.reaction_base">[1]</a>
+      <li><a href="core/unit_model.html#module-idaes.core.unit_model">idaes.core.unit_model (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.unit_model.html#module-idaes.core.unit_model">idaes.core.unit_model (module)</a>, <a href="core/unit_model.html#module-idaes.core.unit_model">[1]</a>
+      <li><a href="core/util/model_serializer.html#module-idaes.core.util.model_serializer">idaes.core.util.model_serializer (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.html#module-idaes.core.util">idaes.core.util (module)</a>
+      <li><a href="dmf/base.html#module-idaes.dmf.dmfbase">idaes.dmf.dmfbase (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.config.html#module-idaes.core.util.config">idaes.core.util.config (module)</a>
+      <li><a href="dmf/resource.html#module-idaes.dmf.resource">idaes.dmf.resource (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.convergence.html#module-idaes.core.util.convergence">idaes.core.util.convergence (module)</a>
+      <li><a href="dmf/workspace.html#module-idaes.dmf.workspace">idaes.dmf.workspace (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence.html#module-idaes.core.util.convergence.convergence">idaes.core.util.convergence.convergence (module)</a>
+      <li><a href="models/cstr.html#module-idaes.unit_models.cstr">idaes.unit_models.cstr (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#module-idaes.core.util.convergence.convergence_base">idaes.core.util.convergence.convergence_base (module)</a>
+      <li><a href="models/flash.html#module-idaes.unit_models.flash">idaes.unit_models.flash (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#module-idaes.core.util.convergence.mpi_utils">idaes.core.util.convergence.mpi_utils (module)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.exceptions.html#module-idaes.core.util.exceptions">idaes.core.util.exceptions (module)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#module-idaes.core.util.expr_doc">idaes.core.util.expr_doc (module)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.initialization.html#module-idaes.core.util.initialization">idaes.core.util.initialization (module)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.math.html#module-idaes.core.util.math">idaes.core.util.math (module)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.misc.html#module-idaes.core.util.misc">idaes.core.util.misc (module)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#module-idaes.core.util.model_serializer">idaes.core.util.model_serializer (module)</a>, <a href="core/util/model_serializer.html#module-idaes.core.util.model_serializer">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.html#module-idaes.dmf">idaes.dmf (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.codesearch.html#module-idaes.dmf.codesearch">idaes.dmf.codesearch (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.commands.html#module-idaes.dmf.commands">idaes.dmf.commands (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#module-idaes.dmf.dmfbase">idaes.dmf.dmfbase (module)</a>, <a href="dmf/base.html#module-idaes.dmf.dmfbase">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#module-idaes.dmf.errors">idaes.dmf.errors (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.experiment.html#module-idaes.dmf.experiment">idaes.dmf.experiment (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.help.html#module-idaes.dmf.help">idaes.dmf.help (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#module-idaes.dmf.magics">idaes.dmf.magics (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#module-idaes.dmf.propdata">idaes.dmf.propdata (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propindex.html#module-idaes.dmf.propindex">idaes.dmf.propindex (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.html#module-idaes.dmf.resource">idaes.dmf.resource (module)</a>, <a href="apidoc/idaes.dmf.resource.html#module-idaes.dmf.resource">[1]</a>, <a href="dmf/resource.html#module-idaes.dmf.resource">[2]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resourcedb.html#module-idaes.dmf.resourcedb">idaes.dmf.resourcedb (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.surrmod.html#module-idaes.dmf.surrmod">idaes.dmf.surrmod (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#module-idaes.dmf.tabular">idaes.dmf.tabular (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.userapi.html#module-idaes.dmf.userapi">idaes.dmf.userapi (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#module-idaes.dmf.util">idaes.dmf.util (module)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#module-idaes.dmf.workspace">idaes.dmf.workspace (module)</a>, <a href="dmf/workspace.html#module-idaes.dmf.workspace">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.html#module-idaes.property_models">idaes.property_models (module)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.BFW_properties.html#module-idaes.property_models.BFW_properties">idaes.property_models.BFW_properties (module)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.BTX_ideal_VLE.html#module-idaes.property_models.BTX_ideal_VLE">idaes.property_models.BTX_ideal_VLE (module)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.iapws95.html#module-idaes.property_models.iapws95">idaes.property_models.iapws95 (module)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#module-idaes.property_models.iapws95.iapws95_wrap_ph">idaes.property_models.iapws95.iapws95_wrap_ph (module)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.ideal_prop_pack_VLE.html#module-idaes.property_models.ideal_prop_pack_VLE">idaes.property_models.ideal_prop_pack_VLE (module)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#module-idaes.property_models.methane_combustion_ideal">idaes.property_models.methane_combustion_ideal (module)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.property_models.saponification_reactions.html#module-idaes.property_models.saponification_reactions">idaes.property_models.saponification_reactions (module)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.saponification_thermo.html#module-idaes.property_models.saponification_thermo">idaes.property_models.saponification_thermo (module)</a>
-</li>
-      <li><a href="apidoc/idaes.ui.html#module-idaes.ui">idaes.ui (module)</a>
-</li>
-      <li><a href="apidoc/idaes.ui.report.html#module-idaes.ui.report">idaes.ui.report (module)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.html#module-idaes.unit_models">idaes.unit_models (module)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.convergence.html#module-idaes.unit_models.convergence">idaes.unit_models.convergence (module)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.convergence.pressure_changer.html#module-idaes.unit_models.convergence.pressure_changer">idaes.unit_models.convergence.pressure_changer (module)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.html#module-idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval">idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval (module)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.cstr.html#module-idaes.unit_models.cstr">idaes.unit_models.cstr (module)</a>, <a href="models/cstr.html#module-idaes.unit_models.cstr">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.flash.html#module-idaes.unit_models.flash">idaes.unit_models.flash (module)</a>, <a href="models/flash.html#module-idaes.unit_models.flash">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.gibbs_reactor.html#module-idaes.unit_models.gibbs_reactor">idaes.unit_models.gibbs_reactor (module)</a>, <a href="models/gibbs_reactor.html#module-idaes.unit_models.gibbs_reactor">[1]</a>
+      <li><a href="models/gibbs_reactor.html#module-idaes.unit_models.gibbs_reactor">idaes.unit_models.gibbs_reactor (module)</a>
 </li>
       <li>
     idaes.unit_models.heat_exchanger
@@ -1311,139 +684,49 @@
         <li><a href="models/heater.html#index-0">Heater</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#module-idaes.unit_models.heat_exchanger">idaes.unit_models.heat_exchanger (module)</a>, <a href="models/heat_exchanger.html#module-idaes.unit_models.heat_exchanger">[1]</a>, <a href="models/heater.html#module-idaes.unit_models.heat_exchanger">[2]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.heat_exchanger_1D.html#module-idaes.unit_models.heat_exchanger_1D">idaes.unit_models.heat_exchanger_1D (module)</a>, <a href="models/heat_exchanger_1D.html#module-idaes.unit_models.heat_exchanger_1D">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.icons.html#module-idaes.unit_models.icons">idaes.unit_models.icons (module)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#module-idaes.unit_models.mixer">idaes.unit_models.mixer (module)</a>, <a href="models/mixer.html#module-idaes.unit_models.mixer">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.plug_flow_reactor.html#module-idaes.unit_models.plug_flow_reactor">idaes.unit_models.plug_flow_reactor (module)</a>, <a href="models/pfr.html#module-idaes.unit_models.plug_flow_reactor">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.pressure_changer.html#module-idaes.unit_models.pressure_changer">idaes.unit_models.pressure_changer (module)</a>, <a href="models/pressure_changer.html#module-idaes.unit_models.pressure_changer">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#module-idaes.unit_models.separator">idaes.unit_models.separator (module)</a>, <a href="models/separator.html#module-idaes.unit_models.separator">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.stoichiometric_reactor.html#module-idaes.unit_models.stoichiometric_reactor">idaes.unit_models.stoichiometric_reactor (module)</a>, <a href="models/stoichiometric_reactor.html#module-idaes.unit_models.stoichiometric_reactor">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.ver.html#module-idaes.ver">idaes.ver (module)</a>, <a href="version.html#module-idaes.ver">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.ideal_prop_pack_VLE.html#idaes.property_models.ideal_prop_pack_VLE.IdealStateBlock">IdealStateBlock (class in idaes.property_models.ideal_prop_pack_VLE)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.identifier_str">identifier_str() (in module idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.import_module">import_module() (in module idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propindex.html#idaes.dmf.propindex.index_property_metadata">index_property_metadata() (in module idaes.dmf.propindex)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.userapi.html#idaes.dmf.userapi.index_property_packages">index_property_packages() (in module idaes.dmf.userapi)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propindex.html#idaes.dmf.propindex.DMFVisitor.INDEXED_PROPERTY_TAG">INDEXED_PROPERTY_TAG (idaes.dmf.propindex.DMFVisitor attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.INFO">INFO (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata.info">info (idaes.dmf.tabular.Metadata attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.commands.html#idaes.dmf.commands.init_conf">init_conf() (in module idaes.dmf.commands)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.init_isentropic">init_isentropic() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.init_isentropic">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.initialize">initialize() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.initialize">[1]</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.initialize">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.initialize">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockBase.initialize">(idaes.core.property_base.StateBlockBase method)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockBase.initialize">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.core.reaction_base.html#idaes.core.reaction_base.ReactionBlockBase.initialize">(idaes.core.reaction_base.ReactionBlockBase method)</a>, <a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockBase.initialize">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.core.unit_model.html#idaes.core.unit_model.UnitBlockData.initialize">(idaes.core.unit_model.UnitBlockData method)</a>, <a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.initialize">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData.initialize">(idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData.initialize">(idaes.unit_models.heat_exchanger.HeatExchangerData method)</a>, <a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData.initialize">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData.initialize">(idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData method)</a>, <a href="models/heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData.initialize">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.initialize">(idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.initialize">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.initialize">(idaes.unit_models.pressure_changer.PressureChangerData method)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.initialize">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.initialize">(idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.initialize">[1]</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagicsImpl.initialized">initialized (idaes.dmf.magics.DmfMagicsImpl attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification.inputs">inputs (idaes.core.util.convergence.convergence_base.ConvergenceEvaluationSpecification attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.InvalidRelationError">InvalidRelationError</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.ipython_document_constraints">ipython_document_constraints() (in module idaes.core.util.expr_doc)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Dict.is_dirty">is_dirty() (idaes.dmf.resource.Dict method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.is_jupyter_notebook">is_jupyter_notebook() (in module idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.config.html#idaes.core.util.config.is_physical_parameter_block">is_physical_parameter_block() (in module idaes.core.util.config)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.config.html#idaes.core.util.config.is_port">is_port() (in module idaes.core.util.config)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.is_property_column">is_property_column() (idaes.dmf.propdata.PropertyData method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.is_python">is_python() (in module idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.config.html#idaes.core.util.config.is_reaction_parameter_block">is_reaction_parameter_block() (in module idaes.core.util.config)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.is_resource_json">is_resource_json() (in module idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#idaes.core.util.convergence.mpi_utils.ParallelTaskManager.is_root">is_root() (idaes.core.util.convergence.mpi_utils.ParallelTaskManager method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.config.html#idaes.core.util.config.is_state_block">is_state_block() (in module idaes.core.util.config)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.is_state_column">is_state_column() (idaes.dmf.propdata.PropertyData method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.isfixed">isfixed() (idaes.core.util.model_serializer.StoreSpec class method)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.isfixed">[1]</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="L">L</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.large_residuals">large_residuals() (in module idaes.ui.report)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagics.last_ok">last_ok (idaes.dmf.magics.DmfMagics attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.LENGTH">LENGTH (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.LI">LI (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata.line_expr">line_expr (idaes.dmf.tabular.Metadata attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.experiment.html#idaes.dmf.experiment.Experiment.link">link() (idaes.dmf.experiment.Experiment method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.config.html#idaes.core.util.config.list_of_floats">list_of_floats() (in module idaes.core.util.config)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.util.config.html#idaes.core.util.config.list_of_strings">list_of_strings() (in module idaes.core.util.config)</a>
+      <li><a href="models/heat_exchanger.html#module-idaes.unit_models.heat_exchanger">idaes.unit_models.heat_exchanger (module)</a>, <a href="models/heater.html#module-idaes.unit_models.heat_exchanger">[1]</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.commands.html#idaes.dmf.commands.list_resources">list_resources() (in module idaes.dmf.commands)</a>
+      <li><a href="models/heat_exchanger_1D.html#module-idaes.unit_models.heat_exchanger_1D">idaes.unit_models.heat_exchanger_1D (module)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.commands.html#idaes.dmf.commands.list_workspaces">list_workspaces() (in module idaes.dmf.commands)</a>
+      <li><a href="models/mixer.html#module-idaes.unit_models.mixer">idaes.unit_models.mixer (module)</a>
 </li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.LN">LN (idaes.core.property_meta.UnitNames attribute)</a>
+      <li><a href="models/pfr.html#module-idaes.unit_models.plug_flow_reactor">idaes.unit_models.plug_flow_reactor (module)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyTable.load">load() (idaes.dmf.propdata.PropertyTable class method)</a>
+      <li><a href="models/pressure_changer.html#module-idaes.unit_models.pressure_changer">idaes.unit_models.pressure_changer (module)</a>
+</li>
+      <li><a href="models/separator.html#module-idaes.unit_models.separator">idaes.unit_models.separator (module)</a>
+</li>
+      <li><a href="models/stoichiometric_reactor.html#module-idaes.unit_models.stoichiometric_reactor">idaes.unit_models.stoichiometric_reactor (module)</a>
+</li>
+      <li><a href="version.html#module-idaes.ver">idaes.ver (module)</a>
+</li>
+      <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.init_isentropic">init_isentropic() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
+</li>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.initialize">initialize() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Table.load">(idaes.dmf.tabular.Table class method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.initialize">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+</li>
+        <li><a href="core/state_block.html#idaes.core.property_base.StateBlockBase.initialize">(idaes.core.property_base.StateBlockBase method)</a>
+</li>
+        <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockBase.initialize">(idaes.core.reaction_base.ReactionBlockBase method)</a>
+</li>
+        <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.initialize">(idaes.core.unit_model.UnitBlockData method)</a>
+</li>
+        <li><a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData.initialize">(idaes.unit_models.heat_exchanger.HeatExchangerData method)</a>
+</li>
+        <li><a href="models/heat_exchanger_1D.html#idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData.initialize">(idaes.unit_models.heat_exchanger_1D.HeatExchanger1DData method)</a>
+</li>
+        <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.initialize">(idaes.unit_models.mixer.MixerData method)</a>
+</li>
+        <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.initialize">(idaes.unit_models.pressure_changer.PressureChangerData method)</a>
+</li>
+        <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.initialize">(idaes.unit_models.separator.SeparatorData method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Fields.LOG_CONF">LOG_CONF (idaes.dmf.workspace.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.LUMINOUS_INTENSITY">LUMINOUS_INTENSITY (idaes.core.property_meta.UnitNames attribute)</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.isfixed">isfixed() (idaes.core.util.model_serializer.StoreSpec class method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1451,189 +734,51 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.MA">MA (idaes.core.property_meta.UnitNames attribute)</a>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.Mixer">Mixer (class in idaes.unit_models.mixer)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagics.magics">magics (idaes.dmf.magics.DmfMagics attribute)</a>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData">MixerData (class in idaes.unit_models.mixer)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence.html#idaes.core.util.convergence.convergence.main">main() (in module idaes.core.util.convergence.convergence)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.MASS">MASS (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.META">META (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.meta">meta (idaes.dmf.workspace.Workspace attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata">Metadata (class in idaes.dmf.tabular)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Table.metadata">metadata (idaes.dmf.tabular.Table attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.Mixer">Mixer (class in idaes.unit_models.mixer)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.Mixer">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData">MixerData (class in idaes.unit_models.mixer)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.mkdir_p">mkdir_p() (in module idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.model_check">model_check() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.model_check">[1]</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.model_check">model_check() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.model_check">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.model_check">[1]</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.model_check">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.model_check">(idaes.core.flowsheet_model.FlowsheetBlockData method)</a>, <a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.model_check">[1]</a>
+        <li><a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.model_check">(idaes.core.flowsheet_model.FlowsheetBlockData method)</a>
 </li>
-        <li><a href="apidoc/idaes.core.unit_model.html#idaes.core.unit_model.UnitBlockData.model_check">(idaes.core.unit_model.UnitBlockData method)</a>, <a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.model_check">[1]</a>
+        <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.model_check">(idaes.core.unit_model.UnitBlockData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlockData.model_check">(idaes.property_models.BFW_properties.StateBlockData method)</a>
+        <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.model_check">(idaes.unit_models.mixer.MixerData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.iapws95.iapws95_wrap_ph.html#idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData.model_check">(idaes.property_models.iapws95.iapws95_wrap_ph.Iapws95StateBlockData method)</a>
+        <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.model_check">(idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.ideal_prop_pack_VLE.html#idaes.property_models.ideal_prop_pack_VLE.StateBlockData.model_check">(idaes.property_models.ideal_prop_pack_VLE.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.StateBlockData.model_check">(idaes.property_models.methane_combustion_ideal.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_reactions.html#idaes.property_models.saponification_reactions.ReactionBlockData.model_check">(idaes.property_models.saponification_reactions.ReactionBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.StateBlockData.model_check">(idaes.property_models.saponification_thermo.StateBlockData method)</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.model_check">(idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.model_check">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.model_check">(idaes.unit_models.pressure_changer.PressureChangerData method)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.model_check">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.model_check">(idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.model_check">[1]</a>
+        <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.model_check">(idaes.unit_models.separator.SeparatorData method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.ModuleClassWalker">ModuleClassWalker (class in idaes.dmf.codesearch)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.ModuleFormatError">ModuleFormatError</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#idaes.core.util.convergence.mpi_utils.MPIInterface">MPIInterface (class in idaes.core.util.convergence.mpi_utils)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="N">N</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.name">name (idaes.dmf.workspace.Workspace attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.names">names() (idaes.dmf.propdata.PropertyData method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.names">(idaes.dmf.tabular.TabularData method)</a>
-</li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.NoSuchResourceError">NoSuchResourceError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.num_columns">num_columns (idaes.dmf.tabular.TabularData attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.num_rows">num_rows (idaes.dmf.tabular.TabularData attribute)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="O">O</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Triple.object">object (idaes.dmf.resource.Triple attribute)</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.ver.html#idaes.ver.package_version">package_version (in module idaes.ver)</a>, <a href="version.html#idaes.ver.package_version">[1]</a>
+      <li><a href="version.html#idaes.ver.package_version">package_version (in module idaes.ver)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#idaes.core.util.convergence.mpi_utils.ParallelTaskManager">ParallelTaskManager (class in idaes.core.util.convergence.mpi_utils)</a>
+      <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.partition_outlet_flows">partition_outlet_flows() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.surrmod.html#idaes.dmf.surrmod.SurrogateModel.PARAM_DATA_KEY">PARAM_DATA_KEY (idaes.dmf.surrmod.SurrogateModel attribute)</a>
+      <li><a href="models/pfr.html#idaes.unit_models.plug_flow_reactor.PFR">PFR (class in idaes.unit_models.plug_flow_reactor)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.ParseError">ParseError</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.partition_outlet_flows">partition_outlet_flows() (idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.partition_outlet_flows">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.plug_flow_reactor.html#idaes.unit_models.plug_flow_reactor.PFR">PFR (class in idaes.unit_models.plug_flow_reactor)</a>, <a href="models/pfr.html#idaes.unit_models.plug_flow_reactor.PFR">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.plug_flow_reactor.html#idaes.unit_models.plug_flow_reactor.PFRData">PFRData (class in idaes.unit_models.plug_flow_reactor)</a>, <a href="models/pfr.html#idaes.unit_models.plug_flow_reactor.PFRData">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.PhysicalParameterBase">PhysicalParameterBase (class in idaes.core.property_base)</a>, <a href="core/state_block.html#idaes.core.property_base.PhysicalParameterBase">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.PhysicalParameterBlock">PhysicalParameterBlock (class in idaes.property_models.BFW_properties)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.property_models.BTX_ideal_VLE.html#idaes.property_models.BTX_ideal_VLE.PhysicalParameterBlock">(class in idaes.property_models.BTX_ideal_VLE)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.PhysicalParameterBlock">(class in idaes.property_models.methane_combustion_ideal)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.PhysicalParameterBlock">(class in idaes.property_models.saponification_thermo)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.PhysicalParameterData">PhysicalParameterData (class in idaes.property_models.BFW_properties)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.property_models.BTX_ideal_VLE.html#idaes.property_models.BTX_ideal_VLE.PhysicalParameterData">(class in idaes.property_models.BTX_ideal_VLE)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.PhysicalParameterData">(class in idaes.property_models.methane_combustion_ideal)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.PhysicalParameterData">(class in idaes.property_models.saponification_thermo)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.PR_DERIVED">PR_DERIVED (in module idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Triple.predicate">predicate (idaes.dmf.resource.Triple attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChanger">PressureChanger (class in idaes.unit_models.pressure_changer)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChanger">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.html#idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval.PressureChangerConvergenceEvaluation">PressureChangerConvergenceEvaluation (class in idaes.unit_models.convergence.pressure_changer.pressure_changer_conv_eval)</a>
+      <li><a href="models/pfr.html#idaes.unit_models.plug_flow_reactor.PFRData">PFRData (class in idaes.unit_models.plug_flow_reactor)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData">PressureChangerData (class in idaes.unit_models.pressure_changer)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData">[1]</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.PhysicalParameterBase">PhysicalParameterBase (class in idaes.core.property_base)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.print_convergence_statistics">print_convergence_statistics() (in module idaes.core.util.convergence.convergence_base)</a>
+      <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChanger">PressureChanger (class in idaes.unit_models.pressure_changer)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.CPrint.println">println() (idaes.dmf.util.CPrint method)</a>
+      <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData">PressureChangerData (class in idaes.unit_models.pressure_changer)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.PrintPropertyMetadataVisitor">PrintPropertyMetadataVisitor (class in idaes.dmf.codesearch)</a>
+      <li><a href="core/process_block.html#idaes.core.process_block.ProcessBlock">ProcessBlock (class in idaes.core.process_block)</a>
 </li>
-      <li><a href="apidoc/idaes.core.process_block.html#idaes.core.process_block.ProcessBlock">ProcessBlock (class in idaes.core.process_block)</a>, <a href="core/process_block.html#idaes.core.process_block.ProcessBlock">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.process_base.html#idaes.core.process_base.ProcessBlockData">ProcessBlockData (class in idaes.core.process_base)</a>, <a href="core/process_block.html#idaes.core.process_base.ProcessBlockData">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.PropertyClassMetadata.properties">properties (idaes.core.property_meta.PropertyClassMetadata attribute)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.properties">(idaes.dmf.propdata.PropertyData attribute)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.PropertyClassMetadata">PropertyClassMetadata (class in idaes.core.property_meta)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyColumn">PropertyColumn (class in idaes.dmf.propdata)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData">PropertyData (class in idaes.dmf.propdata)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.PropertyMetadata">PropertyMetadata (class in idaes.core.property_meta)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyMetadata">(class in idaes.dmf.propdata)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.PropertyMetadataVisitor">PropertyMetadataVisitor (class in idaes.dmf.codesearch)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.exceptions.html#idaes.core.util.exceptions.PropertyNotSupportedError">PropertyNotSupportedError</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.exceptions.html#idaes.core.util.exceptions.PropertyPackageError">PropertyPackageError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyTable">PropertyTable (class in idaes.dmf.propdata)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resourcedb.html#idaes.dmf.resourcedb.ResourceDB.put">put() (idaes.dmf.resourcedb.ResourceDB method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.Pyomo2SympyVisitor">Pyomo2SympyVisitor (class in idaes.core.util.expr_doc)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.PyomoSympyBimap">PyomoSympyBimap (class in idaes.core.util.expr_doc)</a>
+      <li><a href="core/process_block.html#idaes.core.process_base.ProcessBlockData">ProcessBlockData (class in idaes.core.process_base)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1641,165 +786,51 @@
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#idaes.core.util.convergence.mpi_utils.MPIInterface.rank">rank (idaes.core.util.convergence.mpi_utils.MPIInterface attribute)</a>
+      <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockBase">ReactionBlockBase (class in idaes.core.reaction_base)</a>
 </li>
-      <li><a href="apidoc/idaes.property_models.saponification_reactions.html#idaes.property_models.saponification_reactions.ReactionBlock">ReactionBlock (class in idaes.property_models.saponification_reactions)</a>
+      <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockDataBase">ReactionBlockDataBase (class in idaes.core.reaction_base)</a>
 </li>
-      <li><a href="apidoc/idaes.core.reaction_base.html#idaes.core.reaction_base.ReactionBlockBase">ReactionBlockBase (class in idaes.core.reaction_base)</a>, <a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockBase">[1]</a>
+      <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBase">ReactionParameterBase (class in idaes.core.reaction_base)</a>
 </li>
-      <li><a href="apidoc/idaes.property_models.saponification_reactions.html#idaes.property_models.saponification_reactions.ReactionBlockData">ReactionBlockData (class in idaes.property_models.saponification_reactions)</a>
-</li>
-      <li><a href="apidoc/idaes.core.reaction_base.html#idaes.core.reaction_base.ReactionBlockDataBase">ReactionBlockDataBase (class in idaes.core.reaction_base)</a>, <a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockDataBase">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.reaction_base.html#idaes.core.reaction_base.ReactionParameterBase">ReactionParameterBase (class in idaes.core.reaction_base)</a>, <a href="core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBase">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.saponification_reactions.html#idaes.property_models.saponification_reactions.ReactionParameterBlock">ReactionParameterBlock (class in idaes.property_models.saponification_reactions)</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.saponification_reactions.html#idaes.property_models.saponification_reactions.ReactionParameterData">ReactionParameterData (class in idaes.property_models.saponification_reactions)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.register">register() (in module idaes.dmf.magics)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.magics.html#idaes.dmf.magics.DmfMagics.registered">registered (idaes.dmf.magics.DmfMagics attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.control_volume0d.html#idaes.core.control_volume0d.ControlVolume0dData.release_state">release_state() (idaes.core.control_volume0d.ControlVolume0dData method)</a>, <a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.release_state">[1]</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.core.control_volume1d.html#idaes.core.control_volume1d.ControlVolume1dData.release_state">(idaes.core.control_volume1d.ControlVolume1dData method)</a>, <a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.release_state">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.mixer.html#idaes.unit_models.mixer.MixerData.release_state">(idaes.unit_models.mixer.MixerData method)</a>, <a href="models/mixer.html#idaes.unit_models.mixer.MixerData.release_state">[1]</a>
-</li>
-        <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData.release_state">(idaes.unit_models.separator.SeparatorData method)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData.release_state">[1]</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.remove">remove() (idaes.dmf.dmfbase.DMF method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.release_state">release_state() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
 
       <ul>
-        <li><a href="apidoc/idaes.dmf.experiment.html#idaes.dmf.experiment.Experiment.remove">(idaes.dmf.experiment.Experiment method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.release_state">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+</li>
+        <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.release_state">(idaes.unit_models.mixer.MixerData method)</a>
+</li>
+        <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.release_state">(idaes.unit_models.separator.SeparatorData method)</a>
 </li>
       </ul></li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.PropertyClassMetadata.required_properties">required_properties (idaes.core.property_meta.PropertyClassMetadata attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource">Resource (class in idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resourcedb.html#idaes.dmf.resourcedb.ResourceDB">ResourceDB (class in idaes.dmf.resourcedb)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.ResourceError">ResourceError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.root">root (idaes.dmf.workspace.Workspace attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.ROWS">ROWS (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.surrmod.html#idaes.dmf.surrmod.SurrogateModel.run">run() (idaes.dmf.surrmod.SurrogateModel method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.run_convergence_evaluation">run_convergence_evaluation() (in module idaes.core.util.convergence.convergence_base)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.run_convergence_evaluation_from_sample_file">run_convergence_evaluation_from_sample_file() (in module idaes.core.util.convergence.convergence_base)</a>
-</li>
   </ul></td>
 </tr></table>
 
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMFConfig.save">save() (idaes.dmf.dmfbase.DMFConfig method)</a>
+      <li><a href="models/separator.html#idaes.unit_models.separator.Separator">Separator (class in idaes.unit_models.separator)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.save_convergence_statistics">save_convergence_statistics() (in module idaes.core.util.convergence.convergence_base)</a>
+      <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData">SeparatorData (class in idaes.unit_models.separator)</a>
 </li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.save_results_to_dmf">save_results_to_dmf() (in module idaes.core.util.convergence.convergence_base)</a>
+      <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.set_geometry">set_geometry() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.SearchError">SearchError</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.set_read_callback">set_read_callback() (idaes.core.util.model_serializer.StoreSpec method)</a>
 </li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.Separator">Separator (class in idaes.unit_models.separator)</a>, <a href="models/separator.html#idaes.unit_models.separator.Separator">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.separator.html#idaes.unit_models.separator.SeparatorData">SeparatorData (class in idaes.unit_models.separator)</a>, <a href="models/separator.html#idaes.unit_models.separator.SeparatorData">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Dict.set_clean">set_clean() (idaes.dmf.resource.Dict method)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.set_geometry">set_geometry() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>, <a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.set_geometry">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.set_id">set_id() (idaes.dmf.resource.Resource method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.surrmod.html#idaes.dmf.surrmod.SurrogateModel.set_input_data">set_input_data() (idaes.dmf.surrmod.SurrogateModel method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.surrmod.html#idaes.dmf.surrmod.SurrogateModel.set_input_data_np">set_input_data_np() (idaes.dmf.surrmod.SurrogateModel method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.set_meta">set_meta() (idaes.dmf.workspace.Workspace method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.set_read_callback">set_read_callback() (idaes.core.util.model_serializer.StoreSpec method)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.set_read_callback">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.surrmod.html#idaes.dmf.surrmod.SurrogateModel.set_validation_data">set_validation_data() (idaes.dmf.surrmod.SurrogateModel method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.surrmod.html#idaes.dmf.surrmod.SurrogateModel.set_validation_data_np">set_validation_data_np() (idaes.dmf.surrmod.SurrogateModel method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.set_write_callback">set_write_callback() (idaes.core.util.model_serializer.StoreSpec method)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.set_write_callback">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.mpi_utils.html#idaes.core.util.convergence.mpi_utils.MPIInterface.size">size (idaes.core.util.convergence.mpi_utils.MPIInterface attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.math.html#idaes.core.util.math.smooth_abs">smooth_abs() (in module idaes.core.util.math)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.math.html#idaes.core.util.math.smooth_max">smooth_max() (in module idaes.core.util.math)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.math.html#idaes.core.util.math.smooth_min">smooth_min() (in module idaes.core.util.math)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.math.html#idaes.core.util.math.smooth_minmax">smooth_minmax() (in module idaes.core.util.math)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.initialization.html#idaes.core.util.initialization.solve_indexed_blocks">solve_indexed_blocks() (in module idaes.core.util.initialization)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata.source">source (idaes.dmf.tabular.Metadata attribute)</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.set_write_callback">set_write_callback() (idaes.core.util.model_serializer.StoreSpec method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata.source_expr">source_expr (idaes.dmf.tabular.Metadata attribute)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockBase">StateBlockBase (class in idaes.core.property_base)</a>
 </li>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.stale_variables">stale_variables() (in module idaes.ui.report)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase">StateBlockDataBase (class in idaes.core.property_base)</a>
 </li>
-      <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlock">StateBlock (class in idaes.property_models.BFW_properties)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.StateBlock">(class in idaes.property_models.methane_combustion_ideal)</a>
+      <li><a href="models/stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactor">StoichiometricReactor (class in idaes.unit_models.stoichiometric_reactor)</a>
 </li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.StateBlock">(class in idaes.property_models.saponification_thermo)</a>
+      <li><a href="models/stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData">StoichiometricReactorData (class in idaes.unit_models.stoichiometric_reactor)</a>
 </li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockBase">StateBlockBase (class in idaes.core.property_base)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockBase">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlockData">StateBlockData (class in idaes.property_models.BFW_properties)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.property_models.ideal_prop_pack_VLE.html#idaes.property_models.ideal_prop_pack_VLE.StateBlockData">(class in idaes.property_models.ideal_prop_pack_VLE)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.methane_combustion_ideal.html#idaes.property_models.methane_combustion_ideal.StateBlockData">(class in idaes.property_models.methane_combustion_ideal)</a>
-</li>
-        <li><a href="apidoc/idaes.property_models.saponification_thermo.html#idaes.property_models.saponification_thermo.StateBlockData">(class in idaes.property_models.saponification_thermo)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.core.property_base.html#idaes.core.property_base.StateBlockDataBase">StateBlockDataBase (class in idaes.core.property_base)</a>, <a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.StateColumn">StateColumn (class in idaes.dmf.propdata)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.states">states (idaes.dmf.propdata.PropertyData attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.Stats">Stats (class in idaes.core.util.convergence.convergence_base)</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactor">StoichiometricReactor (class in idaes.unit_models.stoichiometric_reactor)</a>, <a href="models/stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactor">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.unit_models.stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData">StoichiometricReactorData (class in idaes.unit_models.stoichiometric_reactor)</a>, <a href="models/stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec">StoreSpec (class in idaes.core.util.model_serializer)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.strlist">strlist() (in module idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Triple.subject">subject (idaes.dmf.resource.Triple attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.suffix">suffix() (idaes.core.util.model_serializer.StoreSpec class method)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.surrmod.html#idaes.dmf.surrmod.SurrogateModel">SurrogateModel (class in idaes.dmf.surrmod)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.sympify_expression">sympify_expression() (in module idaes.core.util.expr_doc)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.PyomoSympyBimap.sympyVars">sympyVars() (idaes.core.util.expr_doc.PyomoSympyBimap method)</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec">StoreSpec (class in idaes.core.util.model_serializer)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1807,173 +838,37 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Table">Table (class in idaes.dmf.tabular)</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.to_json">to_json() (in module idaes.core.util.model_serializer)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData">TabularData (class in idaes.dmf.tabular)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularObject">TabularObject (class in idaes.dmf.tabular)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.TE">TE (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.TempDir">TempDir (class in idaes.dmf.util)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.TEMPERATURE">TEMPERATURE (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.TIME">TIME (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.TITLE">TITLE (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Metadata.title">title (idaes.dmf.tabular.Metadata attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames.TM">TM (idaes.core.property_meta.UnitNames attribute)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.to_json">to_json() (in module idaes.core.util.model_serializer)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.to_json">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.expr_doc.html#idaes.core.util.expr_doc.to_latex">to_latex() (in module idaes.core.util.expr_doc)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Triple">Triple (class in idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.triple_from_resource_relations">triple_from_resource_relations() (in module idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.TY_EXPERIMENT">TY_EXPERIMENT (in module idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.type">type (idaes.dmf.resource.Resource attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.TYPE_FIELD">TYPE_FIELD (idaes.dmf.resource.Resource attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyColumn.type_name">type_name (idaes.dmf.propdata.PropertyColumn attribute)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.StateColumn.type_name">(idaes.dmf.propdata.StateColumn attribute)</a>
-</li>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Column.type_name">(idaes.dmf.tabular.Column attribute)</a>
-</li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.PropertyClassMetadata.U">U (idaes.core.property_meta.PropertyClassMetadata attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.process_base.html#idaes.core.process_base.ProcessBlockData.unfix_initial_conditions">unfix_initial_conditions() (idaes.core.process_base.ProcessBlockData method)</a>, <a href="core/process_block.html#idaes.core.process_base.ProcessBlockData.unfix_initial_conditions">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.initialization.html#idaes.core.util.initialization.unfix_port">unfix_port() (in module idaes.core.util.initialization)</a>
-</li>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.unfixed_variables">unfixed_variables() (in module idaes.ui.report)</a>
-</li>
-      <li><a href="apidoc/idaes.core.unit_model.html#idaes.core.unit_model.UnitBlock">UnitBlock (class in idaes.core.unit_model)</a>, <a href="core/unit_model.html#idaes.core.unit_model.UnitBlock">[1]</a>
+      <li><a href="core/process_block.html#idaes.core.process_base.ProcessBlockData.unfix_initial_conditions">unfix_initial_conditions() (idaes.core.process_base.ProcessBlockData method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.core.unit_model.html#idaes.core.unit_model.UnitBlockData">UnitBlockData (class in idaes.core.unit_model)</a>, <a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData">[1]</a>
+      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlock">UnitBlock (class in idaes.core.unit_model)</a>
 </li>
-      <li><a href="apidoc/idaes.core.property_meta.html#idaes.core.property_meta.UnitNames">UnitNames (class in idaes.core.property_meta)</a>
+      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData">UnitBlockData (class in idaes.core.unit_model)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.update">update() (idaes.dmf.dmfbase.DMF method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.experiment.html#idaes.dmf.experiment.Experiment.update">(idaes.dmf.experiment.Experiment method)</a>
-</li>
-        <li><a href="apidoc/idaes.dmf.resourcedb.html#idaes.dmf.resourcedb.ResourceDB.update">(idaes.dmf.resourcedb.ResourceDB method)</a>
-</li>
-      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="V">V</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.validate">validate() (idaes.dmf.resource.Resource method)</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value">value() (idaes.core.util.model_serializer.StoreSpec class method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.Fields.VALS">VALS (idaes.dmf.tabular.Fields attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value">value() (idaes.core.util.model_serializer.StoreSpec class method)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value_isfixed">value_isfixed() (idaes.core.util.model_serializer.StoreSpec class method)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value_isfixed">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value_isfixed_isactive">value_isfixed_isactive() (idaes.core.util.model_serializer.StoreSpec class method)</a>, <a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value_isfixed_isactive">[1]</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.propdata.html#idaes.dmf.propdata.PropertyData.values_dataframe">values_dataframe() (idaes.dmf.propdata.PropertyData method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.tabular.html#idaes.dmf.tabular.TabularData.values_dataframe">(idaes.dmf.tabular.TabularData method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.ui.report.html#idaes.ui.report.variables_in_active_equalities_set">variables_in_active_equalities_set() (in module idaes.ui.report)</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value_isfixed">value_isfixed() (idaes.core.util.model_serializer.StoreSpec class method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.ver.html#idaes.ver.Version">Version (class in idaes.ver)</a>, <a href="version.html#idaes.ver.Version">[1]</a>
+      <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value_isfixed_isactive">value_isfixed_isactive() (idaes.core.util.model_serializer.StoreSpec class method)</a>
 </li>
-      <li><a href="apidoc/idaes.dmf.resource.html#idaes.dmf.resource.version_list">version_list() (in module idaes.dmf.resource)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.PropertyMetadataVisitor.visit">visit() (idaes.dmf.codesearch.PropertyMetadataVisitor method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.Visitor.visit">(idaes.dmf.codesearch.Visitor method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.PrintPropertyMetadataVisitor.visit_metadata">visit_metadata() (idaes.dmf.codesearch.PrintPropertyMetadataVisitor method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.PropertyMetadataVisitor.visit_metadata">(idaes.dmf.codesearch.PropertyMetadataVisitor method)</a>
-</li>
-        <li><a href="apidoc/idaes.dmf.propindex.html#idaes.dmf.propindex.DMFVisitor.visit_metadata">(idaes.dmf.propindex.DMFVisitor method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.Visitor">Visitor (class in idaes.dmf.codesearch)</a>
-</li>
-  </ul></td>
-</tr></table>
-
-<h2 id="W">W</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.ModuleClassWalker.walk">walk() (idaes.dmf.codesearch.ModuleClassWalker method)</a>
-
-      <ul>
-        <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.Walker.walk">(idaes.dmf.codesearch.Walker method)</a>
-</li>
-      </ul></li>
-      <li><a href="apidoc/idaes.dmf.codesearch.html#idaes.dmf.codesearch.Walker">Walker (class in idaes.dmf.codesearch)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace">Workspace (class in idaes.dmf.workspace)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMFConfig.WORKSPACE">WORKSPACE (idaes.dmf.dmfbase.DMFConfig attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMFConfig.workspace">workspace (idaes.dmf.dmfbase.DMFConfig attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.WORKSPACE_CONFIG">WORKSPACE_CONFIG (idaes.dmf.workspace.Workspace attribute)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.commands.html#idaes.dmf.commands.workspace_import">workspace_import() (in module idaes.dmf.commands)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.commands.html#idaes.dmf.commands.workspace_info">workspace_info() (in module idaes.dmf.commands)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="apidoc/idaes.dmf.commands.html#idaes.dmf.commands.workspace_init">workspace_init() (in module idaes.dmf.commands)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.WorkspaceCannotCreateError">WorkspaceCannotCreateError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.WorkspaceConfig">WorkspaceConfig (class in idaes.dmf.workspace)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.WorkspaceConfMissingField">WorkspaceConfMissingField</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.WorkspaceConfNotFoundError">WorkspaceConfNotFoundError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.WorkspaceError">WorkspaceError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.errors.html#idaes.dmf.errors.WorkspaceNotFoundError">WorkspaceNotFoundError</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.util.html#idaes.dmf.util.CPrint.write">write() (idaes.dmf.util.CPrint method)</a>
-</li>
-      <li><a href="apidoc/idaes.core.util.convergence.convergence_base.html#idaes.core.util.convergence.convergence_base.write_sample_file">write_sample_file() (in module idaes.core.util.convergence.convergence_base)</a>
-</li>
-      <li><a href="apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.wsid">wsid (idaes.dmf.workspace.Workspace attribute)</a>
+      <li><a href="version.html#idaes.ver.Version">Version (class in idaes.ver)</a>
 </li>
   </ul></td>
 </tr></table>
