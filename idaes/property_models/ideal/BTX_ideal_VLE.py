@@ -29,7 +29,7 @@ from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class, PhysicalParameterBase
 from idaes.core.util.misc import extract_data
 
-from idaes.property_models.ideal_prop_pack_VLE import IdealStateBlock
+from idaes.property_models.ideal.ideal_prop_pack_VLE import IdealStateBlock
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"

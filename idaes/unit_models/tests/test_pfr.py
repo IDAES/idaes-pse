@@ -21,9 +21,9 @@ from pyomo.environ import ConcreteModel, SolverFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.plug_flow_reactor import PFR
-from idaes.property_models.saponification_thermo import (
+from idaes.property_models.examples.saponification_thermo import (
                         PhysicalParameterBlock)
-from idaes.property_models.saponification_reactions import (
+from idaes.property_models.examples.saponification_reactions import (
                         ReactionParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 

@@ -21,8 +21,8 @@ from pyomo.environ import ConcreteModel, SolverFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.gibbs_reactor import GibbsReactor
-from idaes.property_models.methane_combustion_ideal import (
-                        PhysicalParameterBlock)
+from idaes.property_models.examples.methane_combustion_ideal import (
+    PhysicalParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
 
