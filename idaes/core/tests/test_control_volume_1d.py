@@ -178,6 +178,11 @@ class ReactionBlockData(ReactionBlockDataBase):
                                             ("e2", "p2", "c1"): 1,
                                             ("e2", "p2", "c2"): 1}
 
+        self.dh_rxn = {"r1": 1,
+                       "r2": 2,
+                       "e1": 3,
+                       "e2": 4}
+
     def model_check(self):
         self.check = True
 

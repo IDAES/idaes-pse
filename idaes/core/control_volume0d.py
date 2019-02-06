@@ -1194,17 +1194,18 @@ class ControlVolume0dData(ControlVolumeBase):
                              doc="Heat of reaction term [{}/{}]"
                                  .format(units['energy'], units['time']))
             def heat_of_reaction(b, t):
-                if hasattr(self, "rate_reaction_extents"):
-                    rate_heat = sum(b.rate_reaction_extent[t, r] *
+                if hasattr(self, "rate_reaction_extent"):
+                    rate_heat = -sum(b.rate_reaction_extent[t, r] *
                                     b.reactions[t].dh_rxn[r]
-                                    for r in self.rate_reaction_idx)
+                                    for r in self.rate_reaction_idx_ref)
                 else:
                     rate_heat = 0
 
-                if hasattr(self, "equilibrium_reaction_extents"):
-                    equil_heat = sum(b.equilibrium_reaction_extent[t, e] *
-                                     b.reactions[t].dh_rxn[e]
-                                     for e in self.equilibrium_reaction_idx)
+                if hasattr(self, "equilibrium_reaction_extent"):
+                    equil_heat = -sum(
+                            b.equilibrium_reaction_extent[t, e] *
+                            b.reactions[t].dh_rxn[e]
+                            for e in self.equilibrium_reaction_idx_ref)
                 else:
                     equil_heat = 0
 

@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.0.1
               </div>
             
           
@@ -94,7 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Sample Models and Flowsheets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
 </ul>
 
             
@@ -1482,17 +1482,18 @@
                              <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Heat of reaction term at point x [</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">]&quot;</span>
                                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">units</span><span class="p">[</span><span class="s1">&#39;energy&#39;</span><span class="p">],</span> <span class="n">units</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]))</span>
             <span class="k">def</span> <span class="nf">heat_of_reaction</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;rate_reaction_extents&quot;</span><span class="p">):</span>
-                    <span class="n">rate_heat</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">rate_reaction_extent</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">r</span><span class="p">]</span> <span class="o">*</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;rate_reaction_extent&quot;</span><span class="p">):</span>
+                    <span class="n">rate_heat</span> <span class="o">=</span> <span class="o">-</span><span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">rate_reaction_extent</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">r</span><span class="p">]</span> <span class="o">*</span>
                                     <span class="n">b</span><span class="o">.</span><span class="n">reactions</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">dh_rxn</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
-                                    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate_reaction_idx</span><span class="p">)</span>
+                                    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate_reaction_idx_ref</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">rate_heat</span> <span class="o">=</span> <span class="mi">0</span>
 
-                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;equilibrium_reaction_extents&quot;</span><span class="p">):</span>
-                    <span class="n">equil_heat</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">equilibrium_reaction_extent</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">e</span><span class="p">]</span> <span class="o">*</span>
-                                     <span class="n">b</span><span class="o">.</span><span class="n">reactions</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">dh_rxn</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
-                                     <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">equilibrium_reaction_idx</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;equilibrium_reaction_extent&quot;</span><span class="p">):</span>
+                    <span class="n">equil_heat</span> <span class="o">=</span> <span class="o">-</span><span class="nb">sum</span><span class="p">(</span>
+                            <span class="n">b</span><span class="o">.</span><span class="n">equilibrium_reaction_extent</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">e</span><span class="p">]</span> <span class="o">*</span>
+                            <span class="n">b</span><span class="o">.</span><span class="n">reactions</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span><span class="o">.</span><span class="n">dh_rxn</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
+                            <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">equilibrium_reaction_idx_ref</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">equil_heat</span> <span class="o">=</span> <span class="mi">0</span>
 

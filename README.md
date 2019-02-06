@@ -1,11 +1,11 @@
 <!-- BEGIN Status badges -->
-[![CircleCI](https://circleci.com/gh/IDAES/idaes.svg?style=svg&circle-token=863b50f5cba60e880ef338300fa545a3a140973c)](https://circleci.com/gh/IDAES/idaes)
-[![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes/badge.svg?branch=master&t=9GISoZ)](https://coveralls.io/github/IDAES/idaes?branch=master)
+[![CircleCI](https://circleci.com/gh/IDAES/idaes-dev.svg?style=svg&circle-token=f01aa6337105a565ae7caa0e0eab66826bd8ea81)](https://circleci.com/gh/IDAES/idaes-dev)
+[![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes-dev/badge.svg?t=PJNalC)](https://coveralls.io/github/IDAES/idaes-dev)
 <!-- END Status badges -->
 
-# IDAES Toolkit
+# IDAES PSE Framework
 
-The IDAES Toolkit aims to provide multi-scale, simulation-based, open source
+The IDAES PSE Framework provides multi-scale, simulation-based, open source
 computational tools and models to support the design, analysis, optimization,
 scale-up, operation and troubleshooting of innovative, advanced energy systems.
 

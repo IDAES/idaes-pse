@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.0
+                1.0.1
               </div>
             
           
@@ -94,7 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
 </ul>
 
             
@@ -167,7 +167,7 @@ of a particular <a class="reference internal" href="workspace.html#module-idaes.
 <dt>
 <em class="property">class </em><code class="descclassname">idaes.dmf.dmfbase.</code><code class="descname">DMFConfig</code><span class="sig-paren">(</span><em>defaults=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/dmfbase.html#DMFConfig"><span class="viewcode-link">[source]</span></a></dt>
 <dd><p>Global DMF configuration.</p>
-<p>Every time you create an instance of the <a class="reference internal" href="../apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF" title="idaes.dmf.dmfbase.DMF"><code class="xref py py-class docutils literal notranslate"><span class="pre">DMF</span></code></a>
+<p>Every time you create an instance of the <code class="xref py py-class docutils literal notranslate"><span class="pre">DMF</span></code>
 or run a <code class="docutils literal notranslate"><span class="pre">dmf</span></code> command on the command-line, the library opens the
 global DMF configuration file to figure out the default workspace
 (and, eventually, other values).</p>
@@ -193,8 +193,8 @@ the following keys defined:</p>
 storing, searching, and retrieving resources that
 are required for the given analysis.</p>
 <p>For details on the configuration files used by the DMF, see
-documentation for <a class="reference internal" href="../apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMFConfig" title="idaes.dmf.dmfbase.DMFConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">DMFConfig</span></code></a> (global configuration) and
-<a class="reference internal" href="../apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace" title="idaes.dmf.workspace.Workspace"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.dmf.workspace.Workspace</span></code></a>.</p>
+documentation for <code class="xref py py-class docutils literal notranslate"><span class="pre">DMFConfig</span></code> (global configuration) and
+<code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.dmf.workspace.Workspace</span></code>.</p>
 <dl class="method">
 <dt>
 <code class="descname">add</code><span class="sig-paren">(</span><em>rsrc</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/dmf/dmfbase.html#DMF.add"><span class="viewcode-link">[source]</span></a></dt>
@@ -213,7 +213,7 @@ of course).</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>rsrc</strong> (<a class="reference internal" href="../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource" title="idaes.dmf.resource.Resource"><em>resource.Resource</em></a>) – The resource</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>rsrc</strong> (<em>resource.Resource</em>) – The resource</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">(str) Resource ID</td>
 </tr>
@@ -312,8 +312,8 @@ resource; otherwise a Resource object is returned.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>rsrc</strong> (<a class="reference internal" href="../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource" title="idaes.dmf.resource.Resource"><em>resource.Resource</em></a>) – Resource starting point</li>
-<li><strong>filter_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – See parameter of same name in <a class="reference internal" href="../apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.find" title="idaes.dmf.dmfbase.DMF.find"><code class="xref py py-meth docutils literal notranslate"><span class="pre">find()</span></code></a>.</li>
+<li><strong>rsrc</strong> (<em>resource.Resource</em>) – Resource starting point</li>
+<li><strong>filter_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – See parameter of same name in <code class="xref py py-meth docutils literal notranslate"><span class="pre">find()</span></code>.</li>
 <li><strong>maxdepth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum depth of search (starts at 1)</li>
 <li><strong>meta</strong> (<em>List</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – Metadata fields to extract for meta part</li>
 <li><strong>outgoing</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If True, look at outgoing relations. Otherwise
@@ -369,7 +369,7 @@ remove all relations that involve this identifier.</li>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>rsrc</strong> (<a class="reference internal" href="../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource" title="idaes.dmf.resource.Resource"><em>resource.Resource</em></a>) – Resource instance</li>
+<li><strong>rsrc</strong> (<em>resource.Resource</em>) – Resource instance</li>
 <li><strong>sync_relations</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – If True, and if resource
 exists in the DB, then the “relations” attribute of
 the provided resource will be changed to the stored value.</li>
