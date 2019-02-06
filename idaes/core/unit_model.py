@@ -18,7 +18,7 @@ from __future__ import division, print_function
 
 import logging
 
-from pyomo.environ import SolverFactory
+from pyomo.environ import Reference, SolverFactory
 from pyomo.network import Port
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigValue, In
@@ -30,7 +30,8 @@ from .property_base import StateBlockBase
 from .control_volume_base import ControlVolumeBase, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
-                                        DynamicError)
+                                        DynamicError,
+                                        PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -187,11 +188,26 @@ class UnitBlockData(ProcessBlockData):
                                      "should only be associated with "
                                      "StateBlocks.".format(blk.name))
 
-        def port_rule(b, t):
-            return block[t].define_port_members()
-
-        p = Port(blk.time_ref, rule=port_rule, doc=doc)
+        # Create empty Port
+        p = Port(noruleinit=True, doc=doc)
         setattr(blk, name, p)
+
+        # Get dict of Port members and names
+        member_list = block[blk.time_ref.first()].define_port_members()
+
+        # Create References for port members
+        for s in member_list:
+            if not member_list[s].is_indexed():
+                slicer = block[:].component(member_list[s].local_name)
+            else:
+                slicer = block[:].component(member_list[s].local_name)[...]
+
+            r = Reference(slicer)
+            setattr(blk, "_"+name+"_"+s+"_ref", r)
+
+            # Add Reference to Port
+            p.add(r, s)
+
         return p
 
     def add_inlet_port(blk, name=None, block=None, doc=None):
@@ -225,39 +241,113 @@ class UnitBlockData(ProcessBlockData):
         # Set default name and doc string if not provided
         # TODO: This does not work when the block has multiple control volumes.
         # Better to raise exception when user does not provide a name than us
-        # setting a name automatically. 
+        # setting a name automatically.
         if name is None:
             name = "inlet"
         if doc is None:
             doc = "Inlet Port"
 
-        def port_rule(b, t):
-            if isinstance(block, ControlVolumeBase):
-                try:
-                    return block.properties_in[t].define_port_members()
-                except AttributeError:
-                    if block._flow_direction == FlowDirection.forward:
-                        return (block.properties[t, block.length_domain.first()]
-                                .define_port_members())
-                    elif block._flow_direction == FlowDirection.backward:
-                        return (block.properties[t, block.length_domain.last()]
-                                    .define_port_members())
-                    else:
-                        raise BurntToast("{} flow_direction argument received "
-                                         "invalid value. This should never "
-                                         "happen, so please contact the IDAES "
-                                         "developers with this bug."
-                                         .format(blk.name))
-            elif isinstance(block, StateBlockBase):
-                return block[t].define_port_members()
-            else:
-                raise ConfigurationError("{} block provided to add_inlet_port "
-                                         "method was not an instance of a "
-                                         "ControlVolume or a StateBlock."
-                                         .format(blk.name))
-
-        p = Port(blk.time_ref, rule=port_rule, doc=doc)
+        # Create empty Port
+        p = Port(noruleinit=True, doc=doc)
         setattr(blk, name, p)
+
+        # Get dict of Port members and names
+        if isinstance(block, ControlVolumeBase):
+            try:
+                member_list = (block.properties_in[block.time_ref.first()]
+                               .define_port_members())
+            except AttributeError:
+                try:
+                    member_list = (block.properties[block.time_ref.first(), 0]
+                                   .define_port_members())
+                except AttributeError:
+                    raise PropertyPackageError(
+                            "{} property package does not appear to have "
+                            "implemented a define_port_memebers method. "
+                            "Please contact the developer of the property "
+                            "package.".format(blk.name))
+        elif isinstance(block, StateBlockBase):
+            member_list = block[blk.time_ref.first()].define_port_members()
+        else:
+            raise ConfigurationError(
+                    "{} block provided to add_inlet_port "
+                    "method was not an instance of a "
+                    "ControlVolume or a StateBlock."
+                    .format(blk.name))
+
+        # Create References for port members
+        for s in member_list:
+            if not member_list[s].is_indexed():
+                if isinstance(block, ControlVolumeBase):
+                    try:
+                        slicer = block.properties_in[:].component(
+                                        member_list[s].local_name)
+                    except AttributeError:
+                        if block._flow_direction == FlowDirection.forward:
+                            slicer = (block.properties[
+                                            :,
+                                            block.length_domain.first()]
+                                      .component(member_list[s].local_name))
+                        elif block._flow_direction == FlowDirection.backward:
+                            slicer = (block.properties[
+                                            :,
+                                            block.length_domain.last()]
+                                      .component(member_list[s].local_name))
+                        else:
+                            raise BurntToast(
+                                    "{} flow_direction argument received "
+                                    "invalid value. This should never "
+                                    "happen, so please contact the IDAES "
+                                    "developers with this bug."
+                                    .format(blk.name))
+                elif isinstance(block, StateBlockBase):
+                    slicer = block[:].component(member_list[s].local_name)
+                else:
+                    raise ConfigurationError(
+                            "{} block provided to add_inlet_port "
+                            "method was not an instance of a "
+                            "ControlVolume or a StateBlock."
+                            .format(blk.name))
+            else:
+                if isinstance(block, ControlVolumeBase):
+                    try:
+                        slicer = block.properties_in[:].component(
+                                        member_list[s].local_name)[...]
+                    except AttributeError:
+                        if block._flow_direction == FlowDirection.forward:
+                            slicer = (block.properties[
+                                            :,
+                                            block.length_domain.first()]
+                                      .component(
+                                              member_list[s].local_name))[...]
+                        elif block._flow_direction == FlowDirection.backward:
+                            slicer = (block.properties[
+                                            :,
+                                            block.length_domain.last()]
+                                      .component(
+                                              member_list[s].local_name))[...]
+                        else:
+                            raise BurntToast(
+                                    "{} flow_direction argument received "
+                                    "invalid value. This should never "
+                                    "happen, so please contact the IDAES "
+                                    "developers with this bug."
+                                    .format(blk.name))
+                elif isinstance(block, StateBlockBase):
+                    slicer = block[:].component(member_list[s].local_name)[...]
+                else:
+                    raise ConfigurationError(
+                            "{} block provided to add_inlet_port "
+                            "method was not an instance of a "
+                            "ControlVolume or a StateBlock."
+                            .format(blk.name))
+
+            r = Reference(slicer)
+            setattr(blk, "_"+name+"_"+s+"_ref", r)
+
+            # Add Reference to Port
+            p.add(r, s)
+
         return p
 
     def add_outlet_port(blk, name=None, block=None, doc=None):
@@ -294,33 +384,108 @@ class UnitBlockData(ProcessBlockData):
         if doc is None:
             doc = "Outlet Port"
 
-        def port_rule(b, t):
-            if isinstance(block, ControlVolumeBase):
-                try:
-                    return block.properties_out[t].define_port_members()
-                except AttributeError:
-                    if block._flow_direction == FlowDirection.forward:
-                        return (block.properties[t, block.length_domain.last()]
-                                .define_port_members())
-                    elif block._flow_direction == FlowDirection.backward:
-                        return (block.properties[t, block.length_domain.first()]
-                                .define_port_members())
-                    else:
-                        raise BurntToast("{} flow_direction argument received "
-                                         "invalid value. This should never "
-                                         "happen, so please contact the IDAES "
-                                         "developers with this bug."
-                                         .format(blk.name))
-            elif isinstance(block, StateBlockBase):
-                return block[t].define_port_members()
-            else:
-                raise ConfigurationError("{} block provided to add_inlet_port "
-                                         "method was not an instance of a "
-                                         "ControlVolume or a StateBlock."
-                                         .format(blk.name))
-
-        p = Port(blk.time_ref, rule=port_rule, doc=doc)
+        # Create empty Port
+        p = Port(noruleinit=True, doc=doc)
         setattr(blk, name, p)
+
+        # Get dict of Port members and names
+        if isinstance(block, ControlVolumeBase):
+            try:
+                member_list = (block.properties_out[block.time_ref.first()]
+                               .define_port_members())
+            except AttributeError:
+                try:
+                    member_list = (block.properties[block.time_ref.first(), 0]
+                                   .define_port_members())
+                except AttributeError:
+                    raise PropertyPackageError(
+                            "{} property package does not appear to have "
+                            "implemented a define_port_memebers method. "
+                            "Please contact the developer of the property "
+                            "package.".format(blk.name))
+        elif isinstance(block, StateBlockBase):
+            member_list = block[blk.time_ref.first()].define_port_members()
+        else:
+            raise ConfigurationError(
+                    "{} block provided to add_inlet_port "
+                    "method was not an instance of a "
+                    "ControlVolume or a StateBlock."
+                    .format(blk.name))
+
+        # Create References for port members
+        for s in member_list:
+            if not member_list[s].is_indexed():
+                if isinstance(block, ControlVolumeBase):
+                    try:
+                        slicer = block.properties_out[:].component(
+                                        member_list[s].local_name)
+                    except AttributeError:
+                        if block._flow_direction == FlowDirection.forward:
+                            slicer = (block.properties[
+                                            :,
+                                            block.length_domain.last()]
+                                      .component(member_list[s].local_name))
+                        elif block._flow_direction == FlowDirection.backward:
+                            slicer = (block.properties[
+                                            :,
+                                            block.length_domain.first()]
+                                      .component(member_list[s].local_name))
+                        else:
+                            raise BurntToast(
+                                    "{} flow_direction argument received "
+                                    "invalid value. This should never "
+                                    "happen, so please contact the IDAES "
+                                    "developers with this bug."
+                                    .format(blk.name))
+                elif isinstance(block, StateBlockBase):
+                    slicer = block[:].component(member_list[s].local_name)
+                else:
+                    raise ConfigurationError(
+                            "{} block provided to add_inlet_port "
+                            "method was not an instance of a "
+                            "ControlVolume or a StateBlock."
+                            .format(blk.name))
+            else:
+                # Need to use slice notation on indexed comenent as well
+                if isinstance(block, ControlVolumeBase):
+                    try:
+                        slicer = block.properties_out[:].component(
+                                        member_list[s].local_name)[...]
+                    except AttributeError:
+                        if block._flow_direction == FlowDirection.forward:
+                            slicer = (block.properties[
+                                            :,
+                                            block.length_domain.last()]
+                                      .component(
+                                              member_list[s].local_name))[...]
+                        elif block._flow_direction == FlowDirection.backward:
+                            slicer = (block.properties[
+                                            :,
+                                            block.length_domain.first()]
+                                      .component(
+                                              member_list[s].local_name))[...]
+                        else:
+                            raise BurntToast(
+                                    "{} flow_direction argument received "
+                                    "invalid value. This should never "
+                                    "happen, so please contact the IDAES "
+                                    "developers with this bug."
+                                    .format(blk.name))
+                elif isinstance(block, StateBlockBase):
+                    slicer = block[:].component(member_list[s].local_name)[...]
+                else:
+                    raise ConfigurationError(
+                            "{} block provided to add_inlet_port "
+                            "method was not an instance of a "
+                            "ControlVolume or a StateBlock."
+                            .format(blk.name))
+
+            r = Reference(slicer)
+            setattr(blk, "_"+name+"_"+s+"_ref", r)
+
+            # Add Reference to Port
+            p.add(r, s)
+
         return p
 
     def initialize(blk, state_args=None, outlvl=0,

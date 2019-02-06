@@ -786,21 +786,21 @@ def test_initialize():
     assert m.fs.sep.outlet_2_state[0].hold_state is False
     assert m.fs.sb[0].hold_state is True
 
-    assert m.fs.sep.outlet_1[0].component_flow["p1", "c1"].value == 0.5
-    assert m.fs.sep.outlet_1[0].component_flow["p1", "c2"].value == 0.5
-    assert m.fs.sep.outlet_1[0].component_flow["p2", "c1"].value == 0.5
-    assert m.fs.sep.outlet_1[0].component_flow["p2", "c2"].value == 0.5
-    assert m.fs.sep.outlet_1[0].enthalpy["p1"].value == 2
-    assert m.fs.sep.outlet_1[0].enthalpy["p2"].value == 2
-    assert m.fs.sep.outlet_1[0].pressure.value == 1e5
+    assert m.fs.sep.outlet_1.component_flow[0, "p1", "c1"].value == 0.5
+    assert m.fs.sep.outlet_1.component_flow[0, "p1", "c2"].value == 0.5
+    assert m.fs.sep.outlet_1.component_flow[0, "p2", "c1"].value == 0.5
+    assert m.fs.sep.outlet_1.component_flow[0, "p2", "c2"].value == 0.5
+    assert m.fs.sep.outlet_1.enthalpy[0, "p1"].value == 2
+    assert m.fs.sep.outlet_1.enthalpy[0, "p2"].value == 2
+    assert m.fs.sep.outlet_1.pressure[0].value == 1e5
 
-    assert m.fs.sep.outlet_2[0].component_flow["p1", "c1"].value == 0.5
-    assert m.fs.sep.outlet_2[0].component_flow["p1", "c2"].value == 0.5
-    assert m.fs.sep.outlet_2[0].component_flow["p2", "c1"].value == 0.5
-    assert m.fs.sep.outlet_2[0].component_flow["p2", "c2"].value == 0.5
-    assert m.fs.sep.outlet_2[0].enthalpy["p1"].value == 2
-    assert m.fs.sep.outlet_2[0].enthalpy["p2"].value == 2
-    assert m.fs.sep.outlet_2[0].pressure.value == 1e5
+    assert m.fs.sep.outlet_2.component_flow[0, "p1", "c1"].value == 0.5
+    assert m.fs.sep.outlet_2.component_flow[0, "p1", "c2"].value == 0.5
+    assert m.fs.sep.outlet_2.component_flow[0, "p2", "c1"].value == 0.5
+    assert m.fs.sep.outlet_2.component_flow[0, "p2", "c2"].value == 0.5
+    assert m.fs.sep.outlet_2.enthalpy[0, "p1"].value == 2
+    assert m.fs.sep.outlet_2.enthalpy[0 ,"p2"].value == 2
+    assert m.fs.sep.outlet_2.pressure[0].value == 1e5
 
     m.fs.sep.release_state(flags=f)
 
