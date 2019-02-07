@@ -134,13 +134,26 @@ class TurbineInletStageData(PressureChangerData):
                 v.fix()
             for k, v in self.outlet[t].vars.items():
                 v.unfix()
-            Pout = self.outlet[t].pressure
-            Pin = self.outlet[t].pressure
-            Pr = Pout/Pin
+            # If there isn't a good guess for efficeny or outlet pressure
+            # provide something reasonable.
             eff = self.efficiency_isentropic[t]
-            Pout.fix(Pout.value if Pr < 1 and Pr > 0.3 else Pin.value*0.8)
-            eff.fix(eff.value if eff > 0.3 and eff < 1.0001 else 0.8)
-            
+            eff.fix(eff.value if value(eff) > 0.3 and value(eff) < 1.0 else 0.8)
+            # for outlet pressure try outlet pressure, pressure ratio, delta P,
+            # then if none of those look reasonable use a pressure ratio of 0.8
+            # to calculate outlet pressure
+            Pout = self.outlet[t].pressure
+            Pin = self.inlet[t].pressure
+            prdp = value((self.deltaP[t] - Pin)/Pin)
+            if value(Pout/Pin) > 0.98 or value(Pout/Pin) < 0.3:
+                if value(self.ratioP[t]) < 0.98 and value(self.ratioP[t]) > 0.3:
+                    Pout.fix(value(Pin*self.ratioP))
+                elif prdp < 0.98 and prdp > 0.3:
+                    Pout.fix(value(prdp*Pin))
+                else:
+                    Pout.fix(value(Pin*0.8))
+            else:
+                Pout.fix()
+
         # Make sure the initialization problem has no degrees of freedom
         # This shouldn't happen here unless there is a bug in this
         dof = degrees_of_freedom(self)
