@@ -130,10 +130,10 @@ class TurbineInletStageData(PressureChangerData):
 
         # fix inlet and free outlet
         for t in self.time_ref:
-            for k, v in self.inlet[t].vars.items():
-                v.fix()
-            for k, v in self.outlet[t].vars.items():
-                v.unfix()
+            for k, v in self.inlet.vars.items():
+                v[t].fix()
+            for k, v in self.outlet.vars.items():
+                v[t].unfix()
             # If there isn't a good guess for efficeny or outlet pressure
             # provide something reasonable.
             eff = self.efficiency_isentropic[t]
@@ -141,8 +141,8 @@ class TurbineInletStageData(PressureChangerData):
             # for outlet pressure try outlet pressure, pressure ratio, delta P,
             # then if none of those look reasonable use a pressure ratio of 0.8
             # to calculate outlet pressure
-            Pout = self.outlet[t].pressure
-            Pin = self.inlet[t].pressure
+            Pout = self.outlet.pressure[t]
+            Pin = self.inlet.pressure[t]
             prdp = value((self.deltaP[t] - Pin)/Pin)
             if value(Pout/Pin) > 0.98 or value(Pout/Pin) < 0.3:
                 if value(self.ratioP[t]) < 0.98 and value(self.ratioP[t]) > 0.3:
@@ -170,7 +170,7 @@ class TurbineInletStageData(PressureChangerData):
 
         # Free eff_isen and activate sepcial constarints
         self.efficiency_isentropic.unfix()
-        self.outlet[:].pressure.unfix()
+        self.outlet.pressure.unfix()
         self.inlet_flow_constraint.activate()
         self.isentropic_enthalpy.activate()
         self.efficiency_correlation.activate()
