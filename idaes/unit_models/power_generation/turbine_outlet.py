@@ -11,12 +11,14 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Steam turbine inlet stage model.  This model is based on:
+Steam turbine outlet stage model.  This model is based on:
 
 Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
     for Gas Turbines and Power. v136, November
 """
+from __future__ import division
+
 __Author__ = "John Eslick"
 
 import logging
@@ -31,9 +33,10 @@ from idaes.unit_models.pressure_changer import PressureChangerData
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.ui.report import degrees_of_freedom
 
-@declare_process_block_class("TurbineInletStage",
-    doc="Inlet stage steam turbine model")
-class TurbineInletStageData(PressureChangerData):
+
+@declare_process_block_class("TurbineOutletStage",
+    doc="Outlet stage steam turbine model")
+class TurbineOutletStageData(PressureChangerData):
     # Same setings as the default pressure changer, but force to expander with
     # isentroic efficiency
     CONFIG = PressureChangerData.CONFIG()
@@ -44,62 +47,57 @@ class TurbineInletStageData(PressureChangerData):
     CONFIG.get('thermodynamic_assumption')._default = 'isentropic'
     CONFIG.get('thermodynamic_assumption')._domain = In(['isentropic'])
     def build(self):
-        super(TurbineInletStageData, self).build()
+        super(TurbineOutletStageData, self).build()
 
-        self.flow_coeff = Var(self.time_ref, initialize=1.053/3600.0,
-            doc="Turbine flow coefficient [kg*C^0.5/Pa/s]")
-        self.delta_enth_isentropic = Var(self.time_ref, initialize=-1000,
-            doc="Specific enthalpy change of isentropic process [J/mol/K]")
-        self.blade_reaction = Var(initialize=0.9,
-            doc="Blade reaction parameter")
-        self.blade_velocity = Var(initialize=110.0,
-            doc="Design blade velocity [m/s]")
-        self.eff_nozzle = Var(initialize=0.95, bounds=(0.0, 1.0),
-            doc="Nozzel efficiency (typically 0.90 to 0.95)")
+        self.flow_coeff = Var(initialize=0.0333,
+            doc="Turbine flow coefficient [kg*C^0.5/s/Pa]")
+        self.delta_enth_isentropic = Var(self.time_ref, initialize=-100,
+            doc="Specific enthalpy change of isentropic process [J/mol]")
+        self.eff_dry = Var(initialize=0.87,
+            doc="Turbine dry isentropic efficiency")
+        self.design_exhaust_flow_vol = Var(initialize=6000.0,
+            doc="Design exit volumetirc flowrate [m^3/s]")
         self.efficiency_mech = Var(initialize=0.98,
             doc="Turbine mechanical efficiency")
-        self.eff_nozzle.fix()
-        self.blade_reaction.fix()
+        self.eff_dry.fix()
+        self.design_exhaust_flow_vol.fix()
         self.flow_coeff.fix()
-        self.blade_velocity.fix()
         self.efficiency_mech.fix()
         self.ratioP[:] = 1 # make sure these have a number value
         self.deltaP[:] = 0 #   to avoid an error later in initialize
 
-        @self.Expression(self.time_ref,
-            doc="Entering steam velocity calculation [m/s]")
-        def steam_entering_velocity(b, t):
-            # 1.414 = 44.72/sqrt(1000) for SI if comparing to Liese (2014)
-            # b.delta_enth_isentropic[t] = -(hin - hiesn), the mw converts
-            # enthalpy to a mass basis
-            return 1.414*sqrt(-(1-b.blade_reaction)*b.delta_enth_isentropic[t]/
-                    b.control_volume.properties_in[t].mw*self.eff_nozzle)
+        @self.Expression(self.time_ref, doc="Efficiency factor correlation")
+        def tel(b, t):
+            f = b.control_volume.properties_out[t].flow_vol/b.design_exhaust_flow_vol
+            return 1e6*(-0.0035*f**5 + 0.022*f**4 - 0.0542*f**3 + 0.0638*f**2 -
+                        0.0328*f + 0.0064)
 
-        @self.Constraint(self.time_ref, doc="Equation: Turbine inlet flow")
-        def inlet_flow_constraint(b, t):
-            # Some local vars to make the equation more readable
-            g = b.control_volume.properties_in[t].heat_capacity_ratio
-            mw = b.control_volume.properties_in[t].mw
+        @self.Constraint(self.time_ref, doc="Equation: Stodola, for choked flow")
+        def stodola_equation(b, t):
             flow = b.control_volume.properties_in[t].flow_mol
+            mw = b.control_volume.properties_in[t].mw
             Tin = b.control_volume.properties_in[t].temperature
-            cf = b.flow_coeff[t]
             Pin = b.control_volume.properties_in[t].pressure
-            Pratio = b.ratioP[t]
-            return (flow*mw*sqrt(Tin - 273.15) ==
-                cf*Pin*sqrt(g/(g - 1)*(Pratio**(2.0/g) - Pratio**((g + 1)/g))))
+            Pr = b.ratioP[t]
+            cf = b.flow_coeff
+            return flow*mw*sqrt(Tin - 273.15) == cf*Pin*sqrt(1 - Pr**2)
 
-        @self.Constraint(self.time_ref, doc="Equation: Isentropic enthalpy change")
+        @self.Constraint( self.time_ref,
+            doc="Equation: isentropic specific enthalpy change")
         def isentropic_enthalpy(b, t):
-            return b.work_isentropic[t] == (b.delta_enth_isentropic[t]*
-                b.control_volume.properties_in[t].flow_mol)
+            flow = b.control_volume.properties_in[t].flow_mol
+            dh_isen = b.delta_enth_isentropic[t]
+            work_isen = b.work_isentropic[t]
+            return work_isen == dh_isen*flow
 
-        @self.Constraint(self.time_ref, doc="Equation: Efficiency")
+        @self.Constraint(self.time_ref, doc="Equation: Efficiency correlation")
         def efficiency_correlation(b, t):
-            Vr = b.blade_velocity/b.steam_entering_velocity[t]
+            x = b.control_volume.properties_out[t].vapor_frac
             eff = b.efficiency_isentropic[t]
-            R = b.blade_reaction
-            return eff == 2*Vr*((sqrt(1 - R) - Vr) +
-                                 sqrt((sqrt(1 - R) - Vr)**2 + R))
+            dh_isen = b.delta_enth_isentropic[t]
+            tel = b.tel[t]
+            return eff == b.eff_dry*x*(1 - 0.65*(1 - x))*(1 + tel/dh_isen)
+
         @self.Expression(self.time_ref, doc="Thermodynamic power [J/s]")
         def power_thermo(b, t):
             return b.control_volume.work[t]
@@ -111,7 +109,7 @@ class TurbineInletStageData(PressureChangerData):
     def initialize(self, state_args={}, outlvl=0, solver='ipopt',
         optarg={'tol': 1e-6}):
         """
-        Initialize the inlet turbine stage model.  This deactivates the
+        Initialize the outlet turbine stage model.  This deactivates the
         specialized constraints, then does the isentropic turbine initialization,
         then reactivates the constraints and solves.
 
@@ -129,17 +127,15 @@ class TurbineInletStageData(PressureChangerData):
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
         # Deactivate special constraints
-        self.inlet_flow_constraint.deactivate()
+        self.stodola_equation.deactivate()
         self.isentropic_enthalpy.deactivate()
         self.efficiency_correlation.deactivate()
         self.deltaP[:].unfix()
         self.ratioP[:].unfix()
-
         # Fix turbine parameters + eff_isen
-        self.eff_nozzle.fix()
-        self.blade_reaction.fix()
+        self.eff_dry.fix()
+        self.design_exhaust_flow_vol.fix()
         self.flow_coeff.fix()
-        self.blade_velocity.fix()
 
         # fix inlet and free outlet
         for t in self.time_ref:
@@ -157,13 +153,13 @@ class TurbineInletStageData(PressureChangerData):
             Pout = self.outlet[t].pressure
             Pin = self.inlet[t].pressure
             prdp = value((self.deltaP[t] - Pin)/Pin)
-            if value(Pout/Pin) > 0.98 or value(Pout/Pin) < 0.3:
-                if value(self.ratioP[t]) < 0.98 and value(self.ratioP[t]) > 0.3:
+            if value(Pout/Pin) > 0.9 or value(Pout/Pin) < 0.01:
+                if value(self.ratioP[t]) < 0.9 and value(self.ratioP[t]) > 0.01:
                     Pout.fix(value(Pin*self.ratioP))
-                elif prdp < 0.98 and prdp > 0.3:
+                elif prdp < 0.9 and prdp > 0.01:
                     Pout.fix(value(prdp*Pin))
                 else:
-                    Pout.fix(value(Pin*0.8))
+                    Pout.fix(value(Pin*0.3))
             else:
                 Pout.fix()
         self.deltaP[:] = value(Pout - Pin)
@@ -180,13 +176,13 @@ class TurbineInletStageData(PressureChangerData):
 
         # one bad thing about reusing this is that the log messages aren't
         # really compatable with being nested inside another initialization
-        super(TurbineInletStageData, self).initialize(state_args=state_args,
+        super(TurbineOutletStageData, self).initialize(state_args=state_args,
             outlvl=outlvl, solver=solver, optarg=optarg)
 
         # Free eff_isen and activate sepcial constarints
         self.efficiency_isentropic.unfix()
         self.outlet[:].pressure.unfix()
-        self.inlet_flow_constraint.activate()
+        self.stodola_equation.activate()
         self.isentropic_enthalpy.activate()
         self.efficiency_correlation.activate()
 
