@@ -124,7 +124,7 @@ class TurbineInletStageData(PressureChangerData):
 
         # Fix turbine parameters + eff_isen
         self.eff_nozzle.fix()
-        self.blade_reaction()
+        self.blade_reaction.fix()
         self.flow_coeff.fix()
         self.blade_velocity.fix()
 
