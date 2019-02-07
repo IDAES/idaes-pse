@@ -77,7 +77,7 @@ def htpx(T, P=None, x=None):
     """
     model = ConcreteModel()
     model.prop_param = Iapws95ParameterBlock()
-    prop = model.prop = Iapws95StateBlock(parameters=model.prop_param)
+    prop = model.prop = Iapws95StateBlock(default={"parameters":model.prop_param})
 
     if x is None:
         Tsat = 647.096/value(prop.func_tau_sat(P/1000))
