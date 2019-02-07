@@ -17,13 +17,13 @@ Base class for control volumes
 from __future__ import division
 
 # Import Python libraries
+import copy
 import logging
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
                            Param,
                            Reals,
-                           Reference,
                            TransformationFactory,
                            Var)
 from pyomo.dae import ContinuousSet, DerivativeVar
@@ -32,7 +32,6 @@ from pyomo.dae import ContinuousSet, DerivativeVar
 from idaes.core import (declare_process_block_class,
                         ControlVolumeBase,
                         FlowDirection,
-                        useDefault,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
@@ -205,7 +204,7 @@ class ControlVolume1dData(ControlVolumeBase):
             None
         """
         # TODO : Should not have ReactionBlock at inlet
-        tmp_dict = package_arguments
+        tmp_dict = copy.copy(package_arguments)
         tmp_dict["state_block"] = self.properties
         tmp_dict["has_equilibrium"] = has_equilibrium
         tmp_dict["parameters"] = self.config.reaction_package
