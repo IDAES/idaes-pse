@@ -160,7 +160,7 @@
   <h1>Source code for idaes.property_models.saponification_thermo</h1><div class="highlight"><pre>
 <span></span><span class="c1">##############################################################################</span>
 <span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
-<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the</span>
 <span class="c1"># software owners: The Regents of the University of California, through</span>
 <span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
 <span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
@@ -168,7 +168,7 @@
 <span class="c1">#</span>
 <span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
 <span class="c1"># license information, respectively. Both files are also available online</span>
-<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes-pse&quot;.</span>
 <span class="c1">##############################################################################</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Example property package for the saponification of Ethyl Acetate with NaOH</span>
@@ -360,24 +360,8 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">blk</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span><span class="o">.</span><span class="n">fix</span><span class="p">(</span><span class="n">temperature</span><span class="p">)</span>
 
-        <span class="c1"># Set solver options</span>
-        <span class="k">if</span> <span class="n">outlvl</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">stee</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">stee</span> <span class="o">=</span> <span class="kc">False</span>
-
         <span class="n">opt</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
         <span class="n">opt</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">optarg</span>
-        <span class="c1">#blk.display()</span>
-        <span class="c1">#results = solve_indexed_blocks(opt, blk, tee=stee)</span>
-        <span class="c1">#if outlvl &gt; 0:</span>
-        <span class="c1">#    if results.solver.termination_condition \</span>
-        <span class="c1">#            == TerminationCondition.optimal:</span>
-        <span class="c1">#        _log.info(&#39;{} Initialisation Step 1 Complete.&#39;</span>
-        <span class="c1">#                  .format(blk.name))</span>
-        <span class="c1">#    else:</span>
-        <span class="c1">#        _log.warning(&#39;{} Initialisation Step 1 Failed.&#39;</span>
-        <span class="c1">#                     .format(blk.name))</span>
 
         <span class="c1"># ---------------------------------------------------------------------</span>
         <span class="c1"># If input block, return flags, else release state</span>

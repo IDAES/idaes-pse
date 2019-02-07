@@ -13341,6 +13341,7 @@ div#notebook {
 <li><code>property_package</code> specified which thermo-physical property package should be used in the model.</li>
 <li><code>reaction_package</code> specifies which reaction package should be used (only needed in unit operations with reactions).</li>
 <li><code>has_equilibrium_reactions</code> sets whether constraints for enforcing chemical equilibrium should be included. In this example we have no equilibrium reactions, so we will set this to <code>False</code>.</li>
+<li><code>has_heat_transfer</code> specifies whether heat of reaction needs to be explicitly accounted for in the energy balance equations. In some cases, heat of reaction will be accounted for implicitly in the specific enthalpy calculations, however this is not the case for this example (you will need to refer to the documentation of each property package to see how heat of reaction is accounted for in each case).</li>
 <li><code>has_heat_transfer</code> specifies whether to include a heat duty term in the energy balance equations. For this tutorial we will include the heat transfer term to demonstrate how to use it.</li>
 <li><code>has_pressure_change</code> specifies whether to include a pressure change term in the momentum balance equations. For this tutorial we will set this to <code>False</code>.</li>
 </ul>
@@ -13348,11 +13349,13 @@ div#notebook {
 <div class="highlight"><pre><span></span><span class="n">m</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">Tank1</span> <span class="o">=</span> <span class="n">CSTR</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;property_package&quot;</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">thermo_params</span><span class="p">,</span>
                            <span class="s2">&quot;reaction_package&quot;</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">reaction_params</span><span class="p">,</span>
                            <span class="s2">&quot;has_equilibrium_reactions&quot;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+                           <span class="s2">&quot;has_heat_of_reaction&quot;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
                            <span class="s2">&quot;has_heat_transfer&quot;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
                            <span class="s2">&quot;has_pressure_change&quot;</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
 <span class="n">m</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">Tank2</span> <span class="o">=</span> <span class="n">CSTR</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;property_package&quot;</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">thermo_params</span><span class="p">,</span>
                            <span class="s2">&quot;reaction_package&quot;</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">reaction_params</span><span class="p">,</span>
                            <span class="s2">&quot;has_equilibrium_reactions&quot;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
+                           <span class="s2">&quot;has_heat_of_reaction&quot;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
                            <span class="s2">&quot;has_heat_transfer&quot;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
                            <span class="s2">&quot;has_pressure_change&quot;</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
 </pre></div>
@@ -13654,24 +13657,24 @@ div#notebook {
 <p><strong>Tank 1</strong></p>
 <ul>
 <li>flow_vol = 1.0 [m^3/s]</li>
-<li>conc_mol_comp["SodiumAcetate"] = 75.177 [mol/m^3]</li>
-<li>conc_mol_comp["Ethanol"] = 75.177 [mol/m^3]</li>
-<li>conc_mol_comp["NaOH"] = 24.823 [mol/m^3]</li>
-<li>conc_mol_comp["EthylAcetate"] = 24.823 [mol/m^3]</li>
+<li>conc_mol_comp["SodiumAcetate"] = 75.704 [mol/m^3]</li>
+<li>conc_mol_comp["Ethanol"] = 75.704 [mol/m^3]</li>
+<li>conc_mol_comp["NaOH"] = 24.296 [mol/m^3]</li>
+<li>conc_mol_comp["EthylAcetate"] = 24.296 [mol/m^3]</li>
 <li>conc_mol_comp["H2O"] = 55388.0 [mol/m^3]</li>
 <li>pressure = 101325 [Pa]</li>
-<li>temperature = 303.15 [K]</li>
+<li>temperature = 304.04 [K]</li>
 </ul>
 <p><strong>Tank 2</strong></p>
 <ul>
 <li>flow_vol = 1.0 [m^3/s]</li>
-<li>conc_mol_comp["SodiumAcetate"] = 89.257 [mol/m^3]</li>
-<li>conc_mol_comp["Ethanol"] = 89.257 [mol/m^3]</li>
-<li>conc_mol_comp["NaOH"] = 10.743 [mol/m^3]</li>
-<li>conc_mol_comp["EthylAcetate"] = 10.743 [mol/m^3]</li>
+<li>conc_mol_comp["SodiumAcetate"] = 89.628 [mol/m^3]</li>
+<li>conc_mol_comp["Ethanol"] = 89.628 [mol/m^3]</li>
+<li>conc_mol_comp["NaOH"] = 10.372 [mol/m^3]</li>
+<li>conc_mol_comp["EthylAcetate"] = 10.372 [mol/m^3]</li>
 <li>conc_mol_comp["H2O"] = 55388.0 [mol/m^3]</li>
 <li>pressure = 101325 [Pa]</li>
-<li>temperature = 303.15 [K]</li>
+<li>temperature = 304.20 [K]</li>
 </ul>
 
 </div>
