@@ -28,7 +28,7 @@ from idaes.ui.report import degrees_of_freedom
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6, 'bound_push': 1e-8}
+    solver.options = {'tol': 1e-6}
 else:
     solver = None
 
