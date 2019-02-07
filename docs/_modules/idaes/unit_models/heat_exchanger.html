@@ -160,7 +160,7 @@
   <h1>Source code for idaes.unit_models.heat_exchanger</h1><div class="highlight"><pre>
 <span></span><span class="c1">##############################################################################</span>
 <span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
-<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the</span>
 <span class="c1"># software owners: The Regents of the University of California, through</span>
 <span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
 <span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
@@ -168,7 +168,7 @@
 <span class="c1">#</span>
 <span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
 <span class="c1"># license information, respectively. Both files are also available online</span>
-<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes-pse&quot;.</span>
 <span class="c1">##############################################################################</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Heat Exchanger Models.</span>
@@ -197,6 +197,7 @@
 
 <span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
+
 <div class="viewcode-block" id="delta_temperature_lmtd_rule"><a class="viewcode-back" href="../../../models/heat_exchanger.html#idaes.unit_models.heat_exchanger.delta_temperature_lmtd_rule">[docs]</a><span class="k">def</span> <span class="nf">delta_temperature_lmtd_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This is a rule for a temperaure difference expression to calculate</span>
@@ -208,7 +209,8 @@
         <span class="n">b</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">properties_out</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span>
     <span class="n">dT2</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">properties_out</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span> <span class="o">-</span> \
         <span class="n">b</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">properties_in</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">dT1</span> <span class="o">-</span> <span class="n">dT2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">log</span><span class="p">(</span><span class="n">dT1</span><span class="p">)</span> <span class="o">-</span> <span class="n">log</span><span class="p">(</span><span class="n">dT2</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="p">(</span><span class="n">dT1</span> <span class="o">-</span> <span class="n">dT2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">log</span><span class="p">(</span><span class="n">dT1</span><span class="p">)</span> <span class="o">-</span> <span class="n">log</span><span class="p">(</span><span class="n">dT2</span><span class="p">))</span></div>
+
 
 <div class="viewcode-block" id="delta_temperature_amtd_rule"><a class="viewcode-back" href="../../../models/heat_exchanger.html#idaes.unit_models.heat_exchanger.delta_temperature_amtd_rule">[docs]</a><span class="k">def</span> <span class="nf">delta_temperature_amtd_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -221,7 +223,8 @@
         <span class="n">b</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">properties_out</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span>
     <span class="n">dT2</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">properties_out</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span> <span class="o">-</span> \
         <span class="n">b</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">properties_in</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">dT1</span> <span class="o">+</span> <span class="n">dT2</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span></div>
+    <span class="k">return</span> <span class="p">(</span><span class="n">dT1</span> <span class="o">+</span> <span class="n">dT2</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.5</span></div>
+
 
 <div class="viewcode-block" id="heat_transfer_rule"><a class="viewcode-back" href="../../../models/heat_exchanger.html#idaes.unit_models.heat_exchanger.heat_transfer_rule">[docs]</a><span class="k">def</span> <span class="nf">heat_transfer_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -229,9 +232,9 @@
 <span class="sd">    transfer (:math:`Q = UA\Delta T`).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">heat_duty</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">==</span>
-            <span class="n">b</span><span class="o">.</span><span class="n">heat_transfer_coefficient</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">*</span>
-            <span class="n">b</span><span class="o">.</span><span class="n">area</span><span class="o">*</span>
-            <span class="n">b</span><span class="o">.</span><span class="n">delta_temperature</span><span class="p">[</span><span class="n">t</span><span class="p">])</span></div>
+            <span class="n">b</span><span class="o">.</span><span class="n">heat_transfer_coefficient</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">*</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">area</span> <span class="o">*</span> <span class="n">b</span><span class="o">.</span><span class="n">delta_temperature</span><span class="p">[</span><span class="n">t</span><span class="p">])</span></div>
+
 
 <span class="k">def</span> <span class="nf">_make_heater_control_volume</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -239,14 +242,17 @@
 <span class="sd">    control volumes for different types of heat exchange models.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">control_volume</span> <span class="o">=</span> <span class="n">ControlVolume0D</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;dynamic&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">dynamic</span><span class="p">,</span>
-            <span class="s2">&quot;property_package&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="p">,</span>
-            <span class="s2">&quot;property_package_args&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">property_package_args</span><span class="p">})</span>
+        <span class="s2">&quot;dynamic&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">dynamic</span><span class="p">,</span>
+        <span class="s2">&quot;property_package&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="p">,</span>
+        <span class="s2">&quot;property_package_args&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">property_package_args</span><span class="p">})</span>
     <span class="c1"># we have to attach this control volume to the model for the rest of</span>
     <span class="c1"># the steps to work</span>
     <span class="nb">setattr</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">control_volume</span><span class="p">)</span>
     <span class="c1"># Add inlet and outlet state blocks to control volume</span>
-    <span class="n">control_volume</span><span class="o">.</span><span class="n">add_state_blocks</span><span class="p">()</span>
+    <span class="n">control_volume</span><span class="o">.</span><span class="n">add_state_blocks</span><span class="p">(</span>
+        <span class="n">has_phase_equilibrium</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">calculate_phase_equilibrium</span><span class="p">,</span>
+        <span class="n">package_arguments</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">property_package_args</span><span class="p">)</span>
+
     <span class="c1"># Add material balance</span>
     <span class="n">control_volume</span><span class="o">.</span><span class="n">add_material_balances</span><span class="p">(</span>
         <span class="n">balance_type</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">material_balance_type</span><span class="p">,</span>
@@ -260,6 +266,7 @@
         <span class="n">balance_type</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">momentum_balance_type</span><span class="p">,</span>
         <span class="n">has_pressure_change</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">has_pressure_change</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">control_volume</span>
+
 
 <span class="k">def</span> <span class="nf">_make_heater_config_block</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -363,6 +370,7 @@
 <span class="s2">**Valid values:** {</span>
 <span class="s2">see property package for documentation.}&quot;&quot;&quot;</span><span class="p">))</span>
 
+
 <span class="k">def</span> <span class="nf">_make_heat_exchanger_config</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Declare configuration options for HeatExchngerData block.</span>
@@ -392,11 +400,11 @@
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Rule for equation for heat transfer coefficient&quot;</span><span class="p">))</span>
 
+
 <div class="viewcode-block" id="HeaterData"><a class="viewcode-back" href="../../../models/heater.html#idaes.unit_models.heat_exchanger.HeaterData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;Heater&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Simple 0D heater/cooler model.&quot;</span><span class="p">)</span>
 <span class="k">class</span> <span class="nc">HeaterData</span><span class="p">(</span><span class="n">UnitBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Simple 0D heater unit.</span>
-
 <span class="sd">    Unit model to add or remove heat from a material.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">ConfigBlock</span><span class="p">()</span>
@@ -405,10 +413,8 @@
 <div class="viewcode-block" id="HeaterData.build"><a class="viewcode-back" href="../../../models/heater.html#idaes.unit_models.heat_exchanger.HeaterData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Building model</span>
-
 <span class="sd">        Args:</span>
 <span class="sd">            None</span>
-
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -424,11 +430,10 @@
 
 
 <div class="viewcode-block" id="HeatExchangerData"><a class="viewcode-back" href="../../../models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;HeatExchanger&quot;</span><span class="p">,</span>
-    <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Simple 0D heat exchanger model.&quot;</span><span class="p">)</span>
+                             <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Simple 0D heat exchanger model.&quot;</span><span class="p">)</span>
 <span class="k">class</span> <span class="nc">HeatExchangerData</span><span class="p">(</span><span class="n">UnitBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Simple 0D heat exchange unit.</span>
-
 <span class="sd">    Unit model to transfer heat from one material to another.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">ConfigBlock</span><span class="p">()</span>
@@ -437,10 +442,8 @@
 <div class="viewcode-block" id="HeatExchangerData.build"><a class="viewcode-back" href="../../../models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Building model</span>
-
 <span class="sd">        Args:</span>
 <span class="sd">            None</span>
-
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -475,6 +478,7 @@
         <span class="n">add_object_reference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;heat_duty&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">heat</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">heat</span><span class="o">.</span><span class="n">latex_symbol</span> <span class="o">=</span> <span class="s2">&quot;Q_1&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">heat</span><span class="o">.</span><span class="n">latex_symbol</span> <span class="o">=</span> <span class="s2">&quot;Q_2&quot;</span>
+
         <span class="c1"># Add a unit level energy balance</span>
         <span class="k">def</span> <span class="nf">unit_heat_balance_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
             <span class="k">return</span> <span class="mi">0</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">heat</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">heat</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
@@ -486,8 +490,8 @@
             <span class="n">rule</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">delta_temperature_rule</span><span class="p">,</span>
             <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Temperature difference driving force for heat transfer&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">delta_temperature</span><span class="o">.</span><span class="n">latex_symbol</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\\</span><span class="s2">Delta T&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">heat_transfer_equation</span> <span class="o">=</span> <span class="n">Constraint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
-            <span class="n">rule</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">heat_transfer_rule</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heat_transfer_equation</span> <span class="o">=</span> <span class="n">Constraint</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">heat_transfer_rule</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">heat_transfer_coefficient_rule</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">heat_transfer_coefficient_equation</span> <span class="o">=</span> <span class="n">Constraint</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">heat_transfer_coefficient_rule</span><span class="p">)</span>
@@ -498,7 +502,6 @@
                    <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;ipopt&#39;</span><span class="p">,</span> <span class="n">optarg</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;tol&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">},</span> <span class="n">duty</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Heat echanger initialization method.</span>
-
 <span class="sd">        Args:</span>
 <span class="sd">            state_args_1 : a dict of arguments to be passed to the property</span>
 <span class="sd">                initialization for side_1 (see documentation of the specific</span>
@@ -507,25 +510,22 @@
 <span class="sd">                initialization for side_2 (see documentation of the specific</span>
 <span class="sd">                property package) (default = {}).</span>
 <span class="sd">            outlvl : sets output level of initialisation routine</span>
-
 <span class="sd">                     * 0 = no output (default)</span>
 <span class="sd">                     * 1 = return solver state for each step in routine</span>
 <span class="sd">                     * 2 = return solver state for each step in subroutines</span>
 <span class="sd">                     * 3 = include solver output infomation (tee=True)</span>
-
 <span class="sd">            optarg : solver options dictionary object (default={&#39;tol&#39;: 1e-6})</span>
 <span class="sd">            solver : str indicating which solver to use during</span>
 <span class="sd">                     initialization (default = &#39;ipopt&#39;)</span>
 <span class="sd">            duty : an initial guess for the amount of heat transfered</span>
 <span class="sd">                (default = 10000)</span>
-
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">heat_duty</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">duty</span> <span class="c1"># probably best start with a positive duty</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">heat</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">duty</span> <span class="c1"># probably best start with a positive duty</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">heat</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">duty</span> <span class="c1"># probably best start with a positive duty</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heat_duty</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">duty</span>  <span class="c1"># probably best start with a positive duty</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">heat</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">duty</span>  <span class="c1"># probably best start with a positive duty</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">heat</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">duty</span>  <span class="c1"># probably best start with a positive duty</span>
         <span class="c1"># Set solver options</span>
         <span class="k">if</span> <span class="n">outlvl</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">:</span>
             <span class="n">stee</span> <span class="o">=</span> <span class="kc">True</span>
@@ -535,23 +535,23 @@
         <span class="n">opt</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
         <span class="n">opt</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">optarg</span>
 
-        <span class="n">flags1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">outlvl</span><span class="o">=</span><span class="n">outlvl</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-                                               <span class="n">optarg</span><span class="o">=</span><span class="n">optarg</span><span class="p">,</span>
-                                               <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
-                                               <span class="n">state_args</span><span class="o">=</span><span class="n">state_args_1</span><span class="p">)</span>
+        <span class="n">flags1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">outlvl</span><span class="o">=</span><span class="n">outlvl</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                                        <span class="n">optarg</span><span class="o">=</span><span class="n">optarg</span><span class="p">,</span>
+                                        <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
+                                        <span class="n">state_args</span><span class="o">=</span><span class="n">state_args_1</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">outlvl</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Initialization Step 1a (side_1) Complete.&#39;</span>\
-                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Initialization Step 1a (side_1) Complete.&#39;</span>
+                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
-        <span class="n">flags2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">outlvl</span><span class="o">=</span><span class="n">outlvl</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-                                               <span class="n">optarg</span><span class="o">=</span><span class="n">optarg</span><span class="p">,</span>
-                                               <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
-                                               <span class="n">state_args</span><span class="o">=</span><span class="n">state_args_2</span><span class="p">)</span>
+        <span class="n">flags2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">outlvl</span><span class="o">=</span><span class="n">outlvl</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+                                        <span class="n">optarg</span><span class="o">=</span><span class="n">optarg</span><span class="p">,</span>
+                                        <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
+                                        <span class="n">state_args</span><span class="o">=</span><span class="n">state_args_2</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">outlvl</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Initialization Step 1b (side_2) Complete.&#39;</span>\
-                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Initialization Step 1b (side_2) Complete.&#39;</span>
+                      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
         <span class="c1"># ---------------------------------------------------------------------</span>
         <span class="c1"># Solve unit</span>
         <span class="n">results</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="n">stee</span><span class="p">)</span>
@@ -567,8 +567,8 @@
 
         <span class="c1"># ---------------------------------------------------------------------</span>
         <span class="c1"># Release Inlet state</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">release_state</span><span class="p">(</span><span class="n">flags1</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">release_state</span><span class="p">(</span><span class="n">flags2</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">release_state</span><span class="p">(</span><span class="n">flags1</span><span class="p">,</span> <span class="n">outlvl</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">side_2</span><span class="o">.</span><span class="n">release_state</span><span class="p">(</span><span class="n">flags2</span><span class="p">,</span> <span class="n">outlvl</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">outlvl</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">_log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> Initialization Complete.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div></div>
