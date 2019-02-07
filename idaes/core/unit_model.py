@@ -284,15 +284,9 @@ class UnitBlockData(ProcessBlockData):
                                         member_list[s].local_name)
                     except AttributeError:
                         if block._flow_direction == FlowDirection.forward:
-                            slicer = (block.properties[
-                                            :,
-                                            block.length_domain.first()]
-                                      .component(member_list[s].local_name))
+                            _idx = block.length_domain.first()
                         elif block._flow_direction == FlowDirection.backward:
-                            slicer = (block.properties[
-                                            :,
-                                            block.length_domain.last()]
-                                      .component(member_list[s].local_name))
+                            _idx = block.length_domain.last()
                         else:
                             raise BurntToast(
                                     "{} flow_direction argument received "
@@ -300,6 +294,8 @@ class UnitBlockData(ProcessBlockData):
                                     "happen, so please contact the IDAES "
                                     "developers with this bug."
                                     .format(blk.name))
+                        slicer = (block.properties[:, _idx]
+                                      .component(member_list[s].local_name))
                 elif isinstance(block, StateBlockBase):
                     slicer = block[:].component(member_list[s].local_name)
                 else:
@@ -315,17 +311,9 @@ class UnitBlockData(ProcessBlockData):
                                         member_list[s].local_name)[...]
                     except AttributeError:
                         if block._flow_direction == FlowDirection.forward:
-                            slicer = (block.properties[
-                                            :,
-                                            block.length_domain.first()]
-                                      .component(
-                                              member_list[s].local_name))[...]
+                            _idx = block.length_domain.first()
                         elif block._flow_direction == FlowDirection.backward:
-                            slicer = (block.properties[
-                                            :,
-                                            block.length_domain.last()]
-                                      .component(
-                                              member_list[s].local_name))[...]
+                            _idx = block.length_domain.last()
                         else:
                             raise BurntToast(
                                     "{} flow_direction argument received "
@@ -333,6 +321,8 @@ class UnitBlockData(ProcessBlockData):
                                     "happen, so please contact the IDAES "
                                     "developers with this bug."
                                     .format(blk.name))
+                        slicer = (block.properties[:, _idx].component(
+                                    member_list[s].local_name))[...]
                 elif isinstance(block, StateBlockBase):
                     slicer = block[:].component(member_list[s].local_name)[...]
                 else:
@@ -421,15 +411,9 @@ class UnitBlockData(ProcessBlockData):
                                         member_list[s].local_name)
                     except AttributeError:
                         if block._flow_direction == FlowDirection.forward:
-                            slicer = (block.properties[
-                                            :,
-                                            block.length_domain.last()]
-                                      .component(member_list[s].local_name))
+                            _idx = block.length_domain.last()
                         elif block._flow_direction == FlowDirection.backward:
-                            slicer = (block.properties[
-                                            :,
-                                            block.length_domain.first()]
-                                      .component(member_list[s].local_name))
+                            _idx = block.length_domain.first()
                         else:
                             raise BurntToast(
                                     "{} flow_direction argument received "
@@ -437,6 +421,8 @@ class UnitBlockData(ProcessBlockData):
                                     "happen, so please contact the IDAES "
                                     "developers with this bug."
                                     .format(blk.name))
+                        slicer = (block.properties[:, _idx]
+                                      .component(member_list[s].local_name))
                 elif isinstance(block, StateBlockBase):
                     slicer = block[:].component(member_list[s].local_name)
                 else:
@@ -453,17 +439,9 @@ class UnitBlockData(ProcessBlockData):
                                         member_list[s].local_name)[...]
                     except AttributeError:
                         if block._flow_direction == FlowDirection.forward:
-                            slicer = (block.properties[
-                                            :,
-                                            block.length_domain.last()]
-                                      .component(
-                                              member_list[s].local_name))[...]
+                            _idx = block.length_domain.last()
                         elif block._flow_direction == FlowDirection.backward:
-                            slicer = (block.properties[
-                                            :,
-                                            block.length_domain.first()]
-                                      .component(
-                                              member_list[s].local_name))[...]
+                            _idx = block.length_domain.first()
                         else:
                             raise BurntToast(
                                     "{} flow_direction argument received "
@@ -471,6 +449,8 @@ class UnitBlockData(ProcessBlockData):
                                     "happen, so please contact the IDAES "
                                     "developers with this bug."
                                     .format(blk.name))
+                        slicer = (block.properties[:, _idx].component(
+                                    member_list[s].local_name))[...]
                 elif isinstance(block, StateBlockBase):
                     slicer = block[:].component(member_list[s].local_name)[...]
                 else:
