@@ -50,7 +50,7 @@ def build_turbine_dyn():
     return m
 
 def test_basic_build(build_turbine):
-    """Make a turbine model and make sure it doesn't trhow exception"""
+    """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")

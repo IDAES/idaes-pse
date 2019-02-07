@@ -123,7 +123,6 @@ class TurbineInletStageData(PressureChangerData):
         self.efficiency_correlation.deactivate()
 
         # Fix turbine parameters + eff_isen
-        self.efficiency_isentropic.fix(0.8)
         self.eff_nozzle.fix()
         self.blade_reaction()
         self.flow_coeff.fix()
@@ -135,7 +134,15 @@ class TurbineInletStageData(PressureChangerData):
                 v.fix()
             for k, v in self.outlet[t].vars.items():
                 v.unfix()
-            self.outlet[t].pressure.fix(value(self.inlet[t].pressure)*0.8)
+            Pout = self.outlet[t].pressure
+            Pin = self.outlet[t].pressure
+            Pr = Pout/Pin
+            eff = self.efficiency_isentropic[t]
+            Pout.fix(Pout.value if Pr < 1 and Pr > 0.3 else Pin.value*0.8)
+            eff.fix(eff.value if eff > 0.3 and eff < 1.0001 else 0.8)
+            
+        # Make sure the initialization problem has no degrees of freedom
+        # This shouldn't happen here unless there is a bug in this
         dof = degrees_of_freedom(self)
         try:
             assert(dof == 0)
@@ -143,6 +150,8 @@ class TurbineInletStageData(PressureChangerData):
             _log.exception("degrees_of_freedom = {}".format(dof))
             raise
 
+        # one bad thing about reusing this is that the log messages aren't
+        # really compatable with being nested inside another initialization
         super(TurbineInletStageData, self).initialize(state_args=state_args,
             outlvl=outlvl, solver=solver, optarg=optarg)
 
@@ -159,9 +168,12 @@ class TurbineInletStageData(PressureChangerData):
 
         if outlvl > 0:
             if res.solver.termination_condition == TerminationCondition.optimal:
-                _log.info('{} Initialization Complete.'.format(self.name))
+                _log.info("{} Initialization Complete.".format(self.name))
             else:
-                _log.warning('{} Initialization Failed.'.format(self.name))
+                _log.warning(
+"""{} Initialization Failed. The most likely cause of initialization failure for
+the Turbine inlet stages model is that the flow coefficent is not compatable
+with flow rate guess.""".format(self.name))
 
         # reload original spec
         from_json(self, sd=istate, wts=sp)
