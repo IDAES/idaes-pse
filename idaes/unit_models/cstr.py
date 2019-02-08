@@ -16,7 +16,6 @@ Standard IDAES CSTR model.
 from __future__ import division
 
 # Import Pyomo libraries
-# from pyomo.environ import Reals,  Var, NonNegativeReals
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
