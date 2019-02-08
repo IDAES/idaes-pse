@@ -1,7 +1,7 @@
 __author__ = "John Eslick"
 
 from pyutilib.enum import Enum
-from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
 from idaes.core import (EnergyBalanceType,
                         MomentumBalanceType,
                         MaterialBalanceType,
@@ -69,4 +69,41 @@ see property package for documentation.}"""))
         domain=int,
         description="Number of low pressure stages not including outlet stage",
         doc="Number of low pressure stages not including outlet stage"))
-    config.declare("hp_split_loc")
+    config.declare("hp_split_locations", ConfigList(
+        default=[],
+        domain=int,
+        description="Locations of splitters in HP section",
+        doc="A list of index locations of splitters in the HP section. The "
+            "indexes indicate after which stage to include splitters.  0 is "
+            "between the inlet stage and the first regular HP stage."))
+    config.declare("ip_split_locations", ConfigList(
+        default=[],
+        domain=int,
+        description="Locations of splitters in IP section",
+        doc="A list of index locations of splitters in the IP section. The "
+            "indexes indicate after which stage to include splitters."))
+    config.declare("lp_split_locations", ConfigList(
+        default=[],
+        domain=int,
+        description="Locations of splitter in LP section",
+        doc="A list of index locations of splitters in the LP section. The "
+            "indexes indicate after which stage to include splitters."))
+    config.declare("hp_mix_locations", ConfigList(
+        default=[],
+        domain=int,
+        description="Locations of mixers in HP section",
+        doc="A list of index locations of mixers in the HP section. The "
+            "indexes indicate after which stages to include mixers.  0 is "
+            "between the inlet stage and the first regular HP stage."))
+    config.declare("ip_mix_locations", ConfigList(
+        default=[],
+        domain=int,
+        description="Locations of mixers in IP section",
+        doc="A list of index locations of mixers in the IP section. The "
+            "indexes indicate after which stages to include mixers."))
+    config.declare("lp_mix_locations", ConfigList(
+        default=[],
+        domain=int,
+        description="Locations of mixers in LP section",
+        doc="A list of index locations of mixers in the LP section. The "
+            "indexes indicate after which stages to include mixers."))

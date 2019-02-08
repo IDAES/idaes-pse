@@ -17,10 +17,12 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
     for Gas Turbines and Power. v136, November
 """
+import copy
 
 from pyomo.environ import RangeSet
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
+from idaes.unit_models import Separator, Mixer, SplittingType
 from idaes.unit_models.power_generation import (
     TurbineInletStage, TurbineStage, TurbineOutletStage)
 from idaes.core import UnitBlockData
@@ -54,3 +56,24 @@ class TurbineMultistageData(UnitBlockData):
         self.ip_stages = TurbineStage(RangeSet(config.num_ip), default=unit_cfg)
         self.lp_stages = TurbineStage(RangeSet(config.num_lp), default=unit_cfg)
         self.outlet_stage = TurbineOutletStage(default=unit_cfg)
+
+        s_cfg = copy.copy(unit_cfg)
+        s_cfg.update(split_basis=SplittingType.totalFlow, ideal_separation=False)
+        del s_cfg["has_holdup"]
+        del s_cfg["has_phase_equilibrium"]
+        if config.hp_split_locations:
+            self.hp_split = Separator(config.hp_split_locations, default=s_cfg)
+        if config.ip_split_locations:
+            self.ip_split = Separator(config.ip_split_locations, default=s_cfg)
+        if config.lp_split_locations:
+            self.lp_split = Separator(config.lp_split_locations, default=s_cfg)
+
+        m_cfg = copy.copy(unit_cfg)
+        del m_cfg["has_holdup"]
+        del m_cfg["has_phase_equilibrium"]
+        if config.hp_mix_locations:
+            self.hp_mix = Mixer(config.hp_mix_locations, default=m_cfg)
+        if config.ip_mix_locations:
+            self.ip_mix = Mixer(config.ip_mix_locations, default=m_cfg)
+        if config.lp_mix_locations:
+            self.lp_mix = Mixer(config.lp_mix_locations, default=m_cfg)
