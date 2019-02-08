@@ -70,10 +70,12 @@ then you would run a command like:
 .. _Docker Hub: https://hub.docker.com/
 .. _Docker Hub documentation: https://docs.docker.com/docker-hub/
 
-.. note:: If you are a software developer, you may have "cloned" the Github repository with
-          the IDAES source code. In this case, the script `idaes-docker` can be used to
-          pull and run the Docker image. Please run ``idaes-docker -h`` to get help and
-          details on how to use this script.
+.. note::
+
+    If you are a software developer, you may have "cloned" the Github repository with
+    the IDAES source code. In this case, the script `idaes-docker` can be used to
+    pull and run the Docker image. Please run ``idaes-docker -h`` to get help and
+    details on how to use this script.
 
 Run the IDAES Docker image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -112,8 +114,10 @@ Installation from source code
 If you want to install the IDAES PSE framework from the source code, follow the
 set of instructions below that are appropriate for your operating system.
 
-.. note:: These installation procedures are only fully tested on Debian-based Linux
-          distributions.
+.. note::
+
+    These installation procedures are only fully tested on Debian-based Linux
+    distributions.
 
 System Requirements
 ^^^^^^^^^^^^^^^^^^^
@@ -151,8 +155,8 @@ that are not required by the IDAES framework.
     bash Miniconda3-latest-Linux-x86_64.sh
 
 Create and activate a conda environment (along with its own copy of ``pip``)
-for the new IDAES installation **(you will need to** ``conda activate idaes`` **
-when you open a fresh terminal window and wish to use IDAES)**:
+for the new IDAES installation **(you will need to** ``conda activate idaes``
+**when you open a fresh terminal window and wish to use IDAES)**:
 
 .. code-block:: sh
 
@@ -188,14 +192,14 @@ Install the required Python packages:
     pip install -r requirements.txt
     python setup.py develop  # or "install"
 
-Install ipopt.  If you have an HSL license, you may prefere to compile ipopt with HSL support.  Please see the ipopt documentation (https://projects.coin-or.org/Ipopt) in that case.  Otherwise ipopt can be installed with conda.
+Install ipopt.  If you have an HSL license, you may prefere to compile ipopt with HSL support.  Please see the ipopt `documentation <https://projects.coin-or.org/Ipopt>`_ in that case.  Otherwise ipopt can be installed with conda.
 
 .. code-block:: sh
 
     conda install -c conda-forge ipopt
 
 
-At this point, you should be able to launch the Jupyter Notebook server and successfully `run examples <examples.html>` from the ``examples`` folder:
+At this point, you should be able to launch the Jupyter Notebook server and successfully `run examples <examples.html>`_ from the ``examples`` folder:
 
 .. code-block:: sh
 
@@ -210,8 +214,8 @@ but a significant number of more advanced problems will not be handled well. Som
 other solvers you can install that may improve (or make possible) solutions for
 these models are:
 
-    * CPLEX: a linear optimization package from IBM. https://www.ibm.com/analytics/cplex-optimizer
-    * Gurobi: LP/MILP/MIQP, etc., solvers from a company of the same name. http://www.gurobi.com
+    * CPLEX: a linear optimization package from `IBM <https://www.ibm.com/analytics/cplex-optimizer>`_.
+    * Gurobi: LP/MILP/MIQP, etc., solvers from `Gurobi <http://www.gurobi.com>`_. 
 
 .. _IPOPT: https://projects.coin-or.org/Ipopt
 
@@ -231,7 +235,9 @@ https://ampl.com/resources/hooking-your-solver-to-ampl/.
 Installation on Windows
 -----------------------
 
-.. note:: We are NOT supporting Windows at this time. Some developers on the team have had success with the following instructions, but we do not promise that they will work for all users, nor will we prioritize helping debug problems.
+.. note::
+
+    We are NOT supporting Windows at this time. Some developers on the team have had success with the following instructions, but we do not promise that they will work for all users, nor will we prioritize helping debug problems.
 
 Python Distribution
 ^^^^^^^^^^^^^^^^^^^
