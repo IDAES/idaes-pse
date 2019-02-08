@@ -43,7 +43,7 @@ class TurbineMultistageData(UnitBlockData):
     def build(self):
         super(TurbineMultistageData, self).build()
         config = self.config
-        unit_cfg = {
+        unit_cfg = { # general unit model config
             "dynamic":config.dynamic,
             "has_holdup":config.has_holdup,
             "has_phase_equilibrium":config.has_phase_equilibrium,
@@ -51,13 +51,16 @@ class TurbineMultistageData(UnitBlockData):
             "property_package_args":config.property_package_args,
         }
 
+        # add turbine stages.
+        # inlet stage -> hp stages -> ip stages -> lp stages -> outlet stage
         self.inlet_stage = TurbineInletStage(default=unit_cfg)
         self.hp_stages = TurbineStage(RangeSet(config.num_hp), default=unit_cfg)
         self.ip_stages = TurbineStage(RangeSet(config.num_ip), default=unit_cfg)
         self.lp_stages = TurbineStage(RangeSet(config.num_lp), default=unit_cfg)
         self.outlet_stage = TurbineOutletStage(default=unit_cfg)
 
-        s_cfg = copy.copy(unit_cfg)
+        # put in splitters for feedwater heater, reheat, ...
+        s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
         s_cfg.update(split_basis=SplittingType.totalFlow, ideal_separation=False)
         del s_cfg["has_holdup"]
         del s_cfg["has_phase_equilibrium"]
@@ -68,7 +71,8 @@ class TurbineMultistageData(UnitBlockData):
         if config.lp_split_locations:
             self.lp_split = Separator(config.lp_split_locations, default=s_cfg)
 
-        m_cfg = copy.copy(unit_cfg)
+        # put in mixers (mostly for reheat return)
+        m_cfg = copy.copy(unit_cfg) # mixer config based on unit_cfg
         del m_cfg["has_holdup"]
         del m_cfg["has_phase_equilibrium"]
         if config.hp_mix_locations:
@@ -77,3 +81,6 @@ class TurbineMultistageData(UnitBlockData):
             self.ip_mix = Mixer(config.ip_mix_locations, default=m_cfg)
         if config.lp_mix_locations:
             self.lp_mix = Mixer(config.lp_mix_locations, default=m_cfg)
+
+        #m.fs.stream = Arc(source=m.fs.Tank1.outlet[0],
+        #          destination=m.fs.Tank2.inlet[0])
