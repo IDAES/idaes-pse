@@ -1,6 +1,6 @@
 Installation
 ============
-   
+
 .. contents:: Contents
     :local:
 
@@ -119,7 +119,7 @@ System Requirements
 ^^^^^^^^^^^^^^^^^^^
 
     * Linux operating system
-    * Python 2.7+ or 3.6+
+    * Python 3.6+
     * Basic GNU/C compilation tools: make, gcc/g++
     * `wget` (for downloading software)
     * `git` (for getting the IDAES source code)
@@ -135,7 +135,7 @@ Installation steps
 
 .. code-block:: sh
 
-    sudo apt-get install gcc g++ make
+    sudo apt-get install gcc g++ make libboost-dev
 
 We use a Python packaging system called Conda_.
 Below are instructions for installing a minimal version of Conda, called Miniconda_.
@@ -146,7 +146,7 @@ that are not required by the IDAES framework.
 .. _Miniconda: https://conda.io/en/latest/miniconda.html
 
 .. code-block:: sh
-    
+
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
 
@@ -155,7 +155,7 @@ for the new IDAES installation **(you will need to** ``conda activate idaes`` **
 when you open a fresh terminal window and wish to use IDAES)**:
 
 .. code-block:: sh
-    
+
     conda create -n idaes pip
     conda activate idaes
 
@@ -168,24 +168,45 @@ Obtain the source code for IDAES from GitHub:
 Next install the main solver dependencies. You should be in the directory that
 you created with the `git clone` command (by default, called "idaes").
 
+Download and compile the AMPL Solver Library (ASL); this is required to compile
+AMPL user defined functions for steam properties and the cubic equations of state.
+These can be downloaded and compiled in any convenient location.
+
 .. code-block:: sh
 
-    sudo apt-get update && sudo apt-get install -y libboost-dev
+    cd <Location to keep the ASL>
     wget https://ampl.com/netlib/ampl/solvers.tgz
     tar -xf solvers.tgz
-    ( cd solvers && ./configure && make )
-    ( export ASL_BUILD=`pwd`/solvers/sys.x86_64.Linux && cd idaes/property_models/iapws95 && make )
-    wget https://ampl.com/dl/open/ipopt/ipopt-linux64.zip
-    unzip ipopt-linux64.zip
-    sudo cp ipopt /usr/local/bin/
+    cd solvers
+    ./configure
+    make
 
-Install the Python packages:
+Next export the ASL_BUILD environment variable which tells the IDAES makefile where
+to find the ASL libraries.
 
 .. code-block:: sh
 
-    cd idaes
+    export ASL_BUILD=`pwd`/solvers/sys.x86_64.Linux
+
+Go back to the main IDAES directory and compile the property package external functions.
+
+.. code-block:: sh
+
+    cd <IDAES source main directory>
+    make
+
+Install the required Python packages:
+
+.. code-block:: sh
+
     pip install -r requirements.txt
     python setup.py develop  # or "install"
+
+Install ipopt.  If you have an HSL license, you may prefere to compile ipopt with HSL support.  Please see the ipopt documation in that case.  Otherwise ipopt can be installed with conda.
+
+.. code-block:: sh
+
+    conda install -c conda-forge ipopt
 
 
 At this point, you should be able to launch the Jupyter Notebook server and successfully `run examples <examples.html>`_ from the ``examples`` folder:
@@ -322,6 +343,3 @@ Option 2: Using Git
 * Open command prompt and navigate to the folder where you extracted the contents of the IDAES repository (`cd <user>/.../<desired directory>/IDAES/`).
 
    1. Run: `python setup.py develop`
-
-
-

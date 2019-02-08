@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -160,7 +160,7 @@
   <h1>Source code for idaes.dmf.dmfbase</h1><div class="highlight"><pre>
 <span></span><span class="c1">##############################################################################</span>
 <span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
-<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the</span>
 <span class="c1"># software owners: The Regents of the University of California, through</span>
 <span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
 <span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
@@ -168,7 +168,7 @@
 <span class="c1">#</span>
 <span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
 <span class="c1"># license information, respectively. Both files are also available online</span>
-<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes-pse&quot;.</span>
 <span class="c1">##############################################################################</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Data Management Framework</span>
@@ -259,12 +259,12 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Parsing configuration at &quot;</span><span class="si">{}</span><span class="s1">&quot;: </span><span class="si">{}</span><span class="s1">&#39;</span>
                                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="n">err</span><span class="p">))</span>
 
-<div class="viewcode-block" id="DMFConfig.save"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMFConfig.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
             <span class="k">raise</span>
-        <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span></div>
+        <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">c</span><span class="p">,</span> <span class="n">fp</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">workspace</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -553,8 +553,8 @@
         <span class="c1"># Make sure datafiles dir is in sync</span>
         <span class="n">rsrc</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;datafiles_dir&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ddir</span>
 
-<div class="viewcode-block" id="DMF.count"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.DMF.count">[docs]</a>    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="p">)</span>
 
 <div class="viewcode-block" id="DMF.fetch_one"><a class="viewcode-back" href="../../../dmf/base.html#idaes.dmf.dmfbase.DMF.fetch_one">[docs]</a>    <span class="k">def</span> <span class="nf">fetch_one</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rid</span><span class="p">,</span> <span class="n">id_only</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fetch one resource, from its identifier.</span>
@@ -747,8 +747,8 @@
         <span class="k">return</span> <span class="s1">&#39;DMF config=&quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_conf</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="get_propertydb_table"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.dmfbase.html#idaes.dmf.dmfbase.get_propertydb_table">[docs]</a><span class="k">def</span> <span class="nf">get_propertydb_table</span><span class="p">(</span><span class="n">rsrc</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">propdata</span><span class="o">.</span><span class="n">PropertyTable</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">rsrc</span><span class="o">.</span><span class="n">datafiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">fullpath</span><span class="p">)</span></div>
+<span class="k">def</span> <span class="nf">get_propertydb_table</span><span class="p">(</span><span class="n">rsrc</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">propdata</span><span class="o">.</span><span class="n">PropertyTable</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">rsrc</span><span class="o">.</span><span class="n">datafiles</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">fullpath</span><span class="p">)</span>
 </pre></div>
 
            </div>
