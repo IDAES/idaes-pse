@@ -27,7 +27,7 @@ from .process_base import (declare_process_block_class,
                            ProcessBlockData,
                            useDefault)
 from .property_base import StateBlock
-from .control_volume_base import ControlVolumeBase, FlowDirection
+from .control_volume_base import ControlVolumeBlockData, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         DynamicError)
@@ -232,7 +232,7 @@ class UnitModelBlockData(ProcessBlockData):
             doc = "Inlet Port"
 
         def port_rule(b, t):
-            if isinstance(block, ControlVolumeBase):
+            if isinstance(block, ControlVolumeBlockData):
                 try:
                     return block.properties_in[t].define_port_members()
                 except AttributeError:
@@ -295,7 +295,7 @@ class UnitModelBlockData(ProcessBlockData):
             doc = "Outlet Port"
 
         def port_rule(b, t):
-            if isinstance(block, ControlVolumeBase):
+            if isinstance(block, ControlVolumeBlockData):
                 try:
                     return block.properties_out[t].define_port_members()
                 except AttributeError:

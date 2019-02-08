@@ -22,7 +22,7 @@ from pyomo.common.config import ConfigValue
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault, PhysicalParameterBlock,
-                        StateBlock, StateBlockDataBase, ControlVolume0D)
+                        StateBlock, StateBlockDataBase, ControlVolume0DBlock)
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 
@@ -214,7 +214,7 @@ def test_add_inlet_port_CV0D():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.control_volume = ControlVolume0D(
+    m.fs.u.control_volume = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     m.fs.u.control_volume.add_state_blocks()
@@ -245,7 +245,7 @@ def test_add_inlet_port_CV0D_no_default_block():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0D(
+    m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     with pytest.raises(ConfigurationError):
@@ -259,7 +259,7 @@ def test_add_inlet_port_CV0D_full_args():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0D(
+    m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     m.fs.u.cv.add_state_blocks()
@@ -292,7 +292,7 @@ def test_add_outlet_port_CV0D():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.control_volume = ControlVolume0D(
+    m.fs.u.control_volume = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     m.fs.u.control_volume.add_state_blocks()
@@ -323,7 +323,7 @@ def test_add_outlet_port_CV0D_no_default_block():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0D(
+    m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     with pytest.raises(ConfigurationError):
@@ -337,7 +337,7 @@ def test_add_outlet_port_CV0D_full_args():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0D(
+    m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     m.fs.u.cv.add_state_blocks()

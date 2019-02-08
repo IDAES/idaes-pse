@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for ControlVolumeBase.
+Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """
@@ -19,7 +19,7 @@ import inspect
 import pytest
 from pyomo.environ import ConcreteModel, Block, Set
 from pyomo.common.config import ConfigBlock, ConfigValue
-from idaes.core import (ControlVolumeBase, CONFIG_Template,
+from idaes.core import (ControlVolumeBlockData, CONFIG_Template,
                         MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType, FlowDirection,
                         declare_process_block_class,
@@ -158,11 +158,11 @@ class _UnitData(UnitModelBlockData):
 
 
 # -----------------------------------------------------------------------------
-# Testing ControlVolumeBase
+# Testing ControlVolumeBlockData
 @declare_process_block_class("CVFrame")
-class CVFrameData(ControlVolumeBase):
+class CVFrameData(ControlVolumeBlockData):
     def build(self):
-        super(ControlVolumeBase, self).build()
+        super(ControlVolumeBlockData, self).build()
 
 
 def test_config_block():

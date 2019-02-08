@@ -25,7 +25,7 @@ from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
                         MomentumBalanceType,
@@ -157,7 +157,7 @@ see property package for documentation.}"""))
         super(PressureChangerData, self).build()
 
         # Add a control volume to the unit including setting up dynamics.
-        self.control_volume = ControlVolume0D(default={
+        self.control_volume = ControlVolume0DBlock(default={
                 "dynamic": self.config.dynamic,
                 "has_holdup": self.config.has_holdup,
                 "property_package": self.config.property_package,

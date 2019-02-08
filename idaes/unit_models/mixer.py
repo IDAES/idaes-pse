@@ -197,7 +197,7 @@ linked to all inlet states and the mixed state,
         # Call super.build()
         super(MixerData, self).build()
 
-        # Call setup methods from ControlVolumeBase
+        # Call setup methods from ControlVolumeBlockData
         self._get_property_package()
         self._get_indexing_sets()
 

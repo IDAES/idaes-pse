@@ -25,7 +25,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
                         MomentumBalanceType,
@@ -81,7 +81,7 @@ def _make_heater_control_volume(o, name, config):
     This is seperated from the main heater class so it can be reused to create
     control volumes for different types of heat exchange models.
     """
-    control_volume = ControlVolume0D(default={
+    control_volume = ControlVolume0DBlock(default={
         "dynamic": config.dynamic,
         "property_package": config.property_package,
         "property_package_args": config.property_package_args})

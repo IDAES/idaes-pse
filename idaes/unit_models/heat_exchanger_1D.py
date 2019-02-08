@@ -27,7 +27,7 @@ from pyomo.environ import (SolverFactory, Var, Param, Constraint,
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume1D, UnitModelBlockData,
+from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
@@ -221,14 +221,14 @@ tube side flows from 1 to 0"""))
             set_direction_tube = FlowDirection.backward
 
         # Control volume 1D for shell
-        self.shell = ControlVolume1D(default={
+        self.shell = ControlVolume1DBlock(default={
             "dynamic": self.config.shell_side.dynamic,
             "has_holdup": self.config.shell_side.has_holdup,
             "property_package": self.config.shell_side.property_package,
             "property_package_args":
                 self.config.shell_side.property_package_args})
 
-        self.tube = ControlVolume1D(default={
+        self.tube = ControlVolume1DBlock(default={
             "dynamic": self.config.tube_side.dynamic,
             "has_holdup": self.config.tube_side.has_holdup,
             "property_package": self.config.tube_side.property_package,

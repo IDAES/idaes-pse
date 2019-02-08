@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for ControlVolumeBase.
+Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """

@@ -20,7 +20,7 @@ from pyomo.environ import Reals,  Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
                         MomentumBalanceType,
@@ -128,7 +128,7 @@ see property package for documentation.}"""))
         super(GibbsReactorData, self).build()
 
         # Build Control Volume
-        self.control_volume = ControlVolume0D(default={
+        self.control_volume = ControlVolume0DBlock(default={
                 "dynamic": self.config.dynamic,
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args})
