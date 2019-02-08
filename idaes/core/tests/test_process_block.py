@@ -95,3 +95,29 @@ class TestProcessBlock(object):
         assert(value(m.b[2].y) == 2002)
         assert(value(m.b[3].x) == 1)
         assert(value(m.b[3].y) == 2)
+
+    def test_user_map(self):
+        m = ConcreteModel()
+        def new_imap(i):
+            if i > 0 and i < 4:
+                return 1
+            else:
+                return i
+
+        m.b = MyBlock(
+            [0,1,2,3,4],
+            idx_map = new_imap,
+            initialize={0:{"xinit":2001, "yinit":2002},
+                        1:{"xinit":5001, "yinit":5002},
+                        2:{"xinit":6001, "yinit":6002},
+                        4:{"xinit":7001, "yinit":7002}})
+        assert(value(m.b[0].x) == 2001)
+        assert(value(m.b[0].y) == 2002)
+        assert(value(m.b[1].x) == 5001)
+        assert(value(m.b[1].y) == 5002)
+        assert(value(m.b[2].x) == 5001) # although this index (2) is in initialize
+        assert(value(m.b[2].y) == 5002) # the idx_map function maps it to 1
+        assert(value(m.b[3].x) == 5001)
+        assert(value(m.b[3].y) == 5002)
+        assert(value(m.b[4].x) == 7001)
+        assert(value(m.b[4].y) == 7002)
