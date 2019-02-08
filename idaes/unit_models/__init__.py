@@ -9,3 +9,6 @@ from .plug_flow_reactor import PFR
 from .pressure_changer import PressureChanger
 from .separator import Separator
 from .stoichiometric_reactor import StoichiometricReactor
+from .equilibrium_reactor import EquilibriumReactor
+from .feed import Feed
+from .product import Product
