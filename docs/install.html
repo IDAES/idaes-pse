@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -329,7 +329,7 @@ distributions.</p>
 <blockquote>
 <div><ul class="simple">
 <li>Linux operating system</li>
-<li>Python 2.7+ or 3.6+</li>
+<li>Python 3.6+</li>
 <li>Basic GNU/C compilation tools: make, gcc/g++</li>
 <li><cite>wget</cite> (for downloading software)</li>
 <li><cite>git</cite> (for getting the IDAES source code)</li>
@@ -346,7 +346,7 @@ distributions.</p>
 </div>
 <div class="section" id="installation-steps">
 <h3><a class="toc-backref" href="#id8">Installation steps</a><a class="headerlink" href="#installation-steps" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>sudo apt-get install gcc g++ make
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>sudo apt-get install gcc g++ make libboost-dev
 </pre></div>
 </div>
 <p>We use a Python packaging system called <a class="reference external" href="https://conda.io/">Conda</a>.
@@ -358,8 +358,8 @@ bash Miniconda3-latest-Linux-x86_64.sh
 </pre></div>
 </div>
 <p>Create and activate a conda environment (along with its own copy of <code class="docutils literal notranslate"><span class="pre">pip</span></code>)
-for the new IDAES installation <strong>(you will need to</strong> <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">activate</span> <span class="pre">idaes</span></code> **
-when you open a fresh terminal window and wish to use IDAES)**:</p>
+for the new IDAES installation <strong>(you will need to</strong> <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">activate</span> <span class="pre">idaes</span></code>
+<strong>when you open a fresh terminal window and wish to use IDAES)</strong>:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda create -n idaes pip
 conda activate idaes
 </pre></div>
@@ -368,22 +368,27 @@ conda activate idaes
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/IDAES/idaes.git
 </pre></div>
 </div>
-<p>Next install the main solver dependencies. You should be in the directory that
-you created with the <cite>git clone</cite> command (by default, called “idaes”).</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>sudo apt-get update <span class="o">&amp;&amp;</span> sudo apt-get install -y libboost-dev
+<p>Download and compile the AMPL Solver Library (ASL) and external property functions;
+this is required for steam properties and cubic equations of state. This step is
+optional, but highly recommended.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> &lt;Location to keep the ASL&gt;
 wget https://ampl.com/netlib/ampl/solvers.tgz
 tar -xf solvers.tgz
-<span class="o">(</span> <span class="nb">cd</span> solvers <span class="o">&amp;&amp;</span> ./configure <span class="o">&amp;&amp;</span> make <span class="o">)</span>
-<span class="o">(</span> <span class="nb">export</span> <span class="nv">ASL_BUILD</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/solvers/sys.x86_64.Linux <span class="o">&amp;&amp;</span> <span class="nb">cd</span> idaes/property_models/iapws95 <span class="o">&amp;&amp;</span> make <span class="o">)</span>
-wget https://ampl.com/dl/open/ipopt/ipopt-linux64.zip
-unzip ipopt-linux64.zip
-sudo cp ipopt /usr/local/bin/
+<span class="nb">cd</span> solvers
+./configure
+make
+<span class="nb">export</span> <span class="nv">ASL_BUILD</span><span class="o">=</span><span class="sb">`</span><span class="nb">pwd</span><span class="sb">`</span>/solvers/sys.x86_64.Linux
+<span class="nb">cd</span> &lt;IDAES <span class="nb">source</span> main directory&gt;
+make
 </pre></div>
 </div>
-<p>Install the Python packages:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> idaes
-pip install -r requirements.txt
+<p>Install the required Python packages:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip install -r requirements.txt
 python setup.py develop  <span class="c1"># or &quot;install&quot;</span>
+</pre></div>
+</div>
+<p>Install ipopt.  If you have an HSL license, you may prefere to compile ipopt with HSL support.  Please see the ipopt <a class="reference external" href="https://projects.coin-or.org/Ipopt">documentation</a> in that case.  Otherwise ipopt can be installed with conda.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda install -c conda-forge ipopt
 </pre></div>
 </div>
 <p>At this point, you should be able to launch the Jupyter Notebook server and successfully <a class="reference external" href="examples.html">run examples</a> from the <code class="docutils literal notranslate"><span class="pre">examples</span></code> folder:</p>
@@ -400,10 +405,8 @@ other solvers you can install that may improve (or make possible) solutions for
 these models are:</p>
 <blockquote>
 <div><ul class="simple">
-<li>CPLEX: a linear optimization package from IBM.
-<a href="#id17"><span class="problematic" id="id18">`Webpage &lt;https://www.ibm.com/analytics/cplex-optimizer`_</span></a>.</li>
-<li>Gurobi: LP/MILP/MIQP, etc., solvers from a company of the same name.
-<a class="reference external" href="http://www.gurobi.com">Webpage</a>.</li>
+<li>CPLEX: a linear optimization package from <a class="reference external" href="https://www.ibm.com/analytics/cplex-optimizer">IBM</a>.</li>
+<li>Gurobi: LP/MILP/MIQP, etc., solvers from <a class="reference external" href="http://www.gurobi.com">Gurobi</a>.</li>
 </ul>
 </div></blockquote>
 <div class="section" id="asl-and-ampl">

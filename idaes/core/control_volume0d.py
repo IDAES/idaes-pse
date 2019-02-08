@@ -17,6 +17,7 @@ Base class for control volumes
 from __future__ import division
 
 # Import Python libraries
+import copy
 import logging
 
 # Import Pyomo libraries
@@ -104,7 +105,7 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             None
         """
-        tmp_dict = package_arguments
+        tmp_dict = copy.copy(package_arguments)
         tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
         tmp_dict["parameters"] = self.config.property_package
 
@@ -155,7 +156,7 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             None
         """
-        tmp_dict = package_arguments
+        tmp_dict = copy.copy(package_arguments)
         tmp_dict["state_block"] = self.properties_out
         tmp_dict["has_equilibrium"] = has_equilibrium
         tmp_dict["parameters"] = self.config.reaction_package
