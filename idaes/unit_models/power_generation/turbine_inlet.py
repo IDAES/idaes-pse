@@ -179,7 +179,7 @@ class TurbineInletStageData(PressureChangerData):
             raise
 
         # one bad thing about reusing this is that the log messages aren't
-        # really compatable with being nested inside another initialization
+        # really compatible with being nested inside another initialization
         super(TurbineInletStageData, self).initialize(state_args=state_args,
             outlvl=outlvl, solver=solver, optarg=optarg)
 
