@@ -24,7 +24,7 @@ from idaes.core import (ControlVolume0D,
                         declare_process_block_class,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
@@ -33,7 +33,7 @@ __author__ = "Jinliang Ma, Andrew Lee"
 
 
 @declare_process_block_class("GibbsReactor")
-class GibbsReactorData(UnitBlockData):
+class GibbsReactorData(UnitModelBlockData):
     """
     Standard Gibbs Reactor Unit Model Class
 

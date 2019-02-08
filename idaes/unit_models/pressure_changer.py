@@ -30,7 +30,7 @@ from idaes.core import (ControlVolume0D,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         MaterialBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block, list_of_strings
 from idaes.core.util.misc import add_object_reference
@@ -40,7 +40,7 @@ logger = logging.getLogger('idaes.unit_model')
 
 
 @declare_process_block_class("PressureChanger")
-class PressureChangerData(UnitBlockData):
+class PressureChangerData(UnitModelBlockData):
     """
     Standard Compressor/Expander Unit Model Class
     """
@@ -504,7 +504,7 @@ see property package for documentation.}"""))
                                 solver=solver,
                                 optarg=optarg)
         else:
-            # Call the general initialization routine in UnitBlockData
+            # Call the general initialization routine in UnitModelBlockData
             super(PressureChangerData, blk).initialize(state_args=state_args,
                                                        outlvl=outlvl,
                                                        solver=solver,

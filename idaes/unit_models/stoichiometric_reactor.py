@@ -24,7 +24,7 @@ from idaes.core import (ControlVolume0D,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
@@ -34,7 +34,7 @@ __author__ = "Chinedu Okoli, Andrew Lee"
 
 
 @declare_process_block_class("StoichiometricReactor")
-class StoichiometricReactorData(UnitBlockData):
+class StoichiometricReactorData(UnitModelBlockData):
     """
     Standard Stoichiometric Reactor Unit Model Class
     This model assumes that all given reactions are irreversible, and that each

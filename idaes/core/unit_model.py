@@ -26,7 +26,7 @@ from pyomo.common.config import ConfigValue, In
 from .process_base import (declare_process_block_class,
                            ProcessBlockData,
                            useDefault)
-from .property_base import StateBlockBase
+from .property_base import StateBlock
 from .control_volume_base import ControlVolumeBase, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
@@ -36,14 +36,14 @@ from idaes.core.util.misc import add_object_reference
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 
-__all__ = ['UnitBlockData', 'UnitBlock']
+__all__ = ['UnitModelBlockData', 'UnitModelBlock']
 
 # Set up logger
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("UnitBlock")
-class UnitBlockData(ProcessBlockData):
+@declare_process_block_class("UnitModelBlock")
+class UnitModelBlockData(ProcessBlockData):
     """
     This is the class for process unit operations models. These are models that
     would generally appear in a process flowsheet or superstructure.
@@ -63,7 +63,7 @@ class UnitBlockData(ProcessBlockData):
 
     def build(self):
         """
-        General build method for UnitBlockData. This method calls a number
+        General build method for UnitModelBlockData. This method calls a number
         of sub-methods which automate the construction of expected attributes
         of unit models.
 
@@ -75,7 +75,7 @@ class UnitBlockData(ProcessBlockData):
         Returns:
             None
         """
-        super(UnitBlockData, self).build()
+        super(UnitModelBlockData, self).build()
 
         # Set up dynamic flag and time domain
         self._setup_dynamics()
@@ -180,7 +180,7 @@ class UnitBlockData(ProcessBlockData):
             A Pyomo Port object and associated components.
         """
         # Validate block object
-        if not isinstance(block, StateBlockBase):
+        if not isinstance(block, StateBlock):
             raise ConfigurationError("{} block object provided to add_port "
                                      "method is not an instance of a "
                                      "StateBlock object. IDAES port objects "
@@ -248,7 +248,7 @@ class UnitBlockData(ProcessBlockData):
                                          "happen, so please contact the IDAES "
                                          "developers with this bug."
                                          .format(blk.name))
-            elif isinstance(block, StateBlockBase):
+            elif isinstance(block, StateBlock):
                 return block[t].define_port_members()
             else:
                 raise ConfigurationError("{} block provided to add_inlet_port "
@@ -311,7 +311,7 @@ class UnitBlockData(ProcessBlockData):
                                          "happen, so please contact the IDAES "
                                          "developers with this bug."
                                          .format(blk.name))
-            elif isinstance(block, StateBlockBase):
+            elif isinstance(block, StateBlock):
                 return block[t].define_port_members()
             else:
                 raise ConfigurationError("{} block provided to add_inlet_port "

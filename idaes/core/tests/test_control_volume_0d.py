@@ -20,8 +20,8 @@ from pyomo.environ import ConcreteModel, Constraint, Expression, Set, Var
 from pyomo.common.config import ConfigBlock
 from idaes.core import (ControlVolume0D, ControlVolumeBase, FlowsheetBlockData,
                         declare_process_block_class, FlowDirection,
-                        PhysicalParameterBase, StateBlockBase,
-                        StateBlockDataBase, ReactionParameterBase,
+                        PhysicalParameterBlock, StateBlock,
+                        StateBlockDataBase, ReactionParameterBlock,
                         ReactionBlockBase, ReactionBlockDataBase,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
@@ -37,8 +37,8 @@ class _Flowsheet(FlowsheetBlockData):
         super(_Flowsheet, self).build()
 
 
-@declare_process_block_class("PhysicalParameterBlock")
-class _PhysicalParameterBlock(PhysicalParameterBase):
+@declare_process_block_class("PhysicalParameterTestBlock")
+class _PhysicalParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_PhysicalParameterBlock, self).build()
 
@@ -52,7 +52,7 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
 
-        self.state_block_class = StateBlock
+        self.state_block_class = TestStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
@@ -65,7 +65,7 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
                                'holdup': 'mol'})
 
 
-class SBlockBase(StateBlockBase):
+class SBlockBase(StateBlock):
     def initialize(blk, outlvl=0, optarg=None, solver=None,
                    hold_state=False, **state_args):
         for k in blk.keys():
@@ -77,12 +77,12 @@ class SBlockBase(StateBlockBase):
             blk[k].hold_state = not blk[k].hold_state
 
 
-@declare_process_block_class("StateBlock", block_class=SBlockBase)
-class StateBlockData(StateBlockDataBase):
+@declare_process_block_class("TestStateBlock", block_class=SBlockBase)
+class StateTestBlockData(StateBlockDataBase):
     CONFIG = ConfigBlock(implicit=True)
 
     def build(self):
-        super(StateBlockData, self).build()
+        super(StateTestBlockData, self).build()
 
         self.test_var = Var()
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
@@ -116,8 +116,8 @@ class StateBlockData(StateBlockDataBase):
             return MaterialFlowBasis.other
 
 
-@declare_process_block_class("ReactionParameterBlock")
-class _ReactionParameterBlock(ReactionParameterBase):
+@declare_process_block_class("ReactionParameterTestBlock")
+class _ReactionParameterBlock(ReactionParameterBlock):
     def build(self):
         super(_ReactionParameterBlock, self).build()
 
@@ -197,7 +197,7 @@ class CVFrameData(ControlVolume0D):
 def test_base_build():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -222,7 +222,7 @@ def test_base_build():
 def test_add_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -238,7 +238,7 @@ def test_add_geometry():
 def test_add_state_blocks():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -260,7 +260,7 @@ def test_add_state_blocks():
 def test_add_state_block_forward_flow():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -273,7 +273,7 @@ def test_add_state_block_forward_flow():
 def test_add_state_block_backward_flow():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -286,7 +286,7 @@ def test_add_state_block_backward_flow():
 def test_add_state_blocks_has_phase_equilibrium():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -299,7 +299,7 @@ def test_add_state_blocks_has_phase_equilibrium():
 def test_add_state_blocks_custom_args():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -317,8 +317,8 @@ def test_add_state_blocks_custom_args():
 def test_add_reaction_blocks():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -337,8 +337,8 @@ def test_add_reaction_blocks():
 def test_add_reaction_blocks_has_equilibrium():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -354,8 +354,8 @@ def test_add_reaction_blocks_has_equilibrium():
 def test_add_phase_fractions():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -370,11 +370,11 @@ def test_add_phase_fractions():
 def test_add_phase_fractions_single_phase():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.del_component(m.fs.pp.phase_list)
     m.fs.pp.phase_list = Set(initialize=["p1"])
 
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -391,8 +391,8 @@ def test_add_phase_fractions_single_phase():
 def test_add_phase_component_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -409,8 +409,8 @@ def test_add_phase_component_balances_default():
 def test_add_phase_component_balances_dynamic():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp,
@@ -432,8 +432,8 @@ def test_add_phase_component_balances_dynamic():
 def test_add_phase_component_balances_dynamic_no_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp,
@@ -450,8 +450,8 @@ def test_add_phase_component_balances_dynamic_no_geometry():
 def test_add_phase_component_balances_rate_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -474,8 +474,8 @@ def test_add_phase_component_balances_rate_rxns():
 def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -488,8 +488,8 @@ def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
 def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.del_component(m.fs.rp.rate_reaction_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -506,8 +506,8 @@ def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
 def test_add_phase_component_balances_eq_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -530,8 +530,8 @@ def test_add_phase_component_balances_eq_rxns():
 def test_add_phase_component_balances_eq_rxns_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -547,8 +547,8 @@ def test_add_phase_component_balances_eq_rxns_not_active():
 def test_add_phase_component_balances_eq_rxns_no_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -565,8 +565,8 @@ def test_add_phase_component_balances_eq_rxns_no_idx():
 def test_add_phase_component_balances_eq_rxns_no_ReactionBlock():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -579,8 +579,8 @@ def test_add_phase_component_balances_eq_rxns_no_ReactionBlock():
 def test_add_phase_component_balances_phase_eq():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -600,8 +600,8 @@ def test_add_phase_component_balances_phase_eq():
 def test_add_phase_component_balances_phase_eq_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -617,8 +617,8 @@ def test_add_phase_component_balances_phase_eq_not_active():
 def test_add_phase_component_balances_phase_eq_no_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -635,8 +635,8 @@ def test_add_phase_component_balances_phase_eq_no_idx():
 def test_add_phase_component_balances_mass_transfer():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -655,8 +655,8 @@ def test_add_phase_component_balances_mass_transfer():
 def test_add_phase_component_balances_custom_molar_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -681,9 +681,9 @@ def test_add_phase_component_balances_custom_molar_term():
 def test_add_phase_component_balances_custom_molar_term_no_mw():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -706,9 +706,9 @@ def test_add_phase_component_balances_custom_molar_term_no_mw():
 def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -737,9 +737,9 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
 def test_add_phase_component_balances_custom_molar_term_undefined_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -762,9 +762,9 @@ def test_add_phase_component_balances_custom_molar_term_undefined_basis():
 def test_add_phase_component_balances_custom_mass_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -789,9 +789,9 @@ def test_add_phase_component_balances_custom_mass_term():
 def test_add_phase_component_balances_custom_mass_term_no_mw():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 1
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -814,9 +814,9 @@ def test_add_phase_component_balances_custom_mass_term_no_mw():
 def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -845,9 +845,9 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
 def test_add_phase_component_balances_custom_mass_term_undefined_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -872,8 +872,8 @@ def test_add_phase_component_balances_custom_mass_term_undefined_basis():
 def test_add_total_component_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -890,8 +890,8 @@ def test_add_total_component_balances_default():
 def test_add_total_component_balances_dynamic():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp,
@@ -913,8 +913,8 @@ def test_add_total_component_balances_dynamic():
 def test_add_total_component_balances_dynamic_no_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp,
@@ -931,8 +931,8 @@ def test_add_total_component_balances_dynamic_no_geometry():
 def test_add_total_component_balances_rate_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -955,8 +955,8 @@ def test_add_total_component_balances_rate_rxns():
 def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -969,8 +969,8 @@ def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
 def test_add_total_component_balances_rate_rxns_no_rxn_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.del_component(m.fs.rp.rate_reaction_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -987,8 +987,8 @@ def test_add_total_component_balances_rate_rxns_no_rxn_idx():
 def test_add_total_component_balances_eq_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1011,8 +1011,8 @@ def test_add_total_component_balances_eq_rxns():
 def test_add_total_component_balances_eq_rxns_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1028,8 +1028,8 @@ def test_add_total_component_balances_eq_rxns_not_active():
 def test_add_total_component_balances_eq_rxns_no_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1046,8 +1046,8 @@ def test_add_total_component_balances_eq_rxns_no_idx():
 def test_add_total_component_balances_eq_rxns_no_ReactionBlock():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -1060,8 +1060,8 @@ def test_add_total_component_balances_eq_rxns_no_ReactionBlock():
 def test_add_total_component_balances_phase_eq_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1077,8 +1077,8 @@ def test_add_total_component_balances_phase_eq_not_active():
 def test_add_total_component_balances_mass_transfer():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1097,8 +1097,8 @@ def test_add_total_component_balances_mass_transfer():
 def test_add_total_component_balances_custom_molar_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1121,9 +1121,9 @@ def test_add_total_component_balances_custom_molar_term():
 def test_add_total_component_balances_custom_molar_term_no_mw():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1144,9 +1144,9 @@ def test_add_total_component_balances_custom_molar_term_no_mw():
 def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1173,9 +1173,9 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
 def test_add_total_component_balances_custom_molar_term_undefined_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1196,9 +1196,9 @@ def test_add_total_component_balances_custom_molar_term_undefined_basis():
 def test_add_total_component_balances_custom_mass_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1221,9 +1221,9 @@ def test_add_total_component_balances_custom_mass_term():
 def test_add_total_component_balances_custom_mass_term_no_mw():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 1
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1244,9 +1244,9 @@ def test_add_total_component_balances_custom_mass_term_no_mw():
 def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 2
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1273,9 +1273,9 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
 def test_add_total_component_balances_custom_mass_term_undefined_basis():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.basis_switch = 3
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1298,8 +1298,8 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
 def test_add_total_element_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1316,8 +1316,8 @@ def test_add_total_element_balances_default():
 def test_add_total_element_balances_properties_not_supported():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.element_list)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1333,8 +1333,8 @@ def test_add_total_element_balances_properties_not_supported():
 def test_add_total_element_balances_dynamic():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp,
@@ -1356,8 +1356,8 @@ def test_add_total_element_balances_dynamic():
 def test_add_total_element_balances_dynamic_no_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp,
@@ -1374,8 +1374,8 @@ def test_add_total_element_balances_dynamic_no_geometry():
 def test_add_total_element_balances_rate_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1391,8 +1391,8 @@ def test_add_total_element_balances_rate_rxns():
 def test_add_total_element_balances_eq_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1411,8 +1411,8 @@ def test_add_total_element_balances_eq_rxns():
 def test_add_total_element_balances_eq_rxns_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1428,8 +1428,8 @@ def test_add_total_element_balances_eq_rxns_not_active():
 def test_add_total_element_balances_eq_rxns_no_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1446,8 +1446,8 @@ def test_add_total_element_balances_eq_rxns_no_idx():
 def test_add_total_element_balances_eq_rxns_no_ReactionBlock():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp})
 
@@ -1460,8 +1460,8 @@ def test_add_total_element_balances_eq_rxns_no_ReactionBlock():
 def test_add_total_element_balances_phase_eq():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1480,8 +1480,8 @@ def test_add_total_element_balances_phase_eq():
 def test_add_total_element_balances_phase_eq_not_active():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1497,8 +1497,8 @@ def test_add_total_element_balances_phase_eq_not_active():
 def test_add_total_element_balances_phase_eq_no_idx():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1515,8 +1515,8 @@ def test_add_total_element_balances_phase_eq_no_idx():
 def test_add_total_element_balances_mass_transfer():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1535,8 +1535,8 @@ def test_add_total_element_balances_mass_transfer():
 def test_add_total_element_balances_custom_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1562,8 +1562,8 @@ def test_add_total_element_balances_custom_term():
 def test_add_total_material_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1582,8 +1582,8 @@ def test_add_total_material_balances():
 def test_add_total_enthalpy_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1600,8 +1600,8 @@ def test_add_total_enthalpy_balances_default():
 def test_add_total_enthalpy_balances_dynamic():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp,
@@ -1623,8 +1623,8 @@ def test_add_total_enthalpy_balances_dynamic():
 def test_add_total_enthalpy_balances_dynamic_no_geometry():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp,
@@ -1641,8 +1641,8 @@ def test_add_total_enthalpy_balances_dynamic_no_geometry():
 def test_add_total_enthalpy_balances_heat_transfer():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1661,8 +1661,8 @@ def test_add_total_enthalpy_balances_heat_transfer():
 def test_add_total_enthalpy_balances_work_transfer():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1681,8 +1681,8 @@ def test_add_total_enthalpy_balances_work_transfer():
 def test_add_total_enthalpy_balances_custom_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1705,8 +1705,8 @@ def test_add_total_enthalpy_balances_custom_term():
 def test_add_total_enthalpy_balances_dh_rxn_no_extents():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1722,8 +1722,8 @@ def test_add_total_enthalpy_balances_dh_rxn_no_extents():
 def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1740,8 +1740,8 @@ def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
 def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1760,8 +1760,8 @@ def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
 def test_add_phase_enthalpy_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1778,8 +1778,8 @@ def test_add_phase_enthalpy_balances():
 def test_add_phase_energy_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1796,8 +1796,8 @@ def test_add_phase_energy_balances():
 def test_add_total_energy_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1816,8 +1816,8 @@ def test_add_total_energy_balances():
 def test_add_total_pressure_balances_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1834,8 +1834,8 @@ def test_add_total_pressure_balances_default():
 def test_add_total_pressure_balances_deltaP():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1854,8 +1854,8 @@ def test_add_total_pressure_balances_deltaP():
 def test_add_total_pressure_balances_custom_term():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
@@ -1880,8 +1880,8 @@ def test_add_total_pressure_balances_custom_term():
 def test_add_phase_pressure_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1898,8 +1898,8 @@ def test_add_phase_pressure_balances():
 def test_add_phase_momentum_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1916,8 +1916,8 @@ def test_add_phase_momentum_balances():
 def test_add_total_momentum_balances():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1936,8 +1936,8 @@ def test_add_total_momentum_balances():
 def test_model_checks():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,
@@ -1958,8 +1958,8 @@ def test_model_checks():
 def test_initialize():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.rp = ReactionParameterBlock(default={"property_package": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
     m.fs.cv = ControlVolume0D(default={"property_package": m.fs.pp,

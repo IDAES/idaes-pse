@@ -30,7 +30,7 @@ from idaes.core import (ControlVolume0D,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         MaterialBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
@@ -242,7 +242,7 @@ def _make_heat_exchanger_config(config):
 
 
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
-class HeaterData(UnitBlockData):
+class HeaterData(UnitModelBlockData):
     """
     Simple 0D heater unit.
     Unit model to add or remove heat from a material.
@@ -271,7 +271,7 @@ class HeaterData(UnitBlockData):
 
 @declare_process_block_class("HeatExchanger",
                              doc="Simple 0D heat exchanger model.")
-class HeatExchangerData(UnitBlockData):
+class HeatExchangerData(UnitModelBlockData):
     """
     Simple 0D heat exchange unit.
     Unit model to transfer heat from one material to another.

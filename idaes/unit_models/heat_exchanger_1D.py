@@ -27,13 +27,13 @@ from pyomo.environ import (SolverFactory, Var, Param, Constraint,
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume1D, UnitBlockData,
+from idaes.core import (ControlVolume1D, UnitModelBlockData,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         FlowDirection,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
@@ -45,10 +45,10 @@ _log = logging.getLogger(__name__)
 
 
 @declare_process_block_class("HeatExchanger1D")
-class HeatExchanger1DData(UnitBlockData):
+class HeatExchanger1DData(UnitModelBlockData):
     """Standard Heat Exchanger 1D Unit Model Class."""
 
-    CONFIG = UnitBlockData.CONFIG()
+    CONFIG = UnitModelBlockData.CONFIG()
     # Template for config arguments for shell and tube side
     _SideTemplate = ConfigBlock()
     _SideTemplate.declare("dynamic", ConfigValue(

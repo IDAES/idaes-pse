@@ -27,7 +27,7 @@ from idaes.core import (ControlVolume0D,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.unit_models.separator import Separator, SplittingType
 
@@ -42,7 +42,7 @@ logger = logging.getLogger('idaes.unit_model')
 
 
 @declare_process_block_class("Flash")
-class FlashData(UnitBlockData):
+class FlashData(UnitModelBlockData):
     """
     Standard Flash Unit Model Class
     """

@@ -25,7 +25,7 @@ from idaes.core import (ControlVolume0D,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
@@ -35,7 +35,7 @@ __author__ = "Andrew Lee, Vibhav Dabadghao"
 
 
 @declare_process_block_class("CSTR")
-class CSTRData(UnitBlockData):
+class CSTRData(UnitModelBlockData):
     """
     Standard CSTR Unit Model Class
     """

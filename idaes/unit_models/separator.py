@@ -29,7 +29,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
 from idaes.core import (declare_process_block_class,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
@@ -53,7 +53,7 @@ SplittingType = Enum(
 
 
 @declare_process_block_class("Separator")
-class SeparatorData(UnitBlockData):
+class SeparatorData(UnitModelBlockData):
     """
     This is a general purpose model for a Separator block with the IDAES
     modeling framework. This block can be used either as a stand-alone
@@ -72,7 +72,7 @@ class SeparatorData(UnitBlockData):
     single unit model - in these cases the unit model developer should write
     their own splitting equations.
     """
-    CONFIG = UnitBlockData.CONFIG()
+    CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,

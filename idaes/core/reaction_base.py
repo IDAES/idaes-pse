@@ -38,10 +38,10 @@ __author__ = "Andrew Lee, John Eslick"
 
 __all__ = ['ReactionBlockDataBase',
            'ReactionBlockBase',
-           'ReactionParameterBase']
+           'ReactionParameterBlock']
 
 
-class ReactionParameterBase(ProcessBlockData,
+class ReactionParameterBlock(ProcessBlockData,
                             property_meta.HasPropertyClassMetadata):
     """
         This is the base class for reaction parameter blocks. These are blocks
@@ -69,7 +69,7 @@ class ReactionParameterBase(ProcessBlockData,
         Returns:
             None
         """
-        super(ReactionParameterBase, self).build()
+        super(ReactionParameterBlock, self).build()
 
         # TODO: Need way to tie reaction package to a specfic property package
         self._validate_property_parameter_units()
