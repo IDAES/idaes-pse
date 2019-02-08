@@ -1,7 +1,7 @@
 Product Block
 =============
 
-Product Blocks are used to represent sinks of material in Flowsheets. These can be used as a conventient way to mark the final destination of a matieral stream and to view the state of that material.
+Product Blocks are used to represent sinks of material in Flowsheets. These can be used as a conventient way to mark the final destination of a material stream and to view the state of that material.
 
 Degrees of Freedom
 ------------------
