@@ -165,12 +165,9 @@ Obtain the source code for IDAES from GitHub:
 
     git clone https://github.com/IDAES/idaes.git
 
-Next install the main solver dependencies. You should be in the directory that
-you created with the `git clone` command (by default, called "idaes").
-
-Download and compile the AMPL Solver Library (ASL); this is required to compile
-AMPL user defined functions for steam properties and the cubic equations of state.
-These can be downloaded and compiled in any convenient location.
+Download and compile the AMPL Solver Library (ASL) and external property functions;
+this is required for steam properties and cubic equations of state. This step is
+optional, but highly recommended.
 
 .. code-block:: sh
 
@@ -180,18 +177,7 @@ These can be downloaded and compiled in any convenient location.
     cd solvers
     ./configure
     make
-
-Next export the ASL_BUILD environment variable which tells the IDAES makefile where
-to find the ASL libraries.
-
-.. code-block:: sh
-
     export ASL_BUILD=`pwd`/solvers/sys.x86_64.Linux
-
-Go back to the main IDAES directory and compile the property package external functions.
-
-.. code-block:: sh
-
     cd <IDAES source main directory>
     make
 
@@ -202,14 +188,14 @@ Install the required Python packages:
     pip install -r requirements.txt
     python setup.py develop  # or "install"
 
-Install ipopt.  If you have an HSL license, you may prefere to compile ipopt with HSL support.  Please see the ipopt documation in that case.  Otherwise ipopt can be installed with conda.
+Install ipopt.  If you have an HSL license, you may prefere to compile ipopt with HSL support.  Please see the ipopt documentation (https://projects.coin-or.org/Ipopt) in that case.  Otherwise ipopt can be installed with conda.
 
 .. code-block:: sh
 
     conda install -c conda-forge ipopt
 
 
-At this point, you should be able to launch the Jupyter Notebook server and successfully `run examples <examples.html>`_ from the ``examples`` folder:
+At this point, you should be able to launch the Jupyter Notebook server and successfully `run examples <examples.html>` from the ``examples`` folder:
 
 .. code-block:: sh
 
@@ -224,10 +210,8 @@ but a significant number of more advanced problems will not be handled well. Som
 other solvers you can install that may improve (or make possible) solutions for
 these models are:
 
-    * CPLEX: a linear optimization package from IBM.
-      `Webpage <https://www.ibm.com/analytics/cplex-optimizer`_.
-    * Gurobi: LP/MILP/MIQP, etc., solvers from a company of the same name.
-      `Webpage <http://www.gurobi.com>`_.
+    * CPLEX: a linear optimization package from IBM. https://www.ibm.com/analytics/cplex-optimizer
+    * Gurobi: LP/MILP/MIQP, etc., solvers from a company of the same name. http://www.gurobi.com
 
 .. _IPOPT: https://projects.coin-or.org/Ipopt
 
