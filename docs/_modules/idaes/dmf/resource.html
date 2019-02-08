@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -160,7 +160,7 @@
   <h1>Source code for idaes.dmf.resource</h1><div class="highlight"><pre>
 <span></span><span class="c1">##############################################################################</span>
 <span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
-<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the</span>
 <span class="c1"># software owners: The Regents of the University of California, through</span>
 <span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
 <span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
@@ -168,7 +168,7 @@
 <span class="c1">#</span>
 <span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
 <span class="c1"># license information, respectively. Both files are also available online</span>
-<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes-pse&quot;.</span>
 <span class="c1">##############################################################################</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Resource representaitons.</span>
@@ -380,7 +380,7 @@
 <span class="p">}</span>
 
 
-<div class="viewcode-block" id="Dict"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Dict">[docs]</a><span class="k">class</span> <span class="nc">Dict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Dict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Subclass of dict that has a &#39;dirty&#39; bit.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -391,11 +391,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Dict</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Dict.set_clean"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Dict.set_clean">[docs]</a>    <span class="k">def</span> <span class="nf">set_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">False</span></div>
+    <span class="k">def</span> <span class="nf">set_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span> <span class="o">=</span> <span class="kc">False</span>
 
-<div class="viewcode-block" id="Dict.is_dirty"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Dict.is_dirty">[docs]</a>    <span class="k">def</span> <span class="nf">is_dirty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span></div></div>
+    <span class="k">def</span> <span class="nf">is_dirty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dirty</span>
 
 
 <div class="viewcode-block" id="Resource"><a class="viewcode-back" href="../../../dmf/resource.html#idaes.dmf.resource.Resource">[docs]</a><span class="k">class</span> <span class="nc">Resource</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -465,11 +465,11 @@
                              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">err</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">set_clean</span><span class="p">()</span>
 
-<div class="viewcode-block" id="Resource.validate"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_massage_values</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_validator</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_validations</span> <span class="o">+=</span> <span class="mi">1</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validations</span> <span class="o">+=</span> <span class="mi">1</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -477,8 +477,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ID_FIELD</span><span class="p">]</span>
 
-<div class="viewcode-block" id="Resource.set_id"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.Resource.set_id">[docs]</a>    <span class="k">def</span> <span class="nf">set_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ID_FIELD</span><span class="p">]</span> <span class="o">=</span> <span class="n">identifier_str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">set_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ID_FIELD</span><span class="p">]</span> <span class="o">=</span> <span class="n">identifier_str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -528,7 +528,7 @@
 <span class="n">Triple</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;Triple&#39;</span><span class="p">,</span> <span class="s1">&#39;subject predicate object&#39;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="create_relation"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.create_relation">[docs]</a><span class="k">def</span> <span class="nf">create_relation</span><span class="p">(</span><span class="n">rel</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">create_relation</span><span class="p">(</span><span class="n">rel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create a relationship between two Resource instances.</span>
 
 <span class="sd">    Relations are stored in both the `subject` and `object` resources, in</span>
@@ -565,16 +565,16 @@
     <span class="c1"># note: hard for this to happen unless the relation was added manually</span>
     <span class="k">if</span> <span class="n">rel_d</span> <span class="ow">in</span> <span class="n">rel</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;relations&#39;</span><span class="p">]:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Duplicate relation for object: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rel</span><span class="p">))</span>
-    <span class="n">rel</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;relations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rel_d</span><span class="p">)</span></div>
+    <span class="n">rel</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;relations&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rel_d</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="create_relation_args"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.create_relation_args">[docs]</a><span class="k">def</span> <span class="nf">create_relation_args</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">create_relation_args</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Syntactic sugar to take 3 args instead of a Triple.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">create_relation</span><span class="p">(</span><span class="n">Triple</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="n">create_relation</span><span class="p">(</span><span class="n">Triple</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">))</span>
 
 
-<div class="viewcode-block" id="triple_from_resource_relations"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.triple_from_resource_relations">[docs]</a><span class="k">def</span> <span class="nf">triple_from_resource_relations</span><span class="p">(</span><span class="n">id_</span><span class="p">,</span> <span class="n">rrel</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">triple_from_resource_relations</span><span class="p">(</span><span class="n">id_</span><span class="p">,</span> <span class="n">rrel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create a Triple from one entry in resource[&#39;relations&#39;].</span>
 
 <span class="sd">    Args:</span>
@@ -587,7 +587,7 @@
         <span class="n">rel</span> <span class="o">=</span> <span class="n">Triple</span><span class="p">(</span><span class="n">id_</span><span class="p">,</span> <span class="n">rrel</span><span class="p">[</span><span class="n">RR_PRED</span><span class="p">],</span> <span class="n">rrel</span><span class="p">[</span><span class="n">RR_ID</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">rel</span> <span class="o">=</span> <span class="n">Triple</span><span class="p">(</span><span class="n">rrel</span><span class="p">[</span><span class="n">RR_ID</span><span class="p">],</span> <span class="n">rrel</span><span class="p">[</span><span class="n">RR_PRED</span><span class="p">],</span> <span class="n">id_</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">rel</span></div>
+    <span class="k">return</span> <span class="n">rel</span>
 
 
 <span class="c1">#</span>
@@ -595,7 +595,7 @@
 <span class="c1">#</span>
 
 
-<div class="viewcode-block" id="date_float"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.date_float">[docs]</a><span class="k">def</span> <span class="nf">date_float</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">date_float</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">bad_date</span><span class="p">(</span><span class="n">e</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot convert date &quot;</span><span class="si">{}</span><span class="s1">&quot; to float: </span><span class="si">{}</span><span class="s1">&#39;</span>
                          <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
@@ -621,14 +621,14 @@
             <span class="n">bad_date</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">dt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot convert date, value is &quot;None&quot;&#39;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">datetime_timestamp</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span> <span class="o">+</span> <span class="n">usec</span>  <span class="c1"># just a float</span></div>
+    <span class="k">return</span> <span class="n">datetime_timestamp</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span> <span class="o">+</span> <span class="n">usec</span>  <span class="c1"># just a float</span>
 
 
 <span class="c1"># def isoformat(ts):</span>
 <span class="c1">#     return datetime.fromtimestamp(ts).isoformat()</span>
 
 
-<div class="viewcode-block" id="version_list"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.version_list">[docs]</a><span class="k">def</span> <span class="nf">version_list</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">version_list</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Semantic version.</span>
 
 <span class="sd">    Three numeric identifiers, separated by a dot.</span>
@@ -700,17 +700,17 @@
     <span class="k">if</span> <span class="n">extra</span> <span class="ow">and</span> <span class="n">extra</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;_&#39;</span><span class="p">):</span>
         <span class="n">extra</span> <span class="o">=</span> <span class="n">extra</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
     <span class="n">verlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">extra</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">verlist</span></div>
+    <span class="k">return</span> <span class="n">verlist</span>
 
 
-<div class="viewcode-block" id="format_version"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.format_version">[docs]</a><span class="k">def</span> <span class="nf">format_version</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">format_version</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
     <span class="n">s</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">*</span><span class="n">values</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">values</span><span class="p">[</span><span class="mi">3</span><span class="p">]:</span>
         <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39;-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">s</span></div>
+    <span class="k">return</span> <span class="n">s</span>
 
 
-<div class="viewcode-block" id="identifier_str"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.resource.html#idaes.dmf.resource.identifier_str">[docs]</a><span class="k">def</span> <span class="nf">identifier_str</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">identifier_str</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Unique identifier.</span>
 
 <span class="sd">    Args:</span>
@@ -724,7 +724,7 @@
     <span class="k">elif</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">id_expr</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Bad format for identifier &quot;</span><span class="si">{}</span><span class="s1">&quot;, must match &#39;</span>
                          <span class="s1">&#39;regular exprresion &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">id_expr</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">value</span></div>
+    <span class="k">return</span> <span class="n">value</span>
 </pre></div>
 
            </div>
