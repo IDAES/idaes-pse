@@ -527,7 +527,7 @@ linked the mixed state and all outlet states,
                          doc="Outlet Port")
             setattr(self, o, p_obj)
 
-            # Iteratve over members to create References or Expressions
+            # Iterate over members to create References or Expressions
             for s in s_vars:
                 # Get local variable name of component
                 l_name = s_vars[s].local_name
