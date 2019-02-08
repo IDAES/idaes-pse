@@ -36,8 +36,8 @@ from idaes.core.util.misc import add_object_reference
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
 
-__all__ = ['ReactionBlockDataBase',
-           'ReactionBlockBase',
+__all__ = ['ReactionBlockData',
+           'ReactionBlock',
            'ReactionParameterBlock']
 
 

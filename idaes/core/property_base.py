@@ -29,7 +29,7 @@ from idaes.core.util.exceptions import (PropertyNotSupportedError,
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
 
-__all__ = ['StateBlockDataBase',
+__all__ = ['StateBlockData',
            'StateBlock',
            'PhysicalParameterBlock']
 
