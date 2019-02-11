@@ -49,7 +49,7 @@ class TurbineInletStageData(PressureChangerData):
         self.flow_coeff = Var(self.time_ref, initialize=1.053/3600.0,
             doc="Turbine flow coefficient [kg*C^0.5/Pa/s]")
         self.delta_enth_isentropic = Var(self.time_ref, initialize=-1000,
-            doc="Specific enthalpy change of isentropic process [J/mol/K]")
+            doc="Specific enthalpy change of isentropic process [J/mol]")
         self.blade_reaction = Var(initialize=0.9,
             doc="Blade reaction parameter")
         self.blade_velocity = Var(initialize=110.0,
