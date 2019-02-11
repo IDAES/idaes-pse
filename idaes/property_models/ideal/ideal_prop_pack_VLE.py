@@ -189,6 +189,12 @@ class _IdealStateBlock(StateBlockBase):
                 blk[k].eq_h_vap.activate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
+
+        for k in blk.keys():
+            if (blk[k].config.defined_state is False):
+                blk[k].eq_mol_frac_out.activate()
+
+        results = solve_indexed_blocks(opt, [blk], tee=stee)
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
@@ -210,10 +216,6 @@ class _IdealStateBlock(StateBlockBase):
             return flags
         else:
             blk.release_state(flags)
-
-        for k in blk.keys():
-            if (blk[k].config.defined_state is False):
-                blk[k].eq_mol_frac_out.activate()
 
     def release_state(blk, flags, outlvl=0):
         '''
