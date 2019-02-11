@@ -213,7 +213,7 @@ see property package for documentation.}"""))
 
 def _make_heat_exchanger_config(config):
     """
-    Declare configuration options for HeatExchngerData block.
+    Declare configuration options for HeatExchangerData block.
     """
     config.declare("dynamic", ConfigValue(
         domain=In([True, False, useDefault]),
