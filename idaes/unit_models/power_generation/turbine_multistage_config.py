@@ -54,6 +54,11 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
+    config.declare("num_parallel_inlet_stages", ConfigValue(
+        default=4,
+        domain=int,
+        description="Number of parallel inlet stages to simulate partial arc "
+                    "admission.  Default=4"))
     config.declare("num_hp", ConfigValue(
         default=2,
         domain=int,
