@@ -84,7 +84,9 @@ see property package for documentation.}"""))
                             doc="Material properties in feed",
                             default={
                                 "defined_state": True,
-                                "parameters": self.config.property_package}))
+                                "parameters": self.config.property_package,
+                                "has_phase_equilibrium": False,
+                                **self.config.property_package_args}))
 
         # Add references to all state vars
         s_vars = self.properties[self.time_ref.first()].define_state_vars()
