@@ -29,12 +29,12 @@ from idaes.core.util.exceptions import (PropertyNotSupportedError,
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
 
-__all__ = ['StateBlockDataBase',
-           'StateBlockBase',
-           'PhysicalParameterBase']
+__all__ = ['StateBlockData',
+           'StateBlock',
+           'PhysicalParameterBlock']
 
 
-class PhysicalParameterBase(ProcessBlockData,
+class PhysicalParameterBlock(ProcessBlockData,
                             property_meta.HasPropertyClassMetadata):
     """
         This is the base class for thermophysical parameter blocks. These are
@@ -59,10 +59,10 @@ class PhysicalParameterBase(ProcessBlockData,
         Returns:
             None
         """
-        super(PhysicalParameterBase, self).build()
+        super(PhysicalParameterBlock, self).build()
 
 
-class StateBlockBase(ProcessBlock):
+class StateBlock(ProcessBlock):
     """
         This is the base class for state block objects. These are used when
         constructing the SimpleBlock or IndexedBlock which will contain the

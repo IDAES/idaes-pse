@@ -30,7 +30,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
 from idaes.core import (declare_process_block_class,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
@@ -60,7 +60,7 @@ MomentumMixingType = Enum(
 
 
 @declare_process_block_class("Mixer")
-class MixerData(UnitBlockData):
+class MixerData(UnitModelBlockData):
     """
     This is a general purpose model for a Mixer block with the IDAES modeling
     framework. This block can be used either as a stand-alone Mixer unit
@@ -78,7 +78,7 @@ class MixerData(UnitBlockData):
     in these cases the unit model developer should write their own mixing
     equations.
     """
-    CONFIG = UnitBlockData.CONFIG()
+    CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -197,7 +197,7 @@ linked to all inlet states and the mixed state,
         # Call super.build()
         super(MixerData, self).build()
 
-        # Call setup methods from ControlVolumeBase
+        # Call setup methods from ControlVolumeBlockData
         self._get_property_package()
         self._get_indexing_sets()
 

@@ -34,9 +34,9 @@ from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
-                        PhysicalParameterBase,
+                        PhysicalParameterBlock,
                         StateBlockDataBase,
-                        StateBlockBase)
+                        StateBlock)
 from idaes.core.util.misc import add_object_reference
 
 # Some more inforation about this module
@@ -47,8 +47,8 @@ __author__ = "Andrew Lee"
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("PhysicalParameterBlock")
-class PhysicalParameterData(PhysicalParameterBase):
+@declare_process_block_class("SaponificationParameterBlock")
+class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
 
@@ -62,7 +62,7 @@ class PhysicalParameterData(PhysicalParameterBase):
         '''
         super(PhysicalParameterData, self).build()
 
-        self.state_block_class = StateBlock
+        self.state_block_class = SaponificationStateBlock
 
         # List of valid phases in property package
         self.phase_list = Set(initialize=['Liq'])
@@ -111,7 +111,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                                'holdup': 'mol'})
 
 
-class _StateBlock(StateBlockBase):
+class _StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -247,9 +247,9 @@ class _StateBlock(StateBlockBase):
                 _log.info('{} State Released.'.format(blk.name))
 
 
-@declare_process_block_class("StateBlock",
+@declare_process_block_class("SaponificationStateBlock",
                              block_class=_StateBlock)
-class StateBlockData(StateBlockDataBase):
+class SaponificationStateBlockData(StateBlockDataBase):
     """
     An example property package for properties for saponification of ethyl
     acetate
@@ -259,7 +259,7 @@ class StateBlockData(StateBlockDataBase):
         """
         Callable method for Block construction
         """
-        super(StateBlockData, self).build()
+        super(SaponificationStateBlockData, self).build()
 
         # Create references to package parameters
         # List of valid phases in property package

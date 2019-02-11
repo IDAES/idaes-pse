@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for ControlVolumeBase.
+Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """
@@ -23,8 +23,8 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.core import (FlowsheetBlockData,
                         declare_process_block_class,
-                        PhysicalParameterBase,
-                        StateBlockBase,
+                        PhysicalParameterBlock,
+                        StateBlock,
                         StateBlockDataBase)
 from idaes.unit_models.mixer import (Mixer,
                                      MixerData,
@@ -43,8 +43,8 @@ class _Flowsheet(FlowsheetBlockData):
         super(_Flowsheet, self).build()
 
 
-@declare_process_block_class("PhysicalParameterBlock")
-class _PhysicalParameterBlock(PhysicalParameterBase):
+@declare_process_block_class("PhysicalParameterTestBlock")
+class _PhysicalParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_PhysicalParameterBlock, self).build()
 
@@ -52,7 +52,7 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
         self.component_list = Set(initialize=["c1", "c2"])
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
 
-        self.state_block_class = StateBlock
+        self.state_block_class = TestStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
@@ -65,7 +65,7 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
                                'holdup': 'mol'})
 
 
-class SBlockBase(StateBlockBase):
+class SBlockBase(StateBlock):
     def initialize(blk, outlvl=0, optarg=None, solver=None,
                    hold_state=False, **state_args):
         for k in blk.keys():
@@ -77,12 +77,12 @@ class SBlockBase(StateBlockBase):
             blk[k].hold_state = not blk[k].hold_state
 
 
-@declare_process_block_class("StateBlock", block_class=SBlockBase)
-class StateBlockData(StateBlockDataBase):
+@declare_process_block_class("TestStateBlock", block_class=SBlockBase)
+class StateTestBlockData(StateBlockDataBase):
     CONFIG = ConfigBlock(implicit=True)
 
     def build(self):
-        super(StateBlockData, self).build()
+        super(StateTestBlockData, self).build()
 
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"])
@@ -123,7 +123,7 @@ class MixerFrameData(MixerData):
 def test_mixer_config():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
 
@@ -145,7 +145,7 @@ def test_mixer_config():
 def test_inherited_methods():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
 
@@ -159,7 +159,7 @@ def test_inherited_methods():
 def test_create_inlet_list_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
 
@@ -175,7 +175,7 @@ def test_create_inlet_list_default():
 def test_create_inlet_list_inlet_list():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "inlet_list": ["foo", "bar"]})
@@ -192,7 +192,7 @@ def test_create_inlet_list_inlet_list():
 def test_create_inlet_list_num_inlets():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "num_inlets": 3})
@@ -209,7 +209,7 @@ def test_create_inlet_list_num_inlets():
 def test_create_inlet_list_both_args_consistent():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "inlet_list": ["foo", "bar"],
@@ -227,7 +227,7 @@ def test_create_inlet_list_both_args_consistent():
 def test_create_inlet_list_both_args_inconsistent():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "inlet_list": ["foo", "bar"],
@@ -243,7 +243,7 @@ def test_create_inlet_list_both_args_inconsistent():
 def test_add_inlet_state_blocks():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "inlet_list": ["foo", "bar"]})
@@ -254,12 +254,12 @@ def test_add_inlet_state_blocks():
     inlet_list = m.fs.mix.create_inlet_list()
     inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
 
-    assert isinstance(m.fs.mix.foo_state, StateBlockBase)
-    assert isinstance(m.fs.mix.bar_state, StateBlockBase)
+    assert isinstance(m.fs.mix.foo_state, StateBlock)
+    assert isinstance(m.fs.mix.bar_state, StateBlock)
 
     assert len(inlet_blocks) == 2
     for i in inlet_blocks:
-        assert isinstance(i, StateBlockBase)
+        assert isinstance(i, StateBlock)
         assert i.local_name in ["foo_state", "bar_state"]
         assert i[0].config.has_phase_equilibrium is False
         assert i[0].config.defined_state is True
@@ -269,7 +269,7 @@ def test_add_inlet_state_blocks():
 def test_add_inlet_state_blocks_prop_pack_args():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "property_package_args": {"test": 1},
@@ -281,12 +281,12 @@ def test_add_inlet_state_blocks_prop_pack_args():
     inlet_list = m.fs.mix.create_inlet_list()
     inlet_blocks = m.fs.mix.add_inlet_state_blocks(inlet_list)
 
-    assert isinstance(m.fs.mix.foo_state, StateBlockBase)
-    assert isinstance(m.fs.mix.bar_state, StateBlockBase)
+    assert isinstance(m.fs.mix.foo_state, StateBlock)
+    assert isinstance(m.fs.mix.bar_state, StateBlock)
 
     assert len(inlet_blocks) == 2
     for i in inlet_blocks:
-        assert isinstance(i, StateBlockBase)
+        assert isinstance(i, StateBlock)
         assert i.local_name in ["foo_state", "bar_state"]
         assert i[0].config.has_phase_equilibrium is False
         assert i[0].config.defined_state is True
@@ -297,7 +297,7 @@ def test_add_inlet_state_blocks_prop_pack_args():
 def test_add_mixed_state_block():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
 
@@ -306,7 +306,7 @@ def test_add_mixed_state_block():
 
     mixed_block = m.fs.mix.add_mixed_state_block()
 
-    assert isinstance(mixed_block, StateBlockBase)
+    assert isinstance(mixed_block, StateBlock)
     assert hasattr(m.fs.mix, "mixed_state")
     assert m.fs.mix.mixed_state[0].config.has_phase_equilibrium is False
     assert m.fs.mix.mixed_state[0].config.defined_state is False
@@ -316,7 +316,7 @@ def test_add_mixed_state_block():
 def test_add_mixed_state_block_prop_pack_args():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "property_package_args": {"test": 1}})
@@ -326,7 +326,7 @@ def test_add_mixed_state_block_prop_pack_args():
 
     mixed_block = m.fs.mix.add_mixed_state_block()
 
-    assert isinstance(mixed_block, StateBlockBase)
+    assert isinstance(mixed_block, StateBlock)
     assert hasattr(m.fs.mix, "mixed_state")
     assert m.fs.mix.mixed_state[0].config.has_phase_equilibrium is False
     assert m.fs.mix.mixed_state[0].config.defined_state is False
@@ -337,8 +337,8 @@ def test_add_mixed_state_block_prop_pack_args():
 def test_get_mixed_state_block():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb})
@@ -354,8 +354,8 @@ def test_get_mixed_state_block():
 def test_get_mixed_state_block_none():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
 
@@ -369,8 +369,8 @@ def test_get_mixed_state_block_none():
 def test_get_mixed_state_block_mismatch():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     # Change parameters arg to create mismatch
     m.fs.sb[0].config.parameters = None
@@ -389,8 +389,8 @@ def test_get_mixed_state_block_mismatch():
 def test_add_material_mixing_equations():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb})
@@ -411,8 +411,8 @@ def test_add_material_mixing_equations():
 def test_add_material_mixing_equations_equilibrium():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb,
@@ -436,9 +436,9 @@ def test_add_material_mixing_equations_equilibrium():
 def test_add_material_mixing_equations_equilibrium_not_supported():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb,
@@ -458,9 +458,9 @@ def test_add_material_mixing_equations_equilibrium_not_supported():
 def test_add_energy_mixing_equations():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb,
@@ -482,9 +482,9 @@ def test_add_energy_mixing_equations():
 def test_add_pressure_minimization_equations():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb,
@@ -511,9 +511,9 @@ def test_add_pressure_minimization_equations():
 def test_add_pressure_equality_equations():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb,
@@ -535,7 +535,7 @@ def test_add_pressure_equality_equations():
 def test_add_port_objects():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
 
@@ -556,7 +556,7 @@ def test_add_port_objects():
 def test_add_port_objects_construct_ports_False():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "construct_ports": False})
@@ -580,7 +580,7 @@ def test_add_port_objects_construct_ports_False():
 def test_build_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = Mixer(default={"property_package": m.fs.pp})
 
@@ -607,7 +607,7 @@ def test_build_default():
 def test_build_phase_equilibrium():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = Mixer(default={"property_package": m.fs.pp,
                               "calculate_phase_equilibrium": True})
@@ -636,7 +636,7 @@ def test_build_phase_equilibrium():
 def test_build_phase_pressure_equality():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = Mixer(default={
             "property_package": m.fs.pp,
@@ -661,7 +661,7 @@ def test_build_phase_pressure_equality():
 def test_model_checks():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = Mixer(default={
             "property_package": m.fs.pp,
@@ -677,8 +677,8 @@ def test_model_checks():
 def test_initialize():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.mix = Mixer(default={
             "property_package": m.fs.pp,
