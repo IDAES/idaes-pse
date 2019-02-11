@@ -23,7 +23,7 @@ clean: iapws95_clean cubic_eos_clean
 docs: docs_html
 
 docs_html:
-	$(MAKE) -C ./docs html
+	$(MAKE) -C ./docs_rst html
 
 docs_clean:
-	$(MAKE) -C ./docs clean
+	$(MAKE) -C ./docs_rst clean
