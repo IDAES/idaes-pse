@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -160,7 +160,7 @@
   <h1>Source code for idaes.core.control_volume1d</h1><div class="highlight"><pre>
 <span></span><span class="c1">##############################################################################</span>
 <span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
-<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the</span>
 <span class="c1"># software owners: The Regents of the University of California, through</span>
 <span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
 <span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
@@ -168,7 +168,7 @@
 <span class="c1">#</span>
 <span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
 <span class="c1"># license information, respectively. Both files are also available online</span>
-<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes-pse&quot;.</span>
 <span class="c1">##############################################################################</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Base class for control volumes</span>
@@ -178,6 +178,7 @@
 
 <span class="c1"># Import Python libraries</span>
 <span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">copy</span>
 
 <span class="c1"># Import Pyomo libraries</span>
 <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="p">(</span><span class="n">Constraint</span><span class="p">,</span>
@@ -326,28 +327,28 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">def</span> <span class="nf">property_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-            <span class="n">fd</span> <span class="o">=</span> <span class="n">information_flow</span>
-            <span class="n">cfg_dict</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">parent_component</span><span class="p">()</span><span class="o">.</span><span class="n">_block_data_config_initialize</span>
-            <span class="n">cfg_dict</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">x</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">package_arguments</span><span class="p">:</span>
-                <span class="n">cfg_dict</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">x</span><span class="p">][</span><span class="n">a</span><span class="p">]</span> <span class="o">=</span> <span class="n">package_arguments</span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
-            <span class="n">cfg_dict</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;has_phase_equilibrium&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">has_phase_equilibrium</span>
-            <span class="n">cfg_dict</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span>
-
-            <span class="k">if</span> <span class="n">fd</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">forward</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">first</span><span class="p">():</span>
-                <span class="n">cfg_dict</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;defined_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">elif</span> <span class="n">fd</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">backward</span> <span class="ow">and</span> <span class="n">x</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">last</span><span class="p">():</span>
-                <span class="n">cfg_dict</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;defined_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="c1"># d0 is config for defined state d1 is config for not defined state</span>
+        <span class="n">d0</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">package_arguments</span><span class="p">)</span>
+        <span class="n">d0</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">has_phase_equilibrium</span><span class="o">=</span><span class="n">has_phase_equilibrium</span><span class="p">,</span>
+                  <span class="n">parameters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="p">,</span>
+                  <span class="n">defined_state</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">d1</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">d0</span><span class="p">)</span>
+        <span class="n">d1</span><span class="p">[</span><span class="s2">&quot;defined_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">def</span> <span class="nf">idx_map</span><span class="p">(</span><span class="n">i</span><span class="p">):</span> <span class="c1"># i = (t, x)</span>
+            <span class="k">if</span> <span class="n">information_flow</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">forward</span> <span class="ow">and</span> \
+                <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">first</span><span class="p">():</span>
+                <span class="k">return</span> <span class="mi">0</span>
+            <span class="k">elif</span> <span class="n">information_flow</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">backward</span> <span class="ow">and</span> \
+                <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">last</span><span class="p">():</span>
+                <span class="k">return</span> <span class="mi">0</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">cfg_dict</span><span class="p">[</span><span class="n">t</span><span class="p">,</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;defined_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="n">b</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
-
+                <span class="k">return</span> <span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">properties</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="o">.</span><span class="n">state_block_class</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">length_domain</span><span class="p">,</span>
             <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Material properties&quot;</span><span class="p">,</span>
-            <span class="n">rule</span><span class="o">=</span><span class="n">property_rule</span><span class="p">)</span></div>
+            <span class="n">initialize</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">:</span><span class="n">d0</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="n">d1</span><span class="p">},</span>
+            <span class="n">idx_map</span><span class="o">=</span><span class="n">idx_map</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ControlVolume1dData.add_reaction_blocks"><a class="viewcode-back" href="../../../core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_reaction_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_reaction_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                             <span class="n">has_equilibrium</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -1722,7 +1723,7 @@
 <span class="sd">            finite_elements - number of finite elements to use in</span>
 <span class="sd">                              transformation (equivalent to Pyomo nfe argument,</span>
 <span class="sd">                              default = 10)</span>
-<span class="sd">            collocation_points - number of collocation points to use (equivalent </span>
+<span class="sd">            collocation_points - number of collocation points to use (equivalent</span>
 <span class="sd">                                 to Pyomo ncp argument, default = 3)</span>
 
 <span class="sd">        Returns:</span>
