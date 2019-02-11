@@ -88,22 +88,36 @@ see property package for documentation.}"""))
         description="Locations of splitter in LP section",
         doc="A list of index locations of splitters in the LP section. The "
             "indexes indicate after which stage to include splitters."))
-    config.declare("hp_mix_locations", ConfigList(
+    config.declare("hp_disconnect", ConfigList(
         default=[],
         domain=int,
-        description="Locations of mixers in HP section",
-        doc="A list of index locations of mixers in the HP section. The "
-            "indexes indicate after which stages to include mixers.  0 is "
-            "between the inlet stage and the first regular HP stage."))
-    config.declare("ip_mix_locations", ConfigList(
+        description="HP Turbine stages to not connect to next with an arc.",
+        doc="HP Turbine stages to not connect to next with an arc. This is "
+            "usually used to insert addtional units between stages on a "
+            "flowsheet, such as a reheater"))
+    config.declare("ip_disconnect", ConfigList(
         default=[],
         domain=int,
-        description="Locations of mixers in IP section",
-        doc="A list of index locations of mixers in the IP section. The "
-            "indexes indicate after which stages to include mixers."))
-    config.declare("lp_mix_locations", ConfigList(
+        description="IP Turbine stages to not connect to next with an arc.",
+        doc="IP Turbine stages to not connect to next with an arc. This is "
+            "usually used to insert addtional units between stages on a "
+            "flowsheet, such as a reheater"))
+    config.declare("lp_disconnect", ConfigList(
         default=[],
         domain=int,
-        description="Locations of mixers in LP section",
-        doc="A list of index locations of mixers in the LP section. The "
-            "indexes indicate after which stages to include mixers."))
+        description="LP Turbine stages to not connect to next with an arc.",
+        doc="LP Turbine stages to not connect to next with an arc. This is "
+            "usually used to insert addtional units between stages on a "
+            "flowsheet, such as a reheater"))
+    config.declare("hp_split_num_outlets", ConfigValue(
+        default={},
+        domain=dict,
+        description="Dict, hp split index: number of splitter outlets"))
+    config.declare("ip_split_num_outlets", ConfigValue(
+        default={},
+        domain=dict,
+        description="Dict, ip split index: number of splitter outlets"))
+    config.declare("lp_split_num_outlets", ConfigValue(
+        default={},
+        domain=dict,
+        description="Dict, lp split index: number of splitter outlets"))

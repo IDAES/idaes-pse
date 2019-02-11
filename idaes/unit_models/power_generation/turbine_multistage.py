@@ -71,16 +71,5 @@ class TurbineMultistageData(UnitBlockData):
         if config.lp_split_locations:
             self.lp_split = Separator(config.lp_split_locations, default=s_cfg)
 
-        # put in mixers (mostly for reheat return)
-        m_cfg = copy.copy(unit_cfg) # mixer config based on unit_cfg
-        del m_cfg["has_holdup"]
-        del m_cfg["has_phase_equilibrium"]
-        if config.hp_mix_locations:
-            self.hp_mix = Mixer(config.hp_mix_locations, default=m_cfg)
-        if config.ip_mix_locations:
-            self.ip_mix = Mixer(config.ip_mix_locations, default=m_cfg)
-        if config.lp_mix_locations:
-            self.lp_mix = Mixer(config.lp_mix_locations, default=m_cfg)
-
         #m.fs.stream = Arc(source=m.fs.Tank1.outlet[0],
         #          destination=m.fs.Tank2.inlet[0])

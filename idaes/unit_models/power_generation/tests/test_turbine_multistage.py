@@ -43,10 +43,7 @@ def build_turbine_for_buid_test():
         "property_package": m.fs.properties,
         "hp_split_locations": [0],
         "ip_split_locations": [1,2],
-        "lp_split_locations": [3,4],
-        "hp_mix_locations": [0],
-        "ip_mix_locations": [1,2],
-        "lp_mix_locations": [3,4]})
+        "lp_split_locations": [3,4]})
     return m
 
 def test_basic_build(build_turbine_for_buid_test):
@@ -61,9 +58,6 @@ def test_basic_build(build_turbine_for_buid_test):
     assert(isinstance(turb.hp_split, Separator))
     assert(isinstance(turb.ip_split, Separator))
     assert(isinstance(turb.lp_split, Separator))
-    assert(isinstance(turb.hp_mix, Mixer))
-    assert(isinstance(turb.ip_mix, Mixer))
-    assert(isinstance(turb.lp_mix, Mixer))
     assert(0 not in turb.hp_stages)
     assert(1 in turb.hp_stages)
     assert(2 in turb.hp_stages)
@@ -81,8 +75,3 @@ def test_basic_build(build_turbine_for_buid_test):
     assert(2 in turb.ip_split)
     assert(3 in turb.lp_split)
     assert(4 in turb.lp_split)
-    assert(0 in turb.hp_mix)
-    assert(1 in turb.ip_mix)
-    assert(2 in turb.ip_mix)
-    assert(3 in turb.lp_mix)
-    assert(4 in turb.lp_mix)
