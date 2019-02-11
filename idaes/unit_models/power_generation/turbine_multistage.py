@@ -51,11 +51,10 @@ class TurbineMultistageData(UnitBlockData):
             "property_package":config.property_package,
             "property_package_args":config.property_package_args,
         }
+        # add inlet stage
         self._add_inlet_stage(unit_cfg)
-
         # add turbine stages.
         # inlet stage -> hp stages -> ip stages -> lp stages -> outlet stage
-
         self.hp_stages = TurbineStage(RangeSet(config.num_hp), default=unit_cfg)
         self.ip_stages = TurbineStage(RangeSet(config.num_ip), default=unit_cfg)
         self.lp_stages = TurbineStage(RangeSet(config.num_lp), default=unit_cfg)
@@ -77,6 +76,8 @@ class TurbineMultistageData(UnitBlockData):
         self.hp_stream_idx = Set(initialize=self.hp_stages.index_set()*[1,2])
         self.ip_stream_idx = Set(initialize=self.ip_stages.index_set()*[1,2])
         self.lp_stream_idx = Set(initialize=self.lp_stages.index_set()*[1,2])
+
+        # connect inlet mixer to 
 
         # okay I'm gonna talk about arcs here. They are the Pyomo components
         # used to make the material streams, this has nothing to do with the
@@ -206,7 +207,7 @@ class TurbineMultistageData(UnitBlockData):
                 "destination":self.inlet_stage[i].inlet[0]}
         def _inlet_to_rule(b, i):
             return {"source":self.inlet_stage[i].outlet[0],
-                "destination":getattr( self.inlet_mix, "inlet_{}".format(i))[0]}
+                "destination":getattr(self.inlet_mix, "inlet_{}".format(i))[0]}
 
         self.split_to_inlet_stage_stream = Arc(RangeSet(ni), rule=_split_to_rule)
         self.inlet_stage_to_mix = Arc(RangeSet(ni), rule=_inlet_to_rule)
