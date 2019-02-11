@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -160,7 +160,7 @@
   <h1>Source code for idaes.core.process_block</h1><div class="highlight"><pre>
 <span></span><span class="c1">##############################################################################</span>
 <span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
-<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the</span>
 <span class="c1"># software owners: The Regents of the University of California, through</span>
 <span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
 <span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
@@ -168,7 +168,7 @@
 <span class="c1">#</span>
 <span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
 <span class="c1"># license information, respectively. Both files are also available online</span>
-<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes-pse&quot;.</span>
 <span class="c1">##############################################################################</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">The process_block module simplifies inheritance of Pyomo blocks. The main</span>
@@ -180,6 +180,8 @@
 
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">from</span> <span class="nn">pyomo.common.config</span> <span class="k">import</span> <span class="n">ConfigBlock</span>
 <span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="n">Block</span>
 
 <span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;John Eslick&quot;</span>
@@ -199,7 +201,6 @@
             <span class="s2">&quot;Failure in build: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
         <span class="k">raise</span> <span class="n">e</span>
 
-
 <span class="n">_process_block_docstring</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">    Args:</span>
 <span class="s2">        rule (function): A rule function or None. Default rule calls build().</span>
@@ -209,9 +210,14 @@
 <span class="s2">        initialize (dict): ProcessBlockData config for individual elements. Keys</span>
 <span class="s2">            are BlockData indexes and values are dictionaries described under the</span>
 <span class="s2">            &quot;default&quot; argument above.</span>
+<span class="s2">        idx_map (function): Function to take the index of a BlockData element and</span>
+<span class="s2">            return the index in the initialize dict from which to read arguments.</span>
+<span class="s2">            This can be provided to overide the default behavior of matching the</span>
+<span class="s2">            BlockData index exactly to the index in initialize.</span>
 <span class="s2">    Returns:</span>
 <span class="s2">        (</span><span class="si">{}</span><span class="s2">) New instance</span>
 <span class="s2">    &quot;&quot;&quot;</span>
+
 <span class="n">_config_block_keys_docstring</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 
 <span class="s2">            ..</span>
@@ -221,17 +227,20 @@
 <span class="s2">            ..</span>
 <span class="s2">&quot;&quot;&quot;</span>
 
+<span class="k">def</span> <span class="nf">_process_kwargs</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;rule&quot;</span><span class="p">,</span> <span class="n">_rule_default</span><span class="p">)</span>
+    <span class="n">o</span><span class="o">.</span><span class="n">_block_data_config_default</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">o</span><span class="o">.</span><span class="n">_block_data_config_initialize</span> <span class="o">=</span> <span class="n">ConfigBlock</span><span class="p">(</span><span class="n">implicit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">o</span><span class="o">.</span><span class="n">_block_data_config_initialize</span><span class="o">.</span><span class="n">set_value</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;initialize&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+    <span class="n">o</span><span class="o">.</span><span class="n">_idx_map</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;idx_map&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
 
 <span class="k">class</span> <span class="nc">_IndexedProcessBlockMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Metaclass used to create an indexed model class.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">meta</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">):</span>
         <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;rule&quot;</span><span class="p">,</span> <span class="n">_rule_default</span><span class="p">)</span>
-            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="p">{})</span>
-            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;initialize&quot;</span><span class="p">,</span> <span class="p">{})</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_block_data_config_default</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_block_data_config_initialize</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;initialize&quot;</span><span class="p">)</span>
+            <span class="n">_process_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
             <span class="n">bases</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">dct</span><span class="p">[</span><span class="s2">&quot;__init__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="fm">__init__</span>
         <span class="n">dct</span><span class="p">[</span><span class="s2">&quot;__process_block__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;indexed&quot;</span>
@@ -243,11 +252,7 @@
 
     <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">meta</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">bases</span><span class="p">,</span> <span class="n">dct</span><span class="p">):</span>
         <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;rule&quot;</span><span class="p">,</span> <span class="n">_rule_default</span><span class="p">)</span>
-            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="p">{})</span>
-            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;initialize&quot;</span><span class="p">,</span> <span class="p">{})</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_block_data_config_default</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_block_data_config_initialize</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;initialize&quot;</span><span class="p">)</span>
+            <span class="n">_process_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
             <span class="n">bases</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
             <span class="n">bases</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">dct</span><span class="p">[</span><span class="s2">&quot;__init__&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="fm">__init__</span>
