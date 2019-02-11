@@ -51,10 +51,11 @@ class TurbineMultistageData(UnitBlockData):
             "property_package":config.property_package,
             "property_package_args":config.property_package_args,
         }
+        self._add_inlet_stage(unit_cfg)
 
         # add turbine stages.
         # inlet stage -> hp stages -> ip stages -> lp stages -> outlet stage
-        self.inlet_stage = TurbineInletStage(default=unit_cfg)
+
         self.hp_stages = TurbineStage(RangeSet(config.num_hp), default=unit_cfg)
         self.ip_stages = TurbineStage(RangeSet(config.num_ip), default=unit_cfg)
         self.lp_stages = TurbineStage(RangeSet(config.num_lp), default=unit_cfg)
@@ -132,24 +133,32 @@ class TurbineMultistageData(UnitBlockData):
         self.lp_stream = Arc(self.lp_stream_idx, rule=
             _arc_rule(config.hp_split_locations, self.lp_stages, self.lp_split))
 
+        conf = config
         if 0 not in conf.ip_disconnect and conf.num_hp not in conf.hp_disconnect:
             #connect hp section to the lp section
-            last_hp = self.hp_stages[-1]
-            if last_hp in config.kp_split_locations: # connect splitter to ip
+            last_hp = conf.num_hp
+            if last_hp in config.hp_split_locations: # connect splitter to ip
                 self.hp_to_ip_stream = Arc(
-                    
-                )
+                    source=self.hp_split[last_hp].outlet_1[0],
+                    destination=self.ip_stages[1].inlet[0])
             else: # connect last hp to ip
-                self.hp_to_ip_stream = Arc()
+                self.hp_to_ip_stream = Arc(
+                    source=self.hp_stages[last_hp].outlet[0],
+                    destination=self.ip_stages[1].inlet[0])
         if 0 not in conf.lp_disconnect and conf.num_ip not in conf.ip_disconnect:
             #connect ip section to the lp section
-            last_ip = self.ip_stages[-1]
-
-            self.ip_to_lp_stream =
-            self.ip_to_lp_stream =
+            last_ip = conf.num_ip
+            if last_ip in config.ip_split_locations: # connect splitter to ip
+                self.ip_to_lp_stream = Arc(
+                    source=self.ip_split[last_ip].outlet_1[0],
+                    destination=self.lp_stages[1].inlet[0])
+            else: # connect last hp to ip
+                self.ip_to_lp_stream = Arc(
+                    source=self.ip_stages[last_ip].outlet[0],
+                    destination=self.lp_stages[1].inlet[0])
         # you are not allowed to stick stuff between the inlet stage and hp
         # or the last lp stage and the outlet stage.  So connect those
-        last_lp = self.lp_stages[-1]
+        last_lp = conf.num_lp
         if last_lp in config.lp_split_locations: # connect splitter to outlet
             self.lp_to_outlet_stream = Arc(
                 source=self.lp_split[last_lp].outlet_1[0],
@@ -158,3 +167,46 @@ class TurbineMultistageData(UnitBlockData):
             self.lp_to_outlet_stream = Arc(
                 source=self.lp_stages[last_lp].outlet[0],
                 destination=self.outlet_stage.inlet[0])
+
+    def _add_inlet_stage(self, unit_cfg):
+        """
+        Add parallel turbine inlet stage models to simulate partial arc
+        addmission.  This includes a splitter mixer and a control valve before
+        each stage.  (TODO add throttel valves once a valve model is available
+        from the basic framework models.)
+
+        Args:
+            unit_cfg: The base unit config dict.
+        """
+        ni = self.config.num_parallel_inlet_stages
+
+        # Splitter config
+        s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
+        s_cfg.update(split_basis=SplittingType.totalFlow,
+            ideal_separation=False, num_outlets=ni)
+        del s_cfg["has_holdup"]
+        del s_cfg["has_phase_equilibrium"]
+
+        # Mixer config
+        m_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
+        m_cfg.update(num_inlets=ni)
+        del m_cfg["has_holdup"]
+        del m_cfg["has_phase_equilibrium"]
+
+        # Add all the units
+        self.inlet_split = Separator(default=s_cfg)
+        self.inlet_mix = Mixer(default=m_cfg)
+        #TODO<jce> Add throttel valves for each inlet stage
+        self.inlet_stage = TurbineInletStage(RangeSet(ni), default=unit_cfg)
+
+        # Add connections
+        # TODO<jce> when framework is updated fix indexing
+        def _split_to_rule(b, i):
+            return {"source":getattr(self.inlet_split, "outlet_{}".format(i))[0],
+                "destination":self.inlet_stage[i].inlet[0]}
+        def _inlet_to_rule(b, i):
+            return {"source":self.inlet_stage[i].outlet[0],
+                "destination":getattr( self.inlet_mix, "inlet_{}".format(i))[0]}
+
+        self.split_to_inlet_stage_stream = Arc(RangeSet(ni), rule=_split_to_rule)
+        self.inlet_stage_to_mix = Arc(RangeSet(ni), rule=_inlet_to_rule)
