@@ -62,6 +62,6 @@ def test_initialize(build_turbine):
     m.fs.turb.inlet[:].flow_mol.value = 15000
     m.fs.turb.inlet[:].pressure.value = 8e4
 
-    m.fs.turb.initialize(outlvl=4)
+    m.fs.turb.initialize(outlvl=4) # need to test this initialized properly
     m.display()
     assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be

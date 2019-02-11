@@ -109,7 +109,7 @@ class TurbineInletStageData(PressureChangerData):
             return b.power_thermo[t]*b.efficiency_mech
 
     def initialize(self, state_args={}, outlvl=0, solver='ipopt',
-        optarg={'tol': 1e-6}):
+        optarg={'tol': 1e-6, 'max_iter':30}):
         """
         Initialize the inlet turbine stage model.  This deactivates the
         specialized constraints, then does the isentropic turbine initialization,
