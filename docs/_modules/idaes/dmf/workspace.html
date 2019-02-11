@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -160,7 +160,7 @@
   <h1>Source code for idaes.dmf.workspace</h1><div class="highlight"><pre>
 <span></span><span class="c1">##############################################################################</span>
 <span class="c1"># Institute for the Design of Advanced Energy Systems Process Systems</span>
-<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the</span>
+<span class="c1"># Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the</span>
 <span class="c1"># software owners: The Regents of the University of California, through</span>
 <span class="c1"># Lawrence Berkeley National Laboratory,  National Technology &amp; Engineering</span>
 <span class="c1"># Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia</span>
@@ -168,7 +168,7 @@
 <span class="c1">#</span>
 <span class="c1"># Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and</span>
 <span class="c1"># license information, respectively. Both files are also available online</span>
-<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes&quot;.</span>
+<span class="c1"># at the URL &quot;https://github.com/IDAES/idaes-pse&quot;.</span>
 <span class="c1">##############################################################################</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Workspace classes and functions.</span>
@@ -220,11 +220,11 @@
 <span class="p">}</span>
 
 
-<div class="viewcode-block" id="Fields"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Fields">[docs]</a><span class="k">class</span> <span class="nc">Fields</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Fields</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Workspace configuration fields.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">DOC_HTML_PATH</span> <span class="o">=</span> <span class="s1">&#39;htmldocs&#39;</span>  <span class="c1"># path to documentation html dir</span>
-    <span class="n">LOG_CONF</span> <span class="o">=</span> <span class="s1">&#39;logging&#39;</span>  <span class="c1"># logging config</span></div>
+    <span class="n">LOG_CONF</span> <span class="o">=</span> <span class="s1">&#39;logging&#39;</span>  <span class="c1"># logging config</span>
 
 
 <div class="viewcode-block" id="Workspace"><a class="viewcode-back" href="../../../dmf/workspace.html#idaes.dmf.workspace.Workspace">[docs]</a><span class="k">class</span> <span class="nc">Workspace</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -516,7 +516,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CONF_DESC</span><span class="p">,</span> <span class="s1">&#39;none&#39;</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="WorkspaceConfig"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.WorkspaceConfig">[docs]</a><span class="k">class</span> <span class="nc">WorkspaceConfig</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">WorkspaceConfig</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="n">DEFAULTS</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;string&#39;</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
                 <span class="s1">&#39;number&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
                 <span class="s1">&#39;boolean&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
@@ -525,7 +525,7 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_schema</span> <span class="o">=</span> <span class="n">jsonschema</span><span class="o">.</span><span class="n">Draft4Validator</span><span class="p">(</span><span class="n">CONFIG_SCHEMA</span><span class="p">)</span>
 
-<div class="viewcode-block" id="WorkspaceConfig.get_fields"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.WorkspaceConfig.get_fields">[docs]</a>    <span class="k">def</span> <span class="nf">get_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">only_defaults</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">get_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">only_defaults</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get all possible metadata fields for workspace config.</span>
 
 <span class="sd">        These values come out of the configuration schema.</span>
@@ -577,10 +577,10 @@
                 <span class="n">default_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULTS</span><span class="p">[</span><span class="n">type_</span><span class="p">]</span>
             <span class="n">result</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">desc</span><span class="p">,</span> <span class="n">default_value</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">result</span></div></div>
+        <span class="k">return</span> <span class="n">result</span>
 
 
-<div class="viewcode-block" id="find_workspaces"><a class="viewcode-back" href="../../../apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.find_workspaces">[docs]</a><span class="k">def</span> <span class="nf">find_workspaces</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">find_workspaces</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Find workspaces at or below &#39;root&#39;.</span>
 
 <span class="sd">    Args:</span>
@@ -601,7 +601,7 @@
     <span class="c1"># also try root itself</span>
     <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">Workspace</span><span class="o">.</span><span class="n">WORKSPACE_CONFIG</span><span class="p">)):</span>
         <span class="n">w</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">root</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">w</span></div>
+    <span class="k">return</span> <span class="n">w</span>
 </pre></div>
 
            </div>
