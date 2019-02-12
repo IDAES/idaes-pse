@@ -90,8 +90,8 @@ Expressions
 =========================== ========================= =========== ======================================================================
 Variable                    Symbol                    Index Sets  Doc
 =========================== ========================= =========== ======================================================================
-``power_thermo``            :math:`\dot{w_{thermo}}`  time        Turbine stage power output not including mechanical loss [W]
-``power_shaft``             :math:`\dot{w_{shaft}}`   time        Turbine stage power output including mechanical loss (bearings...) [W]
+``power_thermo``            :math:`\dot{w}_{thermo}`  time        Turbine stage power output not including mechanical loss [W]
+``power_shaft``             :math:`\dot{w}_{shaft}`   time        Turbine stage power output including mechanical loss (bearings...) [W]
 ``steam_entering_velocity`` :math:`V_0`               time        Steam velocity entering stage [m/s]
 =========================== ========================= =========== ======================================================================
 
