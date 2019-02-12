@@ -8,7 +8,7 @@ Turbine (Outlet Stage)
 
 This is a steam power generation turbine model for the outlet stage. The turbine outlet model is based on:
 
-Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission for Use in a Process Simulation Software Environment." Journal of Engineering for Gas Turbines and Power. v136, November
+Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission for Use in a Process Simulation Software Environment." Journal of Engineering for Gas Turbines and Power. v136.
 
 
 Example
