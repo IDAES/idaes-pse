@@ -9,7 +9,7 @@ Turbine (Inlet Stage)
 This is a steam power generation turbine model for the inlet stage.
 The turbine inlet model is based on:
 
-Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission for Use in a Process Simulation Software Environment." Journal of Engineering for Gas Turbines and Power. v136, November
+Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission for Use in a Process Simulation Software Environment." Journal of Engineering for Gas Turbines and Power. v136.
 
 
 Example
@@ -44,7 +44,7 @@ Degrees of Freedom
 ------------------
 
 Usually the inlet stream, or the inlet stream minus flow rate plus discharge
-pressure are fixed. The are also a few variables which are turbine parameters
+pressure are fixed. There are also a few variables which are turbine parameters
 and are usually fixed.  See the variables section for more information.
 
 Model Structure
@@ -57,8 +57,8 @@ inherits the :ref:`PressureChanger model
 
 Variables
 ---------
-The variables below are defined int the TurbineInletStage model. Additional variables
-are in inherited from the :ref:`PressureChanger model
+The variables below are defined in the TurbineInletStage model. Additional variables
+are inherited from the :ref:`PressureChanger model
 <models/pressure_changer:Pressure Changer>` model.
 
 =========================== ======================== =========== ======================================================================
