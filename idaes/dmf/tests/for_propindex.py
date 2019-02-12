@@ -10,10 +10,10 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from idaes.core.property_base import PhysicalParameterBase
+from idaes.core.property_base import PhysicalParameterBlock
 
 
-class IndexMePlease1(PhysicalParameterBase):
+class IndexMePlease1(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, m):

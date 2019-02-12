@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for ControlVolumeBase.
+Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """
@@ -19,12 +19,12 @@ import inspect
 import pytest
 from pyomo.environ import ConcreteModel, Block, Set
 from pyomo.common.config import ConfigBlock, ConfigValue
-from idaes.core import (ControlVolumeBase, CONFIG_Template,
+from idaes.core import (ControlVolumeBlockData, CONFIG_Template,
                         MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType, FlowDirection,
                         declare_process_block_class,
-                        FlowsheetBlockData, UnitBlockData, useDefault,
-                        PhysicalParameterBase, ReactionParameterBase)
+                        FlowsheetBlockData, UnitModelBlockData, useDefault,
+                        PhysicalParameterBlock, ReactionParameterBlock)
 from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
                                         PropertyPackageError, BurntToast)
 
@@ -146,8 +146,8 @@ class _Flowsheet(FlowsheetBlockData):
 
 
 @declare_process_block_class("Unit")
-class _UnitData(UnitBlockData):
-    CONFIG = UnitBlockData.CONFIG()
+class _UnitData(UnitModelBlockData):
+    CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare("property_package",
                    ConfigValue(default=None))
     CONFIG.declare("property_package_args",
@@ -158,11 +158,11 @@ class _UnitData(UnitBlockData):
 
 
 # -----------------------------------------------------------------------------
-# Testing ControlVolumeBase
+# Testing ControlVolumeBlockData
 @declare_process_block_class("CVFrame")
-class CVFrameData(ControlVolumeBase):
+class CVFrameData(ControlVolumeBlockData):
     def build(self):
-        super(ControlVolumeBase, self).build()
+        super(ControlVolumeBlockData, self).build()
 
 
 def test_config_block():
@@ -248,7 +248,7 @@ def test_setup_dynamics_has_holdup_inconsistent():
 # -----------------------------------------------------------------------------
 # Test _get_property_package
 @declare_process_block_class("PropertyParameterBlock")
-class _PropertyParameterBlock(PhysicalParameterBase):
+class _PropertyParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_PropertyParameterBlock, self).build()
 
@@ -372,10 +372,10 @@ def test_get_reaction_package_none():
     assert hasattr(m.r, "reaction_module") is False
 
 
-@declare_process_block_class("ReactionParameterBlock")
-class _ReactionParameterBlock(ReactionParameterBase):
+@declare_process_block_class("ReactionParameterTestBlock")
+class _ReactionParameterBlock(ReactionParameterBlock):
     def build(self):
-        super(ReactionParameterBase, self).build()
+        super(ReactionParameterBlock, self).build()
 
         frm = inspect.stack()[1]
         self._package_module = inspect.getmodule(frm[0])
@@ -383,7 +383,7 @@ class _ReactionParameterBlock(ReactionParameterBase):
 
 def test_get_reaction_package_module():
     m = ConcreteModel()
-    m.rp = ReactionParameterBlock(
+    m.rp = ReactionParameterTestBlock(
                 default={"default_arguments": {"test": "foo"}})
     m.cv = CVFrame(default={"reaction_package": m.rp})
 
@@ -396,7 +396,7 @@ def test_get_reaction_package_module():
 def test_get_reaction_package_module_default_args():
     # Test that local and default args combine correctly
     m = ConcreteModel()
-    m.rp = ReactionParameterBlock(
+    m.rp = ReactionParameterTestBlock(
             default={"default_arguments": {"test1": "foo",
                                            "test2": "bar"}})
     m.cv = CVFrame(default={"reaction_package": m.rp,

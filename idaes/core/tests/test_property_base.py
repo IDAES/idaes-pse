@@ -18,20 +18,20 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, Var
 from pyomo.common.config import ConfigBlock
-from idaes.core import (declare_process_block_class, PhysicalParameterBase,
-                        StateBlockBase, StateBlockDataBase)
+from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
+                        StateBlock, StateBlockDataBase)
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
 
 # -----------------------------------------------------------------------------
 # Test ParameterBlock
 @declare_process_block_class("ParameterBlock")
-class _ParameterBlock(PhysicalParameterBase):
+class _ParameterBlock(PhysicalParameterBlock):
     pass
 
 
 def test_config_block():
-    # Test that PhysicalParameterBase gets module information
+    # Test that PhysicalParameterBlock gets module information
     m = ConcreteModel()
     m.p = ParameterBlock()
 
@@ -40,8 +40,8 @@ def test_config_block():
     assert len(m.p.config.default_arguments) == 0
 
 
-def test_PhysicalParameterBase():
-    # Test that PhysicalParameterBase builds correctly
+def test_PhysicalParameterBlock():
+    # Test that PhysicalParameterBlock builds correctly
     m = ConcreteModel()
     m.p = ParameterBlock()
     super(_ParameterBlock, m.p).build()
@@ -57,16 +57,16 @@ def test_PhysicalParameter_NotImplementedErrors():
 
 
 # -----------------------------------------------------------------------------
-# Test StateBlockBase
-@declare_process_block_class("StateBlockData", block_class=StateBlockBase)
+# Test StateBlock
+@declare_process_block_class("TestStateBlock", block_class=StateBlock)
 class _StateBlockData(StateBlockDataBase):
     pass
 
 
 def test_StateBlockBase_initialize():
-    # Test that StateBlockBase initialize method raises NotImplementedError
+    # Test that StateBlock initialize method raises NotImplementedError
     m = ConcreteModel()
-    m.p = StateBlockData()
+    m.p = TestStateBlock()
 
     with pytest.raises(NotImplementedError):
         m.p.initialize()
@@ -77,7 +77,7 @@ def test_StateBlockBase_initialize():
 def test_StateBlock_config():
     # Test that StateBlockDataBase config has correct arguments
     m = ConcreteModel()
-    m.p = StateBlockData()
+    m.p = TestStateBlock()
 
     assert len(m.p.config) == 3
     assert hasattr(m.p.config, "has_phase_equilibrium")
@@ -102,7 +102,7 @@ def test_StateBlock_config():
 def test_StateBlock_NotImplementedErrors():
     # Test that placeholder methods return NotImplementedErrors
     m = ConcreteModel()
-    m.p = StateBlockData()
+    m.p = TestStateBlock()
 
     with pytest.raises(NotImplementedError):
         m.p.define_state_vars()
@@ -125,7 +125,7 @@ def test_StateBlock_NotImplementedErrors():
 # -----------------------------------------------------------------------------
 # Test properties __getattr__ method
 @declare_process_block_class("Parameters")
-class _Parameters(PhysicalParameterBase):
+class _Parameters(PhysicalParameterBlock):
     def build(self):
         super(_Parameters, self).build()
 
@@ -141,7 +141,7 @@ class _Parameters(PhysicalParameterBase):
                                 'method': '_does_not_create_component'}})
 
 
-@declare_process_block_class("State", block_class=StateBlockBase)
+@declare_process_block_class("State", block_class=StateBlock)
 class _State(StateBlockDataBase):
     def build(self):
         super(StateBlockDataBase, self).build()

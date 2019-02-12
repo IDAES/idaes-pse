@@ -19,9 +19,9 @@ import pytest
 import inspect
 from pyomo.environ import ConcreteModel, Constraint, Var
 from pyomo.common.config import ConfigBlock
-from idaes.core import (declare_process_block_class, ReactionParameterBase,
+from idaes.core import (declare_process_block_class, ReactionParameterBlock,
                         ReactionBlockBase, ReactionBlockDataBase,
-                        PhysicalParameterBase, StateBlockBase,
+                        PhysicalParameterBlock, StateBlock,
                         StateBlockDataBase)
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
@@ -30,7 +30,7 @@ from idaes.core.util.exceptions import (PropertyPackageError,
 # -----------------------------------------------------------------------------
 # Test ParameterBlock
 @declare_process_block_class("PropertyParameterBlock")
-class _PropertyParameterBlock(PhysicalParameterBase):
+class _PropertyParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_PropertyParameterBlock, self).build()
 
@@ -47,16 +47,16 @@ class _PropertyParameterBlock(PhysicalParameterBase):
                                'holdup': 'mol'})
 
 
-@declare_process_block_class("ReactionParameterBlock")
-class _ReactionParameterBlock(ReactionParameterBase):
+@declare_process_block_class("ReactionParameterTestBlock")
+class _ReactionParameterBlock(ReactionParameterBlock):
     def build(self):
-        super(ReactionParameterBase, self).build()
+        super(ReactionParameterBlock, self).build()
 
 
 def test_config_block():
-    # Test that PhysicalParameterBase gets module information
+    # Test that PhysicalParameterBlock gets module information
     m = ConcreteModel()
-    m.r = ReactionParameterBlock()
+    m.r = ReactionParameterTestBlock()
 
     assert len(m.r.config) == 2
     assert isinstance(m.r.config.default_arguments, ConfigBlock)
@@ -66,16 +66,16 @@ def test_config_block():
 def test_ReactionParameter_NotImplementedErrors():
     # Test that class methods return NotImplementedError
     m = ConcreteModel()
-    m.r = ReactionParameterBlock()
+    m.r = ReactionParameterTestBlock()
 
     with pytest.raises(NotImplementedError):
         m.r.get_metadata()
 
 
 @declare_process_block_class("ReactionParameterBlock2")
-class _ReactionParameterBlock2(ReactionParameterBase):
+class _ReactionParameterBlock2(ReactionParameterBlock):
     def build(self):
-        super(ReactionParameterBase, self).build()
+        super(ReactionParameterBlock, self).build()
 
     @classmethod
     def get_required_properties(self):
@@ -103,9 +103,9 @@ def test_validate_state_block_invalid_units():
 
 
 @declare_process_block_class("ReactionParameterBlock3")
-class _ReactionParameterBlock3(ReactionParameterBase):
+class _ReactionParameterBlock3(ReactionParameterBlock):
     def build(self):
-        super(ReactionParameterBase, self).build()
+        super(ReactionParameterBlock, self).build()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -131,9 +131,9 @@ def test_validate_state_block_unsupported_prop():
 
 
 @declare_process_block_class("ReactionParameterBlock4")
-class _ReactionParameterBlock4(ReactionParameterBase):
+class _ReactionParameterBlock4(ReactionParameterBlock):
     def build(self):
-        super(ReactionParameterBase, self).build()
+        super(ReactionParameterBlock, self).build()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -159,9 +159,9 @@ def test_validate_state_block_unsupported_prop_False():
 
 
 @declare_process_block_class("ReactionParameterBlock5")
-class _ReactionParameterBlock5(ReactionParameterBase):
+class _ReactionParameterBlock5(ReactionParameterBlock):
     def build(self):
-        super(ReactionParameterBase, self).build()
+        super(ReactionParameterBlock, self).build()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -187,9 +187,9 @@ def test_validate_state_block_req_prop_wrong_units():
 
 
 @declare_process_block_class("ReactionParameterBlock6")
-class _ReactionParameterBlock6(ReactionParameterBase):
+class _ReactionParameterBlock6(ReactionParameterBlock):
     def build(self):
-        super(ReactionParameterBase, self).build()
+        super(ReactionParameterBlock, self).build()
 
     @classmethod
     def define_metadata(cls, obj):
@@ -205,7 +205,7 @@ class _ReactionParameterBlock6(ReactionParameterBase):
 
 
 def test_ReactionParameterBase_build():
-    # Test that ReactionParameterBase builds correctly
+    # Test that ReactionParameterBlock builds correctly
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
     m.r = ReactionParameterBlock6(default={"property_package": m.p})
@@ -250,8 +250,8 @@ def test_StateBlock_config():
         m.p.config.has_equilibrium = 10
 
 
-@declare_process_block_class("StateBlock", block_class=StateBlockBase)
-class StateBlockData(StateBlockDataBase):
+@declare_process_block_class("TestStateBlock", block_class=StateBlock)
+class StateTestBlockData(StateBlockDataBase):
     def build(self):
         super(StateBlockDataBase, self).build()
 
@@ -262,7 +262,7 @@ def test_validate_state_block_fail():
     m.p = PropertyParameterBlock()
     m.p2 = PropertyParameterBlock()
 
-    m.pb = StateBlock(default={"parameters": m.p2})
+    m.pb = TestStateBlock(default={"parameters": m.p2})
 
     m.r = ReactionParameterBlock6(default={"property_package": m.p})
     super(_ReactionParameterBlock6, m.r).build()
@@ -286,7 +286,7 @@ def test_build():
     m = ConcreteModel()
     m.p = PropertyParameterBlock()
 
-    m.pb = StateBlock(default={"parameters": m.p})
+    m.pb = TestStateBlock(default={"parameters": m.p})
 
     m.r = ReactionParameterBlock6(default={"property_package": m.p})
     super(_ReactionParameterBlock6, m.r).build()
@@ -300,9 +300,9 @@ def test_build():
 # -----------------------------------------------------------------------------
 # Test reaction __getattr__ method
 @declare_process_block_class("Parameters")
-class _Parameters(ReactionParameterBase):
+class _Parameters(ReactionParameterBlock):
     def build(self):
-        super(ReactionParameterBase, self).build()
+        super(ReactionParameterBlock, self).build()
         frm = inspect.stack()[1]
         self.__package_module = inspect.getmodule(frm[0])
 
