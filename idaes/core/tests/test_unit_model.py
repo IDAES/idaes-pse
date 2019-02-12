@@ -22,7 +22,7 @@ from pyomo.common.config import ConfigValue
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault, PhysicalParameterBlock,
-                        StateBlock, StateBlockDataBase, ControlVolume0DBlock)
+                        StateBlock, StateBlockData, ControlVolume0DBlock)
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 
@@ -44,7 +44,7 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
 
 @declare_process_block_class("TestStateBlock", block_class=StateBlock)
-class StateTestBlockData(StateBlockDataBase):
+class StateTestBlockData(StateBlockData):
     def build(self):
         super(StateTestBlockData, self).build()
 

@@ -32,7 +32,7 @@ from pyomo.opt import SolverFactory, TerminationCondition
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
-                        StateBlockDataBase,
+                        StateBlockData,
                         StateBlock)
 from idaes.core.util.initialization import (evaluate_variable_from_constraint,
                                             solve_indexed_blocks)
@@ -279,7 +279,7 @@ class _StateBlock(StateBlock):
 
 @declare_process_block_class("BFWStateBlock",
                              block_class=_StateBlock)
-class StateTestBlockData(StateBlockDataBase):
+class StateTestBlockData(StateBlockData):
     """An example property package for boiler feed water properties."""
 
     def build(self):

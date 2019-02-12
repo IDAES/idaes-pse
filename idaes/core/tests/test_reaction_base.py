@@ -22,7 +22,7 @@ from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, ReactionParameterBlock,
                         ReactionBlockBase, ReactionBlockDataBase,
                         PhysicalParameterBlock, StateBlock,
-                        StateBlockDataBase)
+                        StateBlockData)
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
 
@@ -251,9 +251,9 @@ def test_StateBlock_config():
 
 
 @declare_process_block_class("TestStateBlock", block_class=StateBlock)
-class StateTestBlockData(StateBlockDataBase):
+class StateTestBlockData(StateBlockData):
     def build(self):
-        super(StateBlockDataBase, self).build()
+        super(StateBlockData, self).build()
 
 
 def test_validate_state_block_fail():

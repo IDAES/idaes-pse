@@ -19,7 +19,7 @@ import pytest
 from pyomo.environ import ConcreteModel, Constraint, Var
 from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
-                        StateBlock, StateBlockDataBase)
+                        StateBlock, StateBlockData)
 from idaes.core.util.exceptions import (PropertyPackageError,
                                         PropertyNotSupportedError)
 
@@ -59,7 +59,7 @@ def test_PhysicalParameter_NotImplementedErrors():
 # -----------------------------------------------------------------------------
 # Test StateBlock
 @declare_process_block_class("TestStateBlock", block_class=StateBlock)
-class _StateBlockData(StateBlockDataBase):
+class _StateBlockData(StateBlockData):
     pass
 
 
@@ -73,9 +73,9 @@ def test_StateBlockBase_initialize():
 
 
 # -----------------------------------------------------------------------------
-# Test StateBlockDataBase
+# Test StateBlockData
 def test_StateBlock_config():
-    # Test that StateBlockDataBase config has correct arguments
+    # Test that StateBlockData config has correct arguments
     m = ConcreteModel()
     m.p = TestStateBlock()
 
@@ -142,9 +142,9 @@ class _Parameters(PhysicalParameterBlock):
 
 
 @declare_process_block_class("State", block_class=StateBlock)
-class _State(StateBlockDataBase):
+class _State(StateBlockData):
     def build(self):
-        super(StateBlockDataBase, self).build()
+        super(StateBlockData, self).build()
 
         self.test_obj = 1
 
