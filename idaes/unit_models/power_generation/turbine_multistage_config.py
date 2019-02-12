@@ -5,7 +5,6 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
 from idaes.core import (EnergyBalanceType,
                         MomentumBalanceType,
                         MaterialBalanceType,
-                        UnitBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 

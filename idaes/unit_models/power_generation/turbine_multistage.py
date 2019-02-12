@@ -23,20 +23,18 @@ from pyomo.environ import RangeSet, Set
 from pyomo.network import Arc
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
+from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.unit_models import Separator, Mixer, SplittingType
 from idaes.unit_models.power_generation import (
     TurbineInletStage, TurbineStage, TurbineOutletStage)
-from idaes.core import UnitBlockData
 from idaes.core.util.config import is_physical_parameter_block
 from .turbine_multistage_config import (
     _define_turbine_mutlistage_config, _ReheatType)
 
-from idaes.core import declare_process_block_class, UnitBlockData
-
 
 @declare_process_block_class("TurbineMultistage",
     doc="Multistage steam turbine with optional reheat and extraction")
-class TurbineMultistageData(UnitBlockData):
+class TurbineMultistageData(UnitModelBlockData):
 
     CONFIG = ConfigBlock()
     _define_turbine_mutlistage_config(CONFIG)
@@ -60,7 +58,7 @@ class TurbineMultistageData(UnitBlockData):
         self.lp_stages = TurbineStage(RangeSet(config.num_lp), default=unit_cfg)
         self.outlet_stage = TurbineOutletStage(default=unit_cfg)
 
-        # put in splitters for feedwater heater, reheat, ...
+        # put in splitters for turbine steam extractions
         s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
         s_cfg.update(split_basis=SplittingType.totalFlow, ideal_separation=False)
         del s_cfg["has_holdup"]
@@ -73,16 +71,23 @@ class TurbineMultistageData(UnitBlockData):
         if config.lp_split_locations:
             self.lp_split = Separator(config.lp_split_locations, default=s_cfg)
 
-        self.hp_stream_idx = Set(initialize=self.hp_stages.index_set()*[1,2])
-        self.ip_stream_idx = Set(initialize=self.ip_stages.index_set()*[1,2])
-        self.lp_stream_idx = Set(initialize=self.lp_stages.index_set()*[1,2])
+        # All the unit models are in place next step is to connect them
+        #   arcs come up in this section and Pyomo arcs for connecting ports
+        #   not related for turbine steam admission.
 
-        # connect inlet mixer to 
-
-        # okay I'm gonna talk about arcs here. They are the Pyomo components
-        # used to make the material streams, this has nothing to do with the
-        # turbine, an is totally unrealated to partial arc admission
         def _arc_indexes(nstages, index_set, discon, splits):
+            """
+            This takes the index set of all possible streams in a turbine
+            section and throws out arc indexes for stages that are disconnected
+            and arc indexes that are not needed because there is no splitter
+            after a stage.
+
+            Args:
+                nstages (int): Number of stages in section
+                index_set (Set): Index set for arcs in the section
+                discon (list): Disconnected stages in the section
+                splits (list): Spliter locations
+            """
             sr = set()
             for i in index_set:
                 if (i[0] in discon or i[0] == nstages) and i[0] in splits:
@@ -101,9 +106,17 @@ class TurbineMultistageData(UnitBlockData):
             for i in sr:
                 index_set.remove(i)
 
-        def _arc_rule(split_loc, turbines, splitters):
-            # already removed indexes for unneeded or disconnected streams, so
-            # I don't need to worry about that here
+        def _arc_rule(turbines, splitters):
+            """
+            This creates a rule function for arcs in a tubrine section. when
+            this is used the indexes for nonexitant stream will have already
+            been removed, so any indexes the rule will get should have a stream
+            accossiated.
+
+            Args:
+                turbines (TurbinStage): Indexed block with turbine section stages
+                splitters (Separator): Indexed block of splitters
+            """
             #TODO<jce> Need to track the port indexing which is going to change
             #          dynamics are broken so just hooking time zero, after
             #          dynamics are fixed in framwwork the port index should go
@@ -120,6 +133,12 @@ class TurbineMultistageData(UnitBlockData):
                             "destination":turbines[i+1].inlet[0]}
             return _rule
 
+        # Create initial arcs index sets with all possible streams
+        self.hp_stream_idx = Set(initialize=self.hp_stages.index_set()*[1,2])
+        self.ip_stream_idx = Set(initialize=self.ip_stages.index_set()*[1,2])
+        self.lp_stream_idx = Set(initialize=self.lp_stages.index_set()*[1,2])
+
+        # Throw out unneeded streams
         _arc_indexes(config.num_hp,
             self.hp_stream_idx, config.hp_disconnect, config.hp_split_locations)
         _arc_indexes(config.num_ip,
@@ -127,17 +146,17 @@ class TurbineMultistageData(UnitBlockData):
         _arc_indexes(config.num_lp,
             self.lp_stream_idx, config.lp_disconnect, config.lp_split_locations)
 
-        self.hp_stream = Arc(self.hp_stream_idx, rule=
-            _arc_rule(config.hp_split_locations, self.hp_stages, self.hp_split))
-        self.ip_stream = Arc(self.ip_stream_idx, rule=
-            _arc_rule(config.hp_split_locations, self.ip_stages, self.ip_split))
-        self.lp_stream = Arc(self.lp_stream_idx, rule=
-            _arc_rule(config.hp_split_locations, self.lp_stages, self.lp_split))
+        # Create connections internal to each turbine section (hp, ip, and lp)
+        self.hp_stream = Arc(self.hp_stream_idx,
+            rule=_arc_rule(self.hp_stages, self.hp_split))
+        self.ip_stream = Arc(self.ip_stream_idx,
+            rule=_arc_rule(self.ip_stages, self.ip_split))
+        self.lp_stream = Arc(self.lp_stream_idx,
+            rule=_arc_rule(self.lp_stages, self.lp_split))
 
-        conf = config
-        if 0 not in conf.ip_disconnect and conf.num_hp not in conf.hp_disconnect:
-            #connect hp section to the lp section
-            last_hp = conf.num_hp
+        # Connect hp section to ip section unless its a disconnect locations
+        last_hp = config.num_hp
+        if 0 not in config.ip_disconnect and last_hp not in config.hp_disconnect:
             if last_hp in config.hp_split_locations: # connect splitter to ip
                 self.hp_to_ip_stream = Arc(
                     source=self.hp_split[last_hp].outlet_1[0],
@@ -146,9 +165,9 @@ class TurbineMultistageData(UnitBlockData):
                 self.hp_to_ip_stream = Arc(
                     source=self.hp_stages[last_hp].outlet[0],
                     destination=self.ip_stages[1].inlet[0])
-        if 0 not in conf.lp_disconnect and conf.num_ip not in conf.ip_disconnect:
-            #connect ip section to the lp section
-            last_ip = conf.num_ip
+        # Connect ip section to lp section unless its a disconnect locations
+        last_ip = config.num_ip
+        if 0 not in config.lp_disconnect and last_ip not in config.ip_disconnect:
             if last_ip in config.ip_split_locations: # connect splitter to ip
                 self.ip_to_lp_stream = Arc(
                     source=self.ip_split[last_ip].outlet_1[0],
@@ -157,9 +176,22 @@ class TurbineMultistageData(UnitBlockData):
                 self.ip_to_lp_stream = Arc(
                     source=self.ip_stages[last_ip].outlet[0],
                     destination=self.lp_stages[1].inlet[0])
-        # you are not allowed to stick stuff between the inlet stage and hp
-        # or the last lp stage and the outlet stage.  So connect those
-        last_lp = conf.num_lp
+
+        # Connect inlet stage to hp section
+        #   not allowing disconnection of inlet and first regular hp stage
+        if 0 in config.hp_split_locations:
+            # connect inlet mix to splitter and splitter to hp section
+            self.inlet_to_splitter_stream = Arc(
+                source=self.inlet_mix.outlet[0],
+                destination=self.hp_split[0].inlet[0])
+        else: # connect mixer to first hp turbine stage
+            self.lp_to_outlet_stream = Arc(
+                source=self.inlet_mix.outlet[0],
+                destination=self.hp_stages[1].inlet[0])
+
+        # Connect inlet stage to hp section
+        #   not allowing disconnection of inlet and first regular hp stage
+        last_lp = config.num_lp
         if last_lp in config.lp_split_locations: # connect splitter to outlet
             self.lp_to_outlet_stream = Arc(
                 source=self.lp_split[last_lp].outlet_1[0],
@@ -172,8 +204,8 @@ class TurbineMultistageData(UnitBlockData):
     def _add_inlet_stage(self, unit_cfg):
         """
         Add parallel turbine inlet stage models to simulate partial arc
-        addmission.  This includes a splitter mixer and a control valve before
-        each stage.  (TODO add throttel valves once a valve model is available
+        addmission. This includes a splitter mixer and a control valve before
+        each stage. (TODO add throttel valves once a valve model is available
         from the basic framework models.)
 
         Args:
