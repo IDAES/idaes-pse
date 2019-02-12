@@ -6,6 +6,8 @@ Turbine (Stage)
 
 .. module:: idaes.unit_models.power_generation.turbine_stage
 
+This is a steam power generation turbine model for the stages between the inlet
+and outlet.
 This model inherits the :ref:`PressureChanger model
 <models/pressure_changer:Pressure Changer>` with the isentropic options. The
 initialization scheme is the same as the :ref:`TurbineInletStage model
@@ -54,7 +56,7 @@ Variable                    Symbol                   Index Sets  Doc
 =========================== ======================== =========== ==========================================================================================
 ``efficiency_isentropic``   :math:`\eta_{isen}`      time        Isentropic efficiency
 ``deltaP``                  :math:`\Delta P`         time        Pressure change (:math:`P_{out} - P_{in}`) [Pa]
-``ratioP``                  :math:`P_{ratio}`        time        Ratio on discharge pressure to inlet pressure :math:`\left(\frac{P_{out}}{P_{in}}\right)`
+``ratioP``                  :math:`P_{ratio}`        time        Ratio of discharge pressure to inlet pressure :math:`\left(\frac{P_{out}}{P_{in}}\right)`
 =========================== ======================== =========== ==========================================================================================
 
 :math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only

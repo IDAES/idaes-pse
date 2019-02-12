@@ -6,6 +6,7 @@ Turbine (Inlet Stage)
 
 .. module:: idaes.unit_models.power_generation.turbine_inlet
 
+This is a steam power generation turbine model for the inlet stage.
 The turbine inlet model is based on:
 
 Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission for Use in a Process Simulation Software Environment." Journal of Engineering for Gas Turbines and Power. v136, November
@@ -78,11 +79,8 @@ Variable                    Symbol                   Index Sets  Doc
 =========================== ======================== =========== ==========================================================================================
 ``efficiency_isentropic``   :math:`\eta_{isen}`      time        Isentropic efficiency
 ``deltaP``                  :math:`\Delta P`         time        Pressure change (:math:`P_{out} - P_{in}`) [Pa]
-``ratioP``                  :math:`P_{ratio}`        time        Ratio on discharge pressure to inlet pressure :math:`\left(\frac{P_{out}}{P_{in}}\right)`
+``ratioP``                  :math:`P_{ratio}`        time        Ratio of discharge pressure to inlet pressure :math:`\left(\frac{P_{out}}{P_{in}}\right)`
 =========================== ======================== =========== ==========================================================================================
-
-:math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only
-
 
 Expressions
 -----------
@@ -122,7 +120,7 @@ The pressure-flow relation is given by:
 
 .. math::
 
-  \dot{m} = C_{flow}\frac{P_{in}}{\sqrt{T_{in}}}\sqrt{\frac{\gamma}{\gamma-1} \left[
+  \dot{m} = C_{flow}\frac{P_{in}}{\sqrt{T_{in}-273.15}}\sqrt{\frac{\gamma}{\gamma-1} \left[
     \left(\frac{P_{out}}{P_{in}}\right)^{\frac{2}{\gamma}} -
     \left(\frac{P_{out}}{P_{in}}\right)^{\frac{\gamma+1}{\gamma}} \right]}
 
