@@ -22,9 +22,9 @@ from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.stoichiometric_reactor import StoichiometricReactor
 from idaes.property_models.examples.saponification_thermo import (
-                        PhysicalParameterBlock)
+    SaponificationParameterBlock)
 from idaes.property_models.examples.saponification_reactions import (
-                        ReactionParameterBlock)
+    SaponificationReactionParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -44,8 +44,8 @@ def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
-    m.fs.reactions = ReactionParameterBlock(default={
+    m.fs.properties = SaponificationParameterBlock()
+    m.fs.reactions = SaponificationReactionParameterBlock(default={
                             "property_package": m.fs.properties})
 
     m.fs.rstoic = StoichiometricReactor(default={
@@ -78,8 +78,8 @@ def test_initialize():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
-    m.fs.reactions = ReactionParameterBlock(default={
+    m.fs.properties = SaponificationParameterBlock()
+    m.fs.reactions = SaponificationReactionParameterBlock(default={
                             "property_package": m.fs.properties})
 
     m.fs.rstoic = StoichiometricReactor(default={

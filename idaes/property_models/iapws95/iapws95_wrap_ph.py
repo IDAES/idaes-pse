@@ -57,7 +57,7 @@ from pyutilib.misc.config import ConfigValue
 
 # Import IDAES
 from idaes.core import declare_process_block_class, ProcessBlock, \
-                       StateBlockBase, StateBlockDataBase, PhysicalParameterBase
+                       StateBlock, StateBlockDataBase, PhysicalParameterBlock
 
 # Logger
 _log = logging.getLogger(__name__)
@@ -91,7 +91,7 @@ def htpx(T, P=None, x=None):
             value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*x
 
 @declare_process_block_class("Iapws95ParameterBlock")
-class Iapws95ParameterBlockData(PhysicalParameterBase):
+class Iapws95ParameterBlockData(PhysicalParameterBlock):
 
     def build(self):
         super(Iapws95ParameterBlockData, self).build()
@@ -258,7 +258,7 @@ class Iapws95ParameterBlockData(PhysicalParameterBase):
             'holdup': 'mol'})
 
 
-class _StateBlock(StateBlockBase):
+class _StateBlock(StateBlock):
     """
     This class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.

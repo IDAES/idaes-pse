@@ -17,7 +17,7 @@ Author: Jaffer Ghouse
 from pyomo.environ import ConcreteModel
 
 from idaes.core import FlowsheetBlock
-from idaes.property_models.ideal.BTX_ideal_VLE import PhysicalParameterBlock
+from idaes.property_models.ideal.BTX_ideal_VLE import IdealParameterBlock
 
 
 # -----------------------------------------------------------------------------
@@ -26,18 +26,18 @@ m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid
-m.fs.properties_vl = PhysicalParameterBlock(default={"valid_phase": 'VL'})
+m.fs.properties_vl = IdealParameterBlock(default={"valid_phase": 'VL'})
 m.fs.state_block_vl = m.fs.properties_vl.state_block_class(
     default={"parameters": m.fs.properties_vl})
 
 # liquid only
-m.fs.properties_l = PhysicalParameterBlock(default={"valid_phase": 'L'})
+m.fs.properties_l = IdealParameterBlock(default={"valid_phase": 'L'})
 m.fs.state_block_l = m.fs.properties_l.state_block_class(
     default={"parameters": m.fs.properties_l,
              "has_phase_equilibrium": False})
 
 # vapor only
-m.fs.properties_v = PhysicalParameterBlock(default={"valid_phase": 'V'})
+m.fs.properties_v = IdealParameterBlock(default={"valid_phase": 'V'})
 m.fs.state_block_v = m.fs.properties_v.state_block_class(
     default={"parameters": m.fs.properties_v,
              "has_phase_equilibrium": False})

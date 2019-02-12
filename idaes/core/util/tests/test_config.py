@@ -19,10 +19,10 @@ import pytest
 from pyomo.environ import ConcreteModel
 from pyomo.network import Port
 from idaes.core import (declare_process_block_class,
-                        PhysicalParameterBase,
-                        StateBlockBase,
+                        PhysicalParameterBlock,
+                        StateBlock,
                         StateBlockDataBase,
-                        ReactionParameterBase,
+                        ReactionParameterBlock,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
@@ -34,7 +34,7 @@ from idaes.core.util.exceptions import ConfigurationError
 
 
 @declare_process_block_class("ParameterBlock")
-class _ParameterBlock(PhysicalParameterBase):
+class _ParameterBlock(PhysicalParameterBlock):
     def build(self):
         pass
 
@@ -65,7 +65,7 @@ def test_is_physical_parameter_block_fails():
 
 
 @declare_process_block_class("RParameterBlock")
-class _RParameterBlock(ReactionParameterBase):
+class _RParameterBlock(ReactionParameterBlock):
     def build(self):
         pass
 
@@ -97,17 +97,17 @@ def test_is_reaction_parameter_block_fails():
         is_reaction_parameter_block(1)  # int
 
 
-@declare_process_block_class("StateBlock", block_class=StateBlockBase)
-class StateBlockData(StateBlockDataBase):
+@declare_process_block_class("TestStateBlock", block_class=StateBlock)
+class StateTestBlockData(StateBlockDataBase):
     def build(self):
         pass
 
 
 def test_is_state_block_passes():
-    # Make an instance of a StateBlock
-    s = StateBlock()
+    # Make an instance of a TestStateBlock
+    s = TestStateBlock()
 
-    # Check that is_state_block returns the StateBlock
+    # Check that is_state_block returns the TestStateBlock
     assert s == is_state_block(s)
 
 
