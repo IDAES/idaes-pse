@@ -34,8 +34,8 @@ from idaes.ui.report import degrees_of_freedom
 @declare_process_block_class("TurbineInletStage",
     doc="Inlet stage steam turbine model")
 class TurbineInletStageData(PressureChangerData):
-    # Same setings as the default pressure changer, but force to expander with
-    # isentroic efficiency
+    # Same settings as the default pressure changer, but force to expander with
+    # isentropic efficiency
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = False
     CONFIG.get('compressor')._default = False
@@ -147,7 +147,7 @@ class TurbineInletStageData(PressureChangerData):
                 v.fix()
             for k, v in self.outlet[t].vars.items():
                 v.unfix()
-            # If there isn't a good guess for efficeny or outlet pressure
+            # If there isn't a good guess for efficiency or outlet pressure
             # provide something reasonable.
             eff = self.efficiency_isentropic[t]
             eff.fix(eff.value if value(eff) > 0.3 and value(eff) < 1.0 else 0.8)

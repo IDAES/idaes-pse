@@ -11,7 +11,9 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Steam turbine outlet stage model.  This model is based on:
+Steam turbine stage model. This is a standard isentropic turine. Under off-design
+conditions the base efficency and pressure ratio do not change much for the stages
+between the inlet and outlet. This model is based on:
 
 Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
@@ -37,8 +39,8 @@ from idaes.ui.report import degrees_of_freedom
 @declare_process_block_class("TurbineStage",
     doc="Basic steam turbine model")
 class TurbineStageData(PressureChangerData):
-    # Same setings as the default pressure changer, but force to expander with
-    # isentroic efficiency
+    # Same settings as the default pressure changer, but force to expander with
+    # isentropic efficiency
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = False
     CONFIG.get('compressor')._default = False
