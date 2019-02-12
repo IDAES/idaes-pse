@@ -14,6 +14,7 @@
 Tests for ideal state block; only tests for construction
 Author: Jaffer Ghouse
 """
+import pytest
 from pyomo.environ import ConcreteModel
 
 from idaes.core import FlowsheetBlock
@@ -87,3 +88,15 @@ def test_setInputs():
     m.fs.state_block_v.pressure.fix(101325)
     m.fs.state_block_v.mole_frac["benzene"].fix(0.5)
     m.fs.state_block_v.mole_frac["toluene"].fix(0.5)
+
+
+def test_bubbleT():
+    assert m.fs.state_block_vl.temperature_bubble_point(
+        101325, m.fs.state_block_vl.mole_frac) == \
+        pytest.approx(365.314, abs=1e-3)
+
+
+def test_dewT():
+    assert m.fs.state_block_vl.temperature_dew_point(
+        101325, m.fs.state_block_vl.mole_frac) == \
+        pytest.approx(371.987, abs=1e-3)

@@ -143,10 +143,10 @@ conditions, and thus corresponding constraints  should be included,
             doc='Critical temperature [K]')
 
         # Gas Constant
-        self.gas_constant = Param(within=NonNegativeReals,
-                                  mutable=False,
-                                  default=8.314,
-                                  doc='Gas Constant [J/mol.K]')
+        self.gas_const = Param(within=NonNegativeReals,
+                               mutable=False,
+                               default=8.314,
+                               doc='Gas Constant [J/mol.K]')
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -203,34 +203,34 @@ conditions, and thus corresponding constraints  should be included,
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        vapor_pressure_coeff_data = {('benzene', 'A'): -6.98273,
-                                     ('benzene', 'B'): 1.33213,
-                                     ('benzene', 'C'): -2.62863,
-                                     ('benzene', 'D'): -3.33399,
-                                     ('toluene', 'A'): -7.28607,
-                                     ('toluene', 'B'): 1.38091,
-                                     ('toluene', 'C'): -2.83433,
-                                     ('toluene', 'D'): -2.79168,
-                                     ('o-xylene', 'A'): -7.53357,
-                                     ('o-xylene', 'B'): 1.40968,
-                                     ('o-xylene', 'C'): -3.10985,
-                                     ('o-xylene', 'D'): -2.85992}
+        pressure_sat_coeff_data = {('benzene', 'A'): -6.98273,
+                                   ('benzene', 'B'): 1.33213,
+                                   ('benzene', 'C'): -2.62863,
+                                   ('benzene', 'D'): -3.33399,
+                                   ('toluene', 'A'): -7.28607,
+                                   ('toluene', 'B'): 1.38091,
+                                   ('toluene', 'C'): -2.83433,
+                                   ('toluene', 'D'): -2.79168,
+                                   ('o-xylene', 'A'): -7.53357,
+                                   ('o-xylene', 'B'): 1.40968,
+                                   ('o-xylene', 'C'): -3.10985,
+                                   ('o-xylene', 'D'): -2.85992}
 
-        self.vapor_pressure_coeff = Param(
+        self.pressure_sat_coeff = Param(
             self.component_list,
             ['A', 'B', 'C', 'D'],
             mutable=False,
-            initialize=extract_data(vapor_pressure_coeff_data),
+            initialize=extract_data(pressure_sat_coeff_data),
             doc="parameters to compute Cp_comp")
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        delH_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
+        dh_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
                     'o-xylene': 4.34584e4}
 
-        self.delH_vap = Param(self.component_list,
+        self.dh_vap = Param(self.component_list,
                               mutable=False,
-                              initialize=extract_data(delH_vap),
+                              initialize=extract_data(dh_vap),
                               doc="heat of vaporization")
 
     @classmethod
@@ -244,7 +244,7 @@ conditions, and thus corresponding constraints  should be included,
              'flow_mol_phase': {'method': None, 'units': 'mol/s'},
              'density_mol': {'method': '_density_mol',
                              'units': 'mol/m^3'},
-             'vapor_pressure': {'method': '_vapor_pressure', 'units': 'Pa'},
+             'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
              'mole_frac_phase': {'method': '_mole_frac_phase',
                                  'units': 'no unit'},
              'enthalpy_comp_liq': {'method': '_enthalpy_comp_liq',
