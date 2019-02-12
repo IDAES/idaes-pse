@@ -143,7 +143,7 @@ class TurbineOutletStageData(PressureChangerData):
                 v.fix()
             for k, v in self.outlet[t].vars.items():
                 v.unfix()
-            # If there isn't a good guess for efficeny or outlet pressure
+            # If there isn't a good guess for efficiency or outlet pressure
             # provide something reasonable.
             eff = self.efficiency_isentropic[t]
             eff.fix(eff.value if value(eff) > 0.3 and value(eff) < 1.0 else 0.8)
