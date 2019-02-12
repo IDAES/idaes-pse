@@ -4,20 +4,20 @@
 .. contents:: Contents
     :depth: 2
 
-The ControlVolume0D block is the most commonly used Control Volume class, and is used for systems where there is a well-mixed volume of fluid, or where variations in spatial domains are considered to be negligible. ControlVolume0D blocks generally contain two :ref:`StateBlocks <core/state_block:State Blocks>` - one for the incoming material and one for the material within and leaving the volume - and one :ref:`StateBlocks <core/reaction_block:Reaction Blocks>`.
+The ControlVolume0DBlock block is the most commonly used Control Volume class, and is used for systems where there is a well-mixed volume of fluid, or where variations in spatial domains are considered to be negligible. ControlVolume0DBlock blocks generally contain two :ref:`StateBlocks <core/state_block:State Blocks>` - one for the incoming material and one for the material within and leaving the volume - and one :ref:`StateBlocks <core/reaction_block:Reaction Blocks>`.
 
 .. module:: idaes.core.control_volume0d
 
-.. autoclass:: ControlVolume0D
+.. autoclass:: ControlVolume0DBlock
     :members:
 
-.. autoclass:: ControlVolume0dData
+.. autoclass:: ControlVolume0DBlockData
     :members:
 
-ControlVolume0D Equations
+ControlVolume0DBlock Equations
 -------------------------
 
-This section documents the variables and constraints created by each of the methods provided by the ControlVolume0D class.
+This section documents the variables and constraints created by each of the methods provided by the ControlVolume0DBlock class.
 
 * :math:`t` indicates time index
 * :math:`p` indicates phase index

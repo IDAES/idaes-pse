@@ -16,10 +16,10 @@ Physical Parameter Blocks
 
 Physical Parameter blocks serve as a central location for linking to a property package, and contain all the parameters and indexing sets used by a given property package.
 
-PhysicalParameterBase Class
+PhysicalParameterBlock Class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The role of the PhysicalParameterBase class is to set up the references required by the rest of the IDAES framework for constructing instances of StateBlocks and attaching these to the PhysicalParameter block for ease of use. This allows other models to be pointed to the PhysicalParameter block in order to collect the necessary information and to construct the necessary StateBlocks without the need for the user to do this manually.
+The role of the PhysicalParameterBlock class is to set up the references required by the rest of the IDAES framework for constructing instances of StateBlocks and attaching these to the PhysicalParameter block for ease of use. This allows other models to be pointed to the PhysicalParameter block in order to collect the necessary information and to construct the necessary StateBlocks without the need for the user to do this manually.
 
 Physical property packages form the core of any process model in the IDAES modeling framework, and are used by all of the other modeling components to inform them of what needs to be constructed. In order to do this, the IDAES modeling framework looks for a number of attributes in the PhysicalParameter block which are used to inform the construction of other components.
 
@@ -40,7 +40,7 @@ Physical Parameter blocks have one standard configuration argument:
 
 .. module:: idaes.core.property_base
 
-.. autoclass:: PhysicalParameterBase
+.. autoclass:: PhysicalParameterBlock
     :members:
 
 State Blocks
@@ -48,8 +48,8 @@ State Blocks
 
 State Blocks are used within all IDAES Unit models (generally within ControlVolume Blocks) in order to calculate physical properties given the state of the material. State Blocks are notably different to other types of Blocks within IDAES as they are always indexed by time (and possibly space as well). There are two base Classes associated with State Blocks:
 
-* StateBlockDataBase forms the base class for all StateBlockData objects, which contain the instructions on how to construct each instance of a State Block.
-* StateBlockBase is used for building classes which contain methods to be applied to sets of Indexed State Blocks (or to a subset of these). See the documentation on declare_process_block_class and the IDAES tutorials and examples for more information.
+* StateBlockData forms the base class for all StateBlockData objects, which contain the instructions on how to construct each instance of a State Block.
+* StateBlock is used for building classes which contain methods to be applied to sets of Indexed State Blocks (or to a subset of these). See the documentation on declare_process_block_class and the IDAES tutorials and examples for more information.
 
 State Block Construction Arguments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -60,17 +60,17 @@ State Blocks have the following construction arguments:
 * defined_state - this argument indicates whether the State Block should expect the material state to be fully defined by another part of the flowsheet (such as by an upstream unit operation). This argument is used to determine whether constraints such as sums of mole fractions should be enforced.
 * has_phase_equilibrium - indicates whether the associated Control Volume or Unit model expects phase equilibrium to be enforced (if applicable).
 
-StateBlockDataBase Class
+StateBlockData Class
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-StateBlockDataBase contains the code necessary for implementing the as needed construction of variables and constraints.
+StateBlockData contains the code necessary for implementing the as needed construction of variables and constraints.
 
 
-.. autoclass:: StateBlockDataBase
+.. autoclass:: StateBlockData
     :members:
 
-StateBlockBase Class
+StateBlock Class
 ^^^^^^^^^^^^^^^^^^^^
 
-.. autoclass:: StateBlockBase
+.. autoclass:: StateBlock
     :members:

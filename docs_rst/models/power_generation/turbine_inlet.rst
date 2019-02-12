@@ -49,13 +49,16 @@ and are usually fixed.  See the the variables section for more information.
 Model Structure
 ---------------
 
-The turbine inlet stage model contains one :ref:`ControlVolume0D block
+The turbine inlet stage model contains one :ref:`ControlVolume0DBlock block
 <core/control_volume_0d:0D Control Volume Class>` called control\_volume and
 inherits the :ref:`pressure changer model
 <models/pressure_changer:Pressure Changer>` using the isentropic option.
 
 Variables
 ---------
+The variables below are defined int the TurbineInletStage model. Additional variables
+are in inherited from the PressureChanger model.
+
 =========================== ======================== =========== ======================================================================
 Variable                    Symbol                   Index Sets  Doc
 =========================== ======================== =========== ======================================================================
@@ -66,6 +69,19 @@ Variable                    Symbol                   Index Sets  Doc
 ``blade_velocity``          :math:`V_{rbl}`          None        Turbine blade velocity (should be constant while running) [m/s]
 ``delta_enth_isentropic``   :math:`\Delta h_{isen}`  time        Isentropic enthalpy change through stage [J/mol]
 =========================== ======================== =========== ======================================================================
+
+The table below shows important variables inherited from the pressure changer model.
+
+=========================== ======================== =========== =================================================================================
+Variable                    Symbol                   Index Sets  Doc
+=========================== ======================== =========== =================================================================================
+``efficiency_isentropic``   :math:`\eta_{isen}`      time        Isentropic efficiency
+``deltaP``                  :math:`\Delta P`         time        Pressure change (:math:`P_{out} - P_{in}`) [Pa]
+``ratioP``                  :math:`P_{ratio}`        time        Ratio on discharge pressure to inlet pressure ((:math:`\dfrac{P_{out}}{P_{in}}`))
+=========================== ======================== =========== =================================================================================
+
+:math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only
+
 
 Expressions
 -----------

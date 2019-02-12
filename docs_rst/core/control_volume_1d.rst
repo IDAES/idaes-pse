@@ -4,20 +4,20 @@
 .. contents:: Contents 
     :depth: 2
 
-The ControlVolume1D block is used for systems with one spatial dimension where material flows parallel to the spatial domain. Examples of these types of unit operations include plug flow reactors and pipes. ControlVolume1D blocks are discretized along the length domain and contain one StateBlock and one ReactionBlock (if applicable) at each point in the domain (including the inlet and outlet).
+The ControlVolume1DBlock block is used for systems with one spatial dimension where material flows parallel to the spatial domain. Examples of these types of unit operations include plug flow reactors and pipes. ControlVolume1DBlock blocks are discretized along the length domain and contain one StateBlock and one ReactionBlock (if applicable) at each point in the domain (including the inlet and outlet).
 
 .. module:: idaes.core.control_volume1d
 
-.. autoclass:: ControlVolume1D
+.. autoclass:: ControlVolume1DBlock
     :members:
 
-.. autoclass:: ControlVolume1dData
+.. autoclass:: ControlVolume1DBlockData
     :members:
 
-ControlVolume1D Equations
+ControlVolume1DBlock Equations
 -------------------------
 
-This section documents the variables and constraints created by each of the methods provided by the ControlVolume0D class.
+This section documents the variables and constraints created by each of the methods provided by the ControlVolume0DBlock class.
 
 * :math:`t` indicates time index
 * :math:`x` indicates spatial (length) index
@@ -26,14 +26,14 @@ This section documents the variables and constraints created by each of the meth
 * :math:`e` indicates element index
 * :math:`r` indicates reaction name index
 
-Most terms within the balance equations written by ControlVolume1D are on a basis of per unit length (e.g. :math:`mol/m \cdot s`).
+Most terms within the balance equations written by ControlVolume1DBlock are on a basis of per unit length (e.g. :math:`mol/m \cdot s`).
 
 add_geometry
 ^^^^^^^^^^^^
 
-The add_geometry method creates the normalized length domain for the control volume (or a reference to an external domain). All constraints in ControlVolume1D assume a normalized length domain, with values between 0 and 1.
+The add_geometry method creates the normalized length domain for the control volume (or a reference to an external domain). All constraints in ControlVolume1DBlock assume a normalized length domain, with values between 0 and 1.
 
-This method also adds variables and constraints to describe the geometry of the control volume. ControlVolume1D does not support varying dimensions of the control volume with time at this stage.
+This method also adds variables and constraints to describe the geometry of the control volume. ControlVolume1DBlock does not support varying dimensions of the control volume with time at this stage.
 
 **Variables**
 
