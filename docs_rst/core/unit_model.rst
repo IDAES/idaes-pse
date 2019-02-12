@@ -4,7 +4,7 @@ Unit Model Class
 The UnitModelBlock is class is designed to form the basis of all IDAES Unit Models, and contains a number of methods which are common to all Unit Models.
 
 UnitModelBlock Construction Arguments
---------------------------------
+--------------------------------------
 
 The UnitModelBlock class by default has only one construction argument, which is listed below. However, most models inheriting from UnitModelBlock should declare their own set of configuration arguments which contain more information on how the model should be constructed.
 
@@ -43,7 +43,7 @@ Initialization Routine
 All Unit Models need to have an initialization routine, which should be customized for each Unit model, In order to ensure that all Unit models have at least a basic initialization routine, UnitModelBlock contains a generic initialization procedure which may be sufficient for simple models with only one Holdup Block. Model developers are strongly encouraged to write their own initialization routines rather than relying on the default method.
 
 UnitModelBlock Classes
------------------
+-----------------------
 
 .. module:: idaes.core.unit_model
 

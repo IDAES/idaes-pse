@@ -44,20 +44,21 @@ Degrees of Freedom
 
 Usually the inlet stream, or the inlet stream minus flow rate plus discharge
 pressure are fixed. The are also a few variables which are turbine parameters
-and are usually fixed.  See the the variables section for more information.
+and are usually fixed.  See the variables section for more information.
 
 Model Structure
 ---------------
 
 The turbine inlet stage model contains one :ref:`ControlVolume0DBlock block
 <core/control_volume_0d:0D Control Volume Class>` called control\_volume and
-inherits the :ref:`pressure changer model
+inherits the :ref:`PressureChanger model
 <models/pressure_changer:Pressure Changer>` using the isentropic option.
 
 Variables
 ---------
 The variables below are defined int the TurbineInletStage model. Additional variables
-are in inherited from the PressureChanger model.
+are in inherited from the :ref:`PressureChanger model
+<models/pressure_changer:Pressure Changer>` model.
 
 =========================== ======================== =========== ======================================================================
 Variable                    Symbol                   Index Sets  Doc
@@ -72,13 +73,13 @@ Variable                    Symbol                   Index Sets  Doc
 
 The table below shows important variables inherited from the pressure changer model.
 
-=========================== ======================== =========== =================================================================================
+=========================== ======================== =========== ==========================================================================================
 Variable                    Symbol                   Index Sets  Doc
-=========================== ======================== =========== =================================================================================
+=========================== ======================== =========== ==========================================================================================
 ``efficiency_isentropic``   :math:`\eta_{isen}`      time        Isentropic efficiency
 ``deltaP``                  :math:`\Delta P`         time        Pressure change (:math:`P_{out} - P_{in}`) [Pa]
-``ratioP``                  :math:`P_{ratio}`        time        Ratio on discharge pressure to inlet pressure ((:math:`\dfrac{P_{out}}{P_{in}}`))
-=========================== ======================== =========== =================================================================================
+``ratioP``                  :math:`P_{ratio}`        time        Ratio on discharge pressure to inlet pressure :math:`\left(\frac{P_{out}}{P_{in}}\right)`
+=========================== ======================== =========== ==========================================================================================
 
 :math:`\eta_{isentropic,t}` efficiency_isentropic Isentropic assumption only
 
@@ -104,8 +105,8 @@ the stage, which is used in the efficiency calculation.
 Constraints
 -----------
 
-In addition to the constraints inherited from the :ref:`pressure changer model
-<models/pressure_changer:Pressure Changer>` with the isentropic options.  This
+In addition to the constraints inherited from the :ref:`PressureChanger model
+<models/pressure_changer:Pressure Changer>` with the isentropic options, this
 model contains two more constraints, one to estimate efficiency and one pressure-flow
 relation.  From the isentropic pressure changer model, these constraints eliminate the
 need to specify efficiency and either inlet flow or outlet pressure.
@@ -129,10 +130,10 @@ Initialization
 --------------
 
 The initialization method for this model will save the current state of the model
-before commencing initialization and reloads it after.  The state of the model after
-initialization will be the same after initialization, only the initial guesses for
+before commencing initialization and reloads it afterwards.  The state of the model
+will be the same after initialization, only the initial guesses for
 unfixed variables will be changed.  To initialize this model, provide a starting
-value for the inlet port variables.  Then provide an guess for one of: discharge
+value for the inlet port variables.  Then provide a guess for one of: discharge
 pressure, ``deltaP``, or ``ratioP``.
 
 The model should initialize readily, but it is possible to provide a flow

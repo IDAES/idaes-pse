@@ -15,7 +15,7 @@ The ControlVolume0DBlock block is the most commonly used Control Volume class, a
     :members:
 
 ControlVolume0DBlock Equations
--------------------------
+-------------------------------
 
 This section documents the variables and constraints created by each of the methods provided by the ControlVolume0DBlock class.
 

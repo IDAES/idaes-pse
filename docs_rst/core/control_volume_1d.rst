@@ -1,7 +1,7 @@
 1D Control Volume Class
 =======================
 
-.. contents:: Contents 
+.. contents:: Contents
     :depth: 2
 
 The ControlVolume1DBlock block is used for systems with one spatial dimension where material flows parallel to the spatial domain. Examples of these types of unit operations include plug flow reactors and pipes. ControlVolume1DBlock blocks are discretized along the length domain and contain one StateBlock and one ReactionBlock (if applicable) at each point in the domain (including the inlet and outlet).
@@ -15,7 +15,7 @@ The ControlVolume1DBlock block is used for systems with one spatial dimension wh
     :members:
 
 ControlVolume1DBlock Equations
--------------------------
+-------------------------------
 
 This section documents the variables and constraints created by each of the methods provided by the ControlVolume0DBlock class.
 
