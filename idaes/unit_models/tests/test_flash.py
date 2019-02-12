@@ -22,7 +22,7 @@ from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType, useDefault)
 from idaes.unit_models.flash import Flash as FL
-from idaes.property_models.BTX_ideal_VLE import PhysicalParameterBlock
+from idaes.property_models.BTX_ideal_VLE import IdealParameterBlock
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -41,7 +41,7 @@ else:
 m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
-m.fs.properties = PhysicalParameterBlock()
+m.fs.properties = IdealParameterBlock()
 m.fs.flash = FL(default={"property_package": m.fs.properties})
 
 

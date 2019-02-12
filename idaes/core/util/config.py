@@ -33,15 +33,15 @@ def is_physical_parameter_block(val):
         val : value to be checked
 
     Returns:
-        ConfigurationError if val is not an instance of PhysicalParameterBase
+        ConfigurationError if val is not an instance of PhysicalParameterBlock
         or useDefault
     '''
-    from idaes.core.property_base import PhysicalParameterBase
-    if isinstance(val, PhysicalParameterBase) or val == useDefault:
+    from idaes.core.property_base import PhysicalParameterBlock
+    if isinstance(val, PhysicalParameterBlock) or val == useDefault:
         return val
     else:
         _log.error("Property package argument {} should == useDefault or "
-                   "be an instance of PhysicalParameterBase".format(val))
+                   "be an instance of PhysicalParameterBlock".format(val))
         raise ConfigurationError(
                 """Property package argument should be an instance
                 of a PhysicalParameterBlock or useDefault""")
@@ -54,10 +54,10 @@ def is_reaction_parameter_block(val):
         val : value to be checked
 
     Returns:
-        ConfigurationError if val is not an instance of ReactionParameterBase
+        ConfigurationError if val is not an instance of ReactionParameterBlock
     '''
-    from idaes.core.reaction_base import ReactionParameterBase
-    if isinstance(val, ReactionParameterBase):
+    from idaes.core.reaction_base import ReactionParameterBlock
+    if isinstance(val, ReactionParameterBlock):
         return val
     else:
         raise ConfigurationError(
@@ -72,11 +72,11 @@ def is_state_block(val):
         val : value to be checked
 
     Returns:
-        ConfigurationError if val is not an instance of StateBlockBase
+        ConfigurationError if val is not an instance of StateBlock
         or None
     '''
-    from idaes.core.property_base import StateBlockBase
-    if (isinstance(val, StateBlockBase) or val is None):
+    from idaes.core.property_base import StateBlock
+    if (isinstance(val, StateBlock) or val is None):
         return val
     else:
         raise ConfigurationError(

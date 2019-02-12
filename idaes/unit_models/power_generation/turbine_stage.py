@@ -11,7 +11,9 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Steam turbine outlet stage model.  This model is based on:
+Steam turbine stage model. This is a standard isentropic turine. Under off-design
+conditions the base efficency and pressure ratio do not change much for the stages
+between the inlet and outlet. This model is based on:
 
 Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
@@ -37,8 +39,8 @@ from idaes.ui.report import degrees_of_freedom
 @declare_process_block_class("TurbineStage",
     doc="Basic steam turbine model")
 class TurbineStageData(PressureChangerData):
-    # Same setings as the default pressure changer, but force to expander with
-    # isentroic efficiency
+    # Same settings as the default pressure changer, but force to expander with
+    # isentropic efficiency
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = False
     CONFIG.get('compressor')._default = False
@@ -64,7 +66,7 @@ class TurbineStageData(PressureChangerData):
             return b.power_thermo[t]*b.efficiency_mech
 
     def initialize(self, state_args={}, outlvl=0, solver='ipopt',
-        optarg={'tol': 1e-6}):
+        optarg={'tol': 1e-6, 'max_iter':30}):
         """
         Initialize the turbine stage model.  This deactivates the
         specialized constraints, then does the isentropic turbine initialization,
@@ -93,7 +95,7 @@ class TurbineStageData(PressureChangerData):
                 v.fix()
             for k, v in self.outlet[t].vars.items():
                 v.unfix()
-            # If there isn't a good guess for efficeny or outlet pressure
+            # If there isn't a good guess for efficiency or outlet pressure
             # provide something reasonable.
             eff = self.efficiency_isentropic[t]
             eff.fix(eff.value if value(eff) > 0.3 and value(eff) < 1.0 else 0.8)

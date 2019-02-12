@@ -18,7 +18,7 @@ Typical fixed variables are:
 Model Structure
 ---------------
 
-The core 1-D Heat Exchanger Model unit model consists of two ControlVolume1D Blocks (named shell and tube), each with one Inlet Port (named shell_inlet and tube_inlet) and one Outlet Port (named shell_outlet and tube_outlet).
+The core 1-D Heat Exchanger Model unit model consists of two ControlVolume1DBlock Blocks (named shell and tube), each with one Inlet Port (named shell_inlet and tube_inlet) and one Outlet Port (named shell_outlet and tube_outlet).
 
 Construction Arguments
 ----------------------
@@ -54,7 +54,7 @@ Arguments that are applicable to the tube side:
 * transformation_scheme - argument to specify the scheme to use for the selected DAE transformation method; should be compatible with the Pyomo DAE TransformationFactory
 
 
-Additionally, 1-D Heat Exchanger units have the following construction arguments which are passed to the ControlVolume1D Block for determining which terms to construct in the balance equations for the shell and tube side.
+Additionally, 1-D Heat Exchanger units have the following construction arguments which are passed to the ControlVolume1DBlock Block for determining which terms to construct in the balance equations for the shell and tube side.
 
 ========================= =================
 Argument                  Default Value
@@ -97,7 +97,7 @@ where :math:`A_{shell}` and :math:`A_{tube}` are the shell and tube areas respec
 Variables
 ---------
 
-1-D Heat Exchanger units add the following additional Variables beyond those created by the ControlVolume1D Block.
+1-D Heat Exchanger units add the following additional Variables beyond those created by the ControlVolume1DBlock Block.
 
 ====================== =============================== =========================
 Variable               Name                            Notes

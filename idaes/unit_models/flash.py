@@ -22,12 +22,12 @@ import logging
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.unit_models.separator import Separator, SplittingType
 
@@ -42,7 +42,7 @@ logger = logging.getLogger('idaes.unit_model')
 
 
 @declare_process_block_class("Flash")
-class FlashData(UnitBlockData):
+class FlashData(UnitModelBlockData):
     """
     Standard Flash Unit Model Class
     """
@@ -159,7 +159,7 @@ see property package for documentation.}"""))
         super(FlashData, self).build()
 
         # Build Control Volume
-        self.control_volume = ControlVolume0D(default={
+        self.control_volume = ControlVolume0DBlock(default={
             "dynamic": self.config.dynamic,
             "has_holdup": self.config.has_holdup,
             "property_package": self.config.property_package,

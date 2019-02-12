@@ -63,5 +63,5 @@ def test_initialize(build_turbine):
     m.fs.turb.inlet[:].pressure.value = 8e6
     m.fs.turb.efficiency_isentropic[:].fix(0.8)
     m.fs.turb.ratioP[:].fix(0.7)
-    m.fs.turb.initialize(outlvl=4)
+    m.fs.turb.initialize(outlvl=4) # need to check for proper init
     assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be

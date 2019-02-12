@@ -32,7 +32,7 @@ from pyomo.environ import (Constraint,
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
-                        ReactionParameterBase,
+                        ReactionParameterBlock,
                         ReactionBlockDataBase,
                         ReactionBlockBase)
 from idaes.core.util.misc import add_object_reference
@@ -45,8 +45,8 @@ __author__ = "Andrew Lee"
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("ReactionParameterBlock")
-class ReactionParameterData(ReactionParameterBase):
+@declare_process_block_class("SaponificationReactionParameterBlock")
+class ReactionParameterData(ReactionParameterBlock):
     """
     Property Parameter Block Class
 

@@ -37,8 +37,8 @@ from idaes.ui.report import degrees_of_freedom
 @declare_process_block_class("TurbineOutletStage",
     doc="Outlet stage steam turbine model")
 class TurbineOutletStageData(PressureChangerData):
-    # Same setings as the default pressure changer, but force to expander with
-    # isentroic efficiency
+    # Same settings as the default pressure changer, but force to expander with
+    # isentropic efficiency
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = False
     CONFIG.get('compressor')._default = False
@@ -107,7 +107,7 @@ class TurbineOutletStageData(PressureChangerData):
             return b.power_thermo[t]*b.efficiency_mech
 
     def initialize(self, state_args={}, outlvl=0, solver='ipopt',
-        optarg={'tol': 1e-6}):
+        optarg={'tol': 1e-6, 'max_iter':30}):
         """
         Initialize the outlet turbine stage model.  This deactivates the
         specialized constraints, then does the isentropic turbine initialization,
@@ -143,7 +143,7 @@ class TurbineOutletStageData(PressureChangerData):
                 v.fix()
             for k, v in self.outlet[t].vars.items():
                 v.unfix()
-            # If there isn't a good guess for efficeny or outlet pressure
+            # If there isn't a good guess for efficiency or outlet pressure
             # provide something reasonable.
             eff = self.efficiency_isentropic[t]
             eff.fix(eff.value if value(eff) > 0.3 and value(eff) < 1.0 else 0.8)
@@ -196,7 +196,7 @@ class TurbineOutletStageData(PressureChangerData):
             else:
                 _log.warning(
 """{} Initialization Failed. The most likely cause of initialization failure for
-the Turbine inlet stages model is that the flow coefficent is not compatable
+the Turbine inlet stages model is that the flow coefficent is not compatible
 with flow rate guess.""".format(self.name))
 
         # reload original spec

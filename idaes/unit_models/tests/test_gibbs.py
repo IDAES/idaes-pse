@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for ControlVolumeBase.
+Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """
@@ -22,7 +22,7 @@ from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.gibbs_reactor import GibbsReactor
 from idaes.property_models.methane_combustion_ideal import (
-                        PhysicalParameterBlock)
+                        MethaneCombustionParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -42,7 +42,7 @@ def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
+    m.fs.properties = MethaneCombustionParameterBlock()
 
     m.fs.gibbs = GibbsReactor(default={"property_package": m.fs.properties,
                                        "has_heat_transfer": True})
@@ -69,7 +69,7 @@ def test_initialize_temperature():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
+    m.fs.properties = MethaneCombustionParameterBlock()
 
     m.fs.gibbs = GibbsReactor(default={"property_package": m.fs.properties,
                                        "has_heat_transfer": True})
@@ -129,7 +129,7 @@ def test_initialize_heat_duty():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
+    m.fs.properties = MethaneCombustionParameterBlock()
 
     m.fs.gibbs = GibbsReactor(default={"property_package": m.fs.properties,
                                        "has_heat_transfer": True})

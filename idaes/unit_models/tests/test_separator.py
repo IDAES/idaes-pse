@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for ControlVolumeBase.
+Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """
@@ -23,9 +23,9 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.core import (FlowsheetBlockData,
                         declare_process_block_class,
-                        PhysicalParameterBase,
-                        StateBlockBase,
-                        StateBlockDataBase)
+                        PhysicalParameterBlock,
+                        StateBlock,
+                        StateBlockData)
 from idaes.unit_models.separator import (Separator,
                                          SeparatorData,
                                          SplittingType)
@@ -42,8 +42,8 @@ class _Flowsheet(FlowsheetBlockData):
         super(_Flowsheet, self).build()
 
 
-@declare_process_block_class("PhysicalParameterBlock")
-class _PhysicalParameterBlock(PhysicalParameterBase):
+@declare_process_block_class("PhysicalParameterTestBlock")
+class _PhysicalParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_PhysicalParameterBlock, self).build()
 
@@ -51,7 +51,7 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
         self.component_list = Set(initialize=["c1", "c2"])
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
 
-        self.state_block_class = StateBlock
+        self.state_block_class = TestStateBlock
 
     @classmethod
     def define_metadata(cls, obj):
@@ -64,7 +64,7 @@ class _PhysicalParameterBlock(PhysicalParameterBase):
                                'holdup': 'mol'})
 
 
-class SBlockBase(StateBlockBase):
+class SBlockBase(StateBlock):
     def initialize(blk, outlvl=0, optarg=None, solver=None,
                    hold_state=False, **state_args):
         for k in blk.keys():
@@ -76,12 +76,12 @@ class SBlockBase(StateBlockBase):
             blk[k].hold_state = not blk[k].hold_state
 
 
-@declare_process_block_class("StateBlock", block_class=SBlockBase)
-class StateBlockData(StateBlockDataBase):
+@declare_process_block_class("TestStateBlock", block_class=SBlockBase)
+class StateTestBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 
     def build(self):
-        super(StateBlockData, self).build()
+        super(StateTestBlockData, self).build()
 
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"])
@@ -123,7 +123,7 @@ class SeparatorFrameData(SeparatorData):
 def test_separator_config():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
 
@@ -144,7 +144,7 @@ def test_separator_config():
 def test_inherited_methods():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
 
@@ -158,7 +158,7 @@ def test_inherited_methods():
 def test_create_outlet_list_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
 
@@ -174,7 +174,7 @@ def test_create_outlet_list_default():
 def test_create_outlet_list_outlet_list():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "outlet_list": ["foo", "bar"]})
@@ -191,7 +191,7 @@ def test_create_outlet_list_outlet_list():
 def test_create_outlet_list_num_outlets():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "num_outlets": 3})
@@ -208,7 +208,7 @@ def test_create_outlet_list_num_outlets():
 def test_create_outlet_list_both_args_consistent():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "outlet_list": ["foo", "bar"],
@@ -226,7 +226,7 @@ def test_create_outlet_list_both_args_consistent():
 def test_create_outlet_list_both_args_inconsistent():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "outlet_list": ["foo", "bar"],
@@ -242,7 +242,7 @@ def test_create_outlet_list_both_args_inconsistent():
 def test_add_outlet_state_blocks():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "outlet_list": ["foo", "bar"]})
@@ -253,12 +253,12 @@ def test_add_outlet_state_blocks():
     outlet_list = m.fs.sep.create_outlet_list()
     outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
 
-    assert isinstance(m.fs.sep.foo_state, StateBlockBase)
-    assert isinstance(m.fs.sep.bar_state, StateBlockBase)
+    assert isinstance(m.fs.sep.foo_state, StateBlock)
+    assert isinstance(m.fs.sep.bar_state, StateBlock)
 
     assert len(outlet_blocks) == 2
     for o in outlet_blocks:
-        assert isinstance(o, StateBlockBase)
+        assert isinstance(o, StateBlock)
         assert o.local_name in ["foo_state", "bar_state"]
         assert o[0].config.has_phase_equilibrium is False
         assert o[0].config.defined_state is False
@@ -268,7 +268,7 @@ def test_add_outlet_state_blocks():
 def test_add_outlet_state_blocks_prop_pack_args():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "property_package_args": {"test": 1},
@@ -280,12 +280,12 @@ def test_add_outlet_state_blocks_prop_pack_args():
     outlet_list = m.fs.sep.create_outlet_list()
     outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
 
-    assert isinstance(m.fs.sep.foo_state, StateBlockBase)
-    assert isinstance(m.fs.sep.bar_state, StateBlockBase)
+    assert isinstance(m.fs.sep.foo_state, StateBlock)
+    assert isinstance(m.fs.sep.bar_state, StateBlock)
 
     assert len(outlet_blocks) == 2
     for o in outlet_blocks:
-        assert isinstance(o, StateBlockBase)
+        assert isinstance(o, StateBlock)
         assert o.local_name in ["foo_state", "bar_state"]
         assert o[0].config.has_phase_equilibrium is False
         assert o[0].config.defined_state is False
@@ -296,7 +296,7 @@ def test_add_outlet_state_blocks_prop_pack_args():
 def test_add_mixed_state_block():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
 
@@ -305,7 +305,7 @@ def test_add_mixed_state_block():
 
     mixed_block = m.fs.sep.add_mixed_state_block()
 
-    assert isinstance(mixed_block, StateBlockBase)
+    assert isinstance(mixed_block, StateBlock)
     assert hasattr(m.fs.sep, "mixed_state")
     assert m.fs.sep.mixed_state[0].config.has_phase_equilibrium is False
     assert m.fs.sep.mixed_state[0].config.defined_state is True
@@ -315,7 +315,7 @@ def test_add_mixed_state_block():
 def test_add_mixed_state_block_prop_pack_args():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "property_package_args": {"test": 1}})
@@ -325,7 +325,7 @@ def test_add_mixed_state_block_prop_pack_args():
 
     mixed_block = m.fs.sep.add_mixed_state_block()
 
-    assert isinstance(mixed_block, StateBlockBase)
+    assert isinstance(mixed_block, StateBlock)
     assert hasattr(m.fs.sep, "mixed_state")
     assert m.fs.sep.mixed_state[0].config.has_phase_equilibrium is False
     assert m.fs.sep.mixed_state[0].config.defined_state is True
@@ -336,8 +336,8 @@ def test_add_mixed_state_block_prop_pack_args():
 def test_get_mixed_state_block():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "mixed_state_block": m.fs.sb})
@@ -353,8 +353,8 @@ def test_get_mixed_state_block():
 def test_get_mixed_state_block_none():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
 
@@ -368,8 +368,8 @@ def test_get_mixed_state_block_none():
 def test_get_mixed_state_block_mismatch():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     # Change parameters arg to create mismatch
     m.fs.sb[0].config.parameters = None
@@ -389,8 +389,8 @@ def test_get_mixed_state_block_mismatch():
 def test_add_split_fractions_total():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "mixed_state_block": m.fs.sb})
@@ -413,8 +413,8 @@ def test_add_split_fractions_total():
 def test_add_split_fractions_phase():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "mixed_state_block": m.fs.sb,
@@ -443,8 +443,8 @@ def test_add_split_fractions_phase():
 def test_add_split_fractions_component():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "mixed_state_block": m.fs.sb,
@@ -474,8 +474,8 @@ def test_add_split_fractions_component():
 def test_add_split_fractions_phase_component():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "mixed_state_block": m.fs.sb,
@@ -506,8 +506,8 @@ def test_add_split_fractions_phase_component():
 def test_add_material_splitting_constraints_total():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "mixed_state_block": m.fs.sb})
@@ -529,8 +529,8 @@ def test_add_material_splitting_constraints_total():
 def test_add_material_splitting_constraints_phase():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "mixed_state_block": m.fs.sb,
@@ -553,8 +553,8 @@ def test_add_material_splitting_constraints_phase():
 def test_add_material_splitting_constraints_component():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "mixed_state_block": m.fs.sb,
@@ -578,8 +578,8 @@ def test_add_material_splitting_constraints_component():
 def test_add_material_splitting_constraints_phase_component():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "mixed_state_block": m.fs.sb,
@@ -603,9 +603,9 @@ def test_add_material_splitting_constraints_phase_component():
 def test_add_energy_splitting_constraints():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb})
@@ -626,9 +626,9 @@ def test_add_energy_splitting_constraints():
 def test_add_momentum_splitting_constraints():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb})
@@ -649,7 +649,7 @@ def test_add_momentum_splitting_constraints():
 def test_add_inlet_port_objects():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
 
@@ -668,7 +668,7 @@ def test_add_inlet_port_objects():
 def test_add_inlet_port_objects_construct_ports_False():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "construct_ports": False})
@@ -688,7 +688,7 @@ def test_add_inlet_port_objects_construct_ports_False():
 def test_add_outlet_port_objects():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
 
@@ -708,7 +708,7 @@ def test_add_outlet_port_objects():
 def test_add_outlet_port_objects_construct_ports_False():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                        "construct_ports": False})
@@ -729,7 +729,7 @@ def test_add_outlet_port_objects_construct_ports_False():
 def test_build_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = Separator(default={"property_package": m.fs.pp,
                                   "ideal_separation": False})
@@ -749,7 +749,7 @@ def test_build_default():
 def test_model_checks():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.sep = Separator(default={
             "property_package": m.fs.pp,
@@ -765,8 +765,8 @@ def test_model_checks():
 def test_initialize():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = Separator(default={
             "property_package": m.fs.pp,
@@ -812,8 +812,8 @@ def test_initialize():
 def test_initialize_inconsistent_keys():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterBlock()
-    m.fs.sb = StateBlock(m.fs.time, default={"parameters": m.fs.pp})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
 
     m.fs.sep = Separator(default={
             "property_package": m.fs.pp,
@@ -831,7 +831,7 @@ def test_initialize_inconsistent_keys():
 # -----------------------------------------------------------------------------
 # Testing of ideal splitting methods
 @declare_process_block_class("PhysicalParameterBlock2")
-class _PhysicalParameterBlock2(PhysicalParameterBase):
+class _PhysicalParameterBlock2(PhysicalParameterBlock):
     def build(self):
         super(_PhysicalParameterBlock2, self).build()
 
@@ -853,7 +853,7 @@ class _PhysicalParameterBlock2(PhysicalParameterBase):
 
 
 @declare_process_block_class("StateBlock2", block_class=SBlockBase)
-class StateBlockData2(StateBlockDataBase):
+class StateBlockData2(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 
     def build(self):
