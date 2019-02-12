@@ -116,12 +116,12 @@ see property package for documentation.}"""))
     config.declare("hp_split_num_outlets", ConfigValue(
         default={},
         domain=dict,
-        description="Dict, hp split index: number of splitter outlets"))
+        description="Dict, hp split index: number of splitter outlets, if not 2"))
     config.declare("ip_split_num_outlets", ConfigValue(
         default={},
         domain=dict,
-        description="Dict, ip split index: number of splitter outlets"))
+        description="Dict, ip split index: number of splitter outlets, if not 2"))
     config.declare("lp_split_num_outlets", ConfigValue(
         default={},
         domain=dict,
-        description="Dict, lp split index: number of splitter outlets"))
+        description="Dict, lp split index: number of splitter outlets, if not 2"))

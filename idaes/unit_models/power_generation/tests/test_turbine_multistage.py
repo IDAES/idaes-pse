@@ -43,14 +43,22 @@ def build_turbine_for_buid_test():
         "property_package": m.fs.properties,
         "hp_split_locations": [0],
         "ip_split_locations": [1,2],
-        "lp_split_locations": [3,4]})
+        "lp_split_locations": [3,4],
+        "lp_split_num_outlets": {3:3}})
     return m
 
 def test_basic_build(build_turbine_for_buid_test):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine_for_buid_test
     turb = m.fs.turb
-    assert(isinstance(turb.inlet_stage, TurbineInletStage))
+    #assert(isinstance(turb.inlet_stage, TurbineInletStage))
+    """
+    assert(0 not in turb.inlet_stage)
+    assert(1 in turb.inlet_stage)
+    assert(2 in turb.inlet_stage)
+    assert(3 in turb.inlet_stage)
+    assert(4 in turb.inlet_stage)
+    assert(5 not in turb.inlet_stage)
     assert(isinstance(turb.outlet_stage, TurbineOutletStage))
     assert(isinstance(turb.hp_stages, TurbineStage))
     assert(isinstance(turb.ip_stages, TurbineStage))
@@ -96,3 +104,22 @@ def test_basic_build(build_turbine_for_buid_test):
         assert((i,2) in turb.lp_stream)
     assert((5,1) not in turb.lp_stream)
     assert((5,2) not in turb.lp_stream)
+
+    # though to test everything here so to make sure connections are right
+    # will fix split fractions except one for each splitter.  in this case
+    # with no disconnections that should leave the number of variables in the
+    # inlet port as the degrees of freedom
+    """
+    '''
+    turb.hp_split[0].split_fraction[0,"outlet_2"].fix(0.05)
+    turb.ip_split[1].split_fraction[0,"outlet_2"].fix(0.05)
+    turb.ip_split[2].split_fraction[0,"outlet_2"].fix(0.05)
+    turb.lp_split[3].split_fraction[0,"outlet_2"].fix(0.05)
+    turb.lp_split[3].split_fraction[0,"outlet_3"].fix(0.05)
+    turb.lp_split[4].split_fraction[0,"outlet_2"].fix(0.05)
+    '''
+    turb.inlet_split.split_fraction[0,"outlet_2"].fix(0.25)
+    turb.inlet_split.split_fraction[0,"outlet_3"].fix(0.25)
+    turb.inlet_split.split_fraction[0,"outlet_4"].fix(0.25)
+    turb.display()
+    assert(degrees_of_freedom(m)==3)
