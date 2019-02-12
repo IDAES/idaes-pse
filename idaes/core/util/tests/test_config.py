@@ -21,7 +21,7 @@ from pyomo.network import Port
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlock,
-                        StateBlockDataBase,
+                        StateBlockData,
                         ReactionParameterBlock,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
@@ -98,7 +98,7 @@ def test_is_reaction_parameter_block_fails():
 
 
 @declare_process_block_class("TestStateBlock", block_class=StateBlock)
-class StateTestBlockData(StateBlockDataBase):
+class StateTestBlockData(StateBlockData):
     def build(self):
         pass
 

@@ -25,7 +25,7 @@ from idaes.core import (FlowsheetBlockData,
                         declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlock,
-                        StateBlockDataBase)
+                        StateBlockData)
 from idaes.unit_models.separator import (Separator,
                                          SeparatorData,
                                          SplittingType)
@@ -77,7 +77,7 @@ class SBlockBase(StateBlock):
 
 
 @declare_process_block_class("TestStateBlock", block_class=SBlockBase)
-class StateTestBlockData(StateBlockDataBase):
+class StateTestBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 
     def build(self):
@@ -853,7 +853,7 @@ class _PhysicalParameterBlock2(PhysicalParameterBlock):
 
 
 @declare_process_block_class("StateBlock2", block_class=SBlockBase)
-class StateBlockData2(StateBlockDataBase):
+class StateBlockData2(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 
     def build(self):

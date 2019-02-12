@@ -57,7 +57,7 @@ from pyutilib.misc.config import ConfigValue
 
 # Import IDAES
 from idaes.core import declare_process_block_class, ProcessBlock, \
-                       StateBlock, StateBlockDataBase, PhysicalParameterBlock
+                       StateBlock, StateBlockData, PhysicalParameterBlock
 
 # Logger
 _log = logging.getLogger(__name__)
@@ -274,7 +274,7 @@ class _StateBlock(StateBlock):
 @declare_process_block_class("Iapws95StateBlock", block_class=_StateBlock, doc="""
     This is some placeholder doc.
     """)
-class Iapws95StateBlockData(StateBlockDataBase):
+class Iapws95StateBlockData(StateBlockData):
     """
     This is a property package for calcuating thermophysical properties of water
     """

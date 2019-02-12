@@ -21,7 +21,7 @@ from pyomo.common.config import ConfigBlock
 from idaes.core import (ControlVolume0DBlock, ControlVolumeBlockData, FlowsheetBlockData,
                         declare_process_block_class, FlowDirection,
                         PhysicalParameterBlock, StateBlock,
-                        StateBlockDataBase, ReactionParameterBlock,
+                        StateBlockData, ReactionParameterBlock,
                         ReactionBlockBase, ReactionBlockDataBase,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
@@ -78,7 +78,7 @@ class SBlockBase(StateBlock):
 
 
 @declare_process_block_class("TestStateBlock", block_class=SBlockBase)
-class StateTestBlockData(StateBlockDataBase):
+class StateTestBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 
     def build(self):

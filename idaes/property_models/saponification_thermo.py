@@ -35,7 +35,7 @@ from pyomo.opt import SolverFactory
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
-                        StateBlockDataBase,
+                        StateBlockData,
                         StateBlock)
 from idaes.core.util.misc import add_object_reference
 
@@ -249,7 +249,7 @@ class _StateBlock(StateBlock):
 
 @declare_process_block_class("SaponificationStateBlock",
                              block_class=_StateBlock)
-class SaponificationStateBlockData(StateBlockDataBase):
+class SaponificationStateBlockData(StateBlockData):
     """
     An example property package for properties for saponification of ethyl
     acetate

@@ -25,7 +25,7 @@ from idaes.core import (FlowsheetBlockData,
                         declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlock,
-                        StateBlockDataBase)
+                        StateBlockData)
 from idaes.unit_models.mixer import (Mixer,
                                      MixerData,
                                      MixingType,
@@ -78,7 +78,7 @@ class SBlockBase(StateBlock):
 
 
 @declare_process_block_class("TestStateBlock", block_class=SBlockBase)
-class StateTestBlockData(StateBlockDataBase):
+class StateTestBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
 
     def build(self):

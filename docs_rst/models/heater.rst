@@ -15,7 +15,7 @@ Example
 .. code-block:: python
 
   import pyomo.environ as pe # Pyomo environment
-  from idaes.core import FlowsheetBlock, StateBlockBase
+  from idaes.core import FlowsheetBlock, StateBlock
   from idaes.unit_models import Heater
   from idaes.property_models import iapws95_ph
 
@@ -46,7 +46,7 @@ freedom, which is the heat duty.
 Model Structure
 ---------------
 
-A heater model contains one ControlVolume0D block.
+A heater model contains one ControlVolume0DBlock block.
 
 Variables
 ---------
@@ -57,7 +57,7 @@ Constraints
 -----------
 
 A heater model contains no additional constraints beyond what are contained in
-a ControlVolume0D model.
+a ControlVolume0DBlock model.
 
 Heater Class
 ------------

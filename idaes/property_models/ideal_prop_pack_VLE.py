@@ -29,7 +29,7 @@ from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
-                        StateBlockDataBase,
+                        StateBlockData,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
@@ -231,7 +231,7 @@ class _IdealStateBlock(StateBlock):
 
 @declare_process_block_class("IdealStateBlock",
                              block_class=_IdealStateBlock)
-class IdealStateBlockData(StateBlockDataBase):
+class IdealStateBlockData(StateBlockData):
     """An example property package for ideal VLE."""
 
     def build(self):
