@@ -11,8 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Steam turbine stage model. This is a standard isentropic turine. Under off-design
-conditions the base efficency and pressure ratio do not change much for the stages
+Steam turbine stage model. This is a standard isentropic turbine. Under off-design
+conditions the base efficiency and pressure ratio do not change much for the stages
 between the inlet and outlet. This model is based on:
 
 Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
