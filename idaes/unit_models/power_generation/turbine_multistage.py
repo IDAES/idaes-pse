@@ -254,22 +254,23 @@ class TurbineMultistageData(UnitModelBlockData):
         # Splitter config
         s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
         s_cfg.update(split_basis=SplittingType.totalFlow,
-            ideal_separation=False, num_outlets=ni)
+            ideal_separation=True, num_outlets=ni)
         del s_cfg["has_holdup"]
         del s_cfg["has_phase_equilibrium"]
+        # add splitter
+        self.inlet_split = Separator(default=s_cfg)
 
+        '''
         # Mixer config
         m_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
         m_cfg.update(num_inlets=ni)
         del m_cfg["has_holdup"]
         del m_cfg["has_phase_equilibrium"]
-
-        # Add all the units
-        self.inlet_split = Separator(default=s_cfg)
-
-        '''
+        # Add mixer
         self.inlet_mix = Mixer(default=m_cfg)
+
         #TODO<jce> Add throttel valves for each inlet stage
+        # Add turbine stages
         self.inlet_stage = TurbineInletStage(RangeSet(ni), default=unit_cfg)
 
         # Add connections
