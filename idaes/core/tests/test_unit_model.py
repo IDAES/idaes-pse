@@ -69,7 +69,7 @@ def test_config_block():
 
     m.u = Unit()
 
-    assert len(m.u. config) == 1
+    assert len(m.u. config) == 2
     assert m.u.config.dynamic == useDefault
 
 
@@ -167,7 +167,7 @@ def test_setup_dynamics_has_holdup():
     m.fs = Flowsheet(default={"dynamic": True})
 
     m.fs.u = Unit()
-    m.fs.u.config.declare("has_holdup", ConfigValue(default=False))
+    m.fs.u.config.has_holdup=False
 
     with pytest.raises(ConfigurationError):
         m.fs.u._setup_dynamics()
