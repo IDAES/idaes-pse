@@ -26,7 +26,7 @@ from pyomo.environ import Param, NonNegativeReals, Set
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, PhysicalParameterBase
+from idaes.core import declare_process_block_class, PhysicalParameterBlock
 from idaes.core.util.misc import extract_data
 
 from idaes.property_models.ideal.ideal_prop_pack_VLE import IdealStateBlock
@@ -40,15 +40,15 @@ __version__ = "0.0.1"
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("PhysicalParameterBlock")
-class PhysicalParameterData(PhysicalParameterBase):
+@declare_process_block_class("IdealParameterBlock")
+class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
     Contains parameters and indexing sets associated with properties for
     BTX system.
     """
     # Config block for the _IdealStateBlock
-    CONFIG = PhysicalParameterBase.CONFIG()
+    CONFIG = PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare("valid_phase", ConfigValue(
         default='VL',

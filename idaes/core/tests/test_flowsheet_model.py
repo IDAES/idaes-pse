@@ -19,7 +19,7 @@ import pytest
 from pyomo.environ import AbstractModel, Block, ConcreteModel, Set
 from pyomo.dae import ContinuousSet
 from idaes.core import FlowsheetBlockData, declare_process_block_class, \
-                        PhysicalParameterBase, useDefault
+                        PhysicalParameterBlock, useDefault
 from idaes.ui.report import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
@@ -31,7 +31,7 @@ class _Flowsheet(FlowsheetBlockData):
 
 
 @declare_process_block_class("ParameterBlock")
-class _ParameterBlock(PhysicalParameterBase):
+class _ParameterBlock(PhysicalParameterBlock):
     pass
 
 def test_config_block():

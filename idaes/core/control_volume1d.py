@@ -31,7 +31,7 @@ from pyomo.dae import ContinuousSet, DerivativeVar
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
-                        ControlVolumeBase,
+                        ControlVolumeBlockData,
                         FlowDirection,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
@@ -49,16 +49,16 @@ _log = logging.getLogger(__name__)
 # TODO : add support for heat of reaction terms
 
 
-@declare_process_block_class("ControlVolume1D", doc="""
-    ControlVolume1D is a specialized Pyomo block for IDAES control volume
+@declare_process_block_class("ControlVolume1DBlock", doc="""
+    ControlVolume1DBlock is a specialized Pyomo block for IDAES control volume
     blocks discretized in one spatial direction, and contains instances of
-    ControlVolume1dData.
+    ControlVolume1DBlockData.
 
-    ControlVolume1D should be used for any control volume with a defined volume
+    ControlVolume1DBlock should be used for any control volume with a defined volume
     and distinct inlets and outlets where there is a single spatial domain
     parallel to the material flow direction. This encompases unit operations
     such as plug flow reactors and pipes.""")
-class ControlVolume1dData(ControlVolumeBase):
+class ControlVolume1DBlockData(ControlVolumeBlockData):
     """
     1-Dimensional ControlVolume Class
 
@@ -69,13 +69,13 @@ class ControlVolume1dData(ControlVolumeBase):
     """
     def build(self):
         """
-        Build method for ControlVolume1D blocks.
+        Build method for ControlVolume1DBlock blocks.
 
         Returns:
             None
         """
         # Call build method from base class
-        super(ControlVolume1dData, self).build()
+        super(ControlVolume1DBlockData, self).build()
 
     def add_geometry(self,
                      length_domain=None,

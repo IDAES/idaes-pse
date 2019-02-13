@@ -23,7 +23,7 @@ from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType)
 from idaes.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
 
-from idaes.property_models.examples.BFW_properties import PhysicalParameterBlock
+from idaes.property_models.examples.BFW_properties import BFWParameterBlock
 from idaes.ui.report import degrees_of_freedom
 
 # -----------------------------------------------------------------------------
@@ -42,7 +42,7 @@ else:
 m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
-m.fs.properties = PhysicalParameterBlock()
+m.fs.properties = BFWParameterBlock()
 m.fs.HX1D = HX1D(default={"shell_side": {"property_package": m.fs.properties},
                           "tube_side": {"property_package": m.fs.properties}})
 
