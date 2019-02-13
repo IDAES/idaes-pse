@@ -25,12 +25,12 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         MaterialBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
@@ -81,7 +81,7 @@ def _make_heater_control_volume(o, name, config):
     This is seperated from the main heater class so it can be reused to create
     control volumes for different types of heat exchange models.
     """
-    control_volume = ControlVolume0D(default={
+    control_volume = ControlVolume0DBlock(default={
         "dynamic": config.dynamic,
         "property_package": config.property_package,
         "property_package_args": config.property_package_args})
@@ -247,7 +247,7 @@ def _make_heat_exchanger_config(config):
 
 
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
-class HeaterData(UnitBlockData):
+class HeaterData(UnitModelBlockData):
     """
     Simple 0D heater unit.
     Unit model to add or remove heat from a material.
@@ -276,7 +276,7 @@ class HeaterData(UnitBlockData):
 
 @declare_process_block_class("HeatExchanger",
                              doc="Simple 0D heat exchanger model.")
-class HeatExchangerData(UnitBlockData):
+class HeatExchangerData(UnitModelBlockData):
     """
     Simple 0D heat exchange unit.
     Unit model to transfer heat from one material to another.

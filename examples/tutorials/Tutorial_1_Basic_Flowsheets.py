@@ -43,9 +43,9 @@ def main():
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     # Add property packages to flowsheet library
-    m.fs.thermo_params = thermo_props.PhysicalParameterBlock()
-    m.fs.reaction_params = reaction_props.ReactionParameterBlock(default={
-                            "property_package": m.fs.thermo_params})
+    m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
+    m.fs.reaction_params = reaction_props.SaponificationReactionParameterBlock(
+        default={"property_package": m.fs.thermo_params})
 
     # Create unit models
     m.fs.Tank1 = CSTR(default={"property_package": m.fs.thermo_params,

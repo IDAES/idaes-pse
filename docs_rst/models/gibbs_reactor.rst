@@ -16,7 +16,7 @@ Typical fixed variables are:
 Model Structure
 ---------------
 
-The core Gibbs reactor unit model consists of a single ControlVolume0D (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet).
+The core Gibbs reactor unit model consists of a single ControlVolume0DBlock (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet).
 
 Variables
 ---------

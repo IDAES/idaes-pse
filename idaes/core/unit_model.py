@@ -26,8 +26,8 @@ from pyomo.common.config import ConfigValue, In
 from .process_base import (declare_process_block_class,
                            ProcessBlockData,
                            useDefault)
-from .property_base import StateBlockBase
-from .control_volume_base import ControlVolumeBase, FlowDirection
+from .property_base import StateBlock
+from .control_volume_base import ControlVolumeBlockData, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         DynamicError)
@@ -36,14 +36,14 @@ from idaes.core.util.misc import add_object_reference
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 
-__all__ = ['UnitBlockData', 'UnitBlock']
+__all__ = ['UnitModelBlockData', 'UnitModelBlock']
 
 # Set up logger
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("UnitBlock")
-class UnitBlockData(ProcessBlockData):
+@declare_process_block_class("UnitModelBlock")
+class UnitModelBlockData(ProcessBlockData):
     """
     This is the class for process unit operations models. These are models that
     would generally appear in a process flowsheet or superstructure.
@@ -73,7 +73,7 @@ Must be True if dynamic = True,
 
     def build(self):
         """
-        General build method for UnitBlockData. This method calls a number
+        General build method for UnitModelBlockData. This method calls a number
         of sub-methods which automate the construction of expected attributes
         of unit models.
 
@@ -85,7 +85,7 @@ Must be True if dynamic = True,
         Returns:
             None
         """
-        super(UnitBlockData, self).build()
+        super(UnitModelBlockData, self).build()
 
         # Set up dynamic flag and time domain
         self._setup_dynamics()
@@ -192,7 +192,7 @@ Must be True if dynamic = True,
             A Pyomo Port object and associated components.
         """
         # Validate block object
-        if not isinstance(block, StateBlockBase):
+        if not isinstance(block, StateBlock):
             raise ConfigurationError("{} block object provided to add_port "
                                      "method is not an instance of a "
                                      "StateBlock object. IDAES port objects "
@@ -244,7 +244,7 @@ Must be True if dynamic = True,
             doc = "Inlet Port"
 
         def port_rule(b, t):
-            if isinstance(block, ControlVolumeBase):
+            if isinstance(block, ControlVolumeBlockData):
                 try:
                     return block.properties_in[t].define_port_members()
                 except AttributeError:
@@ -260,7 +260,7 @@ Must be True if dynamic = True,
                                          "happen, so please contact the IDAES "
                                          "developers with this bug."
                                          .format(blk.name))
-            elif isinstance(block, StateBlockBase):
+            elif isinstance(block, StateBlock):
                 return block[t].define_port_members()
             else:
                 raise ConfigurationError("{} block provided to add_inlet_port "
@@ -307,7 +307,7 @@ Must be True if dynamic = True,
             doc = "Outlet Port"
 
         def port_rule(b, t):
-            if isinstance(block, ControlVolumeBase):
+            if isinstance(block, ControlVolumeBlockData):
                 try:
                     return block.properties_out[t].define_port_members()
                 except AttributeError:
@@ -323,7 +323,7 @@ Must be True if dynamic = True,
                                          "happen, so please contact the IDAES "
                                          "developers with this bug."
                                          .format(blk.name))
-            elif isinstance(block, StateBlockBase):
+            elif isinstance(block, StateBlock):
                 return block[t].define_port_members()
             else:
                 raise ConfigurationError("{} block provided to add_inlet_port "

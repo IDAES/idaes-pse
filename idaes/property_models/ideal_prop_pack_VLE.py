@@ -29,8 +29,8 @@ from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
-                        StateBlockDataBase,
-                        StateBlockBase)
+                        StateBlockData,
+                        StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 
@@ -43,7 +43,7 @@ __version__ = "0.0.1"
 _log = logging.getLogger(__name__)
 
 
-class _IdealStateBlock(StateBlockBase):
+class _IdealStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -231,12 +231,12 @@ class _IdealStateBlock(StateBlockBase):
 
 @declare_process_block_class("IdealStateBlock",
                              block_class=_IdealStateBlock)
-class StateBlockData(StateBlockDataBase):
+class IdealStateBlockData(StateBlockData):
     """An example property package for ideal VLE."""
 
     def build(self):
         """Callable method for Block construction."""
-        super(StateBlockData, self).build()
+        super(IdealStateBlockData, self).build()
 
         self._make_params()
         self._make_state_vars()
