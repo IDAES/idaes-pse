@@ -32,6 +32,7 @@ from idaes.unit_models.separator import (Separator,
                                          SplittingType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
+
 from idaes.ui.report import degrees_of_freedom
 from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)
@@ -141,8 +142,9 @@ def test_separator_config():
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
 
-    assert len(m.fs.sep.config) == 10
+    assert len(m.fs.sep.config) == 11
     assert m.fs.sep.config.dynamic is False
+    assert m.fs.sep.config.has_holdup is False
     assert m.fs.sep.config.property_package == m.fs.pp
     assert isinstance(m.fs.sep.config.property_package_args, ConfigBlock)
     assert len(m.fs.sep.config.property_package_args) == 0
@@ -811,21 +813,21 @@ def test_initialize():
     assert m.fs.sep.outlet_2_state[0].hold_state is False
     assert m.fs.sb[0].hold_state is True
 
-    assert m.fs.sep.outlet_1[0].component_flow["p1", "c1"].value == 0.5
-    assert m.fs.sep.outlet_1[0].component_flow["p1", "c2"].value == 0.5
-    assert m.fs.sep.outlet_1[0].component_flow["p2", "c1"].value == 0.5
-    assert m.fs.sep.outlet_1[0].component_flow["p2", "c2"].value == 0.5
-    assert m.fs.sep.outlet_1[0].enthalpy["p1"].value == 2
-    assert m.fs.sep.outlet_1[0].enthalpy["p2"].value == 2
-    assert m.fs.sep.outlet_1[0].pressure.value == 1e5
+    assert m.fs.sep.outlet_1.component_flow[0, "p1", "c1"].value == 0.5
+    assert m.fs.sep.outlet_1.component_flow[0, "p1", "c2"].value == 0.5
+    assert m.fs.sep.outlet_1.component_flow[0, "p2", "c1"].value == 0.5
+    assert m.fs.sep.outlet_1.component_flow[0, "p2", "c2"].value == 0.5
+    assert m.fs.sep.outlet_1.enthalpy[0, "p1"].value == 2
+    assert m.fs.sep.outlet_1.enthalpy[0, "p2"].value == 2
+    assert m.fs.sep.outlet_1.pressure[0].value == 1e5
 
-    assert m.fs.sep.outlet_2[0].component_flow["p1", "c1"].value == 0.5
-    assert m.fs.sep.outlet_2[0].component_flow["p1", "c2"].value == 0.5
-    assert m.fs.sep.outlet_2[0].component_flow["p2", "c1"].value == 0.5
-    assert m.fs.sep.outlet_2[0].component_flow["p2", "c2"].value == 0.5
-    assert m.fs.sep.outlet_2[0].enthalpy["p1"].value == 2
-    assert m.fs.sep.outlet_2[0].enthalpy["p2"].value == 2
-    assert m.fs.sep.outlet_2[0].pressure.value == 1e5
+    assert m.fs.sep.outlet_2.component_flow[0, "p1", "c1"].value == 0.5
+    assert m.fs.sep.outlet_2.component_flow[0, "p1", "c2"].value == 0.5
+    assert m.fs.sep.outlet_2.component_flow[0, "p2", "c1"].value == 0.5
+    assert m.fs.sep.outlet_2.component_flow[0, "p2", "c2"].value == 0.5
+    assert m.fs.sep.outlet_2.enthalpy[0, "p1"].value == 2
+    assert m.fs.sep.outlet_2.enthalpy[0 ,"p2"].value == 2
+    assert m.fs.sep.outlet_2.pressure[0].value == 1e5
 
     m.fs.sep.release_state(flags=f)
 
@@ -865,15 +867,15 @@ def test_initialize_total_flow():
             "ideal_separation": False,
             "split_basis": SplittingType.totalFlow})
 
-    m.fs.sb.inlet[:].flow_vol.fix(1.0e-03)
-    m.fs.sb.inlet[:].conc_mol_comp["H2O"].fix(55388.0)
-    m.fs.sb.inlet[:].conc_mol_comp["NaOH"].fix(100.0)
-    m.fs.sb.inlet[:].conc_mol_comp["EthylAcetate"].fix(100.0)
-    m.fs.sb.inlet[:].conc_mol_comp["SodiumAcetate"].fix(0.0)
-    m.fs.sb.inlet[:].conc_mol_comp["Ethanol"].fix(0.0)
+    m.fs.sb.inlet.flow_vol.fix(1.0e-03)
+    m.fs.sb.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.sb.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.sb.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.sb.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+    m.fs.sb.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-    m.fs.sb.inlet[:].temperature.fix(303.15)
-    m.fs.sb.inlet[:].pressure.fix(101325.0)
+    m.fs.sb.inlet.temperature.fix(303.15)
+    m.fs.sb.inlet.pressure.fix(101325.0)
 
     m.fs.sb.split_fraction[0, "outlet_1"].fix(0.2)
 
@@ -881,44 +883,44 @@ def test_initialize_total_flow():
 
     m.fs.sb.initialize(outlvl=5, optarg={'tol': 1e-6})
 
-    assert  (pytest.approx(0.2, abs=1e-3) ==
+    assert (pytest.approx(0.2, abs=1e-3) ==
              m.fs.sb.split_fraction[0, "outlet_1"].value)
-    assert  (pytest.approx(0.8, abs=1e-3) ==
+    assert (pytest.approx(0.8, abs=1e-3) ==
              m.fs.sb.split_fraction[0, "outlet_2"].value)
 
     assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.sb.outlet_1[0].vars["pressure"].value)
+            m.fs.sb.outlet_1.pressure[0].value)
     assert (pytest.approx(303.15, abs=1e-2) ==
-            m.fs.sb.outlet_1[0].vars["temperature"].value)
+            m.fs.sb.outlet_1.temperature[0].value)
     assert (pytest.approx(2e-4, abs=1e-6) ==
-            m.fs.sb.outlet_1[0].flow_vol.value)
+            m.fs.sb.outlet_1.flow_vol[0].value)
     assert (pytest.approx(55388.0, abs=1e-2) ==
-            m.fs.sb.outlet_1[0].conc_mol_comp["H2O"].value)
+            m.fs.sb.outlet_1.conc_mol_comp[0, "H2O"].value)
     assert (pytest.approx(100.0, abs=1e-2) ==
-            m.fs.sb.outlet_1[0].conc_mol_comp["NaOH"].value)
+            m.fs.sb.outlet_1.conc_mol_comp[0, "NaOH"].value)
     assert (pytest.approx(100.0, abs=1e-2) ==
-            m.fs.sb.outlet_1[0].conc_mol_comp["EthylAcetate"].value)
+            m.fs.sb.outlet_1.conc_mol_comp[0, "EthylAcetate"].value)
     assert (pytest.approx(0.0, abs=1e-2) ==
-            m.fs.sb.outlet_1[0].conc_mol_comp["SodiumAcetate"].value)
+            m.fs.sb.outlet_1.conc_mol_comp[0, "SodiumAcetate"].value)
     assert (pytest.approx(0.0, abs=1e-2) ==
-            m.fs.sb.outlet_1[0].conc_mol_comp["Ethanol"].value)
+            m.fs.sb.outlet_1.conc_mol_comp[0, "Ethanol"].value)
 
     assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.sb.outlet_2[0].vars["pressure"].value)
+            m.fs.sb.outlet_2.pressure[0].value)
     assert (pytest.approx(303.15, abs=1e-2) ==
-            m.fs.sb.outlet_2[0].vars["temperature"].value)
+            m.fs.sb.outlet_2.temperature[0].value)
     assert (pytest.approx(8e-4, abs=1e-6) ==
-            m.fs.sb.outlet_2[0].flow_vol.value)
+            m.fs.sb.outlet_2.flow_vol[0].value)
     assert (pytest.approx(55388.0, abs=1e-2) ==
-            m.fs.sb.outlet_2[0].conc_mol_comp["H2O"].value)
+            m.fs.sb.outlet_2.conc_mol_comp[0, "H2O"].value)
     assert (pytest.approx(100.0, abs=1e-2) ==
-            m.fs.sb.outlet_2[0].conc_mol_comp["NaOH"].value)
+            m.fs.sb.outlet_2.conc_mol_comp[0, "NaOH"].value)
     assert (pytest.approx(100.0, abs=1e-2) ==
-            m.fs.sb.outlet_2[0].conc_mol_comp["EthylAcetate"].value)
+            m.fs.sb.outlet_2.conc_mol_comp[0, "EthylAcetate"].value)
     assert (pytest.approx(0.0, abs=1e-2) ==
-            m.fs.sb.outlet_2[0].conc_mol_comp["SodiumAcetate"].value)
+            m.fs.sb.outlet_2.conc_mol_comp[0, "SodiumAcetate"].value)
     assert (pytest.approx(0.0, abs=1e-2) ==
-            m.fs.sb.outlet_2[0].conc_mol_comp["Ethanol"].value)
+            m.fs.sb.outlet_2.conc_mol_comp[0, "Ethanol"].value)
 
 
 # -----------------------------------------------------------------------------
