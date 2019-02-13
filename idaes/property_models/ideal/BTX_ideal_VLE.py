@@ -51,16 +51,17 @@ class PhysicalParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare("valid_phase", ConfigValue(
-        default='VL',
-        domain=In(['L', 'V', 'VL']),
+        default=('Vap', 'Liq'),
+        domain=In(['Liq', 'Vap', ('Vap', 'Liq'), ('Liq', 'Vap')]),
         description="Flag indicating the valid phase",
         doc="""Flag indicating the valid phase for a given set of
 conditions, and thus corresponding constraints  should be included,
-**default** - 'VL'.
+**default** - ('Vap', 'Liq').
 **Valid values:** {
-**'L'** - Liquid only,
-**'V'** - Vapor only,
-**'VL'** - Vapor-liquid equilibrium.}"""))
+**'Liq'** - Liquid only,
+**'Vap'** - Vapor only,
+**('Vap', 'Liq')** - Vapor-liquid equilibrium,
+**('Liq', 'Vap')** - Vapor-liquid equilibrium,}"""))
 
     def build(self):
         '''
@@ -71,10 +72,11 @@ conditions, and thus corresponding constraints  should be included,
         self.state_block_class = IdealStateBlock
 
         # List of valid phases in property package
-        if self.config.valid_phase == "VL":
+        if self.config.valid_phase == ('Liq', 'Vap') or \
+                self.config.valid_phase == ('Vap', 'Liq'):
             self.phase_list = Set(initialize=['Liq', 'Vap'],
                                   ordered=True)
-        elif self.config.valid_phase == "L":
+        elif self.config.valid_phase == 'Liq':
             self.phase_list = Set(initialize=['Liq'])
         else:
             self.phase_list = Set(initialize=['Vap'])

@@ -149,18 +149,21 @@ class _IdealStateBlock(StateBlock):
             blk[k].eq_comp.deactivate()
             if (blk[k].config.defined_state is False):
                 blk[k].eq_mol_frac_out.deactivate()
-            if blk[k].config.has_phase_equilibrium or \
-                    blk[k].config.parameters.config.valid_phase == "VL":
+            if (blk[k].config.has_phase_equilibrium) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Liq', 'Vap')) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Vap', 'Liq')):
                 blk[k].eq_Keq.deactivate()
                 blk[k].eq_sum_mol_frac.deactivate()
                 blk[k].eq_h_liq.deactivate()
                 blk[k].eq_h_vap.deactivate()
 
             if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "L":
+                    blk[k].config.parameters.config.valid_phase == "Liq":
                 blk[k].eq_h_liq.deactivate()
             if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "V":
+                    blk[k].config.parameters.config.valid_phase == "Vap":
                 blk[k].eq_h_vap.deactivate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
@@ -168,23 +171,28 @@ class _IdealStateBlock(StateBlock):
         for k in blk.keys():
             blk[k].eq_total.activate()
             blk[k].eq_comp.activate()
-            if blk[k].config.has_phase_equilibrium or \
-                    blk[k].config.parameters.config.valid_phase == "VL":
+            if (blk[k].config.has_phase_equilibrium) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Liq', 'Vap')) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Vap', 'Liq')):
                 blk[k].eq_Keq.activate()
                 blk[k].eq_sum_mol_frac.activate()
-
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
 
         for k in blk.keys():
             if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "L":
+                    blk[k].config.parameters.config.valid_phase == "Liq":
                 blk[k].eq_h_liq.activate()
             if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "V":
+                    blk[k].config.parameters.config.valid_phase == "Vap":
                 blk[k].eq_h_vap.activate()
-            if blk[k].config.has_phase_equilibrium or \
-                    blk[k].config.parameters.config.valid_phase == "VL":
+            if (blk[k].config.has_phase_equilibrium) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Liq', 'Vap')) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Vap', 'Liq')):
                 blk[k].eq_h_liq.activate()
                 blk[k].eq_h_vap.activate()
 
@@ -255,26 +263,29 @@ class IdealStateBlockData(StateBlockData):
         super(IdealStateBlockData, self).build()
 
         # Check for valid phase indicator and consistent flags
-        if self.config.has_phase_equilibrium and\
-                self.config.parameters.config.valid_phase != "VL":
-            raise ConfigurationError("Inconsistent inputs. Valid phase flag"
-                                     " not set to VL for the state block"
-                                     " but has_phase_equilibrium"
+        if self.config.has_phase_equilibrium and \
+                self.config.parameters.config.valid_phase in ['Vap', 'Liq']:
+            raise ConfigurationError("Inconsistent inputs. Valid phase"
+                                     " flag not set to VL for the state"
+                                     " block but has_phase_equilibrium"
                                      " is set to True.")
 
         self._make_params()
         self._make_state_vars()
         self._make_vars()
         if not self.config.has_phase_equilibrium and \
-                self.config.parameters.config.valid_phase == "L":
+                self.config.parameters.config.valid_phase == "Liq":
             self._make_liq_phase_eq()
 
-        if self.config.has_phase_equilibrium or \
-                self.config.parameters.config.valid_phase == "VL":
+        if (self.config.has_phase_equilibrium) or \
+                (self.config.parameters.config.valid_phase ==
+                    ('Liq', 'Vap')) or \
+                (self.config.parameters.config.valid_phase ==
+                    ('Vap', 'Liq')):
             self._make_flash_eq()
 
         if not self.config.has_phase_equilibrium and \
-                self.config.parameters.config.valid_phase == "V":
+                self.config.parameters.config.valid_phase == "Vap":
             self._make_vap_phase_eq()
 
     def _make_params(self):

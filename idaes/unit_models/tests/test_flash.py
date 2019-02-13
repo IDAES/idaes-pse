@@ -40,7 +40,7 @@ else:
 m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
-m.fs.properties = IdealParameterBlock(default={"valid_phase": 'VL'})
+m.fs.properties = IdealParameterBlock(default={"valid_phase": ('Liq', 'Vap')})
 m.fs.flash = FL(default={"property_package": m.fs.properties})
 
 
