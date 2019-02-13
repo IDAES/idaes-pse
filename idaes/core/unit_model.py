@@ -60,6 +60,16 @@ class UnitModelBlockData(ProcessBlockData):
 **useDefault** - get flag from parent (default = False),
 **True** - set as a dynamic model,
 **False** - set as a steady-state model.}"""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=useDefault,
+        domain=In([useDefault, True, False]),
+        description="Holdup construction flag",
+        doc="""Indicates whether holdup terms should be constructed or not.
+Must be True if dynamic = True,
+**default** - False.
+**Valid values:** {
+**True** - construct holdup terms,
+**False** - do not construct holdup terms}"""))
 
     def build(self):
         """
@@ -133,12 +143,14 @@ class UnitModelBlockData(ProcessBlockData):
                 raise DynamicError('{} has a parent model '
                                    'with no time domain'.format(self.name))
 
-        # Check has_holdup, if present
-        if self.config.dynamic:
-            if hasattr(self.config, "has_holdup"):
-                if not self.config.has_holdup:
-                    # Dynamic model must have has_holdup = True
-                    raise ConfigurationError(
+        # Set and validate has_holdup argument
+        if self.config.has_holdup == useDefault:
+            # Default to same value as dynamic flag
+            self.config.has_holdup = self.config.dynamic
+        elif self.config.has_holdup is False:
+            if self.config.dynamic is True:
+                # Dynamic model must have has_holdup = True
+                raise ConfigurationError(
                             "{} invalid arguments for dynamic and has_holdup. "
                             "If dynamic = True, has_holdup must also be True "
                             "(was False)".format(self.name))

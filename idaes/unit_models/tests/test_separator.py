@@ -141,8 +141,9 @@ def test_separator_config():
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
 
-    assert len(m.fs.sep.config) == 10
+    assert len(m.fs.sep.config) == 11
     assert m.fs.sep.config.dynamic is False
+    assert m.fs.sep.config.has_holdup is False
     assert m.fs.sep.config.property_package == m.fs.pp
     assert isinstance(m.fs.sep.config.property_package_args, ConfigBlock)
     assert len(m.fs.sep.config.property_package_args) == 0

@@ -49,7 +49,7 @@ m.fs.HX1D = HX1D(default={"shell_side": {"property_package": m.fs.properties},
 
 def test_build():
     # Check for default setting for config block attributes
-    assert len(m.fs.HX1D.config) == 7
+    assert len(m.fs.HX1D.config) == 8
     assert m.fs.HX1D.config.flow_type == "co_current"
     assert m.fs.HX1D.config.has_wall_conduction == "none"
 
