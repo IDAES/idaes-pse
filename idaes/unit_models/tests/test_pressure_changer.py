@@ -23,16 +23,9 @@ from idaes.ui.report import degrees_of_freedom
 
 # Import property package for testing
 from idaes.property_models import iapws95_ph as pp
-from idaes.property_models.iapws95 import is_available as iapws_available
+from idaes.property_models.iapws95 import iapws95_available
 
-
-# -----------------------------------------------------------------------------
-# General test classes
-@declare_process_block_class("Flowsheet")
-class _Flowsheet(FlowsheetBlock):
-    def build(self):
-        super(_Flowsheet, self).build()
-
+prop_available = iapws95_available()
 
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
@@ -121,7 +114,7 @@ def test_make_isentropic():
     assert hasattr(m.fs.pc, "isentropic_energy_balance")
     assert hasattr(m.fs.pc, "actual_work")
 
-@pytest.mark.skipif(not iapws_available(), reason="IAPWS not available")
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_isothermal():
     m = ConcreteModel()
@@ -156,7 +149,7 @@ def test_initialization_isothermal():
 
     solver.solve(m)
 
-@pytest.mark.skipif(not iapws_available(), reason="IAPWS not available")
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_pump():
     m = ConcreteModel()
@@ -193,7 +186,7 @@ def test_initialization_pump():
 
     solver.solve(m)
 
-@pytest.mark.skipif(not iapws_available(), reason="IAPWS not available")
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_adiabatic():
     m = ConcreteModel()
@@ -229,7 +222,7 @@ def test_initialization_adiabatic():
 
     solver.solve(m)
 
-@pytest.mark.skipif(not iapws_available(), reason="IAPWS not available")
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_isentropic():
     m = ConcreteModel()
