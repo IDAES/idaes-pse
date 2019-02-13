@@ -53,6 +53,12 @@ class GibbsReactorData(UnitModelBlockData):
         description="Dynamic model flag - must be False",
         doc="""Gibbs reactors do not support dynamic models, thus this must be
 False."""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Holdup construction flag",
+        doc="""Gibbs reactors do not support dynamic models, thus this must be
+False."""))
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.enthalpyTotal,
         domain=In(EnergyBalanceType),
