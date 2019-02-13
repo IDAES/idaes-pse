@@ -17,6 +17,7 @@ Base class for control volumes
 from __future__ import division
 
 # Import Python libraries
+import copy
 import logging
 
 # Import Pyomo libraries
@@ -25,7 +26,7 @@ from pyomo.dae import DerivativeVar
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
-                        ControlVolumeBase,
+                        ControlVolumeBlockData,
                         FlowDirection,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
@@ -43,15 +44,15 @@ _log = logging.getLogger(__name__)
 # TODO : Improve flexibility for get_material_flow_terms and associated
 
 
-@declare_process_block_class("ControlVolume0D", doc="""
-    ControlVolume0D is a specialized Pyomo block for IDAES non-discretized
-    control volume blocks, and contains instances of ControlVolume0dData.
+@declare_process_block_class("ControlVolume0DBlock", doc="""
+    ControlVolume0DBlock is a specialized Pyomo block for IDAES non-discretized
+    control volume blocks, and contains instances of ControlVolume0DBlockData.
 
-    ControlVolume0D should be used for any control volume with a defined volume
+    ControlVolume0DBlock should be used for any control volume with a defined volume
     and distinct inlets and outlets which does not require spatial
     discretization. This encompases most basic unit models used in process
     modeling.""")
-class ControlVolume0dData(ControlVolumeBase):
+class ControlVolume0DBlockData(ControlVolumeBlockData):
     """
     0-Dimensional (Non-Discretised) ControlVolume Class
 
@@ -62,13 +63,13 @@ class ControlVolume0dData(ControlVolumeBase):
     """
     def build(self):
         """
-        Build method for ControlVolume0D blocks.
+        Build method for ControlVolume0DBlock blocks.
 
         Returns:
             None
         """
         # Call build method from base class
-        super(ControlVolume0dData, self).build()
+        super(ControlVolume0DBlockData, self).build()
 
     def add_geometry(self):
         """
@@ -104,7 +105,7 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             None
         """
-        tmp_dict = package_arguments
+        tmp_dict = copy.copy(package_arguments)
         tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
         tmp_dict["parameters"] = self.config.property_package
 
@@ -155,7 +156,7 @@ class ControlVolume0dData(ControlVolumeBase):
         Returns:
             None
         """
-        tmp_dict = package_arguments
+        tmp_dict = copy.copy(package_arguments)
         tmp_dict["state_block"] = self.properties_out
         tmp_dict["has_equilibrium"] = has_equilibrium
         tmp_dict["parameters"] = self.config.reaction_package

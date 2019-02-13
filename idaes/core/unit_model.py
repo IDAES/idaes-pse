@@ -26,8 +26,8 @@ from pyomo.common.config import ConfigValue, In
 from .process_base import (declare_process_block_class,
                            ProcessBlockData,
                            useDefault)
-from .property_base import StateBlockBase
-from .control_volume_base import ControlVolumeBase, FlowDirection
+from .property_base import StateBlock
+from .control_volume_base import ControlVolumeBlockData, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         DynamicError,
@@ -37,14 +37,14 @@ from idaes.core.util.misc import add_object_reference
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
 
-__all__ = ['UnitBlockData', 'UnitBlock']
+__all__ = ['UnitModelBlockData', 'UnitModelBlock']
 
 # Set up logger
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("UnitBlock")
-class UnitBlockData(ProcessBlockData):
+@declare_process_block_class("UnitModelBlock")
+class UnitModelBlockData(ProcessBlockData):
     """
     This is the class for process unit operations models. These are models that
     would generally appear in a process flowsheet or superstructure.
@@ -64,7 +64,7 @@ class UnitBlockData(ProcessBlockData):
 
     def build(self):
         """
-        General build method for UnitBlockData. This method calls a number
+        General build method for UnitModelBlockData. This method calls a number
         of sub-methods which automate the construction of expected attributes
         of unit models.
 
@@ -76,7 +76,7 @@ class UnitBlockData(ProcessBlockData):
         Returns:
             None
         """
-        super(UnitBlockData, self).build()
+        super(UnitModelBlockData, self).build()
 
         # Set up dynamic flag and time domain
         self._setup_dynamics()
@@ -181,7 +181,7 @@ class UnitBlockData(ProcessBlockData):
             A Pyomo Port object and associated components.
         """
         # Validate block object
-        if not isinstance(block, StateBlockBase):
+        if not isinstance(block, StateBlock):
             raise ConfigurationError("{} block object provided to add_port "
                                      "method is not an instance of a "
                                      "StateBlock object. IDAES port objects "
@@ -252,7 +252,7 @@ class UnitBlockData(ProcessBlockData):
         setattr(blk, name, p)
 
         # Get dict of Port members and names
-        if isinstance(block, ControlVolumeBase):
+        if isinstance(block, ControlVolumeBlockData):
             try:
                 member_list = (block.properties_in[block.time_ref.first()]
                                .define_port_members())
@@ -266,7 +266,7 @@ class UnitBlockData(ProcessBlockData):
                             "implemented a define_port_memebers method. "
                             "Please contact the developer of the property "
                             "package.".format(blk.name))
-        elif isinstance(block, StateBlockBase):
+        elif isinstance(block, StateBlock):
             member_list = block[blk.time_ref.first()].define_port_members()
         else:
             raise ConfigurationError(
@@ -278,7 +278,7 @@ class UnitBlockData(ProcessBlockData):
         # Create References for port members
         for s in member_list:
             if not member_list[s].is_indexed():
-                if isinstance(block, ControlVolumeBase):
+                if isinstance(block, ControlVolumeBlockData):
                     try:
                         slicer = block.properties_in[:].component(
                                         member_list[s].local_name)
@@ -296,7 +296,7 @@ class UnitBlockData(ProcessBlockData):
                                     .format(blk.name))
                         slicer = (block.properties[:, _idx]
                                       .component(member_list[s].local_name))
-                elif isinstance(block, StateBlockBase):
+                elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)
                 else:
                     raise ConfigurationError(
@@ -305,7 +305,7 @@ class UnitBlockData(ProcessBlockData):
                             "ControlVolume or a StateBlock."
                             .format(blk.name))
             else:
-                if isinstance(block, ControlVolumeBase):
+                if isinstance(block, ControlVolumeBlockData):
                     try:
                         slicer = block.properties_in[:].component(
                                         member_list[s].local_name)[...]
@@ -323,7 +323,7 @@ class UnitBlockData(ProcessBlockData):
                                     .format(blk.name))
                         slicer = (block.properties[:, _idx].component(
                                     member_list[s].local_name))[...]
-                elif isinstance(block, StateBlockBase):
+                elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)[...]
                 else:
                     raise ConfigurationError(
@@ -379,7 +379,7 @@ class UnitBlockData(ProcessBlockData):
         setattr(blk, name, p)
 
         # Get dict of Port members and names
-        if isinstance(block, ControlVolumeBase):
+        if isinstance(block, ControlVolumeBlockData):
             try:
                 member_list = (block.properties_out[block.time_ref.first()]
                                .define_port_members())
@@ -393,7 +393,7 @@ class UnitBlockData(ProcessBlockData):
                             "implemented a define_port_memebers method. "
                             "Please contact the developer of the property "
                             "package.".format(blk.name))
-        elif isinstance(block, StateBlockBase):
+        elif isinstance(block, StateBlock):
             member_list = block[blk.time_ref.first()].define_port_members()
         else:
             raise ConfigurationError(
@@ -405,7 +405,7 @@ class UnitBlockData(ProcessBlockData):
         # Create References for port members
         for s in member_list:
             if not member_list[s].is_indexed():
-                if isinstance(block, ControlVolumeBase):
+                if isinstance(block, ControlVolumeBlockData):
                     try:
                         slicer = block.properties_out[:].component(
                                         member_list[s].local_name)
@@ -423,7 +423,7 @@ class UnitBlockData(ProcessBlockData):
                                     .format(blk.name))
                         slicer = (block.properties[:, _idx]
                                       .component(member_list[s].local_name))
-                elif isinstance(block, StateBlockBase):
+                elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)
                 else:
                     raise ConfigurationError(
@@ -433,7 +433,7 @@ class UnitBlockData(ProcessBlockData):
                             .format(blk.name))
             else:
                 # Need to use slice notation on indexed comenent as well
-                if isinstance(block, ControlVolumeBase):
+                if isinstance(block, ControlVolumeBlockData):
                     try:
                         slicer = block.properties_out[:].component(
                                         member_list[s].local_name)[...]
@@ -451,7 +451,7 @@ class UnitBlockData(ProcessBlockData):
                                     .format(blk.name))
                         slicer = (block.properties[:, _idx].component(
                                     member_list[s].local_name))[...]
-                elif isinstance(block, StateBlockBase):
+                elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)[...]
                 else:
                     raise ConfigurationError(

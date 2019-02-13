@@ -27,13 +27,13 @@ from pyomo.environ import (SolverFactory, Var, Param, Constraint,
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume1D, UnitBlockData,
+from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         FlowDirection,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
@@ -45,10 +45,10 @@ _log = logging.getLogger(__name__)
 
 
 @declare_process_block_class("HeatExchanger1D")
-class HeatExchanger1DData(UnitBlockData):
+class HeatExchanger1DData(UnitModelBlockData):
     """Standard Heat Exchanger 1D Unit Model Class."""
 
-    CONFIG = UnitBlockData.CONFIG()
+    CONFIG = UnitModelBlockData.CONFIG()
     # Template for config arguments for shell and tube side
     _SideTemplate = ConfigBlock()
     _SideTemplate.declare("dynamic", ConfigValue(
@@ -221,14 +221,14 @@ tube side flows from 1 to 0"""))
             set_direction_tube = FlowDirection.backward
 
         # Control volume 1D for shell
-        self.shell = ControlVolume1D(default={
+        self.shell = ControlVolume1DBlock(default={
             "dynamic": self.config.shell_side.dynamic,
             "has_holdup": self.config.shell_side.has_holdup,
             "property_package": self.config.shell_side.property_package,
             "property_package_args":
                 self.config.shell_side.property_package_args})
 
-        self.tube = ControlVolume1D(default={
+        self.tube = ControlVolume1DBlock(default={
             "dynamic": self.config.tube_side.dynamic,
             "has_holdup": self.config.tube_side.has_holdup,
             "property_package": self.config.tube_side.property_package,

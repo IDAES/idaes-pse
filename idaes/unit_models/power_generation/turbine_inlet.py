@@ -15,7 +15,7 @@ Steam turbine inlet stage model.  This model is based on:
 
 Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
-    for Gas Turbines and Power. v136, November
+    for Gas Turbines and Power. v136.
 """
 __Author__ = "John Eslick"
 
@@ -34,8 +34,8 @@ from idaes.ui.report import degrees_of_freedom
 @declare_process_block_class("TurbineInletStage",
     doc="Inlet stage steam turbine model")
 class TurbineInletStageData(PressureChangerData):
-    # Same setings as the default pressure changer, but force to expander with
-    # isentroic efficiency
+    # Same settings as the default pressure changer, but force to expander with
+    # isentropic efficiency
     CONFIG = PressureChangerData.CONFIG()
     CONFIG.compressor = False
     CONFIG.get('compressor')._default = False
@@ -49,18 +49,22 @@ class TurbineInletStageData(PressureChangerData):
         self.flow_coeff = Var(self.time_ref, initialize=1.053/3600.0,
             doc="Turbine flow coefficient [kg*C^0.5/Pa/s]")
         self.delta_enth_isentropic = Var(self.time_ref, initialize=-1000,
-            doc="Specific enthalpy change of isentropic process [J/mol/K]")
+            doc="Specific enthalpy change of isentropic process [J/mol]")
         self.blade_reaction = Var(initialize=0.9,
             doc="Blade reaction parameter")
         self.blade_velocity = Var(initialize=110.0,
             doc="Design blade velocity [m/s]")
         self.eff_nozzle = Var(initialize=0.95, bounds=(0.0, 1.0),
             doc="Nozzel efficiency (typically 0.90 to 0.95)")
+        self.efficiency_mech = Var(initialize=0.98,
+            doc="Turbine mechanical efficiency")
         self.eff_nozzle.fix()
         self.blade_reaction.fix()
         self.flow_coeff.fix()
         self.blade_velocity.fix()
-        self.control_volume.deltaP[:] = -1000
+        self.efficiency_mech.fix()
+        self.ratioP[:] = 1 # make sure these have a number value
+        self.deltaP[:] = 0 #   to avoid an error later in initialize
 
         @self.Expression(self.time_ref,
             doc="Entering steam velocity calculation [m/s]")
@@ -96,9 +100,16 @@ class TurbineInletStageData(PressureChangerData):
             R = b.blade_reaction
             return eff == 2*Vr*((sqrt(1 - R) - Vr) +
                                  sqrt((sqrt(1 - R) - Vr)**2 + R))
+        @self.Expression(self.time_ref, doc="Thermodynamic power [J/s]")
+        def power_thermo(b, t):
+            return b.control_volume.work[t]
+
+        @self.Expression(self.time_ref, doc="Shaft power [J/s]")
+        def power_shaft(b, t):
+            return b.power_thermo[t]*b.efficiency_mech
 
     def initialize(self, state_args={}, outlvl=0, solver='ipopt',
-        optarg={'tol': 1e-6}):
+        optarg={'tol': 1e-6, 'max_iter':30}):
         """
         Initialize the inlet turbine stage model.  This deactivates the
         specialized constraints, then does the isentropic turbine initialization,
@@ -121,6 +132,8 @@ class TurbineInletStageData(PressureChangerData):
         self.inlet_flow_constraint.deactivate()
         self.isentropic_enthalpy.deactivate()
         self.efficiency_correlation.deactivate()
+        self.deltaP[:].unfix()
+        self.ratioP[:].unfix()
 
         # Fix turbine parameters + eff_isen
         self.eff_nozzle.fix()
@@ -153,6 +166,8 @@ class TurbineInletStageData(PressureChangerData):
                     Pout.fix(value(Pin*0.8))
             else:
                 Pout.fix()
+        self.deltaP[:] = value(Pout - Pin)
+        self.ratioP[:] = value(Pout/Pin)
 
         # Make sure the initialization problem has no degrees of freedom
         # This shouldn't happen here unless there is a bug in this
@@ -164,7 +179,7 @@ class TurbineInletStageData(PressureChangerData):
             raise
 
         # one bad thing about reusing this is that the log messages aren't
-        # really compatable with being nested inside another initialization
+        # really compatible with being nested inside another initialization
         super(TurbineInletStageData, self).initialize(state_args=state_args,
             outlvl=outlvl, solver=solver, optarg=optarg)
 
@@ -185,7 +200,7 @@ class TurbineInletStageData(PressureChangerData):
             else:
                 _log.warning(
 """{} Initialization Failed. The most likely cause of initialization failure for
-the Turbine inlet stages model is that the flow coefficent is not compatable
+the Turbine inlet stages model is that the flow coefficient is not compatible
 with flow rate guess.""".format(self.name))
 
         # reload original spec

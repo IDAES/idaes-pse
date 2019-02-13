@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Tests for 0D heat exchanger models.
+Tests for turbine inlet model.
 
 Author: John Eslick
 """
@@ -64,6 +64,7 @@ def test_initialize(build_turbine):
     m.fs.turb.inlet.pressure.value = 2.4233e7
 
     m.fs.turb.initialize(outlvl=3)
+
     assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
