@@ -49,7 +49,7 @@ m.fs.HX1D = HX1D(default={"shell_side": {"property_package": m.fs.properties},
 
 def test_build():
     # Check for default setting for config block attributes
-    assert len(m.fs.HX1D.config) == 7
+    assert len(m.fs.HX1D.config) == 8
     assert m.fs.HX1D.config.flow_type == "co_current"
     assert m.fs.HX1D.config.has_wall_conduction == "none"
 
@@ -77,9 +77,6 @@ def test_build():
     assert not m.fs.HX1D.config.tube_side.has_pressure_change
     assert not m.fs.HX1D.config.tube_side.has_phase_equilibrium
 
-
-
-
     # Check for inlets/outlets construction
     assert hasattr(m.fs.HX1D, "shell_inlet")
     assert hasattr(m.fs.HX1D, "shell_outlet")
@@ -102,15 +99,15 @@ def test_setInputs():
     for t in m.fs.time:
         # Unit HX01
         # NETL baseline study
-        m.fs.HX1D.shell_inlet[t].vars["flow_mol"].fix(2300)  # mol/s
-        m.fs.HX1D.shell_inlet[t].vars["temperature"].fix(676)  # K
-        m.fs.HX1D.shell_inlet[t].vars["pressure"].fix(7.38E6)  # Pa
-        m.fs.HX1D.shell_inlet[t].vars["vapor_frac"].fix(1)
+        m.fs.HX1D.shell_inlet.flow_mol[0].fix(2300)  # mol/s
+        m.fs.HX1D.shell_inlet.temperature[0].fix(676)  # K
+        m.fs.HX1D.shell_inlet.pressure[0].fix(7.38E6)  # Pa
+        m.fs.HX1D.shell_inlet.vapor_frac[0].fix(1)
 
-        m.fs.HX1D.tube_inlet[t].vars["flow_mol"].fix(26.6)  # mol/s
-        m.fs.HX1D.tube_inlet[t].vars["temperature"].fix(529)  # K
-        m.fs.HX1D.tube_inlet[t].vars["pressure"].fix(2.65E7)  # Pa
-        m.fs.HX1D.tube_inlet[t].vars["vapor_frac"].fix(0)
+        m.fs.HX1D.tube_inlet.flow_mol[0].fix(26.6)  # mol/s
+        m.fs.HX1D.tube_inlet.temperature[0].fix(529)  # K
+        m.fs.HX1D.tube_inlet.pressure[0].fix(2.65E7)  # Pa
+        m.fs.HX1D.tube_inlet.vapor_frac[0].fix(0)
 
     assert degrees_of_freedom(m) == 0
 
@@ -125,15 +122,15 @@ def test_initialization():
     assert results.solver.status == SolverStatus.ok
 
     assert (pytest.approx(2300, abs=1e-3) ==
-            m.fs.HX1D.shell_outlet[0].vars["flow_mol"].value)
+            m.fs.HX1D.shell_outlet.flow_mol[0].value)
     assert (pytest.approx(559.220, abs=1e-3) ==
-            m.fs.HX1D.shell_outlet[0].vars["temperature"].value)
+            m.fs.HX1D.shell_outlet.temperature[0].value)
     assert (pytest.approx(7.38E6, abs=1e-3) ==
-            m.fs.HX1D.shell_outlet[0].vars["pressure"].value)
+            m.fs.HX1D.shell_outlet.pressure[0].value)
 
     assert (pytest.approx(26.6, abs=1e-3) ==
-            m.fs.HX1D.tube_outlet[0].vars["flow_mol"].value)
+            m.fs.HX1D.tube_outlet.flow_mol[0].value)
     assert (pytest.approx(541.301, abs=1e-3) ==
-            m.fs.HX1D.tube_outlet[0].vars["temperature"].value)
+            m.fs.HX1D.tube_outlet.temperature[0].value)
     assert (pytest.approx(2.65E7, abs=1e-3) ==
-            m.fs.HX1D.tube_outlet[0].vars["pressure"].value)
+            m.fs.HX1D.tube_outlet.pressure[0].value)

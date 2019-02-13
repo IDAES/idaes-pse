@@ -23,7 +23,8 @@ from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import (PropertyNotSupportedError,
+from idaes.core.util.exceptions import (BurntToast,
+                                        PropertyNotSupportedError,
                                         PropertyPackageError)
 
 # Some more information about this module
@@ -267,6 +268,15 @@ should be constructed in this state block,
                     'attribute. Check the naming of your '
                     'components to avoid any reserved names'
                     .format(self.name, attr))
+
+        if attr == "config":
+            try:
+                self._get_config_args()
+                return self.config
+            except:
+                raise BurntToast("{} getattr method was triggered by a call "
+                                 "to the config block, but _get_config_args "
+                                 "failed. This should never happen.")
 
         # Check for recursive calls
         try:
