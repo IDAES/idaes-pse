@@ -200,7 +200,7 @@ class TurbineInletStageData(PressureChangerData):
             else:
                 _log.warning(
 """{} Initialization Failed. The most likely cause of initialization failure for
-the Turbine inlet stages model is that the flow coefficent is not compatible
+the Turbine inlet stages model is that the flow coefficient is not compatible
 with flow rate guess.""".format(self.name))
 
         # reload original spec
