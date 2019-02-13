@@ -23,7 +23,7 @@ __Author__ = "John Eslick"
 import logging
 _log = logging.getLogger(__name__)
 
-from pyomo.common.config import In
+from pyomo.common.config import In, ConfigValue
 from pyomo.environ import Var, Expression, SolverFactory, value, sqrt
 from pyomo.opt import TerminationCondition
 
@@ -34,7 +34,7 @@ from idaes.ui.report import degrees_of_freedom
 
 from pyutilib.enum import Enum
 
-ValveFunctionType Enum("linear", "quick_opening", "equal_percentage")
+ValveFunctionType = Enum("linear", "quick_opening", "equal_percentage")
 
 @declare_process_block_class("SteamValve", doc="Basic steam valve models")
 class SteamValveData(PressureChangerData):
@@ -50,12 +50,12 @@ class SteamValveData(PressureChangerData):
     CONFIG.declare("valve_function", ConfigValue(
         default=ValveFunctionType.linear,
         domain=In(ValveFunctionType),
-        description="Valve function type",)
+        description="Valve function type",
         doc="""The type of valve function
 **default** - ValveFunctionType.linear
 **Valid values:** {
 ValveFunctionType.linear,
 ValveFunctionType.quick_opening
-ValveFunctionType.equal_percentage}""")
+ValveFunctionType.equal_percentage}"""))
     def build(self):
         super(TurbineStageData, self).build()

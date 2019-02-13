@@ -54,7 +54,6 @@ class TurbineMultistageData(UnitModelBlockData):
         # add turbine stages.
         # inlet stage -> hp stages -> ip stages -> lp stages -> outlet stage
 
-        '''
         self.hp_stages = TurbineStage(RangeSet(config.num_hp), default=unit_cfg)
         self.ip_stages = TurbineStage(RangeSet(config.num_ip), default=unit_cfg)
         self.lp_stages = TurbineStage(RangeSet(config.num_lp), default=unit_cfg)
@@ -236,7 +235,6 @@ class TurbineMultistageData(UnitModelBlockData):
             self.lp_to_outlet_stream = Arc(
                 source=self.lp_stages[last_lp].outlet[0],
                 destination=self.outlet_stage.inlet[0])
-        '''
         TransformationFactory("network.expand_arcs").apply_to(self)
 
     def _add_inlet_stage(self, unit_cfg):
@@ -254,13 +252,12 @@ class TurbineMultistageData(UnitModelBlockData):
         # Splitter config
         s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
         s_cfg.update(split_basis=SplittingType.totalFlow,
-            ideal_separation=True, num_outlets=ni)
+            ideal_separation=False, num_outlets=ni)
         del s_cfg["has_holdup"]
         del s_cfg["has_phase_equilibrium"]
         # add splitter
         self.inlet_split = Separator(default=s_cfg)
 
-        '''
         # Mixer config
         m_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
         m_cfg.update(num_inlets=ni)
@@ -284,4 +281,3 @@ class TurbineMultistageData(UnitModelBlockData):
 
         self.split_to_inlet_stage_stream = Arc(RangeSet(ni), rule=_split_to_rule)
         self.inlet_stage_to_mix = Arc(RangeSet(ni), rule=_inlet_to_rule)
-        '''

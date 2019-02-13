@@ -51,8 +51,7 @@ def test_basic_build(build_turbine_for_buid_test):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine_for_buid_test
     turb = m.fs.turb
-    #assert(isinstance(turb.inlet_stage, TurbineInletStage))
-    """
+    assert(isinstance(turb.inlet_stage, TurbineInletStage))
     assert(0 not in turb.inlet_stage)
     assert(1 in turb.inlet_stage)
     assert(2 in turb.inlet_stage)
@@ -109,17 +108,15 @@ def test_basic_build(build_turbine_for_buid_test):
     # will fix split fractions except one for each splitter.  in this case
     # with no disconnections that should leave the number of variables in the
     # inlet port as the degrees of freedom
-    """
-    '''
+
     turb.hp_split[0].split_fraction[0,"outlet_2"].fix(0.05)
     turb.ip_split[1].split_fraction[0,"outlet_2"].fix(0.05)
     turb.ip_split[2].split_fraction[0,"outlet_2"].fix(0.05)
     turb.lp_split[3].split_fraction[0,"outlet_2"].fix(0.05)
     turb.lp_split[3].split_fraction[0,"outlet_3"].fix(0.05)
     turb.lp_split[4].split_fraction[0,"outlet_2"].fix(0.05)
-    '''
     turb.inlet_split.split_fraction[0,"outlet_2"].fix(0.25)
     turb.inlet_split.split_fraction[0,"outlet_3"].fix(0.25)
     turb.inlet_split.split_fraction[0,"outlet_4"].fix(0.25)
-    turb.display()
+    #turb.display()
     assert(degrees_of_freedom(m)==3)
