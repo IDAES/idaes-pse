@@ -3,21 +3,63 @@
 # Script to interact with IDAES docker image.
 
 function usage () {
-   printf "./idaes-docker [{-h,-help} | test | notebook | refresh]\n"
+   printf "./idaes-docker help | test | notebook | refresh]\n"
    printf "\n"
    printf "options:\n"
-   printf "   -h,-help            Print this message\n"
+   printf "   help          Print this message\n"
    printf "   test          Sanity check step that runs the unit tests on the image and print results to standard output.\n"
    printf "   notebook      Run a Jupyter notebook based on the Docker image.\n"
    printf "   refresh       Run a docker pull to get the latest version of the IDAES docker image.\n"
    exit 1
 }
 
-function idaes_pull() {
-  if [[ "$(docker images -q idaes/idaes_jupyterhub:latest 2> /dev/null)" == "" ]]; then
-    echo "IDAES image not found, pulling IDAES image from DockerHub..."
-    docker pull idaes/idaes_jupyterhub:latest
+# Expected repository and tag of Docker image to use
+IMAGE_REPO=idaes
+IMAGE_TAG=idaes_pse
+
+# Check if image is present. Ask to install it, if not.
+function check_image() {
+  n=$(docker images -q ${IMAGE_REPO}:${IMAGE_TAG} | wc -l)
+  if [ $n -eq 0 ]; then
+    printf "Docker image ${IMAGE_REPO}:${IMAGE_TAG} not found\n"
+    printf "Download and install latest image now (y/N)? "
+    read response
+    case "$response" in
+      y|Y|yes|Yes|YES) install_image ;;
+      *) install_image_help; exit 1 ;;
+    esac
   fi
+}
+
+function install_image() {
+  url="https://s3.amazonaws.com/idaes/idaes-pse"
+  filenm="idaes-pse-docker-latest.tgz"
+  wget -h > /dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    getcmd=wget
+  else
+    curl -h > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+      getcmd="curl -o $filenm"
+    else
+      printf "Could not find 'curl' or 'wget' command. Abort.\n"
+      exit 1
+    fi
+  fi
+  printf "Downloading image..\n"
+  $getcmd ${url}/${filenm}
+  if [ $? -ne 0 ]; then
+    printf "Download failed. Abort command.\n"
+    exit 1
+  fi
+  printf "Loading image..\n"
+  docker load < $filenm
+}
+
+function install_image_help() {
+  printf "Command aborted.\n\nFor information on how to install and use\n"
+  printf "Docker with the IDAES PSE framework, see the installation guide at:\n"
+  printf "    https://idaes.github.io/idaes-pse/install.html\n"
 }
 
 if [ -z $1 ]; then
@@ -26,20 +68,20 @@ fi
 
 case $1 in
     test)
-      idaes_pull
-      echo "Running tests in container..."
+      check_image
+      printf "Running tests in container...\n"
       docker run -it idaes/idaes_jupyterhub /bin/bash -c "cd /home/idaes && pytest"
       ;;
     notebook)
-      idaes_pull
-      echo "Starting Jupyter..."
-      docker run -p 8888:8888 -it idaes/idaes_jupyterhub  
+      check_image
+      printf "Starting Jupyter...\n"
+      docker run -p 8888:8888 -it idaes/idaes_jupyterhub
       ;;
-    refresh)      
-      echo "Refreshing IDAES image from DockerHub..."
+    refresh)
+      printf "Refreshing IDAES image from DockerHub...\n"
       docker pull idaes/idaes_jupyterhub:latest
       ;;
-    -h|-help)
+    -h|help)
       usage
       ;;
     *)
