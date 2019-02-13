@@ -173,7 +173,6 @@ class _IdealStateBlock(StateBlock):
                 blk[k].eq_Keq.activate()
                 blk[k].eq_sum_mol_frac.activate()
 
-
         results = solve_indexed_blocks(opt, [blk], tee=stee)
 
         for k in blk.keys():
@@ -576,12 +575,16 @@ class IdealStateBlockData(StateBlockData):
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
 
-    def temperature_bubble_point(blk, pressure=None, mole_frac=None):
+    def temperature_bubble_point(blk, pressure=None, mole_frac=None,
+                                 options={"initial_guess": 298.15,
+                                          "tol": 1e-3,
+                                          "deltaT": 1e-3}):
         """"To compute the bubble point temperature of the mixture."""
         n = 1
-        T_guess = 298.15
+        T_guess = options["initial_guess"]
+        tol = options["tol"]
+        deltaT = options["deltaT"]
         temp_var = {}
-        tol = 1e-3
         while n == 1:
             s = 0
             for j in blk.component_list_ref:
@@ -598,17 +601,21 @@ class IdealStateBlockData(StateBlockData):
             if abs(s - 1) <= tol:
                 n = 2
             elif s >= 1:
-                T_guess = T_guess - tol
+                T_guess = T_guess - deltaT
             else:
-                T_guess = T_guess + tol
+                T_guess = T_guess + deltaT
         return round(T_guess, 3)
 
-    def temperature_dew_point(blk, pressure=None, mole_frac=None):
+    def temperature_dew_point(blk, pressure=None, mole_frac=None,
+                              options={"initial_guess": 298.15,
+                                       "tol": 1e-3,
+                                       "deltaT": 1e-3}):
         """"To compute the dew point temperature of the mixture."""
         n = 1
-        T_guess = 298.15
+        T_guess = options["initial_guess"]
+        tol = options["tol"]
+        deltaT = options["deltaT"]
         temp_var = {}
-        tol = 1e-3
         while n == 1:
             s = 0
             for j in blk.component_list_ref:
@@ -625,7 +632,69 @@ class IdealStateBlockData(StateBlockData):
             if abs(s - 1) <= tol:
                 n = 2
             elif s >= 1:
-                T_guess = T_guess + tol
+                T_guess = T_guess + deltaT
             else:
-                T_guess = T_guess - tol
+                T_guess = T_guess - deltaT
         return round(T_guess, 3)
+
+    def pressure_bubble_point(blk, temperature=None, mole_frac=None,
+                              options={"initial_guess": 101325,
+                                       "tol": 1e-3,
+                                       "deltaP": 10}):
+        """"To compute the bubble point pressure of the mixture."""
+        n = 1
+        P_guess = options["initial_guess"]
+        tol = options["tol"]
+        deltaP = options["deltaP"]
+        temp_var = {}
+        while n == 1:
+            s = 0
+            for j in blk.component_list_ref:
+                temp_var[j] = (blk.temperature_critical[j] - temperature) \
+                    / blk.temperature_critical[j]
+                p_sat = blk.pressure_critical[j] * \
+                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
+                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
+                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
+                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
+                        (1 - temp_var[j]))
+                k = p_sat / P_guess
+                s = s + k * value(mole_frac[j])
+            if abs(s - 1) <= tol:
+                n = 2
+            elif s >= 1:
+                P_guess = P_guess + deltaP
+            else:
+                P_guess = P_guess - deltaP
+        return round(P_guess, 3)
+
+    def pressure_dew_point(blk, temperature=None, mole_frac=None,
+                           options={"initial_guess": 101325,
+                                    "tol": 1e-3,
+                                    "deltaP": 10}):
+        """"To compute the dew point pressure of the mixture."""
+        n = 1
+        P_guess = options["initial_guess"]
+        tol = options["tol"]
+        deltaP = options["deltaP"]
+        temp_var = {}
+        while n == 1:
+            s = 0
+            for j in blk.component_list_ref:
+                temp_var[j] = (blk.temperature_critical[j] - temperature) \
+                    / blk.temperature_critical[j]
+                p_sat = blk.pressure_critical[j] * \
+                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
+                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
+                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
+                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
+                        (1 - temp_var[j]))
+                k = p_sat / P_guess
+                s = s + value(mole_frac[j]) / k
+            if abs(s - 1) <= tol:
+                n = 2
+            elif s >= 1:
+                P_guess = P_guess - deltaP
+            else:
+                P_guess = P_guess + deltaP
+        return round(P_guess, 3)
