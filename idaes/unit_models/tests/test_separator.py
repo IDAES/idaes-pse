@@ -33,8 +33,8 @@ from idaes.unit_models.separator import (Separator,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 from idaes.ui.report import degrees_of_freedom
-from idaes.property_models.saponification_thermo import (
-                        SaponificationParameterBlock)
+from idaes.property_models.examples.saponification_thermo import (
+    SaponificationParameterBlock)
 
 
 # -----------------------------------------------------------------------------
@@ -874,7 +874,7 @@ def test_initialize_total_flow():
 
     m.fs.sb.inlet[:].temperature.fix(303.15)
     m.fs.sb.inlet[:].pressure.fix(101325.0)
-    
+
     m.fs.sb.split_fraction[0, "outlet_1"].fix(0.2)
 
     assert degrees_of_freedom(m) == 0
