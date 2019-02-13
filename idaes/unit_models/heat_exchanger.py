@@ -221,7 +221,7 @@ def _make_heat_exchanger_config(config):
         description="Dynamic model flag",
         doc="Indicates whether the model is dynamic."))
     config.declare("has_holdup", ConfigValue(
-        domain=In([True, False, useDefault]),
+        domain=In([useDefault, True, False]),
         default=useDefault,
         description="Dynamic model flag",
         doc="Indicates whether the model is dynamic."))
