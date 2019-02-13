@@ -101,20 +101,20 @@ def test_build_heater(build_heater):
     m = build_heater
     assert hasattr(m.fs.heater, "inlet")
     assert hasattr(m.fs.heater, "outlet")
-    assert len(m.fs.heater.inlet[0].vars) == 3
-    assert len(m.fs.heater.outlet[0].vars) == 3
+    assert len(m.fs.heater.inlet.vars) == 3
+    assert len(m.fs.heater.outlet.vars) == 3
 
     for port in [m.fs.heater.inlet, m.fs.heater.outlet]:
-        assert hasattr(port[0], "flow_mol")
-        assert hasattr(port[0], "enth_mol")
-        assert hasattr(port[0], "pressure")
+        assert hasattr(port, "flow_mol")
+        assert hasattr(port, "enth_mol")
+        assert hasattr(port, "pressure")
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_heater(build_heater):
     m = build_heater
-    m.fs.heater.inlet[:].enth_mol.fix(4000)
-    m.fs.heater.inlet[:].flow_mol.fix(100)
-    m.fs.heater.inlet[:].pressure.fix(101325)
+    m.fs.heater.inlet.enth_mol.fix(4000)
+    m.fs.heater.inlet.flow_mol.fix(100)
+    m.fs.heater.inlet.pressure.fix(101325)
     m.fs.heater.heat_duty[0].fix(100*20000)
     m.fs.heater.initialize()
 
@@ -130,9 +130,9 @@ def test_initialize_heater(build_heater):
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_q1(build_heater):
     m = build_heater
-    m.fs.heater.inlet[:].enth_mol.fix(4000)
-    m.fs.heater.inlet[:].flow_mol.fix(100)
-    m.fs.heater.inlet[:].pressure.fix(101325)
+    m.fs.heater.inlet.enth_mol.fix(4000)
+    m.fs.heater.inlet.flow_mol.fix(100)
+    m.fs.heater.inlet.pressure.fix(101325)
     m.fs.heater.heat_duty[0].fix(100*20000)
     m.fs.heater.initialize()
     assert degrees_of_freedom(m) == 0

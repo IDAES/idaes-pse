@@ -55,18 +55,18 @@ def test_build():
                             "has_pressure_change": True})
 
     assert hasattr(m.fs.pfr, "inlet")
-    assert len(m.fs.pfr.inlet[0].vars) == 4
-    assert hasattr(m.fs.pfr.inlet[0], "flow_vol")
-    assert hasattr(m.fs.pfr.inlet[0], "conc_mol_comp")
-    assert hasattr(m.fs.pfr.inlet[0], "temperature")
-    assert hasattr(m.fs.pfr.inlet[0], "pressure")
+    assert len(m.fs.pfr.inlet.vars) == 4
+    assert hasattr(m.fs.pfr.inlet, "flow_vol")
+    assert hasattr(m.fs.pfr.inlet, "conc_mol_comp")
+    assert hasattr(m.fs.pfr.inlet, "temperature")
+    assert hasattr(m.fs.pfr.inlet, "pressure")
 
     assert hasattr(m.fs.pfr, "outlet")
-    assert len(m.fs.pfr.outlet[0].vars) == 4
-    assert hasattr(m.fs.pfr.outlet[0], "flow_vol")
-    assert hasattr(m.fs.pfr.outlet[0], "conc_mol_comp")
-    assert hasattr(m.fs.pfr.outlet[0], "temperature")
-    assert hasattr(m.fs.pfr.outlet[0], "pressure")
+    assert len(m.fs.pfr.outlet.vars) == 4
+    assert hasattr(m.fs.pfr.outlet, "flow_vol")
+    assert hasattr(m.fs.pfr.outlet, "conc_mol_comp")
+    assert hasattr(m.fs.pfr.outlet, "temperature")
+    assert hasattr(m.fs.pfr.outlet, "pressure")
 
     assert hasattr(m.fs.pfr, "performance_eqn")
     assert hasattr(m.fs.pfr.control_volume, "heat")
@@ -89,15 +89,15 @@ def test_initialize():
                             "has_heat_transfer": False,
                             "has_pressure_change": False})
 
-    m.fs.pfr.inlet[:].flow_vol.fix(1.0)
-    m.fs.pfr.inlet[:].conc_mol_comp["H2O"].fix(55388.0)
-    m.fs.pfr.inlet[:].conc_mol_comp["NaOH"].fix(100.0)
-    m.fs.pfr.inlet[:].conc_mol_comp["EthylAcetate"].fix(100.0)
-    m.fs.pfr.inlet[:].conc_mol_comp["SodiumAcetate"].fix(0.0)
-    m.fs.pfr.inlet[:].conc_mol_comp["Ethanol"].fix(0.0)
+    m.fs.pfr.inlet.flow_vol.fix(1.0)
+    m.fs.pfr.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.pfr.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.pfr.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.pfr.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+    m.fs.pfr.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-    m.fs.pfr.inlet[:].temperature.fix(303.15)
-    m.fs.pfr.inlet[:].pressure.fix(101325.0)
+    m.fs.pfr.inlet.temperature.fix(303.15)
+    m.fs.pfr.inlet.pressure.fix(101325.0)
 
     m.fs.pfr.control_volume.length.fix(0.5)
     m.fs.pfr.control_volume.area.fix(0.1)
@@ -108,6 +108,6 @@ def test_initialize():
                         optarg={'tol': 1e-6})
 
     assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.pfr.outlet[0].vars["pressure"].value)
+            m.fs.pfr.outlet.pressure[0].value)
     assert (pytest.approx(303.15, abs=1e-2) ==
-            m.fs.pfr.outlet[0].vars["temperature"].value)
+            m.fs.pfr.outlet.temperature[0].value)
