@@ -22,6 +22,7 @@ from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.power_generation import TurbineOutletStage
 from idaes.property_models import iapws95_ph
+from idaes.property_models.iapws95 import is_available as iapws_available
 from idaes.ui.report import degrees_of_freedom
 
 # See if ipopt is available and set up solver
@@ -53,6 +54,7 @@ def test_basic_build(build_turbine):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine
 
+@pytest.mark.skipif(not iapws_available(), reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize(build_turbine):
     """Initialize a turbine model"""
