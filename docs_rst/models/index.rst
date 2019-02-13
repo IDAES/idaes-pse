@@ -18,3 +18,4 @@ Unit Model Contents
     flash
     separator
     stoichiometric_reactor
+    power_generation/index

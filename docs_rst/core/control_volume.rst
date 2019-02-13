@@ -15,13 +15,13 @@ The IDAES Control Volume classes are designed to facilitate the construction of 
 
 The IDAES process modeling framework currently supports two types of Control Volume:
 
-* ControlVolume0D represents a single well-mixed volume of material with a single inlet and a single outlet. This type of control volume is sufficient to model most inlet-outlet type unit operations which do not require spatial discretization.
-* ControlVolume1D represents a volume with spatial variation in one dimension parallel to the material flow. This type of control volume is useful for representing flow in pipes and simple 1D flow reactors.
+* ControlVolume0DBlock represents a single well-mixed volume of material with a single inlet and a single outlet. This type of control volume is sufficient to model most inlet-outlet type unit operations which do not require spatial discretization.
+* ControlVolume1DBlock represents a volume with spatial variation in one dimension parallel to the material flow. This type of control volume is useful for representing flow in pipes and simple 1D flow reactors.
 
 Common Control Volume Tasks
 ---------------------------
 
-All of the IDAES Control Volume classes are built on a common core (:class:`idaes.core.control_volume_base.ControlVolumeBase`) which defines a set of common tasks required for all Control Volumes. The more specific Control Volume classes then build upon these common tasks to provide tools appropriate for their specific application.
+All of the IDAES Control Volume classes are built on a common core (:class:`idaes.core.control_volume_base.ControlVolumeBlockData`) which defines a set of common tasks required for all Control Volumes. The more specific Control Volume classes then build upon these common tasks to provide tools appropriate for their specific application.
 
 All Control Volume classes begin with the following tasks:
 
@@ -59,7 +59,7 @@ The indexing sets the Control Volume looks for are:
 * component_list - used to determine what components are present, and thus what material balances are required
 * phase_list - used to determine what phases are present, and thus what balance equations are required
 
-ControlVolume and ControlVolumeBase Classes
+ControlVolume and ControlVolumeBlockData Classes
 -------------------------------------------
 
 A key purpose of Control Volumes is to automate as much of the task of writing a unit model as possible. For this purpose, Control Volumes support a number of methods for common tasks model developers may want to perform. The specifics of these methods will be different between different types of Control Volumes, and certain methods may not be applicable to some types of Control Volumes (in which case a NotImplementedError will be returned). A full list of potential methods is provided here, however users should check the documentation for the specific Control Volume they are using for more details on what methods are supported in that specific Control Volume.
@@ -67,7 +67,7 @@ A key purpose of Control Volumes is to automate as much of the task of writing a
 .. autoclass:: ControlVolume
   :members:
 
-.. autoclass:: ControlVolumeBase
+.. autoclass:: ControlVolumeBlockData
   :members:
 
 Auto-Construct Method

@@ -87,7 +87,7 @@ class StateBlock(ProcessBlock):
                                   .format(self.name))
 
 
-class StateBlockDataBase(ProcessBlockData):
+class StateBlockData(ProcessBlockData):
     """
         This is the base class for state block data objects. These are
         blocks that contain the Pyomo components associated with calculating a
@@ -131,7 +131,7 @@ should be constructed in this state block,
         Returns:
             None
         """
-        super(StateBlockDataBase, self).build()
+        super(StateBlockData, self).build()
 
     def define_state_vars(self):
         """
