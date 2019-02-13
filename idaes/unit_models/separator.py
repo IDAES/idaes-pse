@@ -18,7 +18,8 @@ from __future__ import division, print_function
 
 import logging
 
-from pyomo.environ import (Expression,
+from pyomo.environ import (Constraint,
+                           Expression,
                            Reference,
                            Set,
                            SolverFactory,
@@ -373,15 +374,21 @@ linked the mixed state and all outlet states,
 
         if self.config.split_basis == SplittingType.totalFlow:
             sf_idx = [self.time_ref, self.outlet_idx]
+            sf_sum_idx = [self.time_ref]
         elif self.config.split_basis == SplittingType.phaseFlow:
             sf_idx = [self.time_ref, self.outlet_idx, self.phase_list_ref]
+            sf_sum_idx = [self.time_ref, self.phase_list_ref]
         elif self.config.split_basis == SplittingType.componentFlow:
             sf_idx = [self.time_ref, self.outlet_idx, self.component_list_ref]
+            sf_sum_idx = [self.time_ref, self.component_list_ref]
         elif self.config.split_basis == SplittingType.phaseComponentFlow:
             sf_idx = [self.time_ref,
                       self.outlet_idx,
                       self.phase_list_ref,
                       self.component_list_ref]
+            sf_sum_idx = [self.time_ref,
+                          self.phase_list_ref,
+                          self.component_list_ref]
         else:
             raise BurntToast("{} split_basis has unexpected value. This "
                              "should not happen.".format(self.name))
@@ -390,6 +397,12 @@ linked the mixed state and all outlet states,
         self.split_fraction = Var(*sf_idx,
                                   initialize=0.5,
                                   doc="Outlet split fractions")
+
+        # Add constraint that split fractions sum to 1
+        def sum_sf_rule(b, t, *args):
+            return 1 == sum(b.split_fraction[t, o, args]
+                            for o in self.outlet_idx)
+        self.sum_split_frac = Constraint(*sf_sum_idx, rule = sum_sf_rule)
 
     def add_material_splitting_constraints(self, mixed_block):
         """
@@ -412,9 +425,9 @@ linked the mixed state and all outlet states,
                          doc="Material splitting equations")
         def material_splitting_eqn(b, t, o, p, j):
             o_block = getattr(self, o+"_state")
-            return mixed_block[t].get_material_flow_terms(p, j) == (
-                        sf(t, o, p, j) *
-                        o_block[t].get_material_flow_terms(p, j))
+            return (sf(t, o, p, j) *
+                    mixed_block[t].get_material_flow_terms(p, j) ==
+                    o_block[t].get_material_flow_terms(p, j))
 
     def add_energy_splitting_constraints(self, mixed_block):
         """
@@ -917,8 +930,13 @@ linked the mixed state and all outlet states,
                         # Apply split fraction
                         try:
                             for k in s_vars[v]:
-                                s_vars[v][k].value = value(
-                                    m_var[k]*blk.split_fraction[(t, o) + k])
+                                if k is None:
+                                    s_vars[v][k].value = value(
+                                    m_var[k]*blk.split_fraction[(t, o)])
+                                else:
+                                    s_vars[v][k].value = value(
+                                            m_var[k]*blk.split_fraction[
+                                                    (t, o) + k])
                         except KeyError:
                             raise KeyError(
                                     "{} state variable and split fraction "
