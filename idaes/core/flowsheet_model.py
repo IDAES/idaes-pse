@@ -24,7 +24,7 @@ from pyomo.dae import ContinuousSet
 from pyomo.common.config import ConfigValue, In
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
-                        UnitBlockData, useDefault)
+                        UnitModelBlockData, useDefault)
 from idaes.core.util.config import is_physical_parameter_block, list_of_floats
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
 from idaes.core.util.misc import add_object_reference
@@ -107,7 +107,7 @@ within this flowsheet if not otherwise specified,
         """
         This method runs model checks on all unit models in a flowsheet.
 
-        This method searches for objects which inherit from UnitBlockData and
+        This method searches for objects which inherit from UnitModelBlockData and
         executes the model_check method if it exists.
 
         Args:
@@ -118,7 +118,7 @@ within this flowsheet if not otherwise specified,
         """
         _log.info("Executing model checks.")
         for o in self.component_objects(descend_into=False):
-            if isinstance(o, UnitBlockData):
+            if isinstance(o, UnitModelBlockData):
                 try:
                     o.model_check()
                 except AttributeError:

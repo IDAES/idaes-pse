@@ -21,3 +21,4 @@ Unit Model Contents
     product
     separator
     stoichiometric_reactor
+    power_generation/index
