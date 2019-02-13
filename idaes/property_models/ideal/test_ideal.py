@@ -27,18 +27,19 @@ m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid
-m.fs.properties_vl = IdealParameterBlock(default={"valid_phase": 'VL'})
+m.fs.properties_vl = IdealParameterBlock(default={"valid_phase":
+                                                  ('Liq', 'Vap')})
 m.fs.state_block_vl = m.fs.properties_vl.state_block_class(
     default={"parameters": m.fs.properties_vl})
 
 # liquid only
-m.fs.properties_l = IdealParameterBlock(default={"valid_phase": 'L'})
+m.fs.properties_l = IdealParameterBlock(default={"valid_phase": 'Liq'})
 m.fs.state_block_l = m.fs.properties_l.state_block_class(
     default={"parameters": m.fs.properties_l,
              "has_phase_equilibrium": False})
 
 # vapor only
-m.fs.properties_v = IdealParameterBlock(default={"valid_phase": 'V'})
+m.fs.properties_v = IdealParameterBlock(default={"valid_phase": 'Vap'})
 m.fs.state_block_v = m.fs.properties_v.state_block_class(
     default={"parameters": m.fs.properties_v,
              "has_phase_equilibrium": False})
@@ -48,19 +49,20 @@ def test_build():
     assert len(m.fs.properties_vl.config) == 2
 
     # vapor-liquid
-    assert m.fs.properties_vl.config.valid_phase == "VL"
+    assert m.fs.properties_vl.config.valid_phase == ('Vap', 'Liq') or \
+        m.fs.properties_vl.config.valid_phase == ('Liq', 'Vap')
     assert len(m.fs.properties_vl.phase_list) == 2
     assert m.fs.properties_vl.phase_list == ["Liq", "Vap"]
     assert hasattr(m.fs.state_block_vl, "eq_Keq")
 
     # liquid only
-    assert m.fs.properties_l.config.valid_phase == "L"
+    assert m.fs.properties_l.config.valid_phase == "Liq"
     assert len(m.fs.properties_l.phase_list) == 1
     assert m.fs.properties_l.phase_list == ["Liq"]
     assert not hasattr(m.fs.state_block_l, "eq_Keq")
 
     # vapor only
-    assert m.fs.properties_v.config.valid_phase == "V"
+    assert m.fs.properties_v.config.valid_phase == "Vap"
     assert len(m.fs.properties_v.phase_list) == 1
     assert m.fs.properties_v.phase_list == ["Vap"]
     assert not hasattr(m.fs.state_block_v, "eq_Keq")

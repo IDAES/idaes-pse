@@ -64,21 +64,21 @@ def main():
                                "has_pressure_change": False})
 
     # Make Streams to connect units
-    m.fs.stream = Arc(source=m.fs.Tank1.outlet[0],
-                      destination=m.fs.Tank2.inlet[0])
+    m.fs.stream = Arc(source=m.fs.Tank1.outlet,
+                      destination=m.fs.Tank2.inlet)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Set inlet and operating conditions, and some initial conditions.
-    m.fs.Tank1.inlet[0].flow_vol.fix(1.0)
-    m.fs.Tank1.inlet[0].conc_mol_comp["H2O"].fix(55388.0)
-    m.fs.Tank1.inlet[0].conc_mol_comp["NaOH"].fix(100.0)
-    m.fs.Tank1.inlet[0].conc_mol_comp["EthylAcetate"].fix(100.0)
-    m.fs.Tank1.inlet[0].conc_mol_comp["SodiumAcetate"].fix(0.0)
-    m.fs.Tank1.inlet[0].conc_mol_comp["Ethanol"].fix(0.0)
+    m.fs.Tank1.inlet.flow_vol[0].fix(1.0)
+    m.fs.Tank1.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.Tank1.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.Tank1.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.Tank1.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+    m.fs.Tank1.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-    m.fs.Tank1.inlet[0].temperature.fix(303.15)
-    m.fs.Tank1.inlet[0].pressure.fix(101325.0)
+    m.fs.Tank1.inlet.temperature[0].fix(303.15)
+    m.fs.Tank1.inlet.pressure[0].fix(101325.0)
 
     m.fs.Tank1.volume.fix(1.0)
     m.fs.Tank1.heat_duty.fix(0.0)
@@ -101,7 +101,7 @@ def main():
     # =========================================================================
     # Adding Optimization
     m.fs.obj = Objective(
-            expr=m.fs.Tank2.outlet[0].conc_mol_comp["SodiumAcetate"],
+            expr=m.fs.Tank2.outlet.conc_mol_comp[0, "SodiumAcetate"],
             sense=maximize)
 
     # Add additional constraint
