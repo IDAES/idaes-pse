@@ -17,11 +17,12 @@ Author: Andrew Lee
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, Constraint, Param, Set, Var
+from pyomo.environ import ConcreteModel, Constraint, Set, SolverFactory, Var
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock
 
-from idaes.core import (FlowsheetBlockData,
+from idaes.core import (FlowsheetBlock,
+                        FlowsheetBlockData,
                         declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlock,
@@ -30,8 +31,21 @@ from idaes.unit_models.separator import (Separator,
                                          SeparatorData,
                                          SplittingType)
 from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError,
-                                        PropertyNotSupportedError)
+                                        ConfigurationError)
+from idaes.ui.report import degrees_of_freedom
+from idaes.property_models.saponification_thermo import (
+                        SaponificationParameterBlock)
+
+
+# -----------------------------------------------------------------------------
+# See if ipopt is available and set up solver
+if SolverFactory('ipopt').available():
+    solver = SolverFactory('ipopt')
+    solver.options = {'tol': 1e-6,
+                      'mu_init': 1e-8,
+                      'bound_push': 1e-8}
+else:
+    solver = None
 
 
 # -----------------------------------------------------------------------------
@@ -409,6 +423,8 @@ def test_add_split_fractions_total():
     assert len(m.fs.sep.outlet_idx) == len(outlet_list)
     assert isinstance(m.fs.sep.split_fraction, Var)
     assert len(m.fs.sep.split_fraction) == 2
+    assert isinstance(m.fs.sep.sum_split_frac, Constraint)
+    assert len(m.fs.sep.sum_split_frac) == 1
 
 
 def test_add_split_fractions_phase():
@@ -439,6 +455,9 @@ def test_add_split_fractions_phase():
         for o in m.fs.sep.outlet_idx:
             for p in m.fs.sep.phase_list_ref:
                 assert m.fs.sep.split_fraction[t, o, p] == 0.5
+
+    assert isinstance(m.fs.sep.sum_split_frac, Constraint)
+    assert len(m.fs.sep.sum_split_frac) == 2
 
 
 def test_add_split_fractions_component():
@@ -471,6 +490,9 @@ def test_add_split_fractions_component():
             for j in m.fs.sep.component_list_ref:
                 assert m.fs.sep.split_fraction[t, o, j] == 0.5
 
+    assert isinstance(m.fs.sep.sum_split_frac, Constraint)
+    assert len(m.fs.sep.sum_split_frac) == 2
+
 
 def test_add_split_fractions_phase_component():
     m = ConcreteModel()
@@ -502,6 +524,9 @@ def test_add_split_fractions_phase_component():
             for p in m.fs.sep.phase_list_ref:
                 for j in m.fs.sep.component_list_ref:
                     assert m.fs.sep.split_fraction[t, o, p, j] == 0.5
+
+    assert isinstance(m.fs.sep.sum_split_frac, Constraint)
+    assert len(m.fs.sep.sum_split_frac) == 4
 
 
 def test_add_material_splitting_constraints_total():
@@ -827,6 +852,74 @@ def test_initialize_inconsistent_keys():
 
     with pytest.raises(KeyError):
         m.fs.sep.initialize()
+
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_initialize_total_flow():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = SaponificationParameterBlock()
+
+    m.fs.sb = Separator(default={
+            "property_package": m.fs.properties,
+            "ideal_separation": False,
+            "split_basis": SplittingType.totalFlow})
+
+    m.fs.sb.inlet[:].flow_vol.fix(1.0e-03)
+    m.fs.sb.inlet[:].conc_mol_comp["H2O"].fix(55388.0)
+    m.fs.sb.inlet[:].conc_mol_comp["NaOH"].fix(100.0)
+    m.fs.sb.inlet[:].conc_mol_comp["EthylAcetate"].fix(100.0)
+    m.fs.sb.inlet[:].conc_mol_comp["SodiumAcetate"].fix(0.0)
+    m.fs.sb.inlet[:].conc_mol_comp["Ethanol"].fix(0.0)
+
+    m.fs.sb.inlet[:].temperature.fix(303.15)
+    m.fs.sb.inlet[:].pressure.fix(101325.0)
+    
+    m.fs.sb.split_fraction[0, "outlet_1"].fix(0.2)
+
+    assert degrees_of_freedom(m) == 0
+
+    m.fs.sb.initialize(outlvl=5, optarg={'tol': 1e-6})
+
+    assert  (pytest.approx(0.2, abs=1e-3) ==
+             m.fs.sb.split_fraction[0, "outlet_1"].value)
+    assert  (pytest.approx(0.8, abs=1e-3) ==
+             m.fs.sb.split_fraction[0, "outlet_2"].value)
+
+    assert (pytest.approx(101325.0, abs=1e-2) ==
+            m.fs.sb.outlet_1[0].vars["pressure"].value)
+    assert (pytest.approx(303.15, abs=1e-2) ==
+            m.fs.sb.outlet_1[0].vars["temperature"].value)
+    assert (pytest.approx(2e-4, abs=1e-6) ==
+            m.fs.sb.outlet_1[0].flow_vol.value)
+    assert (pytest.approx(55388.0, abs=1e-2) ==
+            m.fs.sb.outlet_1[0].conc_mol_comp["H2O"].value)
+    assert (pytest.approx(100.0, abs=1e-2) ==
+            m.fs.sb.outlet_1[0].conc_mol_comp["NaOH"].value)
+    assert (pytest.approx(100.0, abs=1e-2) ==
+            m.fs.sb.outlet_1[0].conc_mol_comp["EthylAcetate"].value)
+    assert (pytest.approx(0.0, abs=1e-2) ==
+            m.fs.sb.outlet_1[0].conc_mol_comp["SodiumAcetate"].value)
+    assert (pytest.approx(0.0, abs=1e-2) ==
+            m.fs.sb.outlet_1[0].conc_mol_comp["Ethanol"].value)
+
+    assert (pytest.approx(101325.0, abs=1e-2) ==
+            m.fs.sb.outlet_2[0].vars["pressure"].value)
+    assert (pytest.approx(303.15, abs=1e-2) ==
+            m.fs.sb.outlet_2[0].vars["temperature"].value)
+    assert (pytest.approx(8e-4, abs=1e-6) ==
+            m.fs.sb.outlet_2[0].flow_vol.value)
+    assert (pytest.approx(55388.0, abs=1e-2) ==
+            m.fs.sb.outlet_2[0].conc_mol_comp["H2O"].value)
+    assert (pytest.approx(100.0, abs=1e-2) ==
+            m.fs.sb.outlet_2[0].conc_mol_comp["NaOH"].value)
+    assert (pytest.approx(100.0, abs=1e-2) ==
+            m.fs.sb.outlet_2[0].conc_mol_comp["EthylAcetate"].value)
+    assert (pytest.approx(0.0, abs=1e-2) ==
+            m.fs.sb.outlet_2[0].conc_mol_comp["SodiumAcetate"].value)
+    assert (pytest.approx(0.0, abs=1e-2) ==
+            m.fs.sb.outlet_2[0].conc_mol_comp["Ethanol"].value)
 
 
 # -----------------------------------------------------------------------------
