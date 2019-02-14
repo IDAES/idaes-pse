@@ -26,7 +26,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.unit_models import Separator, Mixer, SplittingType
 from idaes.unit_models.power_generation import (
-    TurbineInletStage, TurbineStage, TurbineOutletStage)
+    TurbineInletStage, TurbineStage, TurbineOutletStage, SteamValve)
 from idaes.core.util.config import is_physical_parameter_block
 from .turbine_multistage_config import _define_turbine_mutlistage_config
 
@@ -243,6 +243,8 @@ class TurbineMultistageData(UnitModelBlockData):
             unit_cfg: The base unit config dict.
         """
         ni = self.config.num_parallel_inlet_stages
+        self.inlet_stage_idx = RangeSet(ni)
+        inlet_idx = self.inlet_stage_idx
 
         # Splitter config
         s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
@@ -261,18 +263,29 @@ class TurbineMultistageData(UnitModelBlockData):
         # Add mixer
         self.inlet_mix = Mixer(default=m_cfg)
 
-        #TODO<jce> Add throttel valves for each inlet stage
         # Add turbine stages
-        self.inlet_stage = TurbineInletStage(RangeSet(ni), default=unit_cfg)
+        self.throttel_valve = SteamValve(inlet_idx, default=unit_cfg)
+        self.inlet_stage = TurbineInletStage(inlet_idx, default=unit_cfg)
 
         # Add connections
-        # TODO<jce> when framework is updated fix indexing
         def _split_to_rule(b, i):
             return {"source":getattr(self.inlet_split, "outlet_{}".format(i)),
-                "destination":self.inlet_stage[i].inlet}
+                    "destination":self.throttel_valve[i].inlet}
+        def _valve_to_rule(b, i):
+            return {"source":self.throttel_valve[i].inlet,
+                    "destination":self.inlet_stage[i].inlet}
         def _inlet_to_rule(b, i):
             return {"source":self.inlet_stage[i].outlet,
-                "destination":getattr(self.inlet_mix, "inlet_{}".format(i))}
+                    "destination":getattr(self.inlet_mix, "inlet_{}".format(i))}
 
-        self.split_to_inlet_stage_stream = Arc(RangeSet(ni), rule=_split_to_rule)
-        self.inlet_stage_to_mix = Arc(RangeSet(ni), rule=_inlet_to_rule)
+        self.split_to_valve_stream = Arc(inlet_idx, rule=_split_to_rule)
+        self.valve_to_inlet_stage_stream = Arc(inlet_idx, rule=_valve_to_rule)
+        self.inlet_stage_to_mix = Arc(inlet_idx, rule=_inlet_to_rule)
+
+    def throttle_cv_fix(self, value):
+        for i in self.throttel_valve:
+            self.throttel_valve.Cv.fix(value)
+
+    def turbine_inlet_cf_fix(self, value):
+        for i in self.throttel_valve:
+            self.throttel_valve.flow_coeff.fix(value)

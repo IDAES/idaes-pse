@@ -85,8 +85,9 @@ class TurbineInletStageData(PressureChangerData):
             cf = b.flow_coeff[t]
             Pin = b.control_volume.properties_in[t].pressure
             Pratio = b.ratioP[t]
-            return (flow*mw*sqrt(Tin - 273.15) ==
-                cf*Pin*sqrt(g/(g - 1)*(Pratio**(2.0/g) - Pratio**((g + 1)/g))))
+            return (1e-6*flow**2*mw**2*(Tin - 273.15) ==
+                1e-6*cf**2*Pin**2*
+                (g/(g - 1)*(Pratio**(2.0/g) - Pratio**((g + 1)/g))))
 
         @self.Constraint(self.time_ref, doc="Equation: Isentropic enthalpy change")
         def isentropic_enthalpy(b, t):

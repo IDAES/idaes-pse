@@ -114,8 +114,8 @@ class TurbineStageData(PressureChangerData):
                     Pout.fix(value(Pin*0.8))
             else:
                 Pout.fix()
-        self.deltaP[:] = value(Pout - Pin)
-        self.ratioP[:] = value(Pout/Pin)
+            self.deltaP[t] = value(Pout - Pin)
+            self.ratioP[t] = value(Pout/Pin)
 
         # Make sure the initialization problem has no degrees of freedom
         # This shouldn't happen here unless there is a bug in this

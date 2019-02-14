@@ -80,7 +80,8 @@ class TurbineOutletStageData(PressureChangerData):
             Pin = b.control_volume.properties_in[t].pressure
             Pr = b.ratioP[t]
             cf = b.flow_coeff
-            return flow*mw*sqrt(Tin - 273.15) == cf*Pin*sqrt(1 - Pr**2)
+            return 1e-6*flow**2*mw**2*(Tin - 273.15) == \
+                   1e-6*cf**2*Pin**2*(1 - Pr**2)
 
         @self.Constraint( self.time_ref,
             doc="Equation: isentropic specific enthalpy change")

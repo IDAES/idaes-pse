@@ -62,9 +62,9 @@ def test_initialize(build_turbine):
     """Initialize a turbine model"""
     m = build_turbine
     # set inlet
-    m.fs.turb.inlet.enth_mol.value = 70000
-    m.fs.turb.inlet.flow_mol.value = 15000
-    m.fs.turb.inlet.pressure.value = 8e6
+    m.fs.turb.inlet.enth_mol[0].value = 70000
+    m.fs.turb.inlet.flow_mol[0].value = 15000
+    m.fs.turb.inlet.pressure[0].value = 8e6
     m.fs.turb.efficiency_isentropic.fix(0.8)
     m.fs.turb.ratioP.fix(0.7)
     m.fs.turb.initialize(outlvl=4) # need to check for proper init
