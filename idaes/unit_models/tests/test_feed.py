@@ -20,7 +20,7 @@ from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.feed import Feed
 from idaes.property_models.saponification_thermo import (
-                        PhysicalParameterBlock)
+                        SaponificationParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -40,7 +40,7 @@ def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
+    m.fs.properties = SaponificationParameterBlock()
 
     m.fs.feed = Feed(default={"property_package": m.fs.properties})
 
@@ -50,11 +50,11 @@ def test_build():
     assert hasattr(m.fs.feed, "pressure")
 
     assert hasattr(m.fs.feed, "outlet")
-    assert len(m.fs.feed.outlet[0].vars) == 4
-    assert hasattr(m.fs.feed.outlet[0], "flow_vol")
-    assert hasattr(m.fs.feed.outlet[0], "conc_mol_comp")
-    assert hasattr(m.fs.feed.outlet[0], "temperature")
-    assert hasattr(m.fs.feed.outlet[0], "pressure")
+    assert len(m.fs.feed.outlet.vars) == 4
+    assert hasattr(m.fs.feed.outlet, "flow_vol")
+    assert hasattr(m.fs.feed.outlet, "conc_mol_comp")
+    assert hasattr(m.fs.feed.outlet, "temperature")
+    assert hasattr(m.fs.feed.outlet, "pressure")
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -62,7 +62,7 @@ def test_initialize():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
+    m.fs.properties = SaponificationParameterBlock()
 
     m.fs.feed = Feed(default={"property_package": m.fs.properties})
 
@@ -81,9 +81,9 @@ def test_initialize():
     m.fs.feed.initialize(outlvl=5,
                          optarg={'tol': 1e-6})
 
-    assert m.fs.feed.outlet[0].flow_vol== 1.0e-03
-    assert m.fs.feed.outlet[0].conc_mol_comp["H2O"] == 55388.0
-    assert m.fs.feed.outlet[0].conc_mol_comp["NaOH"] == 100.0
-    assert m.fs.feed.outlet[0].conc_mol_comp["EthylAcetate"] == 100.0
-    assert m.fs.feed.outlet[0].conc_mol_comp["SodiumAcetate"] == 0.0
-    assert m.fs.feed.outlet[0].conc_mol_comp["Ethanol"] == 0.0
+    assert m.fs.feed.outlet.flow_vol[0].value == 1.0e-03
+    assert m.fs.feed.outlet.conc_mol_comp[0, "H2O"].value == 55388.0
+    assert m.fs.feed.outlet.conc_mol_comp[0, "NaOH"].value == 100.0
+    assert m.fs.feed.outlet.conc_mol_comp[0, "EthylAcetate"].value == 100.0
+    assert m.fs.feed.outlet.conc_mol_comp[0, "SodiumAcetate"].value == 0.0
+    assert m.fs.feed.outlet.conc_mol_comp[0, "Ethanol"].value == 0.0

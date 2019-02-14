@@ -23,7 +23,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 
@@ -35,7 +35,7 @@ _log = logging.getLogger(__name__)
 
 
 @declare_process_block_class("Feed")
-class FeedData(UnitBlockData):
+class FeedData(UnitModelBlockData):
     """
     Standard Feed Block Class
     """
@@ -46,6 +46,11 @@ class FeedData(UnitBlockData):
         description="Dynamic model flag - must be False",
         doc="""Indicates whether this model will be dynamic or not,
 **default** = False. Feed blocks are always steady-state."""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Holdup construction flag - must be False",
+        doc="""Feed blocks do not contain holdup, thus this must be False."""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,

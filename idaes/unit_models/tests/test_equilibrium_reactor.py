@@ -20,9 +20,9 @@ from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.equilibrium_reactor import EquilibriumReactor
 from idaes.property_models.saponification_thermo import (
-                        PhysicalParameterBlock)
+                        SaponificationParameterBlock)
 from idaes.property_models.saponification_reactions import (
-                        ReactionParameterBlock)
+                        SaponificationReactionParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -42,8 +42,8 @@ def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
-    m.fs.reactions = ReactionParameterBlock(default={
+    m.fs.properties = SaponificationParameterBlock()
+    m.fs.reactions = SaponificationReactionParameterBlock(default={
                             "property_package": m.fs.properties})
 
     m.fs.req = EquilibriumReactor(
@@ -54,18 +54,18 @@ def test_build():
                      "has_pressure_change": False})
 
     assert hasattr(m.fs.req, "inlet")
-    assert len(m.fs.req.inlet[0].vars) == 4
-    assert hasattr(m.fs.req.inlet[0], "flow_vol")
-    assert hasattr(m.fs.req.inlet[0], "conc_mol_comp")
-    assert hasattr(m.fs.req.inlet[0], "temperature")
-    assert hasattr(m.fs.req.inlet[0], "pressure")
+    assert len(m.fs.req.inlet.vars) == 4
+    assert hasattr(m.fs.req.inlet, "flow_vol")
+    assert hasattr(m.fs.req.inlet, "conc_mol_comp")
+    assert hasattr(m.fs.req.inlet, "temperature")
+    assert hasattr(m.fs.req.inlet, "pressure")
 
     assert hasattr(m.fs.req, "outlet")
-    assert len(m.fs.req.outlet[0].vars) == 4
-    assert hasattr(m.fs.req.outlet[0], "flow_vol")
-    assert hasattr(m.fs.req.outlet[0], "conc_mol_comp")
-    assert hasattr(m.fs.req.outlet[0], "temperature")
-    assert hasattr(m.fs.req.outlet[0], "pressure")
+    assert len(m.fs.req.outlet.vars) == 4
+    assert hasattr(m.fs.req.outlet, "flow_vol")
+    assert hasattr(m.fs.req.outlet, "conc_mol_comp")
+    assert hasattr(m.fs.req.outlet, "temperature")
+    assert hasattr(m.fs.req.outlet, "pressure")
 
     assert hasattr(m.fs.req, "rate_reaction_constraint")
     assert hasattr(m.fs.req.control_volume, "heat")
@@ -77,8 +77,8 @@ def test_initialize():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
-    m.fs.reactions = ReactionParameterBlock(default={
+    m.fs.properties = SaponificationParameterBlock()
+    m.fs.reactions = SaponificationReactionParameterBlock(default={
                             "property_package": m.fs.properties})
 
     m.fs.req = EquilibriumReactor(
@@ -88,15 +88,15 @@ def test_initialize():
                      "has_heat_transfer": False,
                      "has_pressure_change": False})
 
-    m.fs.req.inlet[:].flow_vol.fix(1.0e-03)
-    m.fs.req.inlet[:].conc_mol_comp["H2O"].fix(55388.0)
-    m.fs.req.inlet[:].conc_mol_comp["NaOH"].fix(100.0)
-    m.fs.req.inlet[:].conc_mol_comp["EthylAcetate"].fix(100.0)
-    m.fs.req.inlet[:].conc_mol_comp["SodiumAcetate"].fix(0.0)
-    m.fs.req.inlet[:].conc_mol_comp["Ethanol"].fix(0.0)
+    m.fs.req.inlet.flow_vol.fix(1.0e-03)
+    m.fs.req.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.req.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.req.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.req.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+    m.fs.req.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-    m.fs.req.inlet[:].temperature.fix(303.15)
-    m.fs.req.inlet[:].pressure.fix(101325.0)
+    m.fs.req.inlet.temperature.fix(303.15)
+    m.fs.req.inlet.pressure.fix(101325.0)
 
     assert degrees_of_freedom(m) == 0
 
@@ -104,8 +104,8 @@ def test_initialize():
                          optarg={'tol': 1e-6})
 
     assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.req.outlet[0].vars["pressure"].value)
+            m.fs.req.outlet.pressure[0].value)
     assert (pytest.approx(303.15, abs=1e-2) ==
-            m.fs.req.outlet[0].vars["temperature"].value)
+            m.fs.req.outlet.temperature[0].value)
     assert (pytest.approx(0.02, abs=1e-2) ==
-            m.fs.req.outlet[0].conc_mol_comp["EthylAcetate"].value)
+            m.fs.req.outlet.conc_mol_comp[0, "EthylAcetate"].value)

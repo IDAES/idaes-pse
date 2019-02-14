@@ -19,12 +19,12 @@ from __future__ import division
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
@@ -34,7 +34,7 @@ __author__ = "Andrew Lee"
 
 
 @declare_process_block_class("EquilibriumReactor")
-class EquilibriumReactorData(UnitBlockData):
+class EquilibriumReactorData(UnitModelBlockData):
     """
     Standard Equilibrium Reactor Unit Model Class
     """
@@ -186,7 +186,7 @@ see reaction package for documentation.}"""))
         super(EquilibriumReactorData, self).build()
 
         # Build Control Volume
-        self.control_volume = ControlVolume0D(default={
+        self.control_volume = ControlVolume0DBlock(default={
                 "dynamic": self.config.dynamic,
                 "has_holdup": self.config.has_holdup,
                 "property_package": self.config.property_package,

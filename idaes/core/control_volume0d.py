@@ -48,8 +48,8 @@ _log = logging.getLogger(__name__)
     ControlVolume0DBlock is a specialized Pyomo block for IDAES non-discretized
     control volume blocks, and contains instances of ControlVolume0DBlockData.
 
-    ControlVolume0DBlock should be used for any control volume with a defined volume
-    and distinct inlets and outlets which does not require spatial
+    ControlVolume0DBlock should be used for any control volume with a defined
+    volume and distinct inlets and outlets which does not require spatial
     discretization. This encompases most basic unit models used in process
     modeling.""")
 class ControlVolume0DBlockData(ControlVolumeBlockData):
