@@ -19,12 +19,12 @@ from __future__ import division
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
@@ -34,7 +34,7 @@ __author__ = "Chinedu Okoli, Andrew Lee"
 
 
 @declare_process_block_class("StoichiometricReactor")
-class StoichiometricReactorData(UnitBlockData):
+class StoichiometricReactorData(UnitModelBlockData):
     """
     Standard Stoichiometric Reactor Unit Model Class
     This model assumes that all given reactions are irreversible, and that each
@@ -52,6 +52,16 @@ class StoichiometricReactorData(UnitBlockData):
 **useDefault** - get flag from parent (default = False),
 **True** - set as a dynamic model,
 **False** - set as a steady-state model.}"""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([useDefault, True, False]),
+        description="Holdup construction flag",
+        doc="""Indicates whether holdup terms should be constructed or not.
+Must be True if dynamic = True,
+**default** - False.
+**Valid values:** {
+**True** - construct holdup terms,
+**False** - do not construct holdup terms}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
@@ -164,7 +174,7 @@ see reaction package for documentation.}"""))
         super(StoichiometricReactorData, self).build()
 
         # Build Control Volume
-        self.control_volume = ControlVolume0D(default={
+        self.control_volume = ControlVolume0DBlock(default={
                 "dynamic": self.config.dynamic,
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args,

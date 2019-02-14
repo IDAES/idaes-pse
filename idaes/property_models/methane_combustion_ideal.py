@@ -28,9 +28,9 @@ from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
-                        PhysicalParameterBase,
-                        StateBlockDataBase,
-                        StateBlockBase)
+                        PhysicalParameterBlock,
+                        StateBlockData,
+                        StateBlock)
 from idaes.core.util.initialization import (evaluate_variable_from_constraint,
                                             solve_indexed_blocks)
 from idaes.core.util.misc import add_object_reference
@@ -43,8 +43,8 @@ __author__ = "Andrew Lee, Jinliang Ma"
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("PhysicalParameterBlock")
-class PhysicalParameterData(PhysicalParameterBase):
+@declare_process_block_class("MethaneCombustionParameterBlock")
+class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
 
@@ -58,7 +58,7 @@ class PhysicalParameterData(PhysicalParameterBase):
         '''
         super(PhysicalParameterData, self).build()
 
-        self.state_block_class = StateBlock
+        self.state_block_class = MethaneCombustionStateBlock
 
         # List of valid phases in property package
         self.phase_list = Set(initialize=['Vap'])
@@ -225,7 +225,7 @@ class PhysicalParameterData(PhysicalParameterBase):
                                'holdup': 'mol'})
 
 
-class _StateBlock(StateBlockBase):
+class _StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -419,9 +419,9 @@ class _StateBlock(StateBlockBase):
                 _log.info('{} State Released.'.format(blk.name))
 
 
-@declare_process_block_class("StateBlock",
+@declare_process_block_class("MethaneCombustionStateBlock",
                              block_class=_StateBlock)
-class StateBlockData(StateBlockDataBase):
+class MethaneCombustionStateBlockData(StateBlockData):
     """
     An example property package for ideal gas properties with Gibbs energy
     """
@@ -430,7 +430,7 @@ class StateBlockData(StateBlockDataBase):
         """
         Callable method for Block construction
         """
-        super(StateBlockData, self).build()
+        super(MethaneCombustionStateBlockData, self).build()
 
         # Create references to package parameters
         # List of valid phases in property package

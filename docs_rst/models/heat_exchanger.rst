@@ -19,7 +19,7 @@ overriding the default temperature difference calculation.
 .. code-block:: python
 
   import pyomo.environ as pe # Pyomo environment
-  from idaes.core import FlowsheetBlock, StateBlockBase
+  from idaes.core import FlowsheetBlock, StateBlock
   from idaes.unit_models import HeatExchanger
   from idaes.unit_models.heat_exchanger import delta_temperature_amtd_rule
   from idaes.property_models import iapws95_ph
@@ -61,8 +61,8 @@ The user may also provide constants to calculate the heat transfer coefficient.
 Model Structure
 ---------------
 
-The HeatExchanger model contains two ControlVolume0D blocks (side_1 and side_2),
-which are configured the same as the ControlVolume0D in the
+The HeatExchanger model contains two ControlVolume0DBlock blocks (side_1 and side_2),
+which are configured the same as the ControlVolume0DBlock in the
 :ref:`Heater model <models/heater:Heater>`. The HeatExchanger model contains additional
 constraints that calculate the amount of heat transferred from side_1 to side_2.
 

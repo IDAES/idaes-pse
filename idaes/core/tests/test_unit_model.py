@@ -21,8 +21,8 @@ from pyomo.network import Port
 from pyomo.common.config import ConfigValue
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
-                        UnitBlockData, useDefault, PhysicalParameterBase,
-                        StateBlockBase, StateBlockDataBase, ControlVolume0D)
+                        UnitModelBlockData, useDefault, PhysicalParameterBlock,
+                        StateBlock, StateBlockData, ControlVolume0DBlock)
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 
@@ -32,21 +32,21 @@ class _Flowsheet(FlowsheetBlockData):
         super(_Flowsheet, self).build()
 
 
-@declare_process_block_class("PhysicalParameterBlock")
-class _PhysicalParameterBlock(PhysicalParameterBase):
+@declare_process_block_class("PhysicalParameterTestBlock")
+class _PhysicalParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_PhysicalParameterBlock, self).build()
 
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"])
 
-        self.state_block_class = StateBlock
+        self.state_block_class = TestStateBlock
 
 
-@declare_process_block_class("StateBlock", block_class=StateBlockBase)
-class StateBlockData(StateBlockDataBase):
+@declare_process_block_class("TestStateBlock", block_class=StateBlock)
+class StateTestBlockData(StateBlockData):
     def build(self):
-        super(StateBlockData, self).build()
+        super(StateTestBlockData, self).build()
 
         self.a = Var(initialize=1)
         self.b = Var(initialize=2)
@@ -59,9 +59,9 @@ class StateBlockData(StateBlockDataBase):
 
 
 @declare_process_block_class("Unit")
-class UnitData(UnitBlockData):
+class UnitData(UnitModelBlockData):
     def build(self):
-        super(UnitBlockData, self).build()
+        super(UnitModelBlockData, self).build()
 
 
 def test_config_block():
@@ -69,7 +69,7 @@ def test_config_block():
 
     m.u = Unit()
 
-    assert len(m.u. config) == 1
+    assert len(m.u. config) == 2
     assert m.u.config.dynamic == useDefault
 
 
@@ -167,7 +167,7 @@ def test_setup_dynamics_has_holdup():
     m.fs = Flowsheet(default={"dynamic": True})
 
     m.fs.u = Unit()
-    m.fs.u.config.declare("has_holdup", ConfigValue(default=False))
+    m.fs.u.config.has_holdup=False
 
     with pytest.raises(ConfigurationError):
         m.fs.u._setup_dynamics()
@@ -176,11 +176,11 @@ def test_setup_dynamics_has_holdup():
 def test_add_port():
     m = ConcreteModel()
     m.fs = Flowsheet()
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.prop = StateBlock(m.fs.time,
+    m.fs.u.prop = TestStateBlock(m.fs.time,
                              default={"parameters": m.fs.pp})
 
     p_obj = m.fs.u.add_port(name="test_port", block=m.fs.u.prop)
@@ -188,19 +188,19 @@ def test_add_port():
     assert isinstance(p_obj, Port)
     assert hasattr(m.fs.u, "test_port")
     assert len(m.fs.u.test_port) == 1
-    assert m.fs.u.test_port[0].a.value == m.fs.u.prop[0].a.value
-    assert m.fs.u.test_port[0].b.value == m.fs.u.prop[0].b.value
-    assert m.fs.u.test_port[0].c.value == m.fs.u.prop[0].c.value
+    assert m.fs.u.test_port.a[0].value == m.fs.u.prop[0].a.value
+    assert m.fs.u.test_port.b[0].value == m.fs.u.prop[0].b.value
+    assert m.fs.u.test_port.c[0].value == m.fs.u.prop[0].c.value
 
 
 def test_add_port_invalid_block():
     m = ConcreteModel()
     m.fs = Flowsheet()
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.prop = StateBlock(m.fs.time,
+    m.fs.u.prop = TestStateBlock(m.fs.time,
                              default={"parameters": m.fs.pp})
 
     with pytest.raises(ConfigurationError):
@@ -210,11 +210,11 @@ def test_add_port_invalid_block():
 def test_add_inlet_port_CV0D():
     m = ConcreteModel()
     m.fs = Flowsheet()
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.control_volume = ControlVolume0D(
+    m.fs.u.control_volume = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     m.fs.u.control_volume.add_state_blocks()
@@ -230,22 +230,22 @@ def test_add_inlet_port_CV0D():
     m.fs.u.control_volume.properties_in[0].b = 20
     m.fs.u.control_volume.properties_in[0].c = 30
 
-    assert m.fs.u.inlet[0].a.value == \
+    assert m.fs.u.inlet.a[0].value == \
         m.fs.u.control_volume.properties_in[0].a.value
-    assert m.fs.u.inlet[0].b.value == \
+    assert m.fs.u.inlet.b[0].value == \
         m.fs.u.control_volume.properties_in[0].b.value
-    assert m.fs.u.inlet[0].c.value == \
+    assert m.fs.u.inlet.c[0].value == \
         m.fs.u.control_volume.properties_in[0].c.value
 
 
 def test_add_inlet_port_CV0D_no_default_block():
     m = ConcreteModel()
     m.fs = Flowsheet()
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0D(
+    m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     with pytest.raises(ConfigurationError):
@@ -255,11 +255,11 @@ def test_add_inlet_port_CV0D_no_default_block():
 def test_add_inlet_port_CV0D_full_args():
     m = ConcreteModel()
     m.fs = Flowsheet()
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0D(
+    m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     m.fs.u.cv.add_state_blocks()
@@ -277,22 +277,22 @@ def test_add_inlet_port_CV0D_full_args():
     m.fs.u.cv.properties_in[0].b = 20
     m.fs.u.cv.properties_in[0].c = 30
 
-    assert m.fs.u.test_port[0].a.value == \
+    assert m.fs.u.test_port.a[0].value == \
         m.fs.u.cv.properties_in[0].a.value
-    assert m.fs.u.test_port[0].b.value == \
+    assert m.fs.u.test_port.b[0].value == \
         m.fs.u.cv.properties_in[0].b.value
-    assert m.fs.u.test_port[0].c.value == \
+    assert m.fs.u.test_port.c[0].value == \
         m.fs.u.cv.properties_in[0].c.value
 
 
 def test_add_outlet_port_CV0D():
     m = ConcreteModel()
     m.fs = Flowsheet()
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.control_volume = ControlVolume0D(
+    m.fs.u.control_volume = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     m.fs.u.control_volume.add_state_blocks()
@@ -308,22 +308,22 @@ def test_add_outlet_port_CV0D():
     m.fs.u.control_volume.properties_out[0].b = 20
     m.fs.u.control_volume.properties_out[0].c = 30
 
-    assert m.fs.u.outlet[0].a.value == \
+    assert m.fs.u.outlet.a[0].value == \
         m.fs.u.control_volume.properties_out[0].a.value
-    assert m.fs.u.outlet[0].b.value == \
+    assert m.fs.u.outlet.b[0].value == \
         m.fs.u.control_volume.properties_out[0].b.value
-    assert m.fs.u.outlet[0].c.value == \
+    assert m.fs.u.outlet.c[0].value == \
         m.fs.u.control_volume.properties_out[0].c.value
 
 
 def test_add_outlet_port_CV0D_no_default_block():
     m = ConcreteModel()
     m.fs = Flowsheet()
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0D(
+    m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     with pytest.raises(ConfigurationError):
@@ -333,11 +333,11 @@ def test_add_outlet_port_CV0D_no_default_block():
 def test_add_outlet_port_CV0D_full_args():
     m = ConcreteModel()
     m.fs = Flowsheet()
-    m.fs.pp = PhysicalParameterBlock()
+    m.fs.pp = PhysicalParameterTestBlock()
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    m.fs.u.cv = ControlVolume0D(
+    m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
     m.fs.u.cv.add_state_blocks()
@@ -355,9 +355,9 @@ def test_add_outlet_port_CV0D_full_args():
     m.fs.u.cv.properties_out[0].b = 20
     m.fs.u.cv.properties_out[0].c = 30
 
-    assert m.fs.u.test_port[0].a.value == \
+    assert m.fs.u.test_port.a[0].value == \
         m.fs.u.cv.properties_out[0].a.value
-    assert m.fs.u.test_port[0].b.value == \
+    assert m.fs.u.test_port.b[0].value == \
         m.fs.u.cv.properties_out[0].b.value
-    assert m.fs.u.test_port[0].c.value == \
+    assert m.fs.u.test_port.c[0].value == \
         m.fs.u.cv.properties_out[0].c.value
