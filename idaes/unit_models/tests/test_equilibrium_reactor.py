@@ -19,9 +19,9 @@ import pytest
 from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.equilibrium_reactor import EquilibriumReactor
-from idaes.property_models.saponification_thermo import (
+from idaes.property_models.examples.saponification_thermo import (
                         SaponificationParameterBlock)
-from idaes.property_models.saponification_reactions import (
+from idaes.property_models.examples.saponification_reactions import (
                         SaponificationReactionParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 

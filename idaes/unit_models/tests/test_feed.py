@@ -19,7 +19,7 @@ import pytest
 from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.feed import Feed
-from idaes.property_models.saponification_thermo import (
+from idaes.property_models.examples.saponification_thermo import (
                         SaponificationParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
