@@ -127,8 +127,9 @@ def test_mixer_config():
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp})
 
-    assert len(m.fs.mix.config) == 11
+    assert len(m.fs.mix.config) == 12
     assert m.fs.mix.config.dynamic is False
+    assert m.fs.mix.config.has_holdup is False
     assert m.fs.mix.config.property_package == m.fs.pp
     assert isinstance(m.fs.mix.config.property_package_args, ConfigBlock)
     assert len(m.fs.mix.config.property_package_args) == 0
