@@ -155,7 +155,6 @@ class SteamValveData(PressureChangerData):
         # Make sure the initialization problem has no degrees of freedom
         # This shouldn't happen here unless there is a bug in this
         dof = degrees_of_freedom(self)
-        print(dof)
         try:
             assert(dof == 0)
         except:

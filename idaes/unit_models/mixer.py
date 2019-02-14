@@ -23,6 +23,7 @@ from pyomo.environ import (Constraint,
                            PositiveReals,
                            Reals,
                            Set,
+                           RangeSet,
                            SolverFactory,
                            TerminationCondition,
                            Var)
@@ -56,7 +57,8 @@ MixingType = Enum(
 MomentumMixingType = Enum(
     'none',
     'minimize',
-    'equality')
+    'equality',
+    'minimize_and_equality')
 
 
 @declare_process_block_class("Mixer")
@@ -157,7 +159,12 @@ pressure of incoming streams,
 **MomentumMixingType.minimize** - mixed stream has pressure equal to the
 minimimum pressure of the incoming streams (uses smoothMin operator),
 **MomentumMixingType.equality** - enforces equality of pressure in mixed and
-all incoming streams.}"""))
+all incoming streams.,
+**MomentumMixingType.minimize_and_equality** - add constraints for pressure
+equal to the minimum pressure of the inlets and constraints for equality of
+pressure in mixed and all incoming streams. When the model is initially built,
+the equality constraints are deactivated.  This option is useful for switching
+between flow and pressure driven simulations.}"""))
     CONFIG.declare("mixed_state_block", ConfigValue(
         default=None,
         domain=is_state_block,
@@ -237,11 +244,21 @@ linked to all inlet states and the mixed state,
                                      .format(self.name))
 
         if self.config.momentum_mixing_type == MomentumMixingType.minimize:
+            self.inlet_idx = RangeSet(len(inlet_blocks))
             self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
                                                      mixed_block=mixed_block)
         elif self.config.momentum_mixing_type == MomentumMixingType.equality:
+            self.inlet_idx = RangeSet(len(inlet_blocks))
             self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
                                                  mixed_block=mixed_block)
+        elif self.config.momentum_mixing_type == \
+            MomentumMixingType.minimize_and_equality:
+            self.inlet_idx = RangeSet(len(inlet_blocks))
+            self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
+                                                     mixed_block=mixed_block)
+            self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
+                                                 mixed_block=mixed_block)
+            self.pressure_equality_constraints.deactivate()
         elif self.config.momentum_mixing_type == MomentumMixingType.none:
             pass
         else:
@@ -269,7 +286,7 @@ linked to all inlet states and the mixed state,
                         "num_inlets arguments, which were not consistent ("
                         "length of inlet_list was not equal to num_inlets). "
                         "PLease check your arguments for consistency, and "
-                        "note that it is only necessry to provide one of "
+                        "note that it is only necessary to provide one of "
                         "these arguments.".format(self.name))
         elif self.config.inlet_list is None and self.config.num_inlets is None:
             # If no arguments provided for inlets, default to num_inlets = 2
@@ -454,9 +471,6 @@ linked to all inlet states and the mixed state,
         the IDAES smooth minimum fuction.
         """
         # Add variables
-        self.inlet_idx = Set(initialize=range(1, len(inlet_blocks)+1),
-                             ordered=True)
-
         self.minimum_pressure = Var(self.time_ref,
                                     self.inlet_idx,
                                     doc='Variable for calculating '
@@ -495,10 +509,6 @@ linked to all inlet states and the mixed state,
         constraints equal to the number of inlets, enforcing equality between
         all inlets and the mixed stream.
         """
-        # Add indexing Set
-        self.inlet_idx = Set(initialize=range(1, len(inlet_blocks)+1),
-                             ordered=True)
-
         # Create equality constraints
         @self.Constraint(self.time_ref,
                          self.inlet_idx,

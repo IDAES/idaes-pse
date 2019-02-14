@@ -19,17 +19,24 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
 """
 import copy
 
-from pyomo.environ import RangeSet, Set, TransformationFactory
+from pyomo.environ import RangeSet, Set, TransformationFactory, Var, value
 from pyomo.network import Arc
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
-from idaes.unit_models import Separator, Mixer, SplittingType
+from idaes.unit_models import Separator, Mixer, SplittingType, MomentumMixingType
 from idaes.unit_models.power_generation import (
     TurbineInletStage, TurbineStage, TurbineOutletStage, SteamValve)
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util import from_json, to_json, StoreSpec
 from .turbine_multistage_config import _define_turbine_mutlistage_config
+from idaes.ui.report import degrees_of_freedom
 
+def _set_port(p1, p2):
+    for k, v in p1.vars.items():
+        if isinstance(v, Var):
+            for i in v:
+                v[i].value = value(p2.vars[k][i])
 
 @declare_process_block_class("TurbineMultistage",
     doc="Multistage steam turbine with optional reheat and extraction")
@@ -236,7 +243,7 @@ class TurbineMultistageData(UnitModelBlockData):
         """
         Add parallel turbine inlet stage models to simulate partial arc
         addmission. This includes a splitter mixer and a control valve before
-        each stage. (TODO add throttel valves once a valve model is available
+        each stage. (TODO add throttle valves once a valve model is available
         from the basic framework models.)
 
         Args:
@@ -257,22 +264,23 @@ class TurbineMultistageData(UnitModelBlockData):
 
         # Mixer config
         m_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
-        m_cfg.update(num_inlets=ni)
+        m_cfg.update(num_inlets=ni,
+            momentum_mixing_type=MomentumMixingType.minimize_and_equality)
         del m_cfg["has_holdup"]
         del m_cfg["has_phase_equilibrium"]
         # Add mixer
         self.inlet_mix = Mixer(default=m_cfg)
 
         # Add turbine stages
-        self.throttel_valve = SteamValve(inlet_idx, default=unit_cfg)
+        self.throttle_valve = SteamValve(inlet_idx, default=unit_cfg)
         self.inlet_stage = TurbineInletStage(inlet_idx, default=unit_cfg)
 
         # Add connections
         def _split_to_rule(b, i):
             return {"source":getattr(self.inlet_split, "outlet_{}".format(i)),
-                    "destination":self.throttel_valve[i].inlet}
+                    "destination":self.throttle_valve[i].inlet}
         def _valve_to_rule(b, i):
-            return {"source":self.throttel_valve[i].inlet,
+            return {"source":self.throttle_valve[i].inlet,
                     "destination":self.inlet_stage[i].inlet}
         def _inlet_to_rule(b, i):
             return {"source":self.inlet_stage[i].outlet,
@@ -283,9 +291,103 @@ class TurbineMultistageData(UnitModelBlockData):
         self.inlet_stage_to_mix = Arc(inlet_idx, rule=_inlet_to_rule)
 
     def throttle_cv_fix(self, value):
-        for i in self.throttel_valve:
-            self.throttel_valve.Cv.fix(value)
+        """
+        Fix the thottle valve coefficients.  These are generally the same for
+        each of the parallel stages so this provides a convenient way to set
+        them.
+
+        Args:
+            value: The value to fix the turbine inlet flow coefficients at
+        """
+        for i in self.throttle_valve:
+            self.throttle_valve.Cv.fix(value)
 
     def turbine_inlet_cf_fix(self, value):
-        for i in self.throttel_valve:
-            self.throttel_valve.flow_coeff.fix(value)
+        """
+        Fix the inlet turbine stage flow coefficient.  These are
+        generally the same for each of the parallel stages so this provides
+        a convenient way to set them.
+
+        Args:
+            value: The value to fix the turbine inlet flow coefficients at
+        """
+        for i in self.throttle_valve:
+            self.inlet_stage.flow_coeff.fix(value)
+
+    def initialize(self, outlvl=0, solver='ipopt',
+        optarg={'tol': 1e-6, 'max_iter':30}):
+        """
+        Initialize
+        """
+        stee = True if outlvl >= 3 else False
+        # sp is what to save to make sure state after init is same as the start
+        #   saves value, fixed, and active state, doesn't load originally free
+        #   values, this makes sure original problem spec is same but initializes
+        #   the values of free vars
+        sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
+        istate = to_json(self, return_dict=True, wts=sp)
+
+        self._initialize_inlet_section()
+
+        from_json(self, sd=istate, wts=sp)
+
+
+    def _initialize_inlet_section(self, outlvl=0, solver='ipopt',
+        optarg={'tol': 1e-6, 'max_iter':30}):
+
+        ni = self.config.num_parallel_inlet_stages
+
+        # Initialize Splitter
+        # Fix n - 1 split fractions
+        self.inlet_split.split_fraction[0,"outlet_1"].value = 1.0/ni
+        for i in self.inlet_stage_idx:
+            if i == 1: #fix rest of splits at leaving first one free
+                continue
+            self.inlet_split.split_fraction[0, "outlet_{}".format(i)].fix(1.0/ni)
+        # fix inlet and free outlet
+        self.inlet_split.inlet.fix()
+        for i in self.inlet_stage_idx:
+            ol = getattr(self.inlet_split, "outlet_{}".format(i))
+            ol.unfix()
+        self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        # free split frations
+        for i in self.inlet_stage_idx:
+            self.inlet_split.split_fraction[0, "outlet_{}".format(i)].unfix()
+
+        # Initliaize valves
+        for i in self.inlet_stage_idx:
+            _set_port(self.throttle_valve[i].inlet,
+                      getattr(self.inlet_split, "outlet_{}".format(i)))
+            self.throttle_valve[i].initialize(outlvl=outlvl, solver=solver,
+                optarg=optarg)
+
+        # Initialize turbine
+        for i in self.inlet_stage_idx:
+            _set_port(self.inlet_stage[i].inlet, self.throttle_valve[i].outlet)
+            self.inlet_stage[i].initialize(outlvl=outlvl, solver=solver,
+                optarg=optarg)
+
+        # Initialize Mixer
+        for i in self.inlet_stage_idx:
+            _set_port(getattr(self.inlet_mix, "inlet_{}".format(i)),
+                      self.inlet_stage[i].outlet)
+            getattr(self.inlet_mix, "inlet_{}".format(i)).fix()
+        self.inlet_mix.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        for i in self.inlet_stage_idx:
+            getattr(self.inlet_mix, "inlet_{}".format(i)).unfix()
+
+        self.inlet_mix.minimum_pressure_constraint.deactivate()
+        self.inlet_mix.pressure_equality_constraints.activate()
+
+        #self.hp_stages.deactivate()
+        #self.ip_stages.deactivate()
+        #self.lp_stages.deactivate()
+        #self.hp_split.deactivate()
+        #self.ip_split.deactivate()
+        #self.lp_split.deactivate()
+
+        print(degrees_of_freedom(self))
+        assert(degrees_of_freedom(self)==0)
+
+        #self.inlet_stage.display()
+        #self.inlet_mix.display()

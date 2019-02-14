@@ -110,7 +110,7 @@ def active_equality_set(blk):
     """
     ac = ComponentSet()
     for c in active_equalities(blk):
-        ac.add(c)
+            ac.add(c)
     return ac
 
 def variables_in_active_equalities_set(blk):

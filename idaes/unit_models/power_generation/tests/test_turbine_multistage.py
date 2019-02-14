@@ -47,76 +47,49 @@ def build_turbine_for_buid_test():
         "lp_split_num_outlets": {3:3}})
     return m
 
-def test_basic_build(build_turbine_for_buid_test):
+@pytest.fixture()
+def build_turbine_for_run_test():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    # roughly based on NETL baseline studies
+    m.fs.turb = TurbineMultistage(default={
+        "property_package": m.fs.properties,
+        "num_hp": 7,
+        "num_ip": 14,
+        "num_lp": 11,
+        "hp_split_locations": [4,7],
+        "ip_split_locations": [5, 14],
+        "lp_split_locations": [4,7,9,11],
+        "hp_disconnect": [7],
+        "ip_split_num_outlets": {14:3}})
+    return m
+
+def test_initialize(build_turbine_for_run_test):
     """Make a turbine model and make sure it doesn't throw exception"""
-    m = build_turbine_for_buid_test
+    m = build_turbine_for_run_test
     turb = m.fs.turb
-    assert(isinstance(turb.inlet_stage, TurbineInletStage))
-    assert(0 not in turb.inlet_stage)
-    assert(1 in turb.inlet_stage)
-    assert(2 in turb.inlet_stage)
-    assert(3 in turb.inlet_stage)
-    assert(4 in turb.inlet_stage)
-    assert(5 not in turb.inlet_stage)
-    assert(isinstance(turb.outlet_stage, TurbineOutletStage))
-    assert(isinstance(turb.hp_stages, TurbineStage))
-    assert(isinstance(turb.ip_stages, TurbineStage))
-    assert(isinstance(turb.lp_stages, TurbineStage))
-    assert(isinstance(turb.hp_split, Separator))
-    assert(isinstance(turb.ip_split, Separator))
-    assert(isinstance(turb.lp_split, Separator))
-    assert(0 not in turb.hp_stages)
-    assert(1 in turb.hp_stages)
-    assert(2 in turb.hp_stages)
-    assert(3 not in turb.hp_stages)
-    assert(0 not in turb.ip_stages)
-    assert(1 in turb.ip_stages)
-    assert(10 in turb.ip_stages)
-    assert(11 not in turb.ip_stages)
-    assert(0 not in turb.lp_stages)
-    assert(1 in turb.lp_stages)
-    assert(5 in turb.lp_stages)
-    assert(6 not in turb.lp_stages)
-    assert(0 in turb.hp_split)
-    assert(1 in turb.ip_split)
-    assert(2 in turb.ip_split)
-    assert(3 in turb.lp_split)
-    assert(4 in turb.lp_split)
-    assert((1,1) in turb.hp_stream)
-    assert((1,2) not in turb.hp_stream)
-    assert((2,1) not in turb.hp_stream)
-    assert((2,2) not in turb.hp_stream)
-    assert((1,1) in turb.ip_stream)
-    assert((1,2) in turb.ip_stream)
-    assert((2,1) in turb.ip_stream)
-    assert((2,2) in turb.ip_stream)
-    for i in [3,4,5,6,7,8,9]:
-        assert((i,1) in turb.ip_stream)
-        assert((i,2) not in turb.ip_stream)
-    assert((10,1) not in turb.ip_stream)
-    assert((10,2) not in turb.ip_stream)
-    for i in [1,2]:
-        assert((i,1) in turb.lp_stream)
-        assert((i,2) not in turb.lp_stream)
-    for i in [3,4]:
-        assert((i,1) in turb.lp_stream)
-        assert((i,2) in turb.lp_stream)
-    assert((5,1) not in turb.lp_stream)
-    assert((5,2) not in turb.lp_stream)
 
-    # though to test everything here so to make sure connections are right
-    # will fix split fractions except one for each splitter.  in this case
-    # with no disconnections that should leave the number of variables in the
-    # inlet port as the degrees of freedom
+    hin = iapws95_ph.htpx(T=880, P=2.4233e7)
+    m.fs.turb.inlet_split.inlet.enth_mol[0].fix(hin)
+    m.fs.turb.inlet_split.inlet.flow_mol[0].fix(26000)
+    m.fs.turb.inlet_split.inlet.pressure[0].fix(2.4233e7)
 
-    turb.hp_split[0].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.ip_split[1].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.ip_split[2].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.lp_split[3].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.lp_split[3].split_fraction[0,"outlet_3"].fix(0.05)
+    turb.hp_split[4].split_fraction[0,"outlet_2"].fix(0.05)
+    turb.hp_split[7].split_fraction[0,"outlet_2"].fix(0.05)
+    turb.ip_split[5].split_fraction[0,"outlet_2"].fix(0.05)
+    turb.ip_split[14].split_fraction[0,"outlet_2"].fix(0.05)
+    turb.ip_split[14].split_fraction[0,"outlet_3"].fix(0.10)
     turb.lp_split[4].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.inlet_split.split_fraction[0,"outlet_2"].fix(0.25)
-    turb.inlet_split.split_fraction[0,"outlet_3"].fix(0.25)
-    turb.inlet_split.split_fraction[0,"outlet_4"].fix(0.25)
+    turb.lp_split[7].split_fraction[0,"outlet_2"].fix(0.05)
+    turb.lp_split[9].split_fraction[0,"outlet_2"].fix(0.05)
+    turb.lp_split[11].split_fraction[0,"outlet_2"].fix(0.05)
+
+    turb.inlet_split.split_fraction[0,"outlet_1"].value = 0.25
+    turb.inlet_split.split_fraction[0,"outlet_2"].value = 0.25
+    turb.inlet_split.split_fraction[0,"outlet_3"].value = 0.25
+    turb.inlet_split.split_fraction[0,"outlet_4"].value = 0.25
     #turb.display()
+
+    turb.initialize()
     assert(degrees_of_freedom(m)==3)
