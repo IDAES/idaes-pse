@@ -91,7 +91,7 @@ Create a branch on your fork
 You can have multiple branches at the same time. This is why we are
 recommending you always create a new branch for a new issue instead of
 just using the “master” branch, which git would definitely let you do.
-This type of branch is called a topic branch. The advantage is, if you
+This type of branch is called a _topic_ branch. The advantage is, if you
 have to delay your work and switch to fixing some other issue, you can
 keep the work separated by simply switching back and forth between
 branches. This is especially useful for coordination inGithub, since
@@ -173,7 +173,7 @@ Types of tests
 ~~~~~~~~~~~~~~
 Unit tests: Testing individual pieces of functionality, including the
 ability to report the correct kind of errors from bad inputs. Unit tests
-mustalwaysrun quickly. If it takes more than 5 seconds, it is not a unit
+must always run quickly. If it takes more than 5 seconds, it is not a unit
 test, and it is expected that most unit tests take well under 1 second.
 The reason for this is that the entire unit test suite is run on every
 change in a Pull Request, and should also be run relatively frequently
@@ -188,8 +188,8 @@ only meaningful if the automated tests cover the majority of the code’s
 behavior. This is not a perfect measure, of course, since simply
 executing a line of code under one condition does not mean it would
 execute correctly under all conditions. The code coverage is evaluated
-locally and then integrated with Github through a tool called Coveralls
-(\ https://coveralls.io/\ ).
+locally and then integrated with Github through a tool called `Coveralls
+<https://coveralls.io>`_.
 
 Code Review
 
@@ -200,11 +200,11 @@ Every piece of code must be reviewed by at least two people.
 In every case, one of those people will be a designated “gatekeeper” and
 the one or more others will be “technical reviewers”.
 
-Thetechnical reviewersare expected to consider various aspects of the
+The technical reviewers are expected to consider various aspects of the
 proposed changes (details below), and engage the author in a discussion
 on any aspects that are deemed lacking or missing.
 
-Thegatekeeperis expected to make sure all criteria have been met, and
+The gatekeeper is expected to make sure all criteria have been met, and
 actually merge the PR.
 
 Assigning Roles
@@ -255,9 +255,9 @@ participate, assuming they have many PRs to worry about)
 Gatekeeper responsibilities
 
 The gatekeeper does not need to engage until there is at least one
-approving technical review
+approving technical review.
 
-Once there is, they should verify that
+Once there is, they should verify that:
 
 Changes do not contain proprietary data
 
