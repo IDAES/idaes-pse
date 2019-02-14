@@ -28,8 +28,7 @@ from idaes.unit_models import Separator, Mixer, SplittingType
 from idaes.unit_models.power_generation import (
     TurbineInletStage, TurbineStage, TurbineOutletStage)
 from idaes.core.util.config import is_physical_parameter_block
-from .turbine_multistage_config import (
-    _define_turbine_mutlistage_config, _ReheatType)
+from .turbine_multistage_config import _define_turbine_mutlistage_config
 
 
 @declare_process_block_class("TurbineMultistage",
@@ -150,20 +149,16 @@ class TurbineMultistageData(UnitModelBlockData):
                 turbines (TurbinStage): Indexed block with turbine section stages
                 splitters (Separator): Indexed block of splitters
             """
-            #TODO<jce> Need to track the port indexing which is going to change
-            #          dynamics are broken so just hooking time zero, after
-            #          dynamics are fixed in framwwork the port index should go
-            #          away.
             def _rule(b, i, j):
                 if i in splitters and j == 1:
-                    return {"source":turbines[i].outlet[0],
-                            "destination":splitters[i].inlet[0]}
+                    return {"source":turbines[i].outlet,
+                            "destination":splitters[i].inlet}
                 elif j == 2:
-                    return {"source":splitters[i].outlet_1[0],
-                            "destination":turbines[i+1].inlet[0]}
+                    return {"source":splitters[i].outlet_1,
+                            "destination":turbines[i+1].inlet}
                 else:
-                    return {"source":turbines[i].outlet[0],
-                            "destination":turbines[i+1].inlet[0]}
+                    return {"source":turbines[i].outlet,
+                            "destination":turbines[i+1].inlet}
             return _rule
 
         # Create initial arcs index sets with all possible streams
@@ -192,49 +187,49 @@ class TurbineMultistageData(UnitModelBlockData):
         if 0 not in config.ip_disconnect and last_hp not in config.hp_disconnect:
             if last_hp in config.hp_split_locations: # connect splitter to ip
                 self.hp_to_ip_stream = Arc(
-                    source=self.hp_split[last_hp].outlet_1[0],
-                    destination=self.ip_stages[1].inlet[0])
+                    source=self.hp_split[last_hp].outlet_1,
+                    destination=self.ip_stages[1].inlet)
             else: # connect last hp to ip
                 self.hp_to_ip_stream = Arc(
-                    source=self.hp_stages[last_hp].outlet[0],
-                    destination=self.ip_stages[1].inlet[0])
+                    source=self.hp_stages[last_hp].outlet,
+                    destination=self.ip_stages[1].inlet)
         # Connect ip section to lp section unless its a disconnect locations
         last_ip = config.num_ip
         if 0 not in config.lp_disconnect and last_ip not in config.ip_disconnect:
             if last_ip in config.ip_split_locations: # connect splitter to ip
                 self.ip_to_lp_stream = Arc(
-                    source=self.ip_split[last_ip].outlet_1[0],
-                    destination=self.lp_stages[1].inlet[0])
+                    source=self.ip_split[last_ip].outlet_1,
+                    destination=self.lp_stages[1].inlet)
             else: # connect last hp to ip
                 self.ip_to_lp_stream = Arc(
-                    source=self.ip_stages[last_ip].outlet[0],
-                    destination=self.lp_stages[1].inlet[0])
+                    source=self.ip_stages[last_ip].outlet,
+                    destination=self.lp_stages[1].inlet)
         # Connect inlet stage to hp section
         #   not allowing disconnection of inlet and first regular hp stage
         if 0 in config.hp_split_locations:
             # connect inlet mix to splitter and splitter to hp section
             self.inlet_to_splitter_stream = Arc(
-                source=self.inlet_mix.outlet[0],
-                destination=self.hp_split[0].inlet[0])
+                source=self.inlet_mix.outlet,
+                destination=self.hp_split[0].inlet)
             self.splitter_to_hp_stream = Arc(
-                source=self.hp_split[0].outlet_1[0],
-                destination=self.hp_stages[1].inlet[0])
+                source=self.hp_split[0].outlet_1,
+                destination=self.hp_stages[1].inlet)
         else: # connect mixer to first hp turbine stage
             self.inlet_to_hp_stream = Arc(
-                source=self.inlet_mix.outlet[0],
-                destination=self.hp_stages[1].inlet[0])
+                source=self.inlet_mix.outlet,
+                destination=self.hp_stages[1].inlet)
 
         # Connect inlet stage to hp section
         #   not allowing disconnection of inlet and first regular hp stage
         last_lp = config.num_lp
         if last_lp in config.lp_split_locations: # connect splitter to outlet
             self.lp_to_outlet_stream = Arc(
-                source=self.lp_split[last_lp].outlet_1[0],
-                destination=self.outlet_stage.inlet[0])
+                source=self.lp_split[last_lp].outlet_1,
+                destination=self.outlet_stage.inlet)
         else: # connect last lpstage to outlet
             self.lp_to_outlet_stream = Arc(
-                source=self.lp_stages[last_lp].outlet[0],
-                destination=self.outlet_stage.inlet[0])
+                source=self.lp_stages[last_lp].outlet,
+                destination=self.outlet_stage.inlet)
         TransformationFactory("network.expand_arcs").apply_to(self)
 
     def _add_inlet_stage(self, unit_cfg):
@@ -273,11 +268,11 @@ class TurbineMultistageData(UnitModelBlockData):
         # Add connections
         # TODO<jce> when framework is updated fix indexing
         def _split_to_rule(b, i):
-            return {"source":getattr(self.inlet_split, "outlet_{}".format(i))[0],
-                "destination":self.inlet_stage[i].inlet[0]}
+            return {"source":getattr(self.inlet_split, "outlet_{}".format(i)),
+                "destination":self.inlet_stage[i].inlet}
         def _inlet_to_rule(b, i):
-            return {"source":self.inlet_stage[i].outlet[0],
-                "destination":getattr(self.inlet_mix, "inlet_{}".format(i))[0]}
+            return {"source":self.inlet_stage[i].outlet,
+                "destination":getattr(self.inlet_mix, "inlet_{}".format(i))}
 
         self.split_to_inlet_stage_stream = Arc(RangeSet(ni), rule=_split_to_rule)
         self.inlet_stage_to_mix = Arc(RangeSet(ni), rule=_inlet_to_rule)

@@ -1,14 +1,16 @@
+"""
+Define configuration block for the TurbineMultistage model.
+"""
+
+
 __author__ = "John Eslick"
 
-from pyutilib.enum import Enum
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
 from idaes.core import (EnergyBalanceType,
                         MomentumBalanceType,
                         MaterialBalanceType,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-
-_ReheatType = Enum('none', 'single', 'double')
 
 def _define_turbine_mutlistage_config(config):
     config.declare("dynamic", ConfigValue(
