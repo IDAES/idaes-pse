@@ -37,7 +37,7 @@ The URL for an IDAES repository, e.g. “some-repo”, will be
 
 Public vs. Private
 ------------------
-All these repositories except for “idaes” will only be visible on
+All these repositories except for “idaes-pse” will only be visible on
 Github, on the web, for people who have been added to the IDAES
 developer team in the IDAES “organization” (See `About Github
 organizations <https://help.github.com/articles/about-organizations/>`_).
