@@ -21,10 +21,10 @@ from pyomo.environ import ConcreteModel, SolverFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.stoichiometric_reactor import StoichiometricReactor
-from idaes.property_models.saponification_thermo import (
-                        SaponificationParameterBlock)
-from idaes.property_models.saponification_reactions import (
-                        SaponificationReactionParameterBlock)
+from idaes.property_models.examples.saponification_thermo import (
+    SaponificationParameterBlock)
+from idaes.property_models.examples.saponification_reactions import (
+    SaponificationReactionParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
 
