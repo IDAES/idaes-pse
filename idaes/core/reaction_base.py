@@ -15,9 +15,6 @@ This module contains classes for reaction blocks and reaction parameter blocks.
 """
 from __future__ import division
 
-# Import Python libraries
-import inspect
-
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -276,6 +273,15 @@ should be constructed in this reaction block,
                     'attribute. Check the naming of your '
                     'components to avoid any reserved names'
                     .format(self.name, attr))
+
+        if attr == "config":
+            try:
+                self._get_config_args()
+                return self.config
+            except:
+                raise BurntToast("{} getattr method was triggered by a call "
+                                 "to the config block, but _get_config_args "
+                                 "failed. This should never happen.")
 
         # Check for recursive calls
         try:

@@ -188,9 +188,9 @@ def test_add_port():
     assert isinstance(p_obj, Port)
     assert hasattr(m.fs.u, "test_port")
     assert len(m.fs.u.test_port) == 1
-    assert m.fs.u.test_port[0].a.value == m.fs.u.prop[0].a.value
-    assert m.fs.u.test_port[0].b.value == m.fs.u.prop[0].b.value
-    assert m.fs.u.test_port[0].c.value == m.fs.u.prop[0].c.value
+    assert m.fs.u.test_port.a[0].value == m.fs.u.prop[0].a.value
+    assert m.fs.u.test_port.b[0].value == m.fs.u.prop[0].b.value
+    assert m.fs.u.test_port.c[0].value == m.fs.u.prop[0].c.value
 
 
 def test_add_port_invalid_block():
@@ -230,11 +230,11 @@ def test_add_inlet_port_CV0D():
     m.fs.u.control_volume.properties_in[0].b = 20
     m.fs.u.control_volume.properties_in[0].c = 30
 
-    assert m.fs.u.inlet[0].a.value == \
+    assert m.fs.u.inlet.a[0].value == \
         m.fs.u.control_volume.properties_in[0].a.value
-    assert m.fs.u.inlet[0].b.value == \
+    assert m.fs.u.inlet.b[0].value == \
         m.fs.u.control_volume.properties_in[0].b.value
-    assert m.fs.u.inlet[0].c.value == \
+    assert m.fs.u.inlet.c[0].value == \
         m.fs.u.control_volume.properties_in[0].c.value
 
 
@@ -277,11 +277,11 @@ def test_add_inlet_port_CV0D_full_args():
     m.fs.u.cv.properties_in[0].b = 20
     m.fs.u.cv.properties_in[0].c = 30
 
-    assert m.fs.u.test_port[0].a.value == \
+    assert m.fs.u.test_port.a[0].value == \
         m.fs.u.cv.properties_in[0].a.value
-    assert m.fs.u.test_port[0].b.value == \
+    assert m.fs.u.test_port.b[0].value == \
         m.fs.u.cv.properties_in[0].b.value
-    assert m.fs.u.test_port[0].c.value == \
+    assert m.fs.u.test_port.c[0].value == \
         m.fs.u.cv.properties_in[0].c.value
 
 
@@ -308,11 +308,11 @@ def test_add_outlet_port_CV0D():
     m.fs.u.control_volume.properties_out[0].b = 20
     m.fs.u.control_volume.properties_out[0].c = 30
 
-    assert m.fs.u.outlet[0].a.value == \
+    assert m.fs.u.outlet.a[0].value == \
         m.fs.u.control_volume.properties_out[0].a.value
-    assert m.fs.u.outlet[0].b.value == \
+    assert m.fs.u.outlet.b[0].value == \
         m.fs.u.control_volume.properties_out[0].b.value
-    assert m.fs.u.outlet[0].c.value == \
+    assert m.fs.u.outlet.c[0].value == \
         m.fs.u.control_volume.properties_out[0].c.value
 
 
@@ -355,9 +355,9 @@ def test_add_outlet_port_CV0D_full_args():
     m.fs.u.cv.properties_out[0].b = 20
     m.fs.u.cv.properties_out[0].c = 30
 
-    assert m.fs.u.test_port[0].a.value == \
+    assert m.fs.u.test_port.a[0].value == \
         m.fs.u.cv.properties_out[0].a.value
-    assert m.fs.u.test_port[0].b.value == \
+    assert m.fs.u.test_port.b[0].value == \
         m.fs.u.cv.properties_out[0].b.value
-    assert m.fs.u.test_port[0].c.value == \
+    assert m.fs.u.test_port.c[0].value == \
         m.fs.u.cv.properties_out[0].c.value
