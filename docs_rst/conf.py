@@ -42,6 +42,7 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
     'sphinxarg.ext',
+    'sphinx.ext.doctest',
 #    'sphinx-jsonschema'
 ]
 
