@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
 # Script to interact with IDAES docker image.
+#
 
 function usage () {
    printf "./idaes-docker COMMAND\n\n"
@@ -65,22 +66,35 @@ function install_image_help() {
 
 function build_image() {
   ver=$( python -c "from idaes import ver; print(ver.__version__, end='')" )
+  printf "Detected IDAES package version $ver\n"
   vertag="${IMAGE_REPO}/${IMAGE_TAG}:v${ver}"
   tagopt="-t ${vertag}"
-  while [ $# -gt 0 ]; do
+  # extract user-provided tags
+  while [[ $# -gt 0 ]]; do
     tagopt="$tagopt -t ${IMAGE_REPO}/${IMAGE_TAG}:$1"
     shift
   done
-  printf "Building image...\n"
-  docker build . $tagopt
-  imgid=$( docker images -q $vertag )
-  printf "Saving image..\n"
+  # Build image and saved file, skipping when there seems to already
+  # be something built
   imgname=idaes-pse-docker-${ver}.tgz
-  docker save $imgid | gzip -c >  $imgname
-  printf "Done: $imgname \n"
+  if [[ ! -e $imgname ]]; then
+    imgid=$( docker images -q $vertag )
+    if [[ -z "$imgid" ]]; then
+      printf "Building image...\n"
+      docker build . $tagopt
+      imgid=$( docker images -q $vertag )
+    else
+      printf "Nothing to do: image $vertag already exists ($imgid)\n"
+    fi
+    printf "Saving image..\n"
+    docker save $imgid | gzip -c >  $imgname
+    printf "Done: $imgname \n"
+  else
+    printf "Nothing to do: image file $imgname already exists\n"
+  fi
 }
 
-if [ -z $1 ]; then
+if [[ -z $1 ]]; then
   usage
 fi
 
