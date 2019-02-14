@@ -6,20 +6,20 @@ Model State Serialization
 The IDAES framework has some utility functions for serializing the state of a
 Pyomo model. These functions can save and load attributes of Pyomo components,
 but cannot reconstruct the Pyomo objects (it is not a replacement for pickle).
-It does have some advantages over pickel though. Not all Pyomo models are
+It does have some advantages over pickle though. Not all Pyomo models are
 picklable. Serialization and deserialization of the model state to/from json is
 more secure in that it only deals with data and not executable code.  It should
 be safe to use the ``from_json()`` function with data from untrusted sources,
-while, unpickeling an object from an untrusted source is not secure.  Storing a
+while, unpickling an object from an untrusted source is not secure.  Storing a
 model state using these functions is also probably more robust against Python
-and Python package version changes, and possibly more sutable for log-term storage
+and Python package version changes, and possibly more suitable for long-term storage
 of results.
 
 Below are a few example use cases for this module.
 
 * Some models are very complex and may take minutes to initialize.  Once a model is initialized it's state can be saved. For future runs, the initialized state can be reloaded instead of rerunning the initialization procedure.
-* Results can be stored for later evaluation without needed to rerun the model. These results can be archived in a data management system if needed later.
-* These functions may be useful in writing initialization procedures. For example, a model may be constructed and ready to run but first it may need to be initialized. Which components are active and which variables are fixed can be stored.  The initialization can change which variables fixed and which components are active.  The original state can be read back after initialization, but where only values of variables that were originally fixed are read back in.  This is an easy way to ensure whatever the initialization procedure may do, the results is exactly the same problem (with only better initial values for unfixed variables).
+* Results can be stored for later evaluation without needing to rerun the model. These results can be archived in a data management system if needed later.
+* These functions may be useful in writing initialization procedures. For example, a model may be constructed and ready to run but first it may need to be initialized. Which components are active and which variables are fixed can be stored.  The initialization can change which variables are fixed and which components are active.  The original state can be read back after initialization, but where only values of variables that were originally fixed are read back in.  This is an easy way to ensure that whatever the initialization procedure may do, the result is exactly the same problem (with only better initial values for unfixed variables).
 * These functions can be used to send and receive model data to/from JavaScript user interface components.
 
 Examples
@@ -33,7 +33,7 @@ Example Models
 This section provides some boilerplate and functions to create a couple simple
 test models.  The second model is a little more complicated and includes suffixes.
 
-.. code-block:: python
+.. testcode::
 
   from pyomo.environ import *
   from idaes.core.util import to_json, from_json, StoreSpec
@@ -69,17 +69,17 @@ These examples can be appended to the boilerplate code above.
 The first example creates a model, saves the state, changes a value, then reads
 back the initial state.
 
-.. code-block:: python
+.. testcode:: 
 
   model = setup_model01()
-  to_json(model, fname="ex.json.gz", gzip=True, human_read=True)
+  to_json(model, fname="ex.json.gz", gz=True, human_read=True)
   model.b[1].a = 3000.4
-  from_json(model, fname="ex.json.gz", gzip=True)
+  from_json(model, fname="ex.json.gz", gz=True)
   print(model.b[1].a)
 
 This next example show how to save only suffixes.
 
-.. code-block:: python
+.. testcode::
 
   model = setup_model02()
   # Suffixes here are read back from solver, so to have suffix data,
@@ -116,11 +116,11 @@ special cases of Pyomo component attributes.
 StoreSpec
 ---------
 
-StoreSpec is a class for objects that tell the ``to_json()`` and ``from_json()``
+``StoreSpec`` is a class for objects that tell the ``to_json()`` and ``from_json()``
 functions how to read and write Pyomo component attributes.  The default
 initialization provides an object that would load and save attributes usually
 needed to save a model state.  There are several other class methods that
-provided canned objects for specific uses. Through initialization arguments, the
+provid canned objects for specific uses. Through initialization arguments, the
 behavior is highly customizable. Attributes can be read or written using callback
 functions to handle attributes that can not be directly read or written (e.g.
 a variable lower bound is set by calling setlb()). See the class documentation below.
@@ -139,7 +139,7 @@ The example json below shows the top-level structure.  The
 serialized. The top level component is the only place were the component name does
 not matter when reading the serialized data.
 
-.. code-block:: json
+.. testcode:: 
 
   {
       "__metadata__": {
@@ -172,7 +172,7 @@ solver interface.  If a component is a suffix, keys in the data section are the
 serial integer component IDs generated by ``to_json()``, and the value is the
 value of the suffix for the corresponding component.
 
-.. code-block:: json
+.. testcode::
 
     {
         "__type__": "<class 'some.class'>",
@@ -199,7 +199,7 @@ As a more concrete example, here is the json generated for example model 2 in
 This code can be appended to the :ref:`example boilerplate above <core/util/model_serializer:Examples>`.
 To generate the example json shown.
 
-.. code-block:: python
+.. testcode::
 
   model = setup_model02()
   solver = SolverFactory("ipopt")
