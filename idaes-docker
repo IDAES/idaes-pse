@@ -3,13 +3,14 @@
 # Script to interact with IDAES docker image.
 
 function usage () {
-   printf "./idaes-docker help | test | notebook | refresh]\n"
-   printf "\n"
-   printf "options:\n"
+   printf "./idaes-docker COMMAND\n\n"
+   printf "User commands:\n"
    printf "   help          Print this message\n"
-   printf "   test          Sanity check step that runs the unit tests on the image and print results to standard output.\n"
-   printf "   notebook      Run a Jupyter notebook based on the Docker image.\n"
-   printf "   update        Get the latest version of the IDAES docker image.\n"
+   printf "   test          Run the unit tests on the Docker image.\n"
+   printf "   notebook      Run a Jupyter notebook inside the Docker image.\n"
+   printf "   update        Get the latest version of the IDAES Docker image.\n"
+   printf "Developer commands:\n"
+   printf "   create         Build new Docker image (creates a .tgz file)\n"
    exit 1
 }
 
@@ -62,6 +63,23 @@ function install_image_help() {
   printf "    https://idaes.github.io/idaes-pse/install.html\n"
 }
 
+function build_image() {
+  ver=$( python -c "from idaes import ver; print(ver.__version__, end='')" )
+  vertag="${IMAGE_REPO}/${IMAGE_TAG}:v${ver}"
+  tagopt="-t ${vertag}"
+  while [ $# -gt 0 ]; do
+    tagopt="$tagopt -t ${IMAGE_REPO}/${IMAGE_TAG}:$1"
+    shift
+  done
+  printf "Building image...\n"
+  docker build . $tagopt
+  imgid=$( docker images -q $vertag )
+  printf "Saving image..\n"
+  imgname=idaes-pse-docker-${ver}.tgz
+  docker save $imgid | gzip -c >  $imgname
+  printf "Done: $imgname \n"
+}
+
 if [ -z $1 ]; then
   usage
 fi
@@ -80,6 +98,11 @@ case $1 in
     update)
       printf "Updating IDAES image...\n"
       install_image
+      ;;
+    create)
+      printf "Create new Docker image file\n"
+      shift
+      build_image $*
       ;;
     -h|help)
       usage
