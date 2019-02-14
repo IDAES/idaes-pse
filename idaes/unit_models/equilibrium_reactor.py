@@ -88,25 +88,6 @@ this must be False."""))
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_heat_transfer", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Heat transfer term construction flag",
-        doc="""Indicates whether terms for heat transfer should be constructed,
-**default** - False.
-**Valid values:** {
-**True** - include heat transfer terms,
-**False** - exclude heat transfer terms.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
     CONFIG.declare("has_rate_reactions", ConfigValue(
         default=True,
         domain=In([True, False]),
@@ -127,6 +108,24 @@ should be constructed,
 **Valid values:** {
 **True** - include equilibrium reaction terms,
 **False** - exclude equilibrium reaction terms.}"""))
+    CONFIG.declare("has_phase_equilibrium", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Phase equilibrium term construction flag",
+        doc="""Indicates whether terms for phase equilibrium should be
+constructed, **default** - True.
+**Valid values:** {
+**True** - include phase equilibrium term,
+**False** - exclude phase equlibirum terms.}"""))
+    CONFIG.declare("has_heat_transfer", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Heat transfer term construction flag",
+        doc="""Indicates whether terms for heat transfer should be constructed,
+**default** - False.
+**Valid values:** {
+**True** - include heat transfer terms,
+**False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -137,6 +136,16 @@ constructed,
 **Valid values:** {
 **True** - include heat of reaction terms,
 **False** - exclude heat of reaction terms.}"""))
+    CONFIG.declare("has_pressure_change", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Pressure change term construction flag",
+        doc="""Indicates whether terms for pressure change should be
+constructed,
+**default** - False.
+**Valid values:** {
+**True** - include pressure change terms,
+**False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -196,7 +205,8 @@ see reaction package for documentation.}"""))
 
         # No need for control volume geometry
 
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(
+                has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_reaction_blocks(
                 has_equilibrium=self.config.has_equilibrium_reactions)
@@ -204,7 +214,8 @@ see reaction package for documentation.}"""))
         self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type,
             has_rate_reactions=self.config.has_rate_reactions,
-            has_equilibrium_reactions=self.config.has_equilibrium_reactions)
+            has_equilibrium_reactions=self.config.has_equilibrium_reactions,
+            has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
