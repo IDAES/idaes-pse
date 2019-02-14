@@ -5,6 +5,8 @@ Collaborative software development
 
 .. note:: This section of the developer documentation is a work in progress.
 
+This section gives guidance for all developers on the project.
+
 Although the main focus of this project is developing open source software (OSS),
 it is also true that some of the software may be developed internally or in
 coordination with industry under a :term:`CRADA` or :term:`NDA`.
@@ -67,15 +69,72 @@ collaborate phases are performed in a loop until changes are approved by the tea
 
 1. Setup
 ^^^^^^^^
-TBD
+Before you can start developing software collaboratively,
+you need to make sure you are set up in Github and set up your local development environment.
+
+Github setup
+~~~~~~~~~~~~
+To work within the project, you need to create a login on `Github`_. You also
+need to make sure that this login has been added to the IDAES organization.
+
+If these steps are successful, you should be able to login to Github, visit the
+`IDAES Github organization <https://github.com/IDAES/>`_, and see "Private" repositories
+such as `idaes-dev` and `workspace`.
+
+.. _Github: https://github.com/
 
 Fork the repo
 ~~~~~~~~~~~~~
-TBD
+You use a "fork" of a repository (or "repo" for short) to create a space where you
+can save changes without directly affecting the main repository. Then, as we will see,
+you _request_ that these changes be incorporated (after review).
+
+This section assumes that the repository in question is ``idaes-dev``,
+but the idea is the same for any other repo.
+
+You should first visit the repo on Github
+by pointing your browser to https://github.com/IDAES/idaes-dev/. Then you should
+fork the repo into a repo of the same name under your name.
+
+.. figure:: ../_static/github-fork-repo.png
+    :align: center
+
+    Screenshot showing where to click to fork the Github repo
 
 Clone your fork
 ~~~~~~~~~~~~~~~
-TBD
+A "clone" is a copy of a Github repository on your local machine. This is what
+you need to do in order to actually edit and change the files.
+To make a clone of the fork you created in the previous step,
+change to a directory where you want to put the source code and run the command::
+
+    git clone git clone git@github.com:MYNAME/idaes-dev.git
+
+Of course, replace MYNAME with your login name.
+
+Create the Python environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+We use a Python packaging system called Conda_.
+Below are instructions for installing a minimal version of Conda, called Miniconda_.
+The full version installs a large number of scientific analysis and visualization libraries
+that are not required by the IDAES framework.
+
+.. _Conda: https://conda.io/
+.. _Miniconda: https://conda.io/en/latest/miniconda.html
+
+.. code-block:: sh
+
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash Miniconda3-latest-Linux-x86_64.sh
+
+Create and activate a conda environment (along with its own copy of ``pip``)
+for the new IDAES installation **(you will need to** ``conda activate idaes``
+**when you open a fresh terminal window and wish to use IDAES)**:
+
+.. code-block:: sh
+
+    conda create -n idaes pip
+    conda activate idaes
 
 2. Initiate
 ^^^^^^^^^^^
