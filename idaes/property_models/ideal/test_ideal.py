@@ -60,12 +60,14 @@ def test_build():
     assert len(m.fs.properties_l.phase_list) == 1
     assert m.fs.properties_l.phase_list == ["Liq"]
     assert not hasattr(m.fs.state_block_l, "eq_Keq")
+    assert not hasattr(m.fs.state_block_vl, "eq_h_vap")
 
     # vapor only
     assert m.fs.properties_v.config.valid_phase == "Vap"
     assert len(m.fs.properties_v.phase_list) == 1
     assert m.fs.properties_v.phase_list == ["Vap"]
     assert not hasattr(m.fs.state_block_v, "eq_Keq")
+    assert not hasattr(m.fs.state_block_vl, "eq_h_liq")
 
 
 def test_setInputs():

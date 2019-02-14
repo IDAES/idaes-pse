@@ -156,15 +156,23 @@ class _IdealStateBlock(StateBlock):
                         ('Vap', 'Liq')):
                 blk[k].eq_Keq.deactivate()
                 blk[k].eq_sum_mol_frac.deactivate()
-                blk[k].eq_h_liq.deactivate()
-                blk[k].eq_h_vap.deactivate()
-
+                try:
+                    blk[k].eq_h_liq.deactivate()
+                    blk[k].eq_h_vap.deactivate()
+                except AttributeError:
+                    pass
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Liq":
-                blk[k].eq_h_liq.deactivate()
+                try:
+                    blk[k].eq_h_liq.deactivate()
+                except AttributeError:
+                    pass
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Vap":
-                blk[k].eq_h_vap.deactivate()
+                try:
+                    blk[k].eq_h_vap.deactivate()
+                except AttributeError:
+                    pass
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
 
@@ -184,17 +192,26 @@ class _IdealStateBlock(StateBlock):
         for k in blk.keys():
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Liq":
-                blk[k].eq_h_liq.activate()
+                try:
+                    blk[k].eq_h_liq.activate()
+                except AttributeError:
+                    pass
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Vap":
-                blk[k].eq_h_vap.activate()
+                try:
+                    blk[k].eq_h_vap.activate()
+                except AttributeError:
+                    pass
             if (blk[k].config.has_phase_equilibrium) or \
                     (blk[k].config.parameters.config.valid_phase ==
                         ('Liq', 'Vap')) or \
                     (blk[k].config.parameters.config.valid_phase ==
                         ('Vap', 'Liq')):
-                blk[k].eq_h_liq.activate()
-                blk[k].eq_h_vap.activate()
+                try:
+                    blk[k].eq_h_liq.activate()
+                    blk[k].eq_h_vap.activate()
+                except AttributeError:
+                    pass
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
 
