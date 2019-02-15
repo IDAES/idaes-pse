@@ -18,11 +18,17 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import ConcreteModel, Constraint, Expression, Set, Var
 from pyomo.common.config import ConfigBlock
-from idaes.core import (ControlVolume0DBlock, ControlVolumeBlockData, FlowsheetBlockData,
-                        declare_process_block_class, FlowDirection,
-                        PhysicalParameterBlock, StateBlock,
-                        StateBlockData, ReactionParameterBlock,
-                        ReactionBlockBase, ReactionBlockDataBase,
+from idaes.core import (ControlVolume0DBlock,
+                        ControlVolumeBlockData,
+                        FlowsheetBlockData,
+                        declare_process_block_class,
+                        FlowDirection,
+                        PhysicalParameterBlock,
+                        StateBlock,
+                        StateBlockData,
+                        ReactionParameterBlock,
+                        ReactionBlockBase,
+                        ReactionBlockDataBase,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
@@ -301,9 +307,11 @@ def test_add_state_blocks_custom_args():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
+                                            "property_package_args":
+                                                {"test": "test"}})
 
-    m.fs.cv.add_state_blocks(package_arguments={"test": "test"})
+    m.fs.cv.add_state_blocks()
 
     assert len(m.fs.cv.properties_in[0].config) == 4
     assert m.fs.cv.properties_in[0].config.test == "test"
@@ -347,6 +355,23 @@ def test_add_reaction_blocks_has_equilibrium():
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
     assert m.fs.cv.reactions[0].config.has_equilibrium is True
+
+
+def test_add_reaction_blocks_custom_args():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0DBlock(default={
+            "property_package": m.fs.pp,
+            "reaction_package": m.fs.rp,
+            "reaction_package_args": {"test1": 1}})
+
+    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+
+    assert m.fs.cv.reactions[0].config.test1 == 1
 
 
 # -----------------------------------------------------------------------------
