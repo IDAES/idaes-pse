@@ -87,7 +87,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
-                         has_phase_equilibrium=False):
+                         has_phase_equilibrium=None):
         """
         This method constructs the inlet and outlet state blocks for the
         control volume.
@@ -103,6 +103,16 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Returns:
             None
         """
+        if has_phase_equilibrium is None:
+            raise ConfigurationError(
+                    "{} add_state_blocks method was not provided with a "
+                    "has_phase_equilibrium_argument.".format(self.name))
+        elif has_phase_equilibrium not in [True, False]:
+            raise ConfigurationError(
+                    "{} add_state_blocks method was provided with an invalid "
+                    "has_phase_equilibrium_argument. Must be True or False"
+                    .format(self.name))
+
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
         tmp_dict["parameters"] = self.config.property_package
@@ -139,8 +149,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "developer of the physical property package."
                     .format(self.name))
 
-    def add_reaction_blocks(self,
-                            has_equilibrium=False):
+    def add_reaction_blocks(self, has_equilibrium=None):
         """
         This method constructs the reaction block for the control volume.
 
@@ -153,6 +162,16 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Returns:
             None
         """
+        if has_equilibrium is None:
+            raise ConfigurationError(
+                    "{} add_reaction_blocks method was not provided with a "
+                    "has_equilibrium_argument.".format(self.name))
+        elif has_equilibrium not in [True, False]:
+            raise ConfigurationError(
+                    "{} add_reaction_blocks method was provided with an "
+                    "invalid has_equilibrium_argument. Must be True or False"
+                    .format(self.name))
+
         tmp_dict = dict(**self.config.reaction_package_args)
         tmp_dict["state_block"] = self.properties_out
         tmp_dict["has_equilibrium"] = has_equilibrium

@@ -148,7 +148,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
-                         has_phase_equilibrium=False):
+                         has_phase_equilibrium=None):
         """
         This method constructs the state blocks for the
         control volume.
@@ -164,6 +164,16 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         Returns:
             None
         """
+        if has_phase_equilibrium is None:
+            raise ConfigurationError(
+                    "{} add_state_blocks method was not provided with a "
+                    "has_phase_equilibrium_argument.".format(self.name))
+        elif has_phase_equilibrium not in [True, False]:
+            raise ConfigurationError(
+                    "{} add_state_blocks method was provided with an invalid "
+                    "has_phase_equilibrium_argument. Must be True or False"
+                    .format(self.name))
+
         # d0 is config for defined state d1 is config for not defined state
         d0 = dict(**self.config.property_package_args)
         d0.update(has_phase_equilibrium=has_phase_equilibrium,
@@ -187,8 +197,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             initialize={0:d0, 1:d1},
             idx_map=idx_map)
 
-    def add_reaction_blocks(self,
-                            has_equilibrium=False):
+    def add_reaction_blocks(self, has_equilibrium=None):
         """
         This method constructs the reaction block for the control volume.
 
@@ -201,6 +210,16 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         Returns:
             None
         """
+        if has_equilibrium is None:
+            raise ConfigurationError(
+                    "{} add_reaction_blocks method was not provided with a "
+                    "has_equilibrium_argument.".format(self.name))
+        elif has_equilibrium not in [True, False]:
+            raise ConfigurationError(
+                    "{} add_reaction_blocks method was provided with an "
+                    "invalid has_equilibrium_argument. Must be True or False"
+                    .format(self.name))
+
         # TODO : Should not have ReactionBlock at inlet
         tmp_dict = dict(**self.config.reaction_package_args)
         tmp_dict["state_block"] = self.properties

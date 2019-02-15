@@ -248,7 +248,7 @@ def test_add_state_blocks():
 
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
     assert hasattr(m.fs.cv, "properties_in")
     assert len(m.fs.cv.properties_in[0].config) == 3
@@ -270,7 +270,8 @@ def test_add_state_block_forward_flow():
 
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv.add_state_blocks(information_flow=FlowDirection.forward)
+    m.fs.cv.add_state_blocks(information_flow=FlowDirection.forward,
+                             has_phase_equilibrium=False)
 
     assert m.fs.cv.properties_in[0].config.defined_state is True
     assert m.fs.cv.properties_out[0].config.defined_state is False
@@ -283,7 +284,8 @@ def test_add_state_block_backward_flow():
 
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv.add_state_blocks(information_flow=FlowDirection.backward)
+    m.fs.cv.add_state_blocks(information_flow=FlowDirection.backward,
+                             has_phase_equilibrium=False)
 
     assert m.fs.cv.properties_in[0].config.defined_state is False
     assert m.fs.cv.properties_out[0].config.defined_state is True
@@ -302,6 +304,17 @@ def test_add_state_blocks_has_phase_equilibrium():
     assert m.fs.cv.properties_out[0].config.has_phase_equilibrium is True
 
 
+def test_add_state_blocks_no_has_phase_equilibrium():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_state_blocks()
+
+
 def test_add_state_blocks_custom_args():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -311,7 +324,7 @@ def test_add_state_blocks_custom_args():
                                             "property_package_args":
                                                 {"test": "test"}})
 
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
     assert len(m.fs.cv.properties_in[0].config) == 4
     assert m.fs.cv.properties_in[0].config.test == "test"
@@ -331,8 +344,8 @@ def test_add_reaction_blocks():
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     assert hasattr(m.fs.cv, "reactions")
     assert len(m.fs.cv.reactions[0].config) == 3
@@ -351,10 +364,25 @@ def test_add_reaction_blocks_has_equilibrium():
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
     assert m.fs.cv.reactions[0].config.has_equilibrium is True
+
+
+def test_add_reaction_blocks_no_has_equilibrium():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
+                                       "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_reaction_blocks()
 
 
 def test_add_reaction_blocks_custom_args():
@@ -368,7 +396,7 @@ def test_add_reaction_blocks_custom_args():
             "reaction_package": m.fs.rp,
             "reaction_package_args": {"test1": 1}})
 
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
     assert m.fs.cv.reactions[0].config.test1 == 1
@@ -422,8 +450,8 @@ def test_add_phase_component_balances_default():
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_phase_component_balances()
 
@@ -442,8 +470,8 @@ def test_add_phase_component_balances_dynamic():
                                        "dynamic": True})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_phase_component_balances()
 
@@ -465,8 +493,8 @@ def test_add_phase_component_balances_dynamic_no_geometry():
                                        "dynamic": True})
 
     # Do not add geometry
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_phase_component_balances()
@@ -482,8 +510,8 @@ def test_add_phase_component_balances_rate_rxns():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
 
@@ -504,7 +532,7 @@ def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
 
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
@@ -521,8 +549,8 @@ def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(PropertyNotSupportedError):
         m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
@@ -538,7 +566,7 @@ def test_add_phase_component_balances_eq_rxns():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
     mb = m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
@@ -562,7 +590,7 @@ def test_add_phase_component_balances_eq_rxns_not_active():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
@@ -580,7 +608,7 @@ def test_add_phase_component_balances_eq_rxns_no_idx():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
     with pytest.raises(PropertyNotSupportedError):
@@ -595,7 +623,7 @@ def test_add_phase_component_balances_eq_rxns_no_ReactionBlock():
 
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
@@ -612,7 +640,7 @@ def test_add_phase_component_balances_phase_eq():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
 
@@ -633,7 +661,7 @@ def test_add_phase_component_balances_phase_eq_not_active():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
@@ -651,7 +679,7 @@ def test_add_phase_component_balances_phase_eq_no_idx():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(PropertyNotSupportedError):
         m.fs.cv.add_phase_component_balances(has_phase_equilibrium=True)
@@ -667,8 +695,8 @@ def test_add_phase_component_balances_mass_transfer():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_phase_component_balances(has_mass_transfer=True)
 
@@ -687,8 +715,8 @@ def test_add_phase_component_balances_custom_molar_term():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
@@ -714,8 +742,8 @@ def test_add_phase_component_balances_custom_molar_term_no_mw():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
@@ -739,8 +767,8 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
@@ -770,8 +798,8 @@ def test_add_phase_component_balances_custom_molar_term_undefined_basis():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
@@ -795,8 +823,8 @@ def test_add_phase_component_balances_custom_mass_term():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
@@ -822,8 +850,8 @@ def test_add_phase_component_balances_custom_mass_term_no_mw():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
@@ -847,8 +875,8 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
@@ -878,8 +906,8 @@ def test_add_phase_component_balances_custom_mass_term_undefined_basis():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
@@ -903,8 +931,8 @@ def test_add_total_component_balances_default():
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_component_balances()
 
@@ -923,8 +951,8 @@ def test_add_total_component_balances_dynamic():
                                        "dynamic": True})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_component_balances()
 
@@ -946,8 +974,8 @@ def test_add_total_component_balances_dynamic_no_geometry():
                                        "dynamic": True})
 
     # Do not add geometry
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_component_balances()
@@ -963,8 +991,8 @@ def test_add_total_component_balances_rate_rxns():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_component_balances(has_rate_reactions=True)
 
@@ -985,7 +1013,7 @@ def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
 
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_component_balances(has_rate_reactions=True)
@@ -1002,8 +1030,8 @@ def test_add_total_component_balances_rate_rxns_no_rxn_idx():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(PropertyNotSupportedError):
         m.fs.cv.add_total_component_balances(has_rate_reactions=True)
@@ -1019,7 +1047,7 @@ def test_add_total_component_balances_eq_rxns():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
     mb = m.fs.cv.add_total_component_balances(has_equilibrium_reactions=True)
@@ -1043,7 +1071,7 @@ def test_add_total_component_balances_eq_rxns_not_active():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
@@ -1061,7 +1089,7 @@ def test_add_total_component_balances_eq_rxns_no_idx():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
     with pytest.raises(PropertyNotSupportedError):
@@ -1076,7 +1104,7 @@ def test_add_total_component_balances_eq_rxns_no_ReactionBlock():
 
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_component_balances(has_equilibrium_reactions=True)
@@ -1093,7 +1121,7 @@ def test_add_total_component_balances_phase_eq_not_active():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_component_balances(has_phase_equilibrium=True)
@@ -1109,8 +1137,8 @@ def test_add_total_component_balances_mass_transfer():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_component_balances(has_mass_transfer=True)
 
@@ -1129,8 +1157,8 @@ def test_add_total_component_balances_custom_molar_term():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
@@ -1154,8 +1182,8 @@ def test_add_total_component_balances_custom_molar_term_no_mw():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
@@ -1177,8 +1205,8 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
@@ -1206,8 +1234,8 @@ def test_add_total_component_balances_custom_molar_term_undefined_basis():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
@@ -1229,8 +1257,8 @@ def test_add_total_component_balances_custom_mass_term():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
@@ -1254,8 +1282,8 @@ def test_add_total_component_balances_custom_mass_term_no_mw():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
@@ -1277,8 +1305,8 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
@@ -1306,8 +1334,8 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
 
@@ -1329,8 +1357,8 @@ def test_add_total_element_balances_default():
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_element_balances()
 
@@ -1348,8 +1376,8 @@ def test_add_total_element_balances_properties_not_supported():
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(PropertyNotSupportedError):
         m.fs.cv.add_total_element_balances()
@@ -1366,8 +1394,8 @@ def test_add_total_element_balances_dynamic():
                                        "dynamic": True})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_element_balances()
 
@@ -1389,8 +1417,8 @@ def test_add_total_element_balances_dynamic_no_geometry():
                                        "dynamic": True})
 
     # Do not add geometry
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_element_balances()
@@ -1406,8 +1434,8 @@ def test_add_total_element_balances_rate_rxns():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_element_balances(has_rate_reactions=True)
@@ -1423,7 +1451,7 @@ def test_add_total_element_balances_eq_rxns():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
     mb = m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
@@ -1443,7 +1471,7 @@ def test_add_total_element_balances_eq_rxns_not_active():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
@@ -1461,7 +1489,7 @@ def test_add_total_element_balances_eq_rxns_no_idx():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
     with pytest.raises(PropertyNotSupportedError):
@@ -1476,7 +1504,7 @@ def test_add_total_element_balances_eq_rxns_no_ReactionBlock():
 
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
@@ -1493,7 +1521,7 @@ def test_add_total_element_balances_phase_eq():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_element_balances(has_phase_equilibrium=True)
 
@@ -1513,7 +1541,7 @@ def test_add_total_element_balances_phase_eq_not_active():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_element_balances(has_phase_equilibrium=True)
@@ -1531,7 +1559,7 @@ def test_add_total_element_balances_phase_eq_no_idx():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(PropertyNotSupportedError):
         m.fs.cv.add_total_element_balances(has_phase_equilibrium=True)
@@ -1547,8 +1575,8 @@ def test_add_total_element_balances_mass_transfer():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_element_balances(has_mass_transfer=True)
 
@@ -1567,8 +1595,8 @@ def test_add_total_element_balances_custom_term():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.element_list)
 
@@ -1596,7 +1624,7 @@ def test_add_total_material_balances():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_total_material_balances()
@@ -1613,8 +1641,8 @@ def test_add_total_enthalpy_balances_default():
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     eb = m.fs.cv.add_total_enthalpy_balances()
 
@@ -1633,8 +1661,8 @@ def test_add_total_enthalpy_balances_dynamic():
                                        "dynamic": True})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_enthalpy_balances()
 
@@ -1656,8 +1684,8 @@ def test_add_total_enthalpy_balances_dynamic_no_geometry():
                                        "dynamic": True})
 
     # Do not add geometry
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_enthalpy_balances()
@@ -1673,8 +1701,8 @@ def test_add_total_enthalpy_balances_heat_transfer():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_enthalpy_balances(has_heat_transfer=True)
 
@@ -1693,8 +1721,8 @@ def test_add_total_enthalpy_balances_work_transfer():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_enthalpy_balances(has_work_transfer=True)
 
@@ -1713,8 +1741,8 @@ def test_add_total_enthalpy_balances_custom_term():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref)
 
@@ -1737,8 +1765,8 @@ def test_add_total_enthalpy_balances_dh_rxn_no_extents():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
@@ -1754,8 +1782,8 @@ def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
     m.fs.cv.add_phase_component_balances(has_rate_reactions=True)
 
     eb = m.fs.cv.add_total_enthalpy_balances(has_heat_of_reaction=True)
@@ -1772,7 +1800,7 @@ def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
     m.fs.cv.add_phase_component_balances(has_equilibrium_reactions=True)
 
@@ -1794,7 +1822,7 @@ def test_add_phase_enthalpy_balances():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_phase_enthalpy_balances()
@@ -1812,7 +1840,7 @@ def test_add_phase_energy_balances():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_phase_energy_balances()
@@ -1830,7 +1858,7 @@ def test_add_total_energy_balances():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_total_energy_balances()
@@ -1847,8 +1875,8 @@ def test_add_total_pressure_balances_default():
     m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
 
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     eb = m.fs.cv.add_total_pressure_balances()
 
@@ -1866,8 +1894,8 @@ def test_add_total_pressure_balances_deltaP():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     mb = m.fs.cv.add_total_pressure_balances(has_pressure_change=True)
 
@@ -1886,8 +1914,8 @@ def test_add_total_pressure_balances_custom_term():
                                        "reaction_package": m.fs.rp})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks()
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref)
 
@@ -1914,7 +1942,7 @@ def test_add_phase_pressure_balances():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_phase_pressure_balances()
@@ -1932,7 +1960,7 @@ def test_add_phase_momentum_balances():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_phase_momentum_balances()
@@ -1950,7 +1978,7 @@ def test_add_total_momentum_balances():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_total_momentum_balances()
@@ -1970,7 +1998,7 @@ def test_model_checks():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     m.fs.cv.model_check()
 
@@ -1992,7 +2020,7 @@ def test_initialize():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks()
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     f= m.fs.cv.initialize(state_args={})
 
