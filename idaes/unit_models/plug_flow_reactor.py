@@ -228,7 +228,7 @@ domain,
         self.control_volume.add_geometry(
                 length_domain_set=self.config.length_domain_set)
 
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_reaction_blocks(
                 has_equilibrium=self.config.has_equilibrium_reactions)
