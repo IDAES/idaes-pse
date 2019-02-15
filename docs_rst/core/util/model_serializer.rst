@@ -120,7 +120,7 @@ StoreSpec
 functions how to read and write Pyomo component attributes.  The default
 initialization provides an object that would load and save attributes usually
 needed to save a model state.  There are several other class methods that
-provid canned objects for specific uses. Through initialization arguments, the
+provide canned objects for specific uses. Through initialization arguments, the
 behavior is highly customizable. Attributes can be read or written using callback
 functions to handle attributes that can not be directly read or written (e.g.
 a variable lower bound is set by calling setlb()). See the class documentation below.
