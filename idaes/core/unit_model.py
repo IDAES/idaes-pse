@@ -390,9 +390,9 @@ Must be True if dynamic = True,
             # Check that name is None
             if name is not None:
                 raise ConfigurationError(
-                        "{} add_inlet_port was called without a block argument"
-                        " but a name argument was provided. Either both "
-                        "a name and a block must be provided or neither."
+                        "{} add_outlet_port was called without a block "
+                        "argument  but a name argument was provided. Either "
+                        "both a name and a block must be provided or neither."
                         .format(blk.name))
             else:
                 name = "outlet"
@@ -401,15 +401,15 @@ Must be True if dynamic = True,
                 block = blk.control_volume
             except AttributeError:
                 raise ConfigurationError(
-                        "{} add_inlet_port was called without a block argument"
-                        " but no default ControlVolume exists "
+                        "{} add_outlet_port was called without a block "
+                        "argument but no default ControlVolume exists "
                         "(control_volume). Please provide block to which the "
                         "Port should be associated.".format(blk.name))
         else:
             # Check that name is not None
             if name is None:
                 raise ConfigurationError(
-                        "{} add_inlet_port was called with a block argument, "
+                        "{} add_outlet_port was called with a block argument, "
                         "but a name argument was not provided. Either both "
                         "a name and a block must be provided or neither."
                         .format(blk.name))
