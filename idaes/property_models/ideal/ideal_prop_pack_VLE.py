@@ -425,9 +425,6 @@ class IdealStateBlockData(StateBlockData):
         self.pressure_sat = Var(self.component_list_ref,
                                 initialize=101325,
                                 doc="vapor pressure ")
-        #
-        # self.x = Var(self.component_list_ref, initialize=1,
-        #              doc="temporary variable to compute vapor pressure")
 
         def rule_total_mass_balance(self):
             return self.flow_mol_phase['Liq'] + \
