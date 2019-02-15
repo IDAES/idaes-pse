@@ -1,4 +1,4 @@
-IDAES versioning
+IDAES Versioning
 ================
 
 The IDAES Python package is versioned according to the general guidelines
@@ -16,6 +16,13 @@ printing out the `__version__` variable in the top-level package::
     print(idaes.__version__)
     # prints a version like "1.2.3"
 
+.. testcode::
+    :hide:
+    
+    # This test ensures that the above code works without needing to be
+    # updated every time the IDAES version changes
+    import idaes
+    idaes.__version__
 
 Advanced usage
 --------------
