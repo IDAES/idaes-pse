@@ -17,7 +17,6 @@ Base class for control volumes
 from __future__ import division
 
 # Import Python libraries
-import copy
 import logging
 
 # Import Pyomo libraries
@@ -88,8 +87,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
-                         has_phase_equilibrium=False,
-                         package_arguments={}):
+                         has_phase_equilibrium=False):
         """
         This method constructs the inlet and outlet state blocks for the
         control volume.
@@ -105,7 +103,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Returns:
             None
         """
-        tmp_dict = copy.copy(package_arguments)
+        tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = has_phase_equilibrium
         tmp_dict["parameters"] = self.config.property_package
 
@@ -142,8 +140,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     .format(self.name))
 
     def add_reaction_blocks(self,
-                            has_equilibrium=False,
-                            package_arguments={}):
+                            has_equilibrium=False):
         """
         This method constructs the reaction block for the control volume.
 
@@ -156,7 +153,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Returns:
             None
         """
-        tmp_dict = copy.copy(package_arguments)
+        tmp_dict = dict(**self.config.reaction_package_args)
         tmp_dict["state_block"] = self.properties_out
         tmp_dict["has_equilibrium"] = has_equilibrium
         tmp_dict["parameters"] = self.config.reaction_package
