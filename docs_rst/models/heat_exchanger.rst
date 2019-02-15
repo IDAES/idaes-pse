@@ -16,7 +16,7 @@ Example
 The example below demonstrates how to initialize the HeatExchanger model, and
 override the default temperature difference calculation.
 
-.. testcode:: python
+.. testcode::
 
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
