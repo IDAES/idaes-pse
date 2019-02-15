@@ -12,7 +12,7 @@ material stream.
 Example
 -------
 
-.. testcode:: python
+.. testcode::
 
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
