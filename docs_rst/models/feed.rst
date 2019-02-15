@@ -1,9 +1,7 @@
 Feed Block
 ==========
 
-Feed Blocks are used to represent sources of material in Flowsheets. These can be used to determine the full state of a material (including equilibrium) based on a sufficient set of state variables prior to being passed to the first unit operation.
-
-Feed blocks do not calculate phase equilibrium of the feed stream, and the composition of the material in the outlet stream will be exactly as specified in the input. For applications where the users wishes the outlet stream to be in phase equilibrium, see the Feed_Flash unit model.
+Feed Blocks are used to represent sources of material in Flowsheets. Feed blocks do not calculate phase equilibrium of the feed stream, and the composition of the material in the outlet stream will be exactly as specified in the input. For applications where the users wishes the outlet stream to be in phase equilibrium, see the Feed_Flash unit model.
 
 Degrees of Freedom
 ------------------
