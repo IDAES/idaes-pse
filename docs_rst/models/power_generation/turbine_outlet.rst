@@ -14,7 +14,7 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission for 
 Example
 -------
 
-.. code-block:: python
+.. testcode::
 
     from pyomo.environ import ConcreteModel, SolverFactory
     from idaes.core import FlowsheetBlock
@@ -30,7 +30,8 @@ Example
     m.fs.turb.inlet[:].enth_mol.fix(47115)
     m.fs.turb.inlet[:].flow_mol.fix(15000)
     m.fs.turb.inlet[:].pressure.fix(8e4)
-    m.fs.turb.initialize(outlvl=4)
+
+    m.fs.turb.initialize()
 
 Degrees of Freedom
 ------------------
