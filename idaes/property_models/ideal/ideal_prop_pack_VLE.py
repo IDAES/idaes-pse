@@ -33,10 +33,11 @@ from idaes.core import (declare_process_block_class,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import ConfigurationError
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
 # Set up logger
@@ -55,7 +56,6 @@ class _IdealStateBlock(StateBlock):
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialisation routine for property package.
-
         Keyword Arguments:
             flow_mol_comp : value at which to initialize component flows
                              (default=None)
@@ -63,11 +63,9 @@ class _IdealStateBlock(StateBlock):
             temperature : value at which to initialize temperature
                           (default=None)
             outlvl : sets output level of initialisation routine
-
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = include solver output infomation (tee=True)
-
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -81,7 +79,6 @@ class _IdealStateBlock(StateBlock):
                         - False - state variables are unfixed after
                                  initialization by calling the
                                  relase_state method
-
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -150,28 +147,60 @@ class _IdealStateBlock(StateBlock):
 
             blk[k].eq_total.deactivate()
             blk[k].eq_comp.deactivate()
-            blk[k].eq_sum_mol_frac.deactivate()
-            if blk[k].config.has_phase_equilibrium is True:
-                blk[k].eq_Keq.deactivate()
             if (blk[k].config.defined_state is False):
                 blk[k].eq_mol_frac_out.deactivate()
-            blk[k].eq_h_liq.deactivate()
-            blk[k].eq_h_vap.deactivate()
+            if (blk[k].config.has_phase_equilibrium) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Liq', 'Vap')) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Vap', 'Liq')):
+                blk[k].eq_Keq.deactivate()
+                blk[k].eq_sum_mol_frac.deactivate()
+                blk[k].eq_h_liq.deactivate()
+                blk[k].eq_h_vap.deactivate()
+
+            if not blk[k].config.has_phase_equilibrium and \
+                    blk[k].config.parameters.config.valid_phase == "Liq":
+                blk[k].eq_h_liq.deactivate()
+            if not blk[k].config.has_phase_equilibrium and \
+                    blk[k].config.parameters.config.valid_phase == "Vap":
+                blk[k].eq_h_vap.deactivate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
 
         for k in blk.keys():
             blk[k].eq_total.activate()
             blk[k].eq_comp.activate()
-            blk[k].eq_sum_mol_frac.activate()
-            if blk[k].config.has_phase_equilibrium is True:
+            if (blk[k].config.has_phase_equilibrium) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Liq', 'Vap')) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Vap', 'Liq')):
                 blk[k].eq_Keq.activate()
+                blk[k].eq_sum_mol_frac.activate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
 
         for k in blk.keys():
-            blk[k].eq_h_liq.activate()
-            blk[k].eq_h_vap.activate()
+            if not blk[k].config.has_phase_equilibrium and \
+                    blk[k].config.parameters.config.valid_phase == "Liq":
+                blk[k].eq_h_liq.activate()
+            if not blk[k].config.has_phase_equilibrium and \
+                    blk[k].config.parameters.config.valid_phase == "Vap":
+                blk[k].eq_h_vap.activate()
+            if (blk[k].config.has_phase_equilibrium) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Liq', 'Vap')) or \
+                    (blk[k].config.parameters.config.valid_phase ==
+                        ('Vap', 'Liq')):
+                blk[k].eq_h_liq.activate()
+                blk[k].eq_h_vap.activate()
+
+        results = solve_indexed_blocks(opt, [blk], tee=stee)
+
+        for k in blk.keys():
+            if (blk[k].config.defined_state is False):
+                blk[k].eq_mol_frac_out.activate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
         if outlvl > 0:
@@ -196,14 +225,9 @@ class _IdealStateBlock(StateBlock):
         else:
             blk.release_state(flags)
 
-        for k in blk.keys():
-            if (blk[k].config.defined_state is False):
-                blk[k].eq_mol_frac_out.activate()
-
     def release_state(blk, flags, outlvl=0):
         '''
         Method to relase state variables fixed during initialisation.
-
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -238,9 +262,31 @@ class IdealStateBlockData(StateBlockData):
         """Callable method for Block construction."""
         super(IdealStateBlockData, self).build()
 
+        # Check for valid phase indicator and consistent flags
+        if self.config.has_phase_equilibrium and \
+                self.config.parameters.config.valid_phase in ['Vap', 'Liq']:
+            raise ConfigurationError("Inconsistent inputs. Valid phase"
+                                     " flag not set to VL for the state"
+                                     " block but has_phase_equilibrium"
+                                     " is set to True.")
+
         self._make_params()
         self._make_state_vars()
-        self._make_flash_eq()
+        self._make_vars()
+        if not self.config.has_phase_equilibrium and \
+                self.config.parameters.config.valid_phase == "Liq":
+            self._make_liq_phase_eq()
+
+        if (self.config.has_phase_equilibrium) or \
+                (self.config.parameters.config.valid_phase ==
+                    ('Liq', 'Vap')) or \
+                (self.config.parameters.config.valid_phase ==
+                    ('Vap', 'Liq')):
+            self._make_flash_eq()
+
+        if not self.config.has_phase_equilibrium and \
+                self.config.parameters.config.valid_phase == "Vap":
+            self._make_vap_phase_eq()
 
     def _make_params(self):
         """Make references to the necessary parameters."""
@@ -307,7 +353,7 @@ class IdealStateBlockData(StateBlockData):
                                domain=NonNegativeReals,
                                doc='State temperature [K]')
 
-    def _make_flash_eq(self):
+    def _make_vars(self):
         self.flow_mol_phase = Var(self.phase_list_ref,
                                   initialize=0.5)
 
@@ -315,6 +361,42 @@ class IdealStateBlockData(StateBlockData):
                                    self.component_list_ref,
                                    initialize=1 / len(self.component_list_ref),
                                    bounds=(0, 1))
+
+    def _make_liq_phase_eq(self):
+        def rule_total_mass_balance(self):
+            return self.flow_mol_phase['Liq'] == self.flow_mol
+        self.eq_total = Constraint(rule=rule_total_mass_balance)
+
+        def rule_comp_mass_balance(self, i):
+            return self.flow_mol * self.mole_frac[i] == \
+                self.flow_mol_phase['Liq'] * self.mole_frac_phase['Liq', i]
+        self.eq_comp = Constraint(self.component_list_ref,
+                                  rule=rule_comp_mass_balance)
+
+        if self.config.defined_state is False:
+            # applied at outlet only
+            self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac[i]
+                                              for i in self.component_list_ref)
+                                              == 1)
+
+    def _make_vap_phase_eq(self):
+        def rule_total_mass_balance(self):
+            return self.flow_mol_phase['Vap'] == self.flow_mol
+        self.eq_total = Constraint(rule=rule_total_mass_balance)
+
+        def rule_comp_mass_balance(self, i):
+            return self.flow_mol * self.mole_frac[i] == \
+                self.flow_mol_phase['Vap'] * self.mole_frac_phase['Vap', i]
+        self.eq_comp = Constraint(self.component_list_ref,
+                                  rule=rule_comp_mass_balance)
+
+        if self.config.defined_state is False:
+            # applied at outlet only
+            self.eq_mol_frac_out = Constraint(expr=sum(self.mole_frac[i]
+                                              for i in self.component_list_ref)
+                                              == 1)
+
+    def _make_flash_eq(self):
 
         self.vapor_pressure = Var(self.component_list_ref,
                                   initialize=101325,
@@ -408,7 +490,7 @@ class IdealStateBlockData(StateBlockData):
                                       rule=rule_hl_ig_pc)
 
     def _enthalpy_liq(self):
-            # Liquid phase enthalpy
+        # Liquid phase enthalpy
         self.enthalpy_liq = Var()
 
         def rule_hliq(self):
