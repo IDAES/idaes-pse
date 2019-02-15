@@ -15,60 +15,9 @@
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block, value
+from pyomo.environ import Block
 
 __author__ = "Andrew Lee, John Siirola"
-
-
-EPS = 1e-8
-
-
-def evaluate_variable_from_constraint(variable, constraint):
-    """
-    Calculates the value of a variable based on the current residual of the
-    given constraint, and ot set the value of the variable to this value.
-
-    Args:
-        variable - Pyomo variable to be evaluated
-        constraint - Pyomo Constraint to use ot calculate variable value
-
-    Returns:
-        value of variable
-    """
-    upper = value(constraint.upper)
-    assert value(constraint.lower) == upper  # this is an equality constraint
-    residual_1 = value(constraint.body)
-
-    x1 = value(variable)
-    variable.set_value(x1 - (residual_1-upper))
-
-    residual_2 = value(constraint.body)
-
-    # if the variable appears linearly with a coefficient of 1, then we
-    # are done
-    if abs(residual_2-upper) < EPS:
-        return variable.value
-
-    # Assume the variable appears linearly and calculate the coefficient
-    x2 = value(variable)
-    slope = float(residual_1 - residual_2) / (x1 - x2)
-
-    if abs(slope) < EPS:
-        raise RuntimeError(
-                "Value of variable has no effect on the residual of "
-                "constraint. This general indicates that variable is not part "
-                "of constraint, or is degenerate.")
-
-    intercept = (residual_1-upper) - slope*x1
-    variable.set_value(-intercept/slope)
-
-    if abs(value(constraint.body)-upper) > EPS:
-        print(value(constraint.body))
-        raise RuntimeError(
-            "variable does not appear linearly; cannot (easily) "
-            "calculate the variable value")
-
-    return variable.value
 
 
 # HACK, courtesy of J. Siirola
@@ -125,70 +74,3 @@ def solve_indexed_blocks(solver, blocks, **kwds):
 
     # Return results
     return results
-
-
-def fix_port(port, var, comp=None, value=None, port_idx=None):
-    """
-    Method for fixing Vars in Ports.
-
-    Args:
-        port : Port object in which to fix Vars
-        var : variable name to be fixed (as str)
-        comp : index of var to be fixed (if applicable, default = None)
-        value : value to use when fixing var (default = None)
-        port_idx : list of Port elements at which to fix var. Must be list
-                    of valid indices,
-
-    Returns:
-        None
-    """
-    if port_idx is None:
-        if comp is None:
-            if value is None:
-                port[...].vars[var].fix()
-            else:
-                port[...].vars[var].fix(value)
-        else:
-            if value is None:
-                port[...].vars[var][comp].fix()
-            else:
-                port[...].vars[var][comp].fix(value)
-    else:
-        for k in port_idx:
-            if comp is None:
-                if value is None:
-                    port[k].vars[var].fix()
-                else:
-                    port[k].vars[var].fix(value)
-            else:
-                if value is None:
-                    port[k].vars[var][comp].fix()
-                else:
-                    port[k].vars[var][comp].fix(value)
-
-
-def unfix_port(port, var, comp=None, port_idx=None):
-    """
-    Method for unfixing Vars in Ports.
-
-    Args:
-        port : Port object in which to unfix Vars
-        var : variable name to be unfixed (as str)
-        comp : index of var to be unfixed (if applicable, default = None)
-        port_idx : list of Port elements at which to unfix var. Must be
-                    list of valid indices,
-
-    Returns:
-        None
-    """
-    if port_idx is None:
-        if comp is None:
-            port[...].vars[var].unfix()
-        else:
-            port[...].vars[var][comp].unfix()
-    else:
-        for k in port_idx:
-            if comp is None:
-                port[k].vars[var].unfix()
-            else:
-                port[k].vars[var][comp].unfix()
