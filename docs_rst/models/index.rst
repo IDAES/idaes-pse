@@ -10,6 +10,7 @@ Unit Model Contents
     cstr
     equilibrium
     feed
+    feed_flash
     flash
     gibbs_reactor
     heater
