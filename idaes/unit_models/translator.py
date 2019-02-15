@@ -23,6 +23,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 # Import IDAES cores
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Andrew Lee"
 
@@ -47,6 +48,29 @@ class TranslatorData(UnitModelBlockData):
         domain=In([False]),
         description="Holdup construction flag - must be False",
         doc="""Translator blocks do not contain holdup."""))
+    CONFIG.declare("outlet_state_defined", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Indicated whether outlet state will be fully defined",
+        doc="""Indicates whether unit model will fully define outlet state.
+If False, the outlet property package will enforce constraints such as sum
+of mole fractions and phase equilibrium.
+**default** - True.
+**Valid values:** {
+**True** - outlet state will be fully defined,
+**False** - outlet property package should enforce sumation and equilibrium
+constraints.}"""))
+    CONFIG.declare("has_phase_equilibrium", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Indicated whether outlet state is in phase equilibrium",
+        doc="""Indicates whether outlet property package should enforce
+phase equilibrium constraints.
+**default** - False.
+**Valid values:** {
+**True** - outlet property package should calculate phase equilibrium,
+**False** - outlet property package should notcalculate phase equilibrium.}
+"""))
     CONFIG.declare("inlet_property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
@@ -97,6 +121,14 @@ see property package for documentation.}"""))
         # Call UnitModel.build to setup dynamics
         super(TranslatorData, self).build()
 
+        # Check construction argumnet consistency
+        if (self.config.outlet_state_defined and
+                self.config.has_phase_equilibrium):
+            raise ConfigurationError(
+                "{} cannot calcuate phase equilibrium (has_phase_equilibrium "
+                "= True) when outlet state is set to be fully defined ("
+                "outlet_state_defined = True).".format(self.name))
+
         # Add State Blocks
         self.properties_in = (
                     self.config.inlet_property_package.state_block_class(
@@ -113,9 +145,10 @@ see property package for documentation.}"""))
                         self.time_ref,
                         doc="Material properties in outgoing stream",
                         default={
-                            "defined_state": True,
+                            "defined_state": self.config.outlet_state_defined,
                             "parameters": self.config.outlet_property_package,
-                            "has_phase_equilibrium": False,
+                            "has_phase_equilibrium":
+                                self.config.has_phase_equilibrium,
                             **self.config.outlet_property_package_args}))
 
         # Add outlet port
