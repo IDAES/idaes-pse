@@ -248,7 +248,7 @@ Must be True if dynamic = True,
                 raise ConfigurationError(
                         "{} add_inlet_port was called without a block argument"
                         " but a name argument was provided. Either both "
-                        "a anme and a block must be provided or neither."
+                        "a name and a block must be provided or neither."
                         .format(blk.name))
             else:
                 name = "inlet"
@@ -267,7 +267,7 @@ Must be True if dynamic = True,
                 raise ConfigurationError(
                         "{} add_inlet_port was called with a block argument, "
                         "but a name argument was not provided. Either both "
-                        "a anme and a block must be provided or neither."
+                        "a name and a block must be provided or neither."
                         .format(blk.name))
 
         if doc is None:
@@ -392,7 +392,7 @@ Must be True if dynamic = True,
                 raise ConfigurationError(
                         "{} add_inlet_port was called without a block argument"
                         " but a name argument was provided. Either both "
-                        "a anme and a block must be provided or neither."
+                        "a name and a block must be provided or neither."
                         .format(blk.name))
             else:
                 name = "outlet"
@@ -411,7 +411,7 @@ Must be True if dynamic = True,
                 raise ConfigurationError(
                         "{} add_inlet_port was called with a block argument, "
                         "but a name argument was not provided. Either both "
-                        "a anme and a block must be provided or neither."
+                        "a name and a block must be provided or neither."
                         .format(blk.name))
 
         if doc is None:
