@@ -18,9 +18,10 @@ Author: John Eslick
 import pytest
 
 from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
+from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
-from idaes.unit_models import Separator, Mixer
+from idaes.unit_models import Heater
 from idaes.unit_models.power_generation import (
     TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
 from idaes.property_models import iapws95_ph
@@ -63,6 +64,14 @@ def build_turbine_for_run_test():
         "lp_split_locations": [4,7,9,11],
         "hp_disconnect": [7],
         "ip_split_num_outlets": {14:3}})
+
+    # Add reheater
+    m.fs.reheat = Heater(default={"property_package": m.fs.properties})
+    m.fs.hp_to_reheat = Arc(source=m.fs.turb.hp_split[7].outlet_1,
+                            destination=m.fs.reheat.inlet)
+    m.fs.reheat_to_ip = Arc(source=m.fs.reheat.outlet,
+                            destination=m.fs.turb.ip_stages[1].inlet)
+
     return m
 
 def test_initialize(build_turbine_for_run_test):
@@ -70,26 +79,51 @@ def test_initialize(build_turbine_for_run_test):
     m = build_turbine_for_run_test
     turb = m.fs.turb
 
-    hin = iapws95_ph.htpx(T=880, P=2.4233e7)
+    # Set the inlet of the turbine
+    p = 2.4233e7
+    hin = iapws95_ph.htpx(T=880, P=p)
     m.fs.turb.inlet_split.inlet.enth_mol[0].fix(hin)
     m.fs.turb.inlet_split.inlet.flow_mol[0].fix(26000)
-    m.fs.turb.inlet_split.inlet.pressure[0].fix(2.4233e7)
+    m.fs.turb.inlet_split.inlet.pressure[0].fix(p)
 
-    turb.hp_split[4].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.hp_split[7].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.ip_split[5].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.ip_split[14].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.ip_split[14].split_fraction[0,"outlet_3"].fix(0.10)
-    turb.lp_split[4].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.lp_split[7].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.lp_split[9].split_fraction[0,"outlet_2"].fix(0.05)
-    turb.lp_split[11].split_fraction[0,"outlet_2"].fix(0.05)
+    # Set the inlet of the ip section, which is disconnected
+    # here to insert reheater
+    p = 10649886
+    hin = iapws95_ph.htpx(T=880, P=p)
+    m.fs.turb.ip_stages[1].inlet.enth_mol[0].fix(hin)
+    m.fs.turb.ip_stages[1].inlet.flow_mol[0].fix(25220.0)
+    m.fs.turb.ip_stages[1].inlet.pressure[0].fix(p)
 
-    turb.inlet_split.split_fraction[0,"outlet_1"].value = 0.25
-    turb.inlet_split.split_fraction[0,"outlet_2"].value = 0.25
-    turb.inlet_split.split_fraction[0,"outlet_3"].value = 0.25
-    turb.inlet_split.split_fraction[0,"outlet_4"].value = 0.25
-    #turb.display()
+    for i, s in turb.hp_stages.items():
+        s.ratioP[:] = 0.92
+        s.efficiency_isentropic[:] = 0.9
+    for i, s in turb.ip_stages.items():
+        s.ratioP[:] = 0.90
+        s.efficiency_isentropic[:] = 0.9
+    for i, s in turb.lp_stages.items():
+        s.ratioP[:] = 0.90
+        s.efficiency_isentropic[:] = 0.9
 
+    turb.hp_split[4].split_fraction[0,"outlet_2"].fix(0.03)
+    turb.hp_split[7].split_fraction[0,"outlet_2"].fix(0.03)
+    turb.ip_split[5].split_fraction[0,"outlet_2"].fix(0.04)
+    turb.ip_split[14].split_fraction[0,"outlet_2"].fix(0.04)
+    turb.ip_split[14].split_fraction[0,"outlet_3"].fix(0.15)
+    turb.lp_split[4].split_fraction[0,"outlet_2"].fix(0.04)
+    turb.lp_split[7].split_fraction[0,"outlet_2"].fix(0.04)
+    turb.lp_split[9].split_fraction[0,"outlet_2"].fix(0.04)
+    turb.lp_split[11].split_fraction[0,"outlet_2"].fix(0.04)
+
+    # Congiure with reheater for a full test
+    turb.ip_stages[1].inlet.unfix()
+    turb.inlet_split.inlet.flow_mol.unfix()
+    turb.inlet_mix.use_equal_pressure_constraint()
     turb.initialize()
-    assert(degrees_of_freedom(m)==3)
+
+    for t in m.fs.time:
+        m.fs.reheat.inlet.flow_mol[t] = turb.hp_split[7].outlet_1.flow_mol[t]
+        m.fs.reheat.inlet.enth_mol[t] = turb.hp_split[7].outlet_1.enth_mol[t]
+        m.fs.reheat.inlet.pressure[t] = turb.hp_split[7].outlet_1.pressure[t]
+    m.fs.reheat.initialize()
+
+    assert(degrees_of_freedom(m)==0)

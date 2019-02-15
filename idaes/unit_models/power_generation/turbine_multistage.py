@@ -315,7 +315,7 @@ class TurbineMultistageData(UnitModelBlockData):
             self.inlet_stage.flow_coeff.fix(value)
 
     def initialize(self, outlvl=0, solver='ipopt',
-        optarg={'tol': 1e-6, 'max_iter':30}):
+        optarg={'tol': 1e-6, 'max_iter':35}):
         """
         Initialize
         """
@@ -327,13 +327,6 @@ class TurbineMultistageData(UnitModelBlockData):
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        self._initialize_inlet_section()
-
-        from_json(self, sd=istate, wts=sp)
-
-
-    def _initialize_inlet_section(self, outlvl=0, solver='ipopt',
-        optarg={'tol': 1e-6, 'max_iter':30}):
 
         ni = self.config.num_parallel_inlet_stages
 
@@ -368,6 +361,7 @@ class TurbineMultistageData(UnitModelBlockData):
                 optarg=optarg)
 
         # Initialize Mixer
+        self.inlet_mix.use_minimum_inlet_pressure_constraint()
         for i in self.inlet_stage_idx:
             _set_port(getattr(self.inlet_mix, "inlet_{}".format(i)),
                       self.inlet_stage[i].outlet)
@@ -375,19 +369,47 @@ class TurbineMultistageData(UnitModelBlockData):
         self.inlet_mix.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         for i in self.inlet_stage_idx:
             getattr(self.inlet_mix, "inlet_{}".format(i)).unfix()
+        self.inlet_mix.use_equal_pressure_constraint()
 
-        self.inlet_mix.minimum_pressure_constraint.deactivate()
-        self.inlet_mix.pressure_equality_constraints.activate()
+        def init_section(stages, splits, disconnects, prev_port):
+            if 0 in splits:
+                _set_port(splits[0].inlet, prev_port)
+                splits[0].initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+                prev_port = splits[0].outlet_1
+            for i in stages:
+                if i - 1 not in disconnects:
+                    _set_port(stages[i].inlet, prev_port)
+                stages[i].initialize(
+                    outlvl=outlvl, solver=solver, optarg=optarg)
+                prev_port = stages[i].outlet
+                if i in splits:
+                    _set_port(splits[i].inlet, prev_port)
+                    splits[i].initialize(
+                        outlvl=outlvl, solver=solver, optarg=optarg)
+                    prev_port = splits[i].outlet_1
+            return prev_port
 
-        #self.hp_stages.deactivate()
-        #self.ip_stages.deactivate()
-        #self.lp_stages.deactivate()
-        #self.hp_split.deactivate()
-        #self.ip_split.deactivate()
-        #self.lp_split.deactivate()
+        prev_port = self.inlet_mix.outlet
+        prev_port = init_section(
+            self.hp_stages, self.hp_split, self.config.hp_disconnect, prev_port)
+        if len(self.hp_stages) in self.config.hp_disconnect:
+            prev_port = self.ip_stages[1].inlet
+        prev_port = init_section(
+            self.ip_stages, self.ip_split, self.config.ip_disconnect, prev_port)
+        if len(self.ip_stages) in self.config.ip_disconnect:
+            prev_port = self.lp_stages[1].inlet
+        prev_port = init_section(
+            self.lp_stages, self.lp_split, self.config.lp_disconnect, prev_port)
+
+        _set_port(self.outlet_stage.inlet, prev_port)
+        self.outlet_stage.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+
+        #self.hp_stages[7].display()
+        #self.ip_stages[1].display()
+        #self.ip_stages[14].display()
+        #self.lp_stages.display()
+
+        from_json(self, sd=istate, wts=sp)
 
         print(degrees_of_freedom(self))
-        assert(degrees_of_freedom(self)==0)
-
-        #self.inlet_stage.display()
-        #self.inlet_mix.display()
+        #assert(degrees_of_freedom(self)==0)

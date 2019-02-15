@@ -265,12 +265,31 @@ class _StateBlock(StateBlock):
     This class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-    def initialize(self, *args, **kwargs):
-        for i in self.keys():
-            self[i].initialize(*args, **kwargs)
+    @staticmethod
+    def _set_fixed(v, f):
+        if f:
+            v.fix()
+        else:
+            v.unfix()
 
-    def release_state(*args, **kwargs):
-        pass
+    def initialize(self, *args, **kwargs):
+        flags = {}
+        hold_state = kwargs.pop("hold_state", False)
+        for i, v in self.items(): #
+            flags[i] = (v.flow_mol.fixed,
+                        v.enth_mol.fixed,
+                        v.pressure.fixed)
+            if hold_state:
+                v.flow_mol.fix()
+                v.enth_mol.fix()
+                v.pressure.fix()
+        return flags
+
+    def release_state(self, flags, **kwargs):
+        for i, f in flags.items():
+            self._set_fixed(self[i].flow_mol, f[0])
+            self._set_fixed(self[i].enth_mol, f[1])
+            self._set_fixed(self[i].pressure, f[2])
 
 
 @declare_process_block_class("Iapws95StateBlock", block_class=_StateBlock, doc="""

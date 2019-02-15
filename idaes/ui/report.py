@@ -82,6 +82,16 @@ def active_equalities(blk):
     for o in blk.component_data_objects(Constraint, active=True):
         if o.upper == o.lower: yield o
 
+def active_free_variables(blk):
+    """
+    Generator returning active equality constraints in a model.
+
+    Args:
+        blk: a Pyomo block in which to look for variables.
+    """
+    for o in blk.component_data_objects(Var, active=True):
+        if not o.fixed: yield o
+
 def count_free_variables(blk):
     """
     Count free variables that are in active equality constraints.  Ignore
@@ -110,7 +120,7 @@ def active_equality_set(blk):
     """
     ac = ComponentSet()
     for c in active_equalities(blk):
-            ac.add(c)
+        ac.add(c)
     return ac
 
 def variables_in_active_equalities_set(blk):

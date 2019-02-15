@@ -569,6 +569,14 @@ linked to all inlet states and the mixed state,
                              'model_check method to the associated '
                              'StateBlock class.'.format(blk.name))
 
+    def use_minimum_inlet_pressure_constraint(self):
+        self.minimum_pressure_constraint.activate()
+        self.pressure_equality_constraints.deactivate()
+
+    def use_equal_pressure_constraint(self):
+        self.minimum_pressure_constraint.deactivate()
+        self.pressure_equality_constraints.activate()
+
     def initialize(blk, outlvl=0, optarg={},
                    solver='ipopt', hold_state=True):
         '''

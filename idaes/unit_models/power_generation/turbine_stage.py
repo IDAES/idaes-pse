@@ -54,7 +54,7 @@ class TurbineStageData(PressureChangerData):
         self.efficiency_mech = Var(initialize=0.98,
             doc="Turbine mechanical efficiency")
         self.efficiency_mech.fix()
-        self.ratioP[:] = 1 # make sure these have a number value
+        self.ratioP[:] = 0.8 # make sure these have a number value
         self.deltaP[:] = 0 #   to avoid an error later in initialize
 
         @self.Expression(self.time_ref, doc="Thermodynamic power [J/s]")
@@ -86,9 +86,6 @@ class TurbineStageData(PressureChangerData):
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        self.deltaP[:].unfix()
-        self.ratioP[:].unfix()
-
         # fix inlet and free outlet
         for t in self.time_ref:
             for k, v in self.inlet.vars.items():
@@ -105,6 +102,10 @@ class TurbineStageData(PressureChangerData):
             Pout = self.outlet.pressure[t]
             Pin = self.inlet.pressure[t]
             prdp = value((self.deltaP[t] - Pin)/Pin)
+            if self.deltaP[t].fixed:
+                Pout.value = value(Pin - Pout)
+            if self.ratioP[t].fixed:
+                Pout.value = value(self.ratioP[t]*Pin)
             if value(Pout/Pin) > 0.99 or value(Pout/Pin) < 0.1:
                 if value(self.ratioP[t]) < 0.99 and value(self.ratioP[t]) > 0.1:
                     Pout.fix(value(Pin*self.ratioP[t]))
@@ -116,6 +117,9 @@ class TurbineStageData(PressureChangerData):
                 Pout.fix()
             self.deltaP[t] = value(Pout - Pin)
             self.ratioP[t] = value(Pout/Pin)
+
+        self.deltaP[:].unfix()
+        self.ratioP[:].unfix()
 
         # Make sure the initialization problem has no degrees of freedom
         # This shouldn't happen here unless there is a bug in this
