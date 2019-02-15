@@ -16,10 +16,12 @@ import pytest
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 from idaes.property_models import iapws95_ph as iapws95
+from idaes.property_models.iapws95 import iapws95_available
 import csv
 import math
 import os
 
+prop_available = iapws95_available()
 
 def read_data(fname, col):
     dfile = os.path.dirname(__file__)
@@ -36,12 +38,13 @@ def read_data(fname, col):
             cond.append((float(row[0]), float(row[1]) * 1e6, x))
     return cond
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_limits():
     model = ConcreteModel()
     model.prop_param = iapws95.Iapws95ParameterBlock()
-    model.prop_in = iapws95.Iapws95StateBlock(default={"parameters":model.prop_param})
+    model.prop_in = iapws95.Iapws95StateBlock(
+        default={"parameters":model.prop_param})
     x = value(model.prop_in.func_delta_liq(1e5, -1000))
     assert(math.isnan(x))
     x = value(model.prop_in.func_delta_liq(1e5, 100))
@@ -55,7 +58,7 @@ def test_limits():
     x = value(model.prop_in.func_delta_vap(1e5, 1e7))
     assert(math.isnan(x))
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_tau_sat():
     model = ConcreteModel()
@@ -68,7 +71,7 @@ def test_tau_sat():
         print("{}, {}, {}".format(c[1], c[0], T))
         assert(abs(T-c[0]) < 0.1)
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_liquid_density_sat():
     model = ConcreteModel()
@@ -86,7 +89,7 @@ def test_liquid_density_sat():
         else:
             assert(abs(rho-c[2]) < 5)
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_vapor_density_sat():
     model = ConcreteModel()
@@ -102,7 +105,7 @@ def test_vapor_density_sat():
         if c[0] < 645:
             assert(abs(rho-c[2])/c[2]*100 < 1.0)
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_density():
     model = ConcreteModel()
@@ -124,7 +127,7 @@ def test_density():
         else:
             assert(abs(rho-c[2])/c[2]*100 < 1.0)
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_enthalpy():
     model = ConcreteModel()
@@ -143,7 +146,7 @@ def test_enthalpy():
         print("{}, {}, {}, {}, {}".format(c[0], c[1], h, c[2], p))
         assert(abs(h-c[2])/c[2]*100 < 1)
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_enthalpy_vapor_as_function_of_p_and_tau():
     model = ConcreteModel()
@@ -159,7 +162,7 @@ def test_enthalpy_vapor_as_function_of_p_and_tau():
         print("{}, {}, {}, {}".format(c[0], c[1], h, c[2]))
         assert(abs(h-c[2])/c[2]*100 < 1)
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_enthalpy_liquid_as_function_of_p_and_tau():
     model = ConcreteModel()
@@ -178,7 +181,7 @@ def test_enthalpy_liquid_as_function_of_p_and_tau():
         print("{}, {}, {}, {}, {}, {}, {}".format(c[0], c[1], h, c[2], rho_dat[i][2], rho, p))
         assert(abs(h-c[2])/c[2]*100 < 1)
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_entropy():
     model = ConcreteModel()
@@ -197,7 +200,7 @@ def test_entropy():
         print("{}, {}, {}, {}, {}".format(c[0], c[1], rho, c[2], p))
         assert(abs(rho-c[2])/c[2]*100 < 1)
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_speed_of_sound():
     model = ConcreteModel()
@@ -221,7 +224,7 @@ def test_speed_of_sound():
         print("{}, {}, {}, {}, {}".format(c[0], c[1], rho, c[2], p))
         assert(abs(rho-c[2])/c[2]*100 < 1)
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_cp():
     model = ConcreteModel()
@@ -245,7 +248,7 @@ def test_cp():
         print("{}, {}, {}, {}, {}".format(c[0], c[1], rho, c[2], p))
         assert(abs(rho-c[2])/c[2]*100 < 1)
 
-
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_cv():
     model = ConcreteModel()
