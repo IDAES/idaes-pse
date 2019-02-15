@@ -106,11 +106,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_phase_equilibrium is None:
             raise ConfigurationError(
                     "{} add_state_blocks method was not provided with a "
-                    "has_phase_equilibrium_argument.".format(self.name))
+                    "has_phase_equilibrium argument.".format(self.name))
         elif has_phase_equilibrium not in [True, False]:
             raise ConfigurationError(
                     "{} add_state_blocks method was provided with an invalid "
-                    "has_phase_equilibrium_argument. Must be True or False"
+                    "has_phase_equilibrium argument. Must be True or False"
                     .format(self.name))
 
         tmp_dict = dict(**self.config.property_package_args)
@@ -165,11 +165,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_equilibrium is None:
             raise ConfigurationError(
                     "{} add_reaction_blocks method was not provided with a "
-                    "has_equilibrium_argument.".format(self.name))
+                    "has_equilibrium argument.".format(self.name))
         elif has_equilibrium not in [True, False]:
             raise ConfigurationError(
                     "{} add_reaction_blocks method was provided with an "
-                    "invalid has_equilibrium_argument. Must be True or False"
+                    "invalid has_equilibrium argument. Must be True or False"
                     .format(self.name))
 
         tmp_dict = dict(**self.config.reaction_package_args)
