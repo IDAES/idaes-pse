@@ -108,13 +108,18 @@ you need to do in order to actually edit and change the files.
 To make a clone of the fork you created in the previous step,
 change to a directory where you want to put the source code and run the command::
 
-    git clone git clone git@github.com:MYNAME/idaes-dev.git
+    git clone git@github.com:MYNAME/idaes-dev.git
 
-Of course, replace MYNAME with your login name.
+Of course, replace MYNAME with your login name. This will download all the files in
+the latest version of the repository onto your local disk.
 
 Create the Python environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-We use a Python packaging system called Conda_.
+Once you have the repo cloned, you can change into that directory (by default, it
+will be called "idaes-dev" like the repo) and install the Python packages.
+
+But before you do that, you need to get the Python package manager fully up and
+running. We use a Python packaging system called Conda_.
 Below are instructions for installing a minimal version of Conda, called Miniconda_.
 The full version installs a large number of scientific analysis and visualization libraries
 that are not required by the IDAES framework.
@@ -136,33 +141,78 @@ for the new IDAES installation **(you will need to** ``conda activate idaes``
     conda create -n idaes pip
     conda activate idaes
 
+Now that conda and pip are installed, and you are in the "idaes" conda environment,
+you can run the standard steps for installing a Python package in development mode:
+
+.. code-block:: sh
+
+    pip install -r requirements.txt
+    python setup.py develop
+
+You can test that everything is installed properly by running the tests with
+Pytest_:
+
+.. code-block:: sh
+
+    pytest
+
+.. _Pytest: https://pytest.org/
+
 2. Initiate
 ^^^^^^^^^^^
 We will call a set of changes that belong together, e.g. because they depend on
 each other to work, a "topic". This section describes how to start work on a new
-topic.
+topic. The workflow for initiating a topic is shown in the diagram below.
+
+.. figure:: ../_static/sw-init-workflow.png
+    :align: center
+
+    Initiate topic workflow
+
 
 Create an issue on Github
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+To create an issue on Github, simply navigate to the repository page and click on
+the "Issues" tab. Then click on the "Issues" button and fill in a title and brief
+description of the issue. You do not need to list details about sub-steps required
+for the issue, as this sort of information is better put in the (related) pull
+request that you will create later. Assign the issue to the appropriate people,
+which is often yourself.
+
+There is one more important step to take, that will allow the rest of the project
+to easily notice your issue: add the issue to the "Priorities" project. The screenshot
+below shows where you need to click to do this.
+
+.. image:: ../_static/github-issue-priority.png
+    :align: center
 
 Create a branch on your fork
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-You can have multiple branches at the same time. This is why we are
-recommending you always create a new branch for a new issue instead of
-just using the “master” branch, which git would definitely let you do.
-This type of branch is called a _topic_ branch. The advantage is, if you
-have to delay your work and switch to fixing some other issue, you can
-keep the work separated by simply switching back and forth between
-branches. This is especially useful for coordination inGithub, since
-each pull request (PR) is associated with a specific branch. You can
-have any number of active PRs in parallel if you use separate branches
-for each one.
+It is certainly possible to do your work on your fork in the "master"
+branch. The problem that can arise here is if you need to do two unrelated
+things at the same time, for example working on a new feature and fixing
+a bug in the current code. This can be quite tricky to manage as a single set
+of changes, but very easy to handle by putting each new set of changes in
+its own branch, which as was mentioned earlier we call a *topic* branch.
+When all the changes in the branch are done and merged, you can delete it
+both locally and in your fork so you don't end up with a bunch of old branches
+cluttering up your git history.
 
-Tip: Assuming that you have followed the procedure of creating a Github
-issue first, you can include a descriptive word and the issue number in
-the branch name, e.g. “gibbs-issue163”. This will make it easier to keep
-track of branches, and easier to feel confident about deleting them once
-changes are merged.
+The command for doing this is simple:
+
+.. code-block:: sh
+
+    git co -b <BRANCH-NAME>
+
+The branch name should be one word, with dashes or underscores as needed.
+One convention for the name that can be helpful is to include the Issue number
+at the end, e.g. ``git co -b mytopic-issue42``. This is especially useful later
+when you are cleaning up old branches, and you can quickly see which branches
+are related to issues that are completed.
+
+Make local edits and push changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TBD
 
 Start a new Pull Request on Github
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
