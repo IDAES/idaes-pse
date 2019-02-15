@@ -96,23 +96,31 @@ def test_setInputs():
 
 def test_bubbleT():
     assert m.fs.state_block_vl.temperature_bubble_point(
-        101325, m.fs.state_block_vl.mole_frac) == \
-        pytest.approx(365.314, abs=1e-3)
+        101325, m.fs.state_block_vl.mole_frac,
+        options={"initial_guess": 298.15,
+                 "tol": 1e-3,
+                 "deltaT": 1e-2,
+                 "max_iter": 1e4}) == \
+        pytest.approx(365.314, abs=1e-2)
 
 
 def test_dewT():
     assert m.fs.state_block_vl.temperature_dew_point(
-        101325, m.fs.state_block_vl.mole_frac) == \
-        pytest.approx(371.987, abs=1e-3)
+        101325, m.fs.state_block_vl.mole_frac,
+        options={"initial_guess": 298.15,
+                 "tol": 1e-3,
+                 "deltaT": 1e-2,
+                 "max_iter": 1e4}) == \
+        pytest.approx(371.987, abs=1e-2)
 
 
 def test_bubbleP():
     assert m.fs.state_block_vl.pressure_bubble_point(
         365.314, m.fs.state_block_vl.mole_frac) == \
-        pytest.approx(101325, abs=1e-3)
+        pytest.approx(101325, abs=1e-1)
 
 
 def test_dewP():
     assert m.fs.state_block_vl.pressure_dew_point(
         371.987, m.fs.state_block_vl.mole_frac) == \
-        pytest.approx(101325, abs=1e-3)
+        pytest.approx(101325, abs=1e-1)

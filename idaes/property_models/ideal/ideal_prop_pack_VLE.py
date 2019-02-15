@@ -24,7 +24,8 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp
+from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
+    value, Var, exp
 from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
@@ -158,6 +159,9 @@ class _IdealStateBlock(StateBlock):
                 blk[k].eq_sum_mol_frac.deactivate()
                 try:
                     blk[k].eq_h_liq.deactivate()
+                except AttributeError:
+                    pass
+                try:
                     blk[k].eq_h_vap.deactivate()
                 except AttributeError:
                     pass
@@ -209,6 +213,9 @@ class _IdealStateBlock(StateBlock):
                         ('Vap', 'Liq')):
                 try:
                     blk[k].eq_h_liq.activate()
+                except AttributeError:
+                    pass
+                try:
                     blk[k].eq_h_vap.activate()
                 except AttributeError:
                     pass
@@ -418,9 +425,9 @@ class IdealStateBlockData(StateBlockData):
         self.pressure_sat = Var(self.component_list_ref,
                                 initialize=101325,
                                 doc="vapor pressure ")
-
-        self.x = Var(self.component_list_ref, initialize=1,
-                     doc="temporary variable to compute vapor pressure")
+        #
+        # self.x = Var(self.component_list_ref, initialize=1,
+        #              doc="temporary variable to compute vapor pressure")
 
         def rule_total_mass_balance(self):
             return self.flow_mol_phase['Liq'] + \
@@ -454,9 +461,8 @@ class IdealStateBlockData(StateBlockData):
             self.eq_Keq = Constraint(self.component_list_ref, rule=rule_Keq)
 
         def rule_temp_var_x(self, i):
-            return self.x[i] * self.temperature_critical[i] == \
-                self.temperature_critical[i] - self.temperature
-        self.eq_X = Constraint(self.component_list_ref, rule=rule_temp_var_x)
+            return 1 - self.temperature / self.temperature_critical[i]
+        self.x = Expression(self.component_list_ref, rule=rule_temp_var_x)
 
         def rule_P_vap(self, j):
             return (1 - self.x[j]) * \
@@ -607,14 +613,16 @@ class IdealStateBlockData(StateBlockData):
     def temperature_bubble_point(blk, pressure=None, mole_frac=None,
                                  options={"initial_guess": 298.15,
                                           "tol": 1e-3,
-                                          "deltaT": 1e-3}):
+                                          "deltaT": 1e-3,
+                                          "max_iter": 1e4}):
         """"To compute the bubble point temperature of the mixture."""
-        n = 1
+        n = 0
         T_guess = options["initial_guess"]
         tol = options["tol"]
         deltaT = options["deltaT"]
+        max_iter = options["max_iter"]
         temp_var = {}
-        while n == 1:
+        while True:
             s = 0
             for j in blk.component_list_ref:
                 temp_var[j] = (blk.temperature_critical[j] - T_guess) \
@@ -628,24 +636,36 @@ class IdealStateBlockData(StateBlockData):
                 k = p_sat / pressure
                 s = s + k * value(mole_frac[j])
             if abs(s - 1) <= tol:
-                n = 2
+                break
             elif s >= 1:
                 T_guess = T_guess - deltaT
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
             else:
                 T_guess = T_guess + deltaT
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
         return round(T_guess, 3)
 
     def temperature_dew_point(blk, pressure=None, mole_frac=None,
                               options={"initial_guess": 298.15,
                                        "tol": 1e-3,
-                                       "deltaT": 1e-3}):
+                                       "deltaT": 1e-3,
+                                       "max_iter": 1e4}):
         """"To compute the dew point temperature of the mixture."""
-        n = 1
+        n = 0
         T_guess = options["initial_guess"]
         tol = options["tol"]
         deltaT = options["deltaT"]
+        max_iter = options["max_iter"]
         temp_var = {}
-        while n == 1:
+        while True:
             s = 0
             for j in blk.component_list_ref:
                 temp_var[j] = (blk.temperature_critical[j] - T_guess) \
@@ -659,24 +679,36 @@ class IdealStateBlockData(StateBlockData):
                 k = p_sat / pressure
                 s = s + value(mole_frac[j]) / k
             if abs(s - 1) <= tol:
-                n = 2
+                break
             elif s >= 1:
+                n = n + 1
                 T_guess = T_guess + deltaT
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
             else:
+                n = n + 1
                 T_guess = T_guess - deltaT
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
         return round(T_guess, 3)
 
     def pressure_bubble_point(blk, temperature=None, mole_frac=None,
                               options={"initial_guess": 101325,
                                        "tol": 1e-3,
-                                       "deltaP": 10}):
+                                       "deltaP": 10,
+                                       "max_iter": 1e4}):
         """"To compute the bubble point pressure of the mixture."""
-        n = 1
+        n = 0
         P_guess = options["initial_guess"]
         tol = options["tol"]
         deltaP = options["deltaP"]
+        max_iter = options["max_iter"]
         temp_var = {}
-        while n == 1:
+        while True:
             s = 0
             for j in blk.component_list_ref:
                 temp_var[j] = (blk.temperature_critical[j] - temperature) \
@@ -690,24 +722,36 @@ class IdealStateBlockData(StateBlockData):
                 k = p_sat / P_guess
                 s = s + k * value(mole_frac[j])
             if abs(s - 1) <= tol:
-                n = 2
+                break
             elif s >= 1:
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaP")
+                    break
                 P_guess = P_guess + deltaP
             else:
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaP")
+                    break
                 P_guess = P_guess - deltaP
         return round(P_guess, 3)
 
     def pressure_dew_point(blk, temperature=None, mole_frac=None,
                            options={"initial_guess": 101325,
                                     "tol": 1e-3,
-                                    "deltaP": 10}):
+                                    "deltaP": 10,
+                                    "max_iter": 1e4}):
         """"To compute the dew point pressure of the mixture."""
-        n = 1
+        n = 0
         P_guess = options["initial_guess"]
         tol = options["tol"]
         deltaP = options["deltaP"]
+        max_iter = options["max_iter"]
         temp_var = {}
-        while n == 1:
+        while True:
             s = 0
             for j in blk.component_list_ref:
                 temp_var[j] = (blk.temperature_critical[j] - temperature) \
@@ -721,9 +765,19 @@ class IdealStateBlockData(StateBlockData):
                 k = p_sat / P_guess
                 s = s + value(mole_frac[j]) / k
             if abs(s - 1) <= tol:
-                n = 2
+                break
             elif s >= 1:
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
                 P_guess = P_guess - deltaP
             else:
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
                 P_guess = P_guess + deltaP
         return round(P_guess, 3)
