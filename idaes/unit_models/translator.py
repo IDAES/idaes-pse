@@ -108,7 +108,7 @@ see property package for documentation.}"""))
                             "has_phase_equilibrium": False,
                             **self.config.inlet_property_package_args}))
 
-        self.properties_in = (
+        self.properties_out = (
                     self.config.outlet_property_package.state_block_class(
                         self.time_ref,
                         doc="Material properties in outgoing stream",
