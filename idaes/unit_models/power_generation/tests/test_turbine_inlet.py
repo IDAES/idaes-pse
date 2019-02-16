@@ -22,7 +22,10 @@ from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.power_generation import TurbineInletStage
 from idaes.property_models import iapws95_ph
+from idaes.property_models.iapws95 import iapws95_available
 from idaes.ui.report import degrees_of_freedom
+
+prop_available = iapws95_available()
 
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
@@ -53,18 +56,22 @@ def test_basic_build(build_turbine):
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine
 
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize(build_turbine):
     """Initialize a turbine model"""
     m = build_turbine
     hin = iapws95_ph.htpx(T=880, P=2.4233e7)
     # set inlet
-    m.fs.turb.inlet[:].enth_mol.value = hin
-    m.fs.turb.inlet[:].flow_mol.value = 26000/4.0
-    m.fs.turb.inlet[:].pressure.value = 2.4233e7
-    m.fs.turb.initialize(outlvl=3) # need to test that this initialized properly
+    m.fs.turb.inlet.enth_mol.value = hin
+    m.fs.turb.inlet.flow_mol.value = 26000/4.0
+    m.fs.turb.inlet.pressure.value = 2.4233e7
+
+    m.fs.turb.initialize(outlvl=3)
+
     assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
 
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_dyn(build_turbine_dyn):
     """Initialize a turbine model"""

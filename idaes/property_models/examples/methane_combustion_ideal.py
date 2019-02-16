@@ -24,6 +24,7 @@ import logging
 # Import Pyomo libraries
 from pyomo.environ import Constraint, log, Param, \
                           PositiveReals, Reals, Set, value, Var
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
@@ -31,8 +32,7 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock)
-from idaes.core.util.initialization import (evaluate_variable_from_constraint,
-                                            solve_indexed_blocks)
+from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 
 # Some more inforation about this module
@@ -320,51 +320,51 @@ class _StateBlock(StateBlock):
             for j in blk[k].component_list_ref:
 
                 if hasattr(blk[k], "cp_shomate_eqn"):
-                    evaluate_variable_from_constraint(blk[k].cp_mol_comp[j],
+                    calculate_variable_from_constraint(blk[k].cp_mol_comp[j],
                                                       blk[k].cp_shomate_eqn[j])
 
                 if hasattr(blk[k], "enthalpy_shomate_eqn"):
-                    evaluate_variable_from_constraint(
+                    calculate_variable_from_constraint(
                             blk[k].enth_mol_phase_comp["Vap", j],
                             blk[k].enthalpy_shomate_eqn[j])
 
                 if hasattr(blk[k], "entropy_shomate_eqn"):
-                    evaluate_variable_from_constraint(
+                    calculate_variable_from_constraint(
                             blk[k].entr_mol_phase_comp["Vap", j],
                             blk[k].entropy_shomate_eqn[j])
 
                 if hasattr(blk[k], "partial_gibbs_energy_eqn"):
-                    evaluate_variable_from_constraint(
+                    calculate_variable_from_constraint(
                             blk[k].gibbs_mol_phase_comp["Vap", j],
                             blk[k].partial_gibbs_energy_eqn[j])
 
             if hasattr(blk[k], "ideal_gas"):
-                evaluate_variable_from_constraint(
+                calculate_variable_from_constraint(
                             blk[k].dens_mol_phase["Vap"],
                             blk[k].ideal_gas)
 
             if hasattr(blk[k], "mixture_heat_capacity_eqn"):
-                evaluate_variable_from_constraint(
+                calculate_variable_from_constraint(
                             blk[k].cp_mol,
                             blk[k].mixture_heat_capacity_eqn)
 
             if hasattr(blk[k], "mixture_enthalpy_eqn"):
-                evaluate_variable_from_constraint(
+                calculate_variable_from_constraint(
                             blk[k].enth_mol,
                             blk[k].mixture_enthalpy_eqn)
 
             if hasattr(blk[k], "mixture_entropy_eqn"):
-                evaluate_variable_from_constraint(
+                calculate_variable_from_constraint(
                             blk[k].entr_mol,
                             blk[k].mixture_entropy_eqn)
 
             if hasattr(blk[k], "total_flow_eqn"):
-                evaluate_variable_from_constraint(
+                calculate_variable_from_constraint(
                             blk[k].flow_mol,
                             blk[k].total_flow_eqn)
 
             if hasattr(blk[k], "mixture_gibbs_eqn"):
-                evaluate_variable_from_constraint(
+                calculate_variable_from_constraint(
                             blk[k].gibbs_mol,
                             blk[k].mixture_gibbs_eqn)
 

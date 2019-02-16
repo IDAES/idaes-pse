@@ -52,6 +52,16 @@ class StoichiometricReactorData(UnitModelBlockData):
 **useDefault** - get flag from parent (default = False),
 **True** - set as a dynamic model,
 **False** - set as a steady-state model.}"""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([useDefault, True, False]),
+        description="Holdup construction flag",
+        doc="""Indicates whether holdup terms should be constructed or not.
+Must be True if dynamic = True,
+**default** - False.
+**Valid values:** {
+**True** - construct holdup terms,
+**False** - do not construct holdup terms}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
@@ -171,9 +181,9 @@ see reaction package for documentation.}"""))
                 "reaction_package": self.config.reaction_package,
                 "reaction_package_args": self.config.reaction_package_args})
 
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
-        self.control_volume.add_reaction_blocks()
+        self.control_volume.add_reaction_blocks(has_equilibrium=False)
 
         self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type,

@@ -168,7 +168,8 @@ see property package for documentation.}"""))
             self.control_volume.add_geometry()
 
         # Add inlet and outlet state blocks to control volume
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(has_phase_equilibrium=
+                                             self.config.has_phase_equilibrium)
 
         # Add mass balance
         # Set has_equilibrium is False for now

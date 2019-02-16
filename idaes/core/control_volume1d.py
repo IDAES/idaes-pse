@@ -19,7 +19,6 @@ from __future__ import division
 # Import Python libraries
 import copy
 import logging
-import copy
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
@@ -149,8 +148,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
-                         has_phase_equilibrium=False,
-                         package_arguments={}):
+                         has_phase_equilibrium=None):
         """
         This method constructs the state blocks for the
         control volume.
@@ -166,8 +164,18 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         Returns:
             None
         """
+        if has_phase_equilibrium is None:
+            raise ConfigurationError(
+                    "{} add_state_blocks method was not provided with a "
+                    "has_phase_equilibrium argument.".format(self.name))
+        elif has_phase_equilibrium not in [True, False]:
+            raise ConfigurationError(
+                    "{} add_state_blocks method was provided with an invalid "
+                    "has_phase_equilibrium argument. Must be True or False"
+                    .format(self.name))
+
         # d0 is config for defined state d1 is config for not defined state
-        d0 = copy.copy(package_arguments)
+        d0 = dict(**self.config.property_package_args)
         d0.update(has_phase_equilibrium=has_phase_equilibrium,
                   parameters=self.config.property_package,
                   defined_state=True)
@@ -189,9 +197,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             initialize={0:d0, 1:d1},
             idx_map=idx_map)
 
-    def add_reaction_blocks(self,
-                            has_equilibrium=False,
-                            package_arguments={}):
+    def add_reaction_blocks(self, has_equilibrium=None):
         """
         This method constructs the reaction block for the control volume.
 
@@ -204,8 +210,18 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         Returns:
             None
         """
+        if has_equilibrium is None:
+            raise ConfigurationError(
+                    "{} add_reaction_blocks method was not provided with a "
+                    "has_equilibrium argument.".format(self.name))
+        elif has_equilibrium not in [True, False]:
+            raise ConfigurationError(
+                    "{} add_reaction_blocks method was provided with an "
+                    "invalid has_equilibrium argument. Must be True or False"
+                    .format(self.name))
+
         # TODO : Should not have ReactionBlock at inlet
-        tmp_dict = copy.copy(package_arguments)
+        tmp_dict = dict(**self.config.reaction_package_args)
         tmp_dict["state_block"] = self.properties
         tmp_dict["has_equilibrium"] = has_equilibrium
         tmp_dict["parameters"] = self.config.reaction_package
