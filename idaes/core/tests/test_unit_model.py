@@ -217,7 +217,7 @@ def test_add_inlet_port_CV0D():
     m.fs.u.control_volume = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
-    m.fs.u.control_volume.add_state_blocks()
+    m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
     p_obj = m.fs.u.add_inlet_port()
 
@@ -262,7 +262,7 @@ def test_add_inlet_port_CV0D_full_args():
     m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
-    m.fs.u.cv.add_state_blocks()
+    m.fs.u.cv.add_state_blocks(has_phase_equilibrium=False)
 
     p_obj = m.fs.u.add_inlet_port(name="test_port",
                                   block=m.fs.u.cv,
@@ -295,7 +295,7 @@ def test_add_outlet_port_CV0D():
     m.fs.u.control_volume = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
-    m.fs.u.control_volume.add_state_blocks()
+    m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
     p_obj = m.fs.u.add_outlet_port()
 
@@ -340,7 +340,7 @@ def test_add_outlet_port_CV0D_full_args():
     m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
-    m.fs.u.cv.add_state_blocks()
+    m.fs.u.cv.add_state_blocks(has_phase_equilibrium=False)
 
     p_obj = m.fs.u.add_outlet_port(name="test_port",
                                   block=m.fs.u.cv,
