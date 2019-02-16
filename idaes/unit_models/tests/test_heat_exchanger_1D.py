@@ -23,7 +23,7 @@ from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType)
 from idaes.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
 
-from idaes.property_models.BFW_properties import BFWParameterBlock
+from idaes.property_models.examples.BFW_properties import BFWParameterBlock
 from idaes.ui.report import degrees_of_freedom
 
 # -----------------------------------------------------------------------------

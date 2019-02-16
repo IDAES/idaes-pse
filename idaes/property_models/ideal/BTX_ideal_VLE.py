@@ -23,12 +23,13 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Param, NonNegativeReals, Set
+from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, PhysicalParameterBlock
 from idaes.core.util.misc import extract_data
 
-from idaes.property_models.ideal_prop_pack_VLE import IdealStateBlock
+from idaes.property_models.ideal.ideal_prop_pack_VLE import IdealStateBlock
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -43,11 +44,25 @@ _log = logging.getLogger(__name__)
 class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
-
     Contains parameters and indexing sets associated with properties for
-    superheated steam.
-
+    BTX system.
     """
+    # Config block for the _IdealStateBlock
+    CONFIG = PhysicalParameterBlock.CONFIG()
+
+    CONFIG.declare("valid_phase", ConfigValue(
+        default=('Vap', 'Liq'),
+        domain=In(['Liq', 'Vap', ('Vap', 'Liq'), ('Liq', 'Vap')]),
+        description="Flag indicating the valid phase",
+        doc="""Flag indicating the valid phase for a given set of
+conditions, and thus corresponding constraints  should be included,
+**default** - ('Vap', 'Liq').
+**Valid values:** {
+**'Liq'** - Liquid only,
+**'Vap'** - Vapor only,
+**('Vap', 'Liq')** - Vapor-liquid equilibrium,
+**('Liq', 'Vap')** - Vapor-liquid equilibrium,}"""))
+
     def build(self):
         '''
         Callable method for Block construction.
@@ -57,7 +72,14 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.state_block_class = IdealStateBlock
 
         # List of valid phases in property package
-        self.phase_list = Set(initialize=['Liq', 'Vap'])
+        if self.config.valid_phase == ('Liq', 'Vap') or \
+                self.config.valid_phase == ('Vap', 'Liq'):
+            self.phase_list = Set(initialize=['Liq', 'Vap'],
+                                  ordered=True)
+        elif self.config.valid_phase == 'Liq':
+            self.phase_list = Set(initialize=['Liq'])
+        else:
+            self.phase_list = Set(initialize=['Vap'])
 
         self.component_list_master = Set(initialize=['benzene',
                                                      'toluene',

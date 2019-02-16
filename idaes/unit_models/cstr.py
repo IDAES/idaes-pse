@@ -192,7 +192,7 @@ see reaction package for documentation.}"""))
 
         self.control_volume.add_geometry()
 
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_reaction_blocks(
                 has_equilibrium=self.config.has_equilibrium_reactions)
