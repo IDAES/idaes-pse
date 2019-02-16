@@ -63,7 +63,9 @@ are performed for every new "topic" (e.g. a bugfix or new feature). The develop 
 collaborate phases are performed in a loop until changes are approved by the team.
 
 .. figure:: ../_static/sw-dev-workflow.png
-    :align: center
+    :align: right
+    :height: 200px
+
 
     Software development workflow
 
@@ -165,7 +167,8 @@ each other to work, a "topic". This section describes how to start work on a new
 topic. The workflow for initiating a topic is shown in the diagram below.
 
 .. figure:: ../_static/sw-init-workflow.png
-    :align: center
+    :align: right
+    :height: 400px
 
     Initiate topic workflow
 
@@ -224,7 +227,12 @@ TBD
 
 Run tests
 ~~~~~~~~~
-TBD
+After significant batches of changes, you should make sure you have tests
+for the new/changed functionality. This involves writing :ref:`unit-tests` as
+well as running the test suite and examining the results of the :ref:`coverage-tests`.
+The automated testing that will occur later will fail if the tests fail, or the
+changes result in less overall testing (aka "lower test coverage"). See the
+linked sections for detailed instructions.
 
 Commit changes
 ~~~~~~~~~~~~~~
@@ -262,14 +270,14 @@ is jeopardized, so we need to take this process seriously.
 
 Automated Checks
 ~~~~~~~~~~~~~~~~
-The first level of code review is a set of automated checks that _must_ pass
+The first level of code review is a set of automated checks that *must* pass
 before the code is ready for people to review it. These checks will run
 on the initiation of a :ref:`pull request <devterm_pr>` and on every new commit to that pull
 request that is pushed to Github (thus the name “continuous
 integration”).
 
 The “continuous integration” of the code is hosted by an online service
-– we use CircleCI (\ https://circleci.com\ )-- that can automatically
+– we use `CircleCI <https://circleci.com>`_ -- that can automatically
 rerun the tests after every change (in this case, every new Pull Request
 or update to the code in an existing Pull Request) and report the
 results back to Github for display in the web pages. This status
@@ -278,9 +286,22 @@ code can be merged into the master branch – if tests fail, then no merge
 is allowed. Following this procedure, it is not possible for the master
 branch to ever be failing its own tests.
 
-Types of tests
-~~~~~~~~~~~~~~
-Unit tests: Testing individual pieces of functionality, including the
+Testing
+^^^^^^^
+
+.. note:: “Discovering the unexpected is more important than confirming the known.“
+          -- George E. P. Box
+
+Testing is essential to the process of creating software. The longer one programs,
+the more the idea that "If it isn't tested, it probably doesn't work" makes sense.
+This section outlines the different kinds of testing and how to write/use them in
+the project.
+
+.. _unit-tests:
+
+Unit tests
+~~~~~~~~~~
+Testing individual pieces of functionality, including the
 ability to report the correct kind of errors from bad inputs. Unit tests
 must always run quickly. If it takes more than 5 seconds, it is not a unit
 test, and it is expected that most unit tests take well under 1 second.
@@ -290,7 +311,11 @@ on local developer machines. If this suite of hundreds of tests takes
 more than a couple of minutes to run, it will introduce a significant
 bottleneck in the development workflow.
 
-Code coverage: The “coverage” of the code refers to what percentage of
+.. _coverage-tests:
+
+Code coverage tests
+~~~~~~~~~~~~~~~~~~~
+The “coverage” of the code refers to what percentage of
 the code (“lines covered” divided by total lines) is executed by the
 automated tests. This is important because passing automated tests is
 only meaningful if the automated tests cover the majority of the code’s
@@ -301,9 +326,10 @@ locally and then integrated with Github through a tool called `Coveralls
 <https://coveralls.io>`_.
 
 Code Review
+^^^^^^^^^^^
 
 Summary
-
+~~~~~~~
 Every piece of code must be reviewed by at least two people.
 
 In every case, one of those people will be a designated “gatekeeper” and
