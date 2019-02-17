@@ -215,15 +215,59 @@ are related to issues that are completed.
 
 Make local edits and push changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-TBD
+A new branch, while it feels like a change, is not really a change in the
+eyes of Git or Github, and by itself will not allow you to start a new pull
+request (which is the goal of this whole phase). The easiest thing to do do is
+a special "empty" commit::
+
+    git commit --allow-empty -m 'Empty commit so I can open a PR'
+
+
+Since this is your first "push" to this branch, you are going to need to set an upstream
+branch on the remote that should receive the changes. If this sounds complicated,
+it's OK because git actually gives you cut-and-paste instructions. Just run
+the ``git push`` command with no other arguments::
+
+    $ git push
+    fatal: The current branch mybranch-issue3000 has no upstream branch.
+    To push the current branch and set the remote as upstream, use
+
+        git push --set-upstream origin mybranch-issue3000
+
+Cut and paste the suggested command, and you're ready to go. Subsequent
+calls to "push" will not require any additional arguments to work.
 
 Start a new Pull Request on Github
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-TBD
+Finally, you are ready to initiate the pull request. Right after you perform the
+``push`` command above, head to the repository
+URL in Github (https://github.com/IDAES/idaes-dev) and you should see a highlighted
+bar below the tabs, as in the figure below, asking if you want to start a pull-request.
+
+.. image:: ../_static/github-start-pullrequest.png
+    :align: center
+
+Click on this and fill in the requested information. Remember to link to the issue
+you created earlier.
+
+Depending on the Github plan, there may be a pull-down menu for creating the pull
+request that lets you create a "draft" pull request. If that is not present, you
+can signal this the old-fashioned way by adding "[WIP]" (for Work-in-Progress) at
+the beginning of the pull request title.
+
+Either way, create the pull request. Do *not* assign reviewers until you are done
+making your changes (which is probably not now). This way the assigning of reviewers
+becomes an unambiguous signal that the PR is actually ready for review.
 
 3. Develop
 ^^^^^^^^^^
-TBD
+The development process is a loop of adding code, testing and
+debugging, and committing and pushing to Github. You may go through many (many!)
+iterations of this loop before the code is ready for review.
+
+.. note:: Avoid having pull requests that take months to complete. It is
+          better to divide up the work, even artificially, into a piece that
+          can be reviewed and merged into the main repository within a week or two.
 
 Run tests
 ~~~~~~~~~
@@ -234,9 +278,13 @@ The automated testing that will occur later will fail if the tests fail, or the
 changes result in less overall testing (aka "lower test coverage"). See the
 linked sections for detailed instructions.
 
+.. _git-commit:
+
 Commit changes
 ~~~~~~~~~~~~~~
 TBD
+
+.. _git-push:
 
 Push changes to Github
 ~~~~~~~~~~~~~~~~~~~~~~
