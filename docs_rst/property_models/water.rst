@@ -11,7 +11,7 @@ Theses modules can be imported as:
 .. testcode::
 
   from idaes.property_models import iapws95_ph
-  from idaes.property_models import iapws95_tpx
+  # from idaes.property_models import iapws95_tpx
 
 Example
 -------
