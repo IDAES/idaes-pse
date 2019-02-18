@@ -341,7 +341,7 @@ on any aspects that are deemed lacking or missing.
 
 The gatekeeper is expected to make sure all criteria have been met, and
 actually merge the PR.
-
+  
 Assigning Roles
 
 The gatekeeper is a designated person, who will always be added to
