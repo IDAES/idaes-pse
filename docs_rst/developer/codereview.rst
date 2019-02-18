@@ -1,3 +1,5 @@
+.. _sw-code-review:
+
 Code Review
 ===========
 

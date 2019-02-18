@@ -47,26 +47,25 @@ TBD
 
 Developing software for Open-source Release
 -------------------------------------------
-In this section we lay out all the essential steps for developing
-software that will end up in the open-source releases for IDEAS.
-We can break this process into four distinct steps:
+We can break the software development process five distinct phases, illustrated in Figure 1
+and summarized below:
 
-1. Setup: Prepare your local system for collaborative development.
-2. Initiate: Notify collaborators of intent to make some changes
-3. Develop: Make local changes.
-4. Collaborate: Push the changes to Github and get feedback from other developers.
-5. Merge: Merge the changes into the shared "master" branch.
+.. list-table::
 
-As illustrated in Figure 1 below, the first phase only needs to happen once,
-whereas the remaining phases
-are performed for every new "topic" (e.g. a bugfix or new feature). The develop and
-collaborate phases are performed in a loop until changes are approved by the team.
+    * - :ref:`sw-wf-setup`: Prepare your local system for collaborative development
+    * - :ref:`sw-wf-initiate`: Notify collaborators of intent to make some changes
+    * - :ref:`sw-wf-develop`: Make local changes
+    * - :ref:`sw-wf-collaborate`: Push the changes to Github and get feedback from other developers
+    * - :ref:`sw-wf-merge`: Merge the changes into the shared "master" branch
 
 .. figure:: ../_static/sw-overview-workflow.png
-    :align: right
-    :height: 200px
+    :align: center
 
     Figure 1. Overview of software development workflow
+
+The rest of this page describes the what and how of each of these phases.
+
+.. _sw-wf-setup:
 
 1. Setup
 ^^^^^^^^
@@ -171,7 +170,7 @@ Pytest_:
 
 .. _Pytest: https://pytest.org/
 
-.. _sw-initiate:
+.. _sw-wf-initiate:
 
 2. Initiate
 ^^^^^^^^^^^
@@ -345,22 +344,24 @@ A typical workflow goes like this:
 Of course, in most IDEs you could use built-in commands for committing and adding
 files. The basic flow would be the same.
 
-Merge upstream changes
-~~~~~~~~~~~~~~~~~~~~~~
+
+.. _sw-sync-upstream:
+
+Synchronize with upstream changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Hopefully you are not the only one on the team doing work, and therefore you should
 expect that the main repository may have new and changed content while you are in
 the process of working. To synchronize with the latest content from the "upstream"
 (IDAES organization) repository, you should periodically run one of the two following
-commands.
+commands::
 
-Quick and dirty::
-The quick and dirty way of doing this is ``git pull``. The slightly
-longer version, but one which lets you see what is happening, has two commands::
+    git pull
+    # OR -- explicit
+    git fetch --all
+    git merge upstream/master
 
-    git fetch --all  # get all branches, from all remotes
-    git merge upstream/master  # merge in the changes from the upstream remote
-
-You'll notice that this merge command is the
+You'll notice that this merge command is using the name of the "upstream" remote
+that you :ref:`created earlier <sw-add-upstream>`.
 
 .. _git-push:
 
@@ -387,6 +388,8 @@ same). For example::
        d535552..fe61fcc  devdocs-issue65 -> devdocs-issue65
 
 
+.. _sw-wf-collaborate:
+
 4. Collaborate
 ^^^^^^^^^^^^^^
 The collaboration phase of our journey is mostly about communicating what you
@@ -395,7 +398,7 @@ be able to suggest changes and improvements. You can make changes to the code (o
 people can also make changes, see :ref:`sw-share-forks`), and then push those
 changes up into the same Pull Request. When you get enough approving reviews,
 the code is merged into the master repository. At this point, you can delete the
-"topic branch" used for the pull request, and go back to :ref:`initiate <sw-initiate>` your
+"topic branch" used for the pull request, and go back to :ref:`initiate <sw-wf-initiate>` your
 next set of changes.
 
 Request review
@@ -444,6 +447,8 @@ Hopefully it also is obvious that developers working this way have less safeguar
 for overwriting each other's work, and thus should make an effort to communicate
 clearly and in a timely manner.
 
+.. _sw-wf-merge:
+
 5. Merge
 ^^^^^^^^
 Once all the tests pass and you have enough approving reviews, it's time to merge
@@ -457,7 +462,10 @@ delete your local branch (you can also delete that branch on Github)::
     git branch -d mychanges-issue3000
 
 Next, you should make sure your master reflects the current state of the main
-master branch.
+master branch, i.e. go back and :ref:`synchronize with the upstream remote <sw-sync-upstream>`,
+i.e. run ``git pull``.
+
+Now you can go and enjoy a tasty beverage.
 
 .. _sw-testing:
 
