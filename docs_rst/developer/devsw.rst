@@ -88,7 +88,7 @@ Fork the repo
 ~~~~~~~~~~~~~
 You use a "fork" of a repository (or "repo" for short) to create a space where you
 can save changes without directly affecting the main repository. Then, as we will see,
-you _request_ that these changes be incorporated (after review).
+you *request* that these changes be incorporated (after review).
 
 This section assumes that the repository in question is ``idaes-dev``,
 but the idea is the same for any other repo.
@@ -113,6 +113,18 @@ change to a directory where you want to put the source code and run the command:
 
 Of course, replace MYNAME with your login name. This will download all the files in
 the latest version of the repository onto your local disk.
+
+.. _sw-add-upstream:
+
+Add upstream remote
+~~~~~~~~~~~~~~~~~~~
+In order to guarantee that your fork can be synchronized with the "main" idaes-dev
+repo in the Github IDAES organization, you need to add a pointer to that repository
+as a *remote*. This repository is called *upstream* (changes made there
+by the whole team flow down to your fork), so we will use that name for it in our
+command::
+
+    git remote add upstream git@github.com:IDAES/idaes-dev.git
 
 Create the Python environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -159,6 +171,8 @@ Pytest_:
 
 .. _Pytest: https://pytest.org/
 
+.. _sw-initiate:
+
 2. Initiate
 ^^^^^^^^^^^
 We will call a set of changes that belong together, e.g. because they depend on
@@ -197,7 +211,7 @@ branch. The problem that can arise here is if you need to do two unrelated
 things at the same time, for example working on a new feature and fixing
 a bug in the current code. This can be quite tricky to manage as a single set
 of changes, but very easy to handle by putting each new set of changes in
-its own branch, which as was mentioned earlier we call a *topic* branch.
+its own branch, which we call a *topic* branch.
 When all the changes in the branch are done and merged, you can delete it
 both locally and in your fork so you don't end up with a bunch of old branches
 cluttering up your git history.
@@ -266,6 +280,8 @@ becomes an unambiguous signal that the PR is actually ready for review.
           better to divide up the work, even artificially, into a piece that
           can be reviewed and merged into the main repository within a week or two.
 
+.. _sw-wf-develop:
+
 3. Develop
 ^^^^^^^^^^
 The development process is a loop of adding code, testing and
@@ -329,6 +345,22 @@ A typical workflow goes like this:
 Of course, in most IDEs you could use built-in commands for committing and adding
 files. The basic flow would be the same.
 
+Merge upstream changes
+~~~~~~~~~~~~~~~~~~~~~~
+Hopefully you are not the only one on the team doing work, and therefore you should
+expect that the main repository may have new and changed content while you are in
+the process of working. To synchronize with the latest content from the "upstream"
+(IDAES organization) repository, you should periodically run one of the two following
+commands.
+
+Quick and dirty::
+The quick and dirty way of doing this is ``git pull``. The slightly
+longer version, but one which lets you see what is happening, has two commands::
+
+    git fetch --all  # get all branches, from all remotes
+    git merge upstream/master  # merge in the changes from the upstream remote
+
+You'll notice that this merge command is the
 
 .. _git-push:
 
@@ -341,52 +373,91 @@ takes no options (assuming you have set up your fork, etc., as described so far)
     git push
 
 The output of this command on the console should be an informative, if slightly
-cryptic, statement of how many changes were pushed and the name of the 
+cryptic, statement of how many changes were pushed and, at the bottom,
+the name of your remote fork and the local/remote branches (which should be the
+same). For example::
+
+    Counting objects: 5, done.
+    Delta compression using up to 8 threads.
+    Compressing objects: 100% (5/5), done.
+    Writing objects: 100% (5/5), 528 bytes | 528.00 KiB/s, done.
+    Total 5 (delta 4), reused 0 (delta 0)
+    remote: Resolving deltas: 100% (4/4), completed with 4 local objects.
+    To github.com:dangunter/idaes-dev.git
+       d535552..fe61fcc  devdocs-issue65 -> devdocs-issue65
+
 
 4. Collaborate
 ^^^^^^^^^^^^^^
-TBD
+The collaboration phase of our journey is mostly about communicating what you
+did to the other developers. Through the Github "review" mechanism, people will
+be able to suggest changes and improvements. You can make changes to the code (other
+people can also make changes, see :ref:`sw-share-forks`), and then push those
+changes up into the same Pull Request. When you get enough approving reviews,
+the code is merged into the master repository. At this point, you can delete the
+"topic branch" used for the pull request, and go back to :ref:`initiate <sw-initiate>` your
+next set of changes.
 
 Request review
 ~~~~~~~~~~~~~~
-TBD
+To request review of a pull request, navigate to the pull request in the main
+(e.g., "idaes-dev") repository and select some names in the "Reviewers"
+pull-down on the right-hand side. You need to have two
+approving reviews. The reviewers should get an email, but you can also "@" people
+in a comment in the pull request to give them a little extra nudge.
 
-Keep your branch up to date
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-TBD
+See the full :ref:`code review <sw-code-review>` procedure for more details.
+
+Make changes
+~~~~~~~~~~~~
+You need to keep track of the comments and reviews, and make changes accordingly.
+Think of a pull request as a discussion. Normally, the person who made the pull
+request will make any requested edits. Occasionally, it may make sense for one
+or more other developers to jump in and make edits too, so how to do this is
+covered in the sub-section below.
+
+Changes made while the code is being reviewed use the normal :ref:`Develop <sw-wf-develop>`
+workflow.
+
+.. _sw-share-forks:
+
+Shared forks
+++++++++++++
+Other developers can also make changes in your fork. All they need to do
+is ``git clone`` your fork (not the main repository), switch to the correct
+topic branch, and then ``git push`` work directly to that branch. Note since this
+does not use the whole pull-request mechanism, all developers working on the
+same branch this way need to make sure the ``git pull`` to synchronize with updates
+from the other developers.
+
+For example, if Jack wants to make some edits on Rose's fork, on a topic
+branch called "changes-issue51" he could do the following::
+
+    $ git clone https://github.com/rose/idaes-dev # clone Rose's fork
+    $ git co changes-issue51  # checkout the topic branch
+    $ echo "Hello" >> README.txt  # make some important changes
+    $ pytest # always run tests!!
+    $ git add README.txt ; git commit -m "important changes"
+    $ git push # push changes to the fork
+
+Hopefully it also is obvious that developers working this way have less safeguards
+for overwriting each other's work, and thus should make an effort to communicate
+clearly and in a timely manner.
 
 5. Merge
 ^^^^^^^^
-TBD
+Once all the tests pass and you have enough approving reviews, it's time to merge
+the code! This is the easy part: go to the bottom of the Pull Request and hit the
+big green "merge" button.
 
-Code Review Procedures
-^^^^^^^^^^^^^^^^^^^^^^
+Before you close the laptop and go down to the pub, you should tidy up. First,
+delete your local branch (you can also delete that branch on Github)::
 
-*“It’s a simple 3-step process. Step one: Fix! Step two: It! Step three:
-Fix it!” -- Oscar Rogers (Kenan Thompson), Saturday Night Live, 2/2009*
+    git co master # switch back to master branch
+    git branch -d mychanges-issue3000
 
-Code review is the last line of defense between a mistake that the IDAES
-team will see and a mistake the whole world will see. In the case of
-that mistake being a leak of proprietary information, the entire project
-is jeopardized, so we need to take this process seriously.
-
-Automated Checks
-~~~~~~~~~~~~~~~~
-The first level of code review is a set of automated checks that *must* pass
-before the code is ready for people to review it. These checks will run
-on the initiation of a :ref:`pull request <devterm_pr>` and on every new commit to that pull
-request that is pushed to Github (thus the name “continuous
-integration”).
-
-The “continuous integration” of the code is hosted by an online service
-– we use `CircleCI <https://circleci.com>`_ -- that can automatically
-rerun the tests after every change (in this case, every new Pull Request
-or update to the code in an existing Pull Request) and report the
-results back to Github for display in the web pages. This status
-information can then be used as an automatic gatekeeper on whether the
-code can be merged into the master branch – if tests fail, then no merge
-is allowed. Following this procedure, it is not possible for the master
-branch to ever be failing its own tests.
+Next, you should make sure your master reflects the current state of the main
+master branch.
 
 .. _sw-testing:
 
@@ -426,82 +497,6 @@ execute correctly under all conditions. The code coverage is evaluated
 locally and then integrated with Github through a tool called `Coveralls
 <https://coveralls.io>`_.
 
-Code Review
-^^^^^^^^^^^
-
-Summary
-~~~~~~~
-Every piece of code must be reviewed by at least two people.
-
-In every case, one of those people will be a designated “gatekeeper” and
-the one or more others will be “technical reviewers”.
-
-The technical reviewers are expected to consider various aspects of the
-proposed changes (details below), and engage the author in a discussion
-on any aspects that are deemed lacking or missing.
-
-The gatekeeper is expected to make sure all criteria have been met, and
-actually merge the PR.
-  
-Assigning Roles
-
-The gatekeeper is a designated person, who will always be added to
-review a Pull Request (PR)
-
-Gatekeeper is a role that will be one (?) person for some period like a
-week or two weeks
-
-The role should rotate around the team, it’s expected to be a fair
-amount of work and should be aligned with availability and paper
-deadlines, etc.
-
-The originator of the PR will add as reviewers the gatekeeper and 1+
-technical reviewers.
-
-Originator responsibilities
-
-The originator of the PR should include in the PR itself information
-about where to find:
-
-Changes to code/data
-
-Tests of the changes
-
-Documentation of the changes
-
-The originator should be responsive to the reviewers
-
-Technical reviewer responsibilities
-
-The technical reviewer(s) should look at the proposed changes for
-
-Technical correctness (runs properly, good style, internal code
-documentation, etc.)
-
-Tests
-
-Documentation
-
-No proprietary / sensitive information
-
-Until they approve, the conversation in the PR is between the technical
-reviewers and the originator (the gatekeeper is not required to
-participate, assuming they have many PRs to worry about)
-
-Gatekeeper responsibilities
-
-The gatekeeper does not need to engage until there is at least one
-approving technical review.
-
-Once there is, they should verify that:
-
-Changes do not contain proprietary data
-
-Tests are adequate and do not fail
-
-Documentation is adequate
-
-Once everything is verified, the gatekeeper merges the PR
 
  
 .. rubric:: Footnotes
@@ -511,4 +506,3 @@ Once everything is verified, the gatekeeper merges the PR
               to be committed. The stash operates on the working directory
               and has extensive usage options.* See the documentation for
               `git stash <https://git-scm.com/docs/git-stash>`_ for more information.
-
