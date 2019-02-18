@@ -21,10 +21,10 @@ from pyomo.environ import ConcreteModel, SolverFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.stoichiometric_reactor import StoichiometricReactor
-from idaes.property_models.saponification_thermo import (
-                        SaponificationParameterBlock)
-from idaes.property_models.saponification_reactions import (
-                        SaponificationReactionParameterBlock)
+from idaes.property_models.examples.saponification_thermo import (
+    SaponificationParameterBlock)
+from idaes.property_models.examples.saponification_reactions import (
+    SaponificationReactionParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -55,18 +55,18 @@ def test_build():
                             "has_pressure_change": True})
 
     assert hasattr(m.fs.rstoic, "inlet")
-    assert len(m.fs.rstoic.inlet[0].vars) == 4
-    assert hasattr(m.fs.rstoic.inlet[0], "flow_vol")
-    assert hasattr(m.fs.rstoic.inlet[0], "conc_mol_comp")
-    assert hasattr(m.fs.rstoic.inlet[0], "temperature")
-    assert hasattr(m.fs.rstoic.inlet[0], "pressure")
+    assert len(m.fs.rstoic.inlet.vars) == 4
+    assert hasattr(m.fs.rstoic.inlet, "flow_vol")
+    assert hasattr(m.fs.rstoic.inlet, "conc_mol_comp")
+    assert hasattr(m.fs.rstoic.inlet, "temperature")
+    assert hasattr(m.fs.rstoic.inlet, "pressure")
 
     assert hasattr(m.fs.rstoic, "outlet")
-    assert len(m.fs.rstoic.outlet[0].vars) == 4
-    assert hasattr(m.fs.rstoic.outlet[0], "flow_vol")
-    assert hasattr(m.fs.rstoic.outlet[0], "conc_mol_comp")
-    assert hasattr(m.fs.rstoic.outlet[0], "temperature")
-    assert hasattr(m.fs.rstoic.outlet[0], "pressure")
+    assert len(m.fs.rstoic.outlet.vars) == 4
+    assert hasattr(m.fs.rstoic.outlet, "flow_vol")
+    assert hasattr(m.fs.rstoic.outlet, "conc_mol_comp")
+    assert hasattr(m.fs.rstoic.outlet, "temperature")
+    assert hasattr(m.fs.rstoic.outlet, "pressure")
 
     assert hasattr(m.fs.rstoic.control_volume, "heat")
     assert hasattr(m.fs.rstoic, "heat_duty")
@@ -88,18 +88,18 @@ def test_initialize():
                             "has_heat_transfer": False,
                             "has_pressure_change": False})
 
-    m.fs.rstoic.inlet[:].flow_vol.fix(1.0)
-    m.fs.rstoic.inlet[:].conc_mol_comp["H2O"].fix(55388.0)
-    m.fs.rstoic.inlet[:].conc_mol_comp["NaOH"].fix(100.0)
-    m.fs.rstoic.inlet[:].conc_mol_comp["EthylAcetate"].fix(100.0)
-    m.fs.rstoic.inlet[:].conc_mol_comp["SodiumAcetate"].fix(0.0)
-    m.fs.rstoic.inlet[:].conc_mol_comp["Ethanol"].fix(0.0)
+    m.fs.rstoic.inlet.flow_vol.fix(1.0)
+    m.fs.rstoic.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.rstoic.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.rstoic.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.rstoic.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+    m.fs.rstoic.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-    m.fs.rstoic.inlet[:].temperature.fix(303.15)
-    m.fs.rstoic.inlet[:].pressure.fix(101325.0)
+    m.fs.rstoic.inlet.temperature.fix(303.15)
+    m.fs.rstoic.inlet.pressure.fix(101325.0)
 
     m.fs.rstoic.rate_reaction_extent[:, 'R1'].fix(
-            0.9*m.fs.rstoic.inlet[0].conc_mol_comp["NaOH"].value)
+            0.9*m.fs.rstoic.inlet.conc_mol_comp[0, "NaOH"].value)
 
     assert degrees_of_freedom(m) == 0
 
@@ -107,8 +107,8 @@ def test_initialize():
                            optarg={'tol': 1e-6})
 
     assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.rstoic.outlet[0].vars["pressure"].value)
+            m.fs.rstoic.outlet.pressure[0].value)
     assert (pytest.approx(303.15, abs=1e-2) ==
-            m.fs.rstoic.outlet[0].vars["temperature"].value)
+            m.fs.rstoic.outlet.temperature[0].value)
     assert (pytest.approx(90, abs=1e-2) ==
-            m.fs.rstoic.outlet[0].conc_mol_comp["Ethanol"].value)
+            m.fs.rstoic.outlet.conc_mol_comp[0, "Ethanol"].value)

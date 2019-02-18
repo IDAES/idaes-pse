@@ -19,10 +19,10 @@ import pytest
 from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.cstr import CSTR
-from idaes.property_models.saponification_thermo import (
-                        SaponificationParameterBlock)
-from idaes.property_models.saponification_reactions import (
-                        SaponificationReactionParameterBlock)
+from idaes.property_models.examples.saponification_thermo import (
+    SaponificationParameterBlock)
+from idaes.property_models.examples.saponification_reactions import (
+    SaponificationReactionParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -53,18 +53,18 @@ def test_build():
                               "has_pressure_change": False})
 
     assert hasattr(m.fs.cstr, "inlet")
-    assert len(m.fs.cstr.inlet[0].vars) == 4
-    assert hasattr(m.fs.cstr.inlet[0], "flow_vol")
-    assert hasattr(m.fs.cstr.inlet[0], "conc_mol_comp")
-    assert hasattr(m.fs.cstr.inlet[0], "temperature")
-    assert hasattr(m.fs.cstr.inlet[0], "pressure")
+    assert len(m.fs.cstr.inlet.vars) == 4
+    assert hasattr(m.fs.cstr.inlet, "flow_vol")
+    assert hasattr(m.fs.cstr.inlet, "conc_mol_comp")
+    assert hasattr(m.fs.cstr.inlet, "temperature")
+    assert hasattr(m.fs.cstr.inlet, "pressure")
 
     assert hasattr(m.fs.cstr, "outlet")
-    assert len(m.fs.cstr.outlet[0].vars) == 4
-    assert hasattr(m.fs.cstr.outlet[0], "flow_vol")
-    assert hasattr(m.fs.cstr.outlet[0], "conc_mol_comp")
-    assert hasattr(m.fs.cstr.outlet[0], "temperature")
-    assert hasattr(m.fs.cstr.outlet[0], "pressure")
+    assert len(m.fs.cstr.outlet.vars) == 4
+    assert hasattr(m.fs.cstr.outlet, "flow_vol")
+    assert hasattr(m.fs.cstr.outlet, "conc_mol_comp")
+    assert hasattr(m.fs.cstr.outlet, "temperature")
+    assert hasattr(m.fs.cstr.outlet, "pressure")
 
     assert hasattr(m.fs.cstr, "cstr_performance_eqn")
     assert hasattr(m.fs.cstr.control_volume, "heat")
@@ -86,15 +86,15 @@ def test_initialize():
                               "has_heat_transfer": False,
                               "has_pressure_change": False})
 
-    m.fs.cstr.inlet[:].flow_vol.fix(1.0e-03)
-    m.fs.cstr.inlet[:].conc_mol_comp["H2O"].fix(55388.0)
-    m.fs.cstr.inlet[:].conc_mol_comp["NaOH"].fix(100.0)
-    m.fs.cstr.inlet[:].conc_mol_comp["EthylAcetate"].fix(100.0)
-    m.fs.cstr.inlet[:].conc_mol_comp["SodiumAcetate"].fix(0.0)
-    m.fs.cstr.inlet[:].conc_mol_comp["Ethanol"].fix(0.0)
+    m.fs.cstr.inlet.flow_vol.fix(1.0e-03)
+    m.fs.cstr.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.cstr.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.cstr.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.cstr.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+    m.fs.cstr.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-    m.fs.cstr.inlet[:].temperature.fix(303.15)
-    m.fs.cstr.inlet[:].pressure.fix(101325.0)
+    m.fs.cstr.inlet.temperature.fix(303.15)
+    m.fs.cstr.inlet.pressure.fix(101325.0)
 
     m.fs.cstr.control_volume.volume.fix(1.5e-03)
 
@@ -104,9 +104,8 @@ def test_initialize():
                          optarg={'tol': 1e-6})
 
     assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.cstr.outlet[0].vars["pressure"].value)
+            m.fs.cstr.outlet.pressure[0].value)
     assert (pytest.approx(303.15, abs=1e-2) ==
-            m.fs.cstr.outlet[0].vars["temperature"].value)
-    # print(m.fs.cstr.outlet[0].conc_mol_comp["EthylAcetate"].value)
+            m.fs.cstr.outlet.temperature[0].value)
     assert (pytest.approx(20.80, abs=1e-2) ==
-            m.fs.cstr.outlet[0].conc_mol_comp["EthylAcetate"].value)
+            m.fs.cstr.outlet.conc_mol_comp[0, "EthylAcetate"].value)

@@ -19,7 +19,7 @@ __author__ = "John Eslick"
 
 import logging
 # Import Pyomo libraries
-from pyomo.environ import (Reals, Var, sqrt, log, Expression, Constraint,
+from pyomo.environ import (Var, log, Expression, Constraint,
                            PositiveReals, SolverFactory)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
@@ -90,8 +90,7 @@ def _make_heater_control_volume(o, name, config):
     setattr(o, name, control_volume)
     # Add inlet and outlet state blocks to control volume
     control_volume.add_state_blocks(
-        has_phase_equilibrium=config.calculate_phase_equilibrium,
-        package_arguments=config.property_package_args)
+        has_phase_equilibrium=config.calculate_phase_equilibrium)
 
     # Add material balance
     control_volume.add_material_balances(
@@ -213,11 +212,16 @@ see property package for documentation.}"""))
 
 def _make_heat_exchanger_config(config):
     """
-    Declare configuration options for HeatExchngerData block.
+    Declare configuration options for HeatExchangerData block.
     """
     config.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
-        default=False,
+        domain=In([True, False, useDefault]),
+        default=useDefault,
+        description="Dynamic model flag",
+        doc="Indicates whether the model is dynamic."))
+    config.declare("has_holdup", ConfigValue(
+        domain=In([useDefault, True, False]),
+        default=useDefault,
         description="Dynamic model flag",
         doc="Indicates whether the model is dynamic."))
     config.declare("side_1", ConfigBlock(
