@@ -57,17 +57,16 @@ We can break this process into four distinct steps:
 4. Collaborate: Push the changes to Github and get feedback from other developers.
 5. Merge: Merge the changes into the shared "master" branch.
 
-As illustrated in the diagram below, the first phase only needs to happen once,
+As illustrated in Figure 1 below, the first phase only needs to happen once,
 whereas the remaining phases
 are performed for every new "topic" (e.g. a bugfix or new feature). The develop and
 collaborate phases are performed in a loop until changes are approved by the team.
 
-.. figure:: ../_static/sw-dev-workflow.png
+.. figure:: ../_static/sw-overview-workflow.png
     :align: right
     :height: 200px
 
-
-    Software development workflow
+    Figure 1. Overview of software development workflow
 
 1. Setup
 ^^^^^^^^
@@ -101,7 +100,7 @@ fork the repo into a repo of the same name under your name.
 .. figure:: ../_static/github-fork-repo.png
     :align: center
 
-    Screenshot showing where to click to fork the Github repo
+    Figure 2. Screenshot showing where to click to fork the Github repo
 
 Clone your fork
 ~~~~~~~~~~~~~~~
@@ -164,13 +163,13 @@ Pytest_:
 ^^^^^^^^^^^
 We will call a set of changes that belong together, e.g. because they depend on
 each other to work, a "topic". This section describes how to start work on a new
-topic. The workflow for initiating a topic is shown in the diagram below.
+topic. The workflow for initiating a topic is shown in Figure 3 below.
 
 .. figure:: ../_static/sw-init-workflow.png
     :align: right
     :height: 400px
 
-    Initiate topic workflow
+    Figure 3. Initiate topic workflow
 
 
 Create an issue on Github
@@ -186,8 +185,10 @@ There is one more important step to take, that will allow the rest of the projec
 to easily notice your issue: add the issue to the "Priorities" project. The screenshot
 below shows where you need to click to do this.
 
-.. image:: ../_static/github-issue-priority.png
+.. figure:: ../_static/github-issue-priority.png
     :align: center
+
+    Figure 4. Screenshot for creating an issue on Github
 
 Create a branch on your fork
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -242,10 +243,12 @@ Start a new Pull Request on Github
 Finally, you are ready to initiate the pull request. Right after you perform the
 ``push`` command above, head to the repository
 URL in Github (https://github.com/IDAES/idaes-dev) and you should see a highlighted
-bar below the tabs, as in the figure below, asking if you want to start a pull-request.
+bar below the tabs, as in Figure 5 below, asking if you want to start a pull-request.
 
-.. image:: ../_static/github-start-pullrequest.png
+.. figure:: ../_static/github-start-pullrequest.png
     :align: center
+
+    Figure 5. Screenshot for starting a Pull Request on Github
 
 Click on this and fill in the requested information. Remember to link to the issue
 you created earlier.
@@ -259,36 +262,86 @@ Either way, create the pull request. Do *not* assign reviewers until you are don
 making your changes (which is probably not now). This way the assigning of reviewers
 becomes an unambiguous signal that the PR is actually ready for review.
 
-3. Develop
-^^^^^^^^^^
-The development process is a loop of adding code, testing and
-debugging, and committing and pushing to Github. You may go through many (many!)
-iterations of this loop before the code is ready for review.
-
 .. note:: Avoid having pull requests that take months to complete. It is
           better to divide up the work, even artificially, into a piece that
           can be reviewed and merged into the main repository within a week or two.
 
-Run tests
-~~~~~~~~~
-After significant batches of changes, you should make sure you have tests
+3. Develop
+^^^^^^^^^^
+The development process is a loop of adding code, testing and
+debugging, and committing and pushing to Github. You may go through many (many!)
+iterations of this loop before the code is ready for review. This workflow is
+illustrated in Figure 6.
+
+.. figure:: ../_static/sw-dev-workflow.png
+    :align: right
+    :height: 400px
+
+    Figure 6. Software development workflow
+
+Running tests
+~~~~~~~~~~~~~
+After significant edits, you should make sure you have tests
 for the new/changed functionality. This involves writing :ref:`unit-tests` as
-well as running the test suite and examining the results of the :ref:`coverage-tests`.
-The automated testing that will occur later will fail if the tests fail, or the
-changes result in less overall testing (aka "lower test coverage"). See the
-linked sections for detailed instructions.
+well as running the test suite and examining the results of the :ref:`code-coverage`.
+
+This project uses `Pytest`_ to help with running the unit tests. From the
+top-level directory of the working tree, type::
+
+    pytest
+
+Alternatively users of an IDE like PyCharm can run the tests from within the IDE.
 
 .. _git-commit:
 
 Commit changes
 ~~~~~~~~~~~~~~
-TBD
+The commands: git add, git status, and git commit are all used in combination to
+save a snapshot of a Git project's current state. [#f-stash]_.
+
+The *commit* command is the equivalent of "saving" your changes. But unlike editing
+a document, the set of changes may cover multiple files, including newly created
+files. To allow the user flexibility in specifying exactly which changes to save
+with each commit, the *add* command is used first to indicate files to "stage" for
+the next commit command. The *status* command is used to show the current status
+of the working tree.
+
+A typical workflow goes like this:
+
+.. code-block:: sh
+
+    $ ls
+    file1  file2
+    $ echo 'a' > file1 # edit existing file
+    $ echo '1' > file3 # create new file
+    $ git status --short # shows changed/unstaged and unknown file
+     M file1
+    ?? file3
+    $ git add file1 file3 # stage file1, file3 for commit
+    $ git status --short # M=modified, A=added
+    M  file1
+    A  file3
+    $ git commit -m "made some changes"
+    [master 067c16e] made some changes
+    2 files changed, 2 insertions(+)
+    create mode 100644 file3
+
+Of course, in most IDEs you could use built-in commands for committing and adding
+files. The basic flow would be the same.
+
 
 .. _git-push:
 
 Push changes to Github
 ~~~~~~~~~~~~~~~~~~~~~~
-TBD
+Once changes are :ref:`tested <sw-testing>` and committed, they need to be
+synchronized up to Github. This is done with the git push command, which typically
+takes no options (assuming you have set up your fork, etc., as described so far)::
+
+    git push
+
+The output of this command on the console should be an informative, if slightly
+cryptic, statement of how many changes were pushed and the name of the 
 
 4. Collaborate
 ^^^^^^^^^^^^^^
@@ -308,8 +361,9 @@ TBD
 
 Code Review Procedures
 ^^^^^^^^^^^^^^^^^^^^^^
-.. note:: “It’s a simple 3-step process. Step one: Fix! Step two: It! Step three:
-Fix it!” -- Oscar Rogers (Kenan Thompson), Saturday Night Live, 2/2009
+
+*“It’s a simple 3-step process. Step one: Fix! Step two: It! Step three:
+Fix it!” -- Oscar Rogers (Kenan Thompson), Saturday Night Live, 2/2009*
 
 Code review is the last line of defense between a mistake that the IDAES
 team will see and a mistake the whole world will see. In the case of
@@ -334,11 +388,10 @@ code can be merged into the master branch – if tests fail, then no merge
 is allowed. Following this procedure, it is not possible for the master
 branch to ever be failing its own tests.
 
+.. _sw-testing:
+
 Testing
 ^^^^^^^
-
-.. note:: “Discovering the unexpected is more important than confirming the known.“
-          -- George E. P. Box
 
 Testing is essential to the process of creating software. The longer one programs,
 the more the idea that "If it isn't tested, it probably doesn't work" makes sense.
@@ -359,10 +412,10 @@ on local developer machines. If this suite of hundreds of tests takes
 more than a couple of minutes to run, it will introduce a significant
 bottleneck in the development workflow.
 
-.. _coverage-tests:
+.. _code-coverage:
 
-Code coverage tests
-~~~~~~~~~~~~~~~~~~~
+Code coverage
+~~~~~~~~~~~~~
 The “coverage” of the code refers to what percentage of
 the code (“lines covered” divided by total lines) is executed by the
 automated tests. This is important because passing automated tests is
@@ -451,3 +504,11 @@ Documentation is adequate
 Once everything is verified, the gatekeeper merges the PR
 
  
+.. rubric:: Footnotes
+
+.. [#f-stash] Git has an additional saving mechanism called 'the stash'.
+              The stash is an ephemeral storage area for changes that are not ready
+              to be committed. The stash operates on the working directory
+              and has extensive usage options.* See the documentation for
+              `git stash <https://git-scm.com/docs/git-stash>`_ for more information.
+
