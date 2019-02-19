@@ -24,7 +24,7 @@ import logging
 _log = logging.getLogger(__name__)
 
 from pyomo.common.config import In, ConfigValue
-from pyomo.environ import Var, Expression, SolverFactory, value, Constraint
+from pyomo.environ import Var, Expression, SolverFactory, value, Constraint, sqrt
 from pyomo.opt import TerminationCondition
 
 from idaes.core import declare_process_block_class

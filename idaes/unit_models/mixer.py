@@ -244,16 +244,13 @@ linked to all inlet states and the mixed state,
                                      .format(self.name))
 
         if self.config.momentum_mixing_type == MomentumMixingType.minimize:
-            self.inlet_idx = RangeSet(len(inlet_blocks))
             self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
                                                      mixed_block=mixed_block)
         elif self.config.momentum_mixing_type == MomentumMixingType.equality:
-            self.inlet_idx = RangeSet(len(inlet_blocks))
             self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
                                                  mixed_block=mixed_block)
         elif self.config.momentum_mixing_type == \
             MomentumMixingType.minimize_and_equality:
-            self.inlet_idx = RangeSet(len(inlet_blocks))
             self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
                                                      mixed_block=mixed_block)
             self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
@@ -470,6 +467,8 @@ linked to all inlet states and the mixed state,
         comparisons of each inlet to the minimum pressure so far, using
         the IDAES smooth minimum fuction.
         """
+        if not hasattr(self, "inlet_idx"):
+            self.inlet_idx = RangeSet(len(inlet_blocks))
         # Add variables
         self.minimum_pressure = Var(self.time_ref,
                                     self.inlet_idx,
@@ -509,6 +508,8 @@ linked to all inlet states and the mixed state,
         constraints equal to the number of inlets, enforcing equality between
         all inlets and the mixed stream.
         """
+        if not hasattr(self, "inlet_idx"):
+            self.inlet_idx = RangeSet(len(inlet_blocks))
         # Create equality constraints
         @self.Constraint(self.time_ref,
                          self.inlet_idx,
