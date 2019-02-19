@@ -181,9 +181,9 @@ see reaction package for documentation.}"""))
                 "reaction_package": self.config.reaction_package,
                 "reaction_package_args": self.config.reaction_package_args})
 
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
-        self.control_volume.add_reaction_blocks()
+        self.control_volume.add_reaction_blocks(has_equilibrium=False)
 
         self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type,
