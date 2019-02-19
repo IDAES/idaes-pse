@@ -12,10 +12,14 @@
 ##############################################################################
 """
 Ideal-NRTL property package with VLE calucations assuming an ideal gas for the
-gas phase and a Non-Random Two Liquid Model for the liquid phase.
-Correlations to compute Cp_comp, h_comp and vapor pressure are obtained
-from "The properties of gases and liquids by Robert C. Reid" and "Perry's
-Chemical Engineers Handbook by Robert H. Perry". SI units.
+gas phase and a Non-Random Two Liquid Model for the liquid phase.SI units.
+
+References:
+
+1. "The properties of gases and liquids by Robert C. Reid"
+2. "Perry's Chemical Engineers Handbook by Robert H. Perry".
+3. H. Renon and J.M. Prausnitz, "Local compositions in thermodynamic excess
+   functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
 """
 
 # Chages the divide behavior to not do integer division
@@ -468,6 +472,7 @@ class IdealNRTLStateBlockData(StateBlockData):
                              doc="Gij coefficient for use in NRTL model ")
 
         self.activity_coeff_comp = Var()
+
         def rule_Gij_coeff(self, i, j):
             if i != j:
                 return self.Gij_coeff[i, j] == exp(-self.alpha[i, j] *
