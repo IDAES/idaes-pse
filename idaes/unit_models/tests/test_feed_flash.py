@@ -88,4 +88,5 @@ def test_initialize():
     assert (pytest.approx(1.0, abs=1e-2) ==
             m.fs.ff.outlet.flow_mol[0].value)
     assert (pytest.approx(0.3961, abs=1e-3) ==
-            m.fs.ff.properties_out[0].flow_mol_phase[0, "Vap"].value)
+            m.fs.ff.control_volume.
+                properties_out[0].flow_mol_phase["Vap"].value)
