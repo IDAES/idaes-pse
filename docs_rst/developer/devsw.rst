@@ -1,11 +1,9 @@
-.. _collab_dev:
+.. _sw-top:
 
 Collaborative software development
 ==================================
 
-.. note:: This section of the developer documentation is a work in progress.
-
-This section gives guidance for all developers on the project.
+This page gives guidance for all developers on the project.
 
 Although the main focus of this project is developing open source software (OSS),
 it is also true that some of the software may be developed internally or in
@@ -19,31 +17,35 @@ CRADA/NDA
   If you are developing software covered by a CRADA, NDA, or other legal
   agreement that does not explicitly allow the data and/or code to be
   released as open-source under the IDAES license, then you must follow
-  procedures under :ref:`collab_dev_nda`.
+  procedures under :ref:`sw-nda`.
 
 Internal
   If you are developing non-CRADA/NDA software, which is not intended to be
   part of the core framework or (ever) released as open-source then follow procedures
-  under :ref:`collab_dev_int`.
+  under :ref:`sw-int`.
 
 Core/open-source
   If you are developing software with no proprietary data or code, which
   is intended to be released as open-source with the core framework, then follow
-  procedures under :ref:`collab_dev_oss`.
+  procedures under :ref:`sw-oss`.
 
-.. _collab_dev_nda:
+.. _sw-nda:
 
 Developing Software with Proprietary Content
 --------------------------------------------
-TBD
+Proprietary content is not currently being kept on Github, or any other collaborative
+version control platform. When this changes, this section will be updated.
 
-.. _collab_dev_int:
+.. _sw-int:
 
 Developing Software for Internal Use
 ------------------------------------
-TBD
+Software for internal use should be developed in the ``workspace`` repository of the
+IDAES github organization. The requirements for reviews and testing of this code are
+not as strict as for the ``idaes-dev`` repository, but otherwise the procedures are
+the same as outlined for :ref:`open-source development <sw-oss>`.
 
-.. _collab_dev_oss:
+.. _sw-oss:
 
 Developing software for Open-source Release
 -------------------------------------------
@@ -55,11 +57,11 @@ and summarized below:
     * - :ref:`sw-wf-setup`: Prepare your local system for collaborative development
     * - :ref:`sw-wf-initiate`: Notify collaborators of intent to make some changes
     * - :ref:`sw-wf-develop`: Make local changes
-    * - :ref:`sw-wf-collaborate`: Push the changes to Github and get feedback from other developers
-    * - :ref:`sw-wf-merge`: Merge the changes into the shared "master" branch
+    * - :ref:`sw-wf-collaborate`: Push the changes to Github, get feedback and merge
 
 .. figure:: ../_static/sw-overview-workflow.png
     :align: center
+    :width: 500px
 
     Figure 1. Overview of software development workflow
 
@@ -97,7 +99,8 @@ by pointing your browser to https://github.com/IDAES/idaes-dev/. Then you should
 fork the repo into a repo of the same name under your name.
 
 .. figure:: ../_static/github-fork-repo.png
-    :align: center
+    :align: right
+    :width: 500px
 
     Figure 2. Screenshot showing where to click to fork the Github repo
 
@@ -199,7 +202,8 @@ to easily notice your issue: add the issue to the "Priorities" project. The scre
 below shows where you need to click to do this.
 
 .. figure:: ../_static/github-issue-priority.png
-    :align: center
+    :align: right
+    :width: 500px
 
     Figure 4. Screenshot for creating an issue on Github
 
@@ -259,7 +263,8 @@ URL in Github (https://github.com/IDAES/idaes-dev) and you should see a highligh
 bar below the tabs, as in Figure 5 below, asking if you want to start a pull-request.
 
 .. figure:: ../_static/github-start-pullrequest.png
-    :align: center
+    :align: right
+    :width: 500px
 
     Figure 5. Screenshot for starting a Pull Request on Github
 
@@ -297,8 +302,8 @@ illustrated in Figure 6.
 Running tests
 ~~~~~~~~~~~~~
 After significant edits, you should make sure you have tests
-for the new/changed functionality. This involves writing :ref:`unit-tests` as
-well as running the test suite and examining the results of the :ref:`code-coverage`.
+for the new/changed functionality. This involves writing :ref:`tst-unit` as
+well as running the test suite and examining the results of the :ref:`tst-coverage`.
 
 This project uses `Pytest`_ to help with running the unit tests. From the
 top-level directory of the working tree, type::
@@ -367,7 +372,7 @@ that you :ref:`created earlier <sw-add-upstream>`.
 
 Push changes to Github
 ~~~~~~~~~~~~~~~~~~~~~~
-Once changes are :ref:`tested <sw-testing>` and committed, they need to be
+Once changes are :ref:`tested <tst-top>` and committed, they need to be
 synchronized up to Github. This is done with the git push command, which typically
 takes no options (assuming you have set up your fork, etc., as described so far)::
 
@@ -392,7 +397,7 @@ same). For example::
 
 4. Collaborate
 ^^^^^^^^^^^^^^
-The collaboration phase of our journey is mostly about communicating what you
+The collaboration phase of our journey, shown in Figure 7, is mostly about communicating what you
 did to the other developers. Through the Github "review" mechanism, people will
 be able to suggest changes and improvements. You can make changes to the code (other
 people can also make changes, see :ref:`sw-share-forks`), and then push those
@@ -400,6 +405,12 @@ changes up into the same Pull Request. When you get enough approving reviews,
 the code is merged into the master repository. At this point, you can delete the
 "topic branch" used for the pull request, and go back to :ref:`initiate <sw-wf-initiate>` your
 next set of changes.
+
+.. figure:: ../_static/sw-collaborate-workflow.png
+    :align: right
+    :height: 400px
+
+    Figure 7. Collaborate phase workflow
 
 Request review
 ~~~~~~~~~~~~~~
@@ -449,8 +460,8 @@ clearly and in a timely manner.
 
 .. _sw-wf-merge:
 
-5. Merge
-^^^^^^^^
+Merge
+~~~~~
 Once all the tests pass and you have enough approving reviews, it's time to merge
 the code! This is the easy part: go to the bottom of the Pull Request and hit the
 big green "merge" button.
@@ -465,45 +476,9 @@ Next, you should make sure your master reflects the current state of the main
 master branch, i.e. go back and :ref:`synchronize with the upstream remote <sw-sync-upstream>`,
 i.e. run ``git pull``.
 
-Now you can go and enjoy a tasty beverage.
+Now you can go and enjoy a tasty beverage. Cheers!
 
-.. _sw-testing:
-
-Testing
-^^^^^^^
-
-Testing is essential to the process of creating software. The longer one programs,
-the more the idea that "If it isn't tested, it probably doesn't work" makes sense.
-This section outlines the different kinds of testing and how to write/use them in
-the project.
-
-.. _unit-tests:
-
-Unit tests
-~~~~~~~~~~
-Testing individual pieces of functionality, including the
-ability to report the correct kind of errors from bad inputs. Unit tests
-must always run quickly. If it takes more than 5 seconds, it is not a unit
-test, and it is expected that most unit tests take well under 1 second.
-The reason for this is that the entire unit test suite is run on every
-change in a Pull Request, and should also be run relatively frequently
-on local developer machines. If this suite of hundreds of tests takes
-more than a couple of minutes to run, it will introduce a significant
-bottleneck in the development workflow.
-
-.. _code-coverage:
-
-Code coverage
-~~~~~~~~~~~~~
-The “coverage” of the code refers to what percentage of
-the code (“lines covered” divided by total lines) is executed by the
-automated tests. This is important because passing automated tests is
-only meaningful if the automated tests cover the majority of the code’s
-behavior. This is not a perfect measure, of course, since simply
-executing a line of code under one condition does not mean it would
-execute correctly under all conditions. The code coverage is evaluated
-locally and then integrated with Github through a tool called `Coveralls
-<https://coveralls.io>`_.
+.. image:: ../_static/beer-coffee-cheers-small.png
 
 
  
