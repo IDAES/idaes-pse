@@ -13,6 +13,8 @@ Developer Contents
     :maxdepth: 1
 
     devintro
-    devrepos
+    repos
     devsw
+    testing
+    codereview
     docker
