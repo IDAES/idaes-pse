@@ -34,8 +34,6 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock)
-from idaes.core.util.initialization import (evaluate_variable_from_constraint,
-                                            solve_indexed_blocks)
 from idaes.core.util.misc import add_object_reference
 
 # Some more inforation about this module

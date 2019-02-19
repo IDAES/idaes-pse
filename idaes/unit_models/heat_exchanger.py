@@ -90,8 +90,7 @@ def _make_heater_control_volume(o, name, config):
     setattr(o, name, control_volume)
     # Add inlet and outlet state blocks to control volume
     control_volume.add_state_blocks(
-        has_phase_equilibrium=config.calculate_phase_equilibrium,
-        package_arguments=config.property_package_args)
+        has_phase_equilibrium=config.calculate_phase_equilibrium)
 
     # Add material balance
     control_volume.add_material_balances(
