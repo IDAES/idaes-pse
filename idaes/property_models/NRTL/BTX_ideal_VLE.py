@@ -22,7 +22,7 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Param, NonNegativeReals, Set
+from pyomo.environ import Param, NonNegativeReals, Set, Var
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -228,12 +228,22 @@ conditions, and thus corresponding constraints  should be included,
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
         dh_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
-                    'o-xylene': 4.34584e4}
+                  'o-xylene': 4.34584e4}
 
         self.dh_vap = Param(self.component_list,
-                              mutable=False,
-                              initialize=extract_data(dh_vap),
-                              doc="heat of vaporization")
+                            mutable=False,
+                            initialize=extract_data(dh_vap),
+                            doc="heat of vaporization")
+
+        # NRTL Model specific variables (values to be fixed by user or need to
+        # be estimated based on VLE data)
+        self.alpha = Var(self.component_list, self.component_list,
+                         initialize=0.3,
+                         doc="Non-randomness parameter for NRTL model")
+
+        self.tau = Var(self.component_list, self.component_list,
+                       initialize=1.0,
+                       doc="Binary interaction parameter for NRTL model")
 
     @classmethod
     def define_metadata(cls, obj):

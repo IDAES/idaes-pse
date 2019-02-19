@@ -287,13 +287,12 @@ class IdealNRTLStateBlockData(StateBlockData):
                     ('Liq', 'Vap')) or \
                 (self.config.parameters.config.valid_phase ==
                     ('Vap', 'Liq')):
+            self._make_NRTL_eq()
             self._make_flash_eq()
 
         if not self.config.has_phase_equilibrium and \
                 self.config.parameters.config.valid_phase == "Vap":
             self._make_vap_phase_eq()
-
-        self._make_NRTL_eq()
 
     def _make_params(self):
         """Make references to the necessary parameters."""
@@ -344,6 +343,14 @@ class IdealNRTLStateBlockData(StateBlockData):
         # heat of vaporization
         add_object_reference(self, "dh_vap",
                              self.config.parameters.dh_vap)
+
+        # Non-randomness parameter for NRTL model
+        add_object_reference(self, "alpha",
+                             self.config.paramaters.alpha)
+
+        # Binary interaction parameter for NRTL model
+        add_object_reference(self, "tau",
+                             self.config.parameters.tau)
 
     def _make_state_vars(self):
         """List the necessary state variable objects."""
@@ -439,8 +446,15 @@ class IdealNRTLStateBlockData(StateBlockData):
 
         if self.config.has_phase_equilibrium:
             def rule_Keq(self, i):
-                return self.mole_frac_phase['Vap', i] * self.pressure == \
-                    self.pressure_sat[i] * self.mole_frac_phase['Liq', i]
+                if self.config.parameters.config.\
+                        activity_coefficient_model is None:
+                    return self.mole_frac_phase['Vap', i] * self.pressure == \
+                        self.pressure_sat[i] * self.mole_frac_phase['Liq', i]
+                if self.config.parameters.config.\
+                        activity_coefficient_model == "NRTL":
+                    return self.mole_frac_phase['Vap', i] * self.pressure == \
+                        self.pressure_sat[i] * self.activity_coeff_comp[i] *\
+                        self.mole_frac_phase['Liq', i]
             self.eq_Keq = Constraint(self.component_list_ref, rule=rule_Keq)
 
         def rule_temp_var_x(self, i):
@@ -459,19 +473,13 @@ class IdealNRTLStateBlockData(StateBlockData):
 
     def _make_NRTL_eq(self):
 
-        self.alpha = Var(self.component_list_ref, self.component_list_ref,
-                         initialize=0.3,
-                         doc="Non-randomness parameter for NRTL model")
-
-        self.tau = Var(self.component_list_ref, self.component_list_ref,
-                       initialize=1.0,
-                       doc="Binary interaction parameter for NRTL model")
-
         self.Gij_coeff = Var(self.component_list_ref, self.component_list_ref,
                              initialize=1.0,
                              doc="Gij coefficient for use in NRTL model ")
 
-        self.activity_coeff_comp = Var()
+        self.activity_coeff_comp = Var(self.component_list_ref,
+                                       initialize=1.0,
+                                       doc="Activity coefficient of component")
 
         def rule_Gij_coeff(self, i, j):
             if i != j:
