@@ -24,7 +24,8 @@ from pyomo.network import Arc
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
-from idaes.unit_models import Separator, Mixer, SplittingType, MomentumMixingType
+from idaes.unit_models import (Separator, Mixer, SplittingType,
+    EnergySplittingType, MomentumMixingType)
 from idaes.unit_models.power_generation import (
     TurbineInletStage, TurbineStage, TurbineOutletStage, SteamValve)
 from idaes.core.util.config import is_physical_parameter_block
@@ -78,7 +79,8 @@ class TurbineMultistageData(UnitModelBlockData):
         # Make the config args for each splitter
         # first the generic splitter config
         s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
-        s_cfg.update(split_basis=SplittingType.totalFlow, ideal_separation=False)
+        s_cfg.update(split_basis=SplittingType.totalFlow, ideal_separation=False,
+            energy_split_basis=EnergySplittingType.equal_molar_enthalpy)
         del s_cfg["has_holdup"]
         del s_cfg["has_phase_equilibrium"]
         s_cfg["num_outlets"] = 2
@@ -255,8 +257,9 @@ class TurbineMultistageData(UnitModelBlockData):
 
         # Splitter config
         s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
-        s_cfg.update(split_basis=SplittingType.totalFlow,
-            ideal_separation=False, num_outlets=ni)
+        s_cfg.update(split_basis=SplittingType.totalFlow, ideal_separation=False,
+            num_outlets=ni,
+            energy_split_basis=EnergySplittingType.equal_molar_enthalpy)
         del s_cfg["has_holdup"]
         del s_cfg["has_phase_equilibrium"]
         # add splitter
@@ -280,7 +283,7 @@ class TurbineMultistageData(UnitModelBlockData):
             return {"source":getattr(self.inlet_split, "outlet_{}".format(i)),
                     "destination":self.throttle_valve[i].inlet}
         def _valve_to_rule(b, i):
-            return {"source":self.throttle_valve[i].inlet,
+            return {"source":self.throttle_valve[i].outlet,
                     "destination":self.inlet_stage[i].inlet}
         def _inlet_to_rule(b, i):
             return {"source":self.inlet_stage[i].outlet,

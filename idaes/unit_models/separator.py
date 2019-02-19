@@ -53,6 +53,10 @@ SplittingType = Enum(
     'componentFlow',
     'phaseComponentFlow')
 
+EnergySplittingType = Enum(
+    'equal_temperature',
+    'equal_molar_enthalpy')
+
 
 @declare_process_block_class("Separator")
 class SeparatorData(UnitModelBlockData):
@@ -126,6 +130,16 @@ indexed by time, outlet and phase),
 fraction indexed by time, outlet and components),
 **SplittingType.phaseComponentFlow** - split based on phase-component flows (
 split fraction indexed by both time, outlet, phase and components).}"""))
+    CONFIG.declare("energy_split_basis", ConfigValue(
+        default=EnergySplittingType.equal_temperature,
+        domain=EnergySplittingType,
+        description="Type of constraint to write for energy splitting",
+        doc="""Argument indicating basis to use for splitting energy,
+**default** - EnergySplittingType.equal_temperature.
+**Valid values:** {
+**EnergySplittingType.equal_temperature** - outlet temperatures equal inlet
+**EnergySplittingType.equal_molar_enthalpy** - oulet molar enthalpies equal
+inlet}"""))
     CONFIG.declare("ideal_separation", ConfigValue(
         default=True,
         domain=In([True, False]),
@@ -434,12 +448,22 @@ linked the mixed state and all outlet states,
         Creates constraints for splitting the energy flows - done by equating
         temperatures in outlets.
         """
-        @self.Constraint(self.time_ref,
-                         self.outlet_idx,
-                         doc="Temperature equality constraint")
-        def temperature_equality_eqn(b, t, o):
-            o_block = getattr(self, o+"_state")
-            return mixed_block[t].temperature == o_block[t].temperature
+        if self.config.energy_split_basis == \
+            EnergySplittingType.equal_temperature:
+            @self.Constraint(self.time_ref,
+                             self.outlet_idx,
+                             doc="Temperature equality constraint")
+            def temperature_equality_eqn(b, t, o):
+                o_block = getattr(self, o+"_state")
+                return mixed_block[t].temperature == o_block[t].temperature
+        elif self.config.energy_split_basis == \
+            EnergySplittingType.equal_molar_enthalpy:
+            @self.Constraint(self.time_ref,
+                             self.outlet_idx,
+                             doc="Molar enthalpy equality constraint")
+            def temperature_equality_eqn(b, t, o):
+                o_block = getattr(self, o+"_state")
+                return mixed_block[t].enth_mol == o_block[t].enth_mol
 
     def add_momentum_splitting_constraints(self, mixed_block):
         """
@@ -568,12 +592,12 @@ linked the mixed state and all outlet states,
                                         "{} This should not happen. Please "
                                         "report this bug to the IDAES "
                                         "developers.".format(self.name))
-                            
+
                             if s_check == o:
                                 return mb[t].component(l_name)[p, j]
                             else:
                                 return 0
-                            
+
                         e_obj = Expression(self.time_ref,
                                            self.phase_list_ref,
                                            self.component_list_ref,
@@ -619,7 +643,7 @@ linked the mixed state and all outlet states,
                                         return mfp[p, j]
                                 # else:
                                 return 0
-    
+
                         e_obj = Expression(self.time_ref,
                                            self.component_list_ref,
                                            rule=e_rule)
@@ -673,7 +697,7 @@ linked the mixed state and all outlet states,
                                     "variable with correct indexing sets is "
                                     "not available."
                                     .format(self.name, s))
-                            
+
                             for j in self.component_list_ref:
                                 if self.config.split_basis == \
                                         SplittingType.componentFlow:
@@ -750,7 +774,7 @@ linked the mixed state and all outlet states,
                     if mb[self.time_ref.first()].component(
                             l_name).is_indexed():
                         # Is indexed, assume indexes match and partition
-                        
+
                         def e_rule(b, t, k):
                             if split_map[k] == o:
                                 try:

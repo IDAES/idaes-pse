@@ -7,5 +7,5 @@ from .heat_exchanger_1D import HeatExchanger1D
 from .mixer import Mixer, MomentumMixingType, MixingType
 from .plug_flow_reactor import PFR
 from .pressure_changer import PressureChanger
-from .separator import Separator, SplittingType
+from .separator import Separator, SplittingType, EnergySplittingType
 from .stoichiometric_reactor import StoichiometricReactor

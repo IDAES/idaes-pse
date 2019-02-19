@@ -77,7 +77,7 @@ class SteamValveData(PressureChangerData):
 
         self.valve_opening = Var(self.time_ref, initialize=1,
             doc="Fraction open for valve from 0 to 1")
-        self.Cv = Var(initialize=0.01, doc="Valve flow coefficent, for vapor "
+        self.Cv = Var(initialize=0.1, doc="Valve flow coefficent, for vapor "
             "[mol/s/Pa] for liquid [mol/s/Pa^0.5]")
         self.Cv.fix()
         self.valve_opening.fix()
