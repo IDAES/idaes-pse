@@ -24,7 +24,8 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, log, NonNegativeReals, value, Var
+from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
+    value, Var, exp
 from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
@@ -156,15 +157,26 @@ class _IdealStateBlock(StateBlock):
                         ('Vap', 'Liq')):
                 blk[k].eq_Keq.deactivate()
                 blk[k].eq_sum_mol_frac.deactivate()
-                blk[k].eq_h_liq.deactivate()
-                blk[k].eq_h_vap.deactivate()
-
+                try:
+                    blk[k].eq_h_liq.deactivate()
+                except AttributeError:
+                    pass
+                try:
+                    blk[k].eq_h_vap.deactivate()
+                except AttributeError:
+                    pass
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Liq":
-                blk[k].eq_h_liq.deactivate()
+                try:
+                    blk[k].eq_h_liq.deactivate()
+                except AttributeError:
+                    pass
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Vap":
-                blk[k].eq_h_vap.deactivate()
+                try:
+                    blk[k].eq_h_vap.deactivate()
+                except AttributeError:
+                    pass
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
 
@@ -184,17 +196,29 @@ class _IdealStateBlock(StateBlock):
         for k in blk.keys():
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Liq":
-                blk[k].eq_h_liq.activate()
+                try:
+                    blk[k].eq_h_liq.activate()
+                except AttributeError:
+                    pass
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Vap":
-                blk[k].eq_h_vap.activate()
+                try:
+                    blk[k].eq_h_vap.activate()
+                except AttributeError:
+                    pass
             if (blk[k].config.has_phase_equilibrium) or \
                     (blk[k].config.parameters.config.valid_phase ==
                         ('Liq', 'Vap')) or \
                     (blk[k].config.parameters.config.valid_phase ==
                         ('Vap', 'Liq')):
-                blk[k].eq_h_liq.activate()
-                blk[k].eq_h_vap.activate()
+                try:
+                    blk[k].eq_h_liq.activate()
+                except AttributeError:
+                    pass
+                try:
+                    blk[k].eq_h_vap.activate()
+                except AttributeError:
+                    pass
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
 
@@ -313,8 +337,8 @@ class IdealStateBlockData(StateBlockData):
                              self.config.parameters.temperature_reference)
 
         # Gas Constant
-        add_object_reference(self, "gas_constant",
-                             self.config.parameters.gas_constant)
+        add_object_reference(self, "gas_const",
+                             self.config.parameters.gas_const)
 
         # Critical Properties
         add_object_reference(self, "pressure_critical",
@@ -331,12 +355,12 @@ class IdealStateBlockData(StateBlockData):
                              self.config.parameters.CpIG)
 
         # Vapor pressure coeeficients
-        add_object_reference(self, "vapor_pressure_coeff",
-                             self.config.parameters.vapor_pressure_coeff)
+        add_object_reference(self, "pressure_sat_coeff",
+                             self.config.parameters.pressure_sat_coeff)
 
         # heat of vaporization
-        add_object_reference(self, "delH_vap",
-                             self.config.parameters.delH_vap)
+        add_object_reference(self, "dh_vap",
+                             self.config.parameters.dh_vap)
 
     def _make_state_vars(self):
         """List the necessary state variable objects."""
@@ -398,12 +422,9 @@ class IdealStateBlockData(StateBlockData):
 
     def _make_flash_eq(self):
 
-        self.vapor_pressure = Var(self.component_list_ref,
-                                  initialize=101325,
-                                  doc="vapor pressure ")
-
-        self.x = Var(self.component_list_ref, initialize=1,
-                     doc="temporary variable to compute vapor pressure")
+        self.pressure_sat = Var(self.component_list_ref,
+                                initialize=101325,
+                                doc="vapor pressure ")
 
         def rule_total_mass_balance(self):
             return self.flow_mol_phase['Liq'] + \
@@ -433,21 +454,20 @@ class IdealStateBlockData(StateBlockData):
         if self.config.has_phase_equilibrium:
             def rule_Keq(self, i):
                 return self.mole_frac_phase['Vap', i] * self.pressure == \
-                    self.vapor_pressure[i] * self.mole_frac_phase['Liq', i]
+                    self.pressure_sat[i] * self.mole_frac_phase['Liq', i]
             self.eq_Keq = Constraint(self.component_list_ref, rule=rule_Keq)
 
         def rule_temp_var_x(self, i):
-            return self.x[i] * self.temperature_critical[i] == \
-                self.temperature_critical[i] - self.temperature
-        self.eq_X = Constraint(self.component_list_ref, rule=rule_temp_var_x)
+            return 1 - self.temperature / self.temperature_critical[i]
+        self.x = Expression(self.component_list_ref, rule=rule_temp_var_x)
 
         def rule_P_vap(self, j):
             return (1 - self.x[j]) * \
-                log(self.vapor_pressure[j] / self.pressure_critical[j]) == \
-                (self.vapor_pressure_coeff[j, 'A'] * self.x[j] +
-                 self.vapor_pressure_coeff[j, 'B'] * self.x[j]**1.5 +
-                 self.vapor_pressure_coeff[j, 'C'] * self.x[j]**3 +
-                 self.vapor_pressure_coeff[j, 'D'] * self.x[j]**6)
+                log(self.pressure_sat[j] / self.pressure_critical[j]) == \
+                (self.pressure_sat_coeff[j, 'A'] * self.x[j] +
+                 self.pressure_sat_coeff[j, 'B'] * self.x[j]**1.5 +
+                 self.pressure_sat_coeff[j, 'C'] * self.x[j]**3 +
+                 self.pressure_sat_coeff[j, 'D'] * self.x[j]**6)
         self.eq_P_vap = Constraint(self.component_list_ref, rule=rule_P_vap)
 
     def _density_mol(self):
@@ -456,7 +476,7 @@ class IdealStateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return self.pressure == (self.density_mol[p] *
-                                         self.gas_constant *
+                                         self.gas_const *
                                          self.temperature)
             elif p == "Liq":  # TODO: Add a correlation to compute liq density
                 return self.density_mol[p] == 11.1E3  # mol/m3
@@ -504,7 +524,7 @@ class IdealStateBlockData(StateBlockData):
         self.enthalpy_comp_vap = Var(self.component_list_ref, initialize=40000)
 
         def rule_hv_ig_pc(b, j):
-            return self.enthalpy_comp_vap[j] == self.delH_vap[j] + \
+            return self.enthalpy_comp_vap[j] == self.dh_vap[j] + \
                 ((self.CpIG['Vap', j, '5'] / 5) *
                     (self.temperature**5 - self.temperature_reference**5)
                     + (self.CpIG['Vap', j, '4'] / 4) *
@@ -586,3 +606,175 @@ class IdealStateBlockData(StateBlockData):
             _log.error('{} Pressure set below lower bound.'.format(blk.name))
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
+
+    def temperature_bubble_point(blk, pressure=None, mole_frac=None,
+                                 options={"initial_guess": 298.15,
+                                          "tol": 1e-3,
+                                          "deltaT": 1e-3,
+                                          "max_iter": 1e4}):
+        """"To compute the bubble point temperature of the mixture."""
+        n = 0
+        T_guess = options["initial_guess"]
+        tol = options["tol"]
+        deltaT = options["deltaT"]
+        max_iter = options["max_iter"]
+        temp_var = {}
+        while True:
+            s = 0
+            for j in blk.component_list_ref:
+                temp_var[j] = (blk.temperature_critical[j] - T_guess) \
+                    / blk.temperature_critical[j]
+                p_sat = blk.pressure_critical[j] * \
+                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
+                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
+                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
+                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
+                        (1 - temp_var[j]))
+                k = p_sat / pressure
+                s = s + k * value(mole_frac[j])
+            if abs(s - 1) <= tol:
+                break
+            elif s >= 1:
+                T_guess = T_guess - deltaT
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
+            else:
+                T_guess = T_guess + deltaT
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
+        return round(T_guess, 3)
+
+    def temperature_dew_point(blk, pressure=None, mole_frac=None,
+                              options={"initial_guess": 298.15,
+                                       "tol": 1e-3,
+                                       "deltaT": 1e-3,
+                                       "max_iter": 1e4}):
+        """"To compute the dew point temperature of the mixture."""
+        n = 0
+        T_guess = options["initial_guess"]
+        tol = options["tol"]
+        deltaT = options["deltaT"]
+        max_iter = options["max_iter"]
+        temp_var = {}
+        while True:
+            s = 0
+            for j in blk.component_list_ref:
+                temp_var[j] = (blk.temperature_critical[j] - T_guess) \
+                    / blk.temperature_critical[j]
+                p_sat = blk.pressure_critical[j] * \
+                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
+                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
+                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
+                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
+                        (1 - temp_var[j]))
+                k = p_sat / pressure
+                s = s + value(mole_frac[j]) / k
+            if abs(s - 1) <= tol:
+                break
+            elif s >= 1:
+                n = n + 1
+                T_guess = T_guess + deltaT
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
+            else:
+                n = n + 1
+                T_guess = T_guess - deltaT
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
+        return round(T_guess, 3)
+
+    def pressure_bubble_point(blk, temperature=None, mole_frac=None,
+                              options={"initial_guess": 101325,
+                                       "tol": 1e-3,
+                                       "deltaP": 10,
+                                       "max_iter": 1e4}):
+        """"To compute the bubble point pressure of the mixture."""
+        n = 0
+        P_guess = options["initial_guess"]
+        tol = options["tol"]
+        deltaP = options["deltaP"]
+        max_iter = options["max_iter"]
+        temp_var = {}
+        while True:
+            s = 0
+            for j in blk.component_list_ref:
+                temp_var[j] = (blk.temperature_critical[j] - temperature) \
+                    / blk.temperature_critical[j]
+                p_sat = blk.pressure_critical[j] * \
+                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
+                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
+                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
+                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
+                        (1 - temp_var[j]))
+                k = p_sat / P_guess
+                s = s + k * value(mole_frac[j])
+            if abs(s - 1) <= tol:
+                break
+            elif s >= 1:
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaP")
+                    break
+                P_guess = P_guess + deltaP
+            else:
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaP")
+                    break
+                P_guess = P_guess - deltaP
+        return round(P_guess, 3)
+
+    def pressure_dew_point(blk, temperature=None, mole_frac=None,
+                           options={"initial_guess": 101325,
+                                    "tol": 1e-3,
+                                    "deltaP": 10,
+                                    "max_iter": 1e4}):
+        """"To compute the dew point pressure of the mixture."""
+        n = 0
+        P_guess = options["initial_guess"]
+        tol = options["tol"]
+        deltaP = options["deltaP"]
+        max_iter = options["max_iter"]
+        temp_var = {}
+        while True:
+            s = 0
+            for j in blk.component_list_ref:
+                temp_var[j] = (blk.temperature_critical[j] - temperature) \
+                    / blk.temperature_critical[j]
+                p_sat = blk.pressure_critical[j] * \
+                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
+                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
+                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
+                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
+                        (1 - temp_var[j]))
+                k = p_sat / P_guess
+                s = s + value(mole_frac[j]) / k
+            if abs(s - 1) <= tol:
+                break
+            elif s >= 1:
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
+                P_guess = P_guess - deltaP
+            else:
+                n = n + 1
+                if n >= max_iter:
+                    print("Maximum iterations reached."
+                          "Please provide a better value for deltaT")
+                    break
+                P_guess = P_guess + deltaP
+        return round(P_guess, 3)
