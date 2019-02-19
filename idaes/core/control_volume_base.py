@@ -24,7 +24,9 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
 # Import IDAES cores
-from idaes.core import ProcessBlockData, useDefault, declare_process_block_class
+from idaes.core import (ProcessBlockData,
+                        useDefault,
+                        declare_process_block_class)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
