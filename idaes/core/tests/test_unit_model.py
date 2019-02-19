@@ -391,7 +391,7 @@ def test_add_inlet_port_CV0D_part_args():
     m.fs.u.cv = ControlVolume0DBlock(
             default={"property_package": m.fs.pp})
 
-    m.fs.u.cv.add_state_blocks()
+    m.fs.u.cv.add_state_blocks(has_phase_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
         m.fs.u.add_outlet_port(block=m.fs.u.cv)
