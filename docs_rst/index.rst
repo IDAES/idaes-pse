@@ -40,15 +40,9 @@ Contents
     property_models/index
     dmf/index
     version
-    glossary
     examples
     developer/index
-
-..    install
-..    core/index
-..    properties/index
-..    models/index
-..    dmf/index
+    glossary
 
 Indices and tables
 ==================
