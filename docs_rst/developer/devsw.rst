@@ -124,7 +124,7 @@ change to a directory where you want to put the source code and run the command:
 Of course, replace MYNAME with your login name. This will download all the files in
 the latest version of the repository onto your local disk.
 
-.. note:: After the ``git clone``, subsequent git commands should be performed from
+.. note:: After the ``git clone``, subsequent git checkoutmmands should be performed from
           the "idaes-dev" directory.
 
 .. _sw-add-upstream:
@@ -234,11 +234,11 @@ The command for doing this is simple:
 
 .. code-block:: sh
 
-    git co -b <BRANCH-NAME>
+    git checkout -b <BRANCH-NAME>
 
 The branch name should be one word, with dashes or underscores as needed.
 One convention for the name that can be helpful is to include the Issue number
-at the end, e.g. ``git co -b mytopic-issue42``. This is especially useful later
+at the end, e.g. ``git checkout -b mytopic-issue42``. This is especially useful later
 when you are cleaning up old branches, and you can quickly see which branches
 are related to issues that are completed.
 
@@ -249,7 +249,7 @@ eyes of Git or Github, and by itself will not allow you to start a new pull
 request (which is the goal of this whole phase). The easiest thing to do do is
 a special "empty" commit::
 
-    git commit --allow-empty -m 'Empty commit so I can open a PR'
+    git checkoutmmit --allow-empty -m 'Empty commit so I can open a PR'
 
 
 Since this is your first "push" to this branch, you are going to need to set an upstream
@@ -327,7 +327,7 @@ Alternatively users of an IDE like PyCharm can run the tests from within the IDE
 
 Commit changes
 ~~~~~~~~~~~~~~
-The commands: git add, git status, and git commit are all used in combination to
+The commands: git add, git status, and git checkoutmmit are all used in combination to
 save a snapshot of a Git project's current state. [#f-stash]_.
 
 The *commit* command is the equivalent of "saving" your changes. But unlike editing
@@ -352,7 +352,7 @@ A typical workflow goes like this:
     $ git status --short # M=modified, A=added
     M  file1
     A  file3
-    $ git commit -m "made some changes"
+    $ git checkoutmmit -m "made some changes"
     [master 067c16e] made some changes
     2 files changed, 2 insertions(+)
     create mode 100644 file3
@@ -459,10 +459,10 @@ For example, if Jack wants to make some edits on Rose's fork, on a topic
 branch called "changes-issue51" he could do the following::
 
     $ git clone https://github.com/rose/idaes-dev # clone Rose's fork
-    $ git co changes-issue51  # checkout the topic branch
+    $ git checkout changes-issue51  # checkout the topic branch
     $ echo "Hello" >> README.txt  # make some important changes
     $ pytest # always run tests!!
-    $ git add README.txt ; git commit -m "important changes"
+    $ git add README.txt ; git checkoutmmit -m "important changes"
     $ git push # push changes to the fork
 
 Hopefully it also is obvious that developers working this way have less safeguards
@@ -480,7 +480,7 @@ big green "merge" button.
 Before you close the laptop and go down to the pub, you should tidy up. First,
 delete your local branch (you can also delete that branch on Github)::
 
-    git co master # switch back to master branch
+    git checkout master # switch back to master branch
     git branch -d mychanges-issue3000
 
 Next, you should make sure your master reflects the current state of the main
