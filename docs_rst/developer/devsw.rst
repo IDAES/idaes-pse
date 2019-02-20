@@ -55,7 +55,7 @@ the same as outlined for :ref:`open-source development <sw-oss>`.
 
 Developing software for Open-source Release
 -------------------------------------------
-We can break the software development process five distinct phases, illustrated in Figure 1
+We can break the software development process into five distinct phases, illustrated in Figure 1
 and summarized below:
 
 .. list-table::
@@ -124,7 +124,7 @@ change to a directory where you want to put the source code and run the command:
 Of course, replace MYNAME with your login name. This will download all the files in
 the latest version of the repository onto your local disk.
 
-.. note:: After the ``git clone``, subsequent git checkoutmmands should be performed from
+.. note:: After the ``git clone``, subsequent git commands should be performed from
           the "idaes-dev" directory.
 
 .. _sw-add-upstream:
@@ -238,7 +238,7 @@ The command for doing this is simple:
 
 The branch name should be one word, with dashes or underscores as needed.
 One convention for the name that can be helpful is to include the Issue number
-at the end, e.g. ``git checkout -b mytopic-issue42``. This is especially useful later
+at the end, e.g. ``git co -b mytopic-issue42``. This is especially useful later
 when you are cleaning up old branches, and you can quickly see which branches
 are related to issues that are completed.
 
@@ -246,10 +246,10 @@ Make local edits and push changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 A new branch, while it feels like a change, is not really a change in the
 eyes of Git or Github, and by itself will not allow you to start a new pull
-request (which is the goal of this whole phase). The easiest thing to do do is
+request (which is the goal of this whole phase). The easiest thing to do is
 a special "empty" commit::
 
-    git checkoutmmit --allow-empty -m 'Empty commit so I can open a PR'
+    git commit --allow-empty -m 'Empty commit so I can open a PR'
 
 
 Since this is your first "push" to this branch, you are going to need to set an upstream
@@ -327,7 +327,7 @@ Alternatively users of an IDE like PyCharm can run the tests from within the IDE
 
 Commit changes
 ~~~~~~~~~~~~~~
-The commands: git add, git status, and git checkoutmmit are all used in combination to
+The commands: git add, git status, and git commit are all used in combination to
 save a snapshot of a Git project's current state. [#f-stash]_.
 
 The *commit* command is the equivalent of "saving" your changes. But unlike editing
@@ -352,7 +352,7 @@ A typical workflow goes like this:
     $ git status --short # M=modified, A=added
     M  file1
     A  file3
-    $ git checkoutmmit -m "made some changes"
+    $ git commit -m "made some changes"
     [master 067c16e] made some changes
     2 files changed, 2 insertions(+)
     create mode 100644 file3
