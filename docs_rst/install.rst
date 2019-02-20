@@ -41,41 +41,30 @@ Install Docker on your system
 .. _Docker Desktop for Mac: https://docs.docker.com/docker-for-mac/install/
 .. _Docker Desktop for Windows: https://docs.docker.com/docker-for-windows/install/
 
-.. |idaesimg_org| replace:: idaes
-.. |idaesimg_name| replace:: idaes_pse
-.. |idaesimg_tag| replace:: latest
-.. |idaesimg| replace:: ``idaes/idaes_pse:latest``
-
 Get the IDAES Docker image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-You need to get the pre-built Docker "image" containing the source
-code and solvers for the IDAES PSE framework. This image is stored in
-an online service called `Docker Hub`_. Full details on how to use
-Docker Hub are available in the `Docker Hub documentation`_. The name
-of the Docker image that you would normally pull is
-|idaesimg|. This name has three parts:
+You need to get the ready made Docker image containing the source
+code and solvers for the IDAES PSE framework. This image is available
+for download at a URL like "https://s3.amazonaws.com/idaes/idaes-pse/idaes-pse-docker-``VERSION``.tgz",
+where ``VERSION`` is the release version. See the Releases_ page on GitHub
+for information about what is different about each version.
 
-    - |idaesimg_org| - means the Docker image is in the Docker Hub organization called "idaes".
-    - /|idaesimg_name| - this is the name of the Docker image for the IDAES PSE framework.
-    - :|idaesimg_tag| - this is a "tag" that will get the latest version.
+If you want the latest version, simply use the tag "latest" as the version number.
+Thus, **clicking on this link will start a download of the latest version**:
+`https://s3.amazonaws.com/idaes/idaes-pse/idaes-pse-docker-latest.tgz
+<https://s3.amazonaws.com/idaes/idaes-pse/idaes-pse-docker-latest.tgz>`_.
 
-In a point and click interface, you can type the name of this image
-into the search box. In a command-line interface, e.g. in Linux,
-then you would run a command like:
+.. _Releases: https://github.com/IDAES/idaes-pse/releases
 
-.. code-block:: console
+Load the IDAES Docker image
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The image you downloaded needs to be loaded into your local Docker Installation
+using the `Docker load`_ command, which from the command-line looks like
+this:
 
-    $ docker pull idaes/idaes_pse:latest
+    docker load < idaes-pse-docker-latest.tgz
 
-.. _Docker Hub: https://hub.docker.com/
-.. _Docker Hub documentation: https://docs.docker.com/docker-hub/
-
-.. note::
-
-    If you are a software developer, you may have "cloned" the Github repository with
-    the IDAES source code. In this case, the script `idaes-docker` can be used to
-    pull and run the Docker image. Please run ``idaes-docker -h`` to get help and
-    details on how to use this script.
+.. _Docker load: https://docs.docker.com/engine/reference/commandline/load/
 
 Run the IDAES Docker image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -215,7 +204,7 @@ other solvers you can install that may improve (or make possible) solutions for
 these models are:
 
     * CPLEX: a linear optimization package from `IBM <https://www.ibm.com/analytics/cplex-optimizer>`_.
-    * Gurobi: LP/MILP/MIQP, etc., solvers from `Gurobi <http://www.gurobi.com>`_. 
+    * Gurobi: LP/MILP/MIQP, etc., solvers from `Gurobi <http://www.gurobi.com>`_.
 
 .. _IPOPT: https://projects.coin-or.org/Ipopt
 
