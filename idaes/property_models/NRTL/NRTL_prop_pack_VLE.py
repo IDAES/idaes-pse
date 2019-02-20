@@ -11,8 +11,9 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Ideal-NRTL property package with VLE calucations assuming an ideal gas for the
-gas phase and a Non-Random Two Liquid Model for the liquid phase.SI units.
+Ideal-NRTL/Wilson property package with VLE calucations assuming an ideal gas
+for the gas phase and a Non-Random Two Liquid Model or the Wilson model for
+the liquid phase. SI units.
 
 References:
 
@@ -287,7 +288,10 @@ class IdealNRTLStateBlockData(StateBlockData):
                     ('Liq', 'Vap')) or \
                 (self.config.parameters.config.valid_phase ==
                     ('Vap', 'Liq')):
-            self._make_NRTL_eq()
+            if self.config.parameters.config.activity_coeff_model == 'NRTL':
+                self._make_NRTL_eq()
+            if self.config.parameters.config.activity_coeff_model == "Wilson":
+                self._make_Wilson_eq()
             self._make_flash_eq()
 
         if not self.config.has_phase_equilibrium and \
@@ -344,13 +348,23 @@ class IdealNRTLStateBlockData(StateBlockData):
         add_object_reference(self, "dh_vap",
                              self.config.parameters.dh_vap)
 
-        # Non-randomness parameter for NRTL model
-        add_object_reference(self, "alpha",
-                             self.config.paramaters.alpha)
+        if self.config.parameters.config.activity_coeff_model == "NRTL":
+            # Non-randomness parameter for NRTL model
+            add_object_reference(self, "alpha",
+                                 self.config.parameters.alpha)
 
-        # Binary interaction parameter for NRTL model
-        add_object_reference(self, "tau",
-                             self.config.parameters.tau)
+            # Binary interaction parameter for NRTL model
+            add_object_reference(self, "tau",
+                                 self.config.parameters.tau)
+
+        if self.config.parameters.config.activity_coeff_model == "Wilson":
+            # Molar volume for Wilson model
+            add_object_reference(self, "vol_mol",
+                                 self.config.parameters.vol_mol)
+
+            # Binary interaction parameter for Wilson model
+            add_object_reference(self, "tau",
+                                 self.config.parameters.tau)
 
     def _make_state_vars(self):
         """List the necessary state variable objects."""
@@ -447,11 +461,10 @@ class IdealNRTLStateBlockData(StateBlockData):
         if self.config.has_phase_equilibrium:
             def rule_Keq(self, i):
                 if self.config.parameters.config.\
-                        activity_coefficient_model is None:
+                        activity_coeff_model is None:
                     return self.mole_frac_phase['Vap', i] * self.pressure == \
                         self.pressure_sat[i] * self.mole_frac_phase['Liq', i]
-                if self.config.parameters.config.\
-                        activity_coefficient_model == "NRTL":
+                else:
                     return self.mole_frac_phase['Vap', i] * self.pressure == \
                         self.pressure_sat[i] * self.activity_coeff_comp[i] *\
                         self.mole_frac_phase['Liq', i]
@@ -480,6 +493,16 @@ class IdealNRTLStateBlockData(StateBlockData):
         self.activity_coeff_comp = Var(self.component_list_ref,
                                        initialize=1.0,
                                        doc="Activity coefficient of component")
+
+        self.A = Var(self.component_list_ref,
+                     initialize=1.0,
+                     doc="Intermediate variable to compute activity"
+                     " coefficient")
+
+        self.B = Var(self.component_list_ref,
+                     initialize=1.0,
+                     doc="Intermediate variable to compute activity"
+                     " coefficient")
 
         def rule_Gij_coeff(self, i, j):
             if i != j:
@@ -522,7 +545,62 @@ class IdealNRTLStateBlockData(StateBlockData):
 
         def rule_activity_coeff(self, i):
             return log(self.activity_coeff_comp[i]) == self.A[i] + self.B[i]
-        self.eq_activity_coeff = Constraint(self.comp,
+        self.eq_activity_coeff = Constraint(self.component_list_ref,
+                                            rule=rule_activity_coeff)
+
+    def _make_Wilson_eq(self):
+
+        self.Gij_coeff = Var(self.component_list_ref, self.component_list_ref,
+                             initialize=1.0,
+                             doc="Gij coefficient for use in NRTL model ")
+
+        self.activity_coeff_comp = Var(self.component_list_ref,
+                                       initialize=1.0,
+                                       doc="Activity coefficient of component")
+
+        self.A = Var(self.component_list_ref,
+                     initialize=1.0,
+                     doc="Intermediate variable to compute activity"
+                     " coefficient")
+
+        self.B = Var(self.component_list_ref,
+                     initialize=1.0,
+                     doc="Intermediate variable to compute activity"
+                     " coefficient")
+
+        def rule_Gij_coeff(self, i, j):
+            if i != j:
+                return self.Gij_coeff[i, j] == \
+                    (self.vol_mol[i] / self.vol_mol[j]) * exp(-self.tau[i, j])
+            else:
+                self.Gij_coeff[i, j].fix(1)
+                return Constraint.Skip
+
+        self.eq_Gij_coeff = Constraint(self.component_list_ref,
+                                       self.component_list_ref,
+                                       rule=rule_Gij_coeff)
+
+        def rule_A(self, i):
+            value_1 = log(sum(self.mole_frac_phase['Liq', j] *
+                              self.Gij_coeff[j, i]
+                              for j in self.component_list_ref))
+            return self.A[i] == value_1
+        self.eq_A = Constraint(self.component_list_ref, rule=rule_A)
+
+        def rule_B(self, i):
+            value = sum((self.mole_frac_phase['Liq', j] *
+                         self.Gij_coeff[i, j] /
+                         sum(self.mole_frac_phase['Liq', k] *
+                             self.Gij_coeff[k, j]
+                             for k in self.component_list_ref))
+                        for j in self.component_list_ref)
+            return self.B[i] == value
+        self.eq_B = Constraint(self.component_list_ref, rule=rule_B)
+
+        def rule_activity_coeff(self, i):
+            return log(self.activity_coeff_comp[i]) == \
+                1 - self.A[i] - self.B[i]
+        self.eq_activity_coeff = Constraint(self.component_list_ref,
                                             rule=rule_activity_coeff)
 
     def _density_mol(self):

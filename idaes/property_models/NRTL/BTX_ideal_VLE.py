@@ -12,7 +12,10 @@
 ##############################################################################
 """
 Example property package for the VLE calucations for a Benzene-Toluene-o-Xylene
-system.
+system. If using the activity coefficient models (NRTL or Wilson), the user is
+expected to provide the paramters necessary for these models. Please note that
+these parameters are declared as variables here to allow for use in a parameter
+estimation problem if the VLE data is available.
 """
 
 # Chages the divide behavior to not do integer division
@@ -29,7 +32,7 @@ from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class, PhysicalParameterBlock
 from idaes.core.util.misc import extract_data
 
-from idaes.property_models.ideal.ideal_prop_pack_VLE import IdealStateBlock
+from idaes.property_models.NRTL.NRTL_prop_pack_VLE import IdealNRTLStateBlock
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -50,6 +53,18 @@ class PhysicalParameterData(PhysicalParameterBlock):
     # Config block for the _IdealStateBlock
     CONFIG = PhysicalParameterBlock.CONFIG()
 
+    CONFIG.declare("activity_coeff_model", ConfigValue(
+        default=None,
+        domain=In([None, 'NRTL', 'Wilson']),
+        description="Flag indicating the activity coefficient model",
+        doc="""Flag indicating the activity coefficient model to be used
+for the non-ideal liquid, and thus corresponding constraints  should be
+included,
+**default** - None (i.e. ideal).
+**Valid values:** {
+**'NRTL'** - Non Random Two Liquid Model,
+**'Wilson'** - Wilson Liquid Model,}"""))
+
     CONFIG.declare("valid_phase", ConfigValue(
         default=('Vap', 'Liq'),
         domain=In(['Liq', 'Vap', ('Vap', 'Liq'), ('Liq', 'Vap')]),
@@ -69,7 +84,7 @@ conditions, and thus corresponding constraints  should be included,
         '''
         super(PhysicalParameterData, self).build()
 
-        self.state_block_class = IdealStateBlock
+        self.state_block_class = IdealNRTLStateBlock
 
         # List of valid phases in property package
         if self.config.valid_phase == ('Liq', 'Vap') or \
@@ -237,13 +252,25 @@ conditions, and thus corresponding constraints  should be included,
 
         # NRTL Model specific variables (values to be fixed by user or need to
         # be estimated based on VLE data)
-        self.alpha = Var(self.component_list, self.component_list,
-                         initialize=0.3,
-                         doc="Non-randomness parameter for NRTL model")
+        if self.config.activity_coeff_model == "NRTL":
+            self.alpha = Var(self.component_list, self.component_list,
+                             initialize=0.3,
+                             doc="Non-randomness parameter for NRTL model")
 
-        self.tau = Var(self.component_list, self.component_list,
-                       initialize=1.0,
-                       doc="Binary interaction parameter for NRTL model")
+            self.tau = Var(self.component_list, self.component_list,
+                           initialize=1.0,
+                           doc="Binary interaction parameter for NRTL model")
+
+        # Wilson Model specific variables (values to be fixed by user or need
+        # to be estimated based on VLE data)
+        if self.config.activity_coeff_model == "Wilson":
+            self.vol_mol = Var(self.component_list,
+                               initialize=1.0,
+                               doc="Molar volume of component")
+
+            self.tau = Var(self.component_list, self.component_list,
+                           initialize=1.0,
+                           doc="Binary interaction parameter for NRTL model")
 
     @classmethod
     def define_metadata(cls, obj):
