@@ -17,7 +17,8 @@ Author: John Eslick
 """
 import pytest
 
-from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
+from pyomo.environ import (ConcreteModel, SolverFactory, TransformationFactory,
+                           Constraint, value)
 from pyomo.network import Arc
 
 from idaes.core import FlowsheetBlock
@@ -88,20 +89,20 @@ def test_initialize(build_turbine_for_run_test):
 
     # Set the inlet of the ip section, which is disconnected
     # here to insert reheater
-    p = 10649886
+    p = 7.802e+06
     hin = iapws95_ph.htpx(T=880, P=p)
-    m.fs.turb.ip_stages[1].inlet.enth_mol[0].fix(hin)
-    m.fs.turb.ip_stages[1].inlet.flow_mol[0].fix(25220.0)
-    m.fs.turb.ip_stages[1].inlet.pressure[0].fix(p)
+    m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
+    m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
+    m.fs.turb.ip_stages[1].inlet.pressure[0].value = p
 
     for i, s in turb.hp_stages.items():
-        s.ratioP[:] = 0.92
+        s.ratioP[:] = 0.88
         s.efficiency_isentropic[:] = 0.9
     for i, s in turb.ip_stages.items():
-        s.ratioP[:] = 0.90
+        s.ratioP[:] = 0.85
         s.efficiency_isentropic[:] = 0.9
     for i, s in turb.lp_stages.items():
-        s.ratioP[:] = 0.90
+        s.ratioP[:] = 0.82
         s.efficiency_isentropic[:] = 0.9
 
     turb.hp_split[4].split_fraction[0,"outlet_2"].fix(0.03)
@@ -118,12 +119,21 @@ def test_initialize(build_turbine_for_run_test):
     turb.ip_stages[1].inlet.unfix()
     turb.inlet_split.inlet.flow_mol.unfix()
     turb.inlet_mix.use_equal_pressure_constraint()
-    turb.initialize()
+    turb.initialize(outlvl=4)
 
     for t in m.fs.time:
-        m.fs.reheat.inlet.flow_mol[t] = turb.hp_split[7].outlet_1.flow_mol[t]
-        m.fs.reheat.inlet.enth_mol[t] = turb.hp_split[7].outlet_1.enth_mol[t]
-        m.fs.reheat.inlet.pressure[t] = turb.hp_split[7].outlet_1.pressure[t]
-    m.fs.reheat.initialize()
+        m.fs.reheat.inlet.flow_mol[t].value = \
+            value(turb.hp_split[7].outlet_1_state[t].flow_mol)
+        m.fs.reheat.inlet.enth_mol[t].value = \
+            value(turb.hp_split[7].outlet_1_state[t].enth_mol)
+        m.fs.reheat.inlet.pressure[t].value = \
+            value(turb.hp_split[7].outlet_1_state[t].pressure)
+    m.fs.reheat.initialize(outlvl=4)
+    def reheat_T_rule(b, t):
+        return m.fs.reheat.control_volume.properties_out[t].temperature == 880
+    m.fs.reheat.temperature_out_equation = Constraint(m.fs.reheat.time_ref,
+        rule=reheat_T_rule)
 
+    TransformationFactory("network.expand_arcs").apply_to(m)
+    m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
     assert(degrees_of_freedom(m)==0)
