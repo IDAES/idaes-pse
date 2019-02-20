@@ -462,7 +462,7 @@ branch called "changes-issue51" he could do the following::
     $ git checkout changes-issue51  # checkout the topic branch
     $ echo "Hello" >> README.txt  # make some important changes
     $ pytest # always run tests!!
-    $ git add README.txt ; git checkoutmmit -m "important changes"
+    $ git add README.txt ; git commit -m "important changes"
     $ git push # push changes to the fork
 
 Hopefully it also is obvious that developers working this way have less safeguards
