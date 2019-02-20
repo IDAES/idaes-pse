@@ -42,6 +42,7 @@ Contents
     version
     glossary
     examples
+    developer/index
 
 ..    install
 ..    core/index
