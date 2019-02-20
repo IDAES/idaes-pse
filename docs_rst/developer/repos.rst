@@ -41,5 +41,7 @@ All these repositories except for “idaes-pse” will only be visible on
 Github, on the web, for people who have been added to the IDAES
 developer team in the IDAES “organization” (See `About Github
 organizations <https://help.github.com/articles/about-organizations/>`_).
+If you are a member of the IDAES team and not in the IDAES Github organization,
+please contact one of the core developers.
 The `idaes-pse` repository will be visible to anyone, even
 people without a Github account.

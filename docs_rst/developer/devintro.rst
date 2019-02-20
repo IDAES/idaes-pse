@@ -34,11 +34,11 @@ important ones that tend to get used as verbs in software development
 conversations, and therefore are good to know:
 
 add
-    Put a file onto the list of “things I want to commit” (seecommit),
+    Put a file onto the list of “things I want to commit” (see "commit"),
     called “staging” the file.
 
 commit
-    Save the changes in “staged” files (since the last time you did
+    Save the changes in “staged” files into Git (since the last time you did
     this), along with a user-provided description of what the changes mean
     (called the “commit message”).
 
@@ -62,7 +62,7 @@ There is a good description of what git branches are and how they work
 Understanding this takes a little study, but this pays off by making
 git’s behavior much less mysterious. The short, practical version is
 that a branch is a name for a series of commits that you want to group
-together,and keep separable from other series of commits. From git's perspective,
+together, and keep separable from other series of commits. From git's perspective,
 the branch is just a name for the first commit in that series.
 
 It is recommended that you create new branches on which to develop your work,
@@ -77,12 +77,10 @@ Forks
 A *fork* is a copy of a repository, in the Github shared space (a copy of
 a repository from Github down to your local disk is called a “clone”).
 In this context, that means a copy of the “idaes-dev” repository from
-the IDAES organization (\ https://github.com/IDAES/idaes-dev\ ) toyour
-own user space (e.g.\ https://github.com/dangunter/idaes-dev\ ). The
+the IDAES organization (https://github.com/IDAES/idaes-dev) to your
+own user space, e.g., https://github.com/myname/idaes-dev). The
 mechanics of creating and using forks onGithub are given
-here:\ https://help.github.com/articles/fork-a-repo/\ . In the Software
-Development section, details are given on how to create and use this
-fork for collaborative software development.
+`here <https://help.github.com/articles/fork-a-repo/>`_.
 
 .. _devterm-pr:
 
@@ -94,7 +92,7 @@ participating fully in the software development process. First,
 understand that pull requests are for collaborative development (Github)
 and not part of the core revision control functionality that is offered
 by Git. The official Github description of pull requests is
-`here <https://help.github.com/articles/about-pull-requests>`_ . However,
+`here <https://help.github.com/articles/about-pull-requests>`_. However,
 it gets technical rather quickly, so a higher-level explanation may be
 helpful:
 

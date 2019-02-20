@@ -42,12 +42,7 @@ Contents
     version
     examples
     developer/index
-
-..    install
-..    core/index
-..    properties/index
-..    models/index
-..    dmf/index
+    glossary
 
 Indices and tables
 ==================
