@@ -5,6 +5,12 @@ Collaborative software development
 
 This page gives guidance for all developers on the project.
 
+.. note:: Many details here are targeted at members of the IDAES project team.
+          However, we strongly believe in the importance of transparency in the
+          project's software practices and approaches. Also, understanding how we
+          develop the software internally should be generally useful to understand
+          the review process to expect for external contributors.
+
 Although the main focus of this project is developing open source software (OSS),
 it is also true that some of the software may be developed internally or in
 coordination with industry under a :term:`CRADA` or :term:`NDA`.
@@ -77,7 +83,8 @@ you need to make sure you are set up in Github and set up your local development
 Github setup
 ~~~~~~~~~~~~
 To work within the project, you need to create a login on `Github`_. You also
-need to make sure that this login has been added to the IDAES organization.
+need to make sure that this login has been added to the IDAES organization by
+contacting one of the core developers.
 
 If these steps are successful, you should be able to login to Github, visit the
 `IDAES Github organization <https://github.com/IDAES/>`_, and see "Private" repositories
@@ -112,9 +119,13 @@ To make a clone of the fork you created in the previous step,
 change to a directory where you want to put the source code and run the command::
 
     git clone git@github.com:MYNAME/idaes-dev.git
+    cd idaes-dev
 
 Of course, replace MYNAME with your login name. This will download all the files in
 the latest version of the repository onto your local disk.
+
+.. note:: After the ``git clone``, subsequent git commands should be performed from
+          the "idaes-dev" directory.
 
 .. _sw-add-upstream:
 

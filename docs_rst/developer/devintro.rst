@@ -1,34 +1,31 @@
 Developer introductory material
 ===============================
 This section gives terms and information targeted at people who are new to collaborative
-software development. It serves as background for understanding the
-:ref:`collab_dev` procedures.
+software development. It serves as background for understanding the collaborative
+development procedures. However, this is a quick start and there are many more useful
+things to learn about git and Github. For more information, please refer to the
+excellent `Atlassian Github tutorials <https://www.atlassian.com/git/tutorials>`_ and
+the online `Git documentation <https://git-scm.com/doc>`_  and
+`Github help <https://help.github.com/>`_.
 
 Terminology
 -----------
 `Git <https://git-scm.com/>`__
     A “version control system”, for keeping track of changes in a set of files
 
-branch
-    A name for a series of commits that you want to group together.
-
-fork
-    Copy of a repository, in Github, typically from its original author or
-    organization into your own namespace in Github. For example, you can
-    fork the `idaes-dev` repository from its home in the `idaes` organization,
-    which is written `idaes/idaes-dev`, to your own namespace
-    `myname/idaes-dev`.
-
 `Github <https://github.com>`__
     A hosting service for Git
     repositories that adds many other features that are useful for
-    collaborative software development. Two key concepts that are part of
-    Github are:
+    collaborative software development.
 
-        * Fork: A copy of a Github repository. See “Forks” below.
+branch
+    A name for a series of commits. See :ref:`devterm-branch`.
 
-        * Pull Request: A request to compare and merge code in a Github
-                        repository. See “Pull Requests” below.
+fork
+    Copy of a repository in Github. See :ref:`devterm-fork`.
+
+pull request (PR)
+    A request to compare and merge code in a Github repository. See :ref:`devterm-pr`.
 
 Git commands
 ^^^^^^^^^^^^
@@ -53,8 +50,10 @@ pull
     Update your local files with changes from the Github-hosted
     “remote” repository by “pulling” them across the network.
 
-.. note:: The `push` and `pull` commands require Github (or some other service
-          that can host a remote copy of the repository).
+Note that the `push` and `pull` commands require Github (or some other service
+that can host a remote copy of the repository).
+
+.. devterm-branch:
 
 Branches
 ^^^^^^^^
@@ -71,11 +70,11 @@ and reserve the "master" branch for merging in work that has been completed
 and approved on Github. One way to do this is to create branches that correspond
 directly to issues on Github, and include the issue number in the branch name.
 
-.. _devterm_fork:
+.. _devterm-fork:
 
 Forks
 ^^^^^
-A `fork` is a copy of a repository, in the Github shared space (a copy of
+A *fork* is a copy of a repository, in the Github shared space (a copy of
 a repository from Github down to your local disk is called a “clone”).
 In this context, that means a copy of the “idaes-dev” repository from
 the IDAES organization (\ https://github.com/IDAES/idaes-dev\ ) toyour
@@ -85,7 +84,7 @@ here:\ https://help.github.com/articles/fork-a-repo/\ . In the Software
 Development section, details are given on how to create and use this
 fork for collaborative software development.
 
-.. _devterm_pr:
+.. _devterm-pr:
 
 Pull Requests
 ^^^^^^^^^^^^^
@@ -106,8 +105,3 @@ repository. You can think of it as a staging area where the code is merged
 and all the tests are run, without changing the target repository.
 Everyone on the team can see a pull request, comment on it, and review
 it.
-
-Details on how to use pull requests (or “PRs”) are given in the
-:ref:`collab_dev` section.
-For now, suffice it to say that PRs are central to
-collaborative development. You _must_ use them to add code to the project.

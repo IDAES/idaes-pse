@@ -7,30 +7,30 @@ repositories.
 
 Repositories
 ------------
-+-----------------------+-----------------------+-----------------------+
-| Repository name       | Public?               | Description           |
-+-----------------------+-----------------------+-----------------------+
-| idaes-pse             | Yes                   | Main public           |
-|                       |                       | repository, including |
-|                       |                       | core framework and    |
-|                       |                       | integrated tools      |
-+-----------------------+-----------------------+-----------------------+
-| idaes-dev             | No                    | Main private          |
-|                       |                       | repository, where     |
-|                       |                       | code is contributed   |
-|                       |                       | before being          |
-|                       |                       | “mirrored” to the     |
-|                       |                       | public `ideas-pse`    |
-|                       |                       | repository            |
-+-----------------------+-----------------------+-----------------------+
-| workspace             | No                    | Repository for code   |
-|                       |                       | that does not belong  |
-|                       |                       | to any particular     |
-|                       |                       | CRADA or NDA, but     |
-|                       |                       | also is never         |
-|                       |                       | intended to be        |
-|                       |                       | released open-source  |
-+-----------------------+-----------------------+-----------------------+
++-----------------+----------+-----------------------+
+| Repository name | Public?  | Description           |
++=================+==========+=======================+
+| idaes-pse       | Yes      | Main public           |
+|                 |          | repository, including |
+|                 |          | core framework and    |
+|                 |          | integrated tools      |
++-----------------+----------+-----------------------+
+| idaes-dev       | No       | Main private          |
+|                 |          | repository, where     |
+|                 |          | code is contributed   |
+|                 |          | before being          |
+|                 |          | “mirrored” to the     |
+|                 |          | public `ideas-pse`    |
+|                 |          | repository            |
++-----------------+----------+-----------------------+
+| workspace       | No       | Repository for code   |
+|                 |          | that does not belong  |
+|                 |          | to any particular     |
+|                 |          | CRADA or NDA, but     |
+|                 |          | also is never         |
+|                 |          | intended to be        |
+|                 |          | released open-source  |
++-----------------+----------+-----------------------+
 
 The URL for an IDAES repository, e.g. “some-repo”, will be
 ``https://github.com/IDAES/some-repo``.

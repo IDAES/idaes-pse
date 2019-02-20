@@ -13,6 +13,9 @@ is jeopardized, so we need to take this process seriously.
 
 Summary
 -------
+
+.. warning:: This section is an incomplete set of notes
+
 Every piece of code must be reviewed by at least two people.
 
 In every case, one of those people will be a designated “gatekeeper” and

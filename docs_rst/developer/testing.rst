@@ -54,8 +54,7 @@ fails, it should be obvious which code is causing the problem.
 
 Mocking
 ~~~~~~~
-Besides something the California contingent does of Pittsburgh weather, "mocking" is
-an important technique for avoiding too many dependencies that will make your tests
+Mocking is a common, but important, technique for avoiding dependencies that make your tests
 slow, fragile, and harder to understand. The basic idea is to
 replace dependencies with fake, or "mock", versions of them that will provide just
 enough realism for the test. Python provides a library, `unittest.mock <https://docs.python.org/dev/library/unittest.mock.html>`_,
@@ -96,7 +95,11 @@ external services.
 
 Integration tests
 -----------------
-
+Integration tests exercise an end-to-end slice of the overall functionality. At this
+time, the integration tests are all housed in Jupyter Notebooks, which serve
+double-duty as examples and tutorials for end users. We execute these notebooks
+and verify that they run correctly to completion at least once before each new
+release of the software.
 
 .. _tst-coverage:
 
