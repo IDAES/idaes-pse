@@ -8,6 +8,7 @@ SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = ../docs
 SCRIPTDIR     = scripts
+EXAMPLEDIR    = ../examples
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -83,17 +84,17 @@ examples: execute nbconvert nbimages
 .PHONY: nbconvert
 nbconvert: 
 	mkdir -p $(BUILDDIR)/examples
-	$(SCRIPTDIR)/convert_notebooks.sh ../examples/executed $(BUILDDIR)/examples
+	$(SCRIPTDIR)/convert_notebooks.sh $(EXAMPLEDIR)/executed $(BUILDDIR)/examples
 
 .PHONY: nbimages
 nbimages:
-       $(shell find ../examples -name "*.png" -exec cp {} $(BUILDDIR)/examples \;)
+       $(shell find $(EXAMPLEDIR) -name "*.png" -exec cp {} $(BUILDDIR)/examples \;)
 
 .PHONY: execute
 execute: 
 	jupyter nbconvert --to notebook --execute \
-	$(shell find ../examples -name \*.ipynb | grep -v -e executed -e checkpoint) \
-	--output-dir ../examples/executed
+	$(shell find $(EXAMPLEDIR) -name \*.ipynb | grep -v -e executed -e checkpoint) \
+	--output-dir $(EXAMPLEDIR)/executed
 
 .PHONY: dirhtml
 dirhtml:
