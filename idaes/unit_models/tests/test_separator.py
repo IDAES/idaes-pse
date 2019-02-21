@@ -29,7 +29,8 @@ from idaes.core import (FlowsheetBlock,
                         StateBlockData)
 from idaes.unit_models.separator import (Separator,
                                          SeparatorData,
-                                         SplittingType)
+                                         SplittingType,
+                                         EnergySplittingType)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 
@@ -110,6 +111,7 @@ class StateTestBlockData(StateBlockData):
                                        self.component_list,
                                        initialize=1)
         self.enth_mol_phase = Var(self.phase_list, initialize=2)
+        self.enth_mol = Var(initialize=2) # total molar enthalpy (both phases)
         self.temperature = Var(initialize=5)
 
     def get_material_flow_terms(b, p, j):
@@ -636,7 +638,8 @@ def test_add_energy_splitting_constraints():
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb})
-
+    assert(m.fs.sep.config.energy_split_basis ==
+           EnergySplittingType.equal_temperature)
     m.fs.sep._get_property_package()
     m.fs.sep._get_indexing_sets()
 
@@ -648,6 +651,32 @@ def test_add_energy_splitting_constraints():
 
     assert isinstance(m.fs.sep.temperature_equality_eqn, Constraint)
     assert len(m.fs.sep.temperature_equality_eqn) == 2
+
+
+def test_add_energy_splitting_constraints_enthalpy():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+        "property_package": m.fs.pp,
+        "mixed_state_block": m.fs.sb,
+        "energy_split_basis": EnergySplittingType.equal_molar_enthalpy})
+    assert(m.fs.sep.config.energy_split_basis ==
+           EnergySplittingType.equal_molar_enthalpy)
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+    m.fs.sep.add_energy_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.molar_enthalpy_equality_eqn, Constraint)
+    assert len(m.fs.sep.molar_enthalpy_equality_eqn) == 2
 
 
 def test_add_momentum_splitting_constraints():

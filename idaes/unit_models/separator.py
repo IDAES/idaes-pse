@@ -462,7 +462,7 @@ linked the mixed state and all outlet states,
             @self.Constraint(self.time_ref,
                              self.outlet_idx,
                              doc="Molar enthalpy equality constraint")
-            def temperature_equality_eqn(b, t, o):
+            def molar_enthalpy_equality_eqn(b, t, o):
                 o_block = getattr(self, o+"_state")
                 return mixed_block[t].enth_mol == o_block[t].enth_mol
 
