@@ -81,7 +81,6 @@ class TurbineMultistageData(UnitModelBlockData):
         s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
         s_cfg.update(split_basis=SplittingType.totalFlow, ideal_separation=False,
             energy_split_basis=EnergySplittingType.equal_molar_enthalpy)
-        del s_cfg["has_holdup"]
         del s_cfg["has_phase_equilibrium"]
         s_cfg["num_outlets"] = 2
         # Then make one for each splitter
@@ -259,23 +258,21 @@ class TurbineMultistageData(UnitModelBlockData):
         s_cfg.update(split_basis=SplittingType.totalFlow, ideal_separation=False,
             num_outlets=ni,
             energy_split_basis=EnergySplittingType.equal_molar_enthalpy)
-        del s_cfg["has_holdup"]
         del s_cfg["has_phase_equilibrium"]
         # add splitter
         self.inlet_split = Separator(default=s_cfg)
+
+        # Add turbine stages
+        self.throttle_valve = SteamValve(inlet_idx, default=unit_cfg)
+        self.inlet_stage = TurbineInletStage(inlet_idx, default=unit_cfg)
 
         # Mixer config
         m_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
         m_cfg.update(num_inlets=ni,
             momentum_mixing_type=MomentumMixingType.minimize_and_equality)
-        del m_cfg["has_holdup"]
         del m_cfg["has_phase_equilibrium"]
         # Add mixer
         self.inlet_mix = Mixer(default=m_cfg)
-
-        # Add turbine stages
-        self.throttle_valve = SteamValve(inlet_idx, default=unit_cfg)
-        self.inlet_stage = TurbineInletStage(inlet_idx, default=unit_cfg)
 
         # Add connections
         def _split_to_rule(b, i):
@@ -317,7 +314,7 @@ class TurbineMultistageData(UnitModelBlockData):
             self.inlet_stage.flow_coeff.fix(value)
 
     def initialize(self, outlvl=0, solver='ipopt',
-        optarg={'tol': 1e-6, 'max_iter':35}):
+        optarg={'tol':1e-6, 'max_iter':35}):
         """
         Initialize
         """
