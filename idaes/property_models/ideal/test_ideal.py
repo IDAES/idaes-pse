@@ -11,15 +11,25 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for ideal state block; only tests for construction
+Tests for ideal state block; tests for construction and solves
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition, \
+    SolverStatus, value
 
 from idaes.core import FlowsheetBlock
 from idaes.property_models.ideal.BTX_ideal_VLE import IdealParameterBlock
 from idaes.ui.report import degrees_of_freedom
+
+# See if ipopt is available and set up solver
+if SolverFactory('ipopt').available():
+    solver = SolverFactory('ipopt')
+    solver.options = {'tol': 1e-6,
+                      'mu_init': 1e-8,
+                      'bound_push': 1e-8}
+else:
+    solver = None
 
 # -----------------------------------------------------------------------------
 m = ConcreteModel()
@@ -104,6 +114,51 @@ def test_setInputs_inlet_state_blocks():
     m.fs.state_block_v.mole_frac["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_v) == 0
+
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_solve():
+    # vapor-liquid
+    m.fs.state_block_vl.initialize()
+    results = solver.solve(m.fs.state_block_vl, tee=False)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    # Check for VLE results
+    assert value(m.fs.state_block_vl.mole_frac_phase['Liq', 'benzene']) == \
+        pytest.approx(0.4121, abs=1e-3)
+    assert value(m.fs.state_block_vl.mole_frac_phase['Vap', 'benzene']) == \
+        pytest.approx(0.6339, abs=1e-3)
+
+    # liquid only
+    m.fs.state_block_l.initialize()
+    results = solver.solve(m.fs.state_block_l, tee=False)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    # Check for results
+    assert value(m.fs.state_block_l.mole_frac_phase['Liq', 'benzene']) == \
+        pytest.approx(0.5, abs=1e-3)
+    assert value(m.fs.state_block_l.mole_frac_phase['Liq', 'toluene']) == \
+        pytest.approx(0.5, abs=1e-3)
+
+    # vapor only
+    m.fs.state_block_v.initialize()
+    results = solver.solve(m.fs.state_block_v, tee=False)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    # Check for results
+    assert value(m.fs.state_block_v.mole_frac_phase['Vap', 'benzene']) == \
+        pytest.approx(0.5, abs=1e-3)
+    assert value(m.fs.state_block_v.mole_frac_phase['Vap', 'toluene']) == \
+        pytest.approx(0.5, abs=1e-3)
 
 
 def test_bubbleT_inlet_state_blocks():
