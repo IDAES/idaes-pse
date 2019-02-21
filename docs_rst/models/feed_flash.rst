@@ -13,7 +13,7 @@ The degrees of freedom of FeedFlash blocks depends on the property package being
 Model Structure
 ---------------
 
-FeedFlash Blocks contain of a single ``ControlVolume0D`` (named ``control_volume``) with one Outlet Port (named ``outlet``). FeedFlash Blocks also contain References to the state variables defined within the inlet StateBlock of the ControlVolume (representing the unflashed state of the feed).
+FeedFlash Blocks contain a single ``ControlVolume0D`` (named ``control_volume``) with one Outlet Port (named ``outlet``). FeedFlash Blocks also contain References to the state variables defined within the inlet StateBlock of the ControlVolume (representing the unflashed state of the feed).
 
 FeedFlash Blocks do not write a set of energy balances within the Control Volume - instead a constraint is written which enforces an isothermal flash.
 
