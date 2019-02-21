@@ -264,9 +264,9 @@ conditions, and thus corresponding constraints  should be included,
         # Wilson Model specific variables (values to be fixed by user or need
         # to be estimated based on VLE data)
         if self.config.activity_coeff_model == "Wilson":
-            self.vol_mol = Var(self.component_list,
-                               initialize=1.0,
-                               doc="Molar volume of component")
+            self.vol_mol_comp = Var(self.component_list,
+                                    initialize=1.0,
+                                    doc="Molar volume of component")
 
             self.tau = Var(self.component_list, self.component_list,
                            initialize=1.0,
