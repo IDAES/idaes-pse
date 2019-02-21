@@ -170,6 +170,18 @@ class TurbineInletStageData(PressureChangerData):
         self.deltaP[:] = value(Pout - Pin)
         self.ratioP[:] = value(Pout/Pin)
 
+        for t in self.time_ref:
+            self.properties_isentropic[t].pressure.value = \
+                value(self.outlet.pressure[t])
+            self.properties_isentropic[t].flow_mol.value = \
+                value(self.inlet.flow_mol[t])
+            self.properties_isentropic[t].enth_mol.value = \
+                value(self.inlet.enth_mol[t]*0.95)
+            self.outlet.flow_mol[t].value = \
+                value(self.inlet.flow_mol[t])
+            self.outlet.enth_mol[t].value = \
+                value(self.inlet.enth_mol[t]*0.95)
+
         # Make sure the initialization problem has no degrees of freedom
         # This shouldn't happen here unless there is a bug in this
         dof = degrees_of_freedom(self)

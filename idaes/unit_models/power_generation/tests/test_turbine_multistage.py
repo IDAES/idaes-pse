@@ -35,7 +35,6 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
-@pytest.fixture()
 def build_turbine_for_buid_test():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -49,7 +48,6 @@ def build_turbine_for_buid_test():
         "lp_split_num_outlets": {3:3}})
     return m
 
-@pytest.fixture()
 def build_turbine_for_run_test():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -75,9 +73,9 @@ def build_turbine_for_run_test():
 
     return m
 
-def test_initialize(build_turbine_for_run_test):
+def test_initialize():
     """Make a turbine model and make sure it doesn't throw exception"""
-    m = build_turbine_for_run_test
+    m = build_turbine_for_run_test()
     turb = m.fs.turb
 
     # Set the inlet of the turbine
@@ -137,3 +135,4 @@ def test_initialize(build_turbine_for_run_test):
     TransformationFactory("network.expand_arcs").apply_to(m)
     m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
     assert(degrees_of_freedom(m)==0)
+    return m
