@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -8,7 +8,7 @@
 #
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes".
+# at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
 Steam turbine outlet stage model.  This model is based on:
@@ -25,7 +25,8 @@ import logging
 _log = logging.getLogger(__name__)
 
 from pyomo.common.config import In
-from pyomo.environ import Var, Expression, Constraint, sqrt, SolverFactory, value
+from pyomo.environ import (Var, Expression, Constraint, sqrt, SolverFactory,
+                           value, Param)
 from pyomo.opt import TerminationCondition
 
 from idaes.core import declare_process_block_class
@@ -59,6 +60,9 @@ class TurbineOutletStageData(PressureChangerData):
             doc="Design exit volumetirc flowrate [m^3/s]")
         self.efficiency_mech = Var(initialize=0.98,
             doc="Turbine mechanical efficiency")
+        self.flow_scale = Param(mutable=True, default=1e3, doc=
+            "Scaling factor for pressure flow relation should be approximatly"
+            " the same order of magnitude as the expected flow.")
         self.eff_dry.fix()
         self.design_exhaust_flow_vol.fix()
         self.flow_coeff.fix()
@@ -80,8 +84,8 @@ class TurbineOutletStageData(PressureChangerData):
             Pin = b.control_volume.properties_in[t].pressure
             Pr = b.ratioP[t]
             cf = b.flow_coeff
-            return 1e-6*flow**2*mw**2*(Tin - 273.15) == \
-                   1e-6*cf**2*Pin**2*(1 - Pr**2)
+            return (1/b.flow_scale**2)*flow**2*mw**2*(Tin - 273.15) == \
+                (1/b.flow_scale**2)*cf**2*Pin**2*(1 - Pr**2)
 
         @self.Constraint( self.time_ref,
             doc="Equation: isentropic specific enthalpy change")
@@ -131,8 +135,8 @@ class TurbineOutletStageData(PressureChangerData):
         self.stodola_equation.deactivate()
         self.isentropic_enthalpy.deactivate()
         self.efficiency_correlation.deactivate()
-        self.deltaP[:].unfix()
-        self.ratioP[:].unfix()
+        self.deltaP.unfix()
+        self.ratioP.unfix()
         # Fix turbine parameters + eff_isen
         self.eff_dry.fix()
         self.design_exhaust_flow_vol.fix()

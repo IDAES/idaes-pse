@@ -13,8 +13,6 @@
 from pyomo.environ import *
 from pyomo.core.expr.current import identify_variables
 from pyomo.core.kernel.component_set import ComponentSet
-#from pyomo.core.base import Transformation, Constraint, \
-#    ConstraintList, Var, VarList, TraversalStrategy
 from pyomo.network.port import _PortData, SimplePort
 
 def large_residuals(blk, tol=1e-5):
@@ -81,16 +79,6 @@ def active_equalities(blk):
     """
     for o in blk.component_data_objects(Constraint, active=True):
         if o.upper == o.lower: yield o
-
-def active_free_variables(blk):
-    """
-    Generator returning active equality constraints in a model.
-
-    Args:
-        blk: a Pyomo block in which to look for variables.
-    """
-    for o in blk.component_data_objects(Var, active=True):
-        if not o.fixed: yield o
 
 def count_free_variables(blk):
     """

@@ -134,7 +134,8 @@ split fraction indexed by both time, outlet, phase and components).}"""))
         default=EnergySplittingType.equal_temperature,
         domain=EnergySplittingType,
         description="Type of constraint to write for energy splitting",
-        doc="""Argument indicating basis to use for splitting energy,
+        doc="""Argument indicating basis to use for splitting energy this is not
+used for when ideal_separation == True.
 **default** - EnergySplittingType.equal_temperature.
 **Valid values:** {
 **EnergySplittingType.equal_temperature** - outlet temperatures equal inlet

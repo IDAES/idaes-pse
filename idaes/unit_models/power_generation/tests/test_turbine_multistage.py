@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -8,7 +8,7 @@
 #
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes".
+# at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
 Tests for turbine multistage model.
@@ -27,7 +27,7 @@ from idaes.unit_models.power_generation import (
     TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
 from idaes.property_models import iapws95_ph
 from idaes.property_models.iapws95 import iapws95_available
-from idaes.ui.report import degrees_of_freedom
+from idaes.ui.report import degrees_of_freedom, active_equalities
 
 prop_available = iapws95_available()
 
@@ -109,7 +109,7 @@ def test_initialize():
     turb.ip_stages[1].inlet.unfix()
     turb.inlet_split.inlet.flow_mol.unfix()
     turb.inlet_mix.use_equal_pressure_constraint()
-    turb.initialize(outlvl=4)
+    turb.initialize(outlvl=1)
 
     for t in m.fs.time:
         m.fs.reheat.inlet.flow_mol[t].value = \
@@ -126,5 +126,10 @@ def test_initialize():
 
     TransformationFactory("network.expand_arcs").apply_to(m)
     m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
+
     assert(degrees_of_freedom(m)==0)
+    solver.solve(m, tee=True)
+    for c in active_equalities(m):
+        assert(abs(c.body() - c.lower) < 1e-4)
+
     return m

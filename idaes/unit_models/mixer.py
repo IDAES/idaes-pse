@@ -571,10 +571,32 @@ linked to all inlet states and the mixed state,
                              'StateBlock class.'.format(blk.name))
 
     def use_minimum_inlet_pressure_constraint(self):
+        """Activate the mixer pressure = mimimum inlet pressure constraint and
+        deactivate the mixer pressure and all inlet pressures are equal
+        constraints. This should only be used when momentum_mixing_type ==
+        MomentumMixingType.minimize_and_equality.
+        """
+        if self.config.momentum_mixing_type != \
+            MomentumMixingType.minimize_and_equality:
+            _log.warning(
+"""use_minimum_inlet_pressure_constraint() can only be used when
+momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
+            return
         self.minimum_pressure_constraint.activate()
         self.pressure_equality_constraints.deactivate()
 
     def use_equal_pressure_constraint(self):
+        """Deactivate the mixer pressure = mimimum inlet pressure constraint and
+        activate the mixer pressure and all inlet pressures are equal
+        constraints. This should only be used when momentum_mixing_type ==
+        MomentumMixingType.minimize_and_equality.
+        """
+        if self.config.momentum_mixing_type != \
+            MomentumMixingType.minimize_and_equality:
+            _log.warning(
+"""use_equal_pressure_constraint() can only be used when
+momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
+            return
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 

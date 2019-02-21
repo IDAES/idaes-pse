@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -8,7 +8,7 @@
 #
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes".
+# at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
 Multistage steam turbine for power generation.
@@ -30,7 +30,7 @@ from idaes.unit_models.power_generation import (
     TurbineInletStage, TurbineStage, TurbineOutletStage, SteamValve)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import from_json, to_json, StoreSpec
-from .turbine_multistage_config import _define_turbine_mutlistage_config
+from .turbine_multistage_config import _define_turbine_multistage_config
 from idaes.ui.report import degrees_of_freedom
 
 def _set_port(p1, p2):
@@ -44,7 +44,7 @@ def _set_port(p1, p2):
 class TurbineMultistageData(UnitModelBlockData):
 
     CONFIG = ConfigBlock()
-    _define_turbine_mutlistage_config(CONFIG)
+    _define_turbine_multistage_config(CONFIG)
 
     def build(self):
         super(TurbineMultistageData, self).build()
@@ -67,13 +67,13 @@ class TurbineMultistageData(UnitModelBlockData):
         self.outlet_stage = TurbineOutletStage(default=unit_cfg)
 
         for i in self.hp_stages:
-            self.hp_stages[i].ratioP[:].fix()
+            self.hp_stages[i].ratioP.fix()
             self.hp_stages[i].efficiency_isentropic[:].fix()
         for i in self.ip_stages:
-            self.ip_stages[i].ratioP[:].fix()
+            self.ip_stages[i].ratioP.fix()
             self.ip_stages[i].efficiency_isentropic[:].fix()
         for i in self.lp_stages:
-            self.lp_stages[i].ratioP[:].fix()
+            self.lp_stages[i].ratioP.fix()
             self.lp_stages[i].efficiency_isentropic[:].fix()
 
         # Make the config args for each splitter
@@ -139,7 +139,7 @@ class TurbineMultistageData(UnitModelBlockData):
                     sr.add((i[0], 1))
                     sr.add((i[0], 2))
                 elif i[0] not in splits:
-                    # no splitter and not disconnected so just second steam
+                    # no splitter and not disconnected so just second stream
                     sr.add((i[0], 2))
                 else:
                     # has splitter so need both streams don't remove anything
@@ -149,13 +149,13 @@ class TurbineMultistageData(UnitModelBlockData):
 
         def _arc_rule(turbines, splitters):
             """
-            This creates a rule function for arcs in a tubrine section. when
-            this is used the indexes for nonexitant stream will have already
+            This creates a rule function for arcs in a turbine section. when
+            this is used the indexes for nonexistant stream will have already
             been removed, so any indexes the rule will get should have a stream
-            accossiated.
+            associated.
 
             Args:
-                turbines (TurbinStage): Indexed block with turbine section stages
+                turbines (TurbineStage): Indexed block with turbine section stages
                 splitters (Separator): Indexed block of splitters
             """
             def _rule(b, i, j):
@@ -191,7 +191,7 @@ class TurbineMultistageData(UnitModelBlockData):
         self.lp_stream = Arc(self.lp_stream_idx,
             rule=_arc_rule(self.lp_stages, self.lp_split))
 
-        # Connect hp section to ip section unless its a disconnect locations
+        # Connect hp section to ip section unless its a disconnect location
         last_hp = config.num_hp
         if 0 not in config.ip_disconnect and last_hp not in config.hp_disconnect:
             if last_hp in config.hp_split_locations: # connect splitter to ip
@@ -202,7 +202,7 @@ class TurbineMultistageData(UnitModelBlockData):
                 self.hp_to_ip_stream = Arc(
                     source=self.hp_stages[last_hp].outlet,
                     destination=self.ip_stages[1].inlet)
-        # Connect ip section to lp section unless its a disconnect locations
+        # Connect ip section to lp section unless its a disconnect location
         last_ip = config.num_ip
         if 0 not in config.lp_disconnect and last_ip not in config.ip_disconnect:
             if last_ip in config.ip_split_locations: # connect splitter to ip
@@ -244,9 +244,8 @@ class TurbineMultistageData(UnitModelBlockData):
     def _add_inlet_stage(self, unit_cfg):
         """
         Add parallel turbine inlet stage models to simulate partial arc
-        addmission. This includes a splitter mixer and a control valve before
-        each stage. (TODO add throttle valves once a valve model is available
-        from the basic framework models.)
+        admission. This includes a splitter mixer and a control valve before
+        each stage.
 
         Args:
             unit_cfg: The base unit config dict.
@@ -346,11 +345,11 @@ class TurbineMultistageData(UnitModelBlockData):
             ol = getattr(self.inlet_split, "outlet_{}".format(i))
             ol.unfix()
         self.inlet_split.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        # free split frations
+        # free split fractions
         for i in self.inlet_stage_idx:
             self.inlet_split.split_fraction[0, "outlet_{}".format(i)].unfix()
 
-        # Initliaize valves
+        # Initialize valves
         for i in self.inlet_stage_idx:
             _set_port(self.throttle_valve[i].inlet,
                       getattr(self.inlet_split, "outlet_{}".format(i)))
@@ -407,12 +406,4 @@ class TurbineMultistageData(UnitModelBlockData):
         _set_port(self.outlet_stage.inlet, prev_port)
         self.outlet_stage.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
-        #self.hp_stages[7].display()
-        #self.ip_stages[1].display()
-        #self.ip_stages[14].display()
-        #self.lp_stages.display()
-
         from_json(self, sd=istate, wts=sp)
-
-        print(degrees_of_freedom(self))
-        #assert(degrees_of_freedom(self)==0)

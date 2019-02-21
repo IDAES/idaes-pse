@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -8,7 +8,7 @@
 #
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes".
+# at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
 This provides valve models for steam and liquid water.  These are for
@@ -24,7 +24,8 @@ import logging
 _log = logging.getLogger(__name__)
 
 from pyomo.common.config import In, ConfigValue
-from pyomo.environ import Var, Expression, SolverFactory, value, Constraint, sqrt
+from pyomo.environ import (Var, Expression, SolverFactory, value,
+                           Constraint, sqrt, Param)
 from pyomo.opt import TerminationCondition
 
 from idaes.core import declare_process_block_class
@@ -51,7 +52,7 @@ def _liquid_pressure_flow_rule(b, t):
     F = b.control_volume.properties_in[t].flow_mol
     Cv = b.Cv
     fun = b.valve_function[t]
-    return 1e-3*F**2 == 1e-3*Cv**2*(Pi - Po)*fun**2
+    return (1/b.flow_scale**2)*F**2 == (1/b.flow_scale**2)*Cv**2*(Pi - Po)*fun**2
 
 def _vapor_pressure_flow_rule(b, t):
     """
@@ -62,7 +63,8 @@ def _vapor_pressure_flow_rule(b, t):
     F = b.control_volume.properties_in[t].flow_mol
     Cv = b.Cv
     fun = b.valve_function[t]
-    return 1e-6*F**2 == 1e-6*Cv**2*(Pi**2 - Po**2)*fun**2
+    return (1/b.flow_scale**2)*F**2 == \
+        (1/b.flow_scale**2)*Cv**2*(Pi**2 - Po**2)*fun**2
 
 
 @declare_process_block_class("SteamValve", doc="Basic steam valve models")
@@ -79,6 +81,9 @@ class SteamValveData(PressureChangerData):
             doc="Fraction open for valve from 0 to 1")
         self.Cv = Var(initialize=0.1, doc="Valve flow coefficent, for vapor "
             "[mol/s/Pa] for liquid [mol/s/Pa^0.5]")
+        self.flow_scale = Param(mutable=True, default=1e3, doc=
+            "Scaling factor for pressure flow relation should be approximatly"
+            " the same order of magnitude as the expected flow.")
         self.Cv.fix()
         self.valve_opening.fix()
 
