@@ -18,7 +18,6 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import ConcreteModel, Set, Var
 from pyomo.network import Port
-from pyomo.common.config import ConfigValue
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault, PhysicalParameterBlock,
@@ -285,6 +284,25 @@ def test_add_inlet_port_CV0D_full_args():
         m.fs.u.cv.properties_in[0].c.value
 
 
+def test_add_inlet_port_CV0D_part_args():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.cv = ControlVolume0DBlock(
+            default={"property_package": m.fs.pp})
+
+    m.fs.u.cv.add_state_blocks()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.u.add_inlet_port(block=m.fs.u.cv)
+
+    with pytest.raises(ConfigurationError):
+        m.fs.u.add_inlet_port(name="foo")
+
+
 def test_add_outlet_port_CV0D():
     m = ConcreteModel()
     m.fs = Flowsheet()
@@ -361,3 +379,22 @@ def test_add_outlet_port_CV0D_full_args():
         m.fs.u.cv.properties_out[0].b.value
     assert m.fs.u.test_port.c[0].value == \
         m.fs.u.cv.properties_out[0].c.value
+
+
+def test_add_inlet_port_CV0D_part_args():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.cv = ControlVolume0DBlock(
+            default={"property_package": m.fs.pp})
+
+    m.fs.u.cv.add_state_blocks(has_phase_equilibrium=False)
+
+    with pytest.raises(ConfigurationError):
+        m.fs.u.add_outlet_port(block=m.fs.u.cv)
+
+    with pytest.raises(ConfigurationError):
+        m.fs.u.add_outlet_port(name="foo")
