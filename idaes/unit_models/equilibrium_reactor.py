@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Standard IDAES CSTR model.
+Standard IDAES Equilibrium Reactor model.
 """
 from __future__ import division
 
@@ -30,35 +30,28 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.misc import add_object_reference
 
-__author__ = "Andrew Lee, Vibhav Dabadghao"
+__author__ = "Andrew Lee"
 
 
-@declare_process_block_class("CSTR")
-class CSTRData(UnitModelBlockData):
+@declare_process_block_class("EquilibriumReactor")
+class EquilibriumReactorData(UnitModelBlockData):
     """
-    Standard CSTR Unit Model Class
+    Standard Equilibrium Reactor Unit Model Class
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
-        default=useDefault,
-        description="Dynamic model flag",
+        domain=In([False]),
+        default=False,
+        description="Dynamic model flag - must be False",
         doc="""Indicates whether this model will be dynamic or not,
-**default** = useDefault.
-**Valid values:** {
-**useDefault** - get flag from parent (default = False),
-**True** - set as a dynamic model,
-**False** - set as a steady-state model.}"""))
+**default** = False. Equilibrium Reactors do not support dynamic behavior."""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
-        domain=In([True, False]),
-        description="Holdup construction flag",
+        domain=In([False]),
+        description="Holdup construction flag - must be False",
         doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
+**default** - False. Equilibrium reactors do not have defined volume, thus
+this must be False."""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
@@ -95,25 +88,16 @@ Must be True if dynamic = True,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_heat_transfer", ConfigValue(
-        default=False,
+    CONFIG.declare("has_rate_reactions", ConfigValue(
+        default=True,
         domain=In([True, False]),
-        description="Heat transfer term construction flag",
-        doc="""Indicates whether terms for heat transfer should be constructed,
-**default** - False.
+        description="Rate reaction construction flag",
+        doc="""Indicates whether terms for rate controlled reactions
+should be constructed, along with constraints equating these to zero,
+**default** - True.
 **Valid values:** {
-**True** - include heat transfer terms,
-**False** - exclude heat transfer terms.}"""))
-    CONFIG.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
+**True** - include rate reaction terms,
+**False** - exclude rate reaction terms.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
         default=True,
         domain=In([True, False]),
@@ -124,6 +108,24 @@ should be constructed,
 **Valid values:** {
 **True** - include equilibrium reaction terms,
 **False** - exclude equilibrium reaction terms.}"""))
+    CONFIG.declare("has_phase_equilibrium", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Phase equilibrium term construction flag",
+        doc="""Indicates whether terms for phase equilibrium should be
+constructed, **default** - True.
+**Valid values:** {
+**True** - include phase equilibrium term,
+**False** - exclude phase equlibirum terms.}"""))
+    CONFIG.declare("has_heat_transfer", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Heat transfer term construction flag",
+        doc="""Indicates whether terms for heat transfer should be constructed,
+**default** - False.
+**Valid values:** {
+**True** - include heat transfer terms,
+**False** - exclude heat transfer terms.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -134,6 +136,16 @@ constructed,
 **Valid values:** {
 **True** - include heat of reaction terms,
 **False** - exclude heat of reaction terms.}"""))
+    CONFIG.declare("has_pressure_change", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Pressure change term construction flag",
+        doc="""Indicates whether terms for pressure change should be
+constructed,
+**default** - False.
+**Valid values:** {
+**True** - include pressure change terms,
+**False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -171,14 +183,16 @@ see reaction package for documentation.}"""))
 
     def build(self):
         """
-        Begin building model (pre-DAE transformation).
+        Begin building model.
+
         Args:
             None
+
         Returns:
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(CSTRData, self).build()
+        super(EquilibriumReactorData, self).build()
 
         # Build Control Volume
         self.control_volume = ControlVolume0DBlock(default={
@@ -189,17 +203,19 @@ see reaction package for documentation.}"""))
                 "reaction_package": self.config.reaction_package,
                 "reaction_package_args": self.config.reaction_package_args})
 
-        self.control_volume.add_geometry()
+        # No need for control volume geometry
 
-        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
+        self.control_volume.add_state_blocks(
+                has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_reaction_blocks(
                 has_equilibrium=self.config.has_equilibrium_reactions)
 
         self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type,
-            has_rate_reactions=True,
-            has_equilibrium_reactions=self.config.has_equilibrium_reactions)
+            has_rate_reactions=self.config.has_rate_reactions,
+            has_equilibrium_reactions=self.config.has_equilibrium_reactions,
+            has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
@@ -222,20 +238,17 @@ see reaction package for documentation.}"""))
                              "phase_list_ref",
                              self.control_volume.phase_list_ref)
         add_object_reference(self,
-                             "volume",
-                             self.control_volume.volume)
-        add_object_reference(self,
                              "rate_reaction_idx_ref",
                              self.control_volume.rate_reaction_idx_ref)
 
-        # Add CSTR performance equation
-        @self.Constraint(self.time_ref,
-                         self.rate_reaction_idx_ref,
-                         doc="CSTR performance equation")
-        def cstr_performance_eqn(b, t, r):
-            return b.control_volume.rate_reaction_extent[t, r] == (
-                            b.volume[t] *
-                            b.control_volume.reactions[t].reaction_rate[r])
+        if self.config.has_rate_reactions:
+            # Add equilibrium reactor performance equation
+            @self.Constraint(self.time_ref,
+                             self.rate_reaction_idx_ref,
+                             doc="Rate reaction equilibrium constraint")
+            def rate_reaction_constraint(b, t, r):
+                # Set kinetic reaction rates to zero
+                return b.control_volume.reactions[t].reaction_rate[r] == 0
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and

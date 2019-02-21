@@ -345,7 +345,8 @@ class HeatExchangerData(UnitModelBlockData):
     def initialize(self, state_args_1=None, state_args_2=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}, duty=10000):
         """
-        Heat echanger initialization method.
+        Heat exchanger initialization method.
+
         Args:
             state_args_1 : a dict of arguments to be passed to the property
                 initialization for side_1 (see documentation of the specific
@@ -363,8 +364,10 @@ class HeatExchangerData(UnitModelBlockData):
                      initialization (default = 'ipopt')
             duty : an initial guess for the amount of heat transfered
                 (default = 10000)
+
         Returns:
             None
+
         """
 
         self.heat_duty.value = duty  # probably best start with a positive duty
