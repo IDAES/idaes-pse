@@ -11,7 +11,7 @@ CSTRs generally have one degree of freedom. Typically, the fixed variable is rea
 Model Structure
 ---------------
 
-The core CSTR unit model consists of a single ``ControlVolumn0D`` (named ``control_volume``) with one Inlet Port (named ``inlet``) and one Outlet Port (named ``outlet``).
+The core CSTR unit model consists of a single ``ControlVolume0D`` (named ``control_volume``) with one Inlet Port (named ``inlet``) and one Outlet Port (named ``outlet``).
 
 Additional Constraints
 ----------------------

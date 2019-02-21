@@ -16,7 +16,6 @@ Standard IDAES CSTR model.
 from __future__ import division
 
 # Import Pyomo libraries
-# from pyomo.environ import Reals,  Var, NonNegativeReals
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -192,7 +191,7 @@ see reaction package for documentation.}"""))
 
         self.control_volume.add_geometry()
 
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_reaction_blocks(
                 has_equilibrium=self.config.has_equilibrium_reactions)

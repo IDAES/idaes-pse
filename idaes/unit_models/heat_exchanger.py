@@ -90,8 +90,7 @@ def _make_heater_control_volume(o, name, config):
     setattr(o, name, control_volume)
     # Add inlet and outlet state blocks to control volume
     control_volume.add_state_blocks(
-        has_phase_equilibrium=config.calculate_phase_equilibrium,
-        package_arguments=config.property_package_args)
+        has_phase_equilibrium=config.calculate_phase_equilibrium)
 
     # Add material balance
     control_volume.add_material_balances(
@@ -346,7 +345,8 @@ class HeatExchangerData(UnitModelBlockData):
     def initialize(self, state_args_1=None, state_args_2=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}, duty=10000):
         """
-        Heat echanger initialization method.
+        Heat exchanger initialization method.
+
         Args:
             state_args_1 : a dict of arguments to be passed to the property
                 initialization for side_1 (see documentation of the specific
@@ -364,8 +364,10 @@ class HeatExchangerData(UnitModelBlockData):
                      initialization (default = 'ipopt')
             duty : an initial guess for the amount of heat transfered
                 (default = 10000)
+
         Returns:
             None
+
         """
 
         self.heat_duty.value = duty  # probably best start with a positive duty

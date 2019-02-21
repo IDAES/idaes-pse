@@ -23,12 +23,13 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Param, NonNegativeReals, Set
+from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class, PhysicalParameterBlock
 from idaes.core.util.misc import extract_data
 
-from idaes.property_models.ideal_prop_pack_VLE import IdealStateBlock
+from idaes.property_models.ideal.ideal_prop_pack_VLE import IdealStateBlock
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -43,11 +44,25 @@ _log = logging.getLogger(__name__)
 class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
-
     Contains parameters and indexing sets associated with properties for
-    superheated steam.
-
+    BTX system.
     """
+    # Config block for the _IdealStateBlock
+    CONFIG = PhysicalParameterBlock.CONFIG()
+
+    CONFIG.declare("valid_phase", ConfigValue(
+        default=('Vap', 'Liq'),
+        domain=In(['Liq', 'Vap', ('Vap', 'Liq'), ('Liq', 'Vap')]),
+        description="Flag indicating the valid phase",
+        doc="""Flag indicating the valid phase for a given set of
+conditions, and thus corresponding constraints  should be included,
+**default** - ('Vap', 'Liq').
+**Valid values:** {
+**'Liq'** - Liquid only,
+**'Vap'** - Vapor only,
+**('Vap', 'Liq')** - Vapor-liquid equilibrium,
+**('Liq', 'Vap')** - Vapor-liquid equilibrium,}"""))
+
     def build(self):
         '''
         Callable method for Block construction.
@@ -57,7 +72,14 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.state_block_class = IdealStateBlock
 
         # List of valid phases in property package
-        self.phase_list = Set(initialize=['Liq', 'Vap'])
+        if self.config.valid_phase == ('Liq', 'Vap') or \
+                self.config.valid_phase == ('Vap', 'Liq'):
+            self.phase_list = Set(initialize=['Liq', 'Vap'],
+                                  ordered=True)
+        elif self.config.valid_phase == 'Liq':
+            self.phase_list = Set(initialize=['Liq'])
+        else:
+            self.phase_list = Set(initialize=['Vap'])
 
         self.component_list_master = Set(initialize=['benzene',
                                                      'toluene',
@@ -123,10 +145,10 @@ class PhysicalParameterData(PhysicalParameterBlock):
             doc='Critical temperature [K]')
 
         # Gas Constant
-        self.gas_constant = Param(within=NonNegativeReals,
-                                  mutable=False,
-                                  default=8.314,
-                                  doc='Gas Constant [J/mol.K]')
+        self.gas_const = Param(within=NonNegativeReals,
+                               mutable=False,
+                               default=8.314,
+                               doc='Gas Constant [J/mol.K]')
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -183,34 +205,34 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        vapor_pressure_coeff_data = {('benzene', 'A'): -6.98273,
-                                     ('benzene', 'B'): 1.33213,
-                                     ('benzene', 'C'): -2.62863,
-                                     ('benzene', 'D'): -3.33399,
-                                     ('toluene', 'A'): -7.28607,
-                                     ('toluene', 'B'): 1.38091,
-                                     ('toluene', 'C'): -2.83433,
-                                     ('toluene', 'D'): -2.79168,
-                                     ('o-xylene', 'A'): -7.53357,
-                                     ('o-xylene', 'B'): 1.40968,
-                                     ('o-xylene', 'C'): -3.10985,
-                                     ('o-xylene', 'D'): -2.85992}
+        pressure_sat_coeff_data = {('benzene', 'A'): -6.98273,
+                                   ('benzene', 'B'): 1.33213,
+                                   ('benzene', 'C'): -2.62863,
+                                   ('benzene', 'D'): -3.33399,
+                                   ('toluene', 'A'): -7.28607,
+                                   ('toluene', 'B'): 1.38091,
+                                   ('toluene', 'C'): -2.83433,
+                                   ('toluene', 'D'): -2.79168,
+                                   ('o-xylene', 'A'): -7.53357,
+                                   ('o-xylene', 'B'): 1.40968,
+                                   ('o-xylene', 'C'): -3.10985,
+                                   ('o-xylene', 'D'): -2.85992}
 
-        self.vapor_pressure_coeff = Param(
+        self.pressure_sat_coeff = Param(
             self.component_list,
             ['A', 'B', 'C', 'D'],
             mutable=False,
-            initialize=extract_data(vapor_pressure_coeff_data),
+            initialize=extract_data(pressure_sat_coeff_data),
             doc="parameters to compute Cp_comp")
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        delH_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
+        dh_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
                     'o-xylene': 4.34584e4}
 
-        self.delH_vap = Param(self.component_list,
+        self.dh_vap = Param(self.component_list,
                               mutable=False,
-                              initialize=extract_data(delH_vap),
+                              initialize=extract_data(dh_vap),
                               doc="heat of vaporization")
 
     @classmethod
@@ -224,7 +246,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
              'flow_mol_phase': {'method': None, 'units': 'mol/s'},
              'density_mol': {'method': '_density_mol',
                              'units': 'mol/m^3'},
-             'vapor_pressure': {'method': '_vapor_pressure', 'units': 'Pa'},
+             'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
              'mole_frac_phase': {'method': '_mole_frac_phase',
                                  'units': 'no unit'},
              'enthalpy_comp_liq': {'method': '_enthalpy_comp_liq',
