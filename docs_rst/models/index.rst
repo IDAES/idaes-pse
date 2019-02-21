@@ -5,6 +5,10 @@ Unit Model Library
     :maxdepth: 1
 
     cstr
+    equilibrium
+    feed
+    feed_flash
+    flash
     gibbs_reactor
     heater
     heat_exchanger
@@ -12,7 +16,8 @@ Unit Model Library
     mixer
     pfr
     pressure_changer
-    flash
+    product
     separator
     stoichiometric_reactor
+    translator
     power_generation/index
