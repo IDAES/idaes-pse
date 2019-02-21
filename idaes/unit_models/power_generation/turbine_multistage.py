@@ -56,11 +56,21 @@ class TurbineMultistageData(UnitModelBlockData):
             "property_package":config.property_package,
             "property_package_args":config.property_package_args,
         }
-        # add inlet stage
-        self._add_inlet_stage(unit_cfg)
-        # add turbine stages.
-        # inlet stage -> hp stages -> ip stages -> lp stages -> outlet stage
+        ni = self.config.num_parallel_inlet_stages
+        inlet_idx = self.inlet_stage_idx = RangeSet(ni)
 
+        # Adding unit models
+        #------------------------
+
+        # Splitter to inlet that splits main flow into parallel flows for
+        # paritial arc admission to the turbine
+        self.inlet_split = Separator(default=self._split_cfg(unit_cfg, ni))
+        self.throttle_valve = SteamValve(inlet_idx, default=unit_cfg)
+        self.inlet_stage = TurbineInletStage(inlet_idx, default=unit_cfg)
+        # mixer to combine the parallel flows back together
+        self.inlet_mix = Mixer(default=self._mix_cfg(unit_cfg, ni))
+        # add turbine sections.
+        # inlet stage -> hp stages -> ip stages -> lp stages -> outlet stage
         self.hp_stages = TurbineStage(RangeSet(config.num_hp), default=unit_cfg)
         self.ip_stages = TurbineStage(RangeSet(config.num_ip), default=unit_cfg)
         self.lp_stages = TurbineStage(RangeSet(config.num_lp), default=unit_cfg)
@@ -76,45 +86,51 @@ class TurbineMultistageData(UnitModelBlockData):
             self.lp_stages[i].ratioP.fix()
             self.lp_stages[i].efficiency_isentropic[:].fix()
 
-        # Make the config args for each splitter
-        # first the generic splitter config
-        s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
-        s_cfg.update(split_basis=SplittingType.totalFlow, ideal_separation=False,
-            energy_split_basis=EnergySplittingType.equal_molar_enthalpy)
-        del s_cfg["has_phase_equilibrium"]
-        s_cfg["num_outlets"] = 2
-        # Then make one for each splitter
+        # Then make splitter config.  If number of outlets is specified
+        # make a specific config, otherwise use default with 2 outlets
+        s_sfg_default = self._split_cfg(unit_cfg, 2)
         hp_splt_cfg = {}
-        for i in config.hp_split_locations:
-            hp_splt_cfg[i] = copy.copy(s_cfg)
         ip_splt_cfg = {}
-        for i in config.ip_split_locations:
-            ip_splt_cfg[i] = copy.copy(s_cfg)
         lp_splt_cfg = {}
-        for i in config.lp_split_locations:
-            lp_splt_cfg[i] = copy.copy(s_cfg)
         # Now to finish up if there are more than two outlets, set that
         for i, v in config.hp_split_num_outlets.items():
-            hp_splt_cfg[i]["num_outlets"] = v
+            hp_splt_cfg[i] = self._split_cfg(unit_cfg, v)
         for i, v in config.ip_split_num_outlets.items():
-            ip_splt_cfg[i]["num_outlets"] = v
+            ip_splt_cfg[i] = self._split_cfg(unit_cfg, v)
         for i, v in config.lp_split_num_outlets.items():
-            lp_splt_cfg[i]["num_outlets"] = v
+            lp_splt_cfg[i] = self._split_cfg(unit_cfg, v)
         # put in splitters for turbine steam extractions
         if config.hp_split_locations:
-            self.hp_split = Separator(
-                config.hp_split_locations, initialize=hp_splt_cfg)
+            self.hp_split = Separator(config.hp_split_locations,
+                default=s_sfg_default, initialize=hp_splt_cfg)
         if config.ip_split_locations:
-            self.ip_split = Separator(
-                config.ip_split_locations, initialize=ip_splt_cfg)
+            self.ip_split = Separator(config.ip_split_locations,
+                default=s_sfg_default, initialize=ip_splt_cfg)
         if config.lp_split_locations:
-            self.lp_split = Separator(
-                config.lp_split_locations, initialize=lp_splt_cfg)
+            self.lp_split = Separator(config.lp_split_locations,
+                default=s_sfg_default, initialize=lp_splt_cfg)
 
-        # All the unit models are in place next step is to connect them
-        #   arcs come up in this section and Pyomo arcs for connecting ports
-        #   not related for turbine steam admission.
+        # Done with unit models.  Adding Arcs (streams).
+        #------------------------------------------------
 
+        # First up add streams in the inlet section
+        def _split_to_rule(b, i):
+            return {"source":getattr(self.inlet_split, "outlet_{}".format(i)),
+                    "destination":self.throttle_valve[i].inlet}
+        def _valve_to_rule(b, i):
+            return {"source":self.throttle_valve[i].outlet,
+                    "destination":self.inlet_stage[i].inlet}
+        def _inlet_to_rule(b, i):
+            return {"source":self.inlet_stage[i].outlet,
+                    "destination":getattr(self.inlet_mix, "inlet_{}".format(i))}
+
+        self.split_to_valve_stream = Arc(inlet_idx, rule=_split_to_rule)
+        self.valve_to_inlet_stage_stream = Arc(inlet_idx, rule=_valve_to_rule)
+        self.inlet_stage_to_mix = Arc(inlet_idx, rule=_inlet_to_rule)
+
+        # There are three sections HP, IP, and LP which all have the same sort
+        # of internal connctions, so the functions below provide some generic
+        # capcbilities for adding the internal Arcs (streams).
         def _arc_indexes(nstages, index_set, discon, splits):
             """
             This takes the index set of all possible streams in a turbine
@@ -128,7 +144,7 @@ class TurbineMultistageData(UnitModelBlockData):
                 discon (list): Disconnected stages in the section
                 splits (list): Spliter locations
             """
-            sr = set()
+            sr = set() # set of things to remove from the Arc index set
             for i in index_set:
                 if (i[0] in discon or i[0] == nstages) and i[0] in splits:
                     # don't connect stage i to next remove stream after split
@@ -143,12 +159,12 @@ class TurbineMultistageData(UnitModelBlockData):
                 else:
                     # has splitter so need both streams don't remove anything
                     pass
-            for i in sr:
+            for i in sr: # remove the unneeded Arc indexes
                 index_set.remove(i)
 
         def _arc_rule(turbines, splitters):
             """
-            This creates a rule function for arcs in a turbine section. when
+            This creates a rule function for arcs in a turbine section. When
             this is used the indexes for nonexistant stream will have already
             been removed, so any indexes the rule will get should have a stream
             associated.
@@ -240,54 +256,38 @@ class TurbineMultistageData(UnitModelBlockData):
                 destination=self.outlet_stage.inlet)
         TransformationFactory("network.expand_arcs").apply_to(self)
 
-    def _add_inlet_stage(self, unit_cfg):
+    def _split_cfg(self, unit_cfg, no=2):
         """
-        Add parallel turbine inlet stage models to simulate partial arc
-        admission. This includes a splitter mixer and a control valve before
-        each stage.
+        This creates a configuration dictionary for a splitter.
 
         Args:
             unit_cfg: The base unit config dict.
+            no: Number of outlets, default=2
         """
-        ni = self.config.num_parallel_inlet_stages
-        self.inlet_stage_idx = RangeSet(ni)
-        inlet_idx = self.inlet_stage_idx
-
-        # Splitter config
+        # Create a dict for splitter config args
         s_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
-        s_cfg.update(split_basis=SplittingType.totalFlow, ideal_separation=False,
-            num_outlets=ni,
+        s_cfg.update(
+            split_basis=SplittingType.totalFlow,
+            ideal_separation=False,
+            num_outlets=no,
             energy_split_basis=EnergySplittingType.equal_molar_enthalpy)
         del s_cfg["has_phase_equilibrium"]
-        # add splitter
-        self.inlet_split = Separator(default=s_cfg)
+        return s_cfg
 
-        # Add turbine stages
-        self.throttle_valve = SteamValve(inlet_idx, default=unit_cfg)
-        self.inlet_stage = TurbineInletStage(inlet_idx, default=unit_cfg)
+    def _mix_cfg(self, unit_cfg, ni=2):
+        """
+        This creates a configuration dictionary for a mixer.
 
-        # Mixer config
+        Args:
+            unit_cfg: The base unit config dict.
+            ni: Number of inlets, default=2
+        """
         m_cfg = copy.copy(unit_cfg) # splitter config based on unit_cfg
-        m_cfg.update(num_inlets=ni,
+        m_cfg.update(
+            num_inlets=ni,
             momentum_mixing_type=MomentumMixingType.minimize_and_equality)
         del m_cfg["has_phase_equilibrium"]
-        # Add mixer
-        self.inlet_mix = Mixer(default=m_cfg)
-
-        # Add connections
-        def _split_to_rule(b, i):
-            return {"source":getattr(self.inlet_split, "outlet_{}".format(i)),
-                    "destination":self.throttle_valve[i].inlet}
-        def _valve_to_rule(b, i):
-            return {"source":self.throttle_valve[i].outlet,
-                    "destination":self.inlet_stage[i].inlet}
-        def _inlet_to_rule(b, i):
-            return {"source":self.inlet_stage[i].outlet,
-                    "destination":getattr(self.inlet_mix, "inlet_{}".format(i))}
-
-        self.split_to_valve_stream = Arc(inlet_idx, rule=_split_to_rule)
-        self.valve_to_inlet_stage_stream = Arc(inlet_idx, rule=_valve_to_rule)
-        self.inlet_stage_to_mix = Arc(inlet_idx, rule=_inlet_to_rule)
+        return m_cfg
 
     def throttle_cv_fix(self, value):
         """
