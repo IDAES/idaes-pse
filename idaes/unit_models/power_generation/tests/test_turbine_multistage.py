@@ -26,7 +26,10 @@ from idaes.unit_models import Heater
 from idaes.unit_models.power_generation import (
     TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
 from idaes.property_models import iapws95_ph
+from idaes.property_models.iapws95 import iapws95_available
 from idaes.ui.report import degrees_of_freedom
+
+prop_available = iapws95_available()
 
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
@@ -34,19 +37,6 @@ if SolverFactory('ipopt').available():
     solver.options = {'tol': 1e-6}
 else:
     solver = None
-
-def build_turbine_for_buid_test():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
-    # use the default number of stages
-    m.fs.turb = TurbineMultistage(default={
-        "property_package": m.fs.properties,
-        "hp_split_locations": [0],
-        "ip_split_locations": [1,2],
-        "lp_split_locations": [3,4],
-        "lp_split_num_outlets": {3:3}})
-    return m
 
 def build_turbine_for_run_test():
     m = ConcreteModel()
@@ -73,6 +63,8 @@ def build_turbine_for_run_test():
 
     return m
 
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize():
     """Make a turbine model and make sure it doesn't throw exception"""
     m = build_turbine_for_run_test()

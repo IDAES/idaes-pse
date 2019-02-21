@@ -275,6 +275,8 @@ class _StateBlock(StateBlock):
     def initialize(self, *args, **kwargs):
         flags = {}
         hold_state = kwargs.pop("hold_state", False)
+        for i in self:
+            self[i].initialize(*args, **kwargs)
         for i, v in self.items(): #
             flags[i] = (v.flow_mol.fixed,
                         v.enth_mol.fixed,
@@ -310,7 +312,7 @@ class Iapws95StateBlockData(StateBlockData):
         #
         # This is where stuff would get initialized if there was anything to do
         #
-        # reset the values of fixed variables so this doesn't propblem
+        # reset the values of fixed variables so this doesn't change problem
         if self.flow_mol.is_fixed():
             self.flow_mol.value = Fold
         if self.pressure.is_fixed():
