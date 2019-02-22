@@ -6,7 +6,7 @@ Supplying a configuration file is optional. Currently this file sets logging
 configuration and modules that should be searched for plugins. The
 configuration is done when first importing any idaes.* module. The IDAES
 framework will first attempt to read a user-level configuration file at
-%LOCALAPPDATA%\\idaes\\idaes.conf on Windows or $HOME/.idaes/idaes.conf on
+``%LOCALAPPDATA%\idaes\idaes.conf`` on Windows or ``$HOME/.idaes/idaes.conf`` on
 other operating systems (e.g. Linux or Mac).  Next if an idaes.conf file exists
 in the working directory it will be read. Configuration files in the working
 directory will override settings in the user-level configuration file.  The user
