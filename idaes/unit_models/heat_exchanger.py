@@ -402,7 +402,6 @@ class HeatExchangerData(UnitModelBlockData):
                       .format(self.name))
         # ---------------------------------------------------------------------
         # Solve unit
-        self.display()
         results = opt.solve(self, tee=stee, symbolic_solver_labels=True)
 
         if outlvl > 0:
