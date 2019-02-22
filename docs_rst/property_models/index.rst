@@ -1,9 +1,6 @@
 Property Model Library
 ======================
 
-Property Model Contents
------------------------
-
 .. toctree::
     :maxdepth: 1
 

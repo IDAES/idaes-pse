@@ -16,9 +16,9 @@ initialization scheme is the same as the :ref:`TurbineInletStage model
 Example
 -------
 
-.. code-block:: python
+.. testcode:: 
 
-    from pyomo.environ import ConcreteModel, SolverFactory,
+    from pyomo.environ import ConcreteModel, SolverFactory
 
     from idaes.core import FlowsheetBlock
     from idaes.unit_models.power_generation import TurbineStage
@@ -34,14 +34,14 @@ Example
     m.fs.turb.inlet[:].pressure.fix(8e6)
     m.fs.turb.efficiency_isentropic[:].fix(0.8)
     m.fs.turb.ratioP[:].fix(0.7)
-    m.fs.turb.initialize(outlvl=4)
+    m.fs.turb.initialize()
 
 
 Variables
 ---------
 
-This model adds a variable to account for mechanical efficiency to the base PressureChanger
-model.
+This model adds a variable to the base ``PressureChanger model`` to account
+for mechanical efficiency .
 
 =========================== ======================== =========== ======================================================================
 Variable                    Symbol                   Index Sets  Doc
@@ -64,8 +64,8 @@ Variable                    Symbol                   Index Sets  Doc
 Expressions
 -----------
 
-Currently this model provides two additional expressions, with are not available
-in the pressure changer model.
+This model provides two expressions that are not available in the
+pressure changer model.
 
 =========================== ========================= =========== ======================================================================
 Variable                    Symbol                    Index Sets  Doc
@@ -82,7 +82,7 @@ There are no additional constraints.
 Initialization
 --------------
 
-This just calls the initialization routine from PressureChanger, but it is wrapped in
+This just calls the initialization routine from ``PressureChanger``, but it is wrapped in
 a function to ensure the state after initialization is the same as before initialization.
 The arguments to the initialization method are the same as PressureChanger.
 
@@ -93,7 +93,7 @@ TurbineStage Class
   :members:
 
 TurbineStageData Class
----------------------------
+----------------------
 
 .. autoclass:: TurbineStageData
   :members:

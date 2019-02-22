@@ -37,17 +37,16 @@ def _define_config(config):
         doc="""The type of valve function, if custom provide an expression rule
 with the valve_function_rule argument.
 **default** - ValveFunctionType.linear
-**Valid values - ** {
+**Valid values** - {
 ValveFunctionType.linear,
 ValveFunctionType.quick_opening,
 ValveFunctionType.equal_percentage,
 ValveFunctionType.custom}"""))
     config.declare("valve_function_rule", ConfigValue(
         default=None,
-        description="This is a rule that returns a time indexed valve function"
-                    " expression.",
-        doc="This is a rule with time index that returns an expression for the "
-            "this is required only if valve_function==ValveFunctionType.custom"))
+        description="This is a rule that returns a time indexed valve function expression.",
+        doc="""This is a rule that returns a time indexed valve function expression.
+This is required only if valve_function==ValveFunctionType.custom"""))
     config.declare("phase", ConfigValue(
         default="Vap",
         domain=In(("Vap", "Liq")),

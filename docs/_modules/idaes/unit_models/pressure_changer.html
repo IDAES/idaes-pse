@@ -19,32 +19,35 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -93,8 +96,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -185,12 +189,12 @@
 <span class="kn">from</span> <span class="nn">pyomo.common.config</span> <span class="k">import</span> <span class="n">ConfigBlock</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">,</span> <span class="n">In</span>
 
 <span class="c1"># Import IDAES cores</span>
-<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">ControlVolume0D</span><span class="p">,</span>
+<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">ControlVolume0DBlock</span><span class="p">,</span>
                         <span class="n">declare_process_block_class</span><span class="p">,</span>
                         <span class="n">EnergyBalanceType</span><span class="p">,</span>
                         <span class="n">MomentumBalanceType</span><span class="p">,</span>
                         <span class="n">MaterialBalanceType</span><span class="p">,</span>
-                        <span class="n">UnitBlockData</span><span class="p">,</span>
+                        <span class="n">UnitModelBlockData</span><span class="p">,</span>
                         <span class="n">useDefault</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.config</span> <span class="k">import</span> <span class="n">is_physical_parameter_block</span><span class="p">,</span> <span class="n">list_of_strings</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.misc</span> <span class="k">import</span> <span class="n">add_object_reference</span>
@@ -200,7 +204,7 @@
 
 
 <div class="viewcode-block" id="PressureChangerData"><a class="viewcode-back" href="../../../models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;PressureChanger&quot;</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">PressureChangerData</span><span class="p">(</span><span class="n">UnitBlockData</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">PressureChangerData</span><span class="p">(</span><span class="n">UnitModelBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Standard Compressor/Expander Unit Model Class</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -317,7 +321,7 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">PressureChangerData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
 
         <span class="c1"># Add a control volume to the unit including setting up dynamics.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">control_volume</span> <span class="o">=</span> <span class="n">ControlVolume0D</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">{</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">control_volume</span> <span class="o">=</span> <span class="n">ControlVolume0DBlock</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">{</span>
                 <span class="s2">&quot;dynamic&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span><span class="p">,</span>
                 <span class="s2">&quot;has_holdup&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_holdup</span><span class="p">,</span>
                 <span class="s2">&quot;property_package&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="p">,</span>
@@ -328,7 +332,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">control_volume</span><span class="o">.</span><span class="n">add_geometry</span><span class="p">()</span>
 
         <span class="c1"># Add inlet and outlet state blocks to control volume</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">control_volume</span><span class="o">.</span><span class="n">add_state_blocks</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">control_volume</span><span class="o">.</span><span class="n">add_state_blocks</span><span class="p">(</span><span class="n">has_phase_equilibrium</span><span class="o">=</span>
+                                             <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_phase_equilibrium</span><span class="p">)</span>
 
         <span class="c1"># Add mass balance</span>
         <span class="c1"># Set has_equilibrium is False for now</span>
@@ -664,7 +669,7 @@
                                 <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
                                 <span class="n">optarg</span><span class="o">=</span><span class="n">optarg</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Call the general initialization routine in UnitBlockData</span>
+            <span class="c1"># Call the general initialization routine in UnitModelBlockData</span>
             <span class="nb">super</span><span class="p">(</span><span class="n">PressureChangerData</span><span class="p">,</span> <span class="n">blk</span><span class="p">)</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">state_args</span><span class="o">=</span><span class="n">state_args</span><span class="p">,</span>
                                                        <span class="n">outlvl</span><span class="o">=</span><span class="n">outlvl</span><span class="p">,</span>
                                                        <span class="n">solver</span><span class="o">=</span><span class="n">solver</span><span class="p">,</span>
@@ -791,27 +796,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
