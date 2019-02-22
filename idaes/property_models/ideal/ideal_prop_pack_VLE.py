@@ -178,14 +178,23 @@ class _IdealStateBlock(StateBlock):
                 except AttributeError:
                     pass
 
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
+        if (blk[k].config.has_phase_equilibrium) or \
+                (blk[k].config.parameters.config.valid_phase ==
+                    ('Liq', 'Vap')) or \
+                (blk[k].config.parameters.config.valid_phase ==
+                    ('Vap', 'Liq')):
+            results = solve_indexed_blocks(opt, [blk], tee=stee)
 
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                print(blk, "Initialisation step 1 for properties complete")
-            else:
-                print(blk, "Initialisation step 1 for properties failed")
+            if outlvl > 0:
+                if results.solver.termination_condition \
+                        == TerminationCondition.optimal:
+                    print(blk, "Initialisation step 1 for properties complete")
+                else:
+                    print(blk, "Initialisation step 1 for properties failed")
+
+        else:
+            if outlvl > 0:
+                print(blk, "Initialisation step 1 for properties skipped")
 
         for k in blk.keys():
             blk[k].eq_total.activate()
