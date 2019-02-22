@@ -11,30 +11,22 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from idaes.vis.vis_exceptions import *
 from enum import Enum
-from bokeh.models import ColumnDataSource, LabelSet
 from bokeh.models import Arrow, OpenHead, NormalHead
 from bokeh.models import Label, HoverTool, CircleCross, X
 from bokeh.plotting import figure, output_file, show, ColumnDataSource
-from bokeh.resources import CDN
-from bokeh.embed import file_html
-from bokeh.io import save
-from idaes.vis.plot_utils import *
-from idaes.vis.vis_exceptions import *
-from operator import itemgetter
 from statistics import median
 import random
 
+
 class HENStreamType(Enum):
     """Enum type defining hot and cold streams
-    
     """
-    
     hot = 1
     cold = 2
     hot_utility = 3
     cold_utility = 4
+
 
 def validate(data_frame,x,y,legend=None):
     """Validate that the plot parameters are valid. 
@@ -53,13 +45,14 @@ def validate(data_frame,x,y,legend=None):
         BadDataFrameException - on invalid data frame.
     """
     if not legend and legend is not None:
-        raise MissingVariablesException("Bad legend labels.")
+        raise ValueError("Bad legend labels.")
     is_right_schema = set([x]+y).issubset(set(data_frame.keys()))
     if not is_right_schema:
-        raise BadDataFrameException(
+        raise ValueError(
                 "Invalid data frame passed to plotting function.")
     else:
         return (data_frame is not None) and (not data_frame.empty) and is_right_schema
+
 
 def turn_off_grid_and_axes_ticks(plot):
     """Turn off axis ticks and grid lines on a bokeh figure object.
