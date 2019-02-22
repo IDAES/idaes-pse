@@ -11,11 +11,11 @@ be passed configuration options that affect how a block is built. ProcessBlocks
 have a rule set by default that calls the build method of the contained
 ProcessBlockData class.
 
-.. code-block:: python
+.. testcode::
 
   from pyomo.environ import *
   from pyomo.common.config import ConfigValue
-  from idaes.core import ProcessBlockData, decalre_process_block_class
+  from idaes.core import ProcessBlockData, declare_process_block_class
 
   @declare_process_block_class("MyBlock")
   class MyBlockData(ProcessBlockData):
@@ -31,7 +31,7 @@ The following example demonstrates creating a scalar instance of the new class.
 The ``default`` key word argument is used to pass information on the the
 MyBlockData ConfigBlock.
 
-.. code-block:: python
+.. testcode::
 
     m = ConcreteModel()
     m.b = MyBlock(default={"xinit":1, "yinit":2})
@@ -39,7 +39,7 @@ MyBlockData ConfigBlock.
 The next example creates an indexed MyBlock instance.  In this case, each block is
 configured the same, using the ``default`` argument.
 
-.. code-block:: python
+.. testcode:: 
 
     m = ConcreteModel()
     m.b = MyBlock([0,1,2,3,4], default={"xinit":1, "yinit":2})
@@ -49,7 +49,7 @@ the first block. Initialize is a dictionary of dictionaries where the key of the
 top level dictionary is the block index and the second level dictionary is
 arguments for the config block.
 
-.. code-block:: python
+.. testcode:: 
 
     m = ConcreteModel()
     m.b = MyBlock([0,1,2,3,4], default={"xinit":1, "yinit":2},
@@ -63,11 +63,12 @@ dictionary.  In this case 0 is mapped to 0, 4 is mapped to 4, and all elements
 between 0 and 4 are mapped to 1.  A lambda function is used to convert the block
 index to the correct index in initialize.
 
-.. code-block:: python
+.. testcode:: 
 
+    m = ConcreteModel()
     m.b = MyBlock(
         [0,1,2,3,4],
-        idx_map = lamda i: 1 if i > 0 and i < 4 else i,
+        idx_map = lambda i: 1 if i > 0 and i < 4 else i,
         initialize={0:{"xinit":2001, "yinit":2002},
                     1:{"xinit":5001, "yinit":5002},
                     4:{"xinit":7001, "yinit":7002}})
