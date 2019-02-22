@@ -226,6 +226,9 @@ Must be True if dynamic = True,
         """
         This is a method to build inlet Port objects in a unit model and
         connect these to a specified control volume or state block.
+        
+        The name and block arguments are optional, but must be used together.
+        i.e. either both arguments are provided or neither.
 
         Keyword Args:
             name = name to use for Port object (default = "inlet").
@@ -240,6 +243,15 @@ Must be True if dynamic = True,
             A Pyomo Port object and associated components.
         """
         if block is None:
+            # Check that name is None
+            if name is not None:
+                raise ConfigurationError(
+                        "{} add_inlet_port was called without a block argument"
+                        " but a name argument was provided. Either both "
+                        "a name and a block must be provided or neither."
+                        .format(blk.name))
+            else:
+                name = "inlet"
             # Try for default ControlVolume name
             try:
                 block = blk.control_volume
@@ -249,13 +261,15 @@ Must be True if dynamic = True,
                         " but no default ControlVolume exists "
                         "(control_volume). Please provide block to which the "
                         "Port should be associated.".format(blk.name))
+        else:
+            # Check that name is not None
+            if name is None:
+                raise ConfigurationError(
+                        "{} add_inlet_port was called with a block argument, "
+                        "but a name argument was not provided. Either both "
+                        "a name and a block must be provided or neither."
+                        .format(blk.name))
 
-        # Set default name and doc string if not provided
-        # TODO: This does not work when the block has multiple control volumes.
-        # Better to raise exception when user does not provide a name than us
-        # setting a name automatically.
-        if name is None:
-            name = "inlet"
         if doc is None:
             doc = "Inlet Port"
 
@@ -357,6 +371,9 @@ Must be True if dynamic = True,
         This is a method to build outlet Port objects in a unit model and
         connect these to a specified control volume or state block.
 
+        The name and block arguments are optional, but must be used together.
+        i.e. either both arguments are provided or neither.
+
         Keyword Args:
             name = name to use for Port object (default = "outlet").
             block = an instance of a ControlVolume or StateBlock to use as the
@@ -370,6 +387,15 @@ Must be True if dynamic = True,
             A Pyomo Port object and associated components.
         """
         if block is None:
+            # Check that name is None
+            if name is not None:
+                raise ConfigurationError(
+                        "{} add_outlet_port was called without a block "
+                        "argument  but a name argument was provided. Either "
+                        "both a name and a block must be provided or neither."
+                        .format(blk.name))
+            else:
+                name = "outlet"
             # Try for default ControlVolume name
             try:
                 block = blk.control_volume
@@ -379,10 +405,15 @@ Must be True if dynamic = True,
                         "argument but no default ControlVolume exists "
                         "(control_volume). Please provide block to which the "
                         "Port should be associated.".format(blk.name))
+        else:
+            # Check that name is not None
+            if name is None:
+                raise ConfigurationError(
+                        "{} add_outlet_port was called with a block argument, "
+                        "but a name argument was not provided. Either both "
+                        "a name and a block must be provided or neither."
+                        .format(blk.name))
 
-        # Set default name and doc string if not provided
-        if name is None:
-            name = "outlet"
         if doc is None:
             doc = "Outlet Port"
 
