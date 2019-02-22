@@ -192,6 +192,10 @@ class _IdealStateBlock(StateBlock):
                 else:
                     print(blk, "Initialisation step 1 for properties failed")
 
+        else:
+            if outlvl > 0:
+                print(blk, "Initialisation step 1 for properties skipped")
+
         for k in blk.keys():
             blk[k].eq_total.activate()
             blk[k].eq_comp.activate()
