@@ -12,7 +12,8 @@
 ##############################################################################
 """
 Tests for Ideal + NRTL Liquid activity coefficient state block;
-only tests for construction.
+only tests for construction as parameters need to be provided or estimated
+from VLE data to compute the activity coefficients.
 
 Author: Jaffer Ghouse
 """
@@ -48,7 +49,7 @@ m.fs.state_block_NRTL_l = m.fs.properties_NRTL_l.state_block_class(
              "has_phase_equilibrium": False,
              "defined_state": True})
 
-# liquid only (NRTL)
+# vapour only (NRTL)
 m.fs.properties_NRTL_v = IdealParameterBlock(default={"valid_phase":
                                                       'Vap',
                                                       "activity_coeff_model":
@@ -147,6 +148,16 @@ m.fs1.state_block_NRTL_l = m.fs1.properties_NRTL_l.state_block_class(
              "has_phase_equilibrium": False,
              "defined_state": False})
 
+# vapour only (NRTL)
+m.fs1.properties_NRTL_v = IdealParameterBlock(default={"valid_phase":
+                                                       "Vap",
+                                                       "activity_coeff_model":
+                                                       'NRTL'})
+m.fs1.state_block_NRTL_v = m.fs1.properties_NRTL_v.state_block_class(
+    default={"parameters": m.fs1.properties_NRTL_v,
+             "has_phase_equilibrium": False,
+             "defined_state": False})
+
 
 def test_build_outlet_state_block():
     assert len(m.fs.properties_NRTL_vl.config) == 3
@@ -172,6 +183,17 @@ def test_build_outlet_state_block():
     assert not hasattr(m.fs1.state_block_NRTL_l, "eq_activity_coeff")
     assert hasattr(m.fs1.state_block_NRTL_l, "eq_mol_frac_out")
 
+    # vapour only (NRTL)
+    assert len(m.fs1.properties_NRTL_v.config) == 3
+
+    assert m.fs1.properties_NRTL_v.config.valid_phase == 'Vap'
+    assert len(m.fs1.properties_NRTL_v.phase_list) == 1
+    assert m.fs1.properties_NRTL_v.phase_list == ["Vap"]
+    assert not m.fs1.state_block_NRTL_v.config.defined_state
+    assert not hasattr(m.fs1.state_block_NRTL_v, "eq_Keq")
+    assert not hasattr(m.fs1.state_block_NRTL_v, "eq_activity_coeff")
+    assert hasattr(m.fs1.state_block_NRTL_v, "eq_mol_frac_out")
+
 
 def test_setInputs_outlet_state_block():
 
@@ -182,3 +204,19 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_NRTL_vl.mole_frac["benzene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_NRTL_vl) == 6
+
+    # liquid only (NRTL)
+    m.fs1.state_block_NRTL_l.flow_mol.fix(1)
+    m.fs1.state_block_NRTL_l.temperature.fix(368)
+    m.fs1.state_block_NRTL_l.pressure.fix(101325)
+    m.fs1.state_block_NRTL_l.mole_frac["benzene"].fix(0.5)
+
+    assert degrees_of_freedom(m.fs.state_block_NRTL_l) == 0
+
+    # vapour only (NRTL)
+    m.fs1.state_block_NRTL_v.flow_mol.fix(1)
+    m.fs1.state_block_NRTL_v.temperature.fix(368)
+    m.fs1.state_block_NRTL_v.pressure.fix(101325)
+    m.fs1.state_block_NRTL_v.mole_frac["benzene"].fix(0.5)
+
+    assert degrees_of_freedom(m.fs.state_block_NRTL_v) == 0

@@ -11,9 +11,27 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Ideal-NRTL/Wilson property package with VLE calucations assuming an ideal gas
-for the gas phase and a Non-Random Two Liquid Model or the Wilson model for
-the liquid phase. SI units.
+Ideal gas + Ideal/Non-ideal liquid property package.
+
+VLE calucations assuming an ideal gas for the gas phase. For the liquid phase,
+options include ideal liquid or non-ideal liquid using an activity
+coefficient model; options include Non Random Two Liquid Model (NRTL) or the
+Wilson model to compute the activity coefficient. This property package
+supports the following combinations for gas-liquid mixtures:
+1. Ideal - Ideal
+2. Ideal - NRTL
+3. Ideal - Wilson
+
+This property package currently supports the F_total, T, P and x as state
+variables (mole basis). Support for other combinations will be available
+in the future.
+
+Please note that the parameters required to compute the activity coefficient
+for the component needs to be provided by the user in the parameter block or
+can be estimated by the user if VLE data is available. Please see the
+documentation for more details.
+
+SI units.
 
 References:
 
