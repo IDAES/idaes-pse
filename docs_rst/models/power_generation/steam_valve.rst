@@ -45,8 +45,12 @@ Example
 Parameters
 ----------
 
-The ``flow_scale`` parameter is used to scale the pressure-flow equation and should be approximately
-the same order of magnitude as the expected flow rate.
+=========================== ========================= =========== ==============================================================================================
+Expression                  Symbol                    Index Sets  Doc
+=========================== ========================= =========== ==============================================================================================
+``flow_scale``              :math:`s_f`               None        Factor for scaling the pressure-flow equation, should be same magnitude as expected flow rate
+=========================== ========================= =========== ==============================================================================================
+
 
 Variables
 ---------
@@ -83,13 +87,13 @@ If the ``phase`` option is set to ``"Liq"`` the following equation describes the
 
 .. math::
 
-  F^2 = C_v^2\left(P_{in} - P_{out}\right)f(x)^2
+  \frac{1}{s_f^2}F^2 = \frac{1}{s_f^2}C_v^2\left(P_{in} - P_{out}\right)f(x)^2
 
 If the ``phase`` option is set to ``"Vap"`` the following equation describes the pressure-flow relation.
 
 .. math::
 
-  F^2 = C_v^2\left(P_{in}^2 - P_{out}^2\right)f(x)^2
+  \frac{1}{s_f^2}F^2 = \frac{1}{s_f^2}C_v^2\left(P_{in}^2 - P_{out}^2\right)f(x)^2
 
 
 Initialization

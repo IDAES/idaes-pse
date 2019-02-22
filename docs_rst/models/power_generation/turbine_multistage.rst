@@ -1,5 +1,5 @@
-Turbine Multistage
-===================
+Turbine (Multistage)
+====================
 
 .. index::
   pair: idaes.unit_models.power_generation.turbine_multistage;TurbineMultistage
@@ -9,6 +9,18 @@ Turbine Multistage
 This is a composite model for a power plant turbine with high, intermediate and
 low pressure sections. This model contains an inlet stage with throttle valves
 for partial arc admission and optional splitters for steam extraction.
+
+The figure below shows the layout of the mutistage turbine model.  Optional splitters
+provide for steam extraction.  The splitters can have two or more outlets (one being
+the main steam outlet).  The streams that connect one stage to the next can also be
+omitted.  This allows for connecting additional unit models (usually reheaters) between
+stages.
+
+.. figure:: turbine_multistage.svg
+  :width: 800
+  :align: center
+
+  MultiStage Turbine Model
 
 Example
 -------
@@ -129,27 +141,29 @@ The multistage turbine model contains the models in the table below.  The splitt
 =========================== ==================== ======================================================================================================================================================
 Unit                        Index Sets           Doc
 =========================== ==================== ======================================================================================================================================================
-``inlet_split``             None                 Splitter to split the main steam feed into steams for each arc
-``throttle_valve``          Admission Arcs       Throttle valves for each admission arc
-``inlet_stage``             Admission Arcs       Parallel inlet turbine stages that represent admission arcs :ref:`TurbineInlet <models/power_generation/turbine_inlet:Turbine (Inlet Stage)>`)
-``inlet_mix``               None                 Mixer to combine the streams from each arc back to one stream
+``inlet_split``             None                 Splitter to split the main steam feed into steams for each arc (:ref:`Separator <models/separator:Separator>`)
+``throttle_valve``          Admission Arcs       Throttle valves for each admission arc (:ref:`SteamValve <models/power_generation/steam_valve:Steam/Water Valve>`)
+``inlet_stage``             Admission Arcs       Parallel inlet turbine stages that represent admission arcs (:ref:`TurbineInlet <models/power_generation/turbine_inlet:Turbine (Inlet Stage)>`)
+``inlet_mix``               None                 Mixer to combine the streams from each arc back to one stream (:ref:`Mixer <models/mixer:Mixer>`)
 ``hp_stages``               HP stages            Turbine stages in the high-pressure section (:ref:`TurbineStage <models/power_generation/turbine_stage:Turbine (Stage)>`)
 ``ip_stages``               IP stages            Turbine stages in the intermediate-pressure section (:ref:`TurbineStage <models/power_generation/turbine_stage:Turbine (Stage)>`)
 ``lp_stages``               LP stages            Turbine stages in the low-pressure section (:ref:`TurbineStage <models/power_generation/turbine_stage:Turbine (Stage)>`)
-``hp_splits``               subset of HP stages  Extraction splitters in the high-pressure section
-``ip_splits``               subset of IP stages  Extraction splitters in the high-pressure section,
-``lp_splits``               subset of LP stages  Extraction splitters in the high-pressure section,
-``outlet_stage``            None                 The final stage in the turbine, which calculates exhaust losses :ref:`TurbineOutlet <models/power_generation/turbine_outlet:Turbine (Outlet Stage)>`)
+``hp_splits``               subset of HP stages  Extraction splitters in the high-pressure section (:ref:`Separator <models/separator:Separator>`)
+``ip_splits``               subset of IP stages  Extraction splitters in the high-pressure section (:ref:`Separator <models/separator:Separator>`)
+``lp_splits``               subset of LP stages  Extraction splitters in the high-pressure section (:ref:`Separator <models/separator:Separator>`)
+``outlet_stage``            None                 The final stage in the turbine, which calculates exhaust losses (:ref:`TurbineOutlet <models/power_generation/turbine_outlet:Turbine (Outlet Stage)>`)
 =========================== ==================== ======================================================================================================================================================
 
 Initialization
 --------------
 
 The initialization approach is to sequentially initialize each sub-unit using the outlet of the previous
-model. Before initializing the model, the inlet of the turbine, and any stage that is disconnect should
-be given a reasonable guess.  The efficency and pressure ration of the stages in the HP, IP and LP
+model. Before initializing the model, the inlet of the turbine, and any stage that is disconnected should
+be given a reasonable guess.  The efficiency and pressure ration of the stages in the HP, IP and LP
 sections should be specified. For the inlet and outlet stages the flow coefficient should be specified.
-A reasonable guess for split fractions should also be given for any extraction splitters present.
+Valve coefficients should also be specified.  A reasonable guess for split fractions should also be given
+for any extraction splitters present. The most likely cause of initialization failure is flow coefficients
+in inlet stage, outlet stage, or valves that do not pair well with the specified flow rates.
 
 TurbineMultistage Class
 -----------------------
