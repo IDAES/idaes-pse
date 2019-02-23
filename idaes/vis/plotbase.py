@@ -130,8 +130,7 @@ class PlotRegistry(object):
 
         Args:
             obj: Object for which to get the plot
-            name: Registered name of plot to get
-        Returns:
+            name: Registered name of plot to get Returns:
             Return value of setup function given to :meth:`register()`,
             or the retrieved plot object if that is empty.
         """

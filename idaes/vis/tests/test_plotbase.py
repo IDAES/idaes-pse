@@ -30,9 +30,11 @@ def test_plotregistry_construct():
 
 def test_plotregistry_register():
     reg = plotbase.PlotRegistry()
+    reg.remove_all()
     obj = "hello"
     plot_class = plotbase.PlotBase
     reg.register(obj, "test1", plot_class)
+    reg.remove_all()
 
 
 def setup_plot(plot, obj):
@@ -41,6 +43,7 @@ def setup_plot(plot, obj):
 
 def test_plotregistry_register_setup():
     reg = plotbase.PlotRegistry()
+    reg.remove_all()
     obj = "hello"
     plot_class = plotbase.PlotBase
     reg.register(obj, "test1", plot_class, setup_fn=setup_plot)
@@ -48,6 +51,7 @@ def test_plotregistry_register_setup():
 
 def test_plotregistry_register_overwrite():
     reg = plotbase.PlotRegistry()
+    reg.remove_all()
     obj = "hello"
     plot_class = plotbase.PlotBase
     reg.register(obj, "test1", plot_class)
@@ -61,6 +65,7 @@ def test_plotregistry_register_overwrite():
 
 def test_plotregistry_get():
     reg = plotbase.PlotRegistry()
+    reg.remove_all()
     obj = "hello"
     plot_class = plotbase.PlotBase
     reg.register(obj, "test1", plot_class, setup_fn=setup_plot)
