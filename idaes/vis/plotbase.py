@@ -13,44 +13,10 @@
 """
 Base classes for visualization and plotting in IDAES.
 """
+# stdlib
 from abc import ABC, abstractmethod
+from typing import Type
 
-# Exceptions
-
-
-class MissingVariablesException(Exception):
-    pass
-
-
-class MissingProfileMethodException(Exception):
-    pass
-
-
-class BadDataFrameException(Exception):
-    pass
-
-
-class NonExistingIDAESObject(Exception):
-    pass
-
-
-class NoIndexSetFoundForPlot(Exception):
-    pass
-
-
-class DefaultIndexNotSpecified(Exception):
-    pass
-
-
-class ShowFailedException(Exception):
-    pass
-
-
-class MissingCurrentPlot(Exception):
-    pass
-
-
-# Classes
 
 class PlotBase(ABC):
     """Abstract base class for a plot.
@@ -129,18 +95,23 @@ class PlotRegistry(object):
     XXX: This class is not actually used (yet) by any of the IDAES models.
     """
 
-    def __init__(self):
-        self._objs = {}
+    __objs = {}  # shared state for all instances
 
-    def register(self, obj, name: str, plot, setup_fn=None, overwrite: bool = False):
+    def __init__(self):
+        self._objs = self.__objs
+
+    def register(
+        self, obj, name: str, plot: Type, setup_fn=None, overwrite: bool = False
+    ):
         """Register an object/plot combination.
 
         Args:
             obj: Class or instance
             name: Name for this association
             plot: Plot class
-            setup_fn: Optional setup function to call
-            overwrite: If true, allow overwrite of existing
+            setup_fn: Optional setup function to call. Function should take
+                      two arguments: `plot` class instanace, `obj` assoc. with plot.
+            overwrite: If true, allow overwrite of existing entry in the registry
         """
         if obj in self._objs:
             entry = self._objs[obj]
@@ -168,12 +139,19 @@ class PlotRegistry(object):
             raise KeyError(f"No plots registered for {obj}")
         entry = self._objs[obj]
         if name not in entry:
-            raise KeyError(
-                f"No plot named '{name}' found in " f"entry for object {obj}"
-            )
+            raise KeyError(f"No plot named '{name}' found in entry for object {obj}")
         plot, setup_fn = entry[name]
         if setup_fn is not None:
             result = setup_fn(plot, obj)
         else:
             result = plot
         return result
+
+    def remove_all(self):
+        """Remove all entries from the registry.
+
+        Since the registry is a singleton, this removes all entries from ALL
+        instances. Use with care.
+        """
+        for k in list(self._objs.keys()):
+            del self._objs[k]
