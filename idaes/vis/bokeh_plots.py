@@ -18,6 +18,9 @@ import warnings
 # third-party
 from IPython.core.display import HTML
 from IPython.core.display import display as idisplay
+from bokeh.embed import file_html
+from bokeh.resources import CDN
+from bokeh.models import LabelSet
 # package
 from idaes.vis.plotbase import PlotBase
 from idaes.vis.plotutils import *
