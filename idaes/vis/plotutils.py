@@ -41,8 +41,7 @@ def validate(data_frame,x,y,legend=None):
         Raises exceptions otherwise.
 
     Raises:
-        MissingVariablesException - on bad legend labels (if passed)
-        BadDataFrameException - on invalid data frame.
+        ValueError: on bad legend labels (if passed) or on invalid data frame.
     """
     if not legend and legend is not None:
         raise ValueError("Bad legend labels.")
