@@ -12,10 +12,15 @@
 ##############################################################################
 """
 Base classes for visualization and plotting in IDAES.
+
+Create new plots by inheriting from :class:`PlotBase`. See the
+:mod:`idaes.vis.bokeh_plots` module for examples.
 """
 # stdlib
 from abc import ABC, abstractmethod
-from typing import Type
+from typing import Type, List
+# third party
+import pandas as pd
 
 
 class PlotBase(ABC):
@@ -87,10 +92,60 @@ class PlotBase(ABC):
         """
         pass
 
+    @classmethod
+    def validate(cls, data_frame: pd.DataFrame, x: str, y: List, legend=None):
+        """Validate that the plot parameters are valid.
+
+        Args:
+            data_frame: a pandas data frame of any type.
+            x: Key in data-frame to use as x-axis.
+            y: Keys in data-frame to use as y-axis.
+            legend: List of labels to use as legend for a plot.
+        Returns:
+            True, '' on valid data frames (if x and y are in the data frame keys)
+            False, "message" on invalid data
+        """
+        if data_frame is None or data_frame.empty:
+            return False, "Empty data frame"
+        if not legend and legend is not None:
+            return False, "Bad legend labels"
+        data_keys = set(data_frame.keys())
+        if x not in data_keys:
+            return False, f"The x-axis key {x} is not a column"
+        if not set(y).issubset(data_keys):
+            diff = set(y) - data_keys
+            if len(diff) > 1:
+                return False, f"The y-axis keys {diff} are not columns"
+            else:
+                return False, f"y-axis key {diff} is not a column"
+        return True, ''
+
 
 class PlotRegistry(object):
     """Set of associations between objects/classes + a plot name, and
     the parameters and values needed to perform the plot.
+
+    The basic idea is to create a set of named plots associated with
+    a given IDAES class, and then allow the user or other APIs to invoke that
+    plot once the data is populated in an instance of the class. This keeps
+    the details of how to create plots of a given type in the classes that
+    will create them.
+
+    For example::
+
+        class MyIdaesClass(ProcessBase):
+          # .. code for the class
+          def plot_setup(self, plot_class):
+              # .. details of creating plot_instance from object contents ..
+              return plot_instance
+        PlotRegistry().register(MyIdaesClass, 'basic', MyIdaesClass.plot_setup)
+
+        # .. and, later ..
+        obj = MyIdaesClass(...)
+        # .. do things that fill "obj" with data ..
+        # now create the plot
+        plot = PlotRegistry().get(obj, 'basic')
+        plot.show()
 
     XXX: This class is not actually used (yet) by any of the IDAES models.
     """
@@ -110,7 +165,7 @@ class PlotRegistry(object):
             name: Name for this association
             plot: Plot class
             setup_fn: Optional setup function to call. Function should take
-                      two arguments: `plot` class instanace, `obj` assoc. with plot.
+                      two arguments: `plot` class instance, `obj` assoc. with plot.
             overwrite: If true, allow overwrite of existing entry in the registry
         """
         if obj in self._objs:
@@ -130,9 +185,11 @@ class PlotRegistry(object):
 
         Args:
             obj: Object for which to get the plot
-            name: Registered name of plot to get Returns:
+            name: Registered name of plot to get
+
+        Returns:
             Return value of setup function given to :meth:`register()`,
-            or the retrieved plot object if that is empty.
+            or, if that is empty, the retrieved plot object.
         """
         if obj not in self._objs:
             raise KeyError(f"No plots registered for {obj}")

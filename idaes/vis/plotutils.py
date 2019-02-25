@@ -28,30 +28,6 @@ class HENStreamType(Enum):
     cold_utility = 4
 
 
-def validate(data_frame,x,y,legend=None):
-    """Validate that the plot parameters are valid. 
-
-    Args:
-        data_frame: a pandas data frame of any type.
-        x: Key in data-frame to use as x-axis.
-        y: Keys in data-frame to use as y-axis.
-        legend: List of labels to use as legend for a plot.
-    Returns:
-        True on valid data frames (if x and y are in the data frame keys)
-        Raises exceptions otherwise.
-
-    Raises:
-        ValueError: on bad legend labels (if passed) or on invalid data frame.
-    """
-    if not legend and legend is not None:
-        raise ValueError("Bad legend labels.")
-    is_right_schema = set([x]+y).issubset(set(data_frame.keys()))
-    if not is_right_schema:
-        raise ValueError(
-                "Invalid data frame passed to plotting function.")
-    else:
-        return (data_frame is not None) and (not data_frame.empty) and is_right_schema
-
 
 def turn_off_grid_and_axes_ticks(plot):
     """Turn off axis ticks and grid lines on a bokeh figure object.

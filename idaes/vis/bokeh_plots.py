@@ -15,12 +15,14 @@ Bokeh plots.
 """
 # stdlib
 import warnings
+
 # third-party
 from IPython.core.display import HTML
 from IPython.core.display import display as idisplay
 from bokeh.embed import file_html
 from bokeh.resources import CDN
 from bokeh.models import LabelSet
+
 # package
 from idaes.vis.plotbase import PlotBase
 from idaes.vis.plotutils import *
@@ -683,12 +685,12 @@ class ProfilePlot(BokehPlot):
         self,
         data_frame,
         x='',
-        y=[],
+        y=None,
         title='',
         xlab='',
         ylab='',
         y_axis_type='auto',
-        legend=[],
+        legend=None,
     ):
         """
         A profile plot includes 2 dependent variables and a single
@@ -708,42 +710,32 @@ class ProfilePlot(BokehPlot):
             Plot object on success.
 
         Raises:
-            MissingVariablesException: Dependent variable or their data
-                                        not passed.
-            BadDataFrameException: No data-frame was generated for
-                                    the model object.
-
+            ValueError: Bad input parameters
         """
-
-        # Check that some dependent variable names were passed:
-
-        try:
-            if validate(data_frame, x, y, legend=legend):
-
-                # output to static HTML file (commented out for now)
-                # output_file("profile_plot.html")
-
-                p = figure(
-                    tools="pan,box_zoom,reset,save",
-                    title=title,
-                    x_axis_label=xlab,
-                    y_axis_label=ylab,
-                    y_axis_type=y_axis_type,
-                )
-                # Plotting both y1 and y2 against x:
-                p.line(
-                    data_frame[x],
-                    data_frame[y[0]],
-                    legend=legend[0],
-                    line_color="green",
-                )
-                p.line(
-                    data_frame[x], data_frame[y[1]], legend=legend[1], line_color="blue"
-                )
-            else:
-                raise ValueError("Invalid data frame passed")
-        except Exception as e:
-            raise e
+        # validate inputs
+        y = y or []  # coerce to list
+        valid, msg = self.validate(data_frame, x, y, legend=legend)
+        if not valid:
+            raise ValueError(f"Invalid parameters: {msg}")
+        # output to static HTML file (commented out for now)
+        # output_file("profile_plot.html")
+        p = figure(
+            tools="pan,box_zoom,reset,save",
+            title=title,
+            x_axis_label=xlab,
+            y_axis_label=ylab,
+            y_axis_type=y_axis_type,
+        )
+        # Plotting both y1 and y2 against x:
+        p.line(
+            data_frame[x],
+            data_frame[y[0]],
+            legend=legend[0],
+            line_color="green",
+        )
+        p.line(
+            data_frame[x], data_frame[y[1]], legend=legend[1], line_color="blue"
+        )
         super().__init__(current_plot=p)
 
 
