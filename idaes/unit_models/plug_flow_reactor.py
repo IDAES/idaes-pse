@@ -19,12 +19,12 @@ from __future__ import division
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume1D,
+from idaes.core import (ControlVolume1DBlock,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block,
@@ -35,7 +35,7 @@ __author__ = "Andrew Lee, John Eslick"
 
 
 @declare_process_block_class("PFR")
-class PFRData(UnitBlockData):
+class PFRData(UnitModelBlockData):
     """
     Standard Plug Flow Reactor Unit Model Class
     """
@@ -217,7 +217,7 @@ domain,
         super(PFRData, self).build()
 
         # Build Control Volume
-        self.control_volume = ControlVolume1D(default={
+        self.control_volume = ControlVolume1DBlock(default={
                 "dynamic": self.config.dynamic,
                 "has_holdup": self.config.has_holdup,
                 "property_package": self.config.property_package,
@@ -228,7 +228,7 @@ domain,
         self.control_volume.add_geometry(
                 length_domain_set=self.config.length_domain_set)
 
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_reaction_blocks(
                 has_equilibrium=self.config.has_equilibrium_reactions)

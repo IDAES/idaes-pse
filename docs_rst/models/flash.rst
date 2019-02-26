@@ -18,7 +18,7 @@ Note: When setting the outlet temeprature of a Flash unit, it is best to set con
 Model Structure
 ---------------
 
-The core Flash unit model consists of a single ControlVolume0D (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet, default with two indexes ('vap_outlet' and 'liq_outlet')). The Flash model utilizes the separator unit model in IDAES to split the outlets by phase flows to the liquid and vapor outlets respectively.
+The core Flash unit model consists of a single ControlVolume0DBlock (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet, default with two indexes ('vap_outlet' and 'liq_outlet')). The Flash model utilizes the separator unit model in IDAES to split the outlets by phase flows to the liquid and vapor outlets respectively.
 
 The state variables used by the assoicated property package should meet specific requirements in order that the Flash model can find the necessary information for splitting the outlet flows. To support direct splitting, the property package must use one of a specified set of state variables and support a certain set of property calacuations, as outlined in the table below.
 
@@ -73,7 +73,7 @@ has_pressure_change       True
 Additional Constraints
 ----------------------
 
-Flash units write no additional Constraints beyond those written by the ControlVolume0D and the Separator block.
+Flash units write no additional Constraints beyond those written by the ControlVolume0DBlock and the Separator block.
 
 
 Variables

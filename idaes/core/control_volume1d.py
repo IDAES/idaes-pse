@@ -17,22 +17,21 @@ Base class for control volumes
 from __future__ import division
 
 # Import Python libraries
+import copy
 import logging
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
                            Param,
                            Reals,
-                           Reference,
                            TransformationFactory,
                            Var)
 from pyomo.dae import ContinuousSet, DerivativeVar
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
-                        ControlVolumeBase,
+                        ControlVolumeBlockData,
                         FlowDirection,
-                        useDefault,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
@@ -49,16 +48,16 @@ _log = logging.getLogger(__name__)
 # TODO : add support for heat of reaction terms
 
 
-@declare_process_block_class("ControlVolume1D", doc="""
-    ControlVolume1D is a specialized Pyomo block for IDAES control volume
+@declare_process_block_class("ControlVolume1DBlock", doc="""
+    ControlVolume1DBlock is a specialized Pyomo block for IDAES control volume
     blocks discretized in one spatial direction, and contains instances of
-    ControlVolume1dData.
+    ControlVolume1DBlockData.
 
-    ControlVolume1D should be used for any control volume with a defined volume
+    ControlVolume1DBlock should be used for any control volume with a defined volume
     and distinct inlets and outlets where there is a single spatial domain
     parallel to the material flow direction. This encompases unit operations
     such as plug flow reactors and pipes.""")
-class ControlVolume1dData(ControlVolumeBase):
+class ControlVolume1DBlockData(ControlVolumeBlockData):
     """
     1-Dimensional ControlVolume Class
 
@@ -69,13 +68,13 @@ class ControlVolume1dData(ControlVolumeBase):
     """
     def build(self):
         """
-        Build method for ControlVolume1D blocks.
+        Build method for ControlVolume1DBlock blocks.
 
         Returns:
             None
         """
         # Call build method from base class
-        super(ControlVolume1dData, self).build()
+        super(ControlVolume1DBlockData, self).build()
 
     def add_geometry(self,
                      length_domain=None,
@@ -149,8 +148,7 @@ class ControlVolume1dData(ControlVolumeBase):
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
-                         has_phase_equilibrium=False,
-                         package_arguments={}):
+                         has_phase_equilibrium=None):
         """
         This method constructs the state blocks for the
         control volume.
@@ -166,32 +164,40 @@ class ControlVolume1dData(ControlVolumeBase):
         Returns:
             None
         """
-        def property_rule(b, t, x):
-            fd = information_flow
-            cfg_dict = b.parent_component()._block_data_config_initialize
-            cfg_dict[t,x] = {}
-            for a in package_arguments:
-                cfg_dict[t,x][a] = package_arguments[a]
-            cfg_dict[t,x]["has_phase_equilibrium"] = has_phase_equilibrium
-            cfg_dict[t,x]["parameters"] = self.config.property_package
+        if has_phase_equilibrium is None:
+            raise ConfigurationError(
+                    "{} add_state_blocks method was not provided with a "
+                    "has_phase_equilibrium argument.".format(self.name))
+        elif has_phase_equilibrium not in [True, False]:
+            raise ConfigurationError(
+                    "{} add_state_blocks method was provided with an invalid "
+                    "has_phase_equilibrium argument. Must be True or False"
+                    .format(self.name))
 
-            if fd == FlowDirection.forward and x == self.length_domain.first():
-                cfg_dict[t,x]["defined_state"] = True
-            elif fd == FlowDirection.backward and x == self.length_domain.last():
-                cfg_dict[t,x]["defined_state"] = True
+        # d0 is config for defined state d1 is config for not defined state
+        d0 = dict(**self.config.property_package_args)
+        d0.update(has_phase_equilibrium=has_phase_equilibrium,
+                  parameters=self.config.property_package,
+                  defined_state=True)
+        d1 = copy.copy(d0)
+        d1["defined_state"] = False
+        def idx_map(i): # i = (t, x)
+            if information_flow == FlowDirection.forward and \
+                i[1] == self.length_domain.first():
+                return 0
+            elif information_flow == FlowDirection.backward and \
+                i[1] == self.length_domain.last():
+                return 0
             else:
-                cfg_dict[t,x]["defined_state"] = False
-            b.build()
-
+                return 1
         self.properties = self.config.property_package.state_block_class(
             self.time_ref,
             self.length_domain,
             doc="Material properties",
-            rule=property_rule)
+            initialize={0:d0, 1:d1},
+            idx_map=idx_map)
 
-    def add_reaction_blocks(self,
-                            has_equilibrium=False,
-                            package_arguments={}):
+    def add_reaction_blocks(self, has_equilibrium=None):
         """
         This method constructs the reaction block for the control volume.
 
@@ -204,8 +210,18 @@ class ControlVolume1dData(ControlVolumeBase):
         Returns:
             None
         """
+        if has_equilibrium is None:
+            raise ConfigurationError(
+                    "{} add_reaction_blocks method was not provided with a "
+                    "has_equilibrium argument.".format(self.name))
+        elif has_equilibrium not in [True, False]:
+            raise ConfigurationError(
+                    "{} add_reaction_blocks method was provided with an "
+                    "invalid has_equilibrium argument. Must be True or False"
+                    .format(self.name))
+
         # TODO : Should not have ReactionBlock at inlet
-        tmp_dict = package_arguments
+        tmp_dict = dict(**self.config.reaction_package_args)
         tmp_dict["state_block"] = self.properties
         tmp_dict["has_equilibrium"] = has_equilibrium
         tmp_dict["parameters"] = self.config.reaction_package
@@ -1562,7 +1578,7 @@ class ControlVolume1dData(ControlVolumeBase):
             finite_elements - number of finite elements to use in
                               transformation (equivalent to Pyomo nfe argument,
                               default = 10)
-            collocation_points - number of collocation points to use (equivalent 
+            collocation_points - number of collocation points to use (equivalent
                                  to Pyomo ncp argument, default = 3)
 
         Returns:

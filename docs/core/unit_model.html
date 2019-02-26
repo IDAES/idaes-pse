@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -236,7 +236,7 @@ connect these to a specified control volume or state block.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
 <tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first simple">
-<li><strong>= name to use for Port object</strong> (<a class="reference internal" href="../apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.name" title="idaes.dmf.workspace.Workspace.name"><em>name</em></a>) – </li>
+<li><strong>= name to use for Port object</strong> (<em>name</em>) – </li>
 <li><strong>= an instance of a ControlVolume</strong><strong> or </strong><strong>StateBlock to use as the</strong> (<em>block</em>) – source to populate the Port object. If a ControlVolume is
 provided, the method will use the inlet state block as
 defined by the ControlVolume. If not provided, method will
@@ -263,7 +263,7 @@ connect these to a specified control volume or state block.</p>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name" colspan="2">Keyword Arguments:</th></tr>
 <tr class="field-odd field"><td>&#160;</td><td class="field-body"><ul class="first simple">
-<li><strong>= name to use for Port object</strong> (<a class="reference internal" href="../apidoc/idaes.dmf.workspace.html#idaes.dmf.workspace.Workspace.name" title="idaes.dmf.workspace.Workspace.name"><em>name</em></a>) – </li>
+<li><strong>= name to use for Port object</strong> (<em>name</em>) – </li>
 <li><strong>= an instance of a ControlVolume</strong><strong> or </strong><strong>StateBlock to use as the</strong> (<em>block</em>) – source to populate the Port object. If a ControlVolume is
 provided, the method will use the outlet state block as
 defined by the ControlVolume. If not provided, method will
@@ -409,6 +409,10 @@ steady-state model.}</dd>
 <li><strong>initialize</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – ProcessBlockData config for individual elements. Keys
 are BlockData indexes and values are dictionaries described under the
 “default” argument above.</li>
+<li><strong>idx_map</strong> (<em>function</em>) – Function to take the index of a BlockData element and
+return the index in the initialize dict from which to read arguments.
+This can be provided to overide the default behavior of matching the
+BlockData index exactly to the index in initialize.</li>
 </ul>
 </td>
 </tr>

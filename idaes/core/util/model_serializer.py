@@ -69,7 +69,7 @@ def _get_value(o):
     Returns:
         None
     """
-    return value(o)
+    return value(o, exception=False)
 
 def _set_value(o, d):
     """
@@ -317,7 +317,7 @@ class StoreSpec(object):
     @classmethod
     def value_isfixed(cls, only_fixed):
         """
-        Retur a StoreSpec object to store variable values and if fixed.
+        Return a StoreSpec object to store variable values and if fixed.
 
         Args:
             only_fixed: Only load fixed variable values

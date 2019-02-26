@@ -15,7 +15,7 @@ Typical fixed variables are:
 Model Structure
 ---------------
 
-The core PFR unit model consists of a single ControlVolume1D (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet).
+The core PFR unit model consists of a single ControlVolume1DBlock (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet).
 
 Variables
 ---------

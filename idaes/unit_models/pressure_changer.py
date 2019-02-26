@@ -25,12 +25,12 @@ from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         MaterialBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block, list_of_strings
 from idaes.core.util.misc import add_object_reference
@@ -40,7 +40,7 @@ logger = logging.getLogger('idaes.unit_model')
 
 
 @declare_process_block_class("PressureChanger")
-class PressureChangerData(UnitBlockData):
+class PressureChangerData(UnitModelBlockData):
     """
     Standard Compressor/Expander Unit Model Class
     """
@@ -157,7 +157,7 @@ see property package for documentation.}"""))
         super(PressureChangerData, self).build()
 
         # Add a control volume to the unit including setting up dynamics.
-        self.control_volume = ControlVolume0D(default={
+        self.control_volume = ControlVolume0DBlock(default={
                 "dynamic": self.config.dynamic,
                 "has_holdup": self.config.has_holdup,
                 "property_package": self.config.property_package,
@@ -168,7 +168,8 @@ see property package for documentation.}"""))
             self.control_volume.add_geometry()
 
         # Add inlet and outlet state blocks to control volume
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(has_phase_equilibrium=
+                                             self.config.has_phase_equilibrium)
 
         # Add mass balance
         # Set has_equilibrium is False for now
@@ -504,7 +505,7 @@ see property package for documentation.}"""))
                                 solver=solver,
                                 optarg=optarg)
         else:
-            # Call the general initialization routine in UnitBlockData
+            # Call the general initialization routine in UnitModelBlockData
             super(PressureChangerData, blk).initialize(state_args=state_args,
                                                        outlvl=outlvl,
                                                        solver=solver,

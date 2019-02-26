@@ -53,11 +53,12 @@ from pyomo.environ import Constraint, Expression, Param, PositiveReals,\
                           RangeSet, Reals, Set, value, Var, ExternalFunction,\
                           NonNegativeReals, exp, sqrt, log, tanh, ConcreteModel
 from pyomo.opt import SolverFactory, TerminationCondition
+from pyomo.core.kernel.component_set import ComponentSet
 from pyutilib.misc.config import ConfigValue
 
 # Import IDAES
 from idaes.core import declare_process_block_class, ProcessBlock, \
-                       StateBlockBase, StateBlockDataBase, PhysicalParameterBase
+                       StateBlock, StateBlockData, PhysicalParameterBlock
 
 # Logger
 _log = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ def htpx(T, P=None, x=None):
     """
     model = ConcreteModel()
     model.prop_param = Iapws95ParameterBlock()
-    prop = model.prop = Iapws95StateBlock(parameters=model.prop_param)
+    prop = model.prop = Iapws95StateBlock(default={"parameters":model.prop_param})
 
     if x is None:
         Tsat = 647.096/value(prop.func_tau_sat(P/1000))
@@ -91,7 +92,7 @@ def htpx(T, P=None, x=None):
             value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*x
 
 @declare_process_block_class("Iapws95ParameterBlock")
-class Iapws95ParameterBlockData(PhysicalParameterBase):
+class Iapws95ParameterBlockData(PhysicalParameterBlock):
 
     def build(self):
         super(Iapws95ParameterBlockData, self).build()
@@ -99,6 +100,7 @@ class Iapws95ParameterBlockData(PhysicalParameterBase):
         # Location of the *.so or *.dll file for external functions
         self.plib = os.path.dirname(__file__)
         self.plib = os.path.join(self.plib, "iapws95.so")
+        self.available = os.path.isfile(self.plib)
         # Phase list
         self.private_phase_list = Set(initialize=["Vap", "Liq"])
         self.phase_list = Set(initialize=["Mix"])
@@ -258,7 +260,7 @@ class Iapws95ParameterBlockData(PhysicalParameterBase):
             'holdup': 'mol'})
 
 
-class _StateBlock(StateBlockBase):
+class _StateBlock(StateBlock):
     """
     This class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -274,7 +276,7 @@ class _StateBlock(StateBlockBase):
 @declare_process_block_class("Iapws95StateBlock", block_class=_StateBlock, doc="""
     This is some placeholder doc.
     """)
-class Iapws95StateBlockData(StateBlockDataBase):
+class Iapws95StateBlockData(StateBlockData):
     """
     This is a property package for calcuating thermophysical properties of water
     """
@@ -312,6 +314,11 @@ class Iapws95StateBlockData(StateBlockDataBase):
         dens_mass_crit = self.config.parameters.dens_mass_crit
         gas_const = self.config.parameters.gas_const
 
+        # Set if the IAPWS library is available.
+        self.available = self.config.parameters.available
+        if not self.available:
+            _log.error("IAPWS library file not found. Was it compiled?")
+
         # Variables
         self.flow_mol = Var(initialize=1, domain=NonNegativeReals,
             doc="Total flow [mol/s]")
@@ -324,6 +331,10 @@ class Iapws95StateBlockData(StateBlockDataBase):
         self.enth_mol = Var(initialize=1000,
             doc="Total molar enthalpy (J/mol)")
         self.enth_mol.latex_symbol = "h"
+
+        # For variables that show up in ports specify extensive and intensive
+        self.extensive_set = ComponentSet((self.flow_mol,))
+        self.intensive_set = ComponentSet((self.enth_mol, self.pressure))
 
         # External Functions (some of these are included only for testing)
         plib = self.config.parameters.plib
@@ -600,6 +611,12 @@ class Iapws95StateBlockData(StateBlockDataBase):
         return {"flow_mol": self.flow_mol,
                 "enth_mol": self.enth_mol,
                 "pressure": self.pressure}
+
+    def extensive_state_vars(self):
+        return self.extensive_set
+
+    def intensive_state_vars(self):
+        return self.intensive_set
 
     def model_check(self):
         pass

@@ -19,18 +19,18 @@ __author__ = "John Eslick"
 
 import logging
 # Import Pyomo libraries
-from pyomo.environ import (Reals, Var, sqrt, log, Expression, Constraint,
+from pyomo.environ import (Var, log, Expression, Constraint,
                            PositiveReals, SolverFactory)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         MaterialBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
@@ -81,7 +81,7 @@ def _make_heater_control_volume(o, name, config):
     This is seperated from the main heater class so it can be reused to create
     control volumes for different types of heat exchange models.
     """
-    control_volume = ControlVolume0D(default={
+    control_volume = ControlVolume0DBlock(default={
         "dynamic": config.dynamic,
         "property_package": config.property_package,
         "property_package_args": config.property_package_args})
@@ -90,8 +90,7 @@ def _make_heater_control_volume(o, name, config):
     setattr(o, name, control_volume)
     # Add inlet and outlet state blocks to control volume
     control_volume.add_state_blocks(
-        has_phase_equilibrium=config.calculate_phase_equilibrium,
-        package_arguments=config.property_package_args)
+        has_phase_equilibrium=config.calculate_phase_equilibrium)
 
     # Add material balance
     control_volume.add_material_balances(
@@ -213,11 +212,16 @@ see property package for documentation.}"""))
 
 def _make_heat_exchanger_config(config):
     """
-    Declare configuration options for HeatExchngerData block.
+    Declare configuration options for HeatExchangerData block.
     """
     config.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
-        default=False,
+        domain=In([True, False, useDefault]),
+        default=useDefault,
+        description="Dynamic model flag",
+        doc="Indicates whether the model is dynamic."))
+    config.declare("has_holdup", ConfigValue(
+        domain=In([useDefault, True, False]),
+        default=useDefault,
         description="Dynamic model flag",
         doc="Indicates whether the model is dynamic."))
     config.declare("side_1", ConfigBlock(
@@ -242,7 +246,7 @@ def _make_heat_exchanger_config(config):
 
 
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
-class HeaterData(UnitBlockData):
+class HeaterData(UnitModelBlockData):
     """
     Simple 0D heater unit.
     Unit model to add or remove heat from a material.
@@ -271,7 +275,7 @@ class HeaterData(UnitBlockData):
 
 @declare_process_block_class("HeatExchanger",
                              doc="Simple 0D heat exchanger model.")
-class HeatExchangerData(UnitBlockData):
+class HeatExchangerData(UnitModelBlockData):
     """
     Simple 0D heat exchange unit.
     Unit model to transfer heat from one material to another.
@@ -341,7 +345,8 @@ class HeatExchangerData(UnitBlockData):
     def initialize(self, state_args_1=None, state_args_2=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}, duty=10000):
         """
-        Heat echanger initialization method.
+        Heat exchanger initialization method.
+
         Args:
             state_args_1 : a dict of arguments to be passed to the property
                 initialization for side_1 (see documentation of the specific
@@ -359,8 +364,10 @@ class HeatExchangerData(UnitBlockData):
                      initialization (default = 'ipopt')
             duty : an initial guess for the amount of heat transfered
                 (default = 10000)
+
         Returns:
             None
+
         """
 
         self.heat_duty.value = duty  # probably best start with a positive duty

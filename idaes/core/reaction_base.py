@@ -15,9 +15,6 @@ This module contains classes for reaction blocks and reaction parameter blocks.
 """
 from __future__ import division
 
-# Import Python libraries
-import inspect
-
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -36,12 +33,12 @@ from idaes.core.util.misc import add_object_reference
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
 
-__all__ = ['ReactionBlockDataBase',
-           'ReactionBlockBase',
-           'ReactionParameterBase']
+__all__ = ['ReactionBlockData',
+           'ReactionBlock',
+           'ReactionParameterBlock']
 
 
-class ReactionParameterBase(ProcessBlockData,
+class ReactionParameterBlock(ProcessBlockData,
                             property_meta.HasPropertyClassMetadata):
     """
         This is the base class for reaction parameter blocks. These are blocks
@@ -69,7 +66,7 @@ class ReactionParameterBase(ProcessBlockData,
         Returns:
             None
         """
-        super(ReactionParameterBase, self).build()
+        super(ReactionParameterBlock, self).build()
 
         # TODO: Need way to tie reaction package to a specfic property package
         self._validate_property_parameter_units()
@@ -276,6 +273,15 @@ should be constructed in this reaction block,
                     'attribute. Check the naming of your '
                     'components to avoid any reserved names'
                     .format(self.name, attr))
+
+        if attr == "config":
+            try:
+                self._get_config_args()
+                return self.config
+            except:
+                raise BurntToast("{} getattr method was triggered by a call "
+                                 "to the config block, but _get_config_args "
+                                 "failed. This should never happen.")
 
         # Check for recursive calls
         try:

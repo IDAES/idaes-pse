@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -229,7 +229,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">value</span><span class="p">(</span><span class="n">o</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">value</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">exception</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">_set_value</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -288,13 +288,13 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;fixed&quot;</span><span class="p">,)</span>
 
-<div class="viewcode-block" id="Counter"><a class="viewcode-back" href="../../../../apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.Counter">[docs]</a><span class="k">class</span> <span class="nc">Counter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Counter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This is a counter object, which is an easy way to pass an interger pointer</span>
 <span class="sd">    around between methods.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
 
 <div class="viewcode-block" id="StoreSpec"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec">[docs]</a><span class="k">class</span> <span class="nc">StoreSpec</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -466,18 +466,18 @@
             <span class="n">data_classes</span><span class="o">=</span><span class="p">((</span><span class="n">pyomo</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">_VarData</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;fixed&quot;</span><span class="p">,)),),</span>
             <span class="n">suffix</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="StoreSpec.suffix"><a class="viewcode-back" href="../../../../apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.StoreSpec.suffix">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">suffix</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">suffix_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="n">classes</span><span class="o">=</span><span class="p">((</span><span class="n">Suffix</span><span class="p">,</span> <span class="p">()),),</span>
             <span class="n">data_classes</span><span class="o">=</span><span class="p">(),</span>
             <span class="n">suffix</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">suffix_filter</span><span class="o">=</span><span class="n">suffix_filter</span><span class="p">)</span></div>
+            <span class="n">suffix_filter</span><span class="o">=</span><span class="n">suffix_filter</span><span class="p">)</span>
 
 <div class="viewcode-block" id="StoreSpec.value_isfixed"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.value_isfixed">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">value_isfixed</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">only_fixed</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Retur a StoreSpec object to store variable values and if fixed.</span>
+<span class="sd">        Return a StoreSpec object to store variable values and if fixed.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            only_fixed: Only load fixed variable values</span>
@@ -649,7 +649,7 @@
                     <span class="n">_write_component</span><span class="p">(</span><span class="n">sd</span><span class="o">=</span><span class="n">cdict</span><span class="p">,</span> <span class="n">o</span><span class="o">=</span><span class="n">o2</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="n">wts</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">,</span>
                                      <span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="n">suffixes</span><span class="p">)</span>
 
-<div class="viewcode-block" id="component_data_to_dict"><a class="viewcode-back" href="../../../../apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.component_data_to_dict">[docs]</a><span class="k">def</span> <span class="nf">component_data_to_dict</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">component_data_to_dict</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Component data to a dict.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -669,7 +669,7 @@
             <span class="n">hascomps</span> <span class="o">=</span> <span class="kc">True</span> <span class="c1"># only make __pyomo_components__ dict once</span>
             <span class="c1"># write each sub-component</span>
             <span class="n">_write_component</span><span class="p">(</span><span class="n">sd</span><span class="o">=</span><span class="n">cdict</span><span class="p">,</span> <span class="n">o</span><span class="o">=</span><span class="n">o2</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="n">wts</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">edict</span></div>
+    <span class="k">return</span> <span class="n">edict</span>
 
 <div class="viewcode-block" id="to_json"><a class="viewcode-back" href="../../../../core/util/model_serializer.html#idaes.core.util.model_serializer.to_json">[docs]</a><span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">fname</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">human_read</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">wts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{},</span> <span class="n">gz</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">return_dict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">return_json_string</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -852,7 +852,7 @@
                 <span class="n">_read_component</span><span class="p">(</span><span class="n">edict</span><span class="p">[</span><span class="s2">&quot;__pyomo_components__&quot;</span><span class="p">],</span> <span class="n">o2</span><span class="p">,</span> <span class="n">wts</span><span class="p">,</span>
                                 <span class="n">lookup</span><span class="o">=</span><span class="n">lookup</span><span class="p">,</span> <span class="n">suffixes</span><span class="o">=</span><span class="n">suffixes</span><span class="p">)</span>
 
-<div class="viewcode-block" id="component_data_from_dict"><a class="viewcode-back" href="../../../../apidoc/idaes.core.util.model_serializer.html#idaes.core.util.model_serializer.component_data_from_dict">[docs]</a><span class="k">def</span> <span class="nf">component_data_from_dict</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">component_data_from_dict</span><span class="p">(</span><span class="n">sd</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">wts</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Component data to a dict.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -877,7 +877,7 @@
     <span class="k">if</span> <span class="n">_may_have_subcomponents</span><span class="p">(</span><span class="n">el</span><span class="p">):</span> <span class="c1"># read sub-components of block-like</span>
         <span class="k">for</span> <span class="n">o2</span> <span class="ow">in</span> <span class="n">el</span><span class="o">.</span><span class="n">component_objects</span><span class="p">(</span><span class="n">descend_into</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
             <span class="c1"># recursive read here</span>
-            <span class="n">_read_component</span><span class="p">(</span><span class="n">edict</span><span class="p">[</span><span class="s2">&quot;__pyomo_components__&quot;</span><span class="p">],</span> <span class="n">o2</span><span class="p">,</span> <span class="n">wts</span><span class="p">)</span></div>
+            <span class="n">_read_component</span><span class="p">(</span><span class="n">edict</span><span class="p">[</span><span class="s2">&quot;__pyomo_components__&quot;</span><span class="p">],</span> <span class="n">o2</span><span class="p">,</span> <span class="n">wts</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">_read_suffixes</span><span class="p">(</span><span class="n">lookup</span><span class="p">,</span> <span class="n">suffixes</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>

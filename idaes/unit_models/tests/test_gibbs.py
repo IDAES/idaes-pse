@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for ControlVolumeBase.
+Tests for ControlVolumeBlockData.
 
 Author: Andrew Lee
 """
@@ -21,8 +21,8 @@ from pyomo.environ import ConcreteModel, SolverFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.gibbs_reactor import GibbsReactor
-from idaes.property_models.methane_combustion_ideal import (
-                        PhysicalParameterBlock)
+from idaes.property_models.examples.methane_combustion_ideal import (
+    MethaneCombustionParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -42,22 +42,22 @@ def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
+    m.fs.properties = MethaneCombustionParameterBlock()
 
     m.fs.gibbs = GibbsReactor(default={"property_package": m.fs.properties,
                                        "has_heat_transfer": True})
 
     assert hasattr(m.fs.gibbs, "inlet")
-    assert len(m.fs.gibbs.inlet[0].vars) == 3
-    assert hasattr(m.fs.gibbs.inlet[0], "flow_mol_comp")
-    assert hasattr(m.fs.gibbs.inlet[0], "temperature")
-    assert hasattr(m.fs.gibbs.inlet[0], "pressure")
+    assert len(m.fs.gibbs.inlet.vars) == 3
+    assert hasattr(m.fs.gibbs.inlet, "flow_mol_comp")
+    assert hasattr(m.fs.gibbs.inlet, "temperature")
+    assert hasattr(m.fs.gibbs.inlet, "pressure")
 
     assert hasattr(m.fs.gibbs, "outlet")
-    assert len(m.fs.gibbs.outlet[0].vars) == 3
-    assert hasattr(m.fs.gibbs.outlet[0], "flow_mol_comp")
-    assert hasattr(m.fs.gibbs.outlet[0], "temperature")
-    assert hasattr(m.fs.gibbs.outlet[0], "pressure")
+    assert len(m.fs.gibbs.outlet.vars) == 3
+    assert hasattr(m.fs.gibbs.outlet, "flow_mol_comp")
+    assert hasattr(m.fs.gibbs.outlet, "temperature")
+    assert hasattr(m.fs.gibbs.outlet, "pressure")
 
     assert hasattr(m.fs.gibbs, "gibbs_minimization")
     assert hasattr(m.fs.gibbs.control_volume, "heat")
@@ -69,23 +69,23 @@ def test_initialize_temperature():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
+    m.fs.properties = MethaneCombustionParameterBlock()
 
     m.fs.gibbs = GibbsReactor(default={"property_package": m.fs.properties,
                                        "has_heat_transfer": True})
 
-    m.fs.gibbs.inlet[:].flow_mol_comp["H2"].fix(10.0)
-    m.fs.gibbs.inlet[:].flow_mol_comp["N2"].fix(150.0)
-    m.fs.gibbs.inlet[:].flow_mol_comp["O2"].fix(40.0)
-    m.fs.gibbs.inlet[:].flow_mol_comp["CO2"].fix(1e-5)
-    m.fs.gibbs.inlet[:].flow_mol_comp["CH4"].fix(30.0)
-    m.fs.gibbs.inlet[:].flow_mol_comp["CO"].fix(1e-5)
-    m.fs.gibbs.inlet[:].flow_mol_comp["H2O"].fix(1e-5)
-    m.fs.gibbs.inlet[:].flow_mol_comp["NH3"].fix(1e-5)
-    m.fs.gibbs.inlet[:].temperature.fix(1500.0)
-    m.fs.gibbs.inlet[:].pressure.fix(101325.0)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "H2"].fix(10.0)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "N2"].fix(150.0)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "O2"].fix(40.0)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "CO2"].fix(1e-5)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "CH4"].fix(30.0)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "CO"].fix(1e-5)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "H2O"].fix(1e-5)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "NH3"].fix(1e-5)
+    m.fs.gibbs.inlet.temperature[0].fix(1500.0)
+    m.fs.gibbs.inlet.pressure[0].fix(101325.0)
 
-    m.fs.gibbs.outlet[:].temperature.fix(2844.38)
+    m.fs.gibbs.outlet.temperature[0].fix(2844.38)
 
     assert degrees_of_freedom(m) == 0
 
@@ -103,25 +103,25 @@ def test_initialize_temperature():
                                                         'O2': 1.0}})
 
     assert (pytest.approx(0.0, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["CH4"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "CH4"].value)
     assert (pytest.approx(22.614, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["CO"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "CO"].value)
     assert (pytest.approx(7.386, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["CO2"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "CO2"].value)
     assert (pytest.approx(28.806, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["H2"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "H2"].value)
     assert (pytest.approx(41.194, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["H2O"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "H2O"].value)
     assert (pytest.approx(150.0, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["N2"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "N2"].value)
     assert (pytest.approx(0.0, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["NH3"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "NH3"].value)
     assert (pytest.approx(0.710, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["O2"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "O2"].value)
     assert (pytest.approx(161882.3, abs=1e-2) ==
             m.fs.gibbs.heat_duty[0].value)
     assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["pressure"].value)
+            m.fs.gibbs.outlet.pressure[0].value)
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -129,23 +129,23 @@ def test_initialize_heat_duty():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterBlock()
+    m.fs.properties = MethaneCombustionParameterBlock()
 
     m.fs.gibbs = GibbsReactor(default={"property_package": m.fs.properties,
                                        "has_heat_transfer": True})
 
-    m.fs.gibbs.inlet[:].flow_mol_comp["H2"].fix(10.0)
-    m.fs.gibbs.inlet[:].flow_mol_comp["N2"].fix(150.0)
-    m.fs.gibbs.inlet[:].flow_mol_comp["O2"].fix(40.0)
-    m.fs.gibbs.inlet[:].flow_mol_comp["CO2"].fix(1e-5)
-    m.fs.gibbs.inlet[:].flow_mol_comp["CH4"].fix(30.0)
-    m.fs.gibbs.inlet[:].flow_mol_comp["CO"].fix(1e-5)
-    m.fs.gibbs.inlet[:].flow_mol_comp["H2O"].fix(1e-5)
-    m.fs.gibbs.inlet[:].flow_mol_comp["NH3"].fix(1e-5)
-    m.fs.gibbs.inlet[:].temperature.fix(1500.0)
-    m.fs.gibbs.inlet[:].pressure.fix(101325.0)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "H2"].fix(10.0)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "N2"].fix(150.0)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "O2"].fix(40.0)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "CO2"].fix(1e-5)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "CH4"].fix(30.0)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "CO"].fix(1e-5)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "H2O"].fix(1e-5)
+    m.fs.gibbs.inlet.flow_mol_comp[0, "NH3"].fix(1e-5)
+    m.fs.gibbs.inlet.temperature[0].fix(1500.0)
+    m.fs.gibbs.inlet.pressure[0].fix(101325.0)
 
-    m.fs.gibbs.heat_duty[:].fix(161882.303661)
+    m.fs.gibbs.heat_duty.fix(161882.303661)
 
     assert degrees_of_freedom(m) == 0
 
@@ -163,22 +163,22 @@ def test_initialize_heat_duty():
                                                         'O2': 1.0}})
 
     assert (pytest.approx(0.0, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["CH4"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "CH4"].value)
     assert (pytest.approx(22.614, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["CO"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "CO"].value)
     assert (pytest.approx(7.386, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["CO2"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "CO2"].value)
     assert (pytest.approx(28.806, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["H2"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "H2"].value)
     assert (pytest.approx(41.194, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["H2O"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "H2O"].value)
     assert (pytest.approx(150.0, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["N2"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "N2"].value)
     assert (pytest.approx(0.0, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["NH3"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "NH3"].value)
     assert (pytest.approx(0.710, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["flow_mol_comp"]["O2"].value)
+            m.fs.gibbs.outlet.flow_mol_comp[0, "O2"].value)
     assert (pytest.approx(2844.38, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["temperature"].value)
+            m.fs.gibbs.outlet.temperature[0].value)
     assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.gibbs.outlet[0].vars["pressure"].value)
+            m.fs.gibbs.outlet.pressure[0].value)

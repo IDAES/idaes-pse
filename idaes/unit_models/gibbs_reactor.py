@@ -20,11 +20,11 @@ from pyomo.environ import Reals,  Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
@@ -33,7 +33,7 @@ __author__ = "Jinliang Ma, Andrew Lee"
 
 
 @declare_process_block_class("GibbsReactor")
-class GibbsReactorData(UnitBlockData):
+class GibbsReactorData(UnitModelBlockData):
     """
     Standard Gibbs Reactor Unit Model Class
 
@@ -51,6 +51,12 @@ class GibbsReactorData(UnitBlockData):
         domain=In([False]),
         default=False,
         description="Dynamic model flag - must be False",
+        doc="""Gibbs reactors do not support dynamic models, thus this must be
+False."""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Holdup construction flag",
         doc="""Gibbs reactors do not support dynamic models, thus this must be
 False."""))
     CONFIG.declare("energy_balance_type", ConfigValue(
@@ -128,12 +134,12 @@ see property package for documentation.}"""))
         super(GibbsReactorData, self).build()
 
         # Build Control Volume
-        self.control_volume = ControlVolume0D(default={
+        self.control_volume = ControlVolume0DBlock(default={
                 "dynamic": self.config.dynamic,
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args})
 
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_total_element_balances()
 

@@ -63,7 +63,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -344,6 +344,10 @@ construct Ports.</dd>
 <li><strong>initialize</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – ProcessBlockData config for individual elements. Keys
 are BlockData indexes and values are dictionaries described under the
 “default” argument above.</li>
+<li><strong>idx_map</strong> (<em>function</em>) – Function to take the index of a BlockData element and
+return the index in the initialize dict from which to read arguments.
+This can be provided to overide the default behavior of matching the
+BlockData index exactly to the index in initialize.</li>
 </ul>
 </td>
 </tr>
@@ -466,7 +470,7 @@ between these</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>representing the mixed flow to be split</strong> (<a class="reference internal" href="../apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlock" title="idaes.property_models.BFW_properties.StateBlock"><em>StateBlock</em></a>) – </li>
+<li><strong>representing the mixed flow to be split</strong> (<em>StateBlock</em>) – </li>
 <li><strong>list of names for outlets</strong> (<em>a</em>) – </li>
 </ul>
 </td>
@@ -589,7 +593,7 @@ between these</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>representing the mixed flow to be split</strong> (<a class="reference internal" href="../apidoc/idaes.property_models.BFW_properties.html#idaes.property_models.BFW_properties.StateBlock" title="idaes.property_models.BFW_properties.StateBlock"><em>StateBlock</em></a>) – </li>
+<li><strong>representing the mixed flow to be split</strong> (<em>StateBlock</em>) – </li>
 <li><strong>list of names for outlets</strong> (<em>a</em>) – </li>
 </ul>
 </td>
