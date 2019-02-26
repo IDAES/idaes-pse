@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Property Model Library" href="../property_models/index.html" />
+    <link rel="next" title="Power Generation Models" href="power_generation/index.html" />
     <link rel="prev" title="Separator" href="separator.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -112,6 +115,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#stoichiometricreactordata-class">StoichiometricReactorData Class</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="power_generation/index.html">Power Generation Models</a></li>
 </ul>
 </li>
 </ul>
@@ -119,8 +123,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -201,7 +206,7 @@
 </div>
 <div class="section" id="model-structure">
 <h2>Model Structure<a class="headerlink" href="#model-structure" title="Permalink to this headline">¶</a></h2>
-<p>The core Stoichiometric reactor unit model consists of a single ControlVolume0D (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet).</p>
+<p>The core Stoichiometric reactor unit model consists of a single ControlVolume0DBlock (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet).</p>
 </div>
 <div class="section" id="variables">
 <h2>Variables<a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h2>
@@ -256,6 +261,11 @@
 <strong>default</strong> = False. <strong>Valid values:</strong> { <strong>useDefault</strong> -
 get flag from parent (default = False), <strong>True</strong> - set as
 a dynamic model, <strong>False</strong> - set as a steady-state model.}</dd>
+<dt>has_holdup</dt>
+<dd>Indicates whether holdup terms should be constructed or
+not. Must be True if dynamic = True, <strong>default</strong> - False.
+<strong>Valid values:</strong> { <strong>True</strong> - construct holdup terms,
+<strong>False</strong> - do not construct holdup terms}</dd>
 <dt>material_balance_type</dt>
 <dd>Indicates what type of mass balance should be constructed,
 <strong>default</strong> - MaterialBalanceType.componentPhase. <strong>Valid
@@ -384,10 +394,10 @@ user.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../property_models/index.html" class="btn btn-neutral float-right" title="Property Model Library" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="power_generation/index.html" class="btn btn-neutral float-right" title="Power Generation Models" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="separator.html" class="btn btn-neutral" title="Separator" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="separator.html" class="btn btn-neutral float-left" title="Separator" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -413,27 +423,16 @@ user.</p>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

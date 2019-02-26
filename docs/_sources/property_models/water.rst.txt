@@ -11,7 +11,6 @@ Theses modules can be imported as:
 .. code-block:: python
 
   from idaes.property_models import iapws95_ph
-  from idaes.property_models import iapws95_tpx
 
 Example
 -------
@@ -68,7 +67,7 @@ roots.
 
 The external property functions are written in C++ and complied such that they
 can be called by AMPL solvers.  See the :ref:`installation instructions
-<install:Installation Instructions>` for information about compiling these
+<install:Installation>` for information about compiling these
 functions. The external functions provide both first and second derivatives for
 all property function calls, however at phase transitions some of these functions
 may be non-smooth.

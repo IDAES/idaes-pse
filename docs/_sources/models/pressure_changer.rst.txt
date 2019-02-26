@@ -16,7 +16,7 @@ Typical fixed variables are:
 Model Structure
 ---------------
 
-The core Pressure Changer unit model consists of a single control volume (named ControlVolume0D), a state block, containing the states, one Inlet Port (named inlet) and one Outlet Port (named outlet).
+The core Pressure Changer unit model consists of a single control volume (named ControlVolume0DBlock), a state block, containing the states, one Inlet Port (named inlet) and one Outlet Port (named outlet).
 
 Variables
 ---------

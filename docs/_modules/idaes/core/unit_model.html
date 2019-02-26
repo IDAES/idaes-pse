@@ -19,32 +19,35 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -93,8 +96,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -178,7 +182,7 @@
 
 <span class="kn">import</span> <span class="nn">logging</span>
 
-<span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="n">SolverFactory</span>
+<span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="n">Reference</span><span class="p">,</span> <span class="n">SolverFactory</span>
 <span class="kn">from</span> <span class="nn">pyomo.network</span> <span class="k">import</span> <span class="n">Port</span>
 <span class="kn">from</span> <span class="nn">pyomo.opt</span> <span class="k">import</span> <span class="n">TerminationCondition</span>
 <span class="kn">from</span> <span class="nn">pyomo.common.config</span> <span class="k">import</span> <span class="n">ConfigValue</span><span class="p">,</span> <span class="n">In</span>
@@ -186,24 +190,25 @@
 <span class="kn">from</span> <span class="nn">.process_base</span> <span class="k">import</span> <span class="p">(</span><span class="n">declare_process_block_class</span><span class="p">,</span>
                            <span class="n">ProcessBlockData</span><span class="p">,</span>
                            <span class="n">useDefault</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">.property_base</span> <span class="k">import</span> <span class="n">StateBlockBase</span>
-<span class="kn">from</span> <span class="nn">.control_volume_base</span> <span class="k">import</span> <span class="n">ControlVolumeBase</span><span class="p">,</span> <span class="n">FlowDirection</span>
+<span class="kn">from</span> <span class="nn">.property_base</span> <span class="k">import</span> <span class="n">StateBlock</span>
+<span class="kn">from</span> <span class="nn">.control_volume_base</span> <span class="k">import</span> <span class="n">ControlVolumeBlockData</span><span class="p">,</span> <span class="n">FlowDirection</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.exceptions</span> <span class="k">import</span> <span class="p">(</span><span class="n">BurntToast</span><span class="p">,</span>
                                         <span class="n">ConfigurationError</span><span class="p">,</span>
-                                        <span class="n">DynamicError</span><span class="p">)</span>
+                                        <span class="n">DynamicError</span><span class="p">,</span>
+                                        <span class="n">PropertyPackageError</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.misc</span> <span class="k">import</span> <span class="n">add_object_reference</span>
 
 <span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;John Eslick, Qi Chen, Andrew Lee&quot;</span>
 
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;UnitBlockData&#39;</span><span class="p">,</span> <span class="s1">&#39;UnitBlock&#39;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;UnitModelBlockData&#39;</span><span class="p">,</span> <span class="s1">&#39;UnitModelBlock&#39;</span><span class="p">]</span>
 
 <span class="c1"># Set up logger</span>
 <span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="UnitBlockData"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitBlockData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;UnitBlock&quot;</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">UnitBlockData</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">):</span>
+<div class="viewcode-block" id="UnitModelBlockData"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitModelBlockData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;UnitModelBlock&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">UnitModelBlockData</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This is the class for process unit operations models. These are models that</span>
 <span class="sd">    would generally appear in a process flowsheet or superstructure.</span>
@@ -220,10 +225,20 @@
 <span class="s2">**useDefault** - get flag from parent (default = False),</span>
 <span class="s2">**True** - set as a dynamic model,</span>
 <span class="s2">**False** - set as a steady-state model.}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_holdup&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="n">useDefault</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Holdup construction flag&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Indicates whether holdup terms should be constructed or not.</span>
+<span class="s2">Must be True if dynamic = True,</span>
+<span class="s2">**default** - False.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**True** - construct holdup terms,</span>
+<span class="s2">**False** - do not construct holdup terms}&quot;&quot;&quot;</span><span class="p">))</span>
 
-<div class="viewcode-block" id="UnitBlockData.build"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitBlockData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="UnitModelBlockData.build"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        General build method for UnitBlockData. This method calls a number</span>
+<span class="sd">        General build method for UnitModelBlockData. This method calls a number</span>
 <span class="sd">        of sub-methods which automate the construction of expected attributes</span>
 <span class="sd">        of unit models.</span>
 
@@ -235,7 +250,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">UnitBlockData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">UnitModelBlockData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
 
         <span class="c1"># Set up dynamic flag and time domain</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_setup_dynamics</span><span class="p">()</span></div>
@@ -293,17 +308,19 @@
                 <span class="k">raise</span> <span class="n">DynamicError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> has a parent model &#39;</span>
                                    <span class="s1">&#39;with no time domain&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
-        <span class="c1"># Check has_holdup, if present</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="s2">&quot;has_holdup&quot;</span><span class="p">):</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_holdup</span><span class="p">:</span>
-                    <span class="c1"># Dynamic model must have has_holdup = True</span>
-                    <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+        <span class="c1"># Set and validate has_holdup argument</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_holdup</span> <span class="o">==</span> <span class="n">useDefault</span><span class="p">:</span>
+            <span class="c1"># Default to same value as dynamic flag</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_holdup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">has_holdup</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dynamic</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="c1"># Dynamic model must have has_holdup = True</span>
+                <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
                             <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> invalid arguments for dynamic and has_holdup. &quot;</span>
                             <span class="s2">&quot;If dynamic = True, has_holdup must also be True &quot;</span>
                             <span class="s2">&quot;(was False)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
-<div class="viewcode-block" id="UnitBlockData.model_check"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitBlockData.model_check">[docs]</a>    <span class="k">def</span> <span class="nf">model_check</span><span class="p">(</span><span class="n">blk</span><span class="p">):</span>
+<div class="viewcode-block" id="UnitModelBlockData.model_check"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.model_check">[docs]</a>    <span class="k">def</span> <span class="nf">model_check</span><span class="p">(</span><span class="n">blk</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is a general purpose initialization routine for simple unit</span>
 <span class="sd">        models. This method assumes a single ControlVolume block called</span>
@@ -327,7 +344,7 @@
         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
             <span class="k">pass</span></div>
 
-<div class="viewcode-block" id="UnitBlockData.add_port"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_port">[docs]</a>    <span class="k">def</span> <span class="nf">add_port</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="UnitModelBlockData.add_port"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.add_port">[docs]</a>    <span class="k">def</span> <span class="nf">add_port</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is a method to build Port objects in a unit model and</span>
 <span class="sd">        connect these to a specified StateBlock.</span>
@@ -340,21 +357,36 @@
 <span class="sd">            A Pyomo Port object and associated components.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Validate block object</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">StateBlockBase</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">StateBlock</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> block object provided to add_port &quot;</span>
                                      <span class="s2">&quot;method is not an instance of a &quot;</span>
                                      <span class="s2">&quot;StateBlock object. IDAES port objects &quot;</span>
                                      <span class="s2">&quot;should only be associated with &quot;</span>
                                      <span class="s2">&quot;StateBlocks.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
-        <span class="k">def</span> <span class="nf">port_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">define_port_members</span><span class="p">()</span>
-
-        <span class="n">p</span> <span class="o">=</span> <span class="n">Port</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="n">port_rule</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
+        <span class="c1"># Create empty Port</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">Port</span><span class="p">(</span><span class="n">noruleinit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+        <span class="c1"># Get dict of Port members and names</span>
+        <span class="n">member_list</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="n">blk</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span><span class="o">.</span><span class="n">define_port_members</span><span class="p">()</span>
+
+        <span class="c1"># Create References for port members</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">member_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">is_indexed</span><span class="p">():</span>
+                <span class="n">slicer</span> <span class="o">=</span> <span class="n">block</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">slicer</span> <span class="o">=</span> <span class="n">block</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">)[</span><span class="o">...</span><span class="p">]</span>
+
+            <span class="n">r</span> <span class="o">=</span> <span class="n">Reference</span><span class="p">(</span><span class="n">slicer</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">name</span><span class="o">+</span><span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">s</span><span class="o">+</span><span class="s2">&quot;_ref&quot;</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+            <span class="c1"># Add Reference to Port</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">p</span></div>
 
-<div class="viewcode-block" id="UnitBlockData.add_inlet_port"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_inlet_port">[docs]</a>    <span class="k">def</span> <span class="nf">add_inlet_port</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="UnitModelBlockData.add_inlet_port"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.add_inlet_port">[docs]</a>    <span class="k">def</span> <span class="nf">add_inlet_port</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is a method to build inlet Port objects in a unit model and</span>
 <span class="sd">        connect these to a specified control volume or state block.</span>
@@ -385,42 +417,106 @@
         <span class="c1"># Set default name and doc string if not provided</span>
         <span class="c1"># TODO: This does not work when the block has multiple control volumes.</span>
         <span class="c1"># Better to raise exception when user does not provide a name than us</span>
-        <span class="c1"># setting a name automatically. </span>
+        <span class="c1"># setting a name automatically.</span>
         <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;inlet&quot;</span>
         <span class="k">if</span> <span class="n">doc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">doc</span> <span class="o">=</span> <span class="s2">&quot;Inlet Port&quot;</span>
 
-        <span class="k">def</span> <span class="nf">port_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">ControlVolumeBase</span><span class="p">):</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="n">block</span><span class="o">.</span><span class="n">properties_in</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">define_port_members</span><span class="p">()</span>
-                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">forward</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span>
-                                <span class="o">.</span><span class="n">define_port_members</span><span class="p">())</span>
-                    <span class="k">elif</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">backward</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">last</span><span class="p">()]</span>
-                                    <span class="o">.</span><span class="n">define_port_members</span><span class="p">())</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> flow_direction argument received &quot;</span>
-                                         <span class="s2">&quot;invalid value. This should never &quot;</span>
-                                         <span class="s2">&quot;happen, so please contact the IDAES &quot;</span>
-                                         <span class="s2">&quot;developers with this bug.&quot;</span>
-                                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">StateBlockBase</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">define_port_members</span><span class="p">()</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> block provided to add_inlet_port &quot;</span>
-                                         <span class="s2">&quot;method was not an instance of a &quot;</span>
-                                         <span class="s2">&quot;ControlVolume or a StateBlock.&quot;</span>
-                                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
-
-        <span class="n">p</span> <span class="o">=</span> <span class="n">Port</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="n">port_rule</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
+        <span class="c1"># Create empty Port</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">Port</span><span class="p">(</span><span class="n">noruleinit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+        <span class="c1"># Get dict of Port members and names</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">ControlVolumeBlockData</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">member_list</span> <span class="o">=</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties_in</span><span class="p">[</span><span class="n">block</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span>
+                               <span class="o">.</span><span class="n">define_port_members</span><span class="p">())</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">member_list</span> <span class="o">=</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">block</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">(),</span> <span class="mi">0</span><span class="p">]</span>
+                                   <span class="o">.</span><span class="n">define_port_members</span><span class="p">())</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">PropertyPackageError</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> property package does not appear to have &quot;</span>
+                            <span class="s2">&quot;implemented a define_port_memebers method. &quot;</span>
+                            <span class="s2">&quot;Please contact the developer of the property &quot;</span>
+                            <span class="s2">&quot;package.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">StateBlock</span><span class="p">):</span>
+            <span class="n">member_list</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="n">blk</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span><span class="o">.</span><span class="n">define_port_members</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> block provided to add_inlet_port &quot;</span>
+                    <span class="s2">&quot;method was not an instance of a &quot;</span>
+                    <span class="s2">&quot;ControlVolume or a StateBlock.&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># Create References for port members</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">member_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">is_indexed</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">ControlVolumeBlockData</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">slicer</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">properties_in</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                                        <span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">forward</span><span class="p">:</span>
+                            <span class="n">_idx</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+                        <span class="k">elif</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">backward</span><span class="p">:</span>
+                            <span class="n">_idx</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">last</span><span class="p">()</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
+                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> flow_direction argument received &quot;</span>
+                                    <span class="s2">&quot;invalid value. This should never &quot;</span>
+                                    <span class="s2">&quot;happen, so please contact the IDAES &quot;</span>
+                                    <span class="s2">&quot;developers with this bug.&quot;</span>
+                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                        <span class="n">slicer</span> <span class="o">=</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties</span><span class="p">[:,</span> <span class="n">_idx</span><span class="p">]</span>
+                                      <span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">StateBlock</span><span class="p">):</span>
+                    <span class="n">slicer</span> <span class="o">=</span> <span class="n">block</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> block provided to add_inlet_port &quot;</span>
+                            <span class="s2">&quot;method was not an instance of a &quot;</span>
+                            <span class="s2">&quot;ControlVolume or a StateBlock.&quot;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">ControlVolumeBlockData</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">slicer</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">properties_in</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                                        <span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">)[</span><span class="o">...</span><span class="p">]</span>
+                    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">forward</span><span class="p">:</span>
+                            <span class="n">_idx</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+                        <span class="k">elif</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">backward</span><span class="p">:</span>
+                            <span class="n">_idx</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">last</span><span class="p">()</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
+                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> flow_direction argument received &quot;</span>
+                                    <span class="s2">&quot;invalid value. This should never &quot;</span>
+                                    <span class="s2">&quot;happen, so please contact the IDAES &quot;</span>
+                                    <span class="s2">&quot;developers with this bug.&quot;</span>
+                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                        <span class="n">slicer</span> <span class="o">=</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties</span><span class="p">[:,</span> <span class="n">_idx</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                                    <span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">))[</span><span class="o">...</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">StateBlock</span><span class="p">):</span>
+                    <span class="n">slicer</span> <span class="o">=</span> <span class="n">block</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">)[</span><span class="o">...</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> block provided to add_inlet_port &quot;</span>
+                            <span class="s2">&quot;method was not an instance of a &quot;</span>
+                            <span class="s2">&quot;ControlVolume or a StateBlock.&quot;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+            <span class="n">r</span> <span class="o">=</span> <span class="n">Reference</span><span class="p">(</span><span class="n">slicer</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">name</span><span class="o">+</span><span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">s</span><span class="o">+</span><span class="s2">&quot;_ref&quot;</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+            <span class="c1"># Add Reference to Port</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">p</span></div>
 
-<div class="viewcode-block" id="UnitBlockData.add_outlet_port"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_outlet_port">[docs]</a>    <span class="k">def</span> <span class="nf">add_outlet_port</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="UnitModelBlockData.add_outlet_port"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.add_outlet_port">[docs]</a>    <span class="k">def</span> <span class="nf">add_outlet_port</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is a method to build outlet Port objects in a unit model and</span>
 <span class="sd">        connect these to a specified control volume or state block.</span>
@@ -454,36 +550,101 @@
         <span class="k">if</span> <span class="n">doc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">doc</span> <span class="o">=</span> <span class="s2">&quot;Outlet Port&quot;</span>
 
-        <span class="k">def</span> <span class="nf">port_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">ControlVolumeBase</span><span class="p">):</span>
-                <span class="k">try</span><span class="p">:</span>
-                    <span class="k">return</span> <span class="n">block</span><span class="o">.</span><span class="n">properties_out</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">define_port_members</span><span class="p">()</span>
-                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">forward</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">last</span><span class="p">()]</span>
-                                <span class="o">.</span><span class="n">define_port_members</span><span class="p">())</span>
-                    <span class="k">elif</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">backward</span><span class="p">:</span>
-                        <span class="k">return</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span>
-                                <span class="o">.</span><span class="n">define_port_members</span><span class="p">())</span>
-                    <span class="k">else</span><span class="p">:</span>
-                        <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> flow_direction argument received &quot;</span>
-                                         <span class="s2">&quot;invalid value. This should never &quot;</span>
-                                         <span class="s2">&quot;happen, so please contact the IDAES &quot;</span>
-                                         <span class="s2">&quot;developers with this bug.&quot;</span>
-                                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
-            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">StateBlockBase</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">define_port_members</span><span class="p">()</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> block provided to add_inlet_port &quot;</span>
-                                         <span class="s2">&quot;method was not an instance of a &quot;</span>
-                                         <span class="s2">&quot;ControlVolume or a StateBlock.&quot;</span>
-                                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
-
-        <span class="n">p</span> <span class="o">=</span> <span class="n">Port</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="n">rule</span><span class="o">=</span><span class="n">port_rule</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
+        <span class="c1"># Create empty Port</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">Port</span><span class="p">(</span><span class="n">noruleinit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">doc</span><span class="p">)</span>
         <span class="nb">setattr</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+
+        <span class="c1"># Get dict of Port members and names</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">ControlVolumeBlockData</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">member_list</span> <span class="o">=</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties_out</span><span class="p">[</span><span class="n">block</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span>
+                               <span class="o">.</span><span class="n">define_port_members</span><span class="p">())</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">member_list</span> <span class="o">=</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="n">block</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">(),</span> <span class="mi">0</span><span class="p">]</span>
+                                   <span class="o">.</span><span class="n">define_port_members</span><span class="p">())</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">PropertyPackageError</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> property package does not appear to have &quot;</span>
+                            <span class="s2">&quot;implemented a define_port_memebers method. &quot;</span>
+                            <span class="s2">&quot;Please contact the developer of the property &quot;</span>
+                            <span class="s2">&quot;package.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">StateBlock</span><span class="p">):</span>
+            <span class="n">member_list</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="n">blk</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span><span class="o">.</span><span class="n">define_port_members</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> block provided to add_inlet_port &quot;</span>
+                    <span class="s2">&quot;method was not an instance of a &quot;</span>
+                    <span class="s2">&quot;ControlVolume or a StateBlock.&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="c1"># Create References for port members</span>
+        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">member_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">is_indexed</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">ControlVolumeBlockData</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">slicer</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">properties_out</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                                        <span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">forward</span><span class="p">:</span>
+                            <span class="n">_idx</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">last</span><span class="p">()</span>
+                        <span class="k">elif</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">backward</span><span class="p">:</span>
+                            <span class="n">_idx</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
+                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> flow_direction argument received &quot;</span>
+                                    <span class="s2">&quot;invalid value. This should never &quot;</span>
+                                    <span class="s2">&quot;happen, so please contact the IDAES &quot;</span>
+                                    <span class="s2">&quot;developers with this bug.&quot;</span>
+                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                        <span class="n">slicer</span> <span class="o">=</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties</span><span class="p">[:,</span> <span class="n">_idx</span><span class="p">]</span>
+                                      <span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">StateBlock</span><span class="p">):</span>
+                    <span class="n">slicer</span> <span class="o">=</span> <span class="n">block</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> block provided to add_inlet_port &quot;</span>
+                            <span class="s2">&quot;method was not an instance of a &quot;</span>
+                            <span class="s2">&quot;ControlVolume or a StateBlock.&quot;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Need to use slice notation on indexed comenent as well</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">ControlVolumeBlockData</span><span class="p">):</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">slicer</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">properties_out</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                                        <span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">)[</span><span class="o">...</span><span class="p">]</span>
+                    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">forward</span><span class="p">:</span>
+                            <span class="n">_idx</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">last</span><span class="p">()</span>
+                        <span class="k">elif</span> <span class="n">block</span><span class="o">.</span><span class="n">_flow_direction</span> <span class="o">==</span> <span class="n">FlowDirection</span><span class="o">.</span><span class="n">backward</span><span class="p">:</span>
+                            <span class="n">_idx</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">length_domain</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
+                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> flow_direction argument received &quot;</span>
+                                    <span class="s2">&quot;invalid value. This should never &quot;</span>
+                                    <span class="s2">&quot;happen, so please contact the IDAES &quot;</span>
+                                    <span class="s2">&quot;developers with this bug.&quot;</span>
+                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+                        <span class="n">slicer</span> <span class="o">=</span> <span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">properties</span><span class="p">[:,</span> <span class="n">_idx</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                                    <span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">))[</span><span class="o">...</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">StateBlock</span><span class="p">):</span>
+                    <span class="n">slicer</span> <span class="o">=</span> <span class="n">block</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">member_list</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span><span class="p">)[</span><span class="o">...</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> block provided to add_inlet_port &quot;</span>
+                            <span class="s2">&quot;method was not an instance of a &quot;</span>
+                            <span class="s2">&quot;ControlVolume or a StateBlock.&quot;</span>
+                            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+            <span class="n">r</span> <span class="o">=</span> <span class="n">Reference</span><span class="p">(</span><span class="n">slicer</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">name</span><span class="o">+</span><span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">s</span><span class="o">+</span><span class="s2">&quot;_ref&quot;</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+
+            <span class="c1"># Add Reference to Port</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">p</span></div>
 
-<div class="viewcode-block" id="UnitBlockData.initialize"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitBlockData.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">state_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<div class="viewcode-block" id="UnitModelBlockData.initialize"><a class="viewcode-back" href="../../../core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">state_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                    <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;ipopt&#39;</span><span class="p">,</span> <span class="n">optarg</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;tol&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">}):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        This is a general purpose initialization routine for simple unit</span>
@@ -580,27 +741,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

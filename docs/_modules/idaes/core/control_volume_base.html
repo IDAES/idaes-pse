@@ -19,32 +19,35 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -93,8 +96,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -184,7 +188,9 @@
 <span class="kn">from</span> <span class="nn">pyutilib.enum</span> <span class="k">import</span> <span class="n">Enum</span>
 
 <span class="c1"># Import IDAES cores</span>
-<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="n">ProcessBlockData</span><span class="p">,</span> <span class="n">useDefault</span><span class="p">,</span> <span class="n">declare_process_block_class</span>
+<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">,</span>
+                        <span class="n">useDefault</span><span class="p">,</span>
+                        <span class="n">declare_process_block_class</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.config</span> <span class="k">import</span> <span class="p">(</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
                                     <span class="n">is_reaction_parameter_block</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.exceptions</span> <span class="k">import</span> <span class="p">(</span><span class="n">ConfigurationError</span><span class="p">,</span>
@@ -401,16 +407,16 @@
 <span class="s2">**Valid values:** {</span>
 <span class="s2">see reaction package for documentation.}&quot;&quot;&quot;</span><span class="p">))</span>
 
-<div class="viewcode-block" id="ControlVolumeBase"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;ControlVolume&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;This class is not usually &quot;</span>
-    <span class="s2">&quot;used directly. Use ControlVolume0D or ControlVolume1D instead.&quot;</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">ControlVolumeBase</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;ControlVolume&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;This class is not usually &quot;</span>
+    <span class="s2">&quot;used directly. Use ControlVolume0DBlock or ControlVolume1DBlock instead.&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ControlVolumeBlockData</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    The ControlVolumeBase Class forms the base class for all IDAES</span>
+<span class="sd">    The ControlVolumeBlockData Class forms the base class for all IDAES</span>
 <span class="sd">    ControlVolume models. The purpose of this class is to automate the tasks</span>
 <span class="sd">    common to all control volume blockss and ensure that the necessary</span>
 <span class="sd">    attributes of a control volume block are present.</span>
 
-<span class="sd">    The most signfiicant role of the ControlVolumeBase class is to set up the</span>
+<span class="sd">    The most signfiicant role of the ControlVolumeBlockData class is to set up the</span>
 <span class="sd">    bconstruction arguments for the control volume block, automatically link to</span>
 <span class="sd">    the time domain of the parent block, and to get the information about the</span>
 <span class="sd">    property and reaction packages.</span>
@@ -483,7 +489,7 @@
 <span class="s2">**True** - use automatic construction,</span>
 <span class="s2">**False** - do not use automatic construciton.}&quot;&quot;&quot;</span><span class="p">))</span>
 
-<div class="viewcode-block" id="ControlVolumeBase.build"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.build"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        General build method for Control Volumes blocks. This method calls a</span>
 <span class="sd">        number of sub-methods which automate the construction of expected</span>
@@ -497,7 +503,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ControlVolumeBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ControlVolumeBlockData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
 
         <span class="c1"># Setup dynamics flag and time domain</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_setup_dynamics</span><span class="p">()</span>
@@ -514,7 +520,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_construct</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_auto_construct</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_geometry"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_geometry">[docs]</a>    <span class="k">def</span> <span class="nf">add_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_geometry"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_geometry">[docs]</a>    <span class="k">def</span> <span class="nf">add_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for defining the geometry of the control volume.</span>
 
@@ -526,7 +532,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_material_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_material_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_material_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_material_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_material_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_material_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                               <span class="n">balance_type</span><span class="o">=</span><span class="n">MaterialBalanceType</span><span class="o">.</span><span class="n">componentPhase</span><span class="p">,</span>
                               <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -573,7 +579,7 @@
 
         <span class="k">return</span> <span class="n">mb</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_energy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_energy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                             <span class="n">balance_type</span><span class="o">=</span><span class="n">EnergyBalanceType</span><span class="o">.</span><span class="n">enthalpyPhase</span><span class="p">,</span>
                             <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -614,7 +620,7 @@
 
         <span class="k">return</span> <span class="n">eb</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                               <span class="n">balance_type</span><span class="o">=</span><span class="n">MomentumBalanceType</span><span class="o">.</span><span class="n">pressureTotal</span><span class="p">,</span>
                               <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -751,7 +757,7 @@
                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
     <span class="c1"># Add placeholder methods for adding property and reaction packages</span>
-<div class="viewcode-block" id="ControlVolumeBase.add_state_blocks"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_state_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_state_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_state_blocks"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_state_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_state_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding StateBlocks to the control volume.</span>
 
@@ -763,7 +769,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_reaction_blocks"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_reaction_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_reaction_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_reaction_blocks"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_reaction_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_reaction_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding ReactionBlocks to the control volume.</span>
 
@@ -777,7 +783,7 @@
 
     <span class="c1"># Add placeholder methods for all types of material, energy and momentum</span>
     <span class="c1"># balance equations which return NotImplementedErrors</span>
-<div class="viewcode-block" id="ControlVolumeBase.add_phase_component_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_component_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_component_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_phase_component_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_component_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_component_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding material balances indexed by phase and component to</span>
 <span class="sd">        the control volume.</span>
@@ -790,7 +796,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_total_component_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_component_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_component_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_total_component_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_component_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_component_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding material balances indexed by component to</span>
 <span class="sd">        the control volume.</span>
@@ -803,7 +809,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_total_element_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_element_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_element_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_total_element_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_element_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_element_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding total elemental material balances indexed to</span>
 <span class="sd">        the control volume.</span>
@@ -816,7 +822,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_total_material_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_material_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_material_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_total_material_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_material_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_material_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding a total material balance to</span>
 <span class="sd">        the control volume.</span>
@@ -829,7 +835,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_phase_enthalpy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_enthalpy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_enthalpy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_phase_enthalpy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_enthalpy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_enthalpy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding enthalpy balances indexed by phase to</span>
 <span class="sd">        the control volume.</span>
@@ -842,7 +848,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_total_enthalpy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_enthalpy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_enthalpy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_total_enthalpy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_enthalpy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_enthalpy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding a total enthalpy balance to</span>
 <span class="sd">        the control volume.</span>
@@ -855,7 +861,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_phase_energy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_phase_energy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding energy balances (including kinetic energy) indexed by</span>
 <span class="sd">        phase to the control volume.</span>
@@ -868,7 +874,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_total_energy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_total_energy_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding a total energy balance (including kinetic energy)</span>
 <span class="sd">        to the control volume.</span>
@@ -881,7 +887,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_phase_pressure_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_pressure_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_pressure_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_phase_pressure_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_pressure_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_pressure_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding pressure balances indexed by</span>
 <span class="sd">        phase to the control volume.</span>
@@ -894,7 +900,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_total_pressure_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_pressure_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_pressure_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_total_pressure_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_pressure_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_pressure_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding a total pressure balance to the control volume.</span>
 
@@ -906,7 +912,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_phase_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_phase_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding momentum balances indexed by phase to the control</span>
 <span class="sd">        volume.</span>
@@ -919,7 +925,7 @@
                 <span class="s2">&quot;developer of the ControlVolume class you are using.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolumeBase.add_total_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolumeBlockData.add_total_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method for adding a total momentum balance to the control volume.</span>
 
@@ -959,27 +965,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

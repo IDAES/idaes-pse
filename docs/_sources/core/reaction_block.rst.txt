@@ -1,7 +1,7 @@
 Reaction Property Package Classes
 =================================
 
-.. contents:: Contents 
+.. contents:: Contents
     :depth: 2
 
 Reaction property packages represent a collection of calculations necessary to determine the reaction behavior of a mixture at a given state. Reaction properties depend upon the state and physical properties of the material, and thus must be linked to a StateBlock which provides the necessary state and physical property information.
@@ -16,10 +16,10 @@ Reaction Parameter Blocks
 
 Reaction Parameter blocks serve as a central location for linking to a reaction property package, and contain all the parameters and indexing sets used by a given reaction package.
 
-ReactionParameterBase Class
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ReactionParameterBlock Class
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The role of the ReactionParameterBase class is to set up the references required by the rest of the IDAES framework for constructing instances of ReactionBlocks and attaching these to the ReactionParameter block for ease of use. This allows other models to be pointed to the ReactionParameter block in order to collect the necessary information and to construct the necessary ReactionBlocks without the need for the user to do this manually.
+The role of the ReactionParameterBlock class is to set up the references required by the rest of the IDAES framework for constructing instances of ReactionBlocks and attaching these to the ReactionParameter block for ease of use. This allows other models to be pointed to the ReactionParameter block in order to collect the necessary information and to construct the necessary ReactionBlocks without the need for the user to do this manually.
 
 Reaction property packages are used by all of the other modeling components to inform them of what needs to be constructed when dealing with chemical reactions. In order to do this, the IDAES modeling framework looks for a number of attributes in the ReactionParameter block which are used to inform the construction of other components.
 
@@ -43,7 +43,7 @@ Reaction Parameter blocks have two standard configuration arguments:
 
 .. module:: idaes.core.reaction_base
 
-.. autoclass:: ReactionParameterBase
+.. autoclass:: ReactionParameterBlock
     :members:
 
 Reaction Blocks
