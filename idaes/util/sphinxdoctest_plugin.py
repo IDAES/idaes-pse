@@ -1,11 +1,39 @@
 """
-pytest plugin for Sphinx doc tests
+This module implements pytest plugin for Sphinx doc tests.
+
+In a nutshell, it uses the pytest `pytest_collect_file()` plugin hook
+to recognize the Sphinx Makefile. Then it does a quick and dirty parse
+of that Makefile to extract the command Sphinx is using to run the
+doctests, which it recognizes by being the first command in the
+Makefile target named by `SPHINX_DOCTEST_TARGET`. The parser is
+able to handle simple Makefile variable expansion, though not currently
+nested variables so don't do that.
+
+The mechanics of the pytest plugin mechanism are such that the Makefile
+is wrapped with a subclass of :class:`pytest.File`, :class:`SphinxMakefile`,
+which implements the `collect` method to yield a subclass of :class:`pytest.Item`
+called :class:`SphinxItem`, that in turn implements a few methods to run the
+test and report the result. The bulk of the code in running the test is parsing
+the output to look for errors, and thus decide whether all the doctests passed,
+or not.
+
+The drawback of this whole setup is of course some extra complexity.
+The advantage is that (a) whatever the Makefile does is what this plugin
+should do, for running the command, as long as the command is the first
+(and only significant) thing that occurs in the target, and (b) if there ends up
+being more than one Makefile, it should all continue to work.
 """
 import os
 import re
 import subprocess
 #
 import pytest
+
+__author__ = 'Dan Gunter'
+
+# Modify this to match the target in the
+# Sphinx Makefile for running the doctests
+SPHINX_DOCTEST_TARGET = "doctest"
 
 
 def pytest_collect_file(parent, path):
@@ -44,7 +72,7 @@ class SphinxMakefile(pytest.File):
                 s = line.strip()
                 # look for 'doctest' target
                 if state == 'pre':
-                    if s.startswith('doctest'):
+                    if s.startswith(SPHINX_DOCTEST_TARGET):
                         state = 'next'
                     else:
                         # look for a NAME = value definition, save it in 'mkvars'
