@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -230,6 +230,7 @@
 <span class="sd">            (ProcessBlockData): A new instance</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="n">component</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pb_configured</span> <span class="o">=</span> <span class="kc">False</span>
 
 <div class="viewcode-block" id="ProcessBlockData.build"><a class="viewcode-back" href="../../../core/process_block.html#idaes.core.process_base.ProcessBlockData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -251,13 +252,28 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_config_args</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_config_args</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get config arguments for this element and put them in the ConfigBlock</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pb_configured</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pb_configured</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">idx_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_component</span><span class="p">()</span><span class="o">.</span><span class="n">_idx_map</span> <span class="c1"># index map function</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">()</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="n">idx</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_component</span><span class="p">()</span><span class="o">.</span><span class="n">_block_data_config_initialize</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="n">idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_component</span><span class="p">()</span><span class="o">.</span><span class="n">_block_data_config_default</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="n">idx_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">idx_map</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="n">initialize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_component</span><span class="p">()</span><span class="o">.</span><span class="n">_block_data_config_initialize</span>
+        <span class="k">if</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">initialize</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="n">initialize</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent_component</span><span class="p">()</span><span class="o">.</span><span class="n">_block_data_config_default</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ProcessBlockData.fix_initial_conditions"><a class="viewcode-back" href="../../../core/process_block.html#idaes.core.process_base.ProcessBlockData.fix_initial_conditions">[docs]</a>    <span class="k">def</span> <span class="nf">fix_initial_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="o">=</span><span class="s2">&quot;steady-state&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;This method fixes the initial conditions for dynamic models.</span>

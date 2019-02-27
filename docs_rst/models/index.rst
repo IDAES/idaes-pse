@@ -1,13 +1,14 @@
 Unit Model Library
 ==================
 
-Unit Model Contents
--------------------
-
 .. toctree::
     :maxdepth: 1
 
     cstr
+    equilibrium
+    feed
+    feed_flash
+    flash
     gibbs_reactor
     heater
     heat_exchanger
@@ -15,6 +16,8 @@ Unit Model Contents
     mixer
     pfr
     pressure_changer
-    flash
+    product
     separator
     stoichiometric_reactor
+    translator
+    power_generation/index

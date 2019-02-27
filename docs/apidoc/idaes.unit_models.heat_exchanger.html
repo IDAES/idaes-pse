@@ -61,7 +61,7 @@
             
             
               <div class="version">
-                1.0.1
+                1.0.0
               </div>
             
           
@@ -94,7 +94,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples.html">Sample Models and Flowsheets</a></li>
 </ul>
 
             
@@ -360,8 +360,8 @@ are BlockData indexes and values are dictionaries described under the
 <dt id="idaes.unit_models.heat_exchanger.HeatExchangerData">
 <em class="property">class </em><code class="descclassname">idaes.unit_models.heat_exchanger.</code><code class="descname">HeatExchangerData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeatExchangerData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeatExchangerData" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../core/unit_model.html#idaes.core.unit_model.UnitBlockData" title="idaes.core.unit_model.UnitBlockData"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.unit_model.UnitBlockData</span></code></a></p>
-<p>Simple 0D heat exchange unit.
-Unit model to transfer heat from one material to another.</p>
+<p>Simple 0D heat exchange unit.</p>
+<p>Unit model to transfer heat from one material to another.</p>
 <dl class="attribute">
 <dt id="idaes.unit_models.heat_exchanger.HeatExchangerData.CONFIG">
 <code class="descname">CONFIG</code><em class="property"> = &lt;pyutilib.misc.config.ConfigBlock object&gt;</em><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeatExchangerData.CONFIG" title="Permalink to this definition">¶</a></dt>
@@ -370,13 +370,14 @@ Unit model to transfer heat from one material to another.</p>
 <dl class="method">
 <dt id="idaes.unit_models.heat_exchanger.HeatExchangerData.build">
 <code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeatExchangerData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeatExchangerData.build" title="Permalink to this definition">¶</a></dt>
-<dd><p>Building model
-:param None:</p>
+<dd><p>Building model</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
 </tr>
 </tbody>
 </table>
@@ -385,24 +386,26 @@ Unit model to transfer heat from one material to another.</p>
 <dl class="method">
 <dt id="idaes.unit_models.heat_exchanger.HeatExchangerData.initialize">
 <code class="descname">initialize</code><span class="sig-paren">(</span><em>state_args_1=None</em>, <em>state_args_2=None</em>, <em>outlvl=0</em>, <em>solver='ipopt'</em>, <em>optarg={'tol': 1e-06}</em>, <em>duty=10000</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeatExchangerData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeatExchangerData.initialize" title="Permalink to this definition">¶</a></dt>
-<dd><p>Heat echanger initialization method.
-:param state_args_1: a dict of arguments to be passed to the property</p>
-<blockquote>
-<div>initialization for side_1 (see documentation of the specific
-property package) (default = {}).</div></blockquote>
+<dd><p>Heat echanger initialization method.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>state_args_1</strong> – a dict of arguments to be passed to the property
+initialization for side_1 (see documentation of the specific
+property package) (default = {}).</li>
 <li><strong>state_args_2</strong> – a dict of arguments to be passed to the property
 initialization for side_2 (see documentation of the specific
 property package) (default = {}).</li>
-<li><strong>outlvl</strong> – sets output level of initialisation routine
-* 0 = no output (default)
-* 1 = return solver state for each step in routine
-* 2 = return solver state for each step in subroutines
-* 3 = include solver output infomation (tee=True)</li>
+<li><strong>outlvl</strong> – <p>sets output level of initialisation routine</p>
+<ul>
+<li>0 = no output (default)</li>
+<li>1 = return solver state for each step in routine</li>
+<li>2 = return solver state for each step in subroutines</li>
+<li>3 = include solver output infomation (tee=True)</li>
+</ul>
+</li>
 <li><strong>optarg</strong> – solver options dictionary object (default={‘tol’: 1e-6})</li>
 <li><strong>solver</strong> – str indicating which solver to use during
 initialization (default = ‘ipopt’)</li>
@@ -525,8 +528,8 @@ are BlockData indexes and values are dictionaries described under the
 <dt id="idaes.unit_models.heat_exchanger.HeaterData">
 <em class="property">class </em><code class="descclassname">idaes.unit_models.heat_exchanger.</code><code class="descname">HeaterData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeaterData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeaterData" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../core/unit_model.html#idaes.core.unit_model.UnitBlockData" title="idaes.core.unit_model.UnitBlockData"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.unit_model.UnitBlockData</span></code></a></p>
-<p>Simple 0D heater unit.
-Unit model to add or remove heat from a material.</p>
+<p>Simple 0D heater unit.</p>
+<p>Unit model to add or remove heat from a material.</p>
 <dl class="attribute">
 <dt id="idaes.unit_models.heat_exchanger.HeaterData.CONFIG">
 <code class="descname">CONFIG</code><em class="property"> = &lt;pyutilib.misc.config.ConfigBlock object&gt;</em><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeaterData.CONFIG" title="Permalink to this definition">¶</a></dt>
@@ -535,13 +538,14 @@ Unit model to add or remove heat from a material.</p>
 <dl class="method">
 <dt id="idaes.unit_models.heat_exchanger.HeaterData.build">
 <code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeaterData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeaterData.build" title="Permalink to this definition">¶</a></dt>
-<dd><p>Building model
-:param None:</p>
+<dd><p>Building model</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">None</td>
 </tr>
 </tbody>
 </table>

@@ -14,7 +14,9 @@
 the package. But :class:`Version` has been written to be usable as a general
 versioning interface.
 
-Example of using the class directly::
+Example of using the class directly:
+
+.. doctest::
 
     >>> from idaes.ver import Version
     >>> my_version = Version(1, 2, 3)
@@ -35,7 +37,9 @@ Example of using the class directly::
 
 If you want to add a version to a class, e.g. a model, then
 simply inherit from ``HasVersion`` and initialize it with the
-same arguments you would give the :class:`Version` constructor::
+same arguments you would give the :class:`Version` constructor:
+
+.. doctest::
 
     >>> from idaes.ver import HasVersion
     >>> class MyClass(HasVersion):
@@ -123,7 +127,7 @@ class HasVersion(object):
 
 
 #: Package's version as an object
-package_version = Version(1, 0, 0, 'candidate', 1)
+package_version = Version(1, 0, 1)
 
 #: Package's version as a simple string
 __version__ = str(package_version)

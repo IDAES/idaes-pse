@@ -24,7 +24,9 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyutilib.enum import Enum
 
 # Import IDAES cores
-from idaes.core import ProcessBlockData, useDefault, declare_process_block_class
+from idaes.core import (ProcessBlockData,
+                        useDefault,
+                        declare_process_block_class)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (ConfigurationError,
@@ -242,15 +244,15 @@ and used when constructing these,
 see reaction package for documentation.}"""))
 
 @declare_process_block_class("ControlVolume", doc="This class is not usually "
-    "used directly. Use ControlVolume0D or ControlVolume1D instead.")
-class ControlVolumeBase(ProcessBlockData):
+    "used directly. Use ControlVolume0DBlock or ControlVolume1DBlock instead.")
+class ControlVolumeBlockData(ProcessBlockData):
     """
-    The ControlVolumeBase Class forms the base class for all IDAES
+    The ControlVolumeBlockData Class forms the base class for all IDAES
     ControlVolume models. The purpose of this class is to automate the tasks
     common to all control volume blockss and ensure that the necessary
     attributes of a control volume block are present.
 
-    The most signfiicant role of the ControlVolumeBase class is to set up the
+    The most signfiicant role of the ControlVolumeBlockData class is to set up the
     bconstruction arguments for the control volume block, automatically link to
     the time domain of the parent block, and to get the information about the
     property and reaction packages.
@@ -337,7 +339,7 @@ have a config block which derives from CONFIG_Base,
         Returns:
             None
         """
-        super(ControlVolumeBase, self).build()
+        super(ControlVolumeBlockData, self).build()
 
         # Setup dynamics flag and time domain
         self._setup_dynamics()

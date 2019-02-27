@@ -16,16 +16,15 @@ Standard IDAES CSTR model.
 from __future__ import division
 
 # Import Pyomo libraries
-# from pyomo.environ import Reals,  Var, NonNegativeReals
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume0D,
+from idaes.core import (ControlVolume0DBlock,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
-                        UnitBlockData,
+                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
@@ -35,7 +34,7 @@ __author__ = "Andrew Lee, Vibhav Dabadghao"
 
 
 @declare_process_block_class("CSTR")
-class CSTRData(UnitBlockData):
+class CSTRData(UnitModelBlockData):
     """
     Standard CSTR Unit Model Class
     """
@@ -182,7 +181,7 @@ see reaction package for documentation.}"""))
         super(CSTRData, self).build()
 
         # Build Control Volume
-        self.control_volume = ControlVolume0D(default={
+        self.control_volume = ControlVolume0DBlock(default={
                 "dynamic": self.config.dynamic,
                 "has_holdup": self.config.has_holdup,
                 "property_package": self.config.property_package,
@@ -192,7 +191,7 @@ see reaction package for documentation.}"""))
 
         self.control_volume.add_geometry()
 
-        self.control_volume.add_state_blocks()
+        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
 
         self.control_volume.add_reaction_blocks(
                 has_equilibrium=self.config.has_equilibrium_reactions)
