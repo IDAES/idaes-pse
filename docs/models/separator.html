@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Stoichiometric (Yield) Reactor" href="stoichiometric_reactor.html" />
     <link rel="prev" title="Flash Unit" href="flash.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -113,6 +116,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="stoichiometric_reactor.html">Stoichiometric (Yield) Reactor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="power_generation/index.html">Power Generation Models</a></li>
 </ul>
 </li>
 </ul>
@@ -120,8 +124,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -275,6 +280,11 @@
 <strong>useDefault</strong> - get flag from parent (default = False),
 <strong>True</strong> - set as a dynamic model, <strong>False</strong> - set as a
 steady-state model.}</dd>
+<dt>has_holdup</dt>
+<dd>Indicates whether holdup terms should be constructed or
+not. Must be True if dynamic = True, <strong>default</strong> - False.
+<strong>Valid values:</strong> { <strong>True</strong> - construct holdup terms,
+<strong>False</strong> - do not construct holdup terms}</dd>
 <dt>property_package</dt>
 <dd>Property parameter object used to define property
 calculations, <strong>default</strong> - useDefault. <strong>Valid values:</strong>
@@ -309,6 +319,14 @@ component flows (split fraction indexed by time, outlet
 and components), <strong>SplittingType.phaseComponentFlow</strong> -
 split based on phase-component flows ( split fraction
 indexed by both time, outlet, phase and components).}</dd>
+<dt>energy_split_basis</dt>
+<dd>Argument indicating basis to use for splitting energy this
+is not used for when ideal_separation == True. <strong>default</strong>
+- EnergySplittingType.equal_temperature. <strong>Valid values:</strong>
+{ <strong>EnergySplittingType.equal_temperature</strong> - outlet
+temperatures equal inlet
+<strong>EnergySplittingType.equal_molar_enthalpy</strong> - oulet molar
+enthalpies equal inlet}</dd>
 <dt>ideal_separation</dt>
 <dd>Argument indicating whether ideal splitting should be
 used. Ideal splitting assumes perfect spearation of
@@ -470,7 +488,7 @@ between these</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>representing the mixed flow to be split</strong> (<em>StateBlock</em>) – </li>
+<li><strong>representing the mixed flow to be split</strong> (<a class="reference internal" href="../core/state_block.html#idaes.core.property_base.StateBlock" title="idaes.core.property_base.StateBlock"><em>StateBlock</em></a>) – </li>
 <li><strong>list of names for outlets</strong> (<em>a</em>) – </li>
 </ul>
 </td>
@@ -585,7 +603,7 @@ as part of the unit’s model_check method.</p>
 
 <dl class="method">
 <dt id="idaes.unit_models.separator.SeparatorData.partition_outlet_flows">
-<code class="descname">partition_outlet_flows</code><span class="sig-paren">(</span><em>mixed_block</em>, <em>outlet_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/separator.html#SeparatorData.partition_outlet_flows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.separator.SeparatorData.partition_outlet_flows" title="Permalink to this definition">¶</a></dt>
+<code class="descname">partition_outlet_flows</code><span class="sig-paren">(</span><em>mb</em>, <em>outlet_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/separator.html#SeparatorData.partition_outlet_flows"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.separator.SeparatorData.partition_outlet_flows" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates outlet Port objects and tries to partiton mixed stream flows
 between these</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -593,7 +611,7 @@ between these</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>representing the mixed flow to be split</strong> (<em>StateBlock</em>) – </li>
+<li><strong>representing the mixed flow to be split</strong> (<a class="reference internal" href="../core/state_block.html#idaes.core.property_base.StateBlock" title="idaes.core.property_base.StateBlock"><em>StateBlock</em></a>) – </li>
 <li><strong>list of names for outlets</strong> (<em>a</em>) – </li>
 </ul>
 </td>
@@ -646,7 +664,7 @@ hold_state = True.</li>
         <a href="stoichiometric_reactor.html" class="btn btn-neutral float-right" title="Stoichiometric (Yield) Reactor" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="flash.html" class="btn btn-neutral" title="Flash Unit" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="flash.html" class="btn btn-neutral float-left" title="Flash Unit" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -672,27 +690,16 @@ hold_state = True.</li>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

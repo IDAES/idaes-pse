@@ -19,32 +19,35 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -93,8 +96,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -170,15 +174,25 @@
 <li><a href="idaes/dmf/resource.html">idaes.dmf.resource</a></li>
 <li><a href="idaes/dmf/workspace.html">idaes.dmf.workspace</a></li>
 <li><a href="idaes/unit_models/cstr.html">idaes.unit_models.cstr</a></li>
+<li><a href="idaes/unit_models/equilibrium_reactor.html">idaes.unit_models.equilibrium_reactor</a></li>
+<li><a href="idaes/unit_models/feed.html">idaes.unit_models.feed</a></li>
+<li><a href="idaes/unit_models/feed_flash.html">idaes.unit_models.feed_flash</a></li>
 <li><a href="idaes/unit_models/flash.html">idaes.unit_models.flash</a></li>
 <li><a href="idaes/unit_models/gibbs_reactor.html">idaes.unit_models.gibbs_reactor</a></li>
 <li><a href="idaes/unit_models/heat_exchanger.html">idaes.unit_models.heat_exchanger</a></li>
 <li><a href="idaes/unit_models/heat_exchanger_1D.html">idaes.unit_models.heat_exchanger_1D</a></li>
 <li><a href="idaes/unit_models/mixer.html">idaes.unit_models.mixer</a></li>
 <li><a href="idaes/unit_models/plug_flow_reactor.html">idaes.unit_models.plug_flow_reactor</a></li>
+<li><a href="idaes/unit_models/power_generation/turbine_inlet.html">idaes.unit_models.power_generation.turbine_inlet</a></li>
+<li><a href="idaes/unit_models/power_generation/turbine_multistage.html">idaes.unit_models.power_generation.turbine_multistage</a></li>
+<li><a href="idaes/unit_models/power_generation/turbine_outlet.html">idaes.unit_models.power_generation.turbine_outlet</a></li>
+<li><a href="idaes/unit_models/power_generation/turbine_stage.html">idaes.unit_models.power_generation.turbine_stage</a></li>
+<li><a href="idaes/unit_models/power_generation/valve_steam.html">idaes.unit_models.power_generation.valve_steam</a></li>
 <li><a href="idaes/unit_models/pressure_changer.html">idaes.unit_models.pressure_changer</a></li>
+<li><a href="idaes/unit_models/product.html">idaes.unit_models.product</a></li>
 <li><a href="idaes/unit_models/separator.html">idaes.unit_models.separator</a></li>
 <li><a href="idaes/unit_models/stoichiometric_reactor.html">idaes.unit_models.stoichiometric_reactor</a></li>
+<li><a href="idaes/unit_models/translator.html">idaes.unit_models.translator</a></li>
 <li><a href="idaes/ver.html">idaes.ver</a></li>
 </ul>
 
@@ -209,27 +223,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
