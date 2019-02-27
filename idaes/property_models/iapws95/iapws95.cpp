@@ -8,7 +8,7 @@
 
  Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
  license information, respectively. Both files are also available online
- at the URL "https://github.com/IDAES/idaes".
+ at the URL "https://github.com/IDAES/idaes-pse".
 ------------------------------------------------------------------------------*/
 
 /*------------------------------------------------------------------------------
@@ -430,7 +430,7 @@ int sat(s_real tau, s_real *delta_l_sol, s_real *delta_v_sol){
       else{
         delta_l = 1.02;
         delta_v = 0.98;
-        tol *= 1e-2; //this is probably below what precision is reasonable
+        tol *= 1e-2; s
         max_it *= 4;
       }
     }

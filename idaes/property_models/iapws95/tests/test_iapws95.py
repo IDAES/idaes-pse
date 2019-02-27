@@ -107,6 +107,57 @@ def test_vapor_density_sat():
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
+def test_liquid_enthalpy_sat():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock()
+    model.prop_in = iapws95.Iapws95StateBlock(default={"parameters":model.prop_param})
+    cond = read_data("sat_prop.txt", col=5)
+    for c in cond:
+        if c[0] > 645: break
+        model.prop_in.temperature.set_value(c[0])
+        psat = value(model.prop_in.pressure_sat)
+        model.prop_in.pressure = psat
+        enth = value(model.prop_in.enth_mol_sat_phase["Liq"]/model.prop_in.mw/1000.0)
+        #print("{}, {}, {}, {}, {}".format(c[0], psat, enth, c[1], c[2]))
+        assert(abs((enth-c[2])/c[2]) < 0.002)
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.nocircleci()
+def test_vapor_enthalpy_sat():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock()
+    model.prop_in = iapws95.Iapws95StateBlock(default={"parameters":model.prop_param})
+    cond = read_data("sat_prop.txt", col=17)
+    for c in cond:
+        if c[0] > 645: break
+        model.prop_in.temperature.set_value(c[0])
+        psat = value(model.prop_in.pressure_sat)
+        model.prop_in.pressure = psat
+        enth = value(model.prop_in.enth_mol_sat_phase["Vap"]/model.prop_in.mw/1000.0)
+        #print("{}, {}, {}, {}, {}".format(c[0], psat, enth, c[1], c[2]))
+        assert(abs((enth-c[2])/c[2]) < 0.001)
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.nocircleci()
+def test_enthalpy_of_vaporization():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock()
+    model.prop_in = iapws95.Iapws95StateBlock(default={"parameters":model.prop_param})
+    cond_liq = read_data("sat_prop.txt", col=5)
+    cond_vap = read_data("sat_prop.txt", col=17)
+    for i, c in enumerate(cond_liq):
+        if c[0] > 645: break
+        model.prop_in.temperature.set_value(c[0])
+        psat = value(model.prop_in.pressure_sat)
+        model.prop_in.pressure = psat
+        enth = value(model.prop_in.enth_vaporize_mol/model.prop_in.mw/1000.0)
+        enth_dat = cond_vap[i][2] - c[2]
+        #print("{}, {}, {}, {}, {}".format(c[0], psat, enth, c[1], enth_dat))
+        assert(abs((enth-enth_dat)/enth_dat) < 0.001)
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.nocircleci()
 def test_density():
     model = ConcreteModel()
     model.prop_param = iapws95.Iapws95ParameterBlock()
