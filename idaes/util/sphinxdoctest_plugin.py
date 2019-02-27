@@ -26,6 +26,7 @@ being more than one Makefile, it should all continue to work.
 import os
 import re
 import subprocess
+
 #
 import pytest
 
@@ -55,7 +56,7 @@ def file_contains(s, path):
 class SphinxMakefile(pytest.File):
 
     # simple way to find variables in a Makefile
-    makefile_var_defn = re.compile("\s*([A-Za-z_]+)\s*=(.*)")
+    makefile_var_defn = re.compile(r"\s*([A-Za-z_]+)\s*=(.*)")
 
     def collect(self):
         cmd = self._get_doctest_command()
@@ -67,13 +68,14 @@ class SphinxMakefile(pytest.File):
         result = None
         mkvars = {}  # variables defined in Makefile
         with self.fspath.open() as makefile:
-            state = 'pre'
+            cmd = ""
+            state = "pre"
             for line in makefile:
                 s = line.strip()
                 # look for 'doctest' target
-                if state == 'pre':
+                if state == "pre":
                     if s.startswith(SPHINX_DOCTEST_TARGET):
-                        state = 'next'
+                        state = "next"
                     else:
                         # look for a NAME = value definition, save it in 'mkvars'
                         m = self.makefile_var_defn.match(s)
@@ -82,10 +84,19 @@ class SphinxMakefile(pytest.File):
                             expanded_value = self._expand(value, mkvars)
                             mkvars[m.group(1)] = expanded_value
                 # primed for this to be the doctest command
-                elif state == 'next':
+                elif state == "next":
+                    # ignore print statements
+                    if "echo " in s or "printf " in s:
+                        continue
                     # use 'mkvars' to expand out command
-                    result = self._expand(s, mkvars)
-                    break
+                    if s.endswith("\\"):
+                        cmd += s[:-1] + " "
+                    else:
+                        cmd += s
+                        result = self._expand(cmd, mkvars)
+                        break
+            if result is None and state == "next":
+                raise ValueError(f"EOF while parsing doctest command '{cmd}'")
         return result
 
     @staticmethod
@@ -118,15 +129,19 @@ class SphinxItem(pytest.Item):
         """Run the Sphinx doctest.
         """
         old_d = os.getcwd()
+        print(f"doctest command: {self.cmd}")
         try:
             os.chdir(self.wd)
             args = self.cmd.split()
             try:
                 # print(f"Running [{self.cmd}] from dir {self.wd}")
-                proc = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
+                proc = subprocess.Popen(
+                    args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                )
                 self.successes, self.failures = self._parse_output(proc.stdout)
-                proc.wait()
+                rc = proc.wait()
+                if rc != 0:
+                    raise RuntimeError(f"non-zero exit code: {rc}")
                 self.total_successes = sum(self.successes.values())
                 self.total_failures = sum((x[0] for x in self.failures.values()))
             except Exception as exc:
@@ -134,9 +149,11 @@ class SphinxItem(pytest.Item):
                 raise SphinxCommandFailed(self.cmd, str(exc))
             # report a test failure
             if self.total_failures > 0:
-                self.failure_list = [self.failures[k][1]
-                                     for k in self.failures
-                                     if self.failures[k][0] > 0]
+                self.failure_list = [
+                    self.failures[k][1]
+                    for k in self.failures
+                    if self.failures[k][0] > 0
+                ]
                 raise SphinxHadErrors()
         finally:
             os.chdir(old_d)
@@ -158,6 +175,7 @@ class SphinxItem(pytest.Item):
     def _parse_output(input_stream):
         """Parse output of Sphinx doctest.
         """
+
         def _msgblock(messages):
             lines, indent, marker = [], None, "  - "
             for m in messages:
@@ -196,8 +214,7 @@ class SphinxItem(pytest.Item):
                         # final line of report for a doc
                         successes[cur_doc] = n_passed
                         if n_failed > 0:
-                            failures[cur_doc] = (n_failed,
-                                                 _msgblock(failed_msgs))
+                            failures[cur_doc] = (n_failed, _msgblock(failed_msgs))
                         else:
                             failures[cur_doc] = (0, [])
                         cur_doc = None
