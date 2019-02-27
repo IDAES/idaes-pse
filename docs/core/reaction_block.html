@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Unit Model Class" href="unit_model.html" />
     <link rel="prev" title="Physical Property Package Classes" href="state_block.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -115,8 +118,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -206,9 +210,9 @@
 <div class="section" id="reaction-parameter-blocks">
 <h2><a class="toc-backref" href="#id2">Reaction Parameter Blocks</a><a class="headerlink" href="#reaction-parameter-blocks" title="Permalink to this headline">¶</a></h2>
 <p>Reaction Parameter blocks serve as a central location for linking to a reaction property package, and contain all the parameters and indexing sets used by a given reaction package.</p>
-<div class="section" id="reactionparameterbase-class">
-<h3>ReactionParameterBase Class<a class="headerlink" href="#reactionparameterbase-class" title="Permalink to this headline">¶</a></h3>
-<p>The role of the ReactionParameterBase class is to set up the references required by the rest of the IDAES framework for constructing instances of ReactionBlocks and attaching these to the ReactionParameter block for ease of use. This allows other models to be pointed to the ReactionParameter block in order to collect the necessary information and to construct the necessary ReactionBlocks without the need for the user to do this manually.</p>
+<div class="section" id="reactionparameterblock-class">
+<h3>ReactionParameterBlock Class<a class="headerlink" href="#reactionparameterblock-class" title="Permalink to this headline">¶</a></h3>
+<p>The role of the ReactionParameterBlock class is to set up the references required by the rest of the IDAES framework for constructing instances of ReactionBlocks and attaching these to the ReactionParameter block for ease of use. This allows other models to be pointed to the ReactionParameter block in order to collect the necessary information and to construct the necessary ReactionBlocks without the need for the user to do this manually.</p>
 <p>Reaction property packages are used by all of the other modeling components to inform them of what needs to be constructed when dealing with chemical reactions. In order to do this, the IDAES modeling framework looks for a number of attributes in the ReactionParameter block which are used to inform the construction of other components.</p>
 <ul class="simple">
 <li>reaction_block_class - a pointer to the associated class that should be called when constructing ReactionBlocks.</li>
@@ -230,14 +234,14 @@
 <li>default_arguments - this allows the user to provide a set of default values for construction arguments in associated ReactionBlocks, which will be passed to all ReactionBlocks when they are constructed.</li>
 </ul>
 <span class="target" id="module-idaes.core.reaction_base"></span><dl class="class">
-<dt id="idaes.core.reaction_base.ReactionParameterBase">
-<em class="property">class </em><code class="descclassname">idaes.core.reaction_base.</code><code class="descname">ReactionParameterBase</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/reaction_base.html#ReactionParameterBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.reaction_base.ReactionParameterBase" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.reaction_base.ReactionParameterBlock">
+<em class="property">class </em><code class="descclassname">idaes.core.reaction_base.</code><code class="descname">ReactionParameterBlock</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/reaction_base.html#ReactionParameterBlock"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.reaction_base.ReactionParameterBlock" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is the base class for reaction parameter blocks. These are blocks
 that contain a set of parameters associated with a specific reaction
 package, and are linked to by all instances of that reaction package.</p>
 <dl class="method">
-<dt id="idaes.core.reaction_base.ReactionParameterBase.build">
-<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/reaction_base.html#ReactionParameterBase.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.reaction_base.ReactionParameterBase.build" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.reaction_base.ReactionParameterBlock.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/reaction_base.html#ReactionParameterBlock.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.reaction_base.ReactionParameterBlock.build" title="Permalink to this definition">¶</a></dt>
 <dd><p>General build method for ReactionParameterBlocks. Inheriting models
 should call super().build.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -345,7 +349,7 @@ overload this method with one suited to the particular reaction package</p>
         <a href="unit_model.html" class="btn btn-neutral float-right" title="Unit Model Class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="state_block.html" class="btn btn-neutral" title="Physical Property Package Classes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="state_block.html" class="btn btn-neutral float-left" title="Physical Property Package Classes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -371,27 +375,16 @@ overload this method with one suited to the particular reaction package</p>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

@@ -381,6 +381,7 @@ class HeatExchangerData(UnitModelBlockData):
 
         opt = SolverFactory(solver)
         opt.options = optarg
+        opt.options.update(halt_on_ampl_error="yes")
 
         flags1 = self.side_1.initialize(outlvl=outlvl - 1,
                                         optarg=optarg,
@@ -401,7 +402,7 @@ class HeatExchangerData(UnitModelBlockData):
                       .format(self.name))
         # ---------------------------------------------------------------------
         # Solve unit
-        results = opt.solve(self, tee=stee)
+        results = opt.solve(self, tee=stee, symbolic_solver_labels=True)
 
         if outlvl > 0:
             if results.solver.termination_condition == \

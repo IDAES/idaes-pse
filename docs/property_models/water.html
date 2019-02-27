@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Data Management Framework" href="../dmf/index.html" />
     <link rel="prev" title="Ideal Gas" href="ideal_gas.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -112,8 +115,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -188,7 +192,6 @@ uses pressure and molar enthalpy as state variables and the other uses
 temperature, pressure, and vapor fraction as the state variables.</p>
 <p>Theses modules can be imported as:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">idaes.property_models</span> <span class="kn">import</span> <span class="n">iapws95_ph</span>
-<span class="kn">from</span> <span class="nn">idaes.property_models</span> <span class="kn">import</span> <span class="n">iapws95_tpx</span>
 </pre></div>
 </div>
 <div class="section" id="example">
@@ -235,7 +238,7 @@ part of the full process simulation, external functions were developed that can
 solve the equations required to change state variables and guarantee the correct
 roots.</p>
 <p>The external property functions are written in C++ and complied such that they
-can be called by AMPL solvers.  See the <span class="xref std std-ref">installation instructions</span> for information about compiling these
+can be called by AMPL solvers.  See the <a class="reference internal" href="../install.html#installation"><span class="std std-ref">installation instructions</span></a> for information about compiling these
 functions. The external functions provide both first and second derivatives for
 all property function calls, however at phase transitions some of these functions
 may be non-smooth.</p>
@@ -625,7 +628,7 @@ URL: <a class="reference external" href="http://iapws.org/relguide/visc.pdf">htt
         <a href="../dmf/index.html" class="btn btn-neutral float-right" title="Data Management Framework" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="ideal_gas.html" class="btn btn-neutral" title="Ideal Gas" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="ideal_gas.html" class="btn btn-neutral float-left" title="Ideal Gas" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -651,27 +654,16 @@ URL: <a class="reference external" href="http://iapws.org/relguide/visc.pdf">htt
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

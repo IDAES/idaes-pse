@@ -94,15 +94,15 @@ object. Below are a couple of examples::
     %dmf help idaes.core.control_volume0d
 
     # Get help on a class
-    from idaes.core.control_volume1d import ControlVolume1D
-    %dmf help ControlVolume1D
+    from idaes.core.control_volume1d import ControlVolume1DBlock
+    %dmf help ControlVolume1DBlock
 
     # Get help on a class (by name, no import)
-    %dmf help idaes.core.control_volume1d.ControlVolume1D
+    %dmf help idaes.core.control_volume1d.ControlVolume1DBlock
 
     # Get help on an object (will show help for the object's class)
     # This will end up showing the same help as the previous two examples
-    obj = control_volume1d.ControlVolume1D()
+    obj = control_volume1d.ControlVolume1DBlock()
     %dmf help obj
 
 The help pages will open in a new window. The location of the built
@@ -145,5 +145,5 @@ So, some ways to share (with one or many people) include:
 
 Reference
 ---------
-See the :mod:`DMF package <idaes.dmf>` documentation that is generated
+See the :mod:`idaes.dmf` documentation that is generated
 automatically from the source code.
