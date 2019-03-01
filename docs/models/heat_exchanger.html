@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Heat Exchangers (1D)" href="heat_exchanger_1D.html" />
     <link rel="prev" title="Heater" href="heater.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -94,6 +97,10 @@
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Unit Model Library</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="index.html#unit-model-contents">Unit Model Contents</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="cstr.html">Continuous Stirred Tank Reactor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="equilibrium.html">Equilibrium Reactor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="feed.html">Feed Block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="feed_flash.html">Feed Block with Flash</a></li>
+<li class="toctree-l3"><a class="reference internal" href="flash.html">Flash Unit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="gibbs_reactor.html">Gibbs Reactor</a></li>
 <li class="toctree-l3"><a class="reference internal" href="heater.html">Heater</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">HeatExchanger (0D)</a><ul>
@@ -108,9 +115,11 @@
 <li class="toctree-l3"><a class="reference internal" href="mixer.html">Mixer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pfr.html">Plug Flow Reactor</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pressure_changer.html">Pressure Changer</a></li>
-<li class="toctree-l3"><a class="reference internal" href="flash.html">Flash Unit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="product.html">Product Block</a></li>
 <li class="toctree-l3"><a class="reference internal" href="separator.html">Separator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stoichiometric_reactor.html">Stoichiometric (Yield) Reactor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="translator.html">Translator Block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="power_generation/index.html">Power Generation Models</a></li>
 </ul>
 </li>
 </ul>
@@ -118,8 +127,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -196,7 +206,7 @@ while additional rules and utility functions can be imported from
 <p>The example below demonstrates how to initialize the HeatExchanger model, and
 overriding the default temperature difference calculation.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="kn">as</span> <span class="nn">pe</span> <span class="c1"># Pyomo environment</span>
-<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="kn">import</span> <span class="n">FlowsheetBlock</span><span class="p">,</span> <span class="n">StateBlockBase</span>
+<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="kn">import</span> <span class="n">FlowsheetBlock</span><span class="p">,</span> <span class="n">StateBlock</span>
 <span class="kn">from</span> <span class="nn">idaes.unit_models</span> <span class="kn">import</span> <span class="n">HeatExchanger</span>
 <span class="kn">from</span> <span class="nn">idaes.unit_models.heat_exchanger</span> <span class="kn">import</span> <span class="n">delta_temperature_amtd_rule</span>
 <span class="kn">from</span> <span class="nn">idaes.property_models</span> <span class="kn">import</span> <span class="n">iapws95_ph</span>
@@ -238,8 +248,8 @@ of freedom, which can be fixed for it to be fully specified:</p>
 </div>
 <div class="section" id="model-structure">
 <h2>Model Structure<a class="headerlink" href="#model-structure" title="Permalink to this headline">¶</a></h2>
-<p>The HeatExchanger model contains two ControlVolume0D blocks (side_1 and side_2),
-which are configured the same as the ControlVolume0D in the
+<p>The HeatExchanger model contains two ControlVolume0DBlock blocks (side_1 and side_2),
+which are configured the same as the ControlVolume0DBlock in the
 <a class="reference internal" href="heater.html#heater"><span class="std std-ref">Heater model</span></a>. The HeatExchanger model contains additional
 constraints that calculate the amount of heat transferred from side_1 to side_2.</p>
 <p>The HeatExchanger has two inlet ports inlet_1 (inlet for side_1) and inlet_2
@@ -319,6 +329,8 @@ describes the default constraints.</p>
 <dt>Keys</dt>
 <dd><dl class="first last docutils">
 <dt>dynamic</dt>
+<dd>Indicates whether the model is dynamic.</dd>
+<dt>has_holdup</dt>
 <dd>Indicates whether the model is dynamic.</dd>
 <dt>side_1</dt>
 <dd>A config block used to construct the side_1 control
@@ -525,16 +537,15 @@ Unit model to transfer heat from one material to another.</p>
 <dl class="method">
 <dt id="idaes.unit_models.heat_exchanger.HeatExchangerData.initialize">
 <code class="descname">initialize</code><span class="sig-paren">(</span><em>state_args_1=None</em>, <em>state_args_2=None</em>, <em>outlvl=0</em>, <em>solver='ipopt'</em>, <em>optarg={'tol': 1e-06}</em>, <em>duty=10000</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/unit_models/heat_exchanger.html#HeatExchangerData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.unit_models.heat_exchanger.HeatExchangerData.initialize" title="Permalink to this definition">¶</a></dt>
-<dd><p>Heat echanger initialization method.
-:param state_args_1: a dict of arguments to be passed to the property</p>
-<blockquote>
-<div>initialization for side_1 (see documentation of the specific
-property package) (default = {}).</div></blockquote>
+<dd><p>Heat exchanger initialization method.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>state_args_1</strong> – a dict of arguments to be passed to the property
+initialization for side_1 (see documentation of the specific
+property package) (default = {}).</li>
 <li><strong>state_args_2</strong> – a dict of arguments to be passed to the property
 initialization for side_2 (see documentation of the specific
 property package) (default = {}).</li>
@@ -616,7 +627,7 @@ User provided heat transfer coefficient rules should return a constraint.</p>
         <a href="heat_exchanger_1D.html" class="btn btn-neutral float-right" title="Heat Exchangers (1D)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="heater.html" class="btn btn-neutral" title="Heater" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="heater.html" class="btn btn-neutral float-left" title="Heater" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -642,27 +653,16 @@ User provided heat transfer coefficient rules should return a constraint.</p>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

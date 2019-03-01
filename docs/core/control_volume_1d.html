@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Utility Methods" href="util/index.html" />
     <link rel="prev" title="0D Control Volume Class" href="control_volume_0d.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -105,7 +108,7 @@
 <li class="toctree-l4"><a class="reference internal" href="control_volume.html#setting-up-the-time-domain">Setting up the time domain</a></li>
 <li class="toctree-l4"><a class="reference internal" href="control_volume.html#getting-property-package-information">Getting Property Package Information</a></li>
 <li class="toctree-l4"><a class="reference internal" href="control_volume.html#collecting-indexing-sets-for-property-package">Collecting Indexing Sets for Property Package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="control_volume.html#controlvolume-and-controlvolumebase-classes">ControlVolume and ControlVolumeBase Classes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="control_volume.html#controlvolume-and-controlvolumeblockdata-classes">ControlVolume and ControlVolumeBlockData Classes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="control_volume.html#auto-construct-method">Auto-Construct Method</a></li>
 </ul>
 </li>
@@ -119,8 +122,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -195,19 +199,19 @@
 <p class="topic-title first">Contents</p>
 <ul class="simple">
 <li><a class="reference internal" href="#d-control-volume-class" id="id1">1D Control Volume Class</a><ul>
-<li><a class="reference internal" href="#controlvolume1d-equations" id="id2">ControlVolume1D Equations</a></li>
+<li><a class="reference internal" href="#controlvolume1dblock-equations" id="id2">ControlVolume1DBlock Equations</a></li>
 </ul>
 </li>
 </ul>
 </div>
-<p>The ControlVolume1D block is used for systems with one spatial dimension where material flows parallel to the spatial domain. Examples of these types of unit operations include plug flow reactors and pipes. ControlVolume1D blocks are discretized along the length domain and contain one StateBlock and one ReactionBlock (if applicable) at each point in the domain (including the inlet and outlet).</p>
+<p>The ControlVolume1DBlock block is used for systems with one spatial dimension where material flows parallel to the spatial domain. Examples of these types of unit operations include plug flow reactors and pipes. ControlVolume1DBlock blocks are discretized along the length domain and contain one StateBlock and one ReactionBlock (if applicable) at each point in the domain (including the inlet and outlet).</p>
 <span class="target" id="module-idaes.core.control_volume1d"></span><dl class="class">
-<dt id="idaes.core.control_volume1d.ControlVolume1D">
-<em class="property">class </em><code class="descclassname">idaes.core.control_volume1d.</code><code class="descname">ControlVolume1D</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1D" title="Permalink to this definition">¶</a></dt>
-<dd><p>ControlVolume1D is a specialized Pyomo block for IDAES control volume
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlock">
+<em class="property">class </em><code class="descclassname">idaes.core.control_volume1d.</code><code class="descname">ControlVolume1DBlock</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlock" title="Permalink to this definition">¶</a></dt>
+<dd><p>ControlVolume1DBlock is a specialized Pyomo block for IDAES control volume
 blocks discretized in one spatial direction, and contains instances of
-ControlVolume1dData.</p>
-<p>ControlVolume1D should be used for any control volume with a defined volume
+ControlVolume1DBlockData.</p>
+<p>ControlVolume1DBlock should be used for any control volume with a defined volume
 and distinct inlets and outlets where there is a single spatial domain
 parallel to the material flow direction. This encompases unit operations
 such as plug flow reactors and pipes.</p>
@@ -277,7 +281,7 @@ BlockData index exactly to the index in initialize.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(ControlVolume1D) New instance</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(ControlVolume1DBlock) New instance</p>
 </td>
 </tr>
 </tbody>
@@ -285,16 +289,16 @@ BlockData index exactly to the index in initialize.</li>
 </dd></dl>
 
 <dl class="class">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData">
-<em class="property">class </em><code class="descclassname">idaes.core.control_volume1d.</code><code class="descname">ControlVolume1dData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData">
+<em class="property">class </em><code class="descclassname">idaes.core.control_volume1d.</code><code class="descname">ControlVolume1DBlockData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData" title="Permalink to this definition">¶</a></dt>
 <dd><p>1-Dimensional ControlVolume Class</p>
 <p>This class forms the core of all 1-D IDAES models. It provides
 methods to build property and reaction blocks, and add mass, energy and
 momentum balances. The form of the terms used in these constraints is
 specified in the chosen property package.</p>
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_geometry">
-<code class="descname">add_geometry</code><span class="sig-paren">(</span><em>length_domain=None, length_domain_set=[0.0, 1.0], flow_direction=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;, 0, 'forward')</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_geometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_geometry" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_geometry">
+<code class="descname">add_geometry</code><span class="sig-paren">(</span><em>length_domain=None, length_domain_set=[0.0, 1.0], flow_direction=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;, 0, 'forward')</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_geometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_geometry" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method to create spatial domain and volume Var in ControlVolume.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -328,8 +332,8 @@ from 0 to 1.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_phase_component_balances">
-<code class="descname">add_phase_component_balances</code><span class="sig-paren">(</span><em>has_rate_reactions=False</em>, <em>has_equilibrium_reactions=False</em>, <em>has_phase_equilibrium=False</em>, <em>has_mass_transfer=False</em>, <em>custom_molar_term=None</em>, <em>custom_mass_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_phase_component_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_phase_component_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_component_balances">
+<code class="descname">add_phase_component_balances</code><span class="sig-paren">(</span><em>has_rate_reactions=False</em>, <em>has_equilibrium_reactions=False</em>, <em>has_phase_equilibrium=False</em>, <em>has_mass_transfer=False</em>, <em>custom_molar_term=None</em>, <em>custom_mass_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_phase_component_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_component_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method constructs a set of 1D material balances indexed by time,
 length, phase and component.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -366,40 +370,40 @@ list and component list</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_phase_energy_balances">
-<code class="descname">add_phase_energy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_phase_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_phase_energy_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_energy_balances">
+<code class="descname">add_phase_energy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_phase_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_energy_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding energy balances (including kinetic energy) indexed by
 phase to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_phase_enthalpy_balances">
-<code class="descname">add_phase_enthalpy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_phase_enthalpy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_phase_enthalpy_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_enthalpy_balances">
+<code class="descname">add_phase_enthalpy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_phase_enthalpy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_enthalpy_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding enthalpy balances indexed by phase to
 the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_phase_momentum_balances">
-<code class="descname">add_phase_momentum_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_phase_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_phase_momentum_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_momentum_balances">
+<code class="descname">add_phase_momentum_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_phase_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_momentum_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding momentum balances indexed by phase to the control
 volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_phase_pressure_balances">
-<code class="descname">add_phase_pressure_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_phase_pressure_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_phase_pressure_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_pressure_balances">
+<code class="descname">add_phase_pressure_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_phase_pressure_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_pressure_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding pressure balances indexed by
 phase to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_reaction_blocks">
-<code class="descname">add_reaction_blocks</code><span class="sig-paren">(</span><em>has_equilibrium=False</em>, <em>package_arguments={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_reaction_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_reaction_blocks" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_reaction_blocks">
+<code class="descname">add_reaction_blocks</code><span class="sig-paren">(</span><em>has_equilibrium=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_reaction_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_reaction_blocks" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method constructs the reaction block for the control volume.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -421,8 +425,8 @@ reaction block as construction arguments</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_state_blocks">
-<code class="descname">add_state_blocks</code><span class="sig-paren">(</span><em>information_flow=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;</em>, <em>0</em>, <em>'forward')</em>, <em>has_phase_equilibrium=False</em>, <em>package_arguments={}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_state_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_state_blocks" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_state_blocks">
+<code class="descname">add_state_blocks</code><span class="sig-paren">(</span><em>information_flow=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;</em>, <em>0</em>, <em>'forward')</em>, <em>has_phase_equilibrium=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_state_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_state_blocks" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method constructs the state blocks for the
 control volume.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -448,8 +452,8 @@ state blocks as construction arguments</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_component_balances">
-<code class="descname">add_total_component_balances</code><span class="sig-paren">(</span><em>has_rate_reactions=False</em>, <em>has_equilibrium_reactions=False</em>, <em>has_phase_equilibrium=False</em>, <em>has_mass_transfer=False</em>, <em>custom_molar_term=None</em>, <em>custom_mass_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_component_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_component_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_component_balances">
+<code class="descname">add_total_component_balances</code><span class="sig-paren">(</span><em>has_rate_reactions=False</em>, <em>has_equilibrium_reactions=False</em>, <em>has_phase_equilibrium=False</em>, <em>has_mass_transfer=False</em>, <em>custom_molar_term=None</em>, <em>custom_mass_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_total_component_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_component_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method constructs a set of 1D material balances indexed by time
 length and component.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -486,8 +490,8 @@ component list</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_element_balances">
-<code class="descname">add_total_element_balances</code><span class="sig-paren">(</span><em>has_rate_reactions=False</em>, <em>has_equilibrium_reactions=False</em>, <em>has_phase_equilibrium=False</em>, <em>has_mass_transfer=False</em>, <em>custom_elemental_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_element_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_element_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_element_balances">
+<code class="descname">add_total_element_balances</code><span class="sig-paren">(</span><em>has_rate_reactions=False</em>, <em>has_equilibrium_reactions=False</em>, <em>has_phase_equilibrium=False</em>, <em>has_mass_transfer=False</em>, <em>custom_elemental_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_total_element_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_element_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method constructs a set of 1D element balances indexed by time and
 length.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -515,16 +519,16 @@ and element list</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_energy_balances">
-<code class="descname">add_total_energy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_energy_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_energy_balances">
+<code class="descname">add_total_energy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_total_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_energy_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding a total energy balance (including kinetic energy)
 to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_enthalpy_balances">
-<code class="descname">add_total_enthalpy_balances</code><span class="sig-paren">(</span><em>has_heat_of_reaction=False</em>, <em>has_heat_transfer=False</em>, <em>has_work_transfer=False</em>, <em>custom_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_enthalpy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_enthalpy_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_enthalpy_balances">
+<code class="descname">add_total_enthalpy_balances</code><span class="sig-paren">(</span><em>has_heat_of_reaction=False</em>, <em>has_heat_transfer=False</em>, <em>has_work_transfer=False</em>, <em>custom_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_total_enthalpy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_enthalpy_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method constructs a set of 1D enthalpy balances indexed by time
 and phase.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -548,23 +552,23 @@ Expression must be indexed by time, length and phase list</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_material_balances">
-<code class="descname">add_total_material_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_material_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_material_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_material_balances">
+<code class="descname">add_total_material_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_total_material_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_material_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding a total material balance to
 the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_momentum_balances">
-<code class="descname">add_total_momentum_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_momentum_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_momentum_balances">
+<code class="descname">add_total_momentum_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_total_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_momentum_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding a total momentum balance to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.add_total_pressure_balances">
-<code class="descname">add_total_pressure_balances</code><span class="sig-paren">(</span><em>has_pressure_change=False</em>, <em>custom_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.add_total_pressure_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.add_total_pressure_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_pressure_balances">
+<code class="descname">add_total_pressure_balances</code><span class="sig-paren">(</span><em>has_pressure_change=False</em>, <em>custom_term=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.add_total_pressure_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_pressure_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method constructs a set of 1D pressure balances indexed by time.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -585,8 +589,8 @@ Expression must be indexed by time and length domain</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.apply_transformation">
-<code class="descname">apply_transformation</code><span class="sig-paren">(</span><em>transformation_method='dae.finite_difference'</em>, <em>transformation_scheme='BACKWARD'</em>, <em>finite_elements=10</em>, <em>collocation_points=3</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.apply_transformation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.apply_transformation" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.apply_transformation">
+<code class="descname">apply_transformation</code><span class="sig-paren">(</span><em>transformation_method='dae.finite_difference'</em>, <em>transformation_scheme='BACKWARD'</em>, <em>finite_elements=10</em>, <em>collocation_points=3</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.apply_transformation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.apply_transformation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method to apply DAE transformation to the Control Volume length domain.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -612,9 +616,9 @@ default = 10)</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.build">
-<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.build" title="Permalink to this definition">¶</a></dt>
-<dd><p>Build method for ControlVolume1D blocks.</p>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build method for ControlVolume1DBlock blocks.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -626,8 +630,8 @@ default = 10)</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.initialize">
-<code class="descname">initialize</code><span class="sig-paren">(</span><em>state_args=None</em>, <em>outlvl=0</em>, <em>optarg=None</em>, <em>solver='ipopt'</em>, <em>hold_state=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.initialize" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>state_args=None</em>, <em>outlvl=0</em>, <em>optarg=None</em>, <em>solver='ipopt'</em>, <em>hold_state=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.initialize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialisation routine for 1D control volume (default solver ipopt)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -666,8 +670,8 @@ states were fixed during initialization.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.model_check">
-<code class="descname">model_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.model_check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.model_check" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.model_check">
+<code class="descname">model_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.model_check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.model_check" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method executes the model_check methods on the associated state
 blocks (if they exist). This method is generally called by a unit model
 as part of the unit’s model_check method.</p>
@@ -684,8 +688,8 @@ as part of the unit’s model_check method.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume1d.ControlVolume1dData.release_state">
-<code class="descname">release_state</code><span class="sig-paren">(</span><em>flags</em>, <em>outlvl=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1dData.release_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1dData.release_state" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume1d.ControlVolume1DBlockData.release_state">
+<code class="descname">release_state</code><span class="sig-paren">(</span><em>flags</em>, <em>outlvl=0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume1d.html#ControlVolume1DBlockData.release_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume1d.ControlVolume1DBlockData.release_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method to release state variables fixed during initialisation.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -710,9 +714,9 @@ hold_state = True.</li>
 
 </dd></dl>
 
-<div class="section" id="controlvolume1d-equations">
-<h2><a class="toc-backref" href="#id2">ControlVolume1D Equations</a><a class="headerlink" href="#controlvolume1d-equations" title="Permalink to this headline">¶</a></h2>
-<p>This section documents the variables and constraints created by each of the methods provided by the ControlVolume0D class.</p>
+<div class="section" id="controlvolume1dblock-equations">
+<h2><a class="toc-backref" href="#id2">ControlVolume1DBlock Equations</a><a class="headerlink" href="#controlvolume1dblock-equations" title="Permalink to this headline">¶</a></h2>
+<p>This section documents the variables and constraints created by each of the methods provided by the ControlVolume0DBlock class.</p>
 <ul class="simple">
 <li><span class="math notranslate nohighlight">\(t\)</span> indicates time index</li>
 <li><span class="math notranslate nohighlight">\(x\)</span> indicates spatial (length) index</li>
@@ -721,11 +725,11 @@ hold_state = True.</li>
 <li><span class="math notranslate nohighlight">\(e\)</span> indicates element index</li>
 <li><span class="math notranslate nohighlight">\(r\)</span> indicates reaction name index</li>
 </ul>
-<p>Most terms within the balance equations written by ControlVolume1D are on a basis of per unit length (e.g. <span class="math notranslate nohighlight">\(mol/m \cdot s\)</span>).</p>
+<p>Most terms within the balance equations written by ControlVolume1DBlock are on a basis of per unit length (e.g. <span class="math notranslate nohighlight">\(mol/m \cdot s\)</span>).</p>
 <div class="section" id="add-geometry">
 <h3>add_geometry<a class="headerlink" href="#add-geometry" title="Permalink to this headline">¶</a></h3>
-<p>The add_geometry method creates the normalized length domain for the control volume (or a reference to an external domain). All constraints in ControlVolume1D assume a normalized length domain, with values between 0 and 1.</p>
-<p>This method also adds variables and constraints to describe the geometry of the control volume. ControlVolume1D does not support varying dimensions of the control volume with time at this stage.</p>
+<p>The add_geometry method creates the normalized length domain for the control volume (or a reference to an external domain). All constraints in ControlVolume1DBlock assume a normalized length domain, with values between 0 and 1.</p>
+<p>This method also adds variables and constraints to describe the geometry of the control volume. ControlVolume1DBlock does not support varying dimensions of the control volume with time at this stage.</p>
 <p><strong>Variables</strong></p>
 <table border="1" class="colwidths-given docutils">
 <colgroup>
@@ -1200,7 +1204,7 @@ hold_state = True.</li>
         <a href="util/index.html" class="btn btn-neutral float-right" title="Utility Methods" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="control_volume_0d.html" class="btn btn-neutral" title="0D Control Volume Class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="control_volume_0d.html" class="btn btn-neutral float-left" title="0D Control Volume Class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -1226,27 +1230,16 @@ hold_state = True.</li>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="0D Control Volume Class" href="control_volume_0d.html" />
     <link rel="prev" title="Unit Model Class" href="unit_model.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -105,7 +108,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#setting-up-the-time-domain">Setting up the time domain</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#getting-property-package-information">Getting Property Package Information</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#collecting-indexing-sets-for-property-package">Collecting Indexing Sets for Property Package</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#controlvolume-and-controlvolumebase-classes">ControlVolume and ControlVolumeBase Classes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controlvolume-and-controlvolumeblockdata-classes">ControlVolume and ControlVolumeBlockData Classes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#auto-construct-method">Auto-Construct Method</a></li>
 </ul>
 </li>
@@ -119,8 +122,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -199,12 +203,12 @@
 <p>The IDAES Control Volume classes are designed to facilitate the construction of these balance equations by providing the model developer with a set of pre-built methods to perform the most common tasks in developing models of unit operations. The Control Volume classes contain methods for creating and linking the necessary property calculations and writing common forms of the balance equations so that the model developer can focus their time on the aspects that make each unit model unique.</p>
 <p>The IDAES process modeling framework currently supports two types of Control Volume:</p>
 <ul class="simple">
-<li>ControlVolume0D represents a single well-mixed volume of material with a single inlet and a single outlet. This type of control volume is sufficient to model most inlet-outlet type unit operations which do not require spatial discretization.</li>
-<li>ControlVolume1D represents a volume with spatial variation in one dimension parallel to the material flow. This type of control volume is useful for representing flow in pipes and simple 1D flow reactors.</li>
+<li>ControlVolume0DBlock represents a single well-mixed volume of material with a single inlet and a single outlet. This type of control volume is sufficient to model most inlet-outlet type unit operations which do not require spatial discretization.</li>
+<li>ControlVolume1DBlock represents a volume with spatial variation in one dimension parallel to the material flow. This type of control volume is useful for representing flow in pipes and simple 1D flow reactors.</li>
 </ul>
 <div class="section" id="common-control-volume-tasks">
 <h2>Common Control Volume Tasks<a class="headerlink" href="#common-control-volume-tasks" title="Permalink to this headline">¶</a></h2>
-<p>All of the IDAES Control Volume classes are built on a common core (<a class="reference internal" href="#idaes.core.control_volume_base.ControlVolumeBase" title="idaes.core.control_volume_base.ControlVolumeBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.control_volume_base.ControlVolumeBase</span></code></a>) which defines a set of common tasks required for all Control Volumes. The more specific Control Volume classes then build upon these common tasks to provide tools appropriate for their specific application.</p>
+<p>All of the IDAES Control Volume classes are built on a common core (<a class="reference internal" href="#idaes.core.control_volume_base.ControlVolumeBlockData" title="idaes.core.control_volume_base.ControlVolumeBlockData"><code class="xref py py-class docutils literal notranslate"><span class="pre">idaes.core.control_volume_base.ControlVolumeBlockData</span></code></a>) which defines a set of common tasks required for all Control Volumes. The more specific Control Volume classes then build upon these common tasks to provide tools appropriate for their specific application.</p>
 <p>All Control Volume classes begin with the following tasks:</p>
 <ul class="simple">
 <li>Determine if the ControlVolume should be steady-state or dynamic.</li>
@@ -234,13 +238,13 @@
 <li>phase_list - used to determine what phases are present, and thus what balance equations are required</li>
 </ul>
 </div>
-<div class="section" id="controlvolume-and-controlvolumebase-classes">
-<h2>ControlVolume and ControlVolumeBase Classes<a class="headerlink" href="#controlvolume-and-controlvolumebase-classes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="controlvolume-and-controlvolumeblockdata-classes">
+<h2>ControlVolume and ControlVolumeBlockData Classes<a class="headerlink" href="#controlvolume-and-controlvolumeblockdata-classes" title="Permalink to this headline">¶</a></h2>
 <p>A key purpose of Control Volumes is to automate as much of the task of writing a unit model as possible. For this purpose, Control Volumes support a number of methods for common tasks model developers may want to perform. The specifics of these methods will be different between different types of Control Volumes, and certain methods may not be applicable to some types of Control Volumes (in which case a NotImplementedError will be returned). A full list of potential methods is provided here, however users should check the documentation for the specific Control Volume they are using for more details on what methods are supported in that specific Control Volume.</p>
 <dl class="class">
 <dt id="idaes.core.control_volume_base.ControlVolume">
 <em class="property">class </em><code class="descclassname">idaes.core.control_volume_base.</code><code class="descname">ControlVolume</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolume" title="Permalink to this definition">¶</a></dt>
-<dd><p>This class is not usually used directly. Use ControlVolume0D or ControlVolume1D instead.</p>
+<dd><p>This class is not usually used directly. Use ControlVolume0DBlock or ControlVolume1DBlock instead.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -315,19 +319,19 @@ BlockData index exactly to the index in initialize.</li>
 </dd></dl>
 
 <dl class="class">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase">
-<em class="property">class </em><code class="descclassname">idaes.core.control_volume_base.</code><code class="descname">ControlVolumeBase</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase" title="Permalink to this definition">¶</a></dt>
-<dd><p>The ControlVolumeBase Class forms the base class for all IDAES
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData">
+<em class="property">class </em><code class="descclassname">idaes.core.control_volume_base.</code><code class="descname">ControlVolumeBlockData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData" title="Permalink to this definition">¶</a></dt>
+<dd><p>The ControlVolumeBlockData Class forms the base class for all IDAES
 ControlVolume models. The purpose of this class is to automate the tasks
 common to all control volume blockss and ensure that the necessary
 attributes of a control volume block are present.</p>
-<p>The most signfiicant role of the ControlVolumeBase class is to set up the
+<p>The most signfiicant role of the ControlVolumeBlockData class is to set up the
 bconstruction arguments for the control volume block, automatically link to
 the time domain of the parent block, and to get the information about the
 property and reaction packages.</p>
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_energy_balances">
-<code class="descname">add_energy_balances</code><span class="sig-paren">(</span><em>balance_type=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;</em>, <em>1</em>, <em>'enthalpyPhase')</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_energy_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_energy_balances">
+<code class="descname">add_energy_balances</code><span class="sig-paren">(</span><em>balance_type=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;</em>, <em>1</em>, <em>'enthalpyPhase')</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_energy_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>General method for adding energy balances to a control volume.
 This method makes calls to specialised sub-methods for each type of
 energy balance.</p>
@@ -357,15 +361,15 @@ terms to be included in energy balances</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_geometry">
-<code class="descname">add_geometry</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_geometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_geometry" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_geometry">
+<code class="descname">add_geometry</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_geometry"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_geometry" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for defining the geometry of the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_material_balances">
-<code class="descname">add_material_balances</code><span class="sig-paren">(</span><em>balance_type=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;</em>, <em>1</em>, <em>'componentPhase')</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_material_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_material_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_material_balances">
+<code class="descname">add_material_balances</code><span class="sig-paren">(</span><em>balance_type=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;</em>, <em>1</em>, <em>'componentPhase')</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_material_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_material_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>General method for adding material balances to a control volume.
 This method makes calls to specialised sub-methods for each type of
 material balance.</p>
@@ -394,8 +398,8 @@ balances</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_momentum_balances">
-<code class="descname">add_momentum_balances</code><span class="sig-paren">(</span><em>balance_type=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;</em>, <em>1</em>, <em>'pressureTotal')</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_momentum_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_momentum_balances">
+<code class="descname">add_momentum_balances</code><span class="sig-paren">(</span><em>balance_type=EnumValue(&lt;pyutilib.enum.enum.Enum object&gt;</em>, <em>1</em>, <em>'pressureTotal')</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_momentum_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>General method for adding momentum balances to a control volume.
 This method makes calls to specialised sub-methods for each type of
 momentum balance.</p>
@@ -421,116 +425,116 @@ terms to be included in momentum balances</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_phase_component_balances">
-<code class="descname">add_phase_component_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_phase_component_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_phase_component_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_component_balances">
+<code class="descname">add_phase_component_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_phase_component_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_component_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding material balances indexed by phase and component to
 the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_phase_energy_balances">
-<code class="descname">add_phase_energy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_phase_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_phase_energy_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_energy_balances">
+<code class="descname">add_phase_energy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_phase_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_energy_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding energy balances (including kinetic energy) indexed by
 phase to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_phase_enthalpy_balances">
-<code class="descname">add_phase_enthalpy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_phase_enthalpy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_phase_enthalpy_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_enthalpy_balances">
+<code class="descname">add_phase_enthalpy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_phase_enthalpy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_enthalpy_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding enthalpy balances indexed by phase to
 the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_phase_momentum_balances">
-<code class="descname">add_phase_momentum_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_phase_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_phase_momentum_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_momentum_balances">
+<code class="descname">add_phase_momentum_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_phase_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_momentum_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding momentum balances indexed by phase to the control
 volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_phase_pressure_balances">
-<code class="descname">add_phase_pressure_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_phase_pressure_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_phase_pressure_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_pressure_balances">
+<code class="descname">add_phase_pressure_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_phase_pressure_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_pressure_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding pressure balances indexed by
 phase to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_reaction_blocks">
-<code class="descname">add_reaction_blocks</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_reaction_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_reaction_blocks" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_reaction_blocks">
+<code class="descname">add_reaction_blocks</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_reaction_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_reaction_blocks" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding ReactionBlocks to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_state_blocks">
-<code class="descname">add_state_blocks</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_state_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_state_blocks" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_state_blocks">
+<code class="descname">add_state_blocks</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_state_blocks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_state_blocks" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding StateBlocks to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_total_component_balances">
-<code class="descname">add_total_component_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_total_component_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_total_component_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_total_component_balances">
+<code class="descname">add_total_component_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_total_component_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_component_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding material balances indexed by component to
 the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_total_element_balances">
-<code class="descname">add_total_element_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_total_element_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_total_element_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_total_element_balances">
+<code class="descname">add_total_element_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_total_element_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_element_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding total elemental material balances indexed to
 the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_total_energy_balances">
-<code class="descname">add_total_energy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_total_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_total_energy_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_total_energy_balances">
+<code class="descname">add_total_energy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_total_energy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_energy_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding a total energy balance (including kinetic energy)
 to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_total_enthalpy_balances">
-<code class="descname">add_total_enthalpy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_total_enthalpy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_total_enthalpy_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_total_enthalpy_balances">
+<code class="descname">add_total_enthalpy_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_total_enthalpy_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_enthalpy_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding a total enthalpy balance to
 the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_total_material_balances">
-<code class="descname">add_total_material_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_total_material_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_total_material_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_total_material_balances">
+<code class="descname">add_total_material_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_total_material_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_material_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding a total material balance to
 the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_total_momentum_balances">
-<code class="descname">add_total_momentum_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_total_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_total_momentum_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_total_momentum_balances">
+<code class="descname">add_total_momentum_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_total_momentum_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_momentum_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding a total momentum balance to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.add_total_pressure_balances">
-<code class="descname">add_total_pressure_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.add_total_pressure_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.add_total_pressure_balances" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.add_total_pressure_balances">
+<code class="descname">add_total_pressure_balances</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.add_total_pressure_balances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_pressure_balances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Method for adding a total pressure balance to the control volume.</p>
 <p>See specific control volume documentation for details.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.control_volume_base.ControlVolumeBase.build">
-<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBase.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBase.build" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.control_volume_base.ControlVolumeBlockData.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/control_volume_base.html#ControlVolumeBlockData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.control_volume_base.ControlVolumeBlockData.build" title="Permalink to this definition">¶</a></dt>
 <dd><p>General build method for Control Volumes blocks. This method calls a
 number of sub-methods which automate the construction of expected
 attributes of all ControlVolume blocks.</p>
@@ -597,7 +601,7 @@ attributes of all ControlVolume blocks.</p>
         <a href="control_volume_0d.html" class="btn btn-neutral float-right" title="0D Control Volume Class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="unit_model.html" class="btn btn-neutral" title="Unit Model Class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="unit_model.html" class="btn btn-neutral float-left" title="Unit Model Class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -623,27 +627,16 @@ attributes of all ControlVolume blocks.</p>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

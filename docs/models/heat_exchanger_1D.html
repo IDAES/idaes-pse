@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Mixer" href="mixer.html" />
     <link rel="prev" title="HeatExchanger (0D)" href="heat_exchanger.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -113,6 +116,7 @@
 <li class="toctree-l3"><a class="reference internal" href="flash.html">Flash Unit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="separator.html">Separator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stoichiometric_reactor.html">Stoichiometric (Yield) Reactor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="power_generation/index.html">Power Generation Models</a></li>
 </ul>
 </li>
 </ul>
@@ -120,8 +124,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -204,7 +209,7 @@
 </div>
 <div class="section" id="model-structure">
 <h2>Model Structure<a class="headerlink" href="#model-structure" title="Permalink to this headline">¶</a></h2>
-<p>The core 1-D Heat Exchanger Model unit model consists of two ControlVolume1D Blocks (named shell and tube), each with one Inlet Port (named shell_inlet and tube_inlet) and one Outlet Port (named shell_outlet and tube_outlet).</p>
+<p>The core 1-D Heat Exchanger Model unit model consists of two ControlVolume1DBlock Blocks (named shell and tube), each with one Inlet Port (named shell_inlet and tube_inlet) and one Outlet Port (named shell_outlet and tube_outlet).</p>
 </div>
 <div class="section" id="construction-arguments">
 <h2>Construction Arguments<a class="headerlink" href="#construction-arguments" title="Permalink to this headline">¶</a></h2>
@@ -248,7 +253,7 @@
 <li>transformation_method - argument to specify the DAE transformation method for the tube side; should be compatible with the Pyomo DAE TransformationFactory</li>
 <li>transformation_scheme - argument to specify the scheme to use for the selected DAE transformation method; should be compatible with the Pyomo DAE TransformationFactory</li>
 </ul>
-<p>Additionally, 1-D Heat Exchanger units have the following construction arguments which are passed to the ControlVolume1D Block for determining which terms to construct in the balance equations for the shell and tube side.</p>
+<p>Additionally, 1-D Heat Exchanger units have the following construction arguments which are passed to the ControlVolume1DBlock Block for determining which terms to construct in the balance equations for the shell and tube side.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="60%" />
@@ -308,7 +313,7 @@
 </div>
 <div class="section" id="variables">
 <h2>Variables<a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h2>
-<p>1-D Heat Exchanger units add the following additional Variables beyond those created by the ControlVolume1D Block.</p>
+<p>1-D Heat Exchanger units add the following additional Variables beyond those created by the ControlVolume1DBlock Block.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="28%" />
@@ -388,6 +393,11 @@
 <strong>useDefault</strong> - get flag from parent (default = False),
 <strong>True</strong> - set as a dynamic model, <strong>False</strong> - set as a
 steady-state model.}</dd>
+<dt>has_holdup</dt>
+<dd>Indicates whether holdup terms should be constructed or
+not. Must be True if dynamic = True, <strong>default</strong> - False.
+<strong>Valid values:</strong> { <strong>True</strong> - construct holdup terms,
+<strong>False</strong> - do not construct holdup terms}</dd>
 <dt>shell_side</dt>
 <dd>shell side config arguments<dl class="last docutils">
 <dt>dynamic</dt>
@@ -666,7 +676,7 @@ initialization (default = ‘ipopt’)</li>
         <a href="mixer.html" class="btn btn-neutral float-right" title="Mixer" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="heat_exchanger.html" class="btn btn-neutral" title="HeatExchanger (0D)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="heat_exchanger.html" class="btn btn-neutral float-left" title="HeatExchanger (0D)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -692,27 +702,16 @@ initialization (default = ‘ipopt’)</li>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
