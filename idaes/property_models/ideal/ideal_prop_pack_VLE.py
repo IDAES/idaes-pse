@@ -25,7 +25,7 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, exp, Block
+    value, Var, exp
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -672,6 +672,8 @@ class IdealStateBlockData(StateBlockData):
 
         return self.temperature_bubble.value
 
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
         if clear_components is True:
             self.del_component(self.eq_bubble_point)
             self.del_component(self.temperature_bubble)
