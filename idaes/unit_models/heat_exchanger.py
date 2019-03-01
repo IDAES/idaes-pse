@@ -31,7 +31,8 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         MaterialBalanceType,
                         UnitModelBlockData,
-                        useDefault)
+                        useDefault,
+                        ProcessBlockData)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 
@@ -65,24 +66,57 @@ def delta_temperature_amtd_rule(b, t):
         b.side_2.properties_in[t].temperature
     return (dT1 + dT2) * 0.5
 
+def delta_temperature_lmtd_approx_underwood_rule(b, t):
+    """
+    This is a rule for a temperaure difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
+    difference (LMTD) approximation given by Underwood (1970).  It can be
+    supplied to "delta_temperature_rule" HeatExchanger configuration option.
+    """
+    dT1 = b.side_1.properties_in[t].temperature - \
+        b.side_2.properties_out[t].temperature
+    dT2 = b.side_1.properties_out[t].temperature - \
+        b.side_2.properties_in[t].temperature
+    return ((dT1**(1.0/3.0) + dT2**(1.0/3.0))/2.0)**3
+
+def delta_temperature_lmtd_approx_chen_rule(b, t):
+    """
+    This is a rule for a temperaure difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
+    difference (LMTD) approximation given by Chen (1987).  It can be
+    supplied to "delta_temperature_rule" HeatExchanger configuration option.
+    """
+    dT1 = b.side_1.properties_in[t].temperature - \
+        b.side_2.properties_out[t].temperature
+    dT2 = b.side_1.properties_out[t].temperature - \
+        b.side_2.properties_in[t].temperature
+    return ((dT1**(0.3275) + dT2**(0.3275))/2.0)**(1.0/0.3275)
+
 
 def heat_transfer_rule(b, t):
     """
     This is the defulat rule used by the HeatExchanger model to calculate heat
     transfer (:math:`Q = UA\Delta T`).
     """
-    return (b.heat_duty[t] ==
-            b.heat_transfer_coefficient[t] *
-            b.area * b.delta_temperature[t])
+    u = b.overall_heat_transfer_coefficient[t]
+    a = b.area
+    q = b.heat_duty[t]
+    deltaT = b.delta_temperature[t]
+    return q == u*a*deltaT
 
 
-def _make_heater_control_volume(o, name, config):
+def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
     """
     This is seperated from the main heater class so it can be reused to create
     control volumes for different types of heat exchange models.
     """
+    if dynamic is None:
+        dynamic = config.dynamic
+    if has_holdup is None:
+        has_holdup = config.has_holdup
     control_volume = ControlVolume0DBlock(default={
-        "dynamic": config.dynamic,
+        "dynamic": dynamic,
+        "has_holdup": has_holdup,
         "property_package": config.property_package,
         "property_package_args": config.property_package_args})
     # we have to attach this control volume to the model for the rest of
@@ -90,12 +124,11 @@ def _make_heater_control_volume(o, name, config):
     setattr(o, name, control_volume)
     # Add inlet and outlet state blocks to control volume
     control_volume.add_state_blocks(
-        has_phase_equilibrium=config.calculate_phase_equilibrium)
-
+        has_phase_equilibrium=config.has_phase_equilibrium)
     # Add material balance
     control_volume.add_material_balances(
         balance_type=config.material_balance_type,
-        has_phase_equilibrium=config.calculate_phase_equilibrium)
+        has_phase_equilibrium=config.has_phase_equilibrium)
     # add energy balance
     control_volume.add_energy_balances(
         balance_type=config.energy_balance_type,
@@ -111,21 +144,6 @@ def _make_heater_config_block(config):
     """
     Declare configuration options for HeaterData block.
     """
-    config.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
-        default=False,
-        description="Dynamic model flag",
-        doc="Indicates whether the model is dynamic."))
-    config.declare("has_holdup", ConfigValue(
-        default=useDefault,
-        domain=In([useDefault, True, False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
     config.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
@@ -162,25 +180,16 @@ Must be True if dynamic = True,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    config.declare("has_heat_transfer", ConfigValue(
-        default=True,
-        domain=In([True, False]),
-        description="Heat transfer term construction flag",
-        doc="""Indicates whether terms for heat transfer should be constructed,
-**default** - False.
-**Valid values:** {
-**True** - include heat transfer terms,
-**False** - exclude heat transfer terms.}"""))
-    config.declare("calculate_phase_equilibrium", ConfigValue(
+    config.declare("has_phase_equilibrium", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Calculate phase equilibrium in mixed stream",
-        doc="""Argument indicating whether phase equilibrium should be
-calculated for the resulting mixed stream,
-**default** - False.
+        description="Phase equilibrium construction flag",
+        doc="""Indicates whether terms for phase equilibrium should be
+constructed,
+**default** = False.
 **Valid values:** {
-**True** - calculate phase equilibrium in mixed stream,
-**False** - do not calculate equilibrium in mixed stream.}"""))
+**True** - include phase equilibrium terms
+**False** - exclude phase equilibrium terms.}"""))
     config.declare("has_pressure_change", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -208,22 +217,20 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
+    config.declare("has_heat_transfer", ConfigValue(
+        default=True,
+        domain=In([True]),
+        description="Heat transfer term construction flag",
+        doc="""Indicates whether terms for heat transfer should be constructed,
+**default** - False.
+**Valid values:** {
+**True** - include heat transfer terms}"""))
 
 
 def _make_heat_exchanger_config(config):
     """
     Declare configuration options for HeatExchangerData block.
     """
-    config.declare("dynamic", ConfigValue(
-        domain=In([True, False, useDefault]),
-        default=useDefault,
-        description="Dynamic model flag",
-        doc="Indicates whether the model is dynamic."))
-    config.declare("has_holdup", ConfigValue(
-        domain=In([useDefault, True, False]),
-        default=useDefault,
-        description="Dynamic model flag",
-        doc="Indicates whether the model is dynamic."))
     config.declare("side_1", ConfigBlock(
         implicit=True,
         description="Config block for side_1",
@@ -240,9 +247,6 @@ def _make_heat_exchanger_config(config):
     config.declare("heat_transfer_rule", ConfigValue(
         default=heat_transfer_rule,
         description="Rule for heat transfer rate equation"))
-    config.declare("heat_transfer_coefficient_rule", ConfigValue(
-        default=None,
-        description="Rule for equation for heat transfer coefficient"))
 
 
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
@@ -251,7 +255,7 @@ class HeaterData(UnitModelBlockData):
     Simple 0D heater unit.
     Unit model to add or remove heat from a material.
     """
-    CONFIG = ConfigBlock()
+    CONFIG = UnitModelBlockData.CONFIG()
     _make_heater_config_block(CONFIG)
 
     def build(self):
@@ -280,7 +284,7 @@ class HeatExchangerData(UnitModelBlockData):
     Simple 0D heat exchange unit.
     Unit model to transfer heat from one material to another.
     """
-    CONFIG = ConfigBlock()
+    CONFIG = UnitModelBlockData.CONFIG()
     _make_heat_exchanger_config(CONFIG)
 
     def build(self):
@@ -294,12 +298,12 @@ class HeatExchangerData(UnitModelBlockData):
         # Call UnitModel.build to setup dynamics
         super(HeatExchangerData, self).build()
         # Add variables
-        self.heat_transfer_coefficient = Var(
+        self.overall_heat_transfer_coefficient = Var(
             self.time_ref,
             domain=PositiveReals,
             initialize=100,
             doc="Overall heat transfer coefficient")
-        self.heat_transfer_coefficient.latex_symbol = "U"
+        self.overall_heat_transfer_coefficient.latex_symbol = "U"
         self.area = Var(
             domain=PositiveReals,
             initialize=1000,
@@ -307,12 +311,11 @@ class HeatExchangerData(UnitModelBlockData):
         self.area.fix()
         self.area.latex_symbol = "A"
 
-        # Both sides are dynamic or not, so sync to unit model level flag
-        self.config.side_1.dynamic = self.config.dynamic
-        self.config.side_2.dynamic = self.config.dynamic
         # Add Control Volumes
-        _make_heater_control_volume(self, "side_1", self.config.side_1)
-        _make_heater_control_volume(self, "side_2", self.config.side_2)
+        _make_heater_control_volume(self, "side_1", self.config.side_1,
+            dynamic=self.config.dynamic, has_holdup=self.config.has_holdup)
+        _make_heater_control_volume(self, "side_2", self.config.side_2,
+            dynamic=self.config.dynamic, has_holdup=self.config.has_holdup)
         # Add Ports
         self.add_inlet_port(name="inlet_1", block=self.side_1)
         self.add_inlet_port(name="inlet_2", block=self.side_2)
@@ -336,11 +339,6 @@ class HeatExchangerData(UnitModelBlockData):
         self.delta_temperature.latex_symbol = "\\Delta T"
         self.heat_transfer_equation = Constraint(
             self.time_ref, rule=self.config.heat_transfer_rule)
-        if self.config.heat_transfer_coefficient_rule is not None:
-            self.heat_transfer_coefficient_equation = Constraint(
-                self.time_ref, rule=self.config.heat_transfer_coefficient_rule)
-        else:
-            self.heat_transfer_coefficient.fix()
 
     def initialize(self, state_args_1=None, state_args_2=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}, duty=10000):
