@@ -80,7 +80,7 @@ def test_liquid_density_sat():
     cond = read_data("sat_prop.txt", col=2)
     for c in cond:
         if c[0] > 645: break
-        model.prop_in.temperature.set_value(c[0]) 
+        model.prop_in.temperature.set_value(c[0])
         model.prop_in.pressure = c[1]
         rho = value(model.prop_in.dens_mass_phase["Liq"])
         #print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format(c[0], c[1], rho, c[2]))
@@ -140,13 +140,13 @@ def test_enthalpy_of_vaporization():
     for i, c in enumerate(cond_liq):
         if c[0] > 645: break
         model.prop_in.pressure.value = c[1]
-        enth = value(model.prop_in.enth_vaporize_mol/model.prop_in.mw/1000.0)
+        enth = value(model.prop_in.dh_vap_mol/model.prop_in.mw/1000.0)
         enth_dat = cond_vap[i][2] - c[2]
         #print("{}, {}, {}, {}, {}".format(c[0], model.prop_in.pressure.value, enth, c[1], enth_dat))
         assert(abs((enth-enth_dat)/enth_dat) < 0.001)
     #Over Critical Pressure
     model.prop_in.pressure = model.prop_in.config.parameters.pressure_crit*1.1
-    enth = value(model.prop_in.enth_vaporize_mol/model.prop_in.mw/1000.0)
+    enth = value(model.prop_in.dh_vap_mol/model.prop_in.mw/1000.0)
     assert(abs(enth) < 0.001)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")

@@ -492,7 +492,7 @@ class Iapws95StateBlockData(StateBlockData):
             rule=rule_enth_mol_sat_phase,
             doc="Saturated enthalpy of the phases at pressure (J/mol)")
 
-        self.enth_vaporize_mol = Expression(
+        self.dh_vap_mol = Expression(
             expr=self.enth_mol_sat_phase["Vap"] - self.enth_mol_sat_phase["Liq"],
             doc="Enthaply of vaporization at pressure and saturation (J/mol)")
 
