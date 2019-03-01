@@ -1562,9 +1562,9 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                          self.length_domain,
                          doc='Momentum balance')
         def pressure_balance(b, t, x):
-            if ((b._flow_direction is "forward" and
+            if ((b._flow_direction is FlowDirection.forward and
                  x == b.length_domain.first()) or
-                (b._flow_direction is "backward" and
+                (b._flow_direction is FlowDirection.backward and
                  x == b.length_domain.last())):
                 return Constraint.Skip
             else:
