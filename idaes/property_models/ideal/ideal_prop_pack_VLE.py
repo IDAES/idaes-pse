@@ -25,8 +25,9 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, exp
+    value, Var, exp, Block
 from pyomo.opt import SolverFactory, TerminationCondition
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -636,174 +637,41 @@ class IdealStateBlockData(StateBlockData):
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
 
-    def temperature_bubble_point(blk, pressure=None, mole_frac=None,
-                                 options={"initial_guess": 298.15,
-                                          "tol": 1e-3,
-                                          "deltaT": 1e-3,
-                                          "max_iter": 1e4}):
+    def temperature_bubble_point(self, pressure=None, mole_frac=None,
+                                 clear_components=True):
         """"To compute the bubble point temperature of the mixture."""
-        n = 0
-        T_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaT = options["deltaT"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - T_guess) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / pressure
-                s = s + k * value(mole_frac[j])
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                T_guess = T_guess - deltaT
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-            else:
-                T_guess = T_guess + deltaT
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-        return round(T_guess, 3)
 
-    def temperature_dew_point(blk, pressure=None, mole_frac=None,
-                              options={"initial_guess": 298.15,
-                                       "tol": 1e-3,
-                                       "deltaT": 1e-3,
-                                       "max_iter": 1e4}):
-        """"To compute the dew point temperature of the mixture."""
-        n = 0
-        T_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaT = options["deltaT"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - T_guess) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / pressure
-                s = s + value(mole_frac[j]) / k
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                n = n + 1
-                T_guess = T_guess + deltaT
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-            else:
-                n = n + 1
-                T_guess = T_guess - deltaT
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-        return round(T_guess, 3)
+        self.temperature_bubble = Var(initialize=298.15,
+                                      doc="bubble point temperature")
 
-    def pressure_bubble_point(blk, temperature=None, mole_frac=None,
-                              options={"initial_guess": 101325,
-                                       "tol": 1e-3,
-                                       "deltaP": 10,
-                                       "max_iter": 1e4}):
-        """"To compute the bubble point pressure of the mixture."""
-        n = 0
-        P_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaP = options["deltaP"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - temperature) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / P_guess
-                s = s + k * value(mole_frac[j])
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaP")
-                    break
-                P_guess = P_guess + deltaP
-            else:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaP")
-                    break
-                P_guess = P_guess - deltaP
-        return round(P_guess, 3)
+        def rule_psat(m, j):
+            return self.pressure_critical[j] * \
+                exp((self.pressure_sat_coeff[j, 'A'] *
+                    (1 - self.temperature_bubble /
+                    self.temperature_critical[j]) +
+                    self.pressure_sat_coeff[j, 'B'] *
+                    (1 - self.temperature_bubble /
+                    self.temperature_critical[j])**1.5 +
+                    self.pressure_sat_coeff[j, 'C'] *
+                    (1 - self.temperature_bubble /
+                    self.temperature_critical[j])**3 +
+                    self.pressure_sat_coeff[j, 'D'] *
+                    (1 - self.temperature_bubble /
+                    self.temperature_critical[j])**6) /
+                    (1 - (1 - self.temperature_bubble /
+                          self.temperature_critical[j])))
+        self.p_sat_bubble = Expression(self.component_list_ref, rule=rule_psat)
 
-    def pressure_dew_point(blk, temperature=None, mole_frac=None,
-                           options={"initial_guess": 101325,
-                                    "tol": 1e-3,
-                                    "deltaP": 10,
-                                    "max_iter": 1e4}):
-        """"To compute the dew point pressure of the mixture."""
-        n = 0
-        P_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaP = options["deltaP"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - temperature) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / P_guess
-                s = s + value(mole_frac[j]) / k
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-                P_guess = P_guess - deltaP
-            else:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-                P_guess = P_guess + deltaP
-        return round(P_guess, 3)
+        def rule_temp_bubble(self):
+            return sum(self.p_sat_bubble[i] * mole_frac[i]
+                       for i in self.component_list_ref) - pressure == 0
+        self.eq_bubble_point = Constraint(rule=rule_temp_bubble)
+
+        calculate_variable_from_constraint(self.temperature_bubble,
+                                           self.eq_bubble_point)
+
+        return self.temperature_bubble.value
+
+        if clear_components is True:
+            self.del_component(self.eq_bubble_point)
+            self.del_component(self.temperature_bubble)
