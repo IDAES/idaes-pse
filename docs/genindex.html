@@ -20,32 +20,35 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -94,8 +97,9 @@
 <li class="toctree-l1"><a class="reference internal" href="property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -167,11 +171,13 @@
  | <a href="#B"><strong>B</strong></a>
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
@@ -205,21 +211,21 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_adiabatic">add_adiabatic() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_energy_balances">add_energy_balances() (idaes.core.control_volume_base.ControlVolumeBase method)</a>
+      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_energy_balances">add_energy_balances() (idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_energy_mixing_equations">add_energy_mixing_equations() (idaes.unit_models.mixer.MixerData method)</a>
 </li>
       <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_energy_splitting_constraints">add_energy_splitting_constraints() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_geometry">add_geometry() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_geometry">add_geometry() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_geometry">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_geometry">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_geometry">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_geometry">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_inlet_port">add_inlet_port() (idaes.core.unit_model.UnitBlockData method)</a>
+      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.add_inlet_port">add_inlet_port() (idaes.core.unit_model.UnitModelBlockData method)</a>
 </li>
       <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_inlet_port_objects">add_inlet_port_objects() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
@@ -229,7 +235,7 @@
 </li>
       <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_isothermal">add_isothermal() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_material_balances">add_material_balances() (idaes.core.control_volume_base.ControlVolumeBase method)</a>
+      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_material_balances">add_material_balances() (idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_material_mixing_equations">add_material_mixing_equations() (idaes.unit_models.mixer.MixerData method)</a>
 </li>
@@ -241,11 +247,11 @@
         <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_mixed_state_block">(idaes.unit_models.separator.SeparatorData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_momentum_balances">add_momentum_balances() (idaes.core.control_volume_base.ControlVolumeBase method)</a>
+      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_momentum_balances">add_momentum_balances() (idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_momentum_splitting_constraints">add_momentum_splitting_constraints() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_outlet_port">add_outlet_port() (idaes.core.unit_model.UnitBlockData method)</a>
+      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.add_outlet_port">add_outlet_port() (idaes.core.unit_model.UnitModelBlockData method)</a>
 </li>
       <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_outlet_port_objects">add_outlet_port_objects() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
@@ -253,49 +259,49 @@
 </li>
       <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_performance">add_performance() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_component_balances">add_phase_component_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_phase_component_balances">add_phase_component_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_component_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_component_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_component_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_component_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_energy_balances">add_phase_energy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_phase_energy_balances">add_phase_energy_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_energy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_energy_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_energy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_energy_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_enthalpy_balances">add_phase_enthalpy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_phase_enthalpy_balances">add_phase_enthalpy_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_enthalpy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_enthalpy_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_enthalpy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_enthalpy_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_momentum_balances">add_phase_momentum_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_phase_momentum_balances">add_phase_momentum_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_momentum_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_momentum_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_momentum_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_momentum_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_pressure_balances">add_phase_pressure_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_phase_pressure_balances">add_phase_pressure_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_phase_pressure_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_phase_pressure_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_phase_pressure_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_phase_pressure_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.add_port">add_port() (idaes.core.unit_model.UnitBlockData method)</a>
+      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.add_port">add_port() (idaes.core.unit_model.UnitModelBlockData method)</a>
 </li>
       <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.add_port_objects">add_port_objects() (idaes.unit_models.mixer.MixerData method)</a>
 </li>
@@ -305,83 +311,83 @@
 </li>
       <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.add_pump">add_pump() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_reaction_blocks">add_reaction_blocks() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_reaction_blocks">add_reaction_blocks() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_reaction_blocks">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_reaction_blocks">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_reaction_blocks">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_reaction_blocks">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
       <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.add_split_fractions">add_split_fractions() (idaes.unit_models.separator.SeparatorData method)</a>
 </li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_state_blocks">add_state_blocks() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_state_blocks">add_state_blocks() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_state_blocks">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_state_blocks">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_state_blocks">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_state_blocks">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_component_balances">add_total_component_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_component_balances">add_total_component_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_component_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_component_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_component_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_component_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_element_balances">add_total_element_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_element_balances">add_total_element_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_element_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_element_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_element_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_element_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_energy_balances">add_total_energy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_energy_balances">add_total_energy_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_energy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_energy_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_energy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_energy_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_enthalpy_balances">add_total_enthalpy_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_enthalpy_balances">add_total_enthalpy_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_enthalpy_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_enthalpy_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_enthalpy_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_enthalpy_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_material_balances">add_total_material_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_material_balances">add_total_material_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_material_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_material_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_material_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_material_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_momentum_balances">add_total_momentum_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_momentum_balances">add_total_momentum_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_momentum_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_momentum_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_momentum_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_momentum_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_pressure_balances">add_total_pressure_balances() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_pressure_balances">add_total_pressure_balances() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.add_total_pressure_balances">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.add_total_pressure_balances">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.add_total_pressure_balances">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.add_total_pressure_balances">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
       </ul></li>
       <li><a href="glossary.html#term-api"><strong>API</strong></a>
 </li>
-      <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.apply_transformation">apply_transformation() (idaes.core.control_volume1d.ControlVolume1dData method)</a>
+      <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.apply_transformation">apply_transformation() (idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -395,28 +401,34 @@
 </li>
       <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.bound">bound() (idaes.core.util.model_serializer.StoreSpec class method)</a>
 </li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.build">build() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.build">build() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.build">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.build">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase.build">(idaes.core.control_volume_base.ControlVolumeBase method)</a>
+        <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData.build">(idaes.core.control_volume_base.ControlVolumeBlockData method)</a>
 </li>
         <li><a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.build">(idaes.core.flowsheet_model.FlowsheetBlockData method)</a>
 </li>
         <li><a href="core/process_block.html#idaes.core.process_base.ProcessBlockData.build">(idaes.core.process_base.ProcessBlockData method)</a>
 </li>
-        <li><a href="core/state_block.html#idaes.core.property_base.PhysicalParameterBase.build">(idaes.core.property_base.PhysicalParameterBase method)</a>
+        <li><a href="core/state_block.html#idaes.core.property_base.PhysicalParameterBlock.build">(idaes.core.property_base.PhysicalParameterBlock method)</a>
 </li>
-        <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.build">(idaes.core.property_base.StateBlockDataBase method)</a>
+        <li><a href="core/state_block.html#idaes.core.property_base.StateBlockData.build">(idaes.core.property_base.StateBlockData method)</a>
 </li>
         <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockDataBase.build">(idaes.core.reaction_base.ReactionBlockDataBase method)</a>
 </li>
-        <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBase.build">(idaes.core.reaction_base.ReactionParameterBase method)</a>
+        <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBlock.build">(idaes.core.reaction_base.ReactionParameterBlock method)</a>
 </li>
-        <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.build">(idaes.core.unit_model.UnitBlockData method)</a>
+        <li><a href="core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.build">(idaes.core.unit_model.UnitModelBlockData method)</a>
 </li>
         <li><a href="models/cstr.html#idaes.unit_models.cstr.CSTRData.build">(idaes.unit_models.cstr.CSTRData method)</a>
+</li>
+        <li><a href="models/equilibrium.html#idaes.unit_models.equilibrium_reactor.EquilibriumReactorData.build">(idaes.unit_models.equilibrium_reactor.EquilibriumReactorData method)</a>
+</li>
+        <li><a href="models/feed.html#idaes.unit_models.feed.FeedData.build">(idaes.unit_models.feed.FeedData method)</a>
+</li>
+        <li><a href="models/feed_flash.html#idaes.unit_models.feed_flash.FeedFlashData.build">(idaes.unit_models.feed_flash.FeedFlashData method)</a>
 </li>
         <li><a href="models/flash.html#idaes.unit_models.flash.FlashData.build">(idaes.unit_models.flash.FlashData method)</a>
 </li>
@@ -432,11 +444,25 @@
 </li>
         <li><a href="models/pfr.html#idaes.unit_models.plug_flow_reactor.PFRData.build">(idaes.unit_models.plug_flow_reactor.PFRData method)</a>
 </li>
+        <li><a href="models/power_generation/turbine_inlet.html#idaes.unit_models.power_generation.turbine_inlet.TurbineInletStageData.build">(idaes.unit_models.power_generation.turbine_inlet.TurbineInletStageData method)</a>
+</li>
+        <li><a href="models/power_generation/turbine_multistage.html#idaes.unit_models.power_generation.turbine_multistage.TurbineMultistageData.build">(idaes.unit_models.power_generation.turbine_multistage.TurbineMultistageData method)</a>
+</li>
+        <li><a href="models/power_generation/turbine_outlet.html#idaes.unit_models.power_generation.turbine_outlet.TurbineOutletStageData.build">(idaes.unit_models.power_generation.turbine_outlet.TurbineOutletStageData method)</a>
+</li>
+        <li><a href="models/power_generation/turbine_stage.html#idaes.unit_models.power_generation.turbine_stage.TurbineStageData.build">(idaes.unit_models.power_generation.turbine_stage.TurbineStageData method)</a>
+</li>
+        <li><a href="models/power_generation/steam_valve.html#idaes.unit_models.power_generation.valve_steam.SteamValveData.build">(idaes.unit_models.power_generation.valve_steam.SteamValveData method)</a>
+</li>
         <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.build">(idaes.unit_models.pressure_changer.PressureChangerData method)</a>
+</li>
+        <li><a href="models/product.html#idaes.unit_models.product.ProductData.build">(idaes.unit_models.product.ProductData method)</a>
 </li>
         <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.build">(idaes.unit_models.separator.SeparatorData method)</a>
 </li>
         <li><a href="models/stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData.build">(idaes.unit_models.stoichiometric_reactor.StoichiometricReactorData method)</a>
+</li>
+        <li><a href="models/translator.html#idaes.unit_models.translator.TranslatorData.build">(idaes.unit_models.translator.TranslatorData method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -447,17 +473,19 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolume">ControlVolume (class in idaes.core.control_volume_base)</a>
 </li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0D">ControlVolume0D (class in idaes.core.control_volume0d)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlock">ControlVolume0DBlock (class in idaes.core.control_volume0d)</a>
 </li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData">ControlVolume0dData (class in idaes.core.control_volume0d)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData">ControlVolume0DBlockData (class in idaes.core.control_volume0d)</a>
 </li>
-      <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1D">ControlVolume1D (class in idaes.core.control_volume1d)</a>
+      <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlock">ControlVolume1DBlock (class in idaes.core.control_volume1d)</a>
 </li>
-      <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData">ControlVolume1dData (class in idaes.core.control_volume1d)</a>
+      <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData">ControlVolume1DBlockData (class in idaes.core.control_volume1d)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBase">ControlVolumeBase (class in idaes.core.control_volume_base)</a>
+      <li><a href="core/control_volume.html#idaes.core.control_volume_base.ControlVolumeBlockData">ControlVolumeBlockData (class in idaes.core.control_volume_base)</a>
+</li>
+      <li><a href="glossary.html#term-crada"><strong>CRADA</strong></a>
 </li>
       <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.create_inlet_list">create_inlet_list() (idaes.unit_models.mixer.MixerData method)</a>
 </li>
@@ -475,9 +503,9 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="core/process_block.html#idaes.core.process_block.declare_process_block_class">declare_process_block_class() (in module idaes.core.process_block)</a>
 </li>
-      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.define_port_members">define_port_members() (idaes.core.property_base.StateBlockDataBase method)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockData.define_port_members">define_port_members() (idaes.core.property_base.StateBlockData method)</a>
 </li>
-      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.define_state_vars">define_state_vars() (idaes.core.property_base.StateBlockDataBase method)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockData.define_state_vars">define_state_vars() (idaes.core.property_base.StateBlockData method)</a>
 </li>
       <li><a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.delta_temperature_amtd_rule">delta_temperature_amtd_rule() (in module idaes.unit_models.heat_exchanger)</a>
 </li>
@@ -504,15 +532,37 @@
   </ul></td>
 </tr></table>
 
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="models/equilibrium.html#idaes.unit_models.equilibrium_reactor.EquilibriumReactor">EquilibriumReactor (class in idaes.unit_models.equilibrium_reactor)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="models/equilibrium.html#idaes.unit_models.equilibrium_reactor.EquilibriumReactorData">EquilibriumReactorData (class in idaes.unit_models.equilibrium_reactor)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="F">F</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="models/feed.html#idaes.unit_models.feed.Feed">Feed (class in idaes.unit_models.feed)</a>
+</li>
+      <li><a href="models/feed.html#idaes.unit_models.feed.FeedData">FeedData (class in idaes.unit_models.feed)</a>
+</li>
+      <li><a href="models/feed_flash.html#idaes.unit_models.feed_flash.FeedFlash">FeedFlash (class in idaes.unit_models.feed_flash)</a>
+</li>
+      <li><a href="models/feed_flash.html#idaes.unit_models.feed_flash.FeedFlashData">FeedFlashData (class in idaes.unit_models.feed_flash)</a>
+</li>
       <li><a href="core/process_block.html#idaes.core.process_base.ProcessBlockData.fix_initial_conditions">fix_initial_conditions() (idaes.core.process_base.ProcessBlockData method)</a>
 </li>
       <li><a href="models/flash.html#idaes.unit_models.flash.Flash">Flash (class in idaes.unit_models.flash)</a>
 </li>
       <li><a href="models/flash.html#idaes.unit_models.flash.FlashData">FlashData (class in idaes.unit_models.flash)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     FlowsheetBlock
 
@@ -520,8 +570,6 @@
         <li><a href="core/flowsheet_model.html#index-0">idaes.core.flowsheet_model</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlock">FlowsheetBlock (class in idaes.core.flowsheet_model)</a>
 </li>
       <li>
@@ -545,19 +593,19 @@
 </li>
       <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.get_data_class_attr_list">get_data_class_attr_list() (idaes.core.util.model_serializer.StoreSpec method)</a>
 </li>
-      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_energy_diffusion_terms">get_energy_diffusion_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockData.get_energy_diffusion_terms">get_energy_diffusion_terms() (idaes.core.property_base.StateBlockData method)</a>
 </li>
-      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_enthalpy_density_terms">get_enthalpy_density_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockData.get_enthalpy_density_terms">get_enthalpy_density_terms() (idaes.core.property_base.StateBlockData method)</a>
 </li>
-      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_enthalpy_flow_terms">get_enthalpy_flow_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockData.get_enthalpy_flow_terms">get_enthalpy_flow_terms() (idaes.core.property_base.StateBlockData method)</a>
 </li>
-      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_density_terms">get_material_density_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockData.get_material_density_terms">get_material_density_terms() (idaes.core.property_base.StateBlockData method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_diffusion_terms">get_material_diffusion_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockData.get_material_diffusion_terms">get_material_diffusion_terms() (idaes.core.property_base.StateBlockData method)</a>
 </li>
-      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_flow_terms">get_material_flow_terms() (idaes.core.property_base.StateBlockDataBase method)</a>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockData.get_material_flow_terms">get_material_flow_terms() (idaes.core.property_base.StateBlockData method)</a>
 </li>
       <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.get_mixed_state_block">get_mixed_state_block() (idaes.unit_models.mixer.MixerData method)</a>
 
@@ -663,13 +711,13 @@
 </li>
       <li><a href="core/util/model_serializer.html#module-idaes.core.util.model_serializer">idaes.core.util.model_serializer (module)</a>
 </li>
-      <li><a href="dmf/base.html#module-idaes.dmf.dmfbase">idaes.dmf.dmfbase (module)</a>
-</li>
-      <li><a href="dmf/resource.html#module-idaes.dmf.resource">idaes.dmf.resource (module)</a>
-</li>
-      <li><a href="dmf/workspace.html#module-idaes.dmf.workspace">idaes.dmf.workspace (module)</a>
-</li>
       <li><a href="models/cstr.html#module-idaes.unit_models.cstr">idaes.unit_models.cstr (module)</a>
+</li>
+      <li><a href="models/equilibrium.html#module-idaes.unit_models.equilibrium_reactor">idaes.unit_models.equilibrium_reactor (module)</a>
+</li>
+      <li><a href="models/feed.html#module-idaes.unit_models.feed">idaes.unit_models.feed (module)</a>
+</li>
+      <li><a href="models/feed_flash.html#module-idaes.unit_models.feed_flash">idaes.unit_models.feed_flash (module)</a>
 </li>
       <li><a href="models/flash.html#module-idaes.unit_models.flash">idaes.unit_models.flash (module)</a>
 </li>
@@ -684,8 +732,6 @@
         <li><a href="models/heater.html#index-0">Heater</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="models/heat_exchanger.html#module-idaes.unit_models.heat_exchanger">idaes.unit_models.heat_exchanger (module)</a>, <a href="models/heater.html#module-idaes.unit_models.heat_exchanger">[1]</a>
 </li>
       <li><a href="models/heat_exchanger_1D.html#module-idaes.unit_models.heat_exchanger_1D">idaes.unit_models.heat_exchanger_1D (module)</a>
@@ -694,26 +740,79 @@
 </li>
       <li><a href="models/pfr.html#module-idaes.unit_models.plug_flow_reactor">idaes.unit_models.plug_flow_reactor (module)</a>
 </li>
+      <li>
+    idaes.unit_models.power_generation.turbine_inlet
+
+      <ul>
+        <li><a href="models/power_generation/turbine_inlet.html#index-0">TurbineInletStage</a>
+</li>
+      </ul></li>
+      <li><a href="models/power_generation/turbine_inlet.html#module-idaes.unit_models.power_generation.turbine_inlet">idaes.unit_models.power_generation.turbine_inlet (module)</a>
+</li>
+      <li>
+    idaes.unit_models.power_generation.turbine_multistage
+
+      <ul>
+        <li><a href="models/power_generation/turbine_multistage.html#index-0">TurbineMultistage</a>
+</li>
+      </ul></li>
+      <li><a href="models/power_generation/turbine_multistage.html#module-idaes.unit_models.power_generation.turbine_multistage">idaes.unit_models.power_generation.turbine_multistage (module)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    idaes.unit_models.power_generation.turbine_outlet
+
+      <ul>
+        <li><a href="models/power_generation/turbine_outlet.html#index-0">TurbineOutletStage</a>
+</li>
+      </ul></li>
+      <li><a href="models/power_generation/turbine_outlet.html#module-idaes.unit_models.power_generation.turbine_outlet">idaes.unit_models.power_generation.turbine_outlet (module)</a>
+</li>
+      <li>
+    idaes.unit_models.power_generation.turbine_stage
+
+      <ul>
+        <li><a href="models/power_generation/turbine_stage.html#index-0">TurbineStage</a>
+</li>
+      </ul></li>
+      <li><a href="models/power_generation/turbine_stage.html#module-idaes.unit_models.power_generation.turbine_stage">idaes.unit_models.power_generation.turbine_stage (module)</a>
+</li>
+      <li>
+    idaes.unit_models.power_generation.valve_steam
+
+      <ul>
+        <li><a href="models/power_generation/steam_valve.html#index-0">SteamValve</a>
+</li>
+      </ul></li>
+      <li><a href="models/power_generation/steam_valve.html#module-idaes.unit_models.power_generation.valve_steam">idaes.unit_models.power_generation.valve_steam (module)</a>
+</li>
       <li><a href="models/pressure_changer.html#module-idaes.unit_models.pressure_changer">idaes.unit_models.pressure_changer (module)</a>
+</li>
+      <li><a href="models/product.html#module-idaes.unit_models.product">idaes.unit_models.product (module)</a>
 </li>
       <li><a href="models/separator.html#module-idaes.unit_models.separator">idaes.unit_models.separator (module)</a>
 </li>
       <li><a href="models/stoichiometric_reactor.html#module-idaes.unit_models.stoichiometric_reactor">idaes.unit_models.stoichiometric_reactor (module)</a>
 </li>
+      <li><a href="models/translator.html#module-idaes.unit_models.translator">idaes.unit_models.translator (module)</a>
+</li>
       <li><a href="version.html#module-idaes.ver">idaes.ver (module)</a>
 </li>
       <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.init_isentropic">init_isentropic() (idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.initialize">initialize() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.initialize">initialize() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.initialize">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.initialize">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
-        <li><a href="core/state_block.html#idaes.core.property_base.StateBlockBase.initialize">(idaes.core.property_base.StateBlockBase method)</a>
+        <li><a href="core/state_block.html#idaes.core.property_base.StateBlock.initialize">(idaes.core.property_base.StateBlock method)</a>
 </li>
         <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockBase.initialize">(idaes.core.reaction_base.ReactionBlockBase method)</a>
 </li>
-        <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.initialize">(idaes.core.unit_model.UnitBlockData method)</a>
+        <li><a href="core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.initialize">(idaes.core.unit_model.UnitModelBlockData method)</a>
+</li>
+        <li><a href="models/feed.html#idaes.unit_models.feed.FeedData.initialize">(idaes.unit_models.feed.FeedData method)</a>
 </li>
         <li><a href="models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData.initialize">(idaes.unit_models.heat_exchanger.HeatExchangerData method)</a>
 </li>
@@ -721,9 +820,23 @@
 </li>
         <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.initialize">(idaes.unit_models.mixer.MixerData method)</a>
 </li>
+        <li><a href="models/power_generation/turbine_inlet.html#idaes.unit_models.power_generation.turbine_inlet.TurbineInletStageData.initialize">(idaes.unit_models.power_generation.turbine_inlet.TurbineInletStageData method)</a>
+</li>
+        <li><a href="models/power_generation/turbine_multistage.html#idaes.unit_models.power_generation.turbine_multistage.TurbineMultistageData.initialize">(idaes.unit_models.power_generation.turbine_multistage.TurbineMultistageData method)</a>
+</li>
+        <li><a href="models/power_generation/turbine_outlet.html#idaes.unit_models.power_generation.turbine_outlet.TurbineOutletStageData.initialize">(idaes.unit_models.power_generation.turbine_outlet.TurbineOutletStageData method)</a>
+</li>
+        <li><a href="models/power_generation/turbine_stage.html#idaes.unit_models.power_generation.turbine_stage.TurbineStageData.initialize">(idaes.unit_models.power_generation.turbine_stage.TurbineStageData method)</a>
+</li>
+        <li><a href="models/power_generation/steam_valve.html#idaes.unit_models.power_generation.valve_steam.SteamValveData.initialize">(idaes.unit_models.power_generation.valve_steam.SteamValveData method)</a>
+</li>
         <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData.initialize">(idaes.unit_models.pressure_changer.PressureChangerData method)</a>
 </li>
+        <li><a href="models/product.html#idaes.unit_models.product.ProductData.initialize">(idaes.unit_models.product.ProductData method)</a>
+</li>
         <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.initialize">(idaes.unit_models.separator.SeparatorData method)</a>
+</li>
+        <li><a href="models/translator.html#idaes.unit_models.translator.TranslatorData.initialize">(idaes.unit_models.translator.TranslatorData method)</a>
 </li>
       </ul></li>
       <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.isfixed">isfixed() (idaes.core.util.model_serializer.StoreSpec class method)</a>
@@ -738,14 +851,14 @@
 </li>
       <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData">MixerData (class in idaes.unit_models.mixer)</a>
 </li>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.model_check">model_check() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.model_check">model_check() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.model_check">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.model_check">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
         <li><a href="core/flowsheet_model.html#idaes.core.flowsheet_model.FlowsheetBlockData.model_check">(idaes.core.flowsheet_model.FlowsheetBlockData method)</a>
 </li>
-        <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData.model_check">(idaes.core.unit_model.UnitBlockData method)</a>
+        <li><a href="core/unit_model.html#idaes.core.unit_model.UnitModelBlockData.model_check">(idaes.core.unit_model.UnitModelBlockData method)</a>
 </li>
         <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.model_check">(idaes.unit_models.mixer.MixerData method)</a>
 </li>
@@ -754,6 +867,14 @@
         <li><a href="models/separator.html#idaes.unit_models.separator.SeparatorData.model_check">(idaes.unit_models.separator.SeparatorData method)</a>
 </li>
       </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="glossary.html#term-nda"><strong>NDA</strong></a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -768,10 +889,10 @@
 </li>
       <li><a href="models/pfr.html#idaes.unit_models.plug_flow_reactor.PFRData">PFRData (class in idaes.unit_models.plug_flow_reactor)</a>
 </li>
+      <li><a href="core/state_block.html#idaes.core.property_base.PhysicalParameterBlock">PhysicalParameterBlock (class in idaes.core.property_base)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/state_block.html#idaes.core.property_base.PhysicalParameterBase">PhysicalParameterBase (class in idaes.core.property_base)</a>
-</li>
       <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChanger">PressureChanger (class in idaes.unit_models.pressure_changer)</a>
 </li>
       <li><a href="models/pressure_changer.html#idaes.unit_models.pressure_changer.PressureChangerData">PressureChangerData (class in idaes.unit_models.pressure_changer)</a>
@@ -779,6 +900,10 @@
       <li><a href="core/process_block.html#idaes.core.process_block.ProcessBlock">ProcessBlock (class in idaes.core.process_block)</a>
 </li>
       <li><a href="core/process_block.html#idaes.core.process_base.ProcessBlockData">ProcessBlockData (class in idaes.core.process_base)</a>
+</li>
+      <li><a href="models/product.html#idaes.unit_models.product.Product">Product (class in idaes.unit_models.product)</a>
+</li>
+      <li><a href="models/product.html#idaes.unit_models.product.ProductData">ProductData (class in idaes.unit_models.product)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -790,14 +915,14 @@
 </li>
       <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionBlockDataBase">ReactionBlockDataBase (class in idaes.core.reaction_base)</a>
 </li>
-      <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBase">ReactionParameterBase (class in idaes.core.reaction_base)</a>
+      <li><a href="core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBlock">ReactionParameterBlock (class in idaes.core.reaction_base)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.release_state">release_state() (idaes.core.control_volume0d.ControlVolume0dData method)</a>
+      <li><a href="core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.release_state">release_state() (idaes.core.control_volume0d.ControlVolume0DBlockData method)</a>
 
       <ul>
-        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1dData.release_state">(idaes.core.control_volume1d.ControlVolume1dData method)</a>
+        <li><a href="core/control_volume_1d.html#idaes.core.control_volume1d.ControlVolume1DBlockData.release_state">(idaes.core.control_volume1d.ControlVolume1DBlockData method)</a>
 </li>
         <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.release_state">(idaes.unit_models.mixer.MixerData method)</a>
 </li>
@@ -820,11 +945,22 @@
 </li>
       <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.StoreSpec.set_write_callback">set_write_callback() (idaes.core.util.model_serializer.StoreSpec method)</a>
 </li>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlock">StateBlock (class in idaes.core.property_base)</a>
+</li>
+      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockData">StateBlockData (class in idaes.core.property_base)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockBase">StateBlockBase (class in idaes.core.property_base)</a>
+      <li>
+    SteamValve
+
+      <ul>
+        <li><a href="models/power_generation/steam_valve.html#index-0">idaes.unit_models.power_generation.valve_steam</a>
 </li>
-      <li><a href="core/state_block.html#idaes.core.property_base.StateBlockDataBase">StateBlockDataBase (class in idaes.core.property_base)</a>
+      </ul></li>
+      <li><a href="models/power_generation/steam_valve.html#idaes.unit_models.power_generation.valve_steam.SteamValve">SteamValve (class in idaes.unit_models.power_generation.valve_steam)</a>
+</li>
+      <li><a href="models/power_generation/steam_valve.html#idaes.unit_models.power_generation.valve_steam.SteamValveData">SteamValveData (class in idaes.unit_models.power_generation.valve_steam)</a>
 </li>
       <li><a href="models/stoichiometric_reactor.html#idaes.unit_models.stoichiometric_reactor.StoichiometricReactor">StoichiometricReactor (class in idaes.unit_models.stoichiometric_reactor)</a>
 </li>
@@ -838,7 +974,61 @@
 <h2 id="T">T</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="models/power_generation/turbine_multistage.html#idaes.unit_models.power_generation.turbine_multistage.TurbineMultistageData.throttle_cv_fix">throttle_cv_fix() (idaes.unit_models.power_generation.turbine_multistage.TurbineMultistageData method)</a>
+</li>
       <li><a href="core/util/model_serializer.html#idaes.core.util.model_serializer.to_json">to_json() (in module idaes.core.util.model_serializer)</a>
+</li>
+      <li><a href="models/translator.html#idaes.unit_models.translator.Translator">Translator (class in idaes.unit_models.translator)</a>
+</li>
+      <li><a href="models/translator.html#idaes.unit_models.translator.TranslatorData">TranslatorData (class in idaes.unit_models.translator)</a>
+</li>
+      <li><a href="models/power_generation/turbine_multistage.html#idaes.unit_models.power_generation.turbine_multistage.TurbineMultistageData.turbine_inlet_cf_fix">turbine_inlet_cf_fix() (idaes.unit_models.power_generation.turbine_multistage.TurbineMultistageData method)</a>
+</li>
+      <li>
+    TurbineInletStage
+
+      <ul>
+        <li><a href="models/power_generation/turbine_inlet.html#index-0">idaes.unit_models.power_generation.turbine_inlet</a>
+</li>
+      </ul></li>
+      <li><a href="models/power_generation/turbine_inlet.html#idaes.unit_models.power_generation.turbine_inlet.TurbineInletStage">TurbineInletStage (class in idaes.unit_models.power_generation.turbine_inlet)</a>
+</li>
+      <li><a href="models/power_generation/turbine_inlet.html#idaes.unit_models.power_generation.turbine_inlet.TurbineInletStageData">TurbineInletStageData (class in idaes.unit_models.power_generation.turbine_inlet)</a>
+</li>
+      <li>
+    TurbineMultistage
+
+      <ul>
+        <li><a href="models/power_generation/turbine_multistage.html#index-0">idaes.unit_models.power_generation.turbine_multistage</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="models/power_generation/turbine_multistage.html#idaes.unit_models.power_generation.turbine_multistage.TurbineMultistage">TurbineMultistage (class in idaes.unit_models.power_generation.turbine_multistage)</a>
+</li>
+      <li><a href="models/power_generation/turbine_multistage.html#idaes.unit_models.power_generation.turbine_multistage.TurbineMultistageData">TurbineMultistageData (class in idaes.unit_models.power_generation.turbine_multistage)</a>
+</li>
+      <li>
+    TurbineOutletStage
+
+      <ul>
+        <li><a href="models/power_generation/turbine_outlet.html#index-0">idaes.unit_models.power_generation.turbine_outlet</a>
+</li>
+      </ul></li>
+      <li><a href="models/power_generation/turbine_outlet.html#idaes.unit_models.power_generation.turbine_outlet.TurbineOutletStage">TurbineOutletStage (class in idaes.unit_models.power_generation.turbine_outlet)</a>
+</li>
+      <li><a href="models/power_generation/turbine_outlet.html#idaes.unit_models.power_generation.turbine_outlet.TurbineOutletStageData">TurbineOutletStageData (class in idaes.unit_models.power_generation.turbine_outlet)</a>
+</li>
+      <li>
+    TurbineStage
+
+      <ul>
+        <li><a href="models/power_generation/turbine_stage.html#index-0">idaes.unit_models.power_generation.turbine_stage</a>
+</li>
+      </ul></li>
+      <li><a href="models/power_generation/turbine_stage.html#idaes.unit_models.power_generation.turbine_stage.TurbineStage">TurbineStage (class in idaes.unit_models.power_generation.turbine_stage)</a>
+</li>
+      <li><a href="models/power_generation/turbine_stage.html#idaes.unit_models.power_generation.turbine_stage.TurbineStageData">TurbineStageData (class in idaes.unit_models.power_generation.turbine_stage)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -848,11 +1038,15 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="core/process_block.html#idaes.core.process_base.ProcessBlockData.unfix_initial_conditions">unfix_initial_conditions() (idaes.core.process_base.ProcessBlockData method)</a>
 </li>
+      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitModelBlock">UnitModelBlock (class in idaes.core.unit_model)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlock">UnitBlock (class in idaes.core.unit_model)</a>
+      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitModelBlockData">UnitModelBlockData (class in idaes.core.unit_model)</a>
 </li>
-      <li><a href="core/unit_model.html#idaes.core.unit_model.UnitBlockData">UnitBlockData (class in idaes.core.unit_model)</a>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.use_equal_pressure_constraint">use_equal_pressure_constraint() (idaes.unit_models.mixer.MixerData method)</a>
+</li>
+      <li><a href="models/mixer.html#idaes.unit_models.mixer.MixerData.use_minimum_inlet_pressure_constraint">use_minimum_inlet_pressure_constraint() (idaes.unit_models.mixer.MixerData method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -902,27 +1096,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

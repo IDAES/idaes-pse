@@ -19,32 +19,35 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -93,8 +96,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -175,9 +179,6 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
 
-<span class="c1"># Import Python libraries</span>
-<span class="kn">import</span> <span class="nn">inspect</span>
-
 <span class="c1"># Import Pyomo libraries</span>
 <span class="kn">from</span> <span class="nn">pyomo.common.config</span> <span class="k">import</span> <span class="n">ConfigBlock</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">,</span> <span class="n">In</span>
 
@@ -196,12 +197,12 @@
 <span class="c1"># Some more information about this module</span>
 <span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Andrew Lee, John Eslick&quot;</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ReactionBlockDataBase&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;ReactionBlockBase&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;ReactionParameterBase&#39;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ReactionBlockData&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;ReactionBlock&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;ReactionParameterBlock&#39;</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="ReactionParameterBase"><a class="viewcode-back" href="../../../core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBase">[docs]</a><span class="k">class</span> <span class="nc">ReactionParameterBase</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">,</span>
+<div class="viewcode-block" id="ReactionParameterBlock"><a class="viewcode-back" href="../../../core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBlock">[docs]</a><span class="k">class</span> <span class="nc">ReactionParameterBlock</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">,</span>
                             <span class="n">property_meta</span><span class="o">.</span><span class="n">HasPropertyClassMetadata</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is the base class for reaction parameter blocks. These are blocks</span>
@@ -218,7 +219,7 @@
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Default arguments to use with Property Package&quot;</span><span class="p">,</span>
             <span class="n">implicit</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 
-<div class="viewcode-block" id="ReactionParameterBase.build"><a class="viewcode-back" href="../../../core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBase.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ReactionParameterBlock.build"><a class="viewcode-back" href="../../../core/reaction_block.html#idaes.core.reaction_base.ReactionParameterBlock.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        General build method for ReactionParameterBlocks. Inheriting models</span>
 <span class="sd">        should call super().build.</span>
@@ -229,7 +230,7 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ReactionParameterBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ReactionParameterBlock</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
 
         <span class="c1"># TODO: Need way to tie reaction package to a specfic property package</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_property_parameter_units</span><span class="p">()</span>
@@ -437,6 +438,15 @@
                     <span class="s1">&#39;components to avoid any reserved names&#39;</span>
                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
 
+        <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s2">&quot;config&quot;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_get_config_args</span><span class="p">()</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> getattr method was triggered by a call &quot;</span>
+                                 <span class="s2">&quot;to the config block, but _get_config_args &quot;</span>
+                                 <span class="s2">&quot;failed. This should never happen.&quot;</span><span class="p">)</span>
+
         <span class="c1"># Check for recursive calls</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Check to see if attr already appears in call list</span>
@@ -595,27 +605,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
