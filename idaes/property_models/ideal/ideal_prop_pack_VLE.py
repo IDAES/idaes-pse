@@ -722,3 +722,89 @@ class IdealStateBlockData(StateBlockData):
         if clear_components is True:
             self.del_component(self.eq_dew_point)
             self.del_component(self.temperature_dew)
+
+    def pressure_bubble_point(self, temperature=None, mole_frac=None,
+                              clear_components=True):
+        """"To compute the bubble point pressure of the mixture."""
+
+        self.pressure_bubble = Var(initialize=298.15,
+                                   doc="bubble point pressure")
+
+        def rule_psat_bubble(m, j):
+            return self.pressure_critical[j] * \
+                exp((self.pressure_sat_coeff[j, 'A'] *
+                    (1 - self.temperature /
+                    self.temperature_critical[j]) +
+                    self.pressure_sat_coeff[j, 'B'] *
+                    (1 - self.temperature /
+                    self.temperature_critical[j])**1.5 +
+                    self.pressure_sat_coeff[j, 'C'] *
+                    (1 - self.temperature /
+                    self.temperature_critical[j])**3 +
+                    self.pressure_sat_coeff[j, 'D'] *
+                    (1 - self.temperature /
+                    self.temperature_critical[j])**6) /
+                    (1 - (1 - self.temperature /
+                          self.temperature_critical[j])))
+        self.p_sat_bubbleP = Expression(self.component_list_ref,
+                                        rule=rule_psat_bubble)
+
+        def rule_pressure_bubble(self):
+            return sum(self.p_sat_bubbleP[i] * mole_frac[i]
+                       for i in self.component_list_ref) \
+                - self.pressure_bubble == 0
+        self.eq_bubble_pressure = Constraint(rule=rule_pressure_bubble)
+
+        calculate_variable_from_constraint(self.pressure_bubble,
+                                           self.eq_bubble_pressure)
+
+        return self.pressure_bubble.value
+
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
+        if clear_components is True:
+            self.del_component(self.eq_bubble_pressure)
+            self.del_component(self.pressure_bubble)
+
+    def pressure_dew_point(self, temperature=None, mole_frac=None,
+                           clear_components=True):
+        """"To compute the dew point pressure of the mixture."""
+
+        self.pressure_dew = Var(initialize=298.15,
+                                doc="dew point pressure")
+
+        def rule_psat_dew(m, j):
+            return self.pressure_critical[j] * \
+                exp((self.pressure_sat_coeff[j, 'A'] *
+                    (1 - self.temperature /
+                    self.temperature_critical[j]) +
+                    self.pressure_sat_coeff[j, 'B'] *
+                    (1 - self.temperature /
+                    self.temperature_critical[j])**1.5 +
+                    self.pressure_sat_coeff[j, 'C'] *
+                    (1 - self.temperature /
+                    self.temperature_critical[j])**3 +
+                    self.pressure_sat_coeff[j, 'D'] *
+                    (1 - self.temperature /
+                    self.temperature_critical[j])**6) /
+                    (1 - (1 - self.temperature /
+                          self.temperature_critical[j])))
+        self.p_sat_dewP = Expression(self.component_list_ref,
+                                     rule=rule_psat_dew)
+
+        def rule_pressure_dew(self):
+            return self.pressure_dew * sum(mole_frac[i] / self.p_sat_dewP[i]
+                                           for i in self.component_list_ref) \
+                - 1 == 0
+        self.eq_dew_pressure = Constraint(rule=rule_pressure_dew)
+
+        calculate_variable_from_constraint(self.pressure_dew,
+                                           self.eq_dew_pressure)
+
+        return self.pressure_dew.value
+
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
+        if clear_components is True:
+            self.del_component(self.eq_dew_pressure)
+            self.del_component(self.pressure_dew)

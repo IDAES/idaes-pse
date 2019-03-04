@@ -173,6 +173,18 @@ def test_dewT_inlet_state_blocks():
         pytest.approx(372.02, abs=1e-2)
 
 
+def test_bubbleP_inlet_state_blocks():
+    assert m.fs.state_block_vl.pressure_bubble_point(
+        m.fs.state_block_vl.temperature, m.fs.state_block_vl.mole_frac) == \
+        pytest.approx(109479.22, abs=1e-2)
+
+
+def test_dewP_inlet_state_blocks():
+    assert m.fs.state_block_vl.pressure_dew_point(
+        m.fs.state_block_vl.temperature, m.fs.state_block_vl.mole_frac) == \
+        pytest.approx(89819.72, abs=1e-2)
+
+
 # Create a flowsheet object to test outlet state blocks
 m.fs1 = FlowsheetBlock(default={"dynamic": False})
 # vapor-liquid
