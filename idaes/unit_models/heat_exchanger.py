@@ -13,7 +13,6 @@
 """
 Heat Exchanger Models.
 """
-from __future__ import division
 
 __author__ = "John Eslick"
 
@@ -35,9 +34,33 @@ from idaes.core import (ControlVolume0DBlock,
                         ProcessBlockData)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
+from idaes.unit_models.heat_exchanger_enums import HeatExchangerFlowPattern
 
 _log = logging.getLogger(__name__)
 
+def _delta_T(b,t):
+    """
+    Calculate the temperature differences for calculating * mean temperature
+    difference.
+    """
+    T_in1 = b.side_1.properties_in[t].temperature
+    T_in2 = b.side_2.properties_in[t].temperature
+    T_out1 = b.side_1.properties_out[t].temperature
+    T_out2 = b.side_2.properties_out[t].temperature
+
+    if b.config.flow_pattern == HeatExchangerFlowPattern.countercurrent:
+        dT1 = T_in1 - T_out2
+        dT2 = T_out1 - T_in2
+    elif b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
+        dT1 = T_in1 - T_in2
+        dT2 = T_out1 - T_out2
+    elif b.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+        dT1 = T_in1 - T_out2
+        dT2 = T_out1 - T_in2
+    else:
+        raise Exception("Exchanger flow patter '{}' not supported"\
+            .format(b.config.flow_pattern))
+    return (dT1, dT2)
 
 def delta_temperature_lmtd_rule(b, t):
     """
@@ -46,12 +69,8 @@ def delta_temperature_lmtd_rule(b, t):
     difference (LMTD).  It can be supplied to "delta_temperature_rule"
     HeatExchanger configuration option.
     """
-    dT1 = b.side_1.properties_in[t].temperature - \
-        b.side_2.properties_out[t].temperature
-    dT2 = b.side_1.properties_out[t].temperature - \
-        b.side_2.properties_in[t].temperature
+    dT1, dT2 = _delta_T(b,t)
     return (dT1 - dT2) / (log(dT1) - log(dT2))
-
 
 def delta_temperature_amtd_rule(b, t):
     """
@@ -60,10 +79,7 @@ def delta_temperature_amtd_rule(b, t):
     difference (AMTD).  It can be supplied to "delta_temperature_rule"
     HeatExchanger configuration option.
     """
-    dT1 = b.side_1.properties_in[t].temperature - \
-        b.side_2.properties_out[t].temperature
-    dT2 = b.side_1.properties_out[t].temperature - \
-        b.side_2.properties_in[t].temperature
+    dT1, dT2 = _delta_T(b,t)
     return (dT1 + dT2) * 0.5
 
 def delta_temperature_lmtd_approx_underwood_rule(b, t):
@@ -73,10 +89,7 @@ def delta_temperature_lmtd_approx_underwood_rule(b, t):
     difference (LMTD) approximation given by Underwood (1970).  It can be
     supplied to "delta_temperature_rule" HeatExchanger configuration option.
     """
-    dT1 = b.side_1.properties_in[t].temperature - \
-        b.side_2.properties_out[t].temperature
-    dT2 = b.side_1.properties_out[t].temperature - \
-        b.side_2.properties_in[t].temperature
+    dT1, dT2 = _delta_T(b,t)
     return ((dT1**(1.0/3.0) + dT2**(1.0/3.0))/2.0)**3
 
 def delta_temperature_lmtd_approx_chen_rule(b, t):
@@ -86,14 +99,11 @@ def delta_temperature_lmtd_approx_chen_rule(b, t):
     difference (LMTD) approximation given by Chen (1987).  It can be
     supplied to "delta_temperature_rule" HeatExchanger configuration option.
     """
-    dT1 = b.side_1.properties_in[t].temperature - \
-        b.side_2.properties_out[t].temperature
-    dT2 = b.side_1.properties_out[t].temperature - \
-        b.side_2.properties_in[t].temperature
+    dT1, dT2 = _delta_T(b,t)
     return ((dT1**(0.3275) + dT2**(0.3275))/2.0)**(1.0/0.3275)
 
 
-def heat_transfer_rule(b, t):
+def _heat_transfer_rule(b, t):
     """
     This is the defulat rule used by the HeatExchanger model to calculate heat
     transfer (:math:`Q = UA\Delta T`).
@@ -103,6 +113,18 @@ def heat_transfer_rule(b, t):
     q = b.heat_duty[t]
     deltaT = b.delta_temperature[t]
     return q == u*a*deltaT
+
+def _cross_flow_heat_transfer_rule(b, t):
+    """
+    This is the defulat rule used by the HeatExchanger model to calculate heat
+    transfer (:math:`Q = UA\Delta T`).
+    """
+    u = b.overall_heat_transfer_coefficient[t]
+    a = b.area
+    q = b.heat_duty[t]
+    deltaT = b.delta_temperature[t]
+    f = b.crossflow_factor
+    return q == f*u*a*deltaT
 
 
 def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
@@ -244,9 +266,17 @@ def _make_heat_exchanger_config(config):
     config.declare("delta_temperature_rule", ConfigValue(
         default=delta_temperature_lmtd_rule,
         description="Rule for equation for temperature difference"))
-    config.declare("heat_transfer_rule", ConfigValue(
-        default=heat_transfer_rule,
-        description="Rule for heat transfer rate equation"))
+    config.declare("flow_pattern", ConfigValue(
+        default=HeatExchangerFlowPattern.countercurrent,
+        domain=In(HeatExchangerFlowPattern),
+        description="Heat exchanger flow pattern",
+        doc="""Heat exchanger flow pattern,
+**default** - HeatExchangerFlowPattern.countercurrent.
+**Valid values:** {
+**HeatExchangerFlowPattern.countercurrent** - countercurrent flow,
+**HeatExchangerFlowPattern.cocurrent** - cocurrent flow,
+**HeatExchangerFlowPattern.crossflow** - cross flow, factor times countercurrent
+    temperature difference.}"""))
 
 
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
@@ -298,18 +328,17 @@ class HeatExchangerData(UnitModelBlockData):
         # Call UnitModel.build to setup dynamics
         super(HeatExchangerData, self).build()
         # Add variables
-        self.overall_heat_transfer_coefficient = Var(
-            self.time_ref,
-            domain=PositiveReals,
-            initialize=100,
+        self.overall_heat_transfer_coefficient = Var(self.time_ref,
+            domain=PositiveReals, initialize=100,
             doc="Overall heat transfer coefficient")
         self.overall_heat_transfer_coefficient.latex_symbol = "U"
-        self.area = Var(
-            domain=PositiveReals,
-            initialize=1000,
+        self.area = Var(domain=PositiveReals, initialize=1000,
             doc="Heat exchange area")
-        self.area.fix()
         self.area.latex_symbol = "A"
+        if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+            self.crossflow_factor = Var(self.time_ref, initialize=1,
+                doc="Factor to adjust coutercurrent flow heat transfer "
+                    "calculation for cross flow.")
 
         # Add Control Volumes
         _make_heater_control_volume(self, "side_1", self.config.side_1,
@@ -337,8 +366,13 @@ class HeatExchangerData(UnitModelBlockData):
             rule=self.config.delta_temperature_rule,
             doc="Temperature difference driving force for heat transfer")
         self.delta_temperature.latex_symbol = "\\Delta T"
-        self.heat_transfer_equation = Constraint(
-            self.time_ref, rule=self.config.heat_transfer_rule)
+
+        if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+            self.heat_transfer_equation = Constraint(
+                self.time_ref, rule=_cross_flow_heat_transfer_rule)
+        else:
+            self.heat_transfer_equation = Constraint(
+                self.time_ref, rule=_heat_transfer_rule)
 
     def initialize(self, state_args_1=None, state_args_2=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}, duty=10000):
