@@ -63,7 +63,7 @@ and easily pretend to have certain functionality (returning, for example, fixed 
 To make this all more concrete, consider a simple problem where you want to test
 a function that makes a system call (in this case, ``os.remove``):
 
-.. code-block::
+.. code-block:: python
 
     # file: mymodule.py
     import os
@@ -73,7 +73,7 @@ a function that makes a system call (in this case, ``os.remove``):
 Normally, to test this you would create a temporary file, and then see if it got
 removed. However, with mocking you can take a different approach entirely:
 
-.. code-block::
+.. code-block:: python
 
     # file: test_mymodule.py
     from mymodule import rm
