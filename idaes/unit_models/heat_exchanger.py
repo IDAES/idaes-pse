@@ -43,30 +43,6 @@ HeatExchangerFlowPattern = Enum(
     'cocurrent',
     'crossflow')
 
-def _delta_T(b,t):
-    """
-    Calculate the temperature differences for calculating * mean temperature
-    difference.
-    """
-    T_in1 = b.side_1.properties_in[t].temperature
-    T_in2 = b.side_2.properties_in[t].temperature
-    T_out1 = b.side_1.properties_out[t].temperature
-    T_out2 = b.side_2.properties_out[t].temperature
-
-    if b.config.flow_pattern == HeatExchangerFlowPattern.countercurrent:
-        dT1 = T_in1 - T_out2
-        dT2 = T_out1 - T_in2
-    elif b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
-        dT1 = T_in1 - T_in2
-        dT2 = T_out1 - T_out2
-    elif b.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
-        dT1 = T_in1 - T_out2
-        dT2 = T_out1 - T_in2
-    else:
-        raise Exception("Exchanger flow pattern '{}' not supported"\
-            .format(b.config.flow_pattern))
-    return (dT1, dT2)
-
 def delta_temperature_lmtd_rule(b, t):
     """
     This is a rule for a temperaure difference expression to calculate
@@ -74,7 +50,8 @@ def delta_temperature_lmtd_rule(b, t):
     difference (LMTD).  It can be supplied to "delta_temperature_rule"
     HeatExchanger configuration option.
     """
-    dT1, dT2 = _delta_T(b,t)
+    dT1 = b.delta_temperature_in[t]
+    dT2 = b.delta_temperature_out[t]
     return (dT1 - dT2) / (log(dT1) - log(dT2))
 
 def delta_temperature_amtd_rule(b, t):
@@ -84,18 +61,9 @@ def delta_temperature_amtd_rule(b, t):
     difference (AMTD).  It can be supplied to "delta_temperature_rule"
     HeatExchanger configuration option.
     """
-    dT1, dT2 = _delta_T(b,t)
+    dT1 = b.delta_temperature_in[t]
+    dT2 = b.delta_temperature_out[t]
     return (dT1 + dT2) * 0.5
-
-def delta_temperature_lmtd_approx_underwood_rule(b, t):
-    """
-    This is a rule for a temperaure difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using log-mean temperature
-    difference (LMTD) approximation given by Underwood (1970).  It can be
-    supplied to "delta_temperature_rule" HeatExchanger configuration option.
-    """
-    dT1, dT2 = _delta_T(b,t)
-    return ((dT1**(1.0/3.0) + dT2**(1.0/3.0))/2.0)**3
 
 def delta_temperature_lmtd_approx_chen_rule(b, t):
     """
@@ -104,7 +72,8 @@ def delta_temperature_lmtd_approx_chen_rule(b, t):
     difference (LMTD) approximation given by Chen (1987).  It can be
     supplied to "delta_temperature_rule" HeatExchanger configuration option.
     """
-    dT1, dT2 = _delta_T(b,t)
+    dT1 = b.delta_temperature_in[t]
+    dT2 = b.delta_temperature_out[t]
     return ((dT1**(0.3275) + dT2**(0.3275))/2.0)**(1.0/0.3275)
 
 def _heat_transfer_rule(b, t):
@@ -358,6 +327,31 @@ class HeatExchangerData(UnitModelBlockData):
         add_object_reference(self, "heat_duty", self.side_2.heat)
         self.side_1.heat.latex_symbol = "Q_1"
         self.side_2.heat.latex_symbol = "Q_2"
+
+        @self.Expression(self.time_ref,
+            doc="Temperature difference at the side 1 inlet end")
+        def delta_temperature_in(b, t):
+            if b.config.flow_pattern == HeatExchangerFlowPattern.countercurrent:
+                return b.side_1.properties_in[t].temperature -\
+                       b.side_2.properties_out[t].temperature
+            elif b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
+                return b.side_1.properties_in[t].temperature -\
+                       b.side_2.properties_in[t].temperature
+            elif b.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+                return b.side_1.properties_in[t].temperature -\
+                       b.side_2.properties_out[t].temperature
+        @self.Expression(self.time_ref,
+            doc="Temperature difference at the side 1 outlet end")
+        def delta_temperature_out(b, t):
+            if b.config.flow_pattern == HeatExchangerFlowPattern.countercurrent:
+                return b.side_1.properties_out[t].temperature -\
+                       b.side_2.properties_in[t].temperature
+            elif b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
+                return b.side_1.properties_out[t].temperature -\
+                       b.side_2.properties_out[t].temperature
+            elif b.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+                return b.side_1.properties_out[t].temperature -\
+                       b.side_2.properties_in[t].temperature
 
         # Add a unit level energy balance
         def unit_heat_balance_rule(b, t):
