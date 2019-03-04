@@ -1976,7 +1976,7 @@ def test_add_total_pressure_balances_default():
     mb = m.fs.cv.add_total_pressure_balances()
 
     assert isinstance(mb, Constraint)
-    assert len(mb) == 2
+    assert len(mb) == 1
     assert isinstance(m.fs.cv.pressure, Var)
     assert isinstance(m.fs.cv.pressure_linking_constraint, Constraint)
     assert isinstance(m.fs.cv.pressure_dx, DerivativeVar)
@@ -1998,7 +1998,7 @@ def test_add_total_pressure_balances_deltaP():
     mb = m.fs.cv.add_total_pressure_balances(has_pressure_change=True)
 
     assert isinstance(mb, Constraint)
-    assert len(mb) == 2
+    assert len(mb) == 1
     assert isinstance(m.fs.cv.deltaP, Var)
 
 
@@ -2023,7 +2023,7 @@ def test_add_total_pressure_balances_custom_term():
     mb = m.fs.cv.add_total_pressure_balances(custom_term=custom_method)
 
     assert isinstance(mb, Constraint)
-    assert len(mb) == 2
+    assert len(mb) == 1
 
 
 # -----------------------------------------------------------------------------
