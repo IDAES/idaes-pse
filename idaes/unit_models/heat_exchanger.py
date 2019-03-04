@@ -22,6 +22,7 @@ from pyomo.environ import (Var, log, Expression, Constraint,
                            PositiveReals, SolverFactory)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
+from pyutilib.enum import Enum
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -34,9 +35,13 @@ from idaes.core import (ControlVolume0DBlock,
                         ProcessBlockData)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-from idaes.unit_models.heat_exchanger_enums import HeatExchangerFlowPattern
 
 _log = logging.getLogger(__name__)
+
+HeatExchangerFlowPattern = Enum(
+    'countercurrent',
+    'cocurrent',
+    'crossflow')
 
 def _delta_T(b,t):
     """
@@ -122,7 +127,7 @@ def _cross_flow_heat_transfer_rule(b, t):
     a = b.area
     q = b.heat_duty[t]
     deltaT = b.delta_temperature[t]
-    f = b.crossflow_factor
+    f = b.crossflow_factor[t]
     return q == f*u*a*deltaT
 
 
