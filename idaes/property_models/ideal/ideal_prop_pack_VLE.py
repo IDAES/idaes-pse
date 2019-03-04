@@ -661,23 +661,23 @@ class IdealStateBlockData(StateBlockData):
                     self.temperature_critical[j])**6) /
                     (1 - (1 - self.temperature_bubble /
                           self.temperature_critical[j])))
-        self.p_sat_bubble = Expression(self.component_list_ref,
-                                       rule=rule_psat_bubble)
+        self.p_sat_bubbleT = Expression(self.component_list_ref,
+                                        rule=rule_psat_bubble)
 
         def rule_temp_bubble(self):
-            return sum(self.p_sat_bubble[i] * mole_frac[i]
+            return sum(self.p_sat_bubbleT[i] * mole_frac[i]
                        for i in self.component_list_ref) - pressure == 0
-        self.eq_bubble_point = Constraint(rule=rule_temp_bubble)
+        self.eq_bubble_temp = Constraint(rule=rule_temp_bubble)
 
         calculate_variable_from_constraint(self.temperature_bubble,
-                                           self.eq_bubble_point)
+                                           self.eq_bubble_temp)
 
         return self.temperature_bubble.value
 
         # Delete the var/constraint created in this method that are part of the
         # IdealStateBlock if the user desires
         if clear_components is True:
-            self.del_component(self.eq_bubble_point)
+            self.del_component(self.eq_bubble_temp)
             self.del_component(self.temperature_bubble)
 
     def temperature_dew_point(self, pressure=None, mole_frac=None,
@@ -703,24 +703,24 @@ class IdealStateBlockData(StateBlockData):
                     self.temperature_critical[j])**6) /
                     (1 - (1 - self.temperature_dew /
                           self.temperature_critical[j])))
-        self.p_sat_dew = Expression(self.component_list_ref,
-                                    rule=rule_psat_dew)
+        self.p_sat_dewT = Expression(self.component_list_ref,
+                                     rule=rule_psat_dew)
 
         def rule_temp_dew(self):
-            return pressure * sum(mole_frac[i] / self.p_sat_dew[i]
+            return pressure * sum(mole_frac[i] / self.p_sat_dewT[i]
                                   for i in self.component_list_ref) \
                 - 1 == 0
-        self.eq_dew_point = Constraint(rule=rule_temp_dew)
+        self.eq_dew_temp = Constraint(rule=rule_temp_dew)
 
         calculate_variable_from_constraint(self.temperature_dew,
-                                           self.eq_dew_point)
+                                           self.eq_dew_temp)
 
         return self.temperature_dew.value
 
         # Delete the var/constraint created in this method that are part of the
         # IdealStateBlock if the user desires
         if clear_components is True:
-            self.del_component(self.eq_dew_point)
+            self.del_component(self.eq_dew_temp)
             self.del_component(self.temperature_dew)
 
     def pressure_bubble_point(self, temperature=None, mole_frac=None,
