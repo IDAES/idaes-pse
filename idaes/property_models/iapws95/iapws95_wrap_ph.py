@@ -223,7 +223,7 @@ class Iapws95ParameterBlockData(PhysicalParameterBlock):
             'dens_mass_crit': {'method': None, 'units': 'kg/m^3'},
             'gas_const': {'method': None, 'units': 'J/mol.K'},
             'mw': {'method': None, 'units': 'kg/mol'},
-            'temperature_sat': {'method': '_temperature_sat', 'units': 'K'},
+            'temperature_sat': {'method': 'None', 'units': 'K'},
             'flow_mol': {'method': None, 'units': 'mol/s'},
             'temperature': {'method': None, 'units': 'K'},
             'pressure': {'method': None, 'units': 'Pa'},
@@ -248,7 +248,8 @@ class Iapws95ParameterBlockData(PhysicalParameterBlock):
             'cv_mol': {'method': None, 'units': 'J/mol.K'},
             'heat_capacity_ratio': {'method': None, 'units': None},
             'dens_mass': {'method': None, 'units': 'kg/m^3'},
-            'dens_mol': {'method': None, 'units': 'mol/m^3'}})
+            'dens_mol': {'method': None, 'units': 'mol/m^3'},
+            'dh_vap_mol':{'method':None, 'units': 'J/mol'}})
 
         obj.add_default_units({
             'time': 's',

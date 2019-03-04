@@ -58,7 +58,7 @@ def _delta_T(b,t):
         dT1 = T_in1 - T_out2
         dT2 = T_out1 - T_in2
     else:
-        raise Exception("Exchanger flow patter '{}' not supported"\
+        raise Exception("Exchanger flow pattern '{}' not supported"\
             .format(b.config.flow_pattern))
     return (dT1, dT2)
 
@@ -101,7 +101,6 @@ def delta_temperature_lmtd_approx_chen_rule(b, t):
     """
     dT1, dT2 = _delta_T(b,t)
     return ((dT1**(0.3275) + dT2**(0.3275))/2.0)**(1.0/0.3275)
-
 
 def _heat_transfer_rule(b, t):
     """
