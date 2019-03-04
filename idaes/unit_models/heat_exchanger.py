@@ -104,7 +104,7 @@ def delta_temperature_lmtd_approx_chen_rule(b, t):
 
 def _heat_transfer_rule(b, t):
     """
-    This is the defulat rule used by the HeatExchanger model to calculate heat
+    This is the default rule used by the HeatExchanger model to calculate heat
     transfer (:math:`Q = UA\Delta T`).
     """
     u = b.overall_heat_transfer_coefficient[t]
@@ -115,7 +115,7 @@ def _heat_transfer_rule(b, t):
 
 def _cross_flow_heat_transfer_rule(b, t):
     """
-    This is the defulat rule used by the HeatExchanger model to calculate heat
+    This is the default rule used by the HeatExchanger model to calculate heat
     transfer (:math:`Q = UA\Delta T`).
     """
     u = b.overall_heat_transfer_coefficient[t]
