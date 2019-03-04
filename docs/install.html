@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="IDAES Modeling Standards" href="standards.html" />
     <link rel="prev" title="Institute for the Design of Advanced Energy Systems (IDAES)" href="index.html" /> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -92,6 +95,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#installation-using-docker">Installation using Docker</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#install-docker-on-your-system">Install Docker on your system</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#get-the-idaes-docker-image">Get the IDAES Docker image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load-the-idaes-docker-image">Load the IDAES Docker image</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#run-the-idaes-docker-image">Run the IDAES Docker image</a></li>
 </ul>
 </li>
@@ -122,8 +126,9 @@
 <li class="toctree-l1"><a class="reference internal" href="property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -196,24 +201,25 @@
 <li><a class="reference internal" href="#installation-using-docker" id="id2">Installation using Docker</a><ul>
 <li><a class="reference internal" href="#install-docker-on-your-system" id="id3">Install Docker on your system</a></li>
 <li><a class="reference internal" href="#get-the-idaes-docker-image" id="id4">Get the IDAES Docker image</a></li>
-<li><a class="reference internal" href="#run-the-idaes-docker-image" id="id5">Run the IDAES Docker image</a></li>
+<li><a class="reference internal" href="#load-the-idaes-docker-image" id="id5">Load the IDAES Docker image</a></li>
+<li><a class="reference internal" href="#run-the-idaes-docker-image" id="id6">Run the IDAES Docker image</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#installation-from-source-code" id="id6">Installation from source code</a><ul>
-<li><a class="reference internal" href="#system-requirements" id="id7">System Requirements</a></li>
-<li><a class="reference internal" href="#installation-steps" id="id8">Installation steps</a></li>
-<li><a class="reference internal" href="#solvers" id="id9">Solvers</a><ul>
-<li><a class="reference internal" href="#asl-and-ampl" id="id10">ASL and AMPL</a></li>
+<li><a class="reference internal" href="#installation-from-source-code" id="id7">Installation from source code</a><ul>
+<li><a class="reference internal" href="#system-requirements" id="id8">System Requirements</a></li>
+<li><a class="reference internal" href="#installation-steps" id="id9">Installation steps</a></li>
+<li><a class="reference internal" href="#solvers" id="id10">Solvers</a><ul>
+<li><a class="reference internal" href="#asl-and-ampl" id="id11">ASL and AMPL</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#installation-on-windows" id="id11">Installation on Windows</a><ul>
-<li><a class="reference internal" href="#python-distribution" id="id12">Python Distribution</a></li>
-<li><a class="reference internal" href="#pyomo" id="id13">Pyomo</a></li>
-<li><a class="reference internal" href="#idaes" id="id14">IDAES</a><ul>
-<li><a class="reference internal" href="#option-1-download-zip-file" id="id15">Option 1: Download zip file</a></li>
-<li><a class="reference internal" href="#option-2-using-git" id="id16">Option 2: Using Git</a></li>
+<li><a class="reference internal" href="#installation-on-windows" id="id12">Installation on Windows</a><ul>
+<li><a class="reference internal" href="#python-distribution" id="id13">Python Distribution</a></li>
+<li><a class="reference internal" href="#pyomo" id="id14">Pyomo</a></li>
+<li><a class="reference internal" href="#idaes" id="id15">IDAES</a><ul>
+<li><a class="reference internal" href="#option-1-download-zip-file" id="id16">Option 1: Download zip file</a></li>
+<li><a class="reference internal" href="#option-2-using-git" id="id17">Option 2: Using Git</a></li>
 </ul>
 </li>
 </ul>
@@ -261,35 +267,25 @@ Docker will be started automatically.</p>
 </div>
 <div class="section" id="get-the-idaes-docker-image">
 <h3><a class="toc-backref" href="#id4">Get the IDAES Docker image</a><a class="headerlink" href="#get-the-idaes-docker-image" title="Permalink to this headline">¶</a></h3>
-<p>You need to get the pre-built Docker “image” containing the source
-code and solvers for the IDAES PSE framework. This image is stored in
-an online service called <a class="reference external" href="https://hub.docker.com/">Docker Hub</a>. Full details on how to use
-Docker Hub are available in the <a class="reference external" href="https://docs.docker.com/docker-hub/">Docker Hub documentation</a>. The name
-of the Docker image that you would normally pull is
-<code class="docutils literal notranslate"><span class="pre">idaes/idaes_pse:latest</span></code>. This name has three parts:</p>
+<p>You need to get the ready made Docker image containing the source
+code and solvers for the IDAES PSE framework. This image is available
+for download at a URL like “<a class="reference external" href="https://s3.amazonaws.com/idaes/idaes-pse/idaes-pse-docker">https://s3.amazonaws.com/idaes/idaes-pse/idaes-pse-docker</a>-<code class="docutils literal notranslate"><span class="pre">VERSION</span></code>.tgz”,
+where <code class="docutils literal notranslate"><span class="pre">VERSION</span></code> is the release version. See the <a class="reference external" href="https://github.com/IDAES/idaes-pse/releases">Releases</a> page on GitHub
+for information about what is different about each version.</p>
+<p>If you want the latest version, simply use the tag “latest” as the version number.
+Thus, <strong>clicking on this link will start a download of the latest version</strong>:
+<a class="reference external" href="https://s3.amazonaws.com/idaes/idaes-pse/idaes-pse-docker-latest.tgz">https://s3.amazonaws.com/idaes/idaes-pse/idaes-pse-docker-latest.tgz</a>.</p>
+</div>
+<div class="section" id="load-the-idaes-docker-image">
+<h3><a class="toc-backref" href="#id5">Load the IDAES Docker image</a><a class="headerlink" href="#load-the-idaes-docker-image" title="Permalink to this headline">¶</a></h3>
+<p>The image you downloaded needs to be loaded into your local Docker Installation
+using the <a class="reference external" href="https://docs.docker.com/engine/reference/commandline/load/">Docker load</a> command, which from the command-line looks like
+this:</p>
 <blockquote>
-<div><ul class="simple">
-<li>idaes - means the Docker image is in the Docker Hub organization called “idaes”.</li>
-<li>/idaes_pse - this is the name of the Docker image for the IDAES PSE framework.</li>
-<li>:latest - this is a “tag” that will get the latest version.</li>
-</ul>
-</div></blockquote>
-<p>In a point and click interface, you can type the name of this image
-into the search box. In a command-line interface, e.g. in Linux,
-then you would run a command like:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> docker pull idaes/idaes_pse:latest
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">If you are a software developer, you may have “cloned” the Github repository with
-the IDAES source code. In this case, the script <cite>idaes-docker</cite> can be used to
-pull and run the Docker image. Please run <code class="docutils literal notranslate"><span class="pre">idaes-docker</span> <span class="pre">-h</span></code> to get help and
-details on how to use this script.</p>
-</div>
+<div>docker load &lt; idaes-pse-docker-latest.tgz</div></blockquote>
 </div>
 <div class="section" id="run-the-idaes-docker-image">
-<h3><a class="toc-backref" href="#id5">Run the IDAES Docker image</a><a class="headerlink" href="#run-the-idaes-docker-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6">Run the IDAES Docker image</a><a class="headerlink" href="#run-the-idaes-docker-image" title="Permalink to this headline">¶</a></h3>
 <p>To start the Docker image, use a graphical user interface or a console or shell
 command-line interface.</p>
 <p>From the command-line, if you want to start up the Jupyter Notebook server, e.g.
@@ -316,7 +312,7 @@ following command:</p>
 </div>
 </div>
 <div class="section" id="installation-from-source-code">
-<h2><a class="toc-backref" href="#id6">Installation from source code</a><a class="headerlink" href="#installation-from-source-code" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id7">Installation from source code</a><a class="headerlink" href="#installation-from-source-code" title="Permalink to this headline">¶</a></h2>
 <p>If you want to install the IDAES PSE framework from the source code, follow the
 set of instructions below that are appropriate for your operating system.</p>
 <div class="admonition note">
@@ -325,7 +321,7 @@ set of instructions below that are appropriate for your operating system.</p>
 distributions.</p>
 </div>
 <div class="section" id="system-requirements">
-<h3><a class="toc-backref" href="#id7">System Requirements</a><a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8">System Requirements</a><a class="headerlink" href="#system-requirements" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><ul class="simple">
 <li>Linux operating system</li>
@@ -345,7 +341,7 @@ distributions.</p>
 </div></blockquote>
 </div>
 <div class="section" id="installation-steps">
-<h3><a class="toc-backref" href="#id8">Installation steps</a><a class="headerlink" href="#installation-steps" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id9">Installation steps</a><a class="headerlink" href="#installation-steps" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>sudo apt-get install gcc g++ make libboost-dev
 </pre></div>
 </div>
@@ -397,7 +393,7 @@ python setup.py develop  <span class="c1"># or &quot;install&quot;</span>
 </div>
 </div>
 <div class="section" id="solvers">
-<h3><a class="toc-backref" href="#id9">Solvers</a><a class="headerlink" href="#solvers" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10">Solvers</a><a class="headerlink" href="#solvers" title="Permalink to this headline">¶</a></h3>
 <p>Some of the model code depends on external solvers. The installation instructions
 above include the free <a class="reference external" href="https://projects.coin-or.org/Ipopt">IPOPT</a> solver. Most of the examples can run with this solver,
 but a significant number of more advanced problems will not be handled well. Some
@@ -410,7 +406,7 @@ these models are:</p>
 </ul>
 </div></blockquote>
 <div class="section" id="asl-and-ampl">
-<h4><a class="toc-backref" href="#id10">ASL and AMPL</a><a class="headerlink" href="#asl-and-ampl" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id11">ASL and AMPL</a><a class="headerlink" href="#asl-and-ampl" title="Permalink to this headline">¶</a></h4>
 <p>In some cases, IDAES uses AMPL user-defined functions written in C for property
 models.  Compiling these functions is optional, but some models may not work
 without them.</p>
@@ -421,13 +417,13 @@ from <a class="reference external" href="https://ampl.com/netlib/ampl/solvers.tg
 </div>
 </div>
 <div class="section" id="installation-on-windows">
-<h2><a class="toc-backref" href="#id11">Installation on Windows</a><a class="headerlink" href="#installation-on-windows" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id12">Installation on Windows</a><a class="headerlink" href="#installation-on-windows" title="Permalink to this headline">¶</a></h2>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">We are NOT supporting Windows at this time. Some developers on the team have had success with the following instructions, but we do not promise that they will work for all users, nor will we prioritize helping debug problems.</p>
 </div>
 <div class="section" id="python-distribution">
-<h3><a class="toc-backref" href="#id12">Python Distribution</a><a class="headerlink" href="#python-distribution" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13">Python Distribution</a><a class="headerlink" href="#python-distribution" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p class="first">Install <a class="reference external" href="https://www.anaconda.com/download/#download">Anaconda for Windows</a></p>
 </li>
@@ -460,7 +456,7 @@ from <a class="reference external" href="https://ampl.com/netlib/ampl/solvers.tg
 <a class="reference internal image-reference" href="_images/install_windows_cmd_python.png"><img alt="_images/install_windows_cmd_python.png" class="align-center" src="_images/install_windows_cmd_python.png" style="width: 621.75px; height: 192.75px;" /></a>
 </div>
 <div class="section" id="pyomo">
-<h3><a class="toc-backref" href="#id13">Pyomo</a><a class="headerlink" href="#pyomo" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14">Pyomo</a><a class="headerlink" href="#pyomo" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p class="first">See <a class="reference external" href="http://www.pyomo.org/installation/">instructions</a> for pyomo installation. As mentioned, you can either use the pip or the conda install methods which come included with the Anaconda distribution but conda may be preferable if you installed Anaconda.</p>
 </li>
@@ -507,9 +503,9 @@ from <a class="reference external" href="https://ampl.com/netlib/ampl/solvers.tg
 </ul>
 </div>
 <div class="section" id="idaes">
-<h3><a class="toc-backref" href="#id14">IDAES</a><a class="headerlink" href="#idaes" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15">IDAES</a><a class="headerlink" href="#idaes" title="Permalink to this headline">¶</a></h3>
 <div class="section" id="option-1-download-zip-file">
-<h4><a class="toc-backref" href="#id15">Option 1: Download zip file</a><a class="headerlink" href="#option-1-download-zip-file" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id16">Option 1: Download zip file</a><a class="headerlink" href="#option-1-download-zip-file" title="Permalink to this headline">¶</a></h4>
 <ul>
 <li><p class="first">From the <a class="reference external" href="https://github.com/IDAES/idaes">IDAES</a> repository on GitHub, click on “Clone or download” on the right in green. Click on “Download zip”.</p>
 </li>
@@ -525,7 +521,7 @@ from <a class="reference external" href="https://ampl.com/netlib/ampl/solvers.tg
 </ul>
 </div>
 <div class="section" id="option-2-using-git">
-<h4><a class="toc-backref" href="#id16">Option 2: Using Git</a><a class="headerlink" href="#option-2-using-git" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id17">Option 2: Using Git</a><a class="headerlink" href="#option-2-using-git" title="Permalink to this headline">¶</a></h4>
 <ul>
 <li><p class="first">Install <a class="reference external" href="https://git-scm.com/download/win">git</a> for Windows.</p>
 </li>
@@ -562,7 +558,7 @@ from <a class="reference external" href="https://ampl.com/netlib/ampl/solvers.tg
         <a href="standards.html" class="btn btn-neutral float-right" title="IDAES Modeling Standards" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="Institute for the Design of Advanced Energy Systems (IDAES)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Institute for the Design of Advanced Energy Systems (IDAES)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -588,27 +584,16 @@ from <a class="reference external" href="https://ampl.com/netlib/ampl/solvers.tg
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

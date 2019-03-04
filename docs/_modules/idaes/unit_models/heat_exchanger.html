@@ -19,32 +19,35 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -93,8 +96,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -179,18 +183,18 @@
 
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="c1"># Import Pyomo libraries</span>
-<span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="p">(</span><span class="n">Reals</span><span class="p">,</span> <span class="n">Var</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">Expression</span><span class="p">,</span> <span class="n">Constraint</span><span class="p">,</span>
+<span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="p">(</span><span class="n">Var</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">Expression</span><span class="p">,</span> <span class="n">Constraint</span><span class="p">,</span>
                            <span class="n">PositiveReals</span><span class="p">,</span> <span class="n">SolverFactory</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">pyomo.common.config</span> <span class="k">import</span> <span class="n">ConfigBlock</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">,</span> <span class="n">In</span>
 <span class="kn">from</span> <span class="nn">pyomo.opt</span> <span class="k">import</span> <span class="n">TerminationCondition</span>
 
 <span class="c1"># Import IDAES cores</span>
-<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">ControlVolume0D</span><span class="p">,</span>
+<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">ControlVolume0DBlock</span><span class="p">,</span>
                         <span class="n">declare_process_block_class</span><span class="p">,</span>
                         <span class="n">EnergyBalanceType</span><span class="p">,</span>
                         <span class="n">MomentumBalanceType</span><span class="p">,</span>
                         <span class="n">MaterialBalanceType</span><span class="p">,</span>
-                        <span class="n">UnitBlockData</span><span class="p">,</span>
+                        <span class="n">UnitModelBlockData</span><span class="p">,</span>
                         <span class="n">useDefault</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.config</span> <span class="k">import</span> <span class="n">is_physical_parameter_block</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.misc</span> <span class="k">import</span> <span class="n">add_object_reference</span>
@@ -241,7 +245,7 @@
 <span class="sd">    This is seperated from the main heater class so it can be reused to create</span>
 <span class="sd">    control volumes for different types of heat exchange models.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">control_volume</span> <span class="o">=</span> <span class="n">ControlVolume0D</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">{</span>
+    <span class="n">control_volume</span> <span class="o">=</span> <span class="n">ControlVolume0DBlock</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">{</span>
         <span class="s2">&quot;dynamic&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">dynamic</span><span class="p">,</span>
         <span class="s2">&quot;property_package&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">property_package</span><span class="p">,</span>
         <span class="s2">&quot;property_package_args&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">property_package_args</span><span class="p">})</span>
@@ -250,8 +254,7 @@
     <span class="nb">setattr</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">control_volume</span><span class="p">)</span>
     <span class="c1"># Add inlet and outlet state blocks to control volume</span>
     <span class="n">control_volume</span><span class="o">.</span><span class="n">add_state_blocks</span><span class="p">(</span>
-        <span class="n">has_phase_equilibrium</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">calculate_phase_equilibrium</span><span class="p">,</span>
-        <span class="n">package_arguments</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">property_package_args</span><span class="p">)</span>
+        <span class="n">has_phase_equilibrium</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">calculate_phase_equilibrium</span><span class="p">)</span>
 
     <span class="c1"># Add material balance</span>
     <span class="n">control_volume</span><span class="o">.</span><span class="n">add_material_balances</span><span class="p">(</span>
@@ -373,11 +376,16 @@
 
 <span class="k">def</span> <span class="nf">_make_heat_exchanger_config</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Declare configuration options for HeatExchngerData block.</span>
+<span class="sd">    Declare configuration options for HeatExchangerData block.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">config</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;dynamic&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
-        <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
-        <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">useDefault</span><span class="p">]),</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Dynamic model flag&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Indicates whether the model is dynamic.&quot;</span><span class="p">))</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;has_holdup&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="n">useDefault</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Dynamic model flag&quot;</span><span class="p">,</span>
         <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Indicates whether the model is dynamic.&quot;</span><span class="p">))</span>
     <span class="n">config</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;side_1&quot;</span><span class="p">,</span> <span class="n">ConfigBlock</span><span class="p">(</span>
@@ -402,7 +410,7 @@
 
 
 <div class="viewcode-block" id="HeaterData"><a class="viewcode-back" href="../../../models/heater.html#idaes.unit_models.heat_exchanger.HeaterData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;Heater&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Simple 0D heater/cooler model.&quot;</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">HeaterData</span><span class="p">(</span><span class="n">UnitBlockData</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">HeaterData</span><span class="p">(</span><span class="n">UnitModelBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Simple 0D heater unit.</span>
 <span class="sd">    Unit model to add or remove heat from a material.</span>
@@ -431,7 +439,7 @@
 
 <div class="viewcode-block" id="HeatExchangerData"><a class="viewcode-back" href="../../../models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;HeatExchanger&quot;</span><span class="p">,</span>
                              <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Simple 0D heat exchanger model.&quot;</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">HeatExchangerData</span><span class="p">(</span><span class="n">UnitBlockData</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">HeatExchangerData</span><span class="p">(</span><span class="n">UnitModelBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Simple 0D heat exchange unit.</span>
 <span class="sd">    Unit model to transfer heat from one material to another.</span>
@@ -501,7 +509,8 @@
 <div class="viewcode-block" id="HeatExchangerData.initialize"><a class="viewcode-back" href="../../../models/heat_exchanger.html#idaes.unit_models.heat_exchanger.HeatExchangerData.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state_args_1</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">state_args_2</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                    <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;ipopt&#39;</span><span class="p">,</span> <span class="n">optarg</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;tol&#39;</span><span class="p">:</span> <span class="mf">1e-6</span><span class="p">},</span> <span class="n">duty</span><span class="o">=</span><span class="mi">10000</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Heat echanger initialization method.</span>
+<span class="sd">        Heat exchanger initialization method.</span>
+
 <span class="sd">        Args:</span>
 <span class="sd">            state_args_1 : a dict of arguments to be passed to the property</span>
 <span class="sd">                initialization for side_1 (see documentation of the specific</span>
@@ -519,8 +528,10 @@
 <span class="sd">                     initialization (default = &#39;ipopt&#39;)</span>
 <span class="sd">            duty : an initial guess for the amount of heat transfered</span>
 <span class="sd">                (default = 10000)</span>
+
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">heat_duty</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">duty</span>  <span class="c1"># probably best start with a positive duty</span>
@@ -534,6 +545,7 @@
 
         <span class="n">opt</span> <span class="o">=</span> <span class="n">SolverFactory</span><span class="p">(</span><span class="n">solver</span><span class="p">)</span>
         <span class="n">opt</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">optarg</span>
+        <span class="n">opt</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">halt_on_ampl_error</span><span class="o">=</span><span class="s2">&quot;yes&quot;</span><span class="p">)</span>
 
         <span class="n">flags1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">side_1</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">outlvl</span><span class="o">=</span><span class="n">outlvl</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
                                         <span class="n">optarg</span><span class="o">=</span><span class="n">optarg</span><span class="p">,</span>
@@ -554,7 +566,8 @@
                       <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
         <span class="c1"># ---------------------------------------------------------------------</span>
         <span class="c1"># Solve unit</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="n">stee</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">()</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tee</span><span class="o">=</span><span class="n">stee</span><span class="p">,</span> <span class="n">symbolic_solver_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">outlvl</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">results</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="n">termination_condition</span> <span class="o">==</span> \
@@ -601,27 +614,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

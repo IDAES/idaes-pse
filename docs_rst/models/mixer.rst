@@ -87,6 +87,10 @@ If `momentum_mixing_type` is `equality`, the pressure in all inlets and the outl
 
 .. math:: P_{mix, t} = P_{t, i}
 
+Often the minimum inlet pressure constraint is useful for sequential modular type initialization, but the equal pressure constants are required for pressure-driven flow models.  In these cases it may be convenient to use the minimum pressure constraint for some initialization steps, them deactivate it and use the equal pressure constraints.  The `momentum_mixing_type` is `minimum_and_equality` this will create the constraints for both with the minimum pressure constraint being active.
+
+The `mixture_pressure(t)` and `pressure_equality_constraints(t, i)` can be directly activated and deactivated, but only one set of constraints should be active at a time. The ``use_minimum_inlet_pressure_constraint()`` and ``use_equal_pressure_constraint()`` methods are also provided to switch between constant sets. 
+
 Mixer Class
 -----------
 

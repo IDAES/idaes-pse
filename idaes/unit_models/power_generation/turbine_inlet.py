@@ -23,7 +23,8 @@ import logging
 _log = logging.getLogger(__name__)
 
 from pyomo.common.config import In
-from pyomo.environ import Var, Expression, Constraint, sqrt, SolverFactory, value
+from pyomo.environ import (Var, Expression, Constraint, sqrt, SolverFactory,
+                           value, Param)
 from pyomo.opt import TerminationCondition
 
 from idaes.core import declare_process_block_class
@@ -58,6 +59,9 @@ class TurbineInletStageData(PressureChangerData):
             doc="Nozzel efficiency (typically 0.90 to 0.95)")
         self.efficiency_mech = Var(initialize=0.98,
             doc="Turbine mechanical efficiency")
+        self.flow_scale = Param(mutable=True, default=1e3, doc=
+            "Scaling factor for pressure flow relation should be approximatly"
+            " the same order of magnitude as the expected flow.")
         self.eff_nozzle.fix()
         self.blade_reaction.fix()
         self.flow_coeff.fix()
@@ -85,8 +89,9 @@ class TurbineInletStageData(PressureChangerData):
             cf = b.flow_coeff[t]
             Pin = b.control_volume.properties_in[t].pressure
             Pratio = b.ratioP[t]
-            return (flow*mw*sqrt(Tin - 273.15) ==
-                cf*Pin*sqrt(g/(g - 1)*(Pratio**(2.0/g) - Pratio**((g + 1)/g))))
+            return ((1/b.flow_scale**2)*flow**2*mw**2*(Tin - 273.15) ==
+                (1/b.flow_scale**2)*cf**2*Pin**2*
+                (g/(g - 1)*(Pratio**(2.0/g) - Pratio**((g + 1)/g))))
 
         @self.Constraint(self.time_ref, doc="Equation: Isentropic enthalpy change")
         def isentropic_enthalpy(b, t):
@@ -132,8 +137,8 @@ class TurbineInletStageData(PressureChangerData):
         self.inlet_flow_constraint.deactivate()
         self.isentropic_enthalpy.deactivate()
         self.efficiency_correlation.deactivate()
-        self.deltaP[:].unfix()
-        self.ratioP[:].unfix()
+        self.deltaP.unfix()
+        self.ratioP.unfix()
 
         # Fix turbine parameters + eff_isen
         self.eff_nozzle.fix()
@@ -168,6 +173,18 @@ class TurbineInletStageData(PressureChangerData):
                 Pout.fix()
         self.deltaP[:] = value(Pout - Pin)
         self.ratioP[:] = value(Pout/Pin)
+
+        for t in self.time_ref:
+            self.properties_isentropic[t].pressure.value = \
+                value(self.outlet.pressure[t])
+            self.properties_isentropic[t].flow_mol.value = \
+                value(self.inlet.flow_mol[t])
+            self.properties_isentropic[t].enth_mol.value = \
+                value(self.inlet.enth_mol[t]*0.95)
+            self.outlet.flow_mol[t].value = \
+                value(self.inlet.flow_mol[t])
+            self.outlet.enth_mol[t].value = \
+                value(self.inlet.enth_mol[t]*0.95)
 
         # Make sure the initialization problem has no degrees of freedom
         # This shouldn't happen here unless there is a bug in this

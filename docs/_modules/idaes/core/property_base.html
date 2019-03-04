@@ -19,32 +19,35 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -93,8 +96,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -183,18 +187,19 @@
 <span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="n">ProcessBlockData</span>
 <span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="n">property_meta</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.config</span> <span class="k">import</span> <span class="n">is_physical_parameter_block</span>
-<span class="kn">from</span> <span class="nn">idaes.core.util.exceptions</span> <span class="k">import</span> <span class="p">(</span><span class="n">PropertyNotSupportedError</span><span class="p">,</span>
+<span class="kn">from</span> <span class="nn">idaes.core.util.exceptions</span> <span class="k">import</span> <span class="p">(</span><span class="n">BurntToast</span><span class="p">,</span>
+                                        <span class="n">PropertyNotSupportedError</span><span class="p">,</span>
                                         <span class="n">PropertyPackageError</span><span class="p">)</span>
 
 <span class="c1"># Some more information about this module</span>
 <span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Andrew Lee, John Eslick&quot;</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;StateBlockDataBase&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;StateBlockBase&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;PhysicalParameterBase&#39;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;StateBlockData&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;StateBlock&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;PhysicalParameterBlock&#39;</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="PhysicalParameterBase"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.PhysicalParameterBase">[docs]</a><span class="k">class</span> <span class="nc">PhysicalParameterBase</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">,</span>
+<div class="viewcode-block" id="PhysicalParameterBlock"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.PhysicalParameterBlock">[docs]</a><span class="k">class</span> <span class="nc">PhysicalParameterBlock</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">,</span>
                             <span class="n">property_meta</span><span class="o">.</span><span class="n">HasPropertyClassMetadata</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is the base class for thermophysical parameter blocks. These are</span>
@@ -208,7 +213,7 @@
             <span class="n">implicit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Default arguments to use with Property Package&quot;</span><span class="p">))</span>
 
-<div class="viewcode-block" id="PhysicalParameterBase.build"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.PhysicalParameterBase.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="PhysicalParameterBlock.build"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.PhysicalParameterBlock.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        General build method for PropertyParameterBlocks. Inheriting models</span>
 <span class="sd">        should call super().build.</span>
@@ -219,17 +224,17 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">PhysicalParameterBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span></div></div>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PhysicalParameterBlock</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span></div></div>
 
 
-<div class="viewcode-block" id="StateBlockBase"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockBase">[docs]</a><span class="k">class</span> <span class="nc">StateBlockBase</span><span class="p">(</span><span class="n">ProcessBlock</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlock"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlock">[docs]</a><span class="k">class</span> <span class="nc">StateBlock</span><span class="p">(</span><span class="n">ProcessBlock</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is the base class for state block objects. These are used when</span>
 <span class="sd">        constructing the SimpleBlock or IndexedBlock which will contain the</span>
 <span class="sd">        PropertyData objects, and contains methods that can be applied to</span>
 <span class="sd">        multiple StateBlockData objects simultaneously.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="StateBlockBase.initialize"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockBase.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlock.initialize"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlock.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is a default initialization routine for StateBlocks to ensure</span>
 <span class="sd">        that a routine is present. All StateBlockData classes should</span>
@@ -247,7 +252,7 @@
                                   <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div></div>
 
 
-<div class="viewcode-block" id="StateBlockDataBase"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockDataBase">[docs]</a><span class="k">class</span> <span class="nc">StateBlockDataBase</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlockData"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockData">[docs]</a><span class="k">class</span> <span class="nc">StateBlockData</span><span class="p">(</span><span class="n">ProcessBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is the base class for state block data objects. These are</span>
 <span class="sd">        blocks that contain the Pyomo components associated with calculating a</span>
@@ -281,7 +286,7 @@
 <span class="s2">**True** - StateBlock should calculate phase equilibrium,</span>
 <span class="s2">**False** - StateBlock should not calculate phase equilibrium.}&quot;&quot;&quot;</span><span class="p">))</span>
 
-<div class="viewcode-block" id="StateBlockDataBase.build"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockDataBase.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlockData.build"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        General build method for StateBlockDatas.</span>
 
@@ -291,9 +296,9 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">StateBlockDataBase</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span></div>
+        <span class="nb">super</span><span class="p">(</span><span class="n">StateBlockData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="StateBlockDataBase.define_state_vars"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockDataBase.define_state_vars">[docs]</a>    <span class="k">def</span> <span class="nf">define_state_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlockData.define_state_vars"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockData.define_state_vars">[docs]</a>    <span class="k">def</span> <span class="nf">define_state_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method that returns a dictionary of state variables used in property</span>
 <span class="sd">        package. Implement a placeholder method which returns an Exception to</span>
@@ -303,14 +308,14 @@
                                   <span class="s1">&#39; define_state_vars method. Please contact &#39;</span>
                                   <span class="s1">&#39;the property package developer.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="StateBlockDataBase.define_port_members"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockDataBase.define_port_members">[docs]</a>    <span class="k">def</span> <span class="nf">define_port_members</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlockData.define_port_members"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockData.define_port_members">[docs]</a>    <span class="k">def</span> <span class="nf">define_port_members</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method used to specific components to populate Ports with. Defaults to</span>
 <span class="sd">        define_state_vars, and developers should overload as required.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">define_state_vars</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="StateBlockDataBase.get_material_flow_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_flow_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_material_flow_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlockData.get_material_flow_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockData.get_material_flow_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_material_flow_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method which returns a tuple containing a valid expression to use in</span>
 <span class="sd">        the material balances and a constant indicating the basis of this</span>
@@ -320,7 +325,7 @@
                                   <span class="s1">&#39; get_material_flow_terms method. Please &#39;</span>
                                   <span class="s1">&#39;contact the property package developer.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="StateBlockDataBase.get_material_density_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_density_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_material_density_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlockData.get_material_density_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockData.get_material_density_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_material_density_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method which returns a tuple containing a valid expression to use in</span>
 <span class="sd">        the material balances and a constant indicating the basis of this</span>
@@ -330,7 +335,7 @@
                                   <span class="s1">&#39; get_material_density_terms method. Please &#39;</span>
                                   <span class="s1">&#39;contact the property package developer.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="StateBlockDataBase.get_material_diffusion_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_material_diffusion_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_material_diffusion_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlockData.get_material_diffusion_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockData.get_material_diffusion_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_material_diffusion_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method which returns a tuple containing a valid expression to use in</span>
 <span class="sd">        the material balances and a constant indicating the basis of this</span>
@@ -341,7 +346,7 @@
                                   <span class="s1">&#39;Please contact the property package &#39;</span>
                                   <span class="s1">&#39;developer.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="StateBlockDataBase.get_enthalpy_flow_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_enthalpy_flow_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_enthalpy_flow_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlockData.get_enthalpy_flow_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockData.get_enthalpy_flow_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_enthalpy_flow_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method which returns a tuple containing a valid expression to use in</span>
 <span class="sd">        the energy balances and a constant indicating the basis of this</span>
@@ -351,7 +356,7 @@
                                   <span class="s1">&#39; get_energy_flow_terms method. Please &#39;</span>
                                   <span class="s1">&#39;contact the property package developer.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="StateBlockDataBase.get_enthalpy_density_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_enthalpy_density_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_enthalpy_density_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlockData.get_enthalpy_density_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockData.get_enthalpy_density_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_enthalpy_density_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method which returns a tuple containing a valid expression to use in</span>
 <span class="sd">        the energy balances and a constant indicating the basis of this</span>
@@ -361,7 +366,7 @@
                                   <span class="s1">&#39; get_energy_density_terms method. Please &#39;</span>
                                   <span class="s1">&#39;contact the property package developer.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="StateBlockDataBase.get_energy_diffusion_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockDataBase.get_energy_diffusion_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_energy_diffusion_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="StateBlockData.get_energy_diffusion_terms"><a class="viewcode-back" href="../../../core/state_block.html#idaes.core.property_base.StateBlockData.get_energy_diffusion_terms">[docs]</a>    <span class="k">def</span> <span class="nf">get_energy_diffusion_terms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method which returns a tuple containing a valid expression to use in</span>
 <span class="sd">        the energy balances and a constant indicating the basis of this</span>
@@ -427,6 +432,15 @@
                     <span class="s1">&#39;attribute. Check the naming of your &#39;</span>
                     <span class="s1">&#39;components to avoid any reserved names&#39;</span>
                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s2">&quot;config&quot;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_get_config_args</span><span class="p">()</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> getattr method was triggered by a call &quot;</span>
+                                 <span class="s2">&quot;to the config block, but _get_config_args &quot;</span>
+                                 <span class="s2">&quot;failed. This should never happen.&quot;</span><span class="p">)</span>
 
         <span class="c1"># Check for recursive calls</span>
         <span class="k">try</span><span class="p">:</span>
@@ -586,27 +600,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
