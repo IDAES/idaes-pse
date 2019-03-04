@@ -637,6 +637,7 @@ class IdealStateBlockData(StateBlockData):
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
 
+    # Property package utility functions
     def temperature_bubble_point(self, pressure=None, mole_frac=None,
                                  clear_components=True):
         """"To compute the bubble point temperature of the mixture."""
@@ -644,7 +645,7 @@ class IdealStateBlockData(StateBlockData):
         self.temperature_bubble = Var(initialize=298.15,
                                       doc="bubble point temperature")
 
-        def rule_psat(m, j):
+        def rule_psat_bubble(m, j):
             return self.pressure_critical[j] * \
                 exp((self.pressure_sat_coeff[j, 'A'] *
                     (1 - self.temperature_bubble /
@@ -660,7 +661,8 @@ class IdealStateBlockData(StateBlockData):
                     self.temperature_critical[j])**6) /
                     (1 - (1 - self.temperature_bubble /
                           self.temperature_critical[j])))
-        self.p_sat_bubble = Expression(self.component_list_ref, rule=rule_psat)
+        self.p_sat_bubble = Expression(self.component_list_ref,
+                                       rule=rule_psat_bubble)
 
         def rule_temp_bubble(self):
             return sum(self.p_sat_bubble[i] * mole_frac[i]
@@ -677,3 +679,46 @@ class IdealStateBlockData(StateBlockData):
         if clear_components is True:
             self.del_component(self.eq_bubble_point)
             self.del_component(self.temperature_bubble)
+
+    def temperature_dew_point(self, pressure=None, mole_frac=None,
+                              clear_components=True):
+        """"To compute the dew point temperature of the mixture."""
+
+        self.temperature_dew = Var(initialize=298.15,
+                                   doc="bubble point temperature")
+
+        def rule_psat_dew(m, j):
+            return self.pressure_critical[j] * \
+                exp((self.pressure_sat_coeff[j, 'A'] *
+                    (1 - self.temperature_dew /
+                    self.temperature_critical[j]) +
+                    self.pressure_sat_coeff[j, 'B'] *
+                    (1 - self.temperature_dew /
+                    self.temperature_critical[j])**1.5 +
+                    self.pressure_sat_coeff[j, 'C'] *
+                    (1 - self.temperature_dew /
+                    self.temperature_critical[j])**3 +
+                    self.pressure_sat_coeff[j, 'D'] *
+                    (1 - self.temperature_dew /
+                    self.temperature_critical[j])**6) /
+                    (1 - (1 - self.temperature_dew /
+                          self.temperature_critical[j])))
+        self.p_sat_dew = Expression(self.component_list_ref,
+                                    rule=rule_psat_dew)
+
+        def rule_temp_dew(self):
+            return pressure * sum(mole_frac[i] / self.p_sat_dew[i]
+                                  for i in self.component_list_ref) \
+                - 1 == 0
+        self.eq_dew_point = Constraint(rule=rule_temp_dew)
+
+        calculate_variable_from_constraint(self.temperature_dew,
+                                           self.eq_dew_point)
+
+        return self.temperature_dew.value
+
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
+        if clear_components is True:
+            self.del_component(self.eq_dew_point)
+            self.del_component(self.temperature_dew)
