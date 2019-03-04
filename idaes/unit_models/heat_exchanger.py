@@ -127,7 +127,7 @@ def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
     # add energy balance
     control_volume.add_energy_balances(
         balance_type=config.energy_balance_type,
-        has_heat_transfer=config.has_heat_transfer)
+        has_heat_transfer=True)
     # add momentum balance
     control_volume.add_momentum_balances(
         balance_type=config.momentum_balance_type,
@@ -212,14 +212,6 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
-    config.declare("has_heat_transfer", ConfigValue(
-        default=True,
-        domain=In([True]),
-        description="Heat transfer term construction flag",
-        doc="""Indicates whether terms for heat transfer should be constructed,
-**default** - False.
-**Valid values:** {
-**True** - include heat transfer terms}"""))
 
 
 def _make_heat_exchanger_config(config):
