@@ -8,10 +8,9 @@ temperature, pressure, and vapor fraction as the state variables.
 
 Theses modules can be imported as:
 
-.. code-block:: python
+.. testcode::
 
   from idaes.property_models import iapws95_ph
-  from idaes.property_models import iapws95_tpx
 
 Example
 -------
@@ -24,15 +23,40 @@ water properties module, after solving the problem any property can be
 calculated in any state block after the problem is solved. To get the viscosity
 of the water at the heater outlet, for example the line below could be added.
 
-.. code-block:: python
+.. testsetup::
 
-      import pyomo.environ as pe
-      mu_l = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Liq"])
-      mu_v = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Vap"])
+  import pyomo.environ as pe # Pyomo environment
+  from idaes.core import FlowsheetBlock, StateBlock
+  from idaes.unit_models import Heater
+  from idaes.property_models import iapws95_ph
 
-For more
-information about how StateBlocks and PropertyParameterBlocks work see the :ref:`StateBlock
-documentation <core/state_block:Physical Property Package Classes>`.
+  # Create an empty flowsheet and steam property parameter block.
+  model = pe.ConcreteModel()
+  model.fs = FlowsheetBlock(default={"dynamic": False})
+  model.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+
+  # Add a Heater model to the flowsheet.
+  model.fs.heater = Heater(default={"property_package": model.fs.properties})
+
+  # Setup the heater model by fixing the inputs and heat duty
+  model.fs.heater.inlet[:].enth_mol.fix(4000)
+  model.fs.heater.inlet[:].flow_mol.fix(100)
+  model.fs.heater.inlet[:].pressure.fix(101325)
+  model.fs.heater.heat_duty[:].fix(100*20000)
+
+  # Initialize the model.
+  model.fs.heater.initialize()
+
+
+.. testcode::
+
+  import pyomo.environ as pe
+  mu_l = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Liq"])
+  mu_v = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Vap"])
+
+For more information about how StateBlocks and PropertyParameterBlocks
+work see the :ref:`StateBlock documentation <core/state_block:Physical
+Property Package Classes>`.
 
 Units
 -----
@@ -68,7 +92,7 @@ roots.
 
 The external property functions are written in C++ and complied such that they
 can be called by AMPL solvers.  See the :ref:`installation instructions
-<install:Installation Instructions>` for information about compiling these
+<install:Installation>` for information about compiling these
 functions. The external functions provide both first and second derivatives for
 all property function calls, however at phase transitions some of these functions
 may be non-smooth.

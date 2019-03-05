@@ -7,3 +7,5 @@ Power Generation Models
     turbine_inlet
     turbine_outlet
     turbine_stage
+    turbine_multistage
+    steam_valve

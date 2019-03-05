@@ -19,32 +19,35 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -93,8 +96,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -185,7 +189,7 @@
 
 <span class="c1"># Import IDAES cores</span>
 <span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">declare_process_block_class</span><span class="p">,</span>
-                        <span class="n">ControlVolumeBase</span><span class="p">,</span>
+                        <span class="n">ControlVolumeBlockData</span><span class="p">,</span>
                         <span class="n">FlowDirection</span><span class="p">,</span>
                         <span class="n">MaterialFlowBasis</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.exceptions</span> <span class="k">import</span> <span class="p">(</span><span class="n">BalanceTypeNotSupportedError</span><span class="p">,</span>
@@ -203,15 +207,15 @@
 <span class="c1"># TODO : Improve flexibility for get_material_flow_terms and associated</span>
 
 
-<div class="viewcode-block" id="ControlVolume0dData"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;ControlVolume0D&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">    ControlVolume0D is a specialized Pyomo block for IDAES non-discretized</span>
-<span class="s2">    control volume blocks, and contains instances of ControlVolume0dData.</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;ControlVolume0DBlock&quot;</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    ControlVolume0DBlock is a specialized Pyomo block for IDAES non-discretized</span>
+<span class="s2">    control volume blocks, and contains instances of ControlVolume0DBlockData.</span>
 
-<span class="s2">    ControlVolume0D should be used for any control volume with a defined volume</span>
-<span class="s2">    and distinct inlets and outlets which does not require spatial</span>
+<span class="s2">    ControlVolume0DBlock should be used for any control volume with a defined</span>
+<span class="s2">    volume and distinct inlets and outlets which does not require spatial</span>
 <span class="s2">    discretization. This encompases most basic unit models used in process</span>
 <span class="s2">    modeling.&quot;&quot;&quot;</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">ControlVolume0dData</span><span class="p">(</span><span class="n">ControlVolumeBase</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">ControlVolume0DBlockData</span><span class="p">(</span><span class="n">ControlVolumeBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    0-Dimensional (Non-Discretised) ControlVolume Class</span>
 
@@ -220,17 +224,17 @@
 <span class="sd">    momentum balances. The form of the terms used in these constraints is</span>
 <span class="sd">    specified in the chosen property package.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-<div class="viewcode-block" id="ControlVolume0dData.build"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.build"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.build">[docs]</a>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Build method for ControlVolume0D blocks.</span>
+<span class="sd">        Build method for ControlVolume0DBlock blocks.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Call build method from base class</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">ControlVolume0dData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span></div>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ControlVolume0DBlockData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_geometry"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_geometry">[docs]</a>    <span class="k">def</span> <span class="nf">add_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_geometry"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_geometry">[docs]</a>    <span class="k">def</span> <span class="nf">add_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Method to create volume Var in ControlVolume.</span>
 
@@ -245,10 +249,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="n">initialize</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
                           <span class="n">doc</span><span class="o">=</span><span class="s1">&#39;Holdup Volume [</span><span class="si">{}</span><span class="s1">^3]&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">l_units</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_state_blocks"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_state_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_state_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_state_blocks"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_state_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_state_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                          <span class="n">information_flow</span><span class="o">=</span><span class="n">FlowDirection</span><span class="o">.</span><span class="n">forward</span><span class="p">,</span>
-                         <span class="n">has_phase_equilibrium</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                         <span class="n">package_arguments</span><span class="o">=</span><span class="p">{}):</span>
+                         <span class="n">has_phase_equilibrium</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This method constructs the inlet and outlet state blocks for the</span>
 <span class="sd">        control volume.</span>
@@ -264,7 +267,17 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">tmp_dict</span> <span class="o">=</span> <span class="n">package_arguments</span>
+        <span class="k">if</span> <span class="n">has_phase_equilibrium</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> add_state_blocks method was not provided with a &quot;</span>
+                    <span class="s2">&quot;has_phase_equilibrium argument.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">has_phase_equilibrium</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> add_state_blocks method was provided with an invalid &quot;</span>
+                    <span class="s2">&quot;has_phase_equilibrium argument. Must be True or False&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="n">tmp_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package_args</span><span class="p">)</span>
         <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;has_phase_equilibrium&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">has_phase_equilibrium</span>
         <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">property_package</span>
 
@@ -300,9 +313,7 @@
                     <span class="s2">&quot;developer of the physical property package.&quot;</span>
                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_reaction_blocks"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_reaction_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_reaction_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                            <span class="n">has_equilibrium</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                            <span class="n">package_arguments</span><span class="o">=</span><span class="p">{}):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_reaction_blocks"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_reaction_blocks">[docs]</a>    <span class="k">def</span> <span class="nf">add_reaction_blocks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">has_equilibrium</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This method constructs the reaction block for the control volume.</span>
 
@@ -315,7 +326,17 @@
 <span class="sd">        Returns:</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">tmp_dict</span> <span class="o">=</span> <span class="n">package_arguments</span>
+        <span class="k">if</span> <span class="n">has_equilibrium</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> add_reaction_blocks method was not provided with a &quot;</span>
+                    <span class="s2">&quot;has_equilibrium argument.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="n">has_equilibrium</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> add_reaction_blocks method was provided with an &quot;</span>
+                    <span class="s2">&quot;invalid has_equilibrium argument. Must be True or False&quot;</span>
+                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="n">tmp_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">reaction_package_args</span><span class="p">)</span>
         <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;state_block&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties_out</span>
         <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;has_equilibrium&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">has_equilibrium</span>
         <span class="n">tmp_dict</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">reaction_package</span>
@@ -333,7 +354,7 @@
                     <span class="s2">&quot;developer of the reaction property package.&quot;</span>
                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_phase_component_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_component_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_component_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_phase_component_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_phase_component_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_component_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                      <span class="n">has_rate_reactions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                      <span class="n">has_equilibrium_reactions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                      <span class="n">has_phase_equilibrium</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -695,7 +716,7 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">material_balances</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_total_component_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_component_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_component_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_total_component_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_component_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_component_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                      <span class="n">has_rate_reactions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                      <span class="n">has_equilibrium_reactions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                      <span class="n">has_phase_equilibrium</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -1019,7 +1040,7 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">material_balances</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_total_element_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_element_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_element_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_total_element_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_element_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_element_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                    <span class="n">has_rate_reactions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                    <span class="n">has_equilibrium_reactions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                    <span class="n">has_phase_equilibrium</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -1250,13 +1271,13 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">element_balances</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_total_material_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_material_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_material_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_total_material_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_material_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_material_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">BalanceTypeNotSupportedError</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> OD control volumes do not support &quot;</span>
                 <span class="s2">&quot;add_total_material_balances (yet).&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_total_enthalpy_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_enthalpy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_enthalpy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_total_enthalpy_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_enthalpy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_enthalpy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                     <span class="n">has_heat_of_reaction</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                     <span class="n">has_heat_transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                     <span class="n">has_work_transfer</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -1423,25 +1444,25 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">enthalpy_balances</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_phase_enthalpy_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_enthalpy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_enthalpy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_phase_enthalpy_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_phase_enthalpy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_enthalpy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">BalanceTypeNotSupportedError</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> OD control volumes do not support &quot;</span>
                 <span class="s2">&quot;add_phase_enthalpy_balances.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_phase_energy_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_phase_energy_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_phase_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">BalanceTypeNotSupportedError</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> OD control volumes do not support &quot;</span>
                 <span class="s2">&quot;add_phase_energy_balances.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_total_energy_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_total_energy_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_energy_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_energy_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">BalanceTypeNotSupportedError</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> OD control volumes do not support &quot;</span>
                 <span class="s2">&quot;add_total_energy_balances.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_total_pressure_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_pressure_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_pressure_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_total_pressure_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_pressure_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_pressure_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                     <span class="n">has_pressure_change</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                     <span class="n">custom_term</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1517,25 +1538,25 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pressure_balance</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_phase_pressure_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_pressure_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_pressure_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_phase_pressure_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_phase_pressure_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_pressure_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">BalanceTypeNotSupportedError</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> OD control volumes do not support &quot;</span>
                 <span class="s2">&quot;add_phase_pressure_balances.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_phase_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_phase_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_phase_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_phase_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_phase_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">BalanceTypeNotSupportedError</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> OD control volumes do not support &quot;</span>
                 <span class="s2">&quot;add_phase_momentum_balances.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.add_total_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.add_total_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.add_total_momentum_balances"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.add_total_momentum_balances">[docs]</a>    <span class="k">def</span> <span class="nf">add_total_momentum_balances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">BalanceTypeNotSupportedError</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> OD control volumes do not support &quot;</span>
                 <span class="s2">&quot;add_total_momentum_balances.&quot;</span>
                 <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.model_check"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.model_check">[docs]</a>    <span class="k">def</span> <span class="nf">model_check</span><span class="p">(</span><span class="n">blk</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.model_check"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.model_check">[docs]</a>    <span class="k">def</span> <span class="nf">model_check</span><span class="p">(</span><span class="n">blk</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This method executes the model_check methods on the associated state</span>
 <span class="sd">        blocks (if they exist). This method is generally called by a unit model</span>
@@ -1572,7 +1593,7 @@
                              <span class="s1">&#39;model_check method to the associated &#39;</span>
                              <span class="s1">&#39;ReactionBlock class.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.initialize"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">state_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">optarg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.initialize"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">state_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">optarg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;ipopt&#39;</span><span class="p">,</span> <span class="n">hold_state</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Initialisation routine for 0D control volume (default solver ipopt)</span>
@@ -1641,7 +1662,7 @@
 
         <span class="k">return</span> <span class="n">flags</span></div>
 
-<div class="viewcode-block" id="ControlVolume0dData.release_state"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0dData.release_state">[docs]</a>    <span class="k">def</span> <span class="nf">release_state</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="ControlVolume0DBlockData.release_state"><a class="viewcode-back" href="../../../core/control_volume_0d.html#idaes.core.control_volume0d.ControlVolume0DBlockData.release_state">[docs]</a>    <span class="k">def</span> <span class="nf">release_state</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">flags</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Method to release state variables fixed during initialisation.</span>
 
@@ -1717,27 +1738,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

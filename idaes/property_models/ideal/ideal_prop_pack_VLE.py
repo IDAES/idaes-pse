@@ -27,6 +27,7 @@ import logging
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
     value, Var, exp
 from pyomo.opt import SolverFactory, TerminationCondition
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -636,174 +637,188 @@ class IdealStateBlockData(StateBlockData):
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
 
-    def temperature_bubble_point(blk, pressure=None, mole_frac=None,
-                                 options={"initial_guess": 298.15,
-                                          "tol": 1e-3,
-                                          "deltaT": 1e-3,
-                                          "max_iter": 1e4}):
+    # Property package utility functions
+    def calculate_bubble_point_temperature(self, pressure=None, mole_frac=None,
+                                           clear_components=True):
         """"To compute the bubble point temperature of the mixture."""
-        n = 0
-        T_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaT = options["deltaT"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - T_guess) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / pressure
-                s = s + k * value(mole_frac[j])
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                T_guess = T_guess - deltaT
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-            else:
-                T_guess = T_guess + deltaT
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-        return round(T_guess, 3)
 
-    def temperature_dew_point(blk, pressure=None, mole_frac=None,
-                              options={"initial_guess": 298.15,
-                                       "tol": 1e-3,
-                                       "deltaT": 1e-3,
-                                       "max_iter": 1e4}):
+        try:
+            calculate_variable_from_constraint(self.temperature_bubble,
+                                               self.eq_bubble_temp)
+        except AttributeError:
+            self.temperature_bubble = Var(initialize=298.15,
+                                          doc="Bubble point temperature (K)")
+
+            def rule_psat_bubble(m, j):
+                return self.pressure_critical[j] * \
+                    exp((self.pressure_sat_coeff[j, 'A'] *
+                        (1 - self.temperature_bubble /
+                        self.temperature_critical[j]) +
+                        self.pressure_sat_coeff[j, 'B'] *
+                        (1 - self.temperature_bubble /
+                        self.temperature_critical[j])**1.5 +
+                        self.pressure_sat_coeff[j, 'C'] *
+                        (1 - self.temperature_bubble /
+                        self.temperature_critical[j])**3 +
+                        self.pressure_sat_coeff[j, 'D'] *
+                        (1 - self.temperature_bubble /
+                        self.temperature_critical[j])**6) /
+                        (1 - (1 - self.temperature_bubble /
+                              self.temperature_critical[j])))
+            self._p_sat_bubbleT = Expression(self.component_list_ref,
+                                             rule=rule_psat_bubble)
+
+            def rule_temp_bubble(self):
+                return sum(self._p_sat_bubbleT[i] * mole_frac[i]
+                           for i in self.component_list_ref) - pressure == 0
+            self.eq_bubble_temp = Constraint(rule=rule_temp_bubble)
+            calculate_variable_from_constraint(self.temperature_bubble,
+                                               self.eq_bubble_temp)
+
+        return self.temperature_bubble.value
+
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
+        if clear_components is True:
+            self.del_component(self.eq_bubble_temp)
+            self.del_component(self.temperature_bubble)
+
+    def calculate_dew_point_temperature(self, pressure=None, mole_frac=None,
+                                        clear_components=True):
         """"To compute the dew point temperature of the mixture."""
-        n = 0
-        T_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaT = options["deltaT"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - T_guess) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / pressure
-                s = s + value(mole_frac[j]) / k
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                n = n + 1
-                T_guess = T_guess + deltaT
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-            else:
-                n = n + 1
-                T_guess = T_guess - deltaT
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-        return round(T_guess, 3)
 
-    def pressure_bubble_point(blk, temperature=None, mole_frac=None,
-                              options={"initial_guess": 101325,
-                                       "tol": 1e-3,
-                                       "deltaP": 10,
-                                       "max_iter": 1e4}):
+        try:
+            calculate_variable_from_constraint(self.temperature_dew,
+                                               self.eq_dew_temp)
+        except AttributeError:
+            self.temperature_dew = Var(initialize=298.15,
+                                       doc="Dew point temperature (K)")
+
+            def rule_psat_dew(m, j):
+                return self.pressure_critical[j] * \
+                    exp((self.pressure_sat_coeff[j, 'A'] *
+                        (1 - self.temperature_dew /
+                        self.temperature_critical[j]) +
+                        self.pressure_sat_coeff[j, 'B'] *
+                        (1 - self.temperature_dew /
+                        self.temperature_critical[j])**1.5 +
+                        self.pressure_sat_coeff[j, 'C'] *
+                        (1 - self.temperature_dew /
+                        self.temperature_critical[j])**3 +
+                        self.pressure_sat_coeff[j, 'D'] *
+                        (1 - self.temperature_dew /
+                        self.temperature_critical[j])**6) /
+                        (1 - (1 - self.temperature_dew /
+                              self.temperature_critical[j])))
+            self._p_sat_dewT = Expression(self.component_list_ref,
+                                          rule=rule_psat_dew)
+
+            def rule_temp_dew(self):
+                return pressure * sum(mole_frac[i] / self._p_sat_dewT[i]
+                                      for i in self.component_list_ref) \
+                    - 1 == 0
+            self.eq_dew_temp = Constraint(rule=rule_temp_dew)
+
+            calculate_variable_from_constraint(self.temperature_dew,
+                                               self.eq_dew_temp)
+
+        return self.temperature_dew.value
+
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
+        if clear_components is True:
+            self.del_component(self.eq_dew_temp)
+            self.del_component(self.temperature_dew)
+
+    def calculate_bubble_point_pressure(self, temperature=None, mole_frac=None,
+                                        clear_components=True):
         """"To compute the bubble point pressure of the mixture."""
-        n = 0
-        P_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaP = options["deltaP"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - temperature) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / P_guess
-                s = s + k * value(mole_frac[j])
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaP")
-                    break
-                P_guess = P_guess + deltaP
-            else:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaP")
-                    break
-                P_guess = P_guess - deltaP
-        return round(P_guess, 3)
+        try:
+            calculate_variable_from_constraint(self.pressure_bubble,
+                                               self.eq_bubble_pressure)
+        except AttributeError:
+            self.pressure_bubble = Var(initialize=298.15,
+                                       doc="Bubble point pressure (Pa)")
 
-    def pressure_dew_point(blk, temperature=None, mole_frac=None,
-                           options={"initial_guess": 101325,
-                                    "tol": 1e-3,
-                                    "deltaP": 10,
-                                    "max_iter": 1e4}):
+            def rule_psat_bubble(m, j):
+                return self.pressure_critical[j] * \
+                    exp((self.pressure_sat_coeff[j, 'A'] *
+                        (1 - self.temperature /
+                        self.temperature_critical[j]) +
+                        self.pressure_sat_coeff[j, 'B'] *
+                        (1 - self.temperature /
+                        self.temperature_critical[j])**1.5 +
+                        self.pressure_sat_coeff[j, 'C'] *
+                        (1 - self.temperature /
+                        self.temperature_critical[j])**3 +
+                        self.pressure_sat_coeff[j, 'D'] *
+                        (1 - self.temperature /
+                        self.temperature_critical[j])**6) /
+                        (1 - (1 - self.temperature /
+                              self.temperature_critical[j])))
+            self._p_sat_bubbleP = Expression(self.component_list_ref,
+                                             rule=rule_psat_bubble)
+
+            def rule_pressure_bubble(self):
+                return sum(self._p_sat_bubbleP[i] * mole_frac[i]
+                           for i in self.component_list_ref) \
+                    - self.pressure_bubble == 0
+            self.eq_bubble_pressure = Constraint(rule=rule_pressure_bubble)
+
+            calculate_variable_from_constraint(self.pressure_bubble,
+                                               self.eq_bubble_pressure)
+
+        return self.pressure_bubble.value
+
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
+        if clear_components is True:
+            self.del_component(self.eq_bubble_pressure)
+            self.del_component(self.pressure_bubble)
+
+    def calculate_dew_point_pressure(self, temperature=None, mole_frac=None,
+                                     clear_components=True):
         """"To compute the dew point pressure of the mixture."""
-        n = 0
-        P_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaP = options["deltaP"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - temperature) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / P_guess
-                s = s + value(mole_frac[j]) / k
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-                P_guess = P_guess - deltaP
-            else:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-                P_guess = P_guess + deltaP
-        return round(P_guess, 3)
+        try:
+            calculate_variable_from_constraint(self.pressure_dew,
+                                               self.eq_dew_pressure)
+        except AttributeError:
+            self.pressure_dew = Var(initialize=298.15,
+                                    doc="Dew point pressure (Pa)")
+
+            def rule_psat_dew(m, j):
+                return self.pressure_critical[j] * \
+                    exp((self.pressure_sat_coeff[j, 'A'] *
+                        (1 - self.temperature /
+                        self.temperature_critical[j]) +
+                        self.pressure_sat_coeff[j, 'B'] *
+                        (1 - self.temperature /
+                        self.temperature_critical[j])**1.5 +
+                        self.pressure_sat_coeff[j, 'C'] *
+                        (1 - self.temperature /
+                        self.temperature_critical[j])**3 +
+                        self.pressure_sat_coeff[j, 'D'] *
+                        (1 - self.temperature /
+                        self.temperature_critical[j])**6) /
+                        (1 - (1 - self.temperature /
+                              self.temperature_critical[j])))
+            self._p_sat_dewP = Expression(self.component_list_ref,
+                                          rule=rule_psat_dew)
+
+            def rule_pressure_dew(self):
+                return self.pressure_dew * \
+                    sum(mole_frac[i] / self._p_sat_dewP[i]
+                        for i in self.component_list_ref) \
+                    - 1 == 0
+            self.eq_dew_pressure = Constraint(rule=rule_pressure_dew)
+
+            calculate_variable_from_constraint(self.pressure_dew,
+                                               self.eq_dew_pressure)
+
+        return self.pressure_dew.value
+
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
+        if clear_components is True:
+            self.del_component(self.eq_dew_pressure)
+            self.del_component(self.pressure_dew)

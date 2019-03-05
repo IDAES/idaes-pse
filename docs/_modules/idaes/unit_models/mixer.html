@@ -19,32 +19,35 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -93,8 +96,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -183,6 +187,7 @@
                            <span class="n">PositiveReals</span><span class="p">,</span>
                            <span class="n">Reals</span><span class="p">,</span>
                            <span class="n">Set</span><span class="p">,</span>
+                           <span class="n">RangeSet</span><span class="p">,</span>
                            <span class="n">SolverFactory</span><span class="p">,</span>
                            <span class="n">TerminationCondition</span><span class="p">,</span>
                            <span class="n">Var</span><span class="p">)</span>
@@ -190,7 +195,7 @@
 <span class="kn">from</span> <span class="nn">pyutilib.enum</span> <span class="k">import</span> <span class="n">Enum</span>
 
 <span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">declare_process_block_class</span><span class="p">,</span>
-                        <span class="n">UnitBlockData</span><span class="p">,</span>
+                        <span class="n">UnitModelBlockData</span><span class="p">,</span>
                         <span class="n">useDefault</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.config</span> <span class="k">import</span> <span class="p">(</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
                                     <span class="n">is_state_block</span><span class="p">,</span>
@@ -216,11 +221,12 @@
 <span class="n">MomentumMixingType</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
     <span class="s1">&#39;none&#39;</span><span class="p">,</span>
     <span class="s1">&#39;minimize&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;equality&#39;</span><span class="p">)</span>
+    <span class="s1">&#39;equality&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;minimize_and_equality&#39;</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="MixerData"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;Mixer&quot;</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">MixerData</span><span class="p">(</span><span class="n">UnitBlockData</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">MixerData</span><span class="p">(</span><span class="n">UnitModelBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This is a general purpose model for a Mixer block with the IDAES modeling</span>
 <span class="sd">    framework. This block can be used either as a stand-alone Mixer unit</span>
@@ -238,7 +244,7 @@
 <span class="sd">    in these cases the unit model developer should write their own mixing</span>
 <span class="sd">    equations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">UnitBlockData</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">()</span>
+    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">UnitModelBlockData</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">()</span>
     <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;property_package&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
         <span class="n">domain</span><span class="o">=</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
@@ -317,7 +323,12 @@
 <span class="s2">**MomentumMixingType.minimize** - mixed stream has pressure equal to the</span>
 <span class="s2">minimimum pressure of the incoming streams (uses smoothMin operator),</span>
 <span class="s2">**MomentumMixingType.equality** - enforces equality of pressure in mixed and</span>
-<span class="s2">all incoming streams.}&quot;&quot;&quot;</span><span class="p">))</span>
+<span class="s2">all incoming streams.,</span>
+<span class="s2">**MomentumMixingType.minimize_and_equality** - add constraints for pressure</span>
+<span class="s2">equal to the minimum pressure of the inlets and constraints for equality of</span>
+<span class="s2">pressure in mixed and all incoming streams. When the model is initially built,</span>
+<span class="s2">the equality constraints are deactivated.  This option is useful for switching</span>
+<span class="s2">between flow and pressure driven simulations.}&quot;&quot;&quot;</span><span class="p">))</span>
     <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;mixed_state_block&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">domain</span><span class="o">=</span><span class="n">is_state_block</span><span class="p">,</span>
@@ -357,7 +368,7 @@
         <span class="c1"># Call super.build()</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">MixerData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
 
-        <span class="c1"># Call setup methods from ControlVolumeBase</span>
+        <span class="c1"># Call setup methods from ControlVolumeBlockData</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_get_property_package</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_get_indexing_sets</span><span class="p">()</span>
 
@@ -402,6 +413,13 @@
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">momentum_mixing_type</span> <span class="o">==</span> <span class="n">MomentumMixingType</span><span class="o">.</span><span class="n">equality</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_pressure_equality_equations</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="o">=</span><span class="n">inlet_blocks</span><span class="p">,</span>
                                                  <span class="n">mixed_block</span><span class="o">=</span><span class="n">mixed_block</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">momentum_mixing_type</span> <span class="o">==</span> \
+            <span class="n">MomentumMixingType</span><span class="o">.</span><span class="n">minimize_and_equality</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_pressure_minimization_equations</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="o">=</span><span class="n">inlet_blocks</span><span class="p">,</span>
+                                                     <span class="n">mixed_block</span><span class="o">=</span><span class="n">mixed_block</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_pressure_equality_equations</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="o">=</span><span class="n">inlet_blocks</span><span class="p">,</span>
+                                                 <span class="n">mixed_block</span><span class="o">=</span><span class="n">mixed_block</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pressure_equality_constraints</span><span class="o">.</span><span class="n">deactivate</span><span class="p">()</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">momentum_mixing_type</span> <span class="o">==</span> <span class="n">MomentumMixingType</span><span class="o">.</span><span class="n">none</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">else</span><span class="p">:</span>
@@ -429,7 +447,7 @@
                         <span class="s2">&quot;num_inlets arguments, which were not consistent (&quot;</span>
                         <span class="s2">&quot;length of inlet_list was not equal to num_inlets). &quot;</span>
                         <span class="s2">&quot;PLease check your arguments for consistency, and &quot;</span>
-                        <span class="s2">&quot;note that it is only necessry to provide one of &quot;</span>
+                        <span class="s2">&quot;note that it is only necessary to provide one of &quot;</span>
                         <span class="s2">&quot;these arguments.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">inlet_list</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_inlets</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># If no arguments provided for inlets, default to num_inlets = 2</span>
@@ -613,10 +631,9 @@
 <span class="sd">        comparisons of each inlet to the minimum pressure so far, using</span>
 <span class="sd">        the IDAES smooth minimum fuction.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;inlet_idx&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span> <span class="o">=</span> <span class="n">RangeSet</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="p">))</span>
         <span class="c1"># Add variables</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span>
-                             <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">minimum_pressure</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
                                     <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span><span class="p">,</span>
                                     <span class="n">doc</span><span class="o">=</span><span class="s1">&#39;Variable for calculating &#39;</span>
@@ -655,10 +672,8 @@
 <span class="sd">        constraints equal to the number of inlets, enforcing equality between</span>
 <span class="sd">        all inlets and the mixed stream.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Add indexing Set</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span> <span class="o">=</span> <span class="n">Set</span><span class="p">(</span><span class="n">initialize</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span>
-                             <span class="n">ordered</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;inlet_idx&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span> <span class="o">=</span> <span class="n">RangeSet</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">inlet_blocks</span><span class="p">))</span>
         <span class="c1"># Create equality constraints</span>
         <span class="nd">@self</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
                          <span class="bp">self</span><span class="o">.</span><span class="n">inlet_idx</span><span class="p">,</span>
@@ -718,6 +733,36 @@
                              <span class="s1">&#39;model checks. To correct this, add a &#39;</span>
                              <span class="s1">&#39;model_check method to the associated &#39;</span>
                              <span class="s1">&#39;StateBlock class.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">blk</span><span class="o">.</span><span class="n">name</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="MixerData.use_minimum_inlet_pressure_constraint"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.use_minimum_inlet_pressure_constraint">[docs]</a>    <span class="k">def</span> <span class="nf">use_minimum_inlet_pressure_constraint</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Activate the mixer pressure = mimimum inlet pressure constraint and</span>
+<span class="sd">        deactivate the mixer pressure and all inlet pressures are equal</span>
+<span class="sd">        constraints. This should only be used when momentum_mixing_type ==</span>
+<span class="sd">        MomentumMixingType.minimize_and_equality.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">momentum_mixing_type</span> <span class="o">!=</span> \
+            <span class="n">MomentumMixingType</span><span class="o">.</span><span class="n">minimize_and_equality</span><span class="p">:</span>
+            <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+<span class="sd">&quot;&quot;&quot;use_minimum_inlet_pressure_constraint() can only be used when</span>
+<span class="sd">momentum_mixing_type == MomentumMixingType.minimize_and_equality&quot;&quot;&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minimum_pressure_constraint</span><span class="o">.</span><span class="n">activate</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pressure_equality_constraints</span><span class="o">.</span><span class="n">deactivate</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="MixerData.use_equal_pressure_constraint"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.use_equal_pressure_constraint">[docs]</a>    <span class="k">def</span> <span class="nf">use_equal_pressure_constraint</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Deactivate the mixer pressure = mimimum inlet pressure constraint and</span>
+<span class="sd">        activate the mixer pressure and all inlet pressures are equal</span>
+<span class="sd">        constraints. This should only be used when momentum_mixing_type ==</span>
+<span class="sd">        MomentumMixingType.minimize_and_equality.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">momentum_mixing_type</span> <span class="o">!=</span> \
+            <span class="n">MomentumMixingType</span><span class="o">.</span><span class="n">minimize_and_equality</span><span class="p">:</span>
+            <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+<span class="sd">&quot;&quot;&quot;use_equal_pressure_constraint() can only be used when</span>
+<span class="sd">momentum_mixing_type == MomentumMixingType.minimize_and_equality&quot;&quot;&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minimum_pressure_constraint</span><span class="o">.</span><span class="n">deactivate</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pressure_equality_constraints</span><span class="o">.</span><span class="n">activate</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="MixerData.initialize"><a class="viewcode-back" href="../../../models/mixer.html#idaes.unit_models.mixer.MixerData.initialize">[docs]</a>    <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">blk</span><span class="p">,</span> <span class="n">outlvl</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">optarg</span><span class="o">=</span><span class="p">{},</span>
                    <span class="n">solver</span><span class="o">=</span><span class="s1">&#39;ipopt&#39;</span><span class="p">,</span> <span class="n">hold_state</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -868,27 +913,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

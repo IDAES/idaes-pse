@@ -23,6 +23,7 @@ from pyomo.environ import (Constraint,
                            PositiveReals,
                            Reals,
                            Set,
+                           RangeSet,
                            SolverFactory,
                            TerminationCondition,
                            Var)
@@ -56,7 +57,8 @@ MixingType = Enum(
 MomentumMixingType = Enum(
     'none',
     'minimize',
-    'equality')
+    'equality',
+    'minimize_and_equality')
 
 
 @declare_process_block_class("Mixer")
@@ -157,7 +159,12 @@ pressure of incoming streams,
 **MomentumMixingType.minimize** - mixed stream has pressure equal to the
 minimimum pressure of the incoming streams (uses smoothMin operator),
 **MomentumMixingType.equality** - enforces equality of pressure in mixed and
-all incoming streams.}"""))
+all incoming streams.,
+**MomentumMixingType.minimize_and_equality** - add constraints for pressure
+equal to the minimum pressure of the inlets and constraints for equality of
+pressure in mixed and all incoming streams. When the model is initially built,
+the equality constraints are deactivated.  This option is useful for switching
+between flow and pressure driven simulations.}"""))
     CONFIG.declare("mixed_state_block", ConfigValue(
         default=None,
         domain=is_state_block,
@@ -242,6 +249,13 @@ linked to all inlet states and the mixed state,
         elif self.config.momentum_mixing_type == MomentumMixingType.equality:
             self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
                                                  mixed_block=mixed_block)
+        elif self.config.momentum_mixing_type == \
+            MomentumMixingType.minimize_and_equality:
+            self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
+                                                     mixed_block=mixed_block)
+            self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
+                                                 mixed_block=mixed_block)
+            self.pressure_equality_constraints.deactivate()
         elif self.config.momentum_mixing_type == MomentumMixingType.none:
             pass
         else:
@@ -269,7 +283,7 @@ linked to all inlet states and the mixed state,
                         "num_inlets arguments, which were not consistent ("
                         "length of inlet_list was not equal to num_inlets). "
                         "PLease check your arguments for consistency, and "
-                        "note that it is only necessry to provide one of "
+                        "note that it is only necessary to provide one of "
                         "these arguments.".format(self.name))
         elif self.config.inlet_list is None and self.config.num_inlets is None:
             # If no arguments provided for inlets, default to num_inlets = 2
@@ -453,10 +467,9 @@ linked to all inlet states and the mixed state,
         comparisons of each inlet to the minimum pressure so far, using
         the IDAES smooth minimum fuction.
         """
+        if not hasattr(self, "inlet_idx"):
+            self.inlet_idx = RangeSet(len(inlet_blocks))
         # Add variables
-        self.inlet_idx = Set(initialize=range(1, len(inlet_blocks)+1),
-                             ordered=True)
-
         self.minimum_pressure = Var(self.time_ref,
                                     self.inlet_idx,
                                     doc='Variable for calculating '
@@ -495,10 +508,8 @@ linked to all inlet states and the mixed state,
         constraints equal to the number of inlets, enforcing equality between
         all inlets and the mixed stream.
         """
-        # Add indexing Set
-        self.inlet_idx = Set(initialize=range(1, len(inlet_blocks)+1),
-                             ordered=True)
-
+        if not hasattr(self, "inlet_idx"):
+            self.inlet_idx = RangeSet(len(inlet_blocks))
         # Create equality constraints
         @self.Constraint(self.time_ref,
                          self.inlet_idx,
@@ -558,6 +569,36 @@ linked to all inlet states and the mixed state,
                              'model checks. To correct this, add a '
                              'model_check method to the associated '
                              'StateBlock class.'.format(blk.name))
+
+    def use_minimum_inlet_pressure_constraint(self):
+        """Activate the mixer pressure = mimimum inlet pressure constraint and
+        deactivate the mixer pressure and all inlet pressures are equal
+        constraints. This should only be used when momentum_mixing_type ==
+        MomentumMixingType.minimize_and_equality.
+        """
+        if self.config.momentum_mixing_type != \
+            MomentumMixingType.minimize_and_equality:
+            _log.warning(
+"""use_minimum_inlet_pressure_constraint() can only be used when
+momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
+            return
+        self.minimum_pressure_constraint.activate()
+        self.pressure_equality_constraints.deactivate()
+
+    def use_equal_pressure_constraint(self):
+        """Deactivate the mixer pressure = mimimum inlet pressure constraint and
+        activate the mixer pressure and all inlet pressures are equal
+        constraints. This should only be used when momentum_mixing_type ==
+        MomentumMixingType.minimize_and_equality.
+        """
+        if self.config.momentum_mixing_type != \
+            MomentumMixingType.minimize_and_equality:
+            _log.warning(
+"""use_equal_pressure_constraint() can only be used when
+momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
+            return
+        self.minimum_pressure_constraint.deactivate()
+        self.pressure_equality_constraints.activate()
 
     def initialize(blk, outlvl=0, optarg={},
                    solver='ipopt', hold_state=True):
