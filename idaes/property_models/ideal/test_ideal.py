@@ -162,25 +162,25 @@ def test_solve():
 
 
 def test_bubbleT_inlet_state_blocks():
-    assert m.fs.state_block_vl.temperature_bubble_point(
+    assert m.fs.state_block_vl.calculate_bubble_point_temperature(
         m.fs.state_block_vl.pressure, m.fs.state_block_vl.mole_frac) == \
         pytest.approx(365.347, abs=1e-2)
 
 
 def test_dewT_inlet_state_blocks():
-    assert m.fs.state_block_vl.temperature_dew_point(
+    assert m.fs.state_block_vl.calculate_dew_point_temperature(
         m.fs.state_block_vl.pressure, m.fs.state_block_vl.mole_frac) == \
         pytest.approx(372.02, abs=1e-2)
 
 
 def test_bubbleP_inlet_state_blocks():
-    assert m.fs.state_block_vl.pressure_bubble_point(
+    assert m.fs.state_block_vl.calculate_bubble_point_pressure(
         m.fs.state_block_vl.temperature, m.fs.state_block_vl.mole_frac) == \
         pytest.approx(109479.22, abs=1e-2)
 
 
 def test_dewP_inlet_state_blocks():
-    assert m.fs.state_block_vl.pressure_dew_point(
+    assert m.fs.state_block_vl.calculate_dew_point_pressure(
         m.fs.state_block_vl.temperature, m.fs.state_block_vl.mole_frac) == \
         pytest.approx(89819.72, abs=1e-2)
 
