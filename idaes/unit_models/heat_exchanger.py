@@ -34,6 +34,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault,
                         ProcessBlockData)
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
 
 _log = logging.getLogger(__name__)
@@ -64,17 +65,6 @@ def delta_temperature_amtd_rule(b, t):
     dT1 = b.delta_temperature_in[t]
     dT2 = b.delta_temperature_out[t]
     return (dT1 + dT2) * 0.5
-
-def delta_temperature_lmtd_approx_chen_rule(b, t):
-    """
-    This is a rule for a temperaure difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using log-mean temperature
-    difference (LMTD) approximation given by Chen (1987).  It can be
-    supplied to "delta_temperature_rule" HeatExchanger configuration option.
-    """
-    dT1 = b.delta_temperature_in[t]
-    dT2 = b.delta_temperature_out[t]
-    return ((dT1**(0.3275) + dT2**(0.3275))/2.0)**(1.0/0.3275)
 
 def _heat_transfer_rule(b, t):
     """
@@ -332,6 +322,9 @@ class HeatExchangerData(UnitModelBlockData):
             elif b.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
                 return b.side_1.properties_in[t].temperature -\
                        b.side_2.properties_out[t].temperature
+            else:
+                raise ConfigurationError("Flow pattern {} not supported".format(
+                    b.config.flow_pattern))
         @self.Expression(self.time_ref,
             doc="Temperature difference at the side 1 outlet end")
         def delta_temperature_out(b, t):
