@@ -54,7 +54,7 @@ class _IdealStateBlock(StateBlock):
 
     def initialize(blk, flow_mol=None, mole_frac=None,
                    temperature=None, pressure=None,
-                   hold_state=False, outlvl=0,
+                   hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialisation routine for property package.
@@ -85,6 +85,9 @@ class _IdealStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
+
+        _log.info('Starting {} initialisation'.format(blk.name))
+
         # Fix state variables if not already fixed
         Fflag = {}
         Xflag = {}
@@ -189,13 +192,16 @@ class _IdealStateBlock(StateBlock):
             if outlvl > 0:
                 if results.solver.termination_condition \
                         == TerminationCondition.optimal:
-                    print(blk, "Initialisation step 1 for properties complete")
+                    _log.info("Initialisation step 1 for "
+                              "{} completed".format(blk.name))
                 else:
-                    print(blk, "Initialisation step 1 for properties failed")
+                    _log.warning("Initialisation step 1 for "
+                                 "{} failed".format(blk.name))
 
         else:
             if outlvl > 0:
-                print(blk, "Initialisation step 1 for properties skipped")
+                _log.info("Initialisation step 1 for "
+                          "{} skipped".format(blk.name))
 
         for k in blk.keys():
             blk[k].eq_total.activate()
@@ -213,9 +219,11 @@ class _IdealStateBlock(StateBlock):
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
-                print(blk, "Initialisation step 2 for properties complete")
+                _log.info("Initialisation step 2 for "
+                          "{} completed".format(blk.name))
             else:
-                print(blk, "Initialisation step 2 for properties failed")
+                _log.warning("Initialisation step 2 for "
+                             "{} failed".format(blk.name))
 
         for k in blk.keys():
             if not blk[k].config.has_phase_equilibrium and \
@@ -249,20 +257,16 @@ class _IdealStateBlock(StateBlock):
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
-                print(blk, "Initialisation step 3 for properties complete")
+                _log.info("Initialisation step 3 for "
+                          "{} completed".format(blk.name))
             else:
-                print(blk, "Initialisation step 3 for properties failed")
+                _log.warning("Initialisation step 3 for "
+                             "{} failed".format(blk.name))
 
         for k in blk.keys():
             if (blk[k].config.defined_state is False):
                 blk[k].eq_mol_frac_out.activate()
 
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                print(blk, "Initialisation step for properties complete")
-            else:
-                print(blk, "Initialisation step for properties failed")
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         flags = {"Fflag": Fflag,
@@ -270,14 +274,13 @@ class _IdealStateBlock(StateBlock):
                  "Pflag": Pflag,
                  "Tflag": Tflag}
 
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
-
         if hold_state is True:
             return flags
         else:
             blk.release_state(flags)
+
+        if outlvl > 0:
+            _log.info("Initialisation completed for {}".format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''
@@ -304,7 +307,7 @@ class _IdealStateBlock(StateBlock):
 
         if outlvl > 0:
             if outlvl > 0:
-                _log.info('{} State Released.'.format(blk.name))
+                _log.info('{} states released.'.format(blk.name))
 
 
 @declare_process_block_class("IdealStateBlock",
