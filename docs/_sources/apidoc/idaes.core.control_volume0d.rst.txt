@@ -1,7 +1,0 @@
-idaes.core.control\_volume0d module
-===================================
-
-.. automodule:: idaes.core.control_volume0d
-    :members:
-    :undoc-members:
-    :show-inheritance:

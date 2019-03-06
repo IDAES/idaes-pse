@@ -1,7 +1,0 @@
-idaes.dmf.errors module
-=======================
-
-.. automodule:: idaes.dmf.errors
-    :members:
-    :undoc-members:
-    :show-inheritance:

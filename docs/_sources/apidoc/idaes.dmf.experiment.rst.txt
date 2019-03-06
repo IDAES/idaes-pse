@@ -1,7 +1,0 @@
-idaes.dmf.experiment module
-===========================
-
-.. automodule:: idaes.dmf.experiment
-    :members:
-    :undoc-members:
-    :show-inheritance:

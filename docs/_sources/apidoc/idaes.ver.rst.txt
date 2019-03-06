@@ -1,7 +1,0 @@
-idaes.ver module
-================
-
-.. automodule:: idaes.ver
-    :members:
-    :undoc-members:
-    :show-inheritance:
