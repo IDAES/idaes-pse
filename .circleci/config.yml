@@ -11,7 +11,7 @@ shared: &shared
     - run: sudo python setup.py -q install
     - run: cd docs_rst && make html
 # - run: cd docs_rst && make doctest
-    - run: pytest idaes -m "not nocircleci"
+    - run: pytest -m "not nocircleci"
     - run: coverage report
     - run: coveralls
 jobs:
