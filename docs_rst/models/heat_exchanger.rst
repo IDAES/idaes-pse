@@ -36,13 +36,13 @@ override the default temperature difference calculation.
           "side_2":{"property_package": model.fs.properties}})
 
   model.fs.heat_exchanger.area.fix(1000)
-  model.fs.heat_exchanger.heat_transfer_coefficient[0].fix(100)
-  model.fs.heat_exchanger.inlet_1.flow_mol[0].fix(100)
-  model.fs.heat_exchanger.inlet_1.pressure[0].fix(101325)
-  model.fs.heat_exchanger.inlet_1.enth_mol[0].fix(4000)
-  model.fs.heat_exchanger.inlet_2.flow_mol[0].fix(100)
-  model.fs.heat_exchanger.inlet_2.pressure[0].fix(101325)
-  model.fs.heat_exchanger.inlet_2.enth_mol[0].fix(3000)
+  model.fs.heat_exchanger.overall_heat_transfer_coefficient[0].fix(100)
+  model.fs.heat_exchanger.inlet_1.flow_mol.fix(100)
+  model.fs.heat_exchanger.inlet_1.pressure.fix(101325)
+  model.fs.heat_exchanger.inlet_1.enth_mol.fix(4000)
+  model.fs.heat_exchanger.inlet_2.flow_mol.fix(100)
+  model.fs.heat_exchanger.inlet_2.pressure.fix(101325)
+  model.fs.heat_exchanger.inlet_2.enth_mol.fix(3000)
 
   # Initialize the model
   model.fs.heat_exchanger.initialize()
