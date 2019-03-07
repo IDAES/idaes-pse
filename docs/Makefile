@@ -257,13 +257,8 @@ linkcheck:
 
 .PHONY: doctest
 doctest:
-<<<<<<< HEAD:docs/Makefile
 	mkdir -p $(BUILDDIR)/doctest
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
-=======
-	$(SPHINXBUILD) -b doctest \
-		$(ALLSPHINXOPTS) $(BUILDDIR)/doctest
->>>>>>> b9f06bf9a7d5f1cca677352acfce5949d7a61311:docs_rst/Makefile
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
