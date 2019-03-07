@@ -139,13 +139,11 @@ class SphinxItem(pytest.Item):
                     args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
                 self.successes, self.failures = self._parse_output(proc.stdout)
-                rc = proc.wait()
-                if rc != 0:
-                    raise RuntimeError(f"non-zero exit code: {rc}")
+                proc.wait()
                 self.total_successes = sum(self.successes.values())
                 self.total_failures = sum((x[0] for x in self.failures.values()))
             except Exception as exc:
-                print(f"Unexpected failure in Sphinx command: {exc}")
+                print(f"Unexpected failure in Sphinx doctest command: {exc}")
                 raise SphinxCommandFailed(self.cmd, str(exc))
             # report a test failure
             if self.total_failures > 0:
@@ -177,7 +175,7 @@ class SphinxItem(pytest.Item):
         """
 
         def _msgblock(messages):
-            lines, indent, marker = [], None, "  - "
+            lines, indent, marker = [], None, " ** "
             for m in messages:
                 first_line = marker
                 indent = " " * len(first_line)
