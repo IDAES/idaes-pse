@@ -194,6 +194,7 @@ class SphinxItem(pytest.Item):
         failed_msg, failed_msgs = None, []
         for line_bytes in input_stream:
             line = line_bytes.decode('utf-8').rstrip()
+            print(line)
             try:
                 if state == "ok":
                     if line.startswith('****'):
