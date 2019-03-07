@@ -19,32 +19,35 @@
   
 
   
+  <script type="text/javascript" src="../../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../../_static/doctools.js"></script>
+        <script type="text/javascript" src="../../../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../../../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
-
-  
-  <script src="../../../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -93,8 +96,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -178,7 +182,9 @@
 
 <span class="kn">import</span> <span class="nn">logging</span>
 
-<span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="p">(</span><span class="n">Expression</span><span class="p">,</span>
+<span class="kn">from</span> <span class="nn">pyomo.environ</span> <span class="k">import</span> <span class="p">(</span><span class="n">Constraint</span><span class="p">,</span>
+                           <span class="n">Expression</span><span class="p">,</span>
+                           <span class="n">Reference</span><span class="p">,</span>
                            <span class="n">Set</span><span class="p">,</span>
                            <span class="n">SolverFactory</span><span class="p">,</span>
                            <span class="n">TerminationCondition</span><span class="p">,</span>
@@ -189,7 +195,7 @@
 <span class="kn">from</span> <span class="nn">pyutilib.enum</span> <span class="k">import</span> <span class="n">Enum</span>
 
 <span class="kn">from</span> <span class="nn">idaes.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">declare_process_block_class</span><span class="p">,</span>
-                        <span class="n">UnitBlockData</span><span class="p">,</span>
+                        <span class="n">UnitModelBlockData</span><span class="p">,</span>
                         <span class="n">useDefault</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">idaes.core.util.config</span> <span class="k">import</span> <span class="p">(</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
                                     <span class="n">is_state_block</span><span class="p">,</span>
@@ -211,9 +217,13 @@
     <span class="s1">&#39;componentFlow&#39;</span><span class="p">,</span>
     <span class="s1">&#39;phaseComponentFlow&#39;</span><span class="p">)</span>
 
+<span class="n">EnergySplittingType</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span>
+    <span class="s1">&#39;equal_temperature&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;equal_molar_enthalpy&#39;</span><span class="p">)</span>
+
 
 <div class="viewcode-block" id="SeparatorData"><a class="viewcode-back" href="../../../models/separator.html#idaes.unit_models.separator.SeparatorData">[docs]</a><span class="nd">@declare_process_block_class</span><span class="p">(</span><span class="s2">&quot;Separator&quot;</span><span class="p">)</span>
-<span class="k">class</span> <span class="nc">SeparatorData</span><span class="p">(</span><span class="n">UnitBlockData</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">SeparatorData</span><span class="p">(</span><span class="n">UnitModelBlockData</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This is a general purpose model for a Separator block with the IDAES</span>
 <span class="sd">    modeling framework. This block can be used either as a stand-alone</span>
@@ -232,7 +242,7 @@
 <span class="sd">    single unit model - in these cases the unit model developer should write</span>
 <span class="sd">    their own splitting equations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">UnitBlockData</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">()</span>
+    <span class="n">CONFIG</span> <span class="o">=</span> <span class="n">UnitModelBlockData</span><span class="o">.</span><span class="n">CONFIG</span><span class="p">()</span>
     <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;property_package&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="n">useDefault</span><span class="p">,</span>
         <span class="n">domain</span><span class="o">=</span><span class="n">is_physical_parameter_block</span><span class="p">,</span>
@@ -284,6 +294,17 @@
 <span class="s2">fraction indexed by time, outlet and components),</span>
 <span class="s2">**SplittingType.phaseComponentFlow** - split based on phase-component flows (</span>
 <span class="s2">split fraction indexed by both time, outlet, phase and components).}&quot;&quot;&quot;</span><span class="p">))</span>
+    <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;energy_split_basis&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="n">EnergySplittingType</span><span class="o">.</span><span class="n">equal_temperature</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="n">EnergySplittingType</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Type of constraint to write for energy splitting&quot;</span><span class="p">,</span>
+        <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;Argument indicating basis to use for splitting energy this is not</span>
+<span class="s2">used for when ideal_separation == True.</span>
+<span class="s2">**default** - EnergySplittingType.equal_temperature.</span>
+<span class="s2">**Valid values:** {</span>
+<span class="s2">**EnergySplittingType.equal_temperature** - outlet temperatures equal inlet</span>
+<span class="s2">**EnergySplittingType.equal_molar_enthalpy** - oulet molar enthalpies equal</span>
+<span class="s2">inlet}&quot;&quot;&quot;</span><span class="p">))</span>
     <span class="n">CONFIG</span><span class="o">.</span><span class="n">declare</span><span class="p">(</span><span class="s2">&quot;ideal_separation&quot;</span><span class="p">,</span> <span class="n">ConfigValue</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">domain</span><span class="o">=</span><span class="n">In</span><span class="p">([</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]),</span>
@@ -343,7 +364,7 @@
         <span class="c1"># Call super.build()</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">SeparatorData</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
 
-        <span class="c1"># Call setup methods from ControlVolumeBase</span>
+        <span class="c1"># Call setup methods from ControlVolumeBlockData</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_get_property_package</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_get_indexing_sets</span><span class="p">()</span>
 
@@ -532,15 +553,21 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> <span class="n">SplittingType</span><span class="o">.</span><span class="n">totalFlow</span><span class="p">:</span>
             <span class="n">sf_idx</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outlet_idx</span><span class="p">]</span>
+            <span class="n">sf_sum_idx</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">]</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
             <span class="n">sf_idx</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outlet_idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">]</span>
+            <span class="n">sf_sum_idx</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">]</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
             <span class="n">sf_idx</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">outlet_idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">]</span>
+            <span class="n">sf_sum_idx</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">]</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
             <span class="n">sf_idx</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
                       <span class="bp">self</span><span class="o">.</span><span class="n">outlet_idx</span><span class="p">,</span>
                       <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">,</span>
                       <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">]</span>
+            <span class="n">sf_sum_idx</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> split_basis has unexpected value. This &quot;</span>
                              <span class="s2">&quot;should not happen.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
@@ -548,7 +575,13 @@
         <span class="c1"># Create split fraction variable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">split_fraction</span> <span class="o">=</span> <span class="n">Var</span><span class="p">(</span><span class="o">*</span><span class="n">sf_idx</span><span class="p">,</span>
                                   <span class="n">initialize</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-                                  <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Outlet split fractions&quot;</span><span class="p">)</span></div>
+                                  <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Outlet split fractions&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Add constraint that split fractions sum to 1</span>
+        <span class="k">def</span> <span class="nf">sum_sf_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+            <span class="k">return</span> <span class="mi">1</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">split_fraction</span><span class="p">[</span><span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">args</span><span class="p">]</span>
+                            <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">outlet_idx</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sum_split_frac</span> <span class="o">=</span> <span class="n">Constraint</span><span class="p">(</span><span class="o">*</span><span class="n">sf_sum_idx</span><span class="p">,</span> <span class="n">rule</span> <span class="o">=</span> <span class="n">sum_sf_rule</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SeparatorData.add_material_splitting_constraints"><a class="viewcode-back" href="../../../models/separator.html#idaes.unit_models.separator.SeparatorData.add_material_splitting_constraints">[docs]</a>    <span class="k">def</span> <span class="nf">add_material_splitting_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mixed_block</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -571,21 +604,31 @@
                          <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Material splitting equations&quot;</span><span class="p">)</span>
         <span class="k">def</span> <span class="nf">material_splitting_eqn</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
             <span class="n">o_block</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">get_material_flow_terms</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span>
-                        <span class="n">sf</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="o">*</span>
-                        <span class="n">o_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">get_material_flow_terms</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">))</span></div>
+            <span class="k">return</span> <span class="p">(</span><span class="n">sf</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="o">*</span>
+                    <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">get_material_flow_terms</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="o">==</span>
+                    <span class="n">o_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">get_material_flow_terms</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="SeparatorData.add_energy_splitting_constraints"><a class="viewcode-back" href="../../../models/separator.html#idaes.unit_models.separator.SeparatorData.add_energy_splitting_constraints">[docs]</a>    <span class="k">def</span> <span class="nf">add_energy_splitting_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mixed_block</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates constraints for splitting the energy flows - done by equating</span>
 <span class="sd">        temperatures in outlets.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nd">@self</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
-                         <span class="bp">self</span><span class="o">.</span><span class="n">outlet_idx</span><span class="p">,</span>
-                         <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Temperature equality constraint&quot;</span><span class="p">)</span>
-        <span class="k">def</span> <span class="nf">temperature_equality_eqn</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
-            <span class="n">o_block</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span> <span class="o">==</span> <span class="n">o_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">energy_split_basis</span> <span class="o">==</span> \
+            <span class="n">EnergySplittingType</span><span class="o">.</span><span class="n">equal_temperature</span><span class="p">:</span>
+            <span class="nd">@self</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">outlet_idx</span><span class="p">,</span>
+                             <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Temperature equality constraint&quot;</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">temperature_equality_eqn</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
+                <span class="n">o_block</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span> <span class="o">==</span> <span class="n">o_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">temperature</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">energy_split_basis</span> <span class="o">==</span> \
+            <span class="n">EnergySplittingType</span><span class="o">.</span><span class="n">equal_molar_enthalpy</span><span class="p">:</span>
+            <span class="nd">@self</span><span class="o">.</span><span class="n">Constraint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">outlet_idx</span><span class="p">,</span>
+                             <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Molar enthalpy equality constraint&quot;</span><span class="p">)</span>
+            <span class="k">def</span> <span class="nf">molar_enthalpy_equality_eqn</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">):</span>
+                <span class="n">o_block</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">enth_mol</span> <span class="o">==</span> <span class="n">o_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">enth_mol</span></div>
 
 <div class="viewcode-block" id="SeparatorData.add_momentum_splitting_constraints"><a class="viewcode-back" href="../../../models/separator.html#idaes.unit_models.separator.SeparatorData.add_momentum_splitting_constraints">[docs]</a>    <span class="k">def</span> <span class="nf">add_momentum_splitting_constraints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mixed_block</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -599,7 +642,7 @@
             <span class="n">o_block</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="o">+</span><span class="s2">&quot;_state&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">pressure</span> <span class="o">==</span> <span class="n">o_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">pressure</span></div>
 
-<div class="viewcode-block" id="SeparatorData.partition_outlet_flows"><a class="viewcode-back" href="../../../models/separator.html#idaes.unit_models.separator.SeparatorData.partition_outlet_flows">[docs]</a>    <span class="k">def</span> <span class="nf">partition_outlet_flows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mixed_block</span><span class="p">,</span> <span class="n">outlet_list</span><span class="p">):</span>
+<div class="viewcode-block" id="SeparatorData.partition_outlet_flows"><a class="viewcode-back" href="../../../models/separator.html#idaes.unit_models.separator.SeparatorData.partition_outlet_flows">[docs]</a>    <span class="k">def</span> <span class="nf">partition_outlet_flows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mb</span><span class="p">,</span> <span class="n">outlet_list</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates outlet Port objects and tries to partiton mixed stream flows</span>
 <span class="sd">        between these</span>
@@ -677,341 +720,299 @@
                         <span class="s2">&quot;chosen split_basis.&quot;</span>
                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
+        <span class="c1"># Get list of port members</span>
+        <span class="n">s_vars</span> <span class="o">=</span> <span class="n">mb</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span><span class="o">.</span><span class="n">define_port_members</span><span class="p">()</span>
+
         <span class="c1"># Add empty Port objects</span>
-        <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">outlet_list</span><span class="p">:</span>
-            <span class="n">p_obj</span> <span class="o">=</span> <span class="n">Port</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
-                         <span class="n">noruleinit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outlet_list</span><span class="p">:</span>
+            <span class="n">p_obj</span> <span class="o">=</span> <span class="n">Port</span><span class="p">(</span><span class="n">noruleinit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                          <span class="n">doc</span><span class="o">=</span><span class="s2">&quot;Outlet Port&quot;</span><span class="p">)</span>
-            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">p_obj</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">p_obj</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">:</span>
-            <span class="c1"># Get port members from mixed block</span>
-            <span class="n">s_vars</span> <span class="o">=</span> <span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">define_port_members</span><span class="p">()</span>
-
-            <span class="c1"># Iterate over port members</span>
+            <span class="c1"># Iterate over members to create References or Expressions</span>
             <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">s_vars</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outlet_list</span><span class="p">:</span>
-                    <span class="n">p_obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span>
+                <span class="c1"># Get local variable name of component</span>
+                <span class="n">l_name</span> <span class="o">=</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">local_name</span>
 
-                    <span class="k">if</span> <span class="n">s</span> <span class="o">==</span> <span class="s2">&quot;pressure&quot;</span> <span class="ow">or</span> <span class="n">s</span> <span class="o">==</span> <span class="s2">&quot;temperature&quot;</span><span class="p">:</span>
-                        <span class="c1"># Assume outlets same as mixed flow</span>
-                            <span class="n">p_obj</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">],</span> <span class="n">s</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">l_name</span> <span class="o">==</span> <span class="s2">&quot;pressure&quot;</span> <span class="ow">or</span> <span class="n">l_name</span> <span class="o">==</span> <span class="s2">&quot;temperature&quot;</span><span class="p">:</span>
+                    <span class="c1"># Assume outlets same as mixed flow - make Reference</span>
+                    <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Reference</span><span class="p">(</span><span class="n">mb</span><span class="p">[:]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">l_name</span><span class="p">))</span>
 
-                    <span class="k">elif</span> <span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;mole_frac&quot;</span><span class="p">)</span> <span class="ow">or</span>
-                          <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;mass_frac&quot;</span><span class="p">)):</span>
-                        <span class="c1"># Mole and mass frac need special handling</span>
-                        <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_phase&quot;</span><span class="p">):</span>
+                <span class="k">elif</span> <span class="p">(</span><span class="n">l_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;mole_frac&quot;</span><span class="p">)</span> <span class="ow">or</span>
+                      <span class="n">l_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;mass_frac&quot;</span><span class="p">)):</span>
+                    <span class="c1"># Mole and mass frac need special handling</span>
+                    <span class="k">if</span> <span class="n">l_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_phase&quot;</span><span class="p">):</span>
+                        <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
                             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
                                         <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
-                                <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                    <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                        <span class="k">return</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                    <span class="k">else</span><span class="p">:</span>
-                                        <span class="k">return</span> <span class="mi">0</span>
+                                <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
                             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
                                     <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
-
-                                <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                    <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                        <span class="k">return</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                    <span class="k">else</span><span class="p">:</span>
-                                        <span class="k">return</span> <span class="mi">0</span>
+                                <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
                             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
                                     <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
-
-                                <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                    <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                        <span class="k">return</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                    <span class="k">else</span><span class="p">:</span>
-                                        <span class="k">return</span> <span class="mi">0</span>
+                                <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
                             <span class="k">else</span><span class="p">:</span>
                                 <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
-                                        <span class="s2">&quot;This should not happen. Please &quot;</span>
+                                        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> This should not happen. Please &quot;</span>
                                         <span class="s2">&quot;report this bug to the IDAES &quot;</span>
-                                        <span class="s2">&quot;developers.&quot;</span><span class="p">)</span>
-                            <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">,</span>
-                                               <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">,</span>
-                                               <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
-                                <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">:</span>
-                                        <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                            <span class="k">return</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
-                                    <span class="c1"># else:</span>
-                                    <span class="k">return</span> <span class="mi">0</span>
+                                        <span class="s2">&quot;developers.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
-                                <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">,</span>
-                                                   <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
-
-                            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                    <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
-                                <span class="k">try</span><span class="p">:</span>
-                                    <span class="n">idx_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span>
-                                                        <span class="n">s</span><span class="o">+</span><span class="s2">&quot;_phase&quot;</span><span class="p">)</span>
-                                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
-                                        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with &quot;</span>
-                                        <span class="s2">&quot;this property package. Package uses &quot;</span>
-                                        <span class="s2">&quot;indexed port member </span><span class="si">{}</span><span class="s2"> which does not&quot;</span>
-                                        <span class="s2">&quot; have the correct indexing sets, and &quot;</span>
-                                        <span class="s2">&quot;an equivalent variable with correct &quot;</span>
-                                        <span class="s2">&quot;indexing sets is not available.&quot;</span>
-                                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
-
-                                <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">:</span>
-                                        <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                            <span class="k">return</span> <span class="n">idx_state</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                    <span class="c1"># else:</span>
-                                    <span class="k">return</span> <span class="mi">0</span>
-
-                                <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">,</span>
-                                                   <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
-
-                            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                    <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
-                                <span class="k">try</span><span class="p">:</span>
-                                    <span class="n">idx_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span>
-                                                        <span class="n">s</span><span class="o">+</span><span class="s2">&quot;_phase&quot;</span><span class="p">)</span>
-                                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
-                                        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with &quot;</span>
-                                        <span class="s2">&quot;this property package. Package uses &quot;</span>
-                                        <span class="s2">&quot;indexed port member </span><span class="si">{}</span><span class="s2"> which does not&quot;</span>
-                                        <span class="s2">&quot; have the correct indexing sets, and &quot;</span>
-                                        <span class="s2">&quot;an equivalent variable with correct &quot;</span>
-                                        <span class="s2">&quot;indexing sets is not available.&quot;</span>
-                                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
-
-                                <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">:</span>
-                                        <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                            <span class="k">return</span> <span class="n">idx_state</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                    <span class="c1"># else:</span>
-                                    <span class="k">return</span> <span class="mi">0</span>
-
-                                <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">,</span>
-                                                   <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">s_check</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                <span class="k">return</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">l_name</span><span class="p">)[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
                             <span class="k">else</span><span class="p">:</span>
-                                <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
-                                        <span class="s2">&quot;This should not happen. Please &quot;</span>
-                                        <span class="s2">&quot;report this bug to the IDAES &quot;</span>
-                                        <span class="s2">&quot;developers.&quot;</span><span class="p">)</span>
+                                <span class="k">return</span> <span class="mi">0</span>
 
-                        <span class="c1"># Add expression object to mixed state block and port</span>
-                        <span class="nb">setattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">s</span><span class="o">+</span><span class="s2">&quot;_expr_&quot;</span><span class="o">+</span><span class="n">o</span><span class="p">,</span> <span class="n">e_obj</span><span class="p">)</span>
-                        <span class="n">p_obj</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">e_obj</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
-
-                    <span class="k">elif</span> <span class="n">s</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_phase_comp&quot;</span><span class="p">):</span>
-                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
-
-                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                    <span class="k">return</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                <span class="k">else</span><span class="p">:</span>
-                                    <span class="k">return</span> <span class="mi">0</span>
-                        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
-
-                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                    <span class="k">return</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                <span class="k">else</span><span class="p">:</span>
-                                    <span class="k">return</span> <span class="mi">0</span>
-                        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
-
-                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                    <span class="k">return</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                <span class="k">else</span><span class="p">:</span>
-                                    <span class="k">return</span> <span class="mi">0</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span><span class="s2">&quot;This should not happen. Please &quot;</span>
-                                             <span class="s2">&quot;report this bug to the IDAES &quot;</span>
-                                             <span class="s2">&quot;developers.&quot;</span><span class="p">)</span>
-                        <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">,</span>
+                        <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                                           <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">,</span>
                                            <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">,</span>
                                            <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
 
-                        <span class="c1"># Add expression object to mixed state block and port</span>
-                        <span class="nb">setattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">s</span><span class="o">+</span><span class="s2">&quot;_expr_&quot;</span><span class="o">+</span><span class="n">o</span><span class="p">,</span> <span class="n">e_obj</span><span class="p">)</span>
-                        <span class="n">p_obj</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">e_obj</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
-
-                    <span class="k">elif</span> <span class="n">s</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_phase&quot;</span><span class="p">):</span>
+                    <span class="k">else</span><span class="p">:</span>
                         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
-                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
-                                <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                    <span class="k">return</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">p</span><span class="p">]</span>
-                                <span class="k">else</span><span class="p">:</span>
-                                    <span class="k">return</span> <span class="mi">0</span>
+                                    <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
+                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+                                <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                    <span class="k">return</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">l_name</span><span class="p">)[</span><span class="n">j</span><span class="p">]</span>
+                                <span class="c1"># else:</span>
+                                <span class="k">return</span> <span class="mi">0</span>
+
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+                                <span class="k">try</span><span class="p">:</span>
+                                    <span class="n">mfp</span> <span class="o">=</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">l_name</span><span class="o">+</span><span class="s2">&quot;_phase&quot;</span><span class="p">)</span>
+                                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                                    <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                                        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with &quot;</span>
+                                        <span class="s2">&quot;this property package. Package uses &quot;</span>
+                                        <span class="s2">&quot;indexed port member </span><span class="si">{}</span><span class="s2"> which does not&quot;</span>
+                                        <span class="s2">&quot; have the correct indexing sets, and &quot;</span>
+                                        <span class="s2">&quot;an equivalent variable with correct &quot;</span>
+                                        <span class="s2">&quot;indexing sets is not available.&quot;</span>
+                                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
+
+                                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">:</span>
+                                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                            <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
+                                        <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
+                                    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                            <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
+                                        <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                                    <span class="k">else</span><span class="p">:</span>
+                                        <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
+                                            <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> This should not happen. Please&quot;</span>
+                                            <span class="s2">&quot; report this bug to the IDAES &quot;</span>
+                                            <span class="s2">&quot;developers.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+                                    <span class="k">if</span> <span class="n">s_check</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                        <span class="k">return</span> <span class="n">mfp</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                                <span class="c1"># else:</span>
+                                <span class="k">return</span> <span class="mi">0</span>
+
+                        <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                                           <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">,</span>
+                                           <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
+
+                <span class="k">elif</span> <span class="n">l_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_phase_comp&quot;</span><span class="p">):</span>
+                    <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
+                            <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
                         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
                                 <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
-                            <span class="k">try</span><span class="p">:</span>
-                                <span class="n">idx_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="n">s</span><span class="o">+</span><span class="s2">&quot;_comp&quot;</span><span class="p">)</span>
-                            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
-                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with this &quot;</span>
-                                    <span class="s2">&quot;property package. Package uses indexed &quot;</span>
-                                    <span class="s2">&quot;port member </span><span class="si">{}</span><span class="s2"> which does not have the &quot;</span>
-                                    <span class="s2">&quot;correct indexing sets, and an equivalent &quot;</span>
-                                    <span class="s2">&quot;variable with correct indexing sets is &quot;</span>
-                                    <span class="s2">&quot;not available.&quot;</span>
-                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
-
-                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
-                                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">:</span>
-                                    <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                        <span class="k">return</span> <span class="n">idx_state</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                <span class="c1"># else:</span>
-                                <span class="k">return</span> <span class="mi">0</span>
-
+                            <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
                         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
                                 <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
-                            <span class="k">try</span><span class="p">:</span>
-                                <span class="n">idx_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="n">s</span><span class="o">+</span><span class="s2">&quot;_comp&quot;</span><span class="p">)</span>
-                            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
-                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with this &quot;</span>
-                                    <span class="s2">&quot;property package. Package uses indexed &quot;</span>
-                                    <span class="s2">&quot;port member </span><span class="si">{}</span><span class="s2"> which does not have the &quot;</span>
-                                    <span class="s2">&quot;correct indexing sets, and an equivalent &quot;</span>
-                                    <span class="s2">&quot;variable with correct indexing sets is &quot;</span>
-                                    <span class="s2">&quot;not available.&quot;</span>
-                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
-
-                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
-                                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">:</span>
-                                    <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                        <span class="k">return</span> <span class="n">idx_state</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                <span class="c1"># else:</span>
-                                <span class="k">return</span> <span class="mi">0</span>
-
+                            <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
                         <span class="k">else</span><span class="p">:</span>
-                            <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span><span class="s2">&quot;This should not happen. Please &quot;</span>
-                                             <span class="s2">&quot;report this bug to the IDAES &quot;</span>
-                                             <span class="s2">&quot;developers.&quot;</span><span class="p">)</span>
-                        <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">,</span>
-                                           <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
+                            <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
+                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> This should not happen. Please&quot;</span>
+                                    <span class="s2">&quot; report this bug to the IDAES &quot;</span>
+                                    <span class="s2">&quot;developers.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
-                        <span class="c1"># Add expression object to mixed state block and port</span>
-                        <span class="nb">setattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">s</span><span class="o">+</span><span class="s2">&quot;_expr_&quot;</span><span class="o">+</span><span class="n">o</span><span class="p">,</span> <span class="n">e_obj</span><span class="p">)</span>
-                        <span class="n">p_obj</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">e_obj</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
-
-                    <span class="k">elif</span> <span class="n">s</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_comp&quot;</span><span class="p">):</span>
-                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
-                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                    <span class="k">return</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
-                                <span class="k">else</span><span class="p">:</span>
-                                    <span class="k">return</span> <span class="mi">0</span>
-
-                        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
-                            <span class="k">try</span><span class="p">:</span>
-                                <span class="n">idx_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span>
-                                                    <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_phase</span><span class="si">{1}</span><span class="s2">&quot;</span>
-                                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">[:</span><span class="o">-</span><span class="mi">5</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]))</span>
-                            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
-                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with this &quot;</span>
-                                    <span class="s2">&quot;property package. Package uses indexed &quot;</span>
-                                    <span class="s2">&quot;port member </span><span class="si">{}</span><span class="s2"> which does not have the &quot;</span>
-                                    <span class="s2">&quot;correct indexing sets, and an equivalent &quot;</span>
-                                    <span class="s2">&quot;variable with correct indexing sets is &quot;</span>
-                                    <span class="s2">&quot;not available.&quot;</span>
-                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
-
-                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">:</span>
-                                    <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                        <span class="k">return</span> <span class="n">idx_state</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                <span class="c1"># else:</span>
-                                <span class="k">return</span> <span class="mi">0</span>
-
-                        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
-                            <span class="k">try</span><span class="p">:</span>
-                                <span class="n">idx_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span>
-                                                    <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_phase</span><span class="si">{1}</span><span class="s2">&quot;</span>
-                                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="p">[:</span><span class="o">-</span><span class="mi">5</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]))</span>
-                            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
-                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with this &quot;</span>
-                                    <span class="s2">&quot;property package. Package uses indexed &quot;</span>
-                                    <span class="s2">&quot;port member </span><span class="si">{}</span><span class="s2"> which does not have the &quot;</span>
-                                    <span class="s2">&quot;correct indexing sets, and an equivalent &quot;</span>
-                                    <span class="s2">&quot;variable with correct indexing sets is &quot;</span>
-                                    <span class="s2">&quot;not available.&quot;</span>
-                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
-
-                            <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
-                                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">:</span>
-                                    <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                        <span class="k">return</span> <span class="n">idx_state</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
-                                <span class="c1"># else:</span>
-                                <span class="k">return</span> <span class="mi">0</span>
-
+                        <span class="k">if</span> <span class="n">s_check</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">l_name</span><span class="p">)[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
                         <span class="k">else</span><span class="p">:</span>
-                            <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span><span class="s2">&quot;This should not happen. Please &quot;</span>
-                                             <span class="s2">&quot;report this bug to the IDAES &quot;</span>
-                                             <span class="s2">&quot;developers.&quot;</span><span class="p">)</span>
-                        <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">,</span>
-                                           <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
+                            <span class="k">return</span> <span class="mi">0</span>
 
-                        <span class="c1"># Add expression object to mixed state block and port</span>
-                        <span class="nb">setattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">s</span><span class="o">+</span><span class="s2">&quot;_expr_&quot;</span><span class="o">+</span><span class="n">o</span><span class="p">,</span> <span class="n">e_obj</span><span class="p">)</span>
-                        <span class="n">p_obj</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">e_obj</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+                    <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">,</span>
+                                       <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
+
+                <span class="k">elif</span> <span class="n">l_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_phase&quot;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                    <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
+                        <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                <span class="k">return</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">l_name</span><span class="p">)[</span><span class="n">p</span><span class="p">]</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">return</span> <span class="mi">0</span>
 
                     <span class="k">else</span><span class="p">:</span>
-                        <span class="c1"># Not a recognised state, check for indexing sets</span>
-                        <span class="k">if</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="o">.</span><span class="n">is_indexed</span><span class="p">():</span>
-                            <span class="c1"># Is indexed, assume indexes match and partition</span>
+                        <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
                             <span class="k">try</span><span class="p">:</span>
-                                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">split_map</span><span class="p">:</span>
-                                    <span class="n">p_obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">split_map</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-                                    <span class="n">p_obj</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">s_vars</span><span class="p">[</span><span class="n">s</span><span class="p">][</span><span class="n">k</span><span class="p">],</span> <span class="n">s</span><span class="p">)</span>
-                            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-                                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with&quot;</span>
-                                    <span class="s2">&quot; this property package. Package uses &quot;</span>
-                                    <span class="s2">&quot;indexed port member </span><span class="si">{}</span><span class="s2"> which does not &quot;</span>
-                                    <span class="s2">&quot;have suitable indexing set(s).&quot;</span>
-                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
-
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="c1"># Is not indexed, look for indexed equivalent</span>
-                            <span class="k">try</span><span class="p">:</span>
-                                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
-                                    <span class="n">idx_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span>
-                                                        <span class="n">s</span><span class="o">+</span><span class="s2">&quot;_phase&quot;</span><span class="p">)</span>
-                                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
-                                    <span class="n">idx_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span>
-                                                        <span class="n">s</span><span class="o">+</span><span class="s2">&quot;_comp&quot;</span><span class="p">)</span>
-                                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
-                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
-                                    <span class="n">idx_state</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">mixed_block</span><span class="p">[</span><span class="n">t</span><span class="p">],</span>
-                                                        <span class="n">s</span><span class="o">+</span><span class="s2">&quot;_phase_comp&quot;</span><span class="p">)</span>
+                                <span class="n">mfp</span> <span class="o">=</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">l_name</span><span class="o">+</span><span class="s2">&quot;_comp&quot;</span><span class="p">)</span>
                             <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
                                 <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
                                     <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with this &quot;</span>
-                                    <span class="s2">&quot;property package. Package uses unindexed &quot;</span>
-                                    <span class="s2">&quot;port member </span><span class="si">{}</span><span class="s2"> which does not have an &quot;</span>
-                                    <span class="s2">&quot;equivalent indexed form.&quot;</span>
+                                    <span class="s2">&quot;property package. Package uses indexed &quot;</span>
+                                    <span class="s2">&quot;port member </span><span class="si">{}</span><span class="s2"> which does not have the &quot;</span>
+                                    <span class="s2">&quot;correct indexing sets, and an equivalent &quot;</span>
+                                    <span class="s2">&quot;variable with correct indexing sets is &quot;</span>
+                                    <span class="s2">&quot;not available.&quot;</span>
                                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
 
-                            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">split_map</span><span class="p">:</span>
-                                <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
-                                    <span class="c1"># Add idx_state member to outlet port</span>
-                                    <span class="n">p_obj</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">split_map</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-                                    <span class="n">p_obj</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">idx_state</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">s</span><span class="p">)</span></div>
+                            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
+                                    <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
+                                    <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
+                                        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> This should not happen. Please&quot;</span>
+                                        <span class="s2">&quot; report this bug to the IDAES &quot;</span>
+                                        <span class="s2">&quot;developers.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+                                <span class="k">if</span> <span class="n">s_check</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                    <span class="k">return</span> <span class="n">mfp</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                            <span class="c1"># else:</span>
+                            <span class="k">return</span> <span class="mi">0</span>
+
+                    <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">,</span>
+                                       <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
+
+                <span class="k">elif</span> <span class="n">l_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_comp&quot;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                            <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
+                        <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                <span class="k">return</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">l_name</span><span class="p">)[</span><span class="n">j</span><span class="p">]</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">return</span> <span class="mi">0</span>
+
+                    <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                            <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
+
+                        <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+                            <span class="k">try</span><span class="p">:</span>
+                                <span class="n">mfp</span> <span class="o">=</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                                        <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_phase</span><span class="si">{1}</span><span class="s2">&quot;</span>
+                                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">l_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">5</span><span class="p">],</span> <span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]))</span>
+                            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                                    <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with this &quot;</span>
+                                    <span class="s2">&quot;property package. Package uses indexed &quot;</span>
+                                    <span class="s2">&quot;port member </span><span class="si">{}</span><span class="s2"> which does not have the &quot;</span>
+                                    <span class="s2">&quot;correct indexing sets, and an equivalent &quot;</span>
+                                    <span class="s2">&quot;variable with correct indexing sets is &quot;</span>
+                                    <span class="s2">&quot;not available.&quot;</span>
+                                    <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
+
+                            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">:</span>
+                                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
+                                    <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span>
+                                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                        <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
+                                    <span class="n">s_check</span> <span class="o">=</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="k">raise</span> <span class="n">BurntToast</span><span class="p">(</span>
+                                        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> This should not happen. Please&quot;</span>
+                                        <span class="s2">&quot; report this bug to the IDAES &quot;</span>
+                                        <span class="s2">&quot;developers.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+                                <span class="k">if</span> <span class="n">s_check</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                    <span class="k">return</span> <span class="n">mfp</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                            <span class="c1"># else:</span>
+                            <span class="k">return</span> <span class="mi">0</span>
+
+                    <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">,</span>
+                                       <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Not a recognised state, check for indexing sets</span>
+                    <span class="k">if</span> <span class="n">mb</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                            <span class="n">l_name</span><span class="p">)</span><span class="o">.</span><span class="n">is_indexed</span><span class="p">():</span>
+                        <span class="c1"># Is indexed, assume indexes match and partition</span>
+
+                        <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+                            <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                <span class="k">try</span><span class="p">:</span>
+                                    <span class="k">return</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">l_name</span><span class="p">)[</span><span class="n">k</span><span class="p">]</span>
+                                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                                        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with&quot;</span>
+                                        <span class="s2">&quot; this property package. Package uses &quot;</span>
+                                        <span class="s2">&quot;indexed port member </span><span class="si">{}</span><span class="s2"> which does not&quot;</span>
+                                        <span class="s2">&quot; have suitable indexing set(s).&quot;</span>
+                                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="k">return</span> <span class="mi">0</span>
+
+                        <span class="c1"># TODO : Reusing indexing set from first port member.</span>
+                        <span class="c1"># TODO : Not sure how good of an idea this is.</span>
+                        <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span>
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                                    <span class="n">mb</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="o">.</span><span class="n">first</span><span class="p">()]</span>
+                                        <span class="o">.</span><span class="n">component</span><span class="p">(</span><span class="n">l_name</span><span class="p">)</span><span class="o">.</span><span class="n">index_set</span><span class="p">(),</span>
+                                    <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
+
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># Is not indexed, look for indexed equivalent</span>
+                        <span class="k">try</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                    <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseFlow</span><span class="p">:</span>
+                                <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+                                    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">:</span>
+                                        <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                            <span class="k">return</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                                                    <span class="n">l_name</span><span class="o">+</span><span class="s2">&quot;_phase&quot;</span><span class="p">)[</span><span class="n">p</span><span class="p">]</span>
+                                    <span class="c1"># else</span>
+                                    <span class="k">return</span> <span class="mi">0</span>
+
+                            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                    <span class="n">SplittingType</span><span class="o">.</span><span class="n">componentFlow</span><span class="p">:</span>
+                                <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+                                    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">:</span>
+                                        <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                            <span class="k">return</span> <span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                                                    <span class="n">l_name</span><span class="o">+</span><span class="s2">&quot;_comp&quot;</span><span class="p">)[</span><span class="n">j</span><span class="p">]</span>
+                                    <span class="c1"># else</span>
+                                    <span class="k">return</span> <span class="mi">0</span>
+
+                            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">split_basis</span> <span class="o">==</span> \
+                                    <span class="n">SplittingType</span><span class="o">.</span><span class="n">phaseComponentFlow</span><span class="p">:</span>
+                                <span class="k">def</span> <span class="nf">e_rule</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+                                    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">phase_list_ref</span><span class="p">:</span>
+                                        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">component_list_ref</span><span class="p">:</span>
+                                            <span class="k">if</span> <span class="n">split_map</span><span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">o</span><span class="p">:</span>
+                                                <span class="k">return</span> <span class="p">(</span><span class="n">mb</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">component</span><span class="p">(</span>
+                                                        <span class="n">l_name</span><span class="o">+</span><span class="s2">&quot;_phase_comp&quot;</span><span class="p">)</span>
+                                                        <span class="p">[</span><span class="n">p</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+                                    <span class="c1"># else</span>
+                                    <span class="k">return</span> <span class="mi">0</span>
+
+                        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                                <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> Cannot use ideal splitting with this &quot;</span>
+                                <span class="s2">&quot;property package. Package uses unindexed &quot;</span>
+                                <span class="s2">&quot;port member </span><span class="si">{}</span><span class="s2"> which does not have an &quot;</span>
+                                <span class="s2">&quot;equivalent indexed form.&quot;</span>
+                                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">))</span>
+
+                    <span class="n">e_obj</span> <span class="o">=</span> <span class="n">Expression</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_ref</span><span class="p">,</span>
+                                       <span class="n">rule</span><span class="o">=</span><span class="n">e_rule</span><span class="p">)</span>
+
+                <span class="c1"># Add Reference/Expression object to Separator model object</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">o</span><span class="o">+</span><span class="s2">&quot;_&quot;</span><span class="o">+</span><span class="n">l_name</span><span class="o">+</span><span class="s2">&quot;_ref&quot;</span><span class="p">,</span> <span class="n">e_obj</span><span class="p">)</span>
+
+                <span class="c1"># Add member to Port object</span>
+                <span class="n">p_obj</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">e_obj</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SeparatorData.model_check"><a class="viewcode-back" href="../../../models/separator.html#idaes.unit_models.separator.SeparatorData.model_check">[docs]</a>    <span class="k">def</span> <span class="nf">model_check</span><span class="p">(</span><span class="n">blk</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1118,8 +1119,13 @@
                         <span class="c1"># Apply split fraction</span>
                         <span class="k">try</span><span class="p">:</span>
                             <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">s_vars</span><span class="p">[</span><span class="n">v</span><span class="p">]:</span>
-                                <span class="n">s_vars</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span>
-                                    <span class="n">m_var</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">blk</span><span class="o">.</span><span class="n">split_fraction</span><span class="p">[(</span><span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span> <span class="o">+</span> <span class="n">k</span><span class="p">])</span>
+                                <span class="k">if</span> <span class="n">k</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                                    <span class="n">s_vars</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span>
+                                    <span class="n">m_var</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">blk</span><span class="o">.</span><span class="n">split_fraction</span><span class="p">[(</span><span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">)])</span>
+                                <span class="k">else</span><span class="p">:</span>
+                                    <span class="n">s_vars</span><span class="p">[</span><span class="n">v</span><span class="p">][</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span>
+                                            <span class="n">m_var</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">blk</span><span class="o">.</span><span class="n">split_fraction</span><span class="p">[</span>
+                                                    <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">o</span><span class="p">)</span> <span class="o">+</span> <span class="n">k</span><span class="p">])</span>
                         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
                             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
                                     <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> state variable and split fraction &quot;</span>
@@ -1205,27 +1211,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../../../_static/jquery.js"></script>
-        <script type="text/javascript" src="../../../_static/underscore.js"></script>
-        <script type="text/javascript" src="../../../_static/doctools.js"></script>
-        <script type="text/javascript" src="../../../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../../../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

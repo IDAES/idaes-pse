@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="HeatExchanger (0D)" href="heat_exchanger.html" />
     <link rel="prev" title="Gibbs Reactor" href="gibbs_reactor.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -94,6 +97,10 @@
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Unit Model Library</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="index.html#unit-model-contents">Unit Model Contents</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="cstr.html">Continuous Stirred Tank Reactor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="equilibrium.html">Equilibrium Reactor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="feed.html">Feed Block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="feed_flash.html">Feed Block with Flash</a></li>
+<li class="toctree-l3"><a class="reference internal" href="flash.html">Flash Unit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="gibbs_reactor.html">Gibbs Reactor</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Heater</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#example">Example</a></li>
@@ -110,9 +117,11 @@
 <li class="toctree-l3"><a class="reference internal" href="mixer.html">Mixer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pfr.html">Plug Flow Reactor</a></li>
 <li class="toctree-l3"><a class="reference internal" href="pressure_changer.html">Pressure Changer</a></li>
-<li class="toctree-l3"><a class="reference internal" href="flash.html">Flash Unit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="product.html">Product Block</a></li>
 <li class="toctree-l3"><a class="reference internal" href="separator.html">Separator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="stoichiometric_reactor.html">Stoichiometric (Yield) Reactor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="translator.html">Translator Block</a></li>
+<li class="toctree-l3"><a class="reference internal" href="power_generation/index.html">Power Generation Models</a></li>
 </ul>
 </li>
 </ul>
@@ -120,8 +129,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -195,7 +205,7 @@ material stream.</p>
 <div class="section" id="example">
 <h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pyomo.environ</span> <span class="kn">as</span> <span class="nn">pe</span> <span class="c1"># Pyomo environment</span>
-<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="kn">import</span> <span class="n">FlowsheetBlock</span><span class="p">,</span> <span class="n">StateBlockBase</span>
+<span class="kn">from</span> <span class="nn">idaes.core</span> <span class="kn">import</span> <span class="n">FlowsheetBlock</span><span class="p">,</span> <span class="n">StateBlock</span>
 <span class="kn">from</span> <span class="nn">idaes.unit_models</span> <span class="kn">import</span> <span class="n">Heater</span>
 <span class="kn">from</span> <span class="nn">idaes.property_models</span> <span class="kn">import</span> <span class="n">iapws95_ph</span>
 
@@ -226,7 +236,7 @@ freedom, which is the heat duty.</p>
 </div>
 <div class="section" id="model-structure">
 <h2>Model Structure<a class="headerlink" href="#model-structure" title="Permalink to this headline">¶</a></h2>
-<p>A heater model contains one ControlVolume0D block.</p>
+<p>A heater model contains one ControlVolume0DBlock block.</p>
 </div>
 <div class="section" id="variables">
 <h2>Variables<a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h2>
@@ -235,7 +245,7 @@ freedom, which is the heat duty.</p>
 <div class="section" id="constraints">
 <h2>Constraints<a class="headerlink" href="#constraints" title="Permalink to this headline">¶</a></h2>
 <p>A heater model contains no additional constraints beyond what are contained in
-a ControlVolume0D model.</p>
+a ControlVolume0DBlock model.</p>
 </div>
 <div class="section" id="heater-class">
 <h2>Heater Class<a class="headerlink" href="#heater-class" title="Permalink to this headline">¶</a></h2>
@@ -382,7 +392,7 @@ Unit model to add or remove heat from a material.</p>
         <a href="heat_exchanger.html" class="btn btn-neutral float-right" title="HeatExchanger (0D)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="gibbs_reactor.html" class="btn btn-neutral" title="Gibbs Reactor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="gibbs_reactor.html" class="btn btn-neutral float-left" title="Gibbs Reactor" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -408,27 +418,16 @@ Unit model to add or remove heat from a material.</p>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

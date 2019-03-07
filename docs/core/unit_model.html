@@ -19,34 +19,37 @@
   
 
   
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="../_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Control Volume Classes" href="control_volume.html" />
     <link rel="prev" title="Reaction Property Package Classes" href="reaction_block.html" /> 
-
-  
-  <script src="../_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -98,10 +101,10 @@
 <li class="toctree-l3"><a class="reference internal" href="flowsheet_model.html">Flowsheet Model Class</a></li>
 <li class="toctree-l3"><a class="reference internal" href="properties.html">Property Packages</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Unit Model Class</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#unitblock-construction-arguments">UnitBlock Construction Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#unitmodelblock-construction-arguments">UnitModelBlock Construction Arguments</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#collecting-time-domain">Collecting Time Domain</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#modeling-support-methods">Modeling Support Methods</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#module-idaes.core.unit_model">UnitBlock Classes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-idaes.core.unit_model">UnitModelBlock Classes</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="control_volume.html">Control Volume Classes</a></li>
@@ -115,8 +118,9 @@
 <li class="toctree-l1"><a class="reference internal" href="../property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -185,49 +189,49 @@
             
   <div class="section" id="unit-model-class">
 <h1>Unit Model Class<a class="headerlink" href="#unit-model-class" title="Permalink to this headline">¶</a></h1>
-<p>The UnitBlock is class is designed to form the basis of all IDAES Unit Models, and contains a number of methods which are common to all Unit Models.</p>
-<div class="section" id="unitblock-construction-arguments">
-<h2>UnitBlock Construction Arguments<a class="headerlink" href="#unitblock-construction-arguments" title="Permalink to this headline">¶</a></h2>
-<p>The UnitBlock class by default has only one construction argument, which is listed below. However, most models inheriting from UnitBlock should declare their own set of configuration arguments which contain more information on how the model should be constructed.</p>
+<p>The UnitModelBlock is class is designed to form the basis of all IDAES Unit Models, and contains a number of methods which are common to all Unit Models.</p>
+<div class="section" id="unitmodelblock-construction-arguments">
+<h2>UnitModelBlock Construction Arguments<a class="headerlink" href="#unitmodelblock-construction-arguments" title="Permalink to this headline">¶</a></h2>
+<p>The UnitModelBlock class by default has only one construction argument, which is listed below. However, most models inheriting from UnitModelBlock should declare their own set of configuration arguments which contain more information on how the model should be constructed.</p>
 <ul class="simple">
 <li>dynamic - indicates whether the Unit model should be dynamic or steady-state, and if dynamic = True, the unit is declared to be a dynamic model. dynamic defaults to useDefault if not provided when instantiating the Unit model (see below for more details). It is possible to declare steady-state Unit models as part of dynamic Flowsheets if desired, however the reverse is not true (cannot have dynamic Unit models within steady-state Flowsheets).</li>
 </ul>
 </div>
 <div class="section" id="collecting-time-domain">
 <h2>Collecting Time Domain<a class="headerlink" href="#collecting-time-domain" title="Permalink to this headline">¶</a></h2>
-<p>The next task of the UnitBlock class is to establish the time domain for the unit by collecting the necessary information from the parent Flowsheet model. If the dynamic construction argument is set to useDefault then the Unit model looks to its parent model for the dynamic argument, otherwise the value provided at construction is used. Next, the UnitBlock collects the time domain from its parent model and sets this as the time domain for the Unit model.</p>
+<p>The next task of the UnitModelBlock class is to establish the time domain for the unit by collecting the necessary information from the parent Flowsheet model. If the dynamic construction argument is set to useDefault then the Unit model looks to its parent model for the dynamic argument, otherwise the value provided at construction is used. Next, the UnitModelBlock collects the time domain from its parent model and sets this as the time domain for the Unit model.</p>
 <p>Finally, if the Unit model has a construction argument named “has_holdup” (not part of the base class), then this is checked to ensure that if dynamic = True then has_holdup is also True. If this check fails then a ConfigurationError exception will be thrown.</p>
 </div>
 <div class="section" id="modeling-support-methods">
 <h2>Modeling Support Methods<a class="headerlink" href="#modeling-support-methods" title="Permalink to this headline">¶</a></h2>
-<p>The UnitBlock class also contains a number of methods designed to facilitate the construction of common components of a model, and these are described below.</p>
+<p>The UnitModelBlock class also contains a number of methods designed to facilitate the construction of common components of a model, and these are described below.</p>
 <div class="section" id="build-inlets-method">
 <h3>Build Inlets Method<a class="headerlink" href="#build-inlets-method" title="Permalink to this headline">¶</a></h3>
-<p>All (or almost all) Unit Models will have inlets and outlets which allow material to flow in and out of the unit being modeled. In order to save the model developer from having to write the code for each inlet themselves, UnitBlock contains a method named build_inlet_port which can automatically create an inlet to a specified ControlVolume block (or linked to a specified StateBlock). The build_inlet_port method is described in more detail in the documentation below.</p>
+<p>All (or almost all) Unit Models will have inlets and outlets which allow material to flow in and out of the unit being modeled. In order to save the model developer from having to write the code for each inlet themselves, UnitModelBlock contains a method named build_inlet_port which can automatically create an inlet to a specified ControlVolume block (or linked to a specified StateBlock). The build_inlet_port method is described in more detail in the documentation below.</p>
 </div>
 <div class="section" id="build-outlets-method">
 <h3>Build Outlets Method<a class="headerlink" href="#build-outlets-method" title="Permalink to this headline">¶</a></h3>
-<p>Similar to build_inlet_port, UnitBlock also has a method named build_outlet_port for constructing outlets from Unit models. The build_outlets method is described in more detail in the documentation below.</p>
+<p>Similar to build_inlet_port, UnitModelBlock also has a method named build_outlet_port for constructing outlets from Unit models. The build_outlets method is described in more detail in the documentation below.</p>
 </div>
 <div class="section" id="model-check-method">
 <h3>Model Check Method<a class="headerlink" href="#model-check-method" title="Permalink to this headline">¶</a></h3>
-<p>In order to support the IDAES Model Check tools, UnitBlock contains a simple model_check method which assumes a single Holdup block and calls the model_check method on this block. Model developers are encouraged to create their own model_check methods for their particular applications.</p>
+<p>In order to support the IDAES Model Check tools, UnitModelBlock contains a simple model_check method which assumes a single Holdup block and calls the model_check method on this block. Model developers are encouraged to create their own model_check methods for their particular applications.</p>
 </div>
 <div class="section" id="initialization-routine">
 <h3>Initialization Routine<a class="headerlink" href="#initialization-routine" title="Permalink to this headline">¶</a></h3>
-<p>All Unit Models need to have an initialization routine, which should be customized for each Unit model, In order to ensure that all Unit models have at least a basic initialization routine, UnitBlock contains a generic initialization procedure which may be sufficient for simple models with only one Holdup Block. Model developers are strongly encouraged to write their own initialization routines rather than relying on the default method.</p>
+<p>All Unit Models need to have an initialization routine, which should be customized for each Unit model, In order to ensure that all Unit models have at least a basic initialization routine, UnitModelBlock contains a generic initialization procedure which may be sufficient for simple models with only one Holdup Block. Model developers are strongly encouraged to write their own initialization routines rather than relying on the default method.</p>
 </div>
 </div>
 <div class="section" id="module-idaes.core.unit_model">
-<span id="unitblock-classes"></span><h2>UnitBlock Classes<a class="headerlink" href="#module-idaes.core.unit_model" title="Permalink to this headline">¶</a></h2>
+<span id="unitmodelblock-classes"></span><h2>UnitModelBlock Classes<a class="headerlink" href="#module-idaes.core.unit_model" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
-<dt id="idaes.core.unit_model.UnitBlockData">
-<em class="property">class </em><code class="descclassname">idaes.core.unit_model.</code><code class="descname">UnitBlockData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.unit_model.UnitModelBlockData">
+<em class="property">class </em><code class="descclassname">idaes.core.unit_model.</code><code class="descname">UnitModelBlockData</code><span class="sig-paren">(</span><em>component</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitModelBlockData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitModelBlockData" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is the class for process unit operations models. These are models that
 would generally appear in a process flowsheet or superstructure.</p>
 <dl class="method">
-<dt id="idaes.core.unit_model.UnitBlockData.add_inlet_port">
-<code class="descname">add_inlet_port</code><span class="sig-paren">(</span><em>name=None</em>, <em>block=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.add_inlet_port"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.add_inlet_port" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.unit_model.UnitModelBlockData.add_inlet_port">
+<code class="descname">add_inlet_port</code><span class="sig-paren">(</span><em>name=None</em>, <em>block=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitModelBlockData.add_inlet_port"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitModelBlockData.add_inlet_port" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is a method to build inlet Port objects in a unit model and
 connect these to a specified control volume or state block.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -253,8 +257,8 @@ attempt to default to an object named control_volume.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.unit_model.UnitBlockData.add_outlet_port">
-<code class="descname">add_outlet_port</code><span class="sig-paren">(</span><em>name=None</em>, <em>block=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.add_outlet_port"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.add_outlet_port" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.unit_model.UnitModelBlockData.add_outlet_port">
+<code class="descname">add_outlet_port</code><span class="sig-paren">(</span><em>name=None</em>, <em>block=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitModelBlockData.add_outlet_port"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitModelBlockData.add_outlet_port" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is a method to build outlet Port objects in a unit model and
 connect these to a specified control volume or state block.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -280,8 +284,8 @@ attempt to default to an object named control_volume.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.unit_model.UnitBlockData.add_port">
-<code class="descname">add_port</code><span class="sig-paren">(</span><em>name=None</em>, <em>block=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.add_port"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.add_port" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.unit_model.UnitModelBlockData.add_port">
+<code class="descname">add_port</code><span class="sig-paren">(</span><em>name=None</em>, <em>block=None</em>, <em>doc=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitModelBlockData.add_port"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitModelBlockData.add_port" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is a method to build Port objects in a unit model and
 connect these to a specified StateBlock.
 :keyword name = name to use for Port object.:
@@ -298,9 +302,9 @@ connect these to a specified StateBlock.
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.unit_model.UnitBlockData.build">
-<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.build" title="Permalink to this definition">¶</a></dt>
-<dd><p>General build method for UnitBlockData. This method calls a number
+<dt id="idaes.core.unit_model.UnitModelBlockData.build">
+<code class="descname">build</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitModelBlockData.build"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitModelBlockData.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>General build method for UnitModelBlockData. This method calls a number
 of sub-methods which automate the construction of expected attributes
 of unit models.</p>
 <p>Inheriting models should call <cite>super().build</cite>.</p>
@@ -317,8 +321,8 @@ of unit models.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.unit_model.UnitBlockData.initialize">
-<code class="descname">initialize</code><span class="sig-paren">(</span><em>state_args=None</em>, <em>outlvl=0</em>, <em>solver='ipopt'</em>, <em>optarg={'tol': 1e-06}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.initialize" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.unit_model.UnitModelBlockData.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>state_args=None</em>, <em>outlvl=0</em>, <em>solver='ipopt'</em>, <em>optarg={'tol': 1e-06}</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitModelBlockData.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitModelBlockData.initialize" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is a general purpose initialization routine for simple unit
 models. This method assumes a single ControlVolume block called
 controlVolume, and first initializes this and then attempts to solve
@@ -357,8 +361,8 @@ initialization (default = ‘ipopt’)</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="idaes.core.unit_model.UnitBlockData.model_check">
-<code class="descname">model_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitBlockData.model_check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitBlockData.model_check" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.unit_model.UnitModelBlockData.model_check">
+<code class="descname">model_check</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/idaes/core/unit_model.html#UnitModelBlockData.model_check"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#idaes.core.unit_model.UnitModelBlockData.model_check" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is a general purpose initialization routine for simple unit
 models. This method assumes a single ControlVolume block called
 controlVolume and tries to call the model_check method of the
@@ -382,8 +386,8 @@ ControlVolume blocks present.</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="idaes.core.unit_model.UnitBlock">
-<em class="property">class </em><code class="descclassname">idaes.core.unit_model.</code><code class="descname">UnitBlock</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#idaes.core.unit_model.UnitBlock" title="Permalink to this definition">¶</a></dt>
+<dt id="idaes.core.unit_model.UnitModelBlock">
+<em class="property">class </em><code class="descclassname">idaes.core.unit_model.</code><code class="descname">UnitModelBlock</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#idaes.core.unit_model.UnitModelBlock" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -402,6 +406,11 @@ ControlVolume blocks present.</p>
 <strong>useDefault</strong> - get flag from parent (default = False),
 <strong>True</strong> - set as a dynamic model, <strong>False</strong> - set as a
 steady-state model.}</dd>
+<dt>has_holdup</dt>
+<dd>Indicates whether holdup terms should be constructed or
+not. Must be True if dynamic = True, <strong>default</strong> - False.
+<strong>Valid values:</strong> { <strong>True</strong> - construct holdup terms,
+<strong>False</strong> - do not construct holdup terms}</dd>
 </dl>
 </dd>
 </dl>
@@ -416,7 +425,7 @@ BlockData index exactly to the index in initialize.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(UnitBlock) New instance</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">(UnitModelBlock) New instance</p>
 </td>
 </tr>
 </tbody>
@@ -437,7 +446,7 @@ BlockData index exactly to the index in initialize.</li>
         <a href="control_volume.html" class="btn btn-neutral float-right" title="Control Volume Classes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="reaction_block.html" class="btn btn-neutral" title="Reaction Property Package Classes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="reaction_block.html" class="btn btn-neutral float-left" title="Reaction Property Package Classes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -463,27 +472,16 @@ BlockData index exactly to the index in initialize.</li>
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
-        <script type="text/javascript" src="../_static/jquery.js"></script>
-        <script type="text/javascript" src="../_static/underscore.js"></script>
-        <script type="text/javascript" src="../_static/doctools.js"></script>
-        <script type="text/javascript" src="../_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="../_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>

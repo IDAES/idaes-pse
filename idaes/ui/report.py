@@ -13,8 +13,6 @@
 from pyomo.environ import *
 from pyomo.core.expr.current import identify_variables
 from pyomo.core.kernel.component_set import ComponentSet
-#from pyomo.core.base import Transformation, Constraint, \
-#    ConstraintList, Var, VarList, TraversalStrategy
 from pyomo.network.port import _PortData, SimplePort
 
 def large_residuals(blk, tol=1e-5):

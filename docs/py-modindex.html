@@ -19,13 +19,21 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
   <link rel="stylesheet" href="_static/theme_and_schema.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
@@ -33,21 +41,16 @@
  
 
 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
 </head>
 
 <body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
@@ -96,8 +99,9 @@
 <li class="toctree-l1"><a class="reference internal" href="property_models/index.html">Property Model Library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dmf/index.html">Data Management Framework</a></li>
 <li class="toctree-l1"><a class="reference internal" href="version.html">IDAES versioning</a></li>
-<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer/index.html">Developer Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
 </ul>
 
             
@@ -228,22 +232,22 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
-       <a href="dmf/base.html#module-idaes.dmf.dmfbase"><code class="xref">idaes.dmf.dmfbase</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="dmf/resource.html#module-idaes.dmf.resource"><code class="xref">idaes.dmf.resource</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
-       <a href="dmf/workspace.html#module-idaes.dmf.workspace"><code class="xref">idaes.dmf.workspace</code></a></td><td>
-       <em></em></td></tr>
-     <tr class="cg-1">
-       <td></td>
-       <td>&#160;&#160;&#160;
        <a href="models/cstr.html#module-idaes.unit_models.cstr"><code class="xref">idaes.unit_models.cstr</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="models/equilibrium.html#module-idaes.unit_models.equilibrium_reactor"><code class="xref">idaes.unit_models.equilibrium_reactor</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="models/feed.html#module-idaes.unit_models.feed"><code class="xref">idaes.unit_models.feed</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="models/feed_flash.html#module-idaes.unit_models.feed_flash"><code class="xref">idaes.unit_models.feed_flash</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
        <td></td>
@@ -278,7 +282,37 @@
      <tr class="cg-1">
        <td></td>
        <td>&#160;&#160;&#160;
+       <a href="models/power_generation/turbine_inlet.html#module-idaes.unit_models.power_generation.turbine_inlet"><code class="xref">idaes.unit_models.power_generation.turbine_inlet</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="models/power_generation/turbine_multistage.html#module-idaes.unit_models.power_generation.turbine_multistage"><code class="xref">idaes.unit_models.power_generation.turbine_multistage</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="models/power_generation/turbine_outlet.html#module-idaes.unit_models.power_generation.turbine_outlet"><code class="xref">idaes.unit_models.power_generation.turbine_outlet</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="models/power_generation/turbine_stage.html#module-idaes.unit_models.power_generation.turbine_stage"><code class="xref">idaes.unit_models.power_generation.turbine_stage</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="models/power_generation/steam_valve.html#module-idaes.unit_models.power_generation.valve_steam"><code class="xref">idaes.unit_models.power_generation.valve_steam</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
        <a href="models/pressure_changer.html#module-idaes.unit_models.pressure_changer"><code class="xref">idaes.unit_models.pressure_changer</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="models/product.html#module-idaes.unit_models.product"><code class="xref">idaes.unit_models.product</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
        <td></td>
@@ -289,6 +323,11 @@
        <td></td>
        <td>&#160;&#160;&#160;
        <a href="models/stoichiometric_reactor.html#module-idaes.unit_models.stoichiometric_reactor"><code class="xref">idaes.unit_models.stoichiometric_reactor</code></a></td><td>
+       <em></em></td></tr>
+     <tr class="cg-1">
+       <td></td>
+       <td>&#160;&#160;&#160;
+       <a href="models/translator.html#module-idaes.unit_models.translator"><code class="xref">idaes.unit_models.translator</code></a></td><td>
        <em></em></td></tr>
      <tr class="cg-1">
        <td></td>
@@ -325,27 +364,16 @@
   
 
 
-  
-
-    
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script type="text/javascript" src="_static/jquery.js"></script>
-        <script type="text/javascript" src="_static/underscore.js"></script>
-        <script type="text/javascript" src="_static/doctools.js"></script>
-        <script type="text/javascript" src="_static/language_data.js"></script>
-        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-
-  
-
-  <script type="text/javascript" src="_static/js/theme.js"></script>
-
   <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
