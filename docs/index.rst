@@ -38,6 +38,7 @@ Contents
     core/index
     models/index
     property_models/index
+    vis/index
     dmf/index
     version
     examples/index

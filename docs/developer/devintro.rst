@@ -53,12 +53,12 @@ pull
 Note that the `push` and `pull` commands require Github (or some other service
 that can host a remote copy of the repository).
 
-.. devterm-branch:
+.. _devterm-branch:
 
 Branches
 ^^^^^^^^
-There is a good description of what git branches are and how they work
-`here <https://git-scm.com/book/en/v1/Git-Branching-What-a-Branch-Is>`_.
+There is a good description of what git branches are and `how they work
+here <https://git-scm.com/book/en/v1/Git-Branching-What-a-Branch-Is>`_.
 Understanding this takes a little study, but this pays off by making
 git’s behavior much less mysterious. The short, practical version is
 that a branch is a name for a series of commits that you want to group
@@ -79,8 +79,8 @@ a repository from Github down to your local disk is called a “clone”).
 In this context, that means a copy of the “idaes-dev” repository from
 the IDAES organization (https://github.com/IDAES/idaes-dev) to your
 own user space, e.g., https://github.com/myname/idaes-dev). The
-mechanics of creating and using forks onGithub are given
-`here <https://help.github.com/articles/fork-a-repo/>`_.
+mechanics of creating and using forks on Github `are given
+here <https://help.github.com/articles/fork-a-repo/>`_.
 
 .. _devterm-pr:
 
