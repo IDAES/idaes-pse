@@ -66,6 +66,20 @@ def delta_temperature_amtd_rule(b, t):
     dT2 = b.delta_temperature_out[t]
     return (dT1 + dT2) * 0.5
 
+def delta_temperature_lmtd_approx_underwood_rule(b, t):
+    """
+    This is a rule for a temperaure difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
+    difference (LMTD) approximation given by Underwood (1970).  It can be
+    supplied to "delta_temperature_rule" HeatExchanger configuration option.
+    """
+    # TODO <jce>: If we combined this with a cube root function that returns the
+    #   real negative root when dT is negative, we would always be able to
+    #   evaluate this approximation.  Something to consider for the future.
+    dT1 = b.delta_temperature_in[t]
+    dT2 = b.delta_temperature_out[t]
+    return ((dT1**(1.0/3.0) + dT2**(1.0/3.0))/2.0)**3
+
 def _heat_transfer_rule(b, t):
     """
     This is the default rule used by the HeatExchanger model to calculate heat
@@ -88,7 +102,6 @@ def _cross_flow_heat_transfer_rule(b, t):
     deltaT = b.delta_temperature[t]
     f = b.crossflow_factor[t]
     return q == f*u*a*deltaT
-
 
 def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
     """
@@ -123,7 +136,6 @@ def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
         balance_type=config.momentum_balance_type,
         has_pressure_change=config.has_pressure_change)
     return control_volume
-
 
 def _make_heater_config_block(config):
     """
@@ -202,7 +214,6 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see property package for documentation.}"""))
-
 
 def _make_heat_exchanger_config(config):
     """
