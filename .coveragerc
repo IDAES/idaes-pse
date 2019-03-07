@@ -6,6 +6,8 @@ omit =
     */tests/*
     # skip DMF's CLI
     idaes/dmf/commands.py
+    # skip plugins
+    *_plugin.py
 
 branch = True
 

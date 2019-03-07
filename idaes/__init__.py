@@ -9,34 +9,51 @@ import importlib
 import toml
 import pyomo.common.plugin
 import pyomo.common.config
-from .ver import __version__    # noqa
+from .ver import __version__  # noqa
 
 
 _log = logging.getLogger(__name__)
 _config = pyomo.common.config.ConfigBlock("idaes", implicit=False)
-_config.declare("logging", pyomo.common.config.ConfigBlock(
-    implicit=True,
-    description="Logging configuration dictionary",
-    doc="This stores the logging configuration. See the Python "
-        "logging.config.dictConfig() documentation for details."))
-_config.declare("plugins", pyomo.common.config.ConfigBlock(
-    implicit=False,
-    description="Plugin search configuration",
-    doc="Plugin search configuration"))
-_config.plugins.declare("required", pyomo.common.config.ConfigValue(
-    default=[],
-    description="Modules with required plugins",
-    doc="This is a string list of modules from which to load plugins. "
+_config.declare(
+    "logging",
+    pyomo.common.config.ConfigBlock(
+        implicit=True,
+        description="Logging configuration dictionary",
+        doc="This stores the logging configuration. See the Python "
+        "logging.config.dictConfig() documentation for details.",
+    ),
+)
+_config.declare(
+    "plugins",
+    pyomo.common.config.ConfigBlock(
+        implicit=False,
+        description="Plugin search configuration",
+        doc="Plugin search configuration",
+    ),
+)
+_config.plugins.declare(
+    "required",
+    pyomo.common.config.ConfigValue(
+        default=[],
+        description="Modules with required plugins",
+        doc="This is a string list of modules from which to load plugins. "
         "This will look in {module}.plugins for things to load. Exceptions"
         "raised while attempting to load these plugins are considered fatal. "
-        "This is used for core plugins."))
-_config.plugins.declare("optional", pyomo.common.config.ConfigValue(
-    default=[],
-    description="Modules with optional plugins to load",
-    doc="This is a string list of modules from which to load plugins. "
-         "This will look in {module}.plugins for things to load. Exceptions "
-         "raised while attempting to load these plugins will be logged but "
-         "are nonfatal. This is used for contrib plugins."))
+        "This is used for core plugins.",
+    ),
+)
+_config.plugins.declare(
+    "optional",
+    pyomo.common.config.ConfigValue(
+        default=[],
+        description="Modules with optional plugins to load",
+        doc="This is a string list of modules from which to load plugins. "
+        "This will look in {module}.plugins for things to load. Exceptions "
+        "raised while attempting to load these plugins will be logged but "
+        "are nonfatal. This is used for contrib plugins.",
+    ),
+)
+
 
 def _read_config(config):
     """Read either a TOML formatted config file or a configuration dictionary.
@@ -49,19 +66,20 @@ def _read_config(config):
     if config is None:
         return
     elif isinstance(config, dict):
-        pass #don't worry this catches ConfigBlock too it seems
+        pass  # don't worry this catches ConfigBlock too it seems
     else:
         config_file = config
         try:
             with open(config_file, "r") as f:
                 config = toml.load(f)
-        except IOError: # don't require config file
+        except IOError:  # don't require config file
             _log.debug("Config file {} not found (this is okay)".format(config))
             return
     _config.set_value(config)
     logging.config.dictConfig(_config["logging"])
     if config_file is not None:
         _log.debug("Read config {}".format(config_file))
+
 
 def _import_packages(packages, optional=True):
     """Import plugin package, condensed from pyomo.environ.__init__.py
@@ -72,19 +90,22 @@ def _import_packages(packages, optional=True):
         None
     """
     for name in packages:
-        pname = name + '.plugins' # look in plugins sub-package
+        pname = name + '.plugins'  # look in plugins sub-package
         try:
             pkg = importlib.import_module(pname)
         except ImportError as e:
             _log.exception("failed to import plugin: {}".format(pname))
             if not optional:
                 raise e
-        if hasattr(pkg, 'load'): # run load function for a module if it exists
+        if hasattr(pkg, 'load'):  # run load function for a module if it exists
             pkg.load()
+
 
 # Set default configuration.  Used TOML string to serve as an example for
 # and definitive guide for IDAES configuration files.
-_read_config(toml.loads("""
+_read_config(
+    toml.loads(
+        """
 [plugins]
   required = []
   optional = []
@@ -101,17 +122,19 @@ _read_config(toml.loads("""
   [logging.loggers.idaes]
     level = "INFO"
     handlers = ["console"]
-"""))
+"""
+    )
+)
 
 # Try to read the global IDAES config file.
 # Set where to look for config files
 try:
-    if os.name == 'nt': # Windows
-        _global_config_file = \
-            os.path.join(os.environ['LOCALAPPDATA'], "idaes\idaes.conf")
-    else: # any other OS
-        _global_config_file = \
-            os.path.join(os.environ['HOME'], ".idaes/idaes.conf")
+    if os.name == 'nt':  # Windows
+        _global_config_file = os.path.join(
+            os.environ['LOCALAPPDATA'], "idaes\idaes.conf"
+        )
+    else:  # any other OS
+        _global_config_file = os.path.join(os.environ['HOME'], ".idaes/idaes.conf")
 except AttributeError:
     _global_config_file = None
     _log.debug("No suitable global config file path found (this is okay).")
@@ -128,7 +151,7 @@ _log.debug("'idaes' logger debug test")
 # _import_packages again later though
 
 # This make "idaes" the current plugin environment while importing plugins here
-pyomo.common.plugin.push("idaes") # Add idaes plugin environment at top of stack
+pyomo.common.plugin.push("idaes")  # Add idaes plugin environment at top of stack
 # Import plugins standard IDAES plugins, non-optional plugins
 _import_packages(_config["plugins"]["required"], optional=False)
 # Import contrib plugins, failure to import these is non-fatal.

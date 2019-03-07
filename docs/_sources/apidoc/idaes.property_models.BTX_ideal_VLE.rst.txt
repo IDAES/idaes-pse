@@ -1,7 +1,0 @@
-idaes.property\_models.BTX\_ideal\_VLE module
-=============================================
-
-.. automodule:: idaes.property_models.BTX_ideal_VLE
-    :members:
-    :undoc-members:
-    :show-inheritance:

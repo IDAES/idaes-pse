@@ -1,7 +1,0 @@
-idaes.dmf.magics module
-=======================
-
-.. automodule:: idaes.dmf.magics
-    :members:
-    :undoc-members:
-    :show-inheritance:
