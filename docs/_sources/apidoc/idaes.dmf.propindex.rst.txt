@@ -1,7 +1,0 @@
-idaes.dmf.propindex module
-==========================
-
-.. automodule:: idaes.dmf.propindex
-    :members:
-    :undoc-members:
-    :show-inheritance:

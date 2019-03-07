@@ -73,6 +73,8 @@ def test_initialize_heat_exchanger(build_heat_exchanger):
         "pressure":101325,
         "enth_mol":3500}
 
+    m.fs.heat_exchanger.area.fix(1000)
+    m.fs.heat_exchanger.overall_heat_transfer_coefficient.fix(100)
     prop_in_1 = m.fs.heat_exchanger.side_1.properties_in[0]
     prop_out_1 = m.fs.heat_exchanger.side_1.properties_out[0]
     prop_in_2 = m.fs.heat_exchanger.side_2.properties_in[0]
