@@ -5,14 +5,13 @@
 # DATE          = $(shell date +%Y-%m-%d_%H%M%S)
 SPHINXOPTS    = -w sphinx-build.log -T 
 SPHINXBUILD   = sphinx-build
-PAPER         =
 BUILDDIR      = ./build
 SCRIPTDIR     = scripts
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
-ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
+ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_letter) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
@@ -258,8 +257,13 @@ linkcheck:
 
 .PHONY: doctest
 doctest:
+<<<<<<< HEAD:docs/Makefile
 	mkdir -p $(BUILDDIR)/doctest
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
+=======
+	$(SPHINXBUILD) -b doctest \
+		$(ALLSPHINXOPTS) $(BUILDDIR)/doctest
+>>>>>>> b9f06bf9a7d5f1cca677352acfce5949d7a61311:docs_rst/Makefile
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
