@@ -1,8 +1,0 @@
-idaes.unit\_models.icons package
-================================
-
-.. automodule:: idaes.unit_models.icons
-    :members:
-    :undoc-members:
-    :show-inheritance:
-

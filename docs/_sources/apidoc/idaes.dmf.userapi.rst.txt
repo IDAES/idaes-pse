@@ -1,7 +1,0 @@
-idaes.dmf.userapi module
-========================
-
-.. automodule:: idaes.dmf.userapi
-    :members:
-    :undoc-members:
-    :show-inheritance:
