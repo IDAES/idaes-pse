@@ -1,7 +1,0 @@
-idaes.core.util.convergence.convergence\_base module
-====================================================
-
-.. automodule:: idaes.core.util.convergence.convergence_base
-    :members:
-    :undoc-members:
-    :show-inheritance:

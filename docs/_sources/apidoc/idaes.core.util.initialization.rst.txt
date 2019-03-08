@@ -1,7 +1,0 @@
-idaes.core.util.initialization module
-=====================================
-
-.. automodule:: idaes.core.util.initialization
-    :members:
-    :undoc-members:
-    :show-inheritance:
