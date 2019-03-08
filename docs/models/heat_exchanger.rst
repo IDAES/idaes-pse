@@ -142,7 +142,7 @@ Rules for the ``heat_transfer_rule`` Option
 
 These rules provide constraints for the heat transfer rate.
 
-.. autofunction:: heat_transfer_rule
+.. autofunction:: _heat_transfer_rule
 
 
 Rules for the ``heat_transfer_coefficient_rule`` Option

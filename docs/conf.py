@@ -163,21 +163,19 @@ html_title = u'IDAES v1.0.0'
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 #
-#html_logo = "source/_static/idaes-logo-100x100.png"
-html_logo = "_static/idaes-logo-100x100.png"
+html_logo = "_images/idaes-logo-100x100.png"
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 #
-#html_favicon = "source/_static/idaes-logo.ico"
-html_favicon = "_static/idaes-logo.ico"
+html_favicon = "_images/idaes-logo.ico"
 
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ['_static', '_images']
 html_style = 'theme_and_schema.css'
 
 # Add any extra paths that contain custom files (such as robots.txt or

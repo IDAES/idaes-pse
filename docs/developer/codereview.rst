@@ -92,7 +92,7 @@ Automated Checks
 ~~~~~~~~~~~~~~~~
 The first level of code review is a set of automated checks that *must* pass
 before the code is ready for people to review it. These checks will run
-on the initiation of a :ref:`pull request <devterm_pr>` and on every new commit to that pull
+on the initiation of a :ref:`pull request <devterm-pr>` and on every new commit to that pull
 request that is pushed to Github (thus the name “continuous
 integration”).
 
