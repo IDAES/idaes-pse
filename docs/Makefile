@@ -71,6 +71,8 @@ dep: apidoc
 html:
 	mkdir -p $(BUILDDIR)/examples
 	SPHINX=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)
+	@/bin/cp examples/*.html $(BUILDDIR)/examples
+	@/bin/cp examples/*.png $(BUILDDIR)/examples
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)"
 
