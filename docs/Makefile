@@ -3,12 +3,14 @@
 
 # You can set these variables from the command line.
 # DATE          = $(shell date +%Y-%m-%d_%H%M%S)
-SPHINXOPTS    = -w sphinx-build.log -T 
+SPHINXOPTS    = -w sphinx-errors.txt -T
 SPHINXBUILD   = sphinx-build
 BUILDDIR      = ./build
 SCRIPTDIR     = scripts
 
 # Internal variables.
+SPHINXDOCDIR  = doctest
+SPHINXDOCTEST = $(SPHINXBUILD) -b $(SPHINXDOCDIR) .
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(SPHINXOPTS) .
@@ -257,8 +259,8 @@ linkcheck:
 
 .PHONY: doctest
 doctest:
-	mkdir -p $(BUILDDIR)/doctest
-	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
+	mkdir -p $(BUILDDIR)/$(SPHINXDOCDIR)
+	$(SPHINXDOCTEST) $(BUILDDIR)/$(SPHINXDOCDIR)
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
