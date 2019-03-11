@@ -1,7 +1,0 @@
-idaes.unit\_models.heat\_exchanger\_1D module
-=============================================
-
-.. automodule:: idaes.unit_models.heat_exchanger_1D
-    :members:
-    :undoc-members:
-    :show-inheritance:

@@ -18,8 +18,3 @@ div.highlight pre {
 .wy-nav-content {
     max-width: 1000px; /* default=800 */
 }
-
-/* eliminate table horiz. scrolling */
-.wy-table-responsive table td {
-    white-space: normal;
-}

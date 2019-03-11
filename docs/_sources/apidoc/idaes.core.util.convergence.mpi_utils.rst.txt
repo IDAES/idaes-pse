@@ -1,7 +1,0 @@
-idaes.core.util.convergence.mpi\_utils module
-=============================================
-
-.. automodule:: idaes.core.util.convergence.mpi_utils
-    :members:
-    :undoc-members:
-    :show-inheritance:
