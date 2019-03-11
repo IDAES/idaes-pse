@@ -32,7 +32,7 @@ from pyomo.common.config import ConfigValue, In
 from idaes.core import declare_process_block_class, PhysicalParameterBlock
 from idaes.core.util.misc import extract_data
 
-from idaes.property_models.activity_coeff_models.NRTL_prop_pack_VLE \
+from idaes.property_models.activity_coeff_models.activity_coeff_prop_pack \
     import IdealNRTLStateBlock
 
 # Some more inforation about this module
