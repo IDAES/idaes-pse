@@ -235,7 +235,7 @@ Python Distribution
 
 * Add Anaconda and Anaconda scripts to the path "c:\users\<user>\Anaconda2\" and "c:\users\<user>\Anaconda2\Scripts\". To do this, search for "Edit system variables" in Windows search.  Click on "Edit system environment variables". Click on "Environment Variables". Under "System   Variables", search for the variable "Path" and click "Edit"
 
-	.. image:: _static/install_windows_system_properties.png
+	.. image:: _images/install_windows_system_properties.png
 	   :align: center
 	   :scale: 75%
 
@@ -256,7 +256,7 @@ Python Distribution
 
 * Restart the command prompt and type `python`. If the path variable was added correctly, then you should be able to see the python interpreter as shown below.
 
-.. image:: _static/install_windows_cmd_python.png
+.. image:: _images/install_windows_cmd_python.png
    :align: center
    :scale: 75%
 
