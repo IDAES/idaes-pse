@@ -11,8 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Example property package for the VLE calucations for a Benzene-Toluene-o-Xylene
-system.
+Example ideal parameter block for the VLE calucations for a
+Benzene-Toluene-o-Xylene system.
 """
 
 # Chages the divide behavior to not do integer division
