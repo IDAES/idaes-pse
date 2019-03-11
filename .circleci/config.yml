@@ -10,7 +10,7 @@ shared: &shared
     - run: pyomo --version
     - run: sudo python setup.py -q install
     - run: cd docs && make html
-    - run: pytest idaes -m "not nocircleci"
+    - run: pytest . -m "not nocircleci"
     - run: coverage report
     - run: coveralls
 jobs:
