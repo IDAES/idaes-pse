@@ -25,15 +25,14 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Param, NonNegativeReals, Set, Var
-from pyomo.common.config import ConfigValue, In
+from pyomo.environ import Param, NonNegativeReals, Set
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, PhysicalParameterBlock
+from idaes.core import declare_process_block_class
 from idaes.core.util.misc import extract_data
 
 from idaes.property_models.activity_coeff_models.activity_coeff_prop_pack \
-    import IdealNRTLStateBlock
+    import ActivityCoeffParameterData
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -44,58 +43,14 @@ __version__ = "0.0.1"
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("IdealParameterBlock")
-class PhysicalParameterData(PhysicalParameterBlock):
-    """
-    Property Parameter Block Class
-    Contains parameters and indexing sets associated with properties for
-    BTX system.
-    """
-    # Config block for the _IdealStateBlock
-    CONFIG = PhysicalParameterBlock.CONFIG()
-
-    CONFIG.declare("activity_coeff_model", ConfigValue(
-        default=None,
-        domain=In([None, 'NRTL', 'Wilson']),
-        description="Flag indicating the activity coefficient model",
-        doc="""Flag indicating the activity coefficient model to be used
-for the non-ideal liquid, and thus corresponding constraints  should be
-included,
-**default** - None (i.e. ideal).
-**Valid values:** {
-**'NRTL'** - Non Random Two Liquid Model,
-**'Wilson'** - Wilson Liquid Model,}"""))
-
-    CONFIG.declare("valid_phase", ConfigValue(
-        default=('Vap', 'Liq'),
-        domain=In(['Liq', 'Vap', ('Vap', 'Liq'), ('Liq', 'Vap')]),
-        description="Flag indicating the valid phase",
-        doc="""Flag indicating the valid phase for a given set of
-conditions, and thus corresponding constraints  should be included,
-**default** - ('Vap', 'Liq').
-**Valid values:** {
-**'Liq'** - Liquid only,
-**'Vap'** - Vapor only,
-**('Vap', 'Liq')** - Vapor-liquid equilibrium,
-**('Liq', 'Vap')** - Vapor-liquid equilibrium,}"""))
+@declare_process_block_class("BTXParameterBlock")
+class BTXParameterData(ActivityCoeffParameterData):
 
     def build(self):
         '''
         Callable method for Block construction.
         '''
-        super(PhysicalParameterData, self).build()
-
-        self.state_block_class = IdealNRTLStateBlock
-
-        # List of valid phases in property package
-        if self.config.valid_phase == ('Liq', 'Vap') or \
-                self.config.valid_phase == ('Vap', 'Liq'):
-            self.phase_list = Set(initialize=['Liq', 'Vap'],
-                                  ordered=True)
-        elif self.config.valid_phase == 'Liq':
-            self.phase_list = Set(initialize=['Liq'])
-        else:
-            self.phase_list = Set(initialize=['Vap'])
+        super(BTXParameterData, self).build()
 
         self.component_list_master = Set(initialize=['benzene',
                                                      'toluene',
@@ -250,56 +205,3 @@ conditions, and thus corresponding constraints  should be included,
                             mutable=False,
                             initialize=extract_data(dh_vap),
                             doc="heat of vaporization")
-
-        # NRTL Model specific variables (values to be fixed by user or need to
-        # be estimated based on VLE data)
-        if self.config.activity_coeff_model == "NRTL":
-            self.alpha = Var(self.component_list, self.component_list,
-                             initialize=0.3,
-                             doc="Non-randomness parameter for NRTL model")
-
-            self.tau = Var(self.component_list, self.component_list,
-                           initialize=1.0,
-                           doc="Binary interaction parameter for NRTL model")
-
-        # Wilson Model specific variables (values to be fixed by user or need
-        # to be estimated based on VLE data)
-        if self.config.activity_coeff_model == "Wilson":
-            self.vol_mol_comp = Var(self.component_list,
-                                    initialize=1.0,
-                                    doc="Molar volume of component")
-
-            self.tau = Var(self.component_list, self.component_list,
-                           initialize=1.0,
-                           doc="Binary interaction parameter for NRTL model")
-
-    @classmethod
-    def define_metadata(cls, obj):
-        """Define properties supported and units."""
-        obj.add_properties(
-            {'flow_mol': {'method': None, 'units': 'mol/s'},
-             'mole_frac': {'method': None, 'units': 'no unit'},
-             'temperature': {'method': None, 'units': 'K'},
-             'pressure': {'method': None, 'units': 'Pa'},
-             'flow_mol_phase': {'method': None, 'units': 'mol/s'},
-             'density_mol': {'method': '_density_mol',
-                             'units': 'mol/m^3'},
-             'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
-             'mole_frac_phase': {'method': '_mole_frac_phase',
-                                 'units': 'no unit'},
-             'enthalpy_comp_liq': {'method': '_enthalpy_comp_liq',
-                                   'units': 'J/mol'},
-             'enthalpy_comp_vap': {'method': '_enthalpy_comp_vap',
-                                   'units': 'J/mol'},
-             'enthalpy_liq': {'method': '_enthalpy_liq',
-                              'units': 'J/mol'},
-             'enthalpy_vap': {'method': '_enthalpy_vap',
-                              'units': 'J/mol'}})
-
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})

@@ -48,11 +48,14 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp
+from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp,\
+    Set
 from pyomo.opt import SolverFactory, TerminationCondition
+from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
+                        PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
@@ -68,7 +71,91 @@ __version__ = "0.0.1"
 _log = logging.getLogger(__name__)
 
 
-class _IdealNRTLStateBlock(StateBlock):
+class ActivityCoeffParameterData(PhysicalParameterBlock):
+    """
+    Property Parameter Block Class
+    Contains parameters and indexing sets associated with properties for
+    BTX system.
+    """
+    # Config block for the _IdealStateBlock
+    CONFIG = PhysicalParameterBlock.CONFIG()
+
+    CONFIG.declare("activity_coeff_model", ConfigValue(
+        default=None,
+        domain=In([None, 'NRTL', 'Wilson']),
+        description="Flag indicating the activity coefficient model",
+        doc="""Flag indicating the activity coefficient model to be used
+for the non-ideal liquid, and thus corresponding constraints  should be
+included,
+**default** - None (i.e. ideal).
+**Valid values:** {
+**'NRTL'** - Non Random Two Liquid Model,
+**'Wilson'** - Wilson Liquid Model,}"""))
+
+    CONFIG.declare("valid_phase", ConfigValue(
+        default=('Vap', 'Liq'),
+        domain=In(['Liq', 'Vap', ('Vap', 'Liq'), ('Liq', 'Vap')]),
+        description="Flag indicating the valid phase",
+        doc="""Flag indicating the valid phase for a given set of
+conditions, and thus corresponding constraints  should be included,
+**default** - ('Vap', 'Liq').
+**Valid values:** {
+**'Liq'** - Liquid only,
+**'Vap'** - Vapor only,
+**('Vap', 'Liq')** - Vapor-liquid equilibrium,
+**('Liq', 'Vap')** - Vapor-liquid equilibrium,}"""))
+
+    def build(self):
+        '''
+        Callable method for Block construction.
+        '''
+        super(ActivityCoeffParameterData, self).build()
+
+        self.state_block_class = ActivityCoeffStateBlock
+
+        # List of valid phases in property package
+        if self.config.valid_phase == ('Liq', 'Vap') or \
+                self.config.valid_phase == ('Vap', 'Liq'):
+            self.phase_list = Set(initialize=['Liq', 'Vap'],
+                                  ordered=True)
+        elif self.config.valid_phase == 'Liq':
+            self.phase_list = Set(initialize=['Liq'])
+        else:
+            self.phase_list = Set(initialize=['Vap'])
+
+    @classmethod
+    def define_metadata(cls, obj):
+        """Define properties supported and units."""
+        obj.add_properties(
+            {'flow_mol': {'method': None, 'units': 'mol/s'},
+             'mole_frac': {'method': None, 'units': 'no unit'},
+             'temperature': {'method': None, 'units': 'K'},
+             'pressure': {'method': None, 'units': 'Pa'},
+             'flow_mol_phase': {'method': None, 'units': 'mol/s'},
+             'density_mol': {'method': '_density_mol',
+                             'units': 'mol/m^3'},
+             'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
+             'mole_frac_phase': {'method': '_mole_frac_phase',
+                                 'units': 'no unit'},
+             'enthalpy_comp_liq': {'method': '_enthalpy_comp_liq',
+                                   'units': 'J/mol'},
+             'enthalpy_comp_vap': {'method': '_enthalpy_comp_vap',
+                                   'units': 'J/mol'},
+             'enthalpy_liq': {'method': '_enthalpy_liq',
+                              'units': 'J/mol'},
+             'enthalpy_vap': {'method': '_enthalpy_vap',
+                              'units': 'J/mol'}})
+
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
+
+
+class _ActivityCoeffStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -327,14 +414,14 @@ class _IdealNRTLStateBlock(StateBlock):
                 _log.info('{} State Released.'.format(blk.name))
 
 
-@declare_process_block_class("IdealNRTLStateBlock",
-                             block_class=_IdealNRTLStateBlock)
-class IdealNRTLStateBlockData(StateBlockData):
+@declare_process_block_class("ActivityCoeffStateBlock",
+                             block_class=_ActivityCoeffStateBlock)
+class ActivityCoeffStateBlockData(StateBlockData):
     """An example property package for ideal VLE."""
 
     def build(self):
         """Callable method for Block construction."""
-        super(IdealNRTLStateBlockData, self).build()
+        super(ActivityCoeffStateBlockData, self).build()
 
         # Check for valid phase indicator and consistent flags
         if self.config.has_phase_equilibrium and \
@@ -415,24 +502,6 @@ class IdealNRTLStateBlockData(StateBlockData):
         # heat of vaporization
         add_object_reference(self, "dh_vap",
                              self.config.parameters.dh_vap)
-
-        if self.config.parameters.config.activity_coeff_model == "NRTL":
-            # Non-randomness parameter for NRTL model
-            add_object_reference(self, "alpha",
-                                 self.config.parameters.alpha)
-
-            # Binary interaction parameter for NRTL model
-            add_object_reference(self, "tau",
-                                 self.config.parameters.tau)
-
-        if self.config.parameters.config.activity_coeff_model == "Wilson":
-            # Molar volume for Wilson model
-            add_object_reference(self, "vol_mol_comp",
-                                 self.config.parameters.vol_mol_comp)
-
-            # Binary interaction parameter for Wilson model
-            add_object_reference(self, "tau",
-                                 self.config.parameters.tau)
 
     def _make_state_vars(self):
         """List the necessary state variable objects."""
@@ -554,6 +623,17 @@ class IdealNRTLStateBlockData(StateBlockData):
 
     def _make_NRTL_eq(self):
 
+        # NRTL Model specific variables (values to be fixed by user or need to
+        # be estimated based on VLE data)
+        self.alpha = Var(self.component_list_ref, self.component_list_ref,
+                         initialize=0.3,
+                         doc="Non-randomness parameter for NRTL model")
+
+        self.tau = Var(self.component_list_ref, self.component_list_ref,
+                       initialize=1.0,
+                       doc="Binary interaction parameter for NRTL model")
+
+        # NRTL model variables
         self.Gij_coeff = Var(self.component_list_ref, self.component_list_ref,
                              initialize=1.0,
                              doc="Gij coefficient for use in NRTL model ")
@@ -618,6 +698,17 @@ class IdealNRTLStateBlockData(StateBlockData):
 
     def _make_Wilson_eq(self):
 
+        # Wilson Model specific variables (values to be fixed by user or need
+        # to be estimated based on VLE data)
+        self.vol_mol_comp = Var(self.component_list_ref,
+                                initialize=1.0,
+                                doc="Molar volume of component")
+
+        self.tau = Var(self.component_list_ref, self.component_list_ref,
+                       initialize=1.0,
+                       doc="Binary interaction parameter for NRTL model")
+
+        # Wilson model variables
         self.Gij_coeff = Var(self.component_list_ref, self.component_list_ref,
                              initialize=1.0,
                              doc="Gij coefficient for use in NRTL model ")

@@ -21,7 +21,7 @@ from pyomo.environ import ConcreteModel
 
 from idaes.core import FlowsheetBlock
 from idaes.property_models.activity_coeff_models.BTX_ideal_VLE \
-    import IdealParameterBlock
+    import BTXParameterBlock
 from idaes.ui.report import degrees_of_freedom
 
 # -----------------------------------------------------------------------------
@@ -30,10 +30,10 @@ m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid (Wilson)
-m.fs.properties_Wilson = IdealParameterBlock(default={"valid_phase":
-                                                      ('Liq', 'Vap'),
-                                                      "activity_coeff_model":
-                                                      'Wilson'})
+m.fs.properties_Wilson = BTXParameterBlock(default={"valid_phase":
+                                                    ('Liq', 'Vap'),
+                                                    "activity_coeff_model":
+                                                    'Wilson'})
 m.fs.state_block_Wilson = m.fs.properties_Wilson.state_block_class(
     default={"parameters": m.fs.properties_Wilson,
              "defined_state": True})
@@ -68,10 +68,10 @@ def test_setInputs_vap_liq_inlet():
 m.fs1 = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid (Wilson)
-m.fs1.properties_Wilson = IdealParameterBlock(default={"valid_phase":
-                                                       ('Liq', 'Vap'),
-                                                       "activity_coeff_model":
-                                                       'Wilson'})
+m.fs1.properties_Wilson = BTXParameterBlock(default={"valid_phase":
+                                                     ('Liq', 'Vap'),
+                                                     "activity_coeff_model":
+                                                     'Wilson'})
 m.fs1.state_block_Wilson = m.fs1.properties_Wilson.state_block_class(
     default={"parameters": m.fs1.properties_Wilson,
              "defined_state": False})
