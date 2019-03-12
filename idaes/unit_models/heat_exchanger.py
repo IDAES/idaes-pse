@@ -18,7 +18,7 @@ __author__ = "John Eslick"
 
 import logging
 # Import Pyomo libraries
-from pyomo.environ import (Var, log, Expression, Constraint,
+from pyomo.environ import (Var, log, Expression, Constraint, Param,
                            PositiveReals, SolverFactory)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
@@ -89,7 +89,7 @@ def _heat_transfer_rule(b, t):
     a = b.area
     q = b.heat_duty[t]
     deltaT = b.delta_temperature[t]
-    return q == u*a*deltaT
+    return 0 == (u*a*deltaT - q)/b.heat_transfer_scale
 
 def _cross_flow_heat_transfer_rule(b, t):
     """
@@ -101,7 +101,7 @@ def _cross_flow_heat_transfer_rule(b, t):
     q = b.heat_duty[t]
     deltaT = b.delta_temperature[t]
     f = b.crossflow_factor[t]
-    return q == f*u*a*deltaT
+    return 0 == (f*u*a*deltaT - q)/b.heat_transfer_scale
 
 def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
     """
@@ -293,6 +293,8 @@ class HeatExchangerData(UnitModelBlockData):
         # Call UnitModel.build to setup dynamics
         super(HeatExchangerData, self).build()
         # Add variables
+        self.heat_transfer_scale = Param(mutable=True, default=1e5,
+            doc="Approximate magnitude of heat duty.")
         self.overall_heat_transfer_coefficient = Var(self.time_ref,
             domain=PositiveReals, initialize=100,
             doc="Overall heat transfer coefficient")
@@ -406,7 +408,7 @@ class HeatExchangerData(UnitModelBlockData):
 
         opt = SolverFactory(solver)
         opt.options = optarg
-        opt.options.update(halt_on_ampl_error="yes")
+        #opt.options.update(halt_on_ampl_error="yes")
 
         flags1 = self.side_1.initialize(outlvl=outlvl - 1,
                                         optarg=optarg,
