@@ -30,73 +30,192 @@ m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid (Wilson)
-m.fs.properties_Wilson = BTXParameterBlock(default={"valid_phase":
-                                                    ('Liq', 'Vap'),
-                                                    "activity_coeff_model":
-                                                    'Wilson'})
-m.fs.state_block_Wilson = m.fs.properties_Wilson.state_block_class(
-    default={"parameters": m.fs.properties_Wilson,
+m.fs.properties_Wilson_vl = BTXParameterBlock(default={"valid_phase":
+                                                       ('Liq', 'Vap'),
+                                                       "activity_coeff_model":
+                                                       'Wilson'})
+m.fs.state_block_Wilson_vl = m.fs.properties_Wilson_vl.state_block_class(
+    default={"parameters": m.fs.properties_Wilson_vl,
+             "defined_state": True})
+
+# liquid only (Wilson)
+m.fs.properties_Wilson_l = BTXParameterBlock(default={"valid_phase":
+                                                      'Liq',
+                                                      "activity_coeff_model":
+                                                      'Wilson'})
+m.fs.state_block_Wilson_l = m.fs.properties_Wilson_l.state_block_class(
+    default={"parameters": m.fs.properties_Wilson_l,
+             "has_phase_equilibrium": False,
+             "defined_state": True})
+
+# vapour only (Wilson)
+m.fs.properties_Wilson_v = BTXParameterBlock(default={"valid_phase":
+                                                      'Vap',
+                                                      "activity_coeff_model":
+                                                      'Wilson'})
+m.fs.state_block_Wilson_v = m.fs.properties_Wilson_v.state_block_class(
+    default={"parameters": m.fs.properties_Wilson_v,
+             "has_phase_equilibrium": False,
              "defined_state": True})
 
 
-def test_build_vap_liq_inlet():
+def test_build_inlet_state_block():
+    assert len(m.fs.properties_Wilson_vl.config) == 3
 
     # vapor-liquid (Wilson)
-    assert len(m.fs.properties_Wilson.config) == 3
+    assert m.fs.properties_Wilson_vl.config.valid_phase == ('Vap', 'Liq') or \
+        m.fs.properties_Wilson_vl.config.valid_phase == ('Liq', 'Vap')
+    assert len(m.fs.properties_Wilson_vl.phase_list) == 2
+    assert m.fs.properties_Wilson_vl.phase_list == ["Liq", "Vap"]
+    assert m.fs.state_block_Wilson_vl.config.defined_state
+    assert hasattr(m.fs.state_block_Wilson_vl, "eq_Keq")
+    assert hasattr(m.fs.state_block_Wilson_vl, "eq_activity_coeff")
+    assert not hasattr(m.fs.state_block_Wilson_vl, "eq_mol_frac_out")
 
-    assert m.fs.properties_Wilson.config.valid_phase == ('Vap', 'Liq') or \
-        m.fs.properties_Wilson.config.valid_phase == ('Liq', 'Vap')
-    assert len(m.fs.properties_Wilson.phase_list) == 2
-    assert m.fs.properties_Wilson.phase_list == ["Liq", "Vap"]
-    assert hasattr(m.fs.state_block_Wilson, "eq_Keq")
-    assert hasattr(m.fs.state_block_Wilson, "eq_activity_coeff")
-    assert not hasattr(m.fs.state_block_Wilson, "eq_mol_frac_out")
+    # liquid only (Wilson)
+    assert len(m.fs.properties_Wilson_l.config) == 3
+
+    assert m.fs.properties_Wilson_l.config.valid_phase == 'Liq'
+    assert len(m.fs.properties_Wilson_l.phase_list) == 1
+    assert m.fs.properties_Wilson_l.phase_list == ["Liq"]
+    assert m.fs.state_block_Wilson_l.config.defined_state
+    assert not hasattr(m.fs.state_block_Wilson_l, "eq_Keq")
+    assert not hasattr(m.fs.state_block_Wilson_l, "eq_activity_coeff")
+    assert not hasattr(m.fs.state_block_Wilson_l, "eq_mol_frac_out")
+
+    # vapor only (Wilson)
+    assert len(m.fs.properties_Wilson_v.config) == 3
+
+    assert m.fs.properties_Wilson_v.config.valid_phase == 'Vap'
+    assert len(m.fs.properties_Wilson_v.phase_list) == 1
+    assert m.fs.properties_Wilson_v.phase_list == ["Vap"]
+    assert m.fs.state_block_Wilson_v.config.defined_state
+    assert not hasattr(m.fs.state_block_Wilson_v, "eq_Keq")
+    assert not hasattr(m.fs.state_block_Wilson_v, "eq_activity_coeff")
+    assert not hasattr(m.fs.state_block_Wilson_v, "eq_mol_frac_out")
 
 
-def test_setInputs_vap_liq_inlet():
+def test_setInputs_inlet_state_block():
 
     # vapor-liquid (Wilson)
-    m.fs.state_block_Wilson.flow_mol.fix(1)
-    m.fs.state_block_Wilson.temperature.fix(368)
-    m.fs.state_block_Wilson.pressure.fix(101325)
-    m.fs.state_block_Wilson.mole_frac["benzene"].fix(0.5)
-    m.fs.state_block_Wilson.mole_frac["toluene"].fix(0.5)
+    m.fs.state_block_Wilson_vl.flow_mol.fix(1)
+    m.fs.state_block_Wilson_vl.temperature.fix(368)
+    m.fs.state_block_Wilson_vl.pressure.fix(101325)
+    m.fs.state_block_Wilson_vl.mole_frac["benzene"].fix(0.5)
+    m.fs.state_block_Wilson_vl.mole_frac["toluene"].fix(0.5)
 
-    assert degrees_of_freedom(m.fs.state_block_Wilson) == 4
+    assert degrees_of_freedom(m.fs.state_block_Wilson_vl) == 4
+
+    # liquid only (Wilson)
+    m.fs.state_block_Wilson_l.flow_mol.fix(1)
+    m.fs.state_block_Wilson_l.temperature.fix(368)
+    m.fs.state_block_Wilson_l.pressure.fix(101325)
+    m.fs.state_block_Wilson_l.mole_frac["benzene"].fix(0.5)
+    m.fs.state_block_Wilson_l.mole_frac["toluene"].fix(0.5)
+
+    assert degrees_of_freedom(m.fs.state_block_Wilson_l) == 0
+
+    # vapour only (Wilson)
+    m.fs.state_block_Wilson_v.flow_mol.fix(1)
+    m.fs.state_block_Wilson_v.temperature.fix(368)
+    m.fs.state_block_Wilson_v.pressure.fix(101325)
+    m.fs.state_block_Wilson_v.mole_frac["benzene"].fix(0.5)
+    m.fs.state_block_Wilson_v.mole_frac["toluene"].fix(0.5)
+
+    assert degrees_of_freedom(m.fs.state_block_Wilson_v) == 0
 
 
+# Create a flowsheet object to test outlet state blocks
 m.fs1 = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid (Wilson)
-m.fs1.properties_Wilson = BTXParameterBlock(default={"valid_phase":
-                                                     ('Liq', 'Vap'),
-                                                     "activity_coeff_model":
-                                                     'Wilson'})
-m.fs1.state_block_Wilson = m.fs1.properties_Wilson.state_block_class(
-    default={"parameters": m.fs1.properties_Wilson,
+m.fs1.properties_Wilson_vl = BTXParameterBlock(default={"valid_phase":
+                                                        ('Liq', 'Vap'),
+                                                        "activity_coeff_model":
+                                                        'Wilson'})
+m.fs1.state_block_Wilson_vl = m.fs1.properties_Wilson_vl.state_block_class(
+    default={"parameters": m.fs1.properties_Wilson_vl,
+             "defined_state": False})
+
+# liquid only (Wilson)
+m.fs1.properties_Wilson_l = BTXParameterBlock(default={"valid_phase":
+                                                       "Liq",
+                                                       "activity_coeff_model":
+                                                       'Wilson'})
+m.fs1.state_block_Wilson_l = m.fs1.properties_Wilson_l.state_block_class(
+    default={"parameters": m.fs1.properties_Wilson_l,
+             "has_phase_equilibrium": False,
+             "defined_state": False})
+
+# vapour only (Wilson)
+m.fs1.properties_Wilson_v = BTXParameterBlock(default={"valid_phase":
+                                                       "Vap",
+                                                       "activity_coeff_model":
+                                                       'Wilson'})
+m.fs1.state_block_Wilson_v = m.fs1.properties_Wilson_v.state_block_class(
+    default={"parameters": m.fs1.properties_Wilson_v,
+             "has_phase_equilibrium": False,
              "defined_state": False})
 
 
-def test_build_vap_liq_outlet():
-    # vapor-liquid (Wilson)
-    assert len(m.fs1.properties_Wilson.config) == 3
-
-    assert m.fs1.properties_Wilson.config.valid_phase == ('Vap', 'Liq') or \
-        m.fs1.properties_Wilson.config.valid_phase == ('Liq', 'Vap')
-    assert len(m.fs1.properties_Wilson.phase_list) == 2
-    assert m.fs1.properties_Wilson.phase_list == ["Liq", "Vap"]
-    assert not m.fs1.state_block_Wilson.config.defined_state
-    assert hasattr(m.fs1.state_block_Wilson, "eq_Keq")
-    assert hasattr(m.fs1.state_block_Wilson, "eq_activity_coeff")
-    assert hasattr(m.fs1.state_block_Wilson, "eq_mol_frac_out")
-
-
-def test_setInputs_vap_liq_outlet():
+def test_build_outlet_state_block():
+    assert len(m.fs.properties_Wilson_vl.config) == 3
 
     # vapor-liquid (Wilson)
-    m.fs1.state_block_Wilson.flow_mol.fix(1)
-    m.fs1.state_block_Wilson.temperature.fix(368)
-    m.fs1.state_block_Wilson.pressure.fix(101325)
-    m.fs1.state_block_Wilson.mole_frac["benzene"].fix(0.5)
+    assert m.fs1.properties_Wilson_vl.config.valid_phase == ('Vap', 'Liq') or \
+        m.fs1.properties_Wilson_vl.config.valid_phase == ('Liq', 'Vap')
+    assert len(m.fs1.properties_Wilson_vl.phase_list) == 2
+    assert m.fs1.properties_Wilson_vl.phase_list == ["Liq", "Vap"]
+    assert not m.fs1.state_block_Wilson_vl.config.defined_state
+    assert hasattr(m.fs1.state_block_Wilson_vl, "eq_Keq")
+    assert hasattr(m.fs1.state_block_Wilson_vl, "eq_activity_coeff")
+    assert hasattr(m.fs1.state_block_Wilson_vl, "eq_mol_frac_out")
 
-    assert degrees_of_freedom(m.fs.state_block_Wilson) == 4
+    # liquid only (Wilson)
+    assert len(m.fs1.properties_Wilson_l.config) == 3
+
+    assert m.fs1.properties_Wilson_l.config.valid_phase == 'Liq'
+    assert len(m.fs1.properties_Wilson_l.phase_list) == 1
+    assert m.fs1.properties_Wilson_l.phase_list == ["Liq"]
+    assert not m.fs1.state_block_Wilson_l.config.defined_state
+    assert not hasattr(m.fs1.state_block_Wilson_l, "eq_Keq")
+    assert not hasattr(m.fs1.state_block_Wilson_l, "eq_activity_coeff")
+    assert hasattr(m.fs1.state_block_Wilson_l, "eq_mol_frac_out")
+
+    # vapour only (Wilson)
+    assert len(m.fs1.properties_Wilson_v.config) == 3
+
+    assert m.fs1.properties_Wilson_v.config.valid_phase == 'Vap'
+    assert len(m.fs1.properties_Wilson_v.phase_list) == 1
+    assert m.fs1.properties_Wilson_v.phase_list == ["Vap"]
+    assert not m.fs1.state_block_Wilson_v.config.defined_state
+    assert not hasattr(m.fs1.state_block_Wilson_v, "eq_Keq")
+    assert not hasattr(m.fs1.state_block_Wilson_v, "eq_activity_coeff")
+    assert hasattr(m.fs1.state_block_Wilson_v, "eq_mol_frac_out")
+
+
+def test_setInputs_outlet_state_block():
+
+    # vapor-liquid (Wilson)
+    m.fs1.state_block_Wilson_vl.flow_mol.fix(1)
+    m.fs1.state_block_Wilson_vl.temperature.fix(368)
+    m.fs1.state_block_Wilson_vl.pressure.fix(101325)
+    m.fs1.state_block_Wilson_vl.mole_frac["benzene"].fix(0.5)
+
+    assert degrees_of_freedom(m.fs1.state_block_Wilson_vl) == 4
+
+    # liquid only (Wilson)
+    m.fs1.state_block_Wilson_l.flow_mol.fix(1)
+    m.fs1.state_block_Wilson_l.temperature.fix(368)
+    m.fs1.state_block_Wilson_l.pressure.fix(101325)
+    m.fs1.state_block_Wilson_l.mole_frac["benzene"].fix(0.5)
+
+    assert degrees_of_freedom(m.fs1.state_block_Wilson_l) == 0
+
+    # vapour only (Wilson)
+    m.fs1.state_block_Wilson_v.flow_mol.fix(1)
+    m.fs1.state_block_Wilson_v.temperature.fix(368)
+    m.fs1.state_block_Wilson_v.pressure.fix(101325)
+    m.fs1.state_block_Wilson_v.mole_frac["benzene"].fix(0.5)
+
+    assert degrees_of_freedom(m.fs1.state_block_Wilson_v) == 0

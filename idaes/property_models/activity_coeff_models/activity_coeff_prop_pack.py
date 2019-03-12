@@ -267,7 +267,14 @@ class _ActivityCoeffStateBlock(StateBlock):
                         ('Vap', 'Liq')):
                 blk[k].eq_sum_mol_frac.deactivate()
                 blk[k].eq_Keq.deactivate()
-
+                try:
+                    blk[k].eq_h_liq.deactivate()
+                except AttributeError:
+                    pass
+                try:
+                    blk[k].eq_h_vap.deactivate()
+                except AttributeError:
+                    pass
                 # Deactivate activity coefficient constraints
                 if blk[k].config.parameters.config.activity_coeff_model \
                         is not None:
@@ -276,23 +283,39 @@ class _ActivityCoeffStateBlock(StateBlock):
                     blk[k].eq_B.deactivate()
                     blk[k].eq_activity_coeff.deactivate()
 
-                blk[k].eq_h_liq.deactivate()
-                blk[k].eq_h_vap.deactivate()
-
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Liq":
-                blk[k].eq_h_liq.deactivate()
+                try:
+                    blk[k].eq_h_liq.deactivate()
+                except AttributeError:
+                    pass
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Vap":
-                blk[k].eq_h_vap.deactivate()
+                try:
+                    blk[k].eq_h_vap.deactivate()
+                except AttributeError:
+                    pass
 
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                print(blk, "Initialisation step 1 for properties complete")
-            else:
-                print(blk, "Initialisation step 1 for properties failed")
+        if (blk[k].config.has_phase_equilibrium) or \
+                (blk[k].config.parameters.config.valid_phase ==
+                    ('Liq', 'Vap')) or \
+                (blk[k].config.parameters.config.valid_phase ==
+                    ('Vap', 'Liq')):
+            results = solve_indexed_blocks(opt, [blk], tee=stee)
+
+            if outlvl > 0:
+                if results.solver.termination_condition \
+                        == TerminationCondition.optimal:
+                    _log.info("Initialisation step 1 for "
+                              "{} completed".format(blk.name))
+                else:
+                    _log.warning("Initialisation step 1 for "
+                                 "{} failed".format(blk.name))
+
+        else:
+            if outlvl > 0:
+                _log.info("Initialisation step 1 for "
+                          "{} skipped".format(blk.name))
 
         for k in blk.keys():
             blk[k].eq_total.activate()
@@ -310,12 +333,15 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk[k].eq_sum_mol_frac.activate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
+
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
-                print(blk, "Initialisation step 2 for properties complete")
+                _log.info("Initialisation step 2 for "
+                          "{} completed".format(blk.name))
             else:
-                print(blk, "Initialisation step 2 for properties failed")
+                _log.warning("Initialisation step 2 for "
+                             "{} failed".format(blk.name))
 
         if blk[k].config.parameters.config.activity_coeff_model \
                 is not None:
@@ -328,9 +354,11 @@ class _ActivityCoeffStateBlock(StateBlock):
             if outlvl > 0:
                 if results.solver.termination_condition \
                         == TerminationCondition.optimal:
-                    print(blk, "Initialisation step 3 for properties complete")
+                    _log.info("Initialisation step 3 for "
+                              "{} completed".format(blk.name))
                 else:
-                    print(blk, "Initialisation step 3 for properties failed")
+                    _log.warning("Initialisation step 3 for "
+                                 "{} failed".format(blk.name))
 
             for k in blk.keys():
                 blk[k].eq_activity_coeff.activate()
@@ -340,32 +368,48 @@ class _ActivityCoeffStateBlock(StateBlock):
             if outlvl > 0:
                 if results.solver.termination_condition \
                         == TerminationCondition.optimal:
-                    print(blk, "Initialisation step 3 for properties complete")
+                    _log.info("Initialisation step 4 for "
+                              "{} completed".format(blk.name))
                 else:
-                    print(blk, "Initialisation step 3 for properties failed")
+                    _log.warning("Initialisation step 4 for "
+                                 "{} failed".format(blk.name))
 
         for k in blk.keys():
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Liq":
-                blk[k].eq_h_liq.activate()
+                try:
+                    blk[k].eq_h_liq.activate()
+                except AttributeError:
+                    pass
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Vap":
-                blk[k].eq_h_vap.activate()
+                try:
+                    blk[k].eq_h_vap.activate()
+                except AttributeError:
+                    pass
             if (blk[k].config.has_phase_equilibrium) or \
                     (blk[k].config.parameters.config.valid_phase ==
                         ('Liq', 'Vap')) or \
                     (blk[k].config.parameters.config.valid_phase ==
                         ('Vap', 'Liq')):
-                blk[k].eq_h_liq.activate()
-                blk[k].eq_h_vap.activate()
+                try:
+                    blk[k].eq_h_liq.activate()
+                except AttributeError:
+                    pass
+                try:
+                    blk[k].eq_h_vap.activate()
+                except AttributeError:
+                    pass
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
-                print(blk, "Initialisation step for properties complete")
+                _log.info("Initialisation step 5 for "
+                          "{} completed".format(blk.name))
             else:
-                print(blk, "Initialisation step for properties failed")
+                _log.warning("Initialisation step 5 for "
+                             "{} failed".format(blk.name))
 
         for k in blk.keys():
             if (blk[k].config.defined_state is False):
@@ -377,14 +421,14 @@ class _ActivityCoeffStateBlock(StateBlock):
                  "Pflag": Pflag,
                  "Tflag": Tflag}
 
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
-
         if hold_state is True:
             return flags
         else:
             blk.release_state(flags)
+
+        if outlvl > 0:
+            if outlvl > 0:
+                _log.info('Initialisation completed for {}.'.format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''

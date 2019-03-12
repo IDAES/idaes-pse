@@ -18,13 +18,22 @@ from VLE data to compute the activity coefficients.
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition, \
+    SolverStatus, value
 
 from idaes.core import FlowsheetBlock
 from idaes.property_models.activity_coeff_models.BTX_ideal_VLE \
     import BTXParameterBlock
 from idaes.ui.report import degrees_of_freedom
 
+# See if ipopt is available and set up solver
+if SolverFactory('ipopt').available():
+    solver = SolverFactory('ipopt')
+    solver.options = {'tol': 1e-6,
+                      'mu_init': 1e-8,
+                      'bound_push': 1e-8}
+else:
+    solver = None
 # -----------------------------------------------------------------------------
 # Create a flowsheet for test
 m = ConcreteModel()
@@ -32,7 +41,9 @@ m.fs = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid (NRTL)
 m.fs.properties_NRTL_vl = BTXParameterBlock(default={"valid_phase":
-                                                     ('Liq', 'Vap')})
+                                                     ('Liq', 'Vap'),
+                                                     "activity_coeff_model":
+                                                     None})
 m.fs.state_block_NRTL_vl = m.fs.properties_NRTL_vl.state_block_class(
     default={"parameters": m.fs.properties_NRTL_vl,
              "defined_state": True})
@@ -41,7 +52,7 @@ m.fs.state_block_NRTL_vl = m.fs.properties_NRTL_vl.state_block_class(
 m.fs.properties_NRTL_l = BTXParameterBlock(default={"valid_phase":
                                                     'Liq',
                                                     "activity_coeff_model":
-                                                    'NRTL'})
+                                                    None})
 m.fs.state_block_NRTL_l = m.fs.properties_NRTL_l.state_block_class(
     default={"parameters": m.fs.properties_NRTL_l,
              "has_phase_equilibrium": False,
@@ -51,7 +62,7 @@ m.fs.state_block_NRTL_l = m.fs.properties_NRTL_l.state_block_class(
 m.fs.properties_NRTL_v = BTXParameterBlock(default={"valid_phase":
                                                     'Vap',
                                                     "activity_coeff_model":
-                                                    'NRTL'})
+                                                    None})
 m.fs.state_block_NRTL_v = m.fs.properties_NRTL_v.state_block_class(
     default={"parameters": m.fs.properties_NRTL_v,
              "has_phase_equilibrium": False,
@@ -124,6 +135,50 @@ def test_setInputs_inlet_state_block():
     assert degrees_of_freedom(m.fs.state_block_NRTL_v) == 0
 
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_solve():
+    # vapor-liquid
+    m.fs.state_block_NRTL_vl.initialize()
+    results = solver.solve(m.fs.state_block_NRTL_vl, tee=False)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    # Check for VLE results
+    assert value(m.fs.state_block_NRTL_vl.mole_frac_phase['Liq', 'benzene']) == \
+        pytest.approx(0.4121, abs=1e-3)
+    assert value(m.fs.state_block_NRTL_vl.mole_frac_phase['Vap', 'benzene']) == \
+        pytest.approx(0.6339, abs=1e-3)
+
+    # liquid only
+    m.fs.state_block_NRTL_l.initialize()
+    results = solver.solve(m.fs.state_block_NRTL_l, tee=False)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    # Check for results
+    assert value(m.fs.state_block_NRTL_l.mole_frac_phase['Liq', 'benzene']) == \
+        pytest.approx(0.5, abs=1e-3)
+    assert value(m.fs.state_block_NRTL_l.mole_frac_phase['Liq', 'toluene']) == \
+        pytest.approx(0.5, abs=1e-3)
+
+    # vapor only
+    m.fs.state_block_NRTL_v.initialize()
+    results = solver.solve(m.fs.state_block_NRTL_v, tee=False)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    # Check for results
+    assert value(m.fs.state_block_NRTL_v.mole_frac_phase['Vap', 'benzene']) == \
+        pytest.approx(0.5, abs=1e-3)
+    assert value(m.fs.state_block_NRTL_v.mole_frac_phase['Vap', 'toluene']) == \
+        pytest.approx(0.5, abs=1e-3)
+
 # Create a flowsheet object to test outlet state blocks
 m.fs1 = FlowsheetBlock(default={"dynamic": False})
 
@@ -131,7 +186,7 @@ m.fs1 = FlowsheetBlock(default={"dynamic": False})
 m.fs1.properties_NRTL_vl = BTXParameterBlock(default={"valid_phase":
                                                       ('Liq', 'Vap'),
                                                       "activity_coeff_model":
-                                                      'NRTL'})
+                                                      None})
 m.fs1.state_block_NRTL_vl = m.fs1.properties_NRTL_vl.state_block_class(
     default={"parameters": m.fs1.properties_NRTL_vl,
              "defined_state": False})
@@ -140,7 +195,7 @@ m.fs1.state_block_NRTL_vl = m.fs1.properties_NRTL_vl.state_block_class(
 m.fs1.properties_NRTL_l = BTXParameterBlock(default={"valid_phase":
                                                      "Liq",
                                                      "activity_coeff_model":
-                                                     'NRTL'})
+                                                     None})
 m.fs1.state_block_NRTL_l = m.fs1.properties_NRTL_l.state_block_class(
     default={"parameters": m.fs1.properties_NRTL_l,
              "has_phase_equilibrium": False,
@@ -150,7 +205,7 @@ m.fs1.state_block_NRTL_l = m.fs1.properties_NRTL_l.state_block_class(
 m.fs1.properties_NRTL_v = BTXParameterBlock(default={"valid_phase":
                                                      "Vap",
                                                      "activity_coeff_model":
-                                                     'NRTL'})
+                                                     None})
 m.fs1.state_block_NRTL_v = m.fs1.properties_NRTL_v.state_block_class(
     default={"parameters": m.fs1.properties_NRTL_v,
              "has_phase_equilibrium": False,
@@ -167,7 +222,7 @@ def test_build_outlet_state_block():
     assert m.fs1.properties_NRTL_vl.phase_list == ["Liq", "Vap"]
     assert not m.fs1.state_block_NRTL_vl.config.defined_state
     assert hasattr(m.fs1.state_block_NRTL_vl, "eq_Keq")
-    assert hasattr(m.fs1.state_block_NRTL_vl, "eq_activity_coeff")
+    assert not hasattr(m.fs1.state_block_NRTL_vl, "eq_activity_coeff")
     assert hasattr(m.fs1.state_block_NRTL_vl, "eq_mol_frac_out")
 
     # liquid only (NRTL)
@@ -201,7 +256,7 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_NRTL_vl.pressure.fix(101325)
     m.fs1.state_block_NRTL_vl.mole_frac["benzene"].fix(0.5)
 
-    assert degrees_of_freedom(m.fs1.state_block_NRTL_vl) == 6
+    assert degrees_of_freedom(m.fs1.state_block_NRTL_vl) == 0
 
     # liquid only (NRTL)
     m.fs1.state_block_NRTL_l.flow_mol.fix(1)
@@ -209,7 +264,7 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_NRTL_l.pressure.fix(101325)
     m.fs1.state_block_NRTL_l.mole_frac["benzene"].fix(0.5)
 
-    assert degrees_of_freedom(m.fs.state_block_NRTL_l) == 0
+    assert degrees_of_freedom(m.fs1.state_block_NRTL_l) == 0
 
     # vapour only (NRTL)
     m.fs1.state_block_NRTL_v.flow_mol.fix(1)
@@ -217,4 +272,4 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_NRTL_v.pressure.fix(101325)
     m.fs1.state_block_NRTL_v.mole_frac["benzene"].fix(0.5)
 
-    assert degrees_of_freedom(m.fs.state_block_NRTL_v) == 0
+    assert degrees_of_freedom(m.fs1.state_block_NRTL_v) == 0

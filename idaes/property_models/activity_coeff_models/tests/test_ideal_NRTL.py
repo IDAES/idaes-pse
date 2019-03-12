@@ -203,7 +203,7 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_NRTL_vl.pressure.fix(101325)
     m.fs1.state_block_NRTL_vl.mole_frac["benzene"].fix(0.5)
 
-    assert degrees_of_freedom(m.fs.state_block_NRTL_vl) == 6
+    assert degrees_of_freedom(m.fs1.state_block_NRTL_vl) == 6
 
     # liquid only (NRTL)
     m.fs1.state_block_NRTL_l.flow_mol.fix(1)
@@ -211,7 +211,7 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_NRTL_l.pressure.fix(101325)
     m.fs1.state_block_NRTL_l.mole_frac["benzene"].fix(0.5)
 
-    assert degrees_of_freedom(m.fs.state_block_NRTL_l) == 0
+    assert degrees_of_freedom(m.fs1.state_block_NRTL_l) == 0
 
     # vapour only (NRTL)
     m.fs1.state_block_NRTL_v.flow_mol.fix(1)
@@ -219,4 +219,4 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_NRTL_v.pressure.fix(101325)
     m.fs1.state_block_NRTL_v.mole_frac["benzene"].fix(0.5)
 
-    assert degrees_of_freedom(m.fs.state_block_NRTL_v) == 0
+    assert degrees_of_freedom(m.fs1.state_block_NRTL_v) == 0
