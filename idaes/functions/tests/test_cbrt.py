@@ -11,6 +11,7 @@ def test_cbrt_values():
     assert(abs(pyo.value(m.cbrt(0.0))) < 0.00001)
     assert(abs(pyo.value(m.cbrt(27.0)) - 3.0) < 0.00001)
 
+@pytest.mark.skipif(not functions_available(), reason="functions.so not available")
 def test_cbrt_derivs():
     m = pyo.ConcreteModel()
     flib = functions_lib()
@@ -23,6 +24,7 @@ def test_cbrt_derivs():
         gfd = (f2 - f1)/h
         assert(abs(g1[0] - gfd) < tol)
 
+@pytest.mark.skipif(not functions_available(), reason="functions.so not available")
 def test_cbrt_hes():
     m = pyo.ConcreteModel()
     flib = functions_lib()
