@@ -19,7 +19,7 @@ __author__ = "John Eslick"
 import logging
 # Import Pyomo libraries
 from pyomo.environ import (Var, log, Expression, Constraint, Param,
-                           PositiveReals, SolverFactory)
+                           PositiveReals, SolverFactory, ExternalFunction)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
 from pyutilib.enum import Enum
@@ -36,6 +36,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
+from idaes.functions import functions_lib, functions_available
 
 _log = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ def delta_temperature_amtd_rule(b, t):
     dT2 = b.delta_temperature_out[t]
     return (dT1 + dT2) * 0.5
 
-def delta_temperature_lmtd_approx_underwood_rule(b, t):
+def delta_temperature_underwood_rule(b, t):
     """
     This is a rule for a temperaure difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using log-mean temperature
@@ -77,7 +78,7 @@ def delta_temperature_lmtd_approx_underwood_rule(b, t):
     dT2 = b.delta_temperature_out[t]
     return ((dT1**(1.0/3.0) + dT2**(1.0/3.0))/2.0)**3
 
-def delta_temperature_lmtd_approx_underwood2_rule(b, t):
+def delta_temperature_underwood2_rule(b, t):
     """
     This is a rule for a temperaure difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using log-mean temperature
@@ -88,8 +89,7 @@ def delta_temperature_lmtd_approx_underwood2_rule(b, t):
     """
     dT1 = b.delta_temperature_in[t]
     dT2 = b.delta_temperature_out[t]
-    cbrt = b.cbrt_func
-    return ((cbrt(dT1) + cbrt(dT2))/2.0)**3
+    return ((b.cbrt(dT1) + b.cbrt(dT2))/2.0)**3
 
 def _heat_transfer_rule(b, t):
     """
@@ -303,6 +303,7 @@ class HeatExchangerData(UnitModelBlockData):
         """
         # Call UnitModel.build to setup dynamics
         super(HeatExchangerData, self).build()
+        config = self.config
         # Add variables
         self.heat_transfer_scale = Param(mutable=True, default=1e5,
             doc="Approximate magnitude of heat duty.")
@@ -313,22 +314,21 @@ class HeatExchangerData(UnitModelBlockData):
         self.area = Var(domain=PositiveReals, initialize=1000,
             doc="Heat exchange area")
         self.area.latex_symbol = "A"
-        if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+        if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(self.time_ref, initialize=1,
                 doc="Factor to adjust coutercurrent flow heat transfer "
                     "calculation for cross flow.")
 
-        if self.config.delta_temperature_rule == \
-            delta_temperature_lmtd_approx_underwood2_rule:
+        if config.delta_temperature_rule == delta_temperature_underwood2_rule:
             # Define a cube root function that return the real negative root
             # for the cube root of a negative number.
-            self.cbrt = pyo.ExternalFunction(library=flib, function="cbrt")
+            self.cbrt = ExternalFunction(library=functions_lib(),function="cbrt")
 
         # Add Control Volumes
-        _make_heater_control_volume(self, "side_1", self.config.side_1,
-            dynamic=self.config.dynamic, has_holdup=self.config.has_holdup)
-        _make_heater_control_volume(self, "side_2", self.config.side_2,
-            dynamic=self.config.dynamic, has_holdup=self.config.has_holdup)
+        _make_heater_control_volume(self, "side_1", config.side_1,
+            dynamic=config.dynamic, has_holdup=config.has_holdup)
+        _make_heater_control_volume(self, "side_2", config.side_2,
+            dynamic=config.dynamic, has_holdup=config.has_holdup)
         # Add Ports
         self.add_inlet_port(name="inlet_1", block=self.side_1)
         self.add_inlet_port(name="inlet_2", block=self.side_2)
@@ -375,11 +375,11 @@ class HeatExchangerData(UnitModelBlockData):
         # Add heat transfer equation
         self.delta_temperature = Expression(
             self.time_ref,
-            rule=self.config.delta_temperature_rule,
+            rule=config.delta_temperature_rule,
             doc="Temperature difference driving force for heat transfer")
         self.delta_temperature.latex_symbol = "\\Delta T"
 
-        if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+        if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.heat_transfer_equation = Constraint(
                 self.time_ref, rule=_cross_flow_heat_transfer_rule)
         else:

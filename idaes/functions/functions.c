@@ -15,7 +15,8 @@ void funcadd(AmplExports *ae){
 extern real scbrt(arglist *al){
     real x = al->ra[al->at[0]];
     if(al->derivs!=NULL){
-      al->derivs[0] = pow(cbrt(x), -2.0)/3.0;
+      if(fabs(x) < 6e-9) al->derivs[0] = 1e5;
+      else al->derivs[0] = pow(cbrt(x), -2.0)/3.0;
       if(al->hes!=NULL){
         al->hes[0] = -2.0*pow(cbrt(x), -5.0)/9.0;
       }
