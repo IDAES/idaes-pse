@@ -73,12 +73,23 @@ def delta_temperature_lmtd_approx_underwood_rule(b, t):
     difference (LMTD) approximation given by Underwood (1970).  It can be
     supplied to "delta_temperature_rule" HeatExchanger configuration option.
     """
-    # TODO <jce>: If we combined this with a cube root function that returns the
-    #   real negative root when dT is negative, we would always be able to
-    #   evaluate this approximation.  Something to consider for the future.
     dT1 = b.delta_temperature_in[t]
     dT2 = b.delta_temperature_out[t]
     return ((dT1**(1.0/3.0) + dT2**(1.0/3.0))/2.0)**3
+
+def delta_temperature_lmtd_approx_underwood2_rule(b, t):
+    """
+    This is a rule for a temperaure difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
+    difference (LMTD) approximation given by Underwood (1970).  It can be
+    supplied to "delta_temperature_rule" HeatExchanger configuration option.
+    This uses a cube root function that works with negative numbers returning
+    the real negative root.  This function should always evaluate successfully.
+    """
+    dT1 = b.delta_temperature_in[t]
+    dT2 = b.delta_temperature_out[t]
+    cbrt = b.cbrt_func
+    return ((cbrt(dT1) + cbrt(dT2))/2.0)**3
 
 def _heat_transfer_rule(b, t):
     """
@@ -306,6 +317,12 @@ class HeatExchangerData(UnitModelBlockData):
             self.crossflow_factor = Var(self.time_ref, initialize=1,
                 doc="Factor to adjust coutercurrent flow heat transfer "
                     "calculation for cross flow.")
+
+        if self.config.delta_temperature_rule == \
+            delta_temperature_lmtd_approx_underwood2_rule:
+            # Define a cube root function that return the real negative root
+            # for the cube root of a negative number.
+            self.cbrt = pyo.ExternalFunction(library=flib, function="cbrt")
 
         # Add Control Volumes
         _make_heater_control_volume(self, "side_1", self.config.side_1,
