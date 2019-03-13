@@ -100,7 +100,7 @@ def _heat_transfer_rule(b, t):
     a = b.area
     q = b.heat_duty[t]
     deltaT = b.delta_temperature[t]
-    return 0 == (u*a*deltaT - q)/b.heat_transfer_scale
+    return 0 == (u*a*deltaT - q)*b.side_1.scaling_factor_energy
 
 def _cross_flow_heat_transfer_rule(b, t):
     """
@@ -112,7 +112,7 @@ def _cross_flow_heat_transfer_rule(b, t):
     q = b.heat_duty[t]
     deltaT = b.delta_temperature[t]
     f = b.crossflow_factor[t]
-    return 0 == (f*u*a*deltaT - q)/b.heat_transfer_scale
+    return 0 == (f*u*a*deltaT - q)*b.side_1.scaling_factor_energy
 
 def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
     """
@@ -292,6 +292,19 @@ class HeatExchangerData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
     _make_heat_exchanger_config(CONFIG)
 
+    def set_scaling_factor_energy(self, f):
+        """
+        This function sets scaling_factor_energy for both side_1 and side_2.
+        This factor multiplies the energy balance and heat transfer equations
+        in the heat exchnager.  The value of this factor should be about
+        1/(expected heat duty).
+
+        Args:
+            f: Energy balance scaling factor
+        """
+        self.side_1.scaling_factor_energy.value = f
+        self.side_2.scaling_factor_energy.value = f
+
     def build(self):
         """
         Building model
@@ -305,8 +318,6 @@ class HeatExchangerData(UnitModelBlockData):
         super(HeatExchangerData, self).build()
         config = self.config
         # Add variables
-        self.heat_transfer_scale = Param(mutable=True, default=1e5,
-            doc="Approximate magnitude of heat duty.")
         self.overall_heat_transfer_coefficient = Var(self.time_ref,
             domain=PositiveReals, initialize=100,
             doc="Overall heat transfer coefficient")
