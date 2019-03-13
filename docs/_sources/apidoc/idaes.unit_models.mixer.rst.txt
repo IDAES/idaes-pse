@@ -1,7 +1,0 @@
-idaes.unit\_models.mixer module
-===============================
-
-.. automodule:: idaes.unit_models.mixer
-    :members:
-    :undoc-members:
-    :show-inheritance:
