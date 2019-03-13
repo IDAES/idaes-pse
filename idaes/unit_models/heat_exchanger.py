@@ -181,8 +181,7 @@ def _make_heater_config_block(config):
         default=False,
         domain=In([True, False]),
         description="Phase equilibrium construction flag",
-        doc="""Indicates whether terms for phase equilibrium should be
-constructed,
+        doc="""Indicates whether terms for phase equilibrium should be constructed,
 **default** = False.
 **Valid values:** {
 **True** - include phase equilibrium terms
@@ -241,8 +240,7 @@ def _make_heat_exchanger_config(config):
 **Valid values:** {
 **HeatExchangerFlowPattern.countercurrent** - countercurrent flow,
 **HeatExchangerFlowPattern.cocurrent** - cocurrent flow,
-**HeatExchangerFlowPattern.crossflow** - cross flow, factor times countercurrent
-    temperature difference.}"""))
+**HeatExchangerFlowPattern.crossflow** - cross flow, factor times countercurrent temperature difference.}"""))
 
 
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
@@ -286,6 +284,7 @@ class HeatExchangerData(UnitModelBlockData):
     def build(self):
         """
         Building model
+
         Args:
             None
         Returns:
