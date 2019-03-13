@@ -48,7 +48,7 @@ def unfixed_variables(blk):
         blk: a Pyomo block in which to look for variables.
     """
     for o in blk.component_data_objects(Var):
-        if not o.fixed: yield item
+        if not o.fixed: yield o
 
 def free_variables(blk):
     """
@@ -75,9 +75,19 @@ def active_equalities(blk):
     Generator returning active equality constraints in a model.
 
     Args:
-        blk: a Pyomo block in which to look for variables.
+        blk: a Pyomo block in which to look for constraints.
     """
     for o in blk.component_data_objects(Constraint, active=True):
+        if o.upper == o.lower: yield o
+
+def inactive_equalities(blk):
+    """
+    Generator returning inactive equality constraints in a model.
+
+    Args:
+        blk: a Pyomo block in which to look for constraints.
+    """
+    for o in blk.component_data_objects(Constraint, active=False):
         if o.upper == o.lower: yield o
 
 def count_free_variables(blk):

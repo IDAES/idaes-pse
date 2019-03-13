@@ -16,29 +16,32 @@ Authors: Andrew Lee, Vibhav Dabadghao
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, SolverFactory
+from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.cstr import CSTR
 from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)
 from idaes.property_models.examples.saponification_reactions import (
     SaponificationReactionParameterBlock)
-from idaes.ui.report import degrees_of_freedom
+from idaes.ui.report import (degrees_of_freedom,
+                             fixed_variables,
+                             stale_variables,
+                             unfixed_variables,
+                             active_equalities,
+                             inactive_equalities)
+from idaes.core.util.testing import (count_constraints,
+                                     count_variables,
+                                     get_default_solver)
+
+
+# Get default solver from test utils
+solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
-                      'mu_init': 1e-8,
-                      'bound_push': 1e-8}
-else:
-    solver = None
-
-
-# -----------------------------------------------------------------------------
-def test_build():
+# create basic model for testing
+@pytest.fixture(scope="module")
+def model():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
@@ -52,60 +55,83 @@ def test_build():
                               "has_heat_transfer": True,
                               "has_pressure_change": False})
 
-    assert hasattr(m.fs.cstr, "inlet")
-    assert len(m.fs.cstr.inlet.vars) == 4
-    assert hasattr(m.fs.cstr.inlet, "flow_vol")
-    assert hasattr(m.fs.cstr.inlet, "conc_mol_comp")
-    assert hasattr(m.fs.cstr.inlet, "temperature")
-    assert hasattr(m.fs.cstr.inlet, "pressure")
+    return m
 
-    assert hasattr(m.fs.cstr, "outlet")
-    assert len(m.fs.cstr.outlet.vars) == 4
-    assert hasattr(m.fs.cstr.outlet, "flow_vol")
-    assert hasattr(m.fs.cstr.outlet, "conc_mol_comp")
-    assert hasattr(m.fs.cstr.outlet, "temperature")
-    assert hasattr(m.fs.cstr.outlet, "pressure")
+# -----------------------------------------------------------------------------
+@pytest.mark.model_build
+def test_build(model):
+    assert hasattr(model.fs.cstr, "inlet")
+    assert len(model.fs.cstr.inlet.vars) == 4
+    assert hasattr(model.fs.cstr.inlet, "flow_vol")
+    assert hasattr(model.fs.cstr.inlet, "conc_mol_comp")
+    assert hasattr(model.fs.cstr.inlet, "temperature")
+    assert hasattr(model.fs.cstr.inlet, "pressure")
 
-    assert hasattr(m.fs.cstr, "cstr_performance_eqn")
-    assert hasattr(m.fs.cstr.control_volume, "heat")
-    assert hasattr(m.fs.cstr, "heat_duty")
+    assert hasattr(model.fs.cstr, "outlet")
+    assert len(model.fs.cstr.outlet.vars) == 4
+    assert hasattr(model.fs.cstr.outlet, "flow_vol")
+    assert hasattr(model.fs.cstr.outlet, "conc_mol_comp")
+    assert hasattr(model.fs.cstr.outlet, "temperature")
+    assert hasattr(model.fs.cstr.outlet, "pressure")
+
+    assert hasattr(model.fs.cstr, "cstr_performance_eqn")
+    assert hasattr(model.fs.cstr.control_volume, "heat")
+    assert hasattr(model.fs.cstr, "heat_duty")
+
+
+@pytest.mark.degrees_of_freedom
+def test_dof(model):
+    model.fs.cstr.inlet.flow_vol.fix(1.0e-03)
+    model.fs.cstr.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+    model.fs.cstr.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+    model.fs.cstr.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    model.fs.cstr.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+    model.fs.cstr.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+    model.fs.cstr.inlet.temperature.fix(303.15)
+    model.fs.cstr.inlet.pressure.fix(101325.0)
+
+    model.fs.cstr.volume.fix(1.5e-03)
+    model.fs.cstr.heat_duty.fix(0)
+
+    assert degrees_of_freedom(model) == 0
+
+    assert count_variables(model) == 42
+    assert count_constraints(model) == 16
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_initialize():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+@pytest.mark.initialization
+def test_initialize(model):
+    assert degrees_of_freedom(model) == 0
 
-    m.fs.properties = SaponificationParameterBlock()
-    m.fs.reactions = SaponificationReactionParameterBlock(default={
-                            "property_package": m.fs.properties})
+    f_vars_1 = fixed_variables(model)
+    u_vars_1 = unfixed_variables(model)
+    a_cons_1 = active_equalities(model)
+    i_cons_1 = inactive_equalities(model)
 
-    m.fs.cstr = CSTR(default={"property_package": m.fs.properties,
-                              "reaction_package": m.fs.reactions,
-                              "has_equilibrium_reactions": False,
-                              "has_heat_transfer": False,
-                              "has_pressure_change": False})
+    model.fs.cstr.initialize(outlvl=5,
+                             optarg={'tol': 1e-6})
 
-    m.fs.cstr.inlet.flow_vol.fix(1.0e-03)
-    m.fs.cstr.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-    m.fs.cstr.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-    m.fs.cstr.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-    m.fs.cstr.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-    m.fs.cstr.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+    f_vars_2 = fixed_variables(model)
+    u_vars_2 = unfixed_variables(model)
+    a_cons_2 = active_equalities(model)
+    i_cons_2 = inactive_equalities(model)
 
-    m.fs.cstr.inlet.temperature.fix(303.15)
-    m.fs.cstr.inlet.pressure.fix(101325.0)
+    for v in f_vars_1:
+        assert v in f_vars_2
+    for v in u_vars_1:
+        assert v in u_vars_2
+    for c in a_cons_1:
+        assert c in a_cons_2
+    for c in i_cons_1:
+        assert c in i_cons_2
 
-    m.fs.cstr.control_volume.volume.fix(1.5e-03)
-
-    assert degrees_of_freedom(m) == 0
-
-    m.fs.cstr.initialize(outlvl=5,
-                         optarg={'tol': 1e-6})
+    assert len(list(stale_variables(model))) == 0
 
     assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.cstr.outlet.pressure[0].value)
+            model.fs.cstr.outlet.pressure[0].value)
     assert (pytest.approx(303.15, abs=1e-2) ==
-            m.fs.cstr.outlet.temperature[0].value)
+            model.fs.cstr.outlet.temperature[0].value)
     assert (pytest.approx(20.80, abs=1e-2) ==
-            m.fs.cstr.outlet.conc_mol_comp[0, "EthylAcetate"].value)
+            model.fs.cstr.outlet.conc_mol_comp[0, "EthylAcetate"].value)
