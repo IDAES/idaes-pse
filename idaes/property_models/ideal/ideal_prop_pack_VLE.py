@@ -437,43 +437,43 @@ class IdealStateBlockData(StateBlockData):
                              self.config.parameters.component_list)
 
         # List of Reaction Indicies
-        add_object_reference(self, "phase_equilibrium_idx",
+        add_object_reference(self, "phase_equilibrium_idx_ref",
                              self.config.parameters.phase_equilibrium_idx)
 
         # Reaction Stoichiometry
-        add_object_reference(self, "phase_equilibrium_list",
+        add_object_reference(self, "phase_equilibrium_list_ref",
                              self.config.parameters.phase_equilibrium_list)
 
         # Thermodynamic reference state
-        add_object_reference(self, "pressure_reference",
+        add_object_reference(self, "pressure_ref_ref",
                              self.config.parameters.pressure_reference)
-        add_object_reference(self, "temperature_reference",
+        add_object_reference(self, "temperature_ref_ref",
                              self.config.parameters.temperature_reference)
 
         # Gas Constant
-        add_object_reference(self, "gas_const",
+        add_object_reference(self, "gas_const_ref",
                              self.config.parameters.gas_const)
 
         # Critical Properties
-        add_object_reference(self, "pressure_critical",
+        add_object_reference(self, "pressure_critical_ref",
                              self.config.parameters.pressure_critical)
-        add_object_reference(self, "temperature_critical",
+        add_object_reference(self, "temperature_critical_ref",
                              self.config.parameters.temperature_critical)
 
         # Molecular weights
-        add_object_reference(self, "mw_comp",
+        add_object_reference(self, "mw_comp_ref",
                              self.config.parameters.mw_comp)
 
         # Specific Enthalpy Coefficients
-        add_object_reference(self, "CpIG",
+        add_object_reference(self, "CpIG_ref",
                              self.config.parameters.CpIG)
 
         # Vapor pressure coeeficients
-        add_object_reference(self, "pressure_sat_coeff",
+        add_object_reference(self, "pressure_sat_coeff_ref",
                              self.config.parameters.pressure_sat_coeff)
 
         # heat of vaporization
-        add_object_reference(self, "dh_vap",
+        add_object_reference(self, "dh_vap_ref",
                              self.config.parameters.dh_vap)
 
     def _make_state_vars(self):
@@ -572,16 +572,16 @@ class IdealStateBlockData(StateBlockData):
             self.eq_Keq = Constraint(self.component_list_ref, rule=rule_Keq)
 
         def rule_temp_var_x(self, i):
-            return 1 - self.temperature / self.temperature_critical[i]
+            return 1 - self.temperature / self.temperature_critical_ref[i]
         self.x = Expression(self.component_list_ref, rule=rule_temp_var_x)
 
         def rule_P_vap(self, j):
             return (1 - self.x[j]) * \
-                log(self.pressure_sat[j] / self.pressure_critical[j]) == \
-                (self.pressure_sat_coeff[j, 'A'] * self.x[j] +
-                 self.pressure_sat_coeff[j, 'B'] * self.x[j]**1.5 +
-                 self.pressure_sat_coeff[j, 'C'] * self.x[j]**3 +
-                 self.pressure_sat_coeff[j, 'D'] * self.x[j]**6)
+                log(self.pressure_sat[j] / self.pressure_critical_ref[j]) == \
+                (self.pressure_sat_coeff_ref[j, 'A'] * self.x[j] +
+                 self.pressure_sat_coeff_ref[j, 'B'] * self.x[j]**1.5 +
+                 self.pressure_sat_coeff_ref[j, 'C'] * self.x[j]**3 +
+                 self.pressure_sat_coeff_ref[j, 'D'] * self.x[j]**6)
         self.eq_P_vap = Constraint(self.component_list_ref, rule=rule_P_vap)
 
     def _density_mol(self):
@@ -590,7 +590,7 @@ class IdealStateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return self.pressure == (self.density_mol[p] *
-                                         self.gas_const *
+                                         self.gas_const_ref *
                                          self.temperature)
             elif p == "Liq":  # TODO: Add a correlation to compute liq density
                 return self.density_mol[p] == 11.1E3  # mol/m3
@@ -610,16 +610,16 @@ class IdealStateBlockData(StateBlockData):
 
         def rule_hl_ig_pc(b, j):
             return self.enthalpy_comp_liq[j] * 1E3 == \
-                ((self.CpIG['Liq', j, '5'] / 5) *
-                    (self.temperature**5 - self.temperature_reference**5)
-                    + (self.CpIG['Liq', j, '4'] / 4) *
-                      (self.temperature**4 - self.temperature_reference**4)
-                    + (self.CpIG['Liq', j, '3'] / 3) *
-                      (self.temperature**3 - self.temperature_reference**3)
-                    + (self.CpIG['Liq', j, '2'] / 2) *
-                      (self.temperature**2 - self.temperature_reference**2)
-                    + self.CpIG['Liq', j, '1'] *
-                      (self.temperature - self.temperature_reference))
+                ((self.CpIG_ref['Liq', j, '5'] / 5) *
+                    (self.temperature**5 - self.temperature_ref_ref**5)
+                    + (self.CpIG_ref['Liq', j, '4'] / 4) *
+                      (self.temperature**4 - self.temperature_ref_ref**4)
+                    + (self.CpIG_ref['Liq', j, '3'] / 3) *
+                      (self.temperature**3 - self.temperature_ref_ref**3)
+                    + (self.CpIG_ref['Liq', j, '2'] / 2) *
+                      (self.temperature**2 - self.temperature_ref_ref**2)
+                    + self.CpIG_ref['Liq', j, '1'] *
+                      (self.temperature - self.temperature_ref_ref))
         self.eq_hl_ig_pc = Constraint(self.component_list_ref,
                                       rule=rule_hl_ig_pc)
 
@@ -638,17 +638,17 @@ class IdealStateBlockData(StateBlockData):
         self.enthalpy_comp_vap = Var(self.component_list_ref, initialize=40000)
 
         def rule_hv_ig_pc(b, j):
-            return self.enthalpy_comp_vap[j] == self.dh_vap[j] + \
-                ((self.CpIG['Vap', j, '5'] / 5) *
-                    (self.temperature**5 - self.temperature_reference**5)
-                    + (self.CpIG['Vap', j, '4'] / 4) *
-                      (self.temperature**4 - self.temperature_reference**4)
-                    + (self.CpIG['Vap', j, '3'] / 3) *
-                      (self.temperature**3 - self.temperature_reference**3)
-                    + (self.CpIG['Vap', j, '2'] / 2) *
-                      (self.temperature**2 - self.temperature_reference**2)
-                    + self.CpIG['Vap', j, '1'] *
-                      (self.temperature - self.temperature_reference))
+            return self.enthalpy_comp_vap[j] == self.dh_vap_ref[j] + \
+                ((self.CpIG_ref['Vap', j, '5'] / 5) *
+                    (self.temperature**5 - self.temperature_ref_ref**5)
+                    + (self.CpIG_ref['Vap', j, '4'] / 4) *
+                      (self.temperature**4 - self.temperature_ref_ref**4)
+                    + (self.CpIG_ref['Vap', j, '3'] / 3) *
+                      (self.temperature**3 - self.temperature_ref_ref**3)
+                    + (self.CpIG_ref['Vap', j, '2'] / 2) *
+                      (self.temperature**2 - self.temperature_ref_ref**2)
+                    + self.CpIG_ref['Vap', j, '1'] *
+                      (self.temperature - self.temperature_ref_ref))
         self.eq_hv_ig_pc = Constraint(self.component_list_ref,
                                       rule=rule_hv_ig_pc)
 
@@ -727,21 +727,21 @@ class IdealStateBlockData(StateBlockData):
                                       doc="Bubble point temperature (K)")
 
         def rule_psat_bubble(m, j):
-            return self.pressure_critical[j] * \
-                exp((self.pressure_sat_coeff[j, 'A'] *
+            return self.pressure_critical_ref[j] * \
+                exp((self.pressure_sat_coeff_ref[j, 'A'] *
                     (1 - self.temperature_bubble /
-                    self.temperature_critical[j]) +
-                    self.pressure_sat_coeff[j, 'B'] *
+                    self.temperature_critical_ref[j]) +
+                    self.pressure_sat_coeff_ref[j, 'B'] *
                     (1 - self.temperature_bubble /
-                    self.temperature_critical[j])**1.5 +
-                    self.pressure_sat_coeff[j, 'C'] *
+                    self.temperature_critical_ref[j])**1.5 +
+                    self.pressure_sat_coeff_ref[j, 'C'] *
                     (1 - self.temperature_bubble /
-                    self.temperature_critical[j])**3 +
-                    self.pressure_sat_coeff[j, 'D'] *
+                    self.temperature_critical_ref[j])**3 +
+                    self.pressure_sat_coeff_ref[j, 'D'] *
                     (1 - self.temperature_bubble /
-                    self.temperature_critical[j])**6) /
+                    self.temperature_critical_ref[j])**6) /
                     (1 - (1 - self.temperature_bubble /
-                          self.temperature_critical[j])))
+                          self.temperature_critical_ref[j])))
         try:
             # Try to build expression
             self._p_sat_bubbleT = Expression(self.component_list_ref,
@@ -766,21 +766,21 @@ class IdealStateBlockData(StateBlockData):
                                    doc="Dew point temperature (K)")
 
         def rule_psat_dew(m, j):
-            return self.pressure_critical[j] * \
-                exp((self.pressure_sat_coeff[j, 'A'] *
+            return self.pressure_critical_ref[j] * \
+                exp((self.pressure_sat_coeff_ref[j, 'A'] *
                     (1 - self.temperature_dew /
-                    self.temperature_critical[j]) +
-                    self.pressure_sat_coeff[j, 'B'] *
+                    self.temperature_critical_ref[j]) +
+                    self.pressure_sat_coeff_ref[j, 'B'] *
                     (1 - self.temperature_dew /
-                    self.temperature_critical[j])**1.5 +
-                    self.pressure_sat_coeff[j, 'C'] *
+                    self.temperature_critical_ref[j])**1.5 +
+                    self.pressure_sat_coeff_ref[j, 'C'] *
                     (1 - self.temperature_dew /
-                    self.temperature_critical[j])**3 +
-                    self.pressure_sat_coeff[j, 'D'] *
+                    self.temperature_critical_ref[j])**3 +
+                    self.pressure_sat_coeff_ref[j, 'D'] *
                     (1 - self.temperature_dew /
-                    self.temperature_critical[j])**6) /
+                    self.temperature_critical_ref[j])**6) /
                     (1 - (1 - self.temperature_dew /
-                          self.temperature_critical[j])))
+                          self.temperature_critical_ref[j])))
 
         try:
             # Try to build expression
@@ -805,21 +805,21 @@ class IdealStateBlockData(StateBlockData):
                                    doc="Bubble point pressure (Pa)")
 
         def rule_psat_bubble(m, j):
-            return self.pressure_critical[j] * \
-                exp((self.pressure_sat_coeff[j, 'A'] *
+            return self.pressure_critical_ref[j] * \
+                exp((self.pressure_sat_coeff_ref[j, 'A'] *
                     (1 - self.temperature /
-                    self.temperature_critical[j]) +
-                    self.pressure_sat_coeff[j, 'B'] *
+                    self.temperature_critical_ref[j]) +
+                    self.pressure_sat_coeff_ref[j, 'B'] *
                     (1 - self.temperature /
-                    self.temperature_critical[j])**1.5 +
-                    self.pressure_sat_coeff[j, 'C'] *
+                    self.temperature_critical_ref[j])**1.5 +
+                    self.pressure_sat_coeff_ref[j, 'C'] *
                     (1 - self.temperature /
-                    self.temperature_critical[j])**3 +
-                    self.pressure_sat_coeff[j, 'D'] *
+                    self.temperature_critical_ref[j])**3 +
+                    self.pressure_sat_coeff_ref[j, 'D'] *
                     (1 - self.temperature /
-                    self.temperature_critical[j])**6) /
+                    self.temperature_critical_ref[j])**6) /
                     (1 - (1 - self.temperature /
-                          self.temperature_critical[j])))
+                          self.temperature_critical_ref[j])))
 
         try:
             # Try to build expression
@@ -843,21 +843,21 @@ class IdealStateBlockData(StateBlockData):
                                 doc="Dew point pressure (Pa)")
 
         def rule_psat_dew(m, j):
-            return self.pressure_critical[j] * \
-                exp((self.pressure_sat_coeff[j, 'A'] *
+            return self.pressure_critical_ref[j] * \
+                exp((self.pressure_sat_coeff_ref[j, 'A'] *
                     (1 - self.temperature /
-                    self.temperature_critical[j]) +
-                    self.pressure_sat_coeff[j, 'B'] *
+                    self.temperature_critical_ref[j]) +
+                    self.pressure_sat_coeff_ref[j, 'B'] *
                     (1 - self.temperature /
-                    self.temperature_critical[j])**1.5 +
-                    self.pressure_sat_coeff[j, 'C'] *
+                    self.temperature_critical_ref[j])**1.5 +
+                    self.pressure_sat_coeff_ref[j, 'C'] *
                     (1 - self.temperature /
-                    self.temperature_critical[j])**3 +
-                    self.pressure_sat_coeff[j, 'D'] *
+                    self.temperature_critical_ref[j])**3 +
+                    self.pressure_sat_coeff_ref[j, 'D'] *
                     (1 - self.temperature /
-                    self.temperature_critical[j])**6) /
+                    self.temperature_critical_ref[j])**6) /
                     (1 - (1 - self.temperature /
-                          self.temperature_critical[j])))
+                          self.temperature_critical_ref[j])))
 
         try:
             # Try to build expression
@@ -873,7 +873,7 @@ class IdealStateBlockData(StateBlockData):
         except AttributeError:
             # If expression fails, clean up so that DAE can try again later
             # Deleting only var/expression as expression construction will fail
-            # first; if it passes then constraint construction will not fail. 
+            # first; if it passes then constraint construction will not fail.
             self.del_component(self.pressure_dew)
             self.del_component(self._p_sat_dewP)
 
