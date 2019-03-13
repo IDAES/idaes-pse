@@ -480,17 +480,43 @@ def version_list(value):
 
     A leading dash or underscore in the trailing non-numeric characters
     is removed.
+    
+    Some examples of valid inputs and how they translate to 4-part versions:
 
-    Some examples:
+    .. testcode::
 
-    - 1           => valid    => (1, 0, 0, '')
-    - rc3         => invalid: no number
-    - 1.1         => valid    => (1, 1, 0, '')
-    - 1a          => valid    => (1, 0, 0, 'a')
-    - 1.a.1       => invalid: non-numeric can only go at end
-    - 1.12.1      => valid    => (1, 12, 1, '')
-    - 1.12.13-1   => valid    => (1, 12, 13, '1')
-    - 1.12.13.x   => invalid: too many parts
+        version_list('1')
+        version_list('1.1')
+        version_list('1a')
+        version_list('1.12.1')
+        version_list('1.12.13-1')
+
+    .. testoutput::
+
+        [1, 0, 0, '']
+        [1, 1, 0, '']
+        [1, 0, 0, 'a']
+        [1, 12, 1, '']
+        [1, 12, 13, '1']
+
+    Some example inputs that will fail:
+
+    .. testcode::
+
+        for bad_input in ('rc3',      # too short
+                          '1.a.1.',   # non-number in middle
+                          '1.12.13.x' # too long
+            ):
+            try:
+                version_list(bad_input)
+            except ValueError:
+                print(f"failed: {bad_input}")
+
+    .. testoutput::
+
+        failed: rc3
+        failed: 1.a.1.
+        failed: 1.12.13.x
 
     Returns:
         list: [major:int, minor:int, debug:int, release-type:str]
