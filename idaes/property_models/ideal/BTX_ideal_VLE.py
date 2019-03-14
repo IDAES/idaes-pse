@@ -11,8 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Example property package for the VLE calucations for a Benzene-Toluene-o-Xylene
-system.
+Example ideal parameter block for the VLE calucations for a
+Benzene-Toluene-o-Xylene system.
 """
 
 # Chages the divide behavior to not do integer division
@@ -23,13 +23,12 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Param, NonNegativeReals, Set
-from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, PhysicalParameterBlock
+from idaes.core import declare_process_block_class
 from idaes.core.util.misc import extract_data
 
-from idaes.property_models.ideal.ideal_prop_pack_VLE import IdealStateBlock
+from idaes.property_models.ideal.ideal_prop_pack_VLE import IdealParameterData
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -40,46 +39,14 @@ __version__ = "0.0.1"
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("IdealParameterBlock")
-class PhysicalParameterData(PhysicalParameterBlock):
-    """
-    Property Parameter Block Class
-    Contains parameters and indexing sets associated with properties for
-    BTX system.
-    """
-    # Config block for the _IdealStateBlock
-    CONFIG = PhysicalParameterBlock.CONFIG()
-
-    CONFIG.declare("valid_phase", ConfigValue(
-        default=('Vap', 'Liq'),
-        domain=In(['Liq', 'Vap', ('Vap', 'Liq'), ('Liq', 'Vap')]),
-        description="Flag indicating the valid phase",
-        doc="""Flag indicating the valid phase for a given set of
-conditions, and thus corresponding constraints  should be included,
-**default** - ('Vap', 'Liq').
-**Valid values:** {
-**'Liq'** - Liquid only,
-**'Vap'** - Vapor only,
-**('Vap', 'Liq')** - Vapor-liquid equilibrium,
-**('Liq', 'Vap')** - Vapor-liquid equilibrium,}"""))
+@declare_process_block_class("BTXParameterBlock")
+class BTXParameterData(IdealParameterData):
 
     def build(self):
         '''
         Callable method for Block construction.
         '''
-        super(PhysicalParameterData, self).build()
-
-        self.state_block_class = IdealStateBlock
-
-        # List of valid phases in property package
-        if self.config.valid_phase == ('Liq', 'Vap') or \
-                self.config.valid_phase == ('Vap', 'Liq'):
-            self.phase_list = Set(initialize=['Liq', 'Vap'],
-                                  ordered=True)
-        elif self.config.valid_phase == 'Liq':
-            self.phase_list = Set(initialize=['Liq'])
-        else:
-            self.phase_list = Set(initialize=['Vap'])
+        super(BTXParameterData, self).build()
 
         self.component_list_master = Set(initialize=['benzene',
                                                      'toluene',
@@ -228,40 +195,9 @@ conditions, and thus corresponding constraints  should be included,
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
         dh_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
-                    'o-xylene': 4.34584e4}
+                  'o-xylene': 4.34584e4}
 
         self.dh_vap = Param(self.component_list,
-                              mutable=False,
-                              initialize=extract_data(dh_vap),
-                              doc="heat of vaporization")
-
-    @classmethod
-    def define_metadata(cls, obj):
-        """Define properties supported and units."""
-        obj.add_properties(
-            {'flow_mol': {'method': None, 'units': 'mol/s'},
-             'mole_frac': {'method': None, 'units': 'no unit'},
-             'temperature': {'method': None, 'units': 'K'},
-             'pressure': {'method': None, 'units': 'Pa'},
-             'flow_mol_phase': {'method': None, 'units': 'mol/s'},
-             'density_mol': {'method': '_density_mol',
-                             'units': 'mol/m^3'},
-             'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
-             'mole_frac_phase': {'method': '_mole_frac_phase',
-                                 'units': 'no unit'},
-             'enthalpy_comp_liq': {'method': '_enthalpy_comp_liq',
-                                   'units': 'J/mol'},
-             'enthalpy_comp_vap': {'method': '_enthalpy_comp_vap',
-                                   'units': 'J/mol'},
-             'enthalpy_liq': {'method': '_enthalpy_liq',
-                              'units': 'J/mol'},
-             'enthalpy_vap': {'method': '_enthalpy_vap',
-                              'units': 'J/mol'}})
-
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+                            mutable=False,
+                            initialize=extract_data(dh_vap),
+                            doc="heat of vaporization")
