@@ -117,11 +117,24 @@ class FWH0DData(UnitModelBlockData):
 
         # Add a desuperheat section before the condensing section
         if config.has_desuperheat:
-            pass
+            self.desuperheat = HeatExchanger(default=config.desuperheat)
+            self.desuperheat.area.value = 10
+            if config.has_drain_mixer:
+                self.desuperheat_drain_arc = Arc(
+                    source=self.desuperheat.outlet_1,
+                    destination=self.drain_mix.steam)
+            else:
+                self.desuperheat_drain_arc = Arc(
+                    source=self.desuperheat.outlet_1,
+                    destination=self.condense.inlet_1)
+            self.desuperheat_fw_arc = Arc(
+                source=self.desuperheat.outlet_2,
+                destination=self.condense.inlet_2)
 
         # Add a drain cooling section after the condensing section
         if config.has_drain_cooling:
-            pass
+            self.cooling = HeatExchanger(default=config.cooling)
+            self.cooling.area.value = 10
 
         TransformationFactory("network.expand_arcs").apply_to(self)
 
@@ -131,7 +144,13 @@ class FWH0DData(UnitModelBlockData):
         istate = to_json(self, return_dict=True, wts=sp)
         # initialize desuperheat if include
         if config.has_desuperheat:
+            self.desuperheat.initialize(*args, **kwargs)
             self.desuperheat.inlet_1.flow_mol.unfix()
+            if config.has_drain_mixer:
+                _set_port(self.drain_mix.steam, self.desuperheat.outlet_1)
+            else:
+                _set_port(self.condense.inlet_1, self.desuperheat.outlet_1)
+            _set_port(self.condense.inlet_2, self.desuperheat.outlet_2)
         # initialize mixer if included
         if config.has_drain_mixer:
             self.drain_mix.steam.fix()
