@@ -163,7 +163,7 @@ class _ActivityCoeffStateBlock(StateBlock):
 
     def initialize(blk, flow_mol=None, mole_frac=None,
                    temperature=None, pressure=None,
-                   hold_state=False, outlvl=0,
+                   hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialisation routine for property package.
@@ -508,43 +508,43 @@ class ActivityCoeffStateBlockData(StateBlockData):
                              self.config.parameters.component_list)
 
         # List of Reaction Indicies
-        add_object_reference(self, "phase_equilibrium_idx",
+        add_object_reference(self, "phase_equilibrium_idx_ref",
                              self.config.parameters.phase_equilibrium_idx)
 
         # Reaction Stoichiometry
-        add_object_reference(self, "phase_equilibrium_list",
+        add_object_reference(self, "phase_equilibrium_list_ref",
                              self.config.parameters.phase_equilibrium_list)
 
         # Thermodynamic reference state
-        add_object_reference(self, "pressure_reference",
+        add_object_reference(self, "pressure_ref_ref",
                              self.config.parameters.pressure_reference)
-        add_object_reference(self, "temperature_reference",
+        add_object_reference(self, "temperature_ref_ref",
                              self.config.parameters.temperature_reference)
 
         # Gas Constant
-        add_object_reference(self, "gas_const",
+        add_object_reference(self, "gas_const_ref",
                              self.config.parameters.gas_const)
 
         # Critical Properties
-        add_object_reference(self, "pressure_critical",
+        add_object_reference(self, "pressure_critical_ref",
                              self.config.parameters.pressure_critical)
         add_object_reference(self, "temperature_critical",
                              self.config.parameters.temperature_critical)
 
         # Molecular weights
-        add_object_reference(self, "mw_comp",
+        add_object_reference(self, "mw_comp_ref",
                              self.config.parameters.mw_comp)
 
         # Specific Enthalpy Coefficients
-        add_object_reference(self, "CpIG",
+        add_object_reference(self, "CpIG_ref",
                              self.config.parameters.CpIG)
 
         # Vapor pressure coeeficients
-        add_object_reference(self, "pressure_sat_coeff",
+        add_object_reference(self, "pressure_sat_coeff_ref",
                              self.config.parameters.pressure_sat_coeff)
 
         # heat of vaporization
-        add_object_reference(self, "dh_vap",
+        add_object_reference(self, "dh_vap_ref",
                              self.config.parameters.dh_vap)
 
     def _make_state_vars(self):
@@ -658,11 +658,11 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         def rule_P_vap(self, j):
             return (1 - self.x[j]) * \
-                log(self.pressure_sat[j] / self.pressure_critical[j]) == \
-                (self.pressure_sat_coeff[j, 'A'] * self.x[j] +
-                 self.pressure_sat_coeff[j, 'B'] * self.x[j]**1.5 +
-                 self.pressure_sat_coeff[j, 'C'] * self.x[j]**3 +
-                 self.pressure_sat_coeff[j, 'D'] * self.x[j]**6)
+                log(self.pressure_sat[j] / self.pressure_critical_ref[j]) == \
+                (self.pressure_sat_coeff_ref[j, 'A'] * self.x[j] +
+                 self.pressure_sat_coeff_ref[j, 'B'] * self.x[j]**1.5 +
+                 self.pressure_sat_coeff_ref[j, 'C'] * self.x[j]**3 +
+                 self.pressure_sat_coeff_ref[j, 'D'] * self.x[j]**6)
         self.eq_P_vap = Constraint(self.component_list_ref, rule=rule_P_vap)
 
     def _make_NRTL_eq(self):
@@ -813,7 +813,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return self.pressure == (self.density_mol[p] *
-                                         self.gas_const *
+                                         self.gas_const_ref *
                                          self.temperature)
             elif p == "Liq":  # TODO: Add a correlation to compute liq density
                 return self.density_mol[p] == 11.1E3  # mol/m3
@@ -833,16 +833,16 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         def rule_hl_ig_pc(b, j):
             return self.enthalpy_comp_liq[j] * 1E3 == \
-                ((self.CpIG['Liq', j, '5'] / 5) *
-                    (self.temperature**5 - self.temperature_reference**5)
-                    + (self.CpIG['Liq', j, '4'] / 4) *
-                      (self.temperature**4 - self.temperature_reference**4)
-                    + (self.CpIG['Liq', j, '3'] / 3) *
-                      (self.temperature**3 - self.temperature_reference**3)
-                    + (self.CpIG['Liq', j, '2'] / 2) *
-                      (self.temperature**2 - self.temperature_reference**2)
-                    + self.CpIG['Liq', j, '1'] *
-                      (self.temperature - self.temperature_reference))
+                ((self.CpIG_ref['Liq', j, '5'] / 5) *
+                    (self.temperature**5 - self.temperature_ref_ref**5)
+                    + (self.CpIG_ref['Liq', j, '4'] / 4) *
+                      (self.temperature**4 - self.temperature_ref_ref**4)
+                    + (self.CpIG_ref['Liq', j, '3'] / 3) *
+                      (self.temperature**3 - self.temperature_ref_ref**3)
+                    + (self.CpIG_ref['Liq', j, '2'] / 2) *
+                      (self.temperature**2 - self.temperature_ref_ref**2)
+                    + self.CpIG_ref['Liq', j, '1'] *
+                      (self.temperature - self.temperature_ref_ref))
         self.eq_hl_ig_pc = Constraint(self.component_list_ref,
                                       rule=rule_hl_ig_pc)
 
@@ -861,17 +861,17 @@ class ActivityCoeffStateBlockData(StateBlockData):
         self.enthalpy_comp_vap = Var(self.component_list_ref, initialize=40000)
 
         def rule_hv_ig_pc(b, j):
-            return self.enthalpy_comp_vap[j] == self.dh_vap[j] + \
-                ((self.CpIG['Vap', j, '5'] / 5) *
-                    (self.temperature**5 - self.temperature_reference**5)
-                    + (self.CpIG['Vap', j, '4'] / 4) *
-                      (self.temperature**4 - self.temperature_reference**4)
-                    + (self.CpIG['Vap', j, '3'] / 3) *
-                      (self.temperature**3 - self.temperature_reference**3)
-                    + (self.CpIG['Vap', j, '2'] / 2) *
-                      (self.temperature**2 - self.temperature_reference**2)
-                    + self.CpIG['Vap', j, '1'] *
-                      (self.temperature - self.temperature_reference))
+            return self.enthalpy_comp_vap[j] == self.dh_vap_ref[j] + \
+                ((self.CpIG_ref['Vap', j, '5'] / 5) *
+                    (self.temperature**5 - self.temperature_ref_ref**5)
+                    + (self.CpIG_ref['Vap', j, '4'] / 4) *
+                      (self.temperature**4 - self.temperature_ref_ref**4)
+                    + (self.CpIG_ref['Vap', j, '3'] / 3) *
+                      (self.temperature**3 - self.temperature_ref_ref**3)
+                    + (self.CpIG_ref['Vap', j, '2'] / 2) *
+                      (self.temperature**2 - self.temperature_ref_ref**2)
+                    + self.CpIG_ref['Vap', j, '1'] *
+                      (self.temperature - self.temperature_ref_ref))
         self.eq_hv_ig_pc = Constraint(self.component_list_ref,
                                       rule=rule_hv_ig_pc)
 
