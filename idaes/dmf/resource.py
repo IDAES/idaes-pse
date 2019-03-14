@@ -244,7 +244,7 @@ class Resource(object):
     ID_FIELD = 'id_'     #: Identifier field name constant
     TYPE_FIELD = 'type'  #: Resource type field name constant
 
-    def __init__(self, value=None, type_=None):
+    def __init__(self, value: dict=None, type_: str=None):
         self._set_defaults()
         if value:
             self.v.update(value)
@@ -436,6 +436,8 @@ def triple_from_resource_relations(id_, rrel):
 
 
 def date_float(value):
+    """Convert a date to a floating point seconds since the UNIX epoch.
+    """
     def bad_date(e):
         raise ValueError('Cannot convert date "{}" to float: {}'
                          .format(value, e))
@@ -483,40 +485,32 @@ def version_list(value):
     
     Some examples of valid inputs and how they translate to 4-part versions:
 
-    .. testcode::
+    >>> version_list('1')
+    [1, 0, 0, '']
+    >>> version_list('1.1')
+    [1, 1, 0, '']
+    >>> version_list('1a')
+    [1, 0, 0, 'a']
+    >>> version_list('1.12.1')
+    [1, 12, 1, '']
+    >>> version_list('1.12.13-1')
+    [1, 12, 13, '1']
 
-        version_list('1')
-        version_list('1.1')
-        version_list('1a')
-        version_list('1.12.1')
-        version_list('1.12.13-1')
+    Some examples of invalid inputs:
 
-    .. testoutput::
+    >>> for bad_input in ('rc3',      # too short
+    ...                   '1.a.1.',   # non-number in middle
+    ...                   '1.12.13.x' # too long
+    ...     ):
+    ...     try:
+    ...         version_list(bad_input)
+    ...     except ValueError:
+    ...         print(f"failed: {bad_input}")
+    ... 
+    failed: rc3
+    failed: 1.a.1.
+    failed: 1.12.13.x
 
-        [1, 0, 0, '']
-        [1, 1, 0, '']
-        [1, 0, 0, 'a']
-        [1, 12, 1, '']
-        [1, 12, 13, '1']
-
-    Some example inputs that will fail:
-
-    .. testcode::
-
-        for bad_input in ('rc3',      # too short
-                          '1.a.1.',   # non-number in middle
-                          '1.12.13.x' # too long
-            ):
-            try:
-                version_list(bad_input)
-            except ValueError:
-                print(f"failed: {bad_input}")
-
-    .. testoutput::
-
-        failed: rc3
-        failed: 1.a.1.
-        failed: 1.12.13.x
 
     Returns:
         list: [major:int, minor:int, debug:int, release-type:str]
@@ -577,17 +571,32 @@ def format_version(values):
 
 
 def identifier_str(value=None):
-    """Unique identifier.
+    """Generate or validate a unique identifier.
+
+    If generating, you will get a UUID in hex format
+
+    >>> identifier_str()  #doctest: +ELLIPSIS
+    '...'
+
+    If validating, anything that is not 32 lowercase letters
+    or digits will fail.
+
+    >>> identifier_str('A' * 32)   #doctest: +NORMALIZE_WHITESPACE
+    Traceback (most recent call last):
+    ValueError: Bad format for identifier "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":
+    must match regular expression "[0-9a-f]{32}"
 
     Args:
         value (str): If given, validate that it is a 32-byte str
                      If not given or None, set new random value.
+    Raises:
+        ValuError, if a value is given, and it is invalid.
     """
     # regular expression for identifier: hex string len=32
     id_expr = '[0-9a-f]{32}'
     if value is None:
         value = uuid.uuid4().hex
     elif not re.match(id_expr, value):
-        raise ValueError('Bad format for identifier "{}", must match '
-                         'regular exprresion "{}"'.format(value, id_expr))
+        raise ValueError('Bad format for identifier "{}": must match '
+                         'regular expression "{}"'.format(value, id_expr))
     return value

@@ -9,9 +9,10 @@ BUILDDIR      = ./build
 SCRIPTDIR     = scripts
 
 # Internal variables.
-SPHINXDOCDIR  = doctest
-SPHINXDOCTEST = $(SPHINXBUILD) -b $(SPHINXDOCDIR) .
-ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
+SPHINXDOCBUILDER  = doctest
+SPHINXDOCDIR  	  = doctest
+SPHINXDOCTEST     = $(SPHINXBUILD) -b $(SPHINXDOCBUILDER) .
+ALLSPHINXOPTS     = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(SPHINXOPTS) .
 
@@ -70,7 +71,7 @@ dep: apidoc
 	@echo "Done building all dependencies"
 
 .PHONY: html
-html:
+html: apidoc
 	mkdir -p $(BUILDDIR)/examples
 	SPHINX=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)
 	@/bin/cp examples/*.html $(BUILDDIR)/examples

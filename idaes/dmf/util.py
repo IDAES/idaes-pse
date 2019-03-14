@@ -29,7 +29,7 @@ import sys
 import tempfile
 import time
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = 'Dan Gunter'
 
 _log = logging.getLogger(__name__)
 
