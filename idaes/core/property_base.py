@@ -213,6 +213,46 @@ should be constructed in this state block,
                                   'Please contact the property package '
                                   'developer.')
 
+    def calculate_bubble_point_temperature(self, *args, **kwargs):
+        """
+        Method which computes the bubble point temperature for a multi-
+        component mixture given a pressure and mole fraction.
+        """
+        raise NotImplementedError('{} property package has not implemented the'
+                                  ' calculate_bubble_point_temperature method.'
+                                  ' Please contact the property package '
+                                  'developer.')
+
+    def calculate_dew_point_temperature(self, *args, **kwargs):
+        """
+        Method which computes the dew point temperature for a multi-
+        component mixture given a pressure and mole fraction.
+        """
+        raise NotImplementedError('{} property package has not implemented the'
+                                  ' calculate_dew_point_temperature method.'
+                                  ' Please contact the property package '
+                                  'developer.')
+
+    def calculate_bubble_point_pressure(self, *args, **kwargs):
+        """
+        Method which computes the bubble point pressure for a multi-
+        component mixture given a temperature and mole fraction.
+        """
+        raise NotImplementedError('{} property package has not implemented the'
+                                  ' calculate_bubble_point_pressure method.'
+                                  ' Please contact the property package '
+                                  'developer.')
+
+    def calculate_dew_point_pressure(self, *args, **kwargs):
+        """
+        Method which computes the dew point pressure for a multi-
+        component mixture given a temperature and mole fraction.
+        """
+        raise NotImplementedError('{} property package has not implemented the'
+                                  ' calculate_dew_point_pressure method.'
+                                  ' Please contact the property package '
+                                  'developer.')
+
     def __getattr__(self, attr):
         """
         This method is used to avoid generating unnecessary property
