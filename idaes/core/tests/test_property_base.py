@@ -120,8 +120,14 @@ def test_StateBlock_NotImplementedErrors():
         m.p.get_enthalpy_density_terms()
     with pytest.raises(NotImplementedError):
         m.p.get_energy_diffusion_terms()
-
-
+    with pytest.raises(NotImplementedError):
+        m.p.calculate_bubble_point_temperature()
+    with pytest.raises(NotImplementedError):
+        m.p.calculate_dew_point_temperature()
+    with pytest.raises(NotImplementedError):
+        m.p.calculate_bubble_point_pressure()
+    with pytest.raises(NotImplementedError):
+        m.p.calculate_dew_point_pressure()
 # -----------------------------------------------------------------------------
 # Test properties __getattr__ method
 @declare_process_block_class("Parameters")
