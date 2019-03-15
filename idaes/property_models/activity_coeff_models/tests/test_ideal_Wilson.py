@@ -60,6 +60,7 @@ m.fs.state_block_Wilson_v = m.fs.properties_Wilson_v.state_block_class(
 
 
 def test_build_inlet_state_block():
+    
     assert len(m.fs.properties_Wilson_vl.config) == 3
 
     # vapor-liquid (Wilson)
@@ -105,6 +106,12 @@ def test_setInputs_inlet_state_block():
     m.fs.state_block_Wilson_vl.mole_frac["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_Wilson_vl) == 4
+
+    # Fix Wilson specific variables
+    m.fs.state_block_Wilson_vl.vol_mol_comp.fix()
+    m.fs.state_block_Wilson_vl.tau.fix()
+
+    assert degrees_of_freedom(m.fs.state_block_Wilson_vl) == 0
 
     # liquid only (Wilson)
     m.fs.state_block_Wilson_l.flow_mol.fix(1)
