@@ -93,7 +93,7 @@ class StateTestBlockData(StateBlockData):
 
         self.test_var = Var()
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
-        self.phase_equilibrium_list = \
+        self.phase_equilibrium_list_ref = \
             {"e1": ["c1", ("p1", "p2")],
              "e2": ["c2", ("p1", "p2")]}
 
@@ -453,7 +453,7 @@ def test_add_state_blocks_no_has_phase_equilibrium():
     m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv.add_geometry()
-    
+
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_state_blocks()
 
@@ -526,7 +526,7 @@ def test_add_reaction_blocks_no_has_equilibrium():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    
+
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_reaction_blocks()
 

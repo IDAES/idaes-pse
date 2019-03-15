@@ -20,7 +20,7 @@ from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.feed_flash import FeedFlash
 from idaes.property_models.ideal.BTX_ideal_VLE import (
-                        IdealParameterBlock)
+                        BTXParameterBlock)
 from idaes.ui.report import degrees_of_freedom
 
 
@@ -40,7 +40,7 @@ def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = IdealParameterBlock()
+    m.fs.properties = BTXParameterBlock()
 
     m.fs.ff = FeedFlash(
             default={"property_package": m.fs.properties})
@@ -65,7 +65,7 @@ def test_initialize():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = IdealParameterBlock()
+    m.fs.properties = BTXParameterBlock()
 
     m.fs.ff = FeedFlash(
             default={"property_package": m.fs.properties})
