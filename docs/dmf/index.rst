@@ -145,5 +145,5 @@ So, some ways to share (with one or many people) include:
 
 Reference
 ---------
-See the :mod:`idaes.dmf` documentation that is generated
+See the :mod:`idaes.dmf` package documentation that is generated
 automatically from the source code.
