@@ -29,7 +29,7 @@ import six
 # local
 from .util import datetime_timestamp
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = 'Dan Gunter'
 
 _log = logging.getLogger(__name__)
 
@@ -485,31 +485,39 @@ def version_list(value):
     
     Some examples of valid inputs and how they translate to 4-part versions:
 
-    >>> version_list('1')
-    [1, 0, 0, '']
-    >>> version_list('1.1')
-    [1, 1, 0, '']
-    >>> version_list('1a')
-    [1, 0, 0, 'a']
-    >>> version_list('1.12.1')
-    [1, 12, 1, '']
-    >>> version_list('1.12.13-1')
-    [1, 12, 13, '1']
+    .. testsetup:: version_list
+
+        from idaes.dmf.resource import version_list
+
+    .. doctest:: version_list
+
+        >>> version_list('1')
+        [1, 0, 0, '']
+        >>> version_list('1.1')
+        [1, 1, 0, '']
+        >>> version_list('1a')
+        [1, 0, 0, 'a']
+        >>> version_list('1.12.1')
+        [1, 12, 1, '']
+        >>> version_list('1.12.13-1')
+        [1, 12, 13, '1']
 
     Some examples of invalid inputs:
 
-    >>> for bad_input in ('rc3',      # too short
-    ...                   '1.a.1.',   # non-number in middle
-    ...                   '1.12.13.x' # too long
-    ...     ):
-    ...     try:
-    ...         version_list(bad_input)
-    ...     except ValueError:
-    ...         print(f"failed: {bad_input}")
-    ... 
-    failed: rc3
-    failed: 1.a.1.
-    failed: 1.12.13.x
+    .. doctest:: version_list
+
+        >>> for bad_input in ('rc3',      # too short
+        ...                   '1.a.1.',   # non-number in middle
+        ...                   '1.12.13.x' # too long
+        ...     ):
+        ...     try:
+        ...         version_list(bad_input)
+        ...     except ValueError:
+        ...         print(f"failed: {bad_input}")
+        ... 
+        failed: rc3
+        failed: 1.a.1.
+        failed: 1.12.13.x
 
 
     Returns:
@@ -575,16 +583,24 @@ def identifier_str(value=None):
 
     If generating, you will get a UUID in hex format
 
-    >>> identifier_str()  #doctest: +ELLIPSIS
-    '...'
+    .. testsetup:: idstr
+
+        from idaes.dmf.resource import identifier_str
+
+    .. doctest:: idstr
+
+        >>> identifier_str()  #doctest: +ELLIPSIS
+        '...'
 
     If validating, anything that is not 32 lowercase letters
     or digits will fail.
 
-    >>> identifier_str('A' * 32)   #doctest: +NORMALIZE_WHITESPACE
-    Traceback (most recent call last):
-    ValueError: Bad format for identifier "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":
-    must match regular expression "[0-9a-f]{32}"
+    .. doctest:: idstr
+
+        >>> identifier_str('A' * 32)   #doctest: +NORMALIZE_WHITESPACE
+        Traceback (most recent call last):
+        ValueError: Bad format for identifier "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA":
+        must match regular expression "[0-9a-f]{32}"
 
     Args:
         value (str): If given, validate that it is a 32-byte str
