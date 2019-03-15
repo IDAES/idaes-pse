@@ -23,7 +23,7 @@ The condensing section uses the :ref:`FWHCondensing0D <models/power_generation/f
 =========================== ====================== ====================================================================================================================================================================
 Unit                        Option                 Doc
 =========================== ====================== ====================================================================================================================================================================
-``condense``                -                      Condensing section (:ref:`FWHCondensing0D <models/power_generation/feedwater_heater_condensing_0D:Feedwater Heater (Condensing Section 0D)>`)
+``condense``                --                     Condensing section (:ref:`FWHCondensing0D <models/power_generation/feedwater_heater_condensing_0D:Feedwater Heater (Condensing Section 0D)>`)
 ``desuperheat``             ``has_desuperheat``    Desuperheating section (:ref:`HeatExchanger <models/heat_exchanger:HeatExchanger (0D)>`)
 ``cooling``                 ``has_drain_cooling``  Drain cooling section (:ref:`HeatExchanger <models/heat_exchanger:HeatExchanger (0D)>`)
 ``drain_mix``               ``has_drain_mixer``    Mixer for steam and other FWH drain (:ref:`Mixer <models/mixer:Mixer>`)
