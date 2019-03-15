@@ -69,7 +69,7 @@ These examples can be appended to the boilerplate code above.
 The first example creates a model, saves the state, changes a value, then reads
 back the initial state.
 
-.. .. testcode:: (Commenting out failing doctest)
+.. testcode:: (Commenting out failing doctest)
 .. code-block:: python
 
   model = setup_model01()
@@ -80,7 +80,7 @@ back the initial state.
 
 This next example show how to save only suffixes.
 
-.. .. testcode:: (Commenting out failing doctest)
+.. testcode:: (Commenting out failing doctest)
 .. code-block:: python
 
   model = setup_model02()
