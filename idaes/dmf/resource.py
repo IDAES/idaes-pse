@@ -244,7 +244,7 @@ class Resource(object):
     ID_FIELD = 'id_'     #: Identifier field name constant
     TYPE_FIELD = 'type'  #: Resource type field name constant
 
-    def __init__(self, value: dict=None, type_: str=None):
+    def __init__(self, value: dict = None, type_: str = None):
         self._set_defaults()
         if value:
             self.v.update(value)
