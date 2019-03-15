@@ -112,7 +112,7 @@ class FWH0DData(UnitModelBlockData):
             @self.drain_mix.Constraint(self.drain_mix.time_ref)
             def mixer_pressure_constraint(b, t):
                 return b.steam_state[t].pressure == b.mixed_state[t].pressure
-            self.mix_to_cond = Arc(source=self.drain_mix.outlet,
+            self.mix_out_arc = Arc(source=self.drain_mix.outlet,
                                    destination=self.condense.inlet_1)
 
         # Add a desuperheat section before the condensing section
@@ -127,14 +127,20 @@ class FWH0DData(UnitModelBlockData):
                 self.desuperheat_drain_arc = Arc(
                     source=self.desuperheat.outlet_1,
                     destination=self.condense.inlet_1)
-            self.desuperheat_fw_arc = Arc(
-                source=self.desuperheat.outlet_2,
-                destination=self.condense.inlet_2)
+            self.condense_out2_arc = Arc(
+                source=self.condense.outlet_2,
+                destination=self.desuperheat.inlet_2)
 
         # Add a drain cooling section after the condensing section
         if config.has_drain_cooling:
             self.cooling = HeatExchanger(default=config.cooling)
             self.cooling.area.value = 10
+            self.cooling_out2_arc = Arc(
+                source=self.cooling.outlet_2,
+                destination=self.condense.inlet_2)
+            self.condense_out1_arc = Arc(
+                source=self.condense.outlet_1,
+                destination=self.cooling.inlet_1)
 
         TransformationFactory("network.expand_arcs").apply_to(self)
 
@@ -142,15 +148,25 @@ class FWH0DData(UnitModelBlockData):
         config = self.config
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
+
+        # the initilization here isn't straight forward since the heatechanger
+        # may have 3 stages and they are countercurrent.  For simplicity each
+        # stage in initialized with the same cooling water inlet conditions then
+        # the whole feedwater heater is solved together.  There are more rubust
+        # approaches which can be implimented if the need arises.
+
         # initialize desuperheat if include
         if config.has_desuperheat:
+            if config.has_drain_cooling:
+                _set_port(self.desuperheat.inlet_2, self.cooling.inlet_2)
+            else:
+                _set_port(self.desuperheat.inlet_2, self.condense.inlet_2)
             self.desuperheat.initialize(*args, **kwargs)
             self.desuperheat.inlet_1.flow_mol.unfix()
             if config.has_drain_mixer:
                 _set_port(self.drain_mix.steam, self.desuperheat.outlet_1)
             else:
                 _set_port(self.condense.inlet_1, self.desuperheat.outlet_1)
-            _set_port(self.condense.inlet_2, self.desuperheat.outlet_2)
         # initialize mixer if included
         if config.has_drain_mixer:
             self.drain_mix.steam.fix()
@@ -163,10 +179,13 @@ class FWH0DData(UnitModelBlockData):
             else:
                 self.drain_mix.steam.flow_mol.unfix()
         # Initialize condense section
+        if config.has_drain_cooling:
+            _set_port(self.condense.inlet_2, self.cooling.inlet_2)
         self.condense.initialize(*args, **kwargs)
         # Initialize drain cooling if included
         if config.has_drain_cooling:
-            pass
+            _set_port(self.cooling.inlet_1, self.condense.outlet_1)
+            self.cooling.initialize(*args, **kwargs)
 
         # Solve all together
         outlvl = kwargs.get("outlvl", 0)
