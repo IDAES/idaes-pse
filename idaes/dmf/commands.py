@@ -231,7 +231,7 @@ def workspace_import(path, patterns, exit_on_error):
 
 
 def list_workspaces(root, stream=None):
-    # type: (str, ...) -> None
+    # type: (str, Any) -> None
     """List workspaces found from a given root path.
 
     Args:
