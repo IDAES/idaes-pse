@@ -25,6 +25,7 @@ import math
 import os
 import re
 import sys
+from typing import Any
 # Third-party
 from backports.shutil_get_terminal_size import get_terminal_size
 import jsonschema
