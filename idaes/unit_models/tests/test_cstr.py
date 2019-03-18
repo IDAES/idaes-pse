@@ -29,7 +29,8 @@ from idaes.ui.report import (degrees_of_freedom,
                              unfixed_variables,
                              active_equalities,
                              inactive_equalities)
-from idaes.core.util.testing import (count_constraints,
+from idaes.core.util.testing import (compare_model_state,
+                                     count_constraints,
                                      count_variables,
                                      get_default_solver)
 
@@ -105,27 +106,7 @@ def test_dof(model):
 def test_initialize(model):
     assert degrees_of_freedom(model) == 0
 
-    f_vars_1 = fixed_variables(model)
-    u_vars_1 = unfixed_variables(model)
-    a_cons_1 = active_equalities(model)
-    i_cons_1 = inactive_equalities(model)
-
-    model.fs.cstr.initialize(outlvl=5,
-                             optarg={'tol': 1e-6})
-
-    f_vars_2 = fixed_variables(model)
-    u_vars_2 = unfixed_variables(model)
-    a_cons_2 = active_equalities(model)
-    i_cons_2 = inactive_equalities(model)
-
-    for v in f_vars_1:
-        assert v in f_vars_2
-    for v in u_vars_1:
-        assert v in u_vars_2
-    for c in a_cons_1:
-        assert c in a_cons_2
-    for c in i_cons_1:
-        assert c in i_cons_2
+    compare_model_state(model, model.fs.cstr.initialize, kwargs={"optarg":{'tol': 1e-6}})
 
     assert len(list(stale_variables(model))) == 0
 
