@@ -25,11 +25,14 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, exp
+    value, Var, exp, Set
 from pyomo.opt import SolverFactory, TerminationCondition
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
+                        PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
@@ -45,6 +48,86 @@ __version__ = "0.0.2"
 _log = logging.getLogger(__name__)
 
 
+class IdealParameterData(PhysicalParameterBlock):
+    """
+    Property Parameter Block Class
+    Contains parameters and indexing sets associated with properties for
+    BTX system.
+    """
+    # Config block for the _IdealStateBlock
+    CONFIG = PhysicalParameterBlock.CONFIG()
+
+    CONFIG.declare("valid_phase", ConfigValue(
+        default=('Vap', 'Liq'),
+        domain=In(['Liq', 'Vap', ('Vap', 'Liq'), ('Liq', 'Vap')]),
+        description="Flag indicating the valid phase",
+        doc="""Flag indicating the valid phase for a given set of
+conditions, and thus corresponding constraints  should be included,
+**default** - ('Vap', 'Liq').
+**Valid values:** {
+**'Liq'** - Liquid only,
+**'Vap'** - Vapor only,
+**('Vap', 'Liq')** - Vapor-liquid equilibrium,
+**('Liq', 'Vap')** - Vapor-liquid equilibrium,}"""))
+
+    def build(self):
+        '''
+        Callable method for Block construction.
+        '''
+        super(IdealParameterData, self).build()
+
+        self.state_block_class = IdealStateBlock
+
+        # List of valid phases in property package
+        if self.config.valid_phase == ('Liq', 'Vap') or \
+                self.config.valid_phase == ('Vap', 'Liq'):
+            self.phase_list = Set(initialize=['Liq', 'Vap'],
+                                  ordered=True)
+        elif self.config.valid_phase == 'Liq':
+            self.phase_list = Set(initialize=['Liq'])
+        else:
+            self.phase_list = Set(initialize=['Vap'])
+
+    @classmethod
+    def define_metadata(cls, obj):
+        """Define properties supported and units."""
+        obj.add_properties(
+            {'flow_mol': {'method': None, 'units': 'mol/s'},
+             'mole_frac': {'method': None, 'units': 'no unit'},
+             'temperature': {'method': None, 'units': 'K'},
+             'pressure': {'method': None, 'units': 'Pa'},
+             'flow_mol_phase': {'method': None, 'units': 'mol/s'},
+             'density_mol': {'method': '_density_mol',
+                             'units': 'mol/m^3'},
+             'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
+             'mole_frac_phase': {'method': '_mole_frac_phase',
+                                 'units': 'no unit'},
+             'enthalpy_comp_liq': {'method': '_enthalpy_comp_liq',
+                                   'units': 'J/mol'},
+             'enthalpy_comp_vap': {'method': '_enthalpy_comp_vap',
+                                   'units': 'J/mol'},
+             'enthalpy_liq': {'method': '_enthalpy_liq',
+                              'units': 'J/mol'},
+             'enthalpy_vap': {'method': '_enthalpy_vap',
+                              'units': 'J/mol'},
+             'temperature_bubble': {'method': '_temperature_bubble',
+                                    'units': 'K'},
+             'temperature_dew': {'method': '_temperature_dew',
+                                 'units': 'K'},
+             'pressure_bubble': {'method': '_pressure_bubble',
+                                 'units': 'Pa'},
+             'pressure_dew': {'method': '_pressure_dew',
+                              'units': 'Pa'}})
+
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
+
+
 class _IdealStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
@@ -53,7 +136,7 @@ class _IdealStateBlock(StateBlock):
 
     def initialize(blk, flow_mol=None, mole_frac=None,
                    temperature=None, pressure=None,
-                   hold_state=False, outlvl=0,
+                   hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialisation routine for property package.
@@ -84,6 +167,9 @@ class _IdealStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
+
+        _log.info('Starting {} initialisation'.format(blk.name))
+
         # Fix state variables if not already fixed
         Fflag = {}
         Xflag = {}
@@ -188,13 +274,16 @@ class _IdealStateBlock(StateBlock):
             if outlvl > 0:
                 if results.solver.termination_condition \
                         == TerminationCondition.optimal:
-                    print(blk, "Initialisation step 1 for properties complete")
+                    _log.info("Initialisation step 1 for "
+                              "{} completed".format(blk.name))
                 else:
-                    print(blk, "Initialisation step 1 for properties failed")
+                    _log.warning("Initialisation step 1 for "
+                                 "{} failed".format(blk.name))
 
         else:
             if outlvl > 0:
-                print(blk, "Initialisation step 1 for properties skipped")
+                _log.info("Initialisation step 1 for "
+                          "{} skipped".format(blk.name))
 
         for k in blk.keys():
             blk[k].eq_total.activate()
@@ -212,9 +301,11 @@ class _IdealStateBlock(StateBlock):
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
-                print(blk, "Initialisation step 2 for properties complete")
+                _log.info("Initialisation step 2 for "
+                          "{} completed".format(blk.name))
             else:
-                print(blk, "Initialisation step 2 for properties failed")
+                _log.warning("Initialisation step 2 for "
+                             "{} failed".format(blk.name))
 
         for k in blk.keys():
             if not blk[k].config.has_phase_equilibrium and \
@@ -248,20 +339,16 @@ class _IdealStateBlock(StateBlock):
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
-                print(blk, "Initialisation step 3 for properties complete")
+                _log.info("Initialisation step 3 for "
+                          "{} completed".format(blk.name))
             else:
-                print(blk, "Initialisation step 3 for properties failed")
+                _log.warning("Initialisation step 3 for "
+                             "{} failed".format(blk.name))
 
         for k in blk.keys():
             if (blk[k].config.defined_state is False):
                 blk[k].eq_mol_frac_out.activate()
 
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                print(blk, "Initialisation step for properties complete")
-            else:
-                print(blk, "Initialisation step for properties failed")
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
         flags = {"Fflag": Fflag,
@@ -269,14 +356,13 @@ class _IdealStateBlock(StateBlock):
                  "Pflag": Pflag,
                  "Tflag": Tflag}
 
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
-
         if hold_state is True:
             return flags
         else:
             blk.release_state(flags)
+
+        if outlvl > 0:
+            _log.info("Initialisation completed for {}".format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''
@@ -303,8 +389,7 @@ class _IdealStateBlock(StateBlock):
 
         if outlvl > 0:
             if outlvl > 0:
-                _log.info('{} State Released.'.format(blk.name))
-
+                _log.info('{} states released.'.format(blk.name))
 
 @declare_process_block_class("IdealStateBlock",
                              block_class=_IdealStateBlock)
@@ -352,43 +437,43 @@ class IdealStateBlockData(StateBlockData):
                              self.config.parameters.component_list)
 
         # List of Reaction Indicies
-        add_object_reference(self, "phase_equilibrium_idx",
+        add_object_reference(self, "phase_equilibrium_idx_ref",
                              self.config.parameters.phase_equilibrium_idx)
 
         # Reaction Stoichiometry
-        add_object_reference(self, "phase_equilibrium_list",
+        add_object_reference(self, "phase_equilibrium_list_ref",
                              self.config.parameters.phase_equilibrium_list)
 
         # Thermodynamic reference state
-        add_object_reference(self, "pressure_reference",
+        add_object_reference(self, "pressure_ref_ref",
                              self.config.parameters.pressure_reference)
-        add_object_reference(self, "temperature_reference",
+        add_object_reference(self, "temperature_ref_ref",
                              self.config.parameters.temperature_reference)
 
         # Gas Constant
-        add_object_reference(self, "gas_const",
+        add_object_reference(self, "gas_const_ref",
                              self.config.parameters.gas_const)
 
         # Critical Properties
-        add_object_reference(self, "pressure_critical",
+        add_object_reference(self, "pressure_critical_ref",
                              self.config.parameters.pressure_critical)
-        add_object_reference(self, "temperature_critical",
+        add_object_reference(self, "temperature_critical_ref",
                              self.config.parameters.temperature_critical)
 
         # Molecular weights
-        add_object_reference(self, "mw_comp",
+        add_object_reference(self, "mw_comp_ref",
                              self.config.parameters.mw_comp)
 
         # Specific Enthalpy Coefficients
-        add_object_reference(self, "CpIG",
+        add_object_reference(self, "CpIG_ref",
                              self.config.parameters.CpIG)
 
         # Vapor pressure coeeficients
-        add_object_reference(self, "pressure_sat_coeff",
+        add_object_reference(self, "pressure_sat_coeff_ref",
                              self.config.parameters.pressure_sat_coeff)
 
         # heat of vaporization
-        add_object_reference(self, "dh_vap",
+        add_object_reference(self, "dh_vap_ref",
                              self.config.parameters.dh_vap)
 
     def _make_state_vars(self):
@@ -487,16 +572,16 @@ class IdealStateBlockData(StateBlockData):
             self.eq_Keq = Constraint(self.component_list_ref, rule=rule_Keq)
 
         def rule_temp_var_x(self, i):
-            return 1 - self.temperature / self.temperature_critical[i]
+            return 1 - self.temperature / self.temperature_critical_ref[i]
         self.x = Expression(self.component_list_ref, rule=rule_temp_var_x)
 
         def rule_P_vap(self, j):
             return (1 - self.x[j]) * \
-                log(self.pressure_sat[j] / self.pressure_critical[j]) == \
-                (self.pressure_sat_coeff[j, 'A'] * self.x[j] +
-                 self.pressure_sat_coeff[j, 'B'] * self.x[j]**1.5 +
-                 self.pressure_sat_coeff[j, 'C'] * self.x[j]**3 +
-                 self.pressure_sat_coeff[j, 'D'] * self.x[j]**6)
+                log(self.pressure_sat[j] / self.pressure_critical_ref[j]) == \
+                (self.pressure_sat_coeff_ref[j, 'A'] * self.x[j] +
+                 self.pressure_sat_coeff_ref[j, 'B'] * self.x[j]**1.5 +
+                 self.pressure_sat_coeff_ref[j, 'C'] * self.x[j]**3 +
+                 self.pressure_sat_coeff_ref[j, 'D'] * self.x[j]**6)
         self.eq_P_vap = Constraint(self.component_list_ref, rule=rule_P_vap)
 
     def _density_mol(self):
@@ -505,7 +590,7 @@ class IdealStateBlockData(StateBlockData):
         def density_mol_calculation(self, p):
             if p == "Vap":
                 return self.pressure == (self.density_mol[p] *
-                                         self.gas_const *
+                                         self.gas_const_ref *
                                          self.temperature)
             elif p == "Liq":  # TODO: Add a correlation to compute liq density
                 return self.density_mol[p] == 11.1E3  # mol/m3
@@ -525,16 +610,16 @@ class IdealStateBlockData(StateBlockData):
 
         def rule_hl_ig_pc(b, j):
             return self.enthalpy_comp_liq[j] * 1E3 == \
-                ((self.CpIG['Liq', j, '5'] / 5) *
-                    (self.temperature**5 - self.temperature_reference**5)
-                    + (self.CpIG['Liq', j, '4'] / 4) *
-                      (self.temperature**4 - self.temperature_reference**4)
-                    + (self.CpIG['Liq', j, '3'] / 3) *
-                      (self.temperature**3 - self.temperature_reference**3)
-                    + (self.CpIG['Liq', j, '2'] / 2) *
-                      (self.temperature**2 - self.temperature_reference**2)
-                    + self.CpIG['Liq', j, '1'] *
-                      (self.temperature - self.temperature_reference))
+                ((self.CpIG_ref['Liq', j, '5'] / 5) *
+                    (self.temperature**5 - self.temperature_ref_ref**5)
+                    + (self.CpIG_ref['Liq', j, '4'] / 4) *
+                      (self.temperature**4 - self.temperature_ref_ref**4)
+                    + (self.CpIG_ref['Liq', j, '3'] / 3) *
+                      (self.temperature**3 - self.temperature_ref_ref**3)
+                    + (self.CpIG_ref['Liq', j, '2'] / 2) *
+                      (self.temperature**2 - self.temperature_ref_ref**2)
+                    + self.CpIG_ref['Liq', j, '1'] *
+                      (self.temperature - self.temperature_ref_ref))
         self.eq_hl_ig_pc = Constraint(self.component_list_ref,
                                       rule=rule_hl_ig_pc)
 
@@ -553,17 +638,17 @@ class IdealStateBlockData(StateBlockData):
         self.enthalpy_comp_vap = Var(self.component_list_ref, initialize=40000)
 
         def rule_hv_ig_pc(b, j):
-            return self.enthalpy_comp_vap[j] == self.dh_vap[j] + \
-                ((self.CpIG['Vap', j, '5'] / 5) *
-                    (self.temperature**5 - self.temperature_reference**5)
-                    + (self.CpIG['Vap', j, '4'] / 4) *
-                      (self.temperature**4 - self.temperature_reference**4)
-                    + (self.CpIG['Vap', j, '3'] / 3) *
-                      (self.temperature**3 - self.temperature_reference**3)
-                    + (self.CpIG['Vap', j, '2'] / 2) *
-                      (self.temperature**2 - self.temperature_reference**2)
-                    + self.CpIG['Vap', j, '1'] *
-                      (self.temperature - self.temperature_reference))
+            return self.enthalpy_comp_vap[j] == self.dh_vap_ref[j] + \
+                ((self.CpIG_ref['Vap', j, '5'] / 5) *
+                    (self.temperature**5 - self.temperature_ref_ref**5)
+                    + (self.CpIG_ref['Vap', j, '4'] / 4) *
+                      (self.temperature**4 - self.temperature_ref_ref**4)
+                    + (self.CpIG_ref['Vap', j, '3'] / 3) *
+                      (self.temperature**3 - self.temperature_ref_ref**3)
+                    + (self.CpIG_ref['Vap', j, '2'] / 2) *
+                      (self.temperature**2 - self.temperature_ref_ref**2)
+                    + self.CpIG_ref['Vap', j, '1'] *
+                      (self.temperature - self.temperature_ref_ref))
         self.eq_hv_ig_pc = Constraint(self.component_list_ref,
                                       rule=rule_hv_ig_pc)
 
@@ -636,174 +721,233 @@ class IdealStateBlockData(StateBlockData):
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
 
-    def temperature_bubble_point(blk, pressure=None, mole_frac=None,
-                                 options={"initial_guess": 298.15,
-                                          "tol": 1e-3,
-                                          "deltaT": 1e-3,
-                                          "max_iter": 1e4}):
+    def _temperature_bubble(self):
+
+        self.temperature_bubble = Var(initialize=298.15,
+                                      doc="Bubble point temperature (K)")
+
+        def rule_psat_bubble(m, j):
+            return self.pressure_critical_ref[j] * \
+                exp((self.pressure_sat_coeff_ref[j, 'A'] *
+                    (1 - self.temperature_bubble /
+                    self.temperature_critical_ref[j]) +
+                    self.pressure_sat_coeff_ref[j, 'B'] *
+                    (1 - self.temperature_bubble /
+                    self.temperature_critical_ref[j])**1.5 +
+                    self.pressure_sat_coeff_ref[j, 'C'] *
+                    (1 - self.temperature_bubble /
+                    self.temperature_critical_ref[j])**3 +
+                    self.pressure_sat_coeff_ref[j, 'D'] *
+                    (1 - self.temperature_bubble /
+                    self.temperature_critical_ref[j])**6) /
+                    (1 - (1 - self.temperature_bubble /
+                          self.temperature_critical_ref[j])))
+        try:
+            # Try to build expression
+            self._p_sat_bubbleT = Expression(self.component_list_ref,
+                                             rule=rule_psat_bubble)
+
+            def rule_temp_bubble(self):
+                return sum(self._p_sat_bubbleT[i] * self.mole_frac[i]
+                           for i in self.component_list_ref) - \
+                    self.pressure == 0
+            self.eq_bubble_temp = Constraint(rule=rule_temp_bubble)
+
+        except AttributeError:
+            # If expression fails, clean up so that DAE can try again later
+            # Deleting only var/expression as expression construction will fail
+            # first; if it passes then constraint construction will not fail.
+            self.del_component(self.temperature_bubble)
+            self.del_component(self._p_sat_bubbleT)
+
+    def _temperature_dew(self):
+
+        self.temperature_dew = Var(initialize=298.15,
+                                   doc="Dew point temperature (K)")
+
+        def rule_psat_dew(m, j):
+            return self.pressure_critical_ref[j] * \
+                exp((self.pressure_sat_coeff_ref[j, 'A'] *
+                    (1 - self.temperature_dew /
+                    self.temperature_critical_ref[j]) +
+                    self.pressure_sat_coeff_ref[j, 'B'] *
+                    (1 - self.temperature_dew /
+                    self.temperature_critical_ref[j])**1.5 +
+                    self.pressure_sat_coeff_ref[j, 'C'] *
+                    (1 - self.temperature_dew /
+                    self.temperature_critical_ref[j])**3 +
+                    self.pressure_sat_coeff_ref[j, 'D'] *
+                    (1 - self.temperature_dew /
+                    self.temperature_critical_ref[j])**6) /
+                    (1 - (1 - self.temperature_dew /
+                          self.temperature_critical_ref[j])))
+
+        try:
+            # Try to build expression
+            self._p_sat_dewT = Expression(self.component_list_ref,
+                                          rule=rule_psat_dew)
+
+            def rule_temp_dew(self):
+                return self.pressure * sum(self.mole_frac[i] /
+                                           self._p_sat_dewT[i]
+                                           for i in self.component_list_ref) \
+                    - 1 == 0
+            self.eq_dew_temp = Constraint(rule=rule_temp_dew)
+        except AttributeError:
+            # If expression fails, clean up so that DAE can try again later
+            # Deleting only var/expression as expression construction will fail
+            # first; if it passes then constraint construction will not fail.
+            self.del_component(self.temperature_dew)
+            self.del_component(self._p_sat_dewT)
+
+    def _pressure_bubble(self):
+        self.pressure_bubble = Var(initialize=298.15,
+                                   doc="Bubble point pressure (Pa)")
+
+        def rule_psat_bubble(m, j):
+            return self.pressure_critical_ref[j] * \
+                exp((self.pressure_sat_coeff_ref[j, 'A'] *
+                    (1 - self.temperature /
+                    self.temperature_critical_ref[j]) +
+                    self.pressure_sat_coeff_ref[j, 'B'] *
+                    (1 - self.temperature /
+                    self.temperature_critical_ref[j])**1.5 +
+                    self.pressure_sat_coeff_ref[j, 'C'] *
+                    (1 - self.temperature /
+                    self.temperature_critical_ref[j])**3 +
+                    self.pressure_sat_coeff_ref[j, 'D'] *
+                    (1 - self.temperature /
+                    self.temperature_critical_ref[j])**6) /
+                    (1 - (1 - self.temperature /
+                          self.temperature_critical_ref[j])))
+
+        try:
+            # Try to build expression
+            self._p_sat_bubbleP = Expression(self.component_list_ref,
+                                             rule=rule_psat_bubble)
+
+            def rule_pressure_bubble(self):
+                return sum(self._p_sat_bubbleP[i] * self.mole_frac[i]
+                           for i in self.component_list_ref) \
+                    - self.pressure_bubble == 0
+            self.eq_bubble_pressure = Constraint(rule=rule_pressure_bubble)
+        except AttributeError:
+            # If expression fails, clean up so that DAE can try again later
+            # Deleting only var/expression as expression construction will fail
+            # first; if it passes then constraint construction will not fail.
+            self.del_component(self.pressure_bubble)
+            self.del_component(self._p_sat_bubbleP)
+
+    def _pressure_dew(self):
+        self.pressure_dew = Var(initialize=298.15,
+                                doc="Dew point pressure (Pa)")
+
+        def rule_psat_dew(m, j):
+            return self.pressure_critical_ref[j] * \
+                exp((self.pressure_sat_coeff_ref[j, 'A'] *
+                    (1 - self.temperature /
+                    self.temperature_critical_ref[j]) +
+                    self.pressure_sat_coeff_ref[j, 'B'] *
+                    (1 - self.temperature /
+                    self.temperature_critical_ref[j])**1.5 +
+                    self.pressure_sat_coeff_ref[j, 'C'] *
+                    (1 - self.temperature /
+                    self.temperature_critical_ref[j])**3 +
+                    self.pressure_sat_coeff_ref[j, 'D'] *
+                    (1 - self.temperature /
+                    self.temperature_critical_ref[j])**6) /
+                    (1 - (1 - self.temperature /
+                          self.temperature_critical_ref[j])))
+
+        try:
+            # Try to build expression
+            self._p_sat_dewP = Expression(self.component_list_ref,
+                                          rule=rule_psat_dew)
+
+            def rule_pressure_dew(self):
+                return self.pressure_dew * \
+                    sum(self.mole_frac[i] / self._p_sat_dewP[i]
+                        for i in self.component_list_ref) \
+                    - 1 == 0
+            self.eq_dew_pressure = Constraint(rule=rule_pressure_dew)
+        except AttributeError:
+            # If expression fails, clean up so that DAE can try again later
+            # Deleting only var/expression as expression construction will fail
+            # first; if it passes then constraint construction will not fail.
+            self.del_component(self.pressure_dew)
+            self.del_component(self._p_sat_dewP)
+
+    # Property package utility functions
+    def calculate_bubble_point_temperature(self, clear_components=True):
         """"To compute the bubble point temperature of the mixture."""
-        n = 0
-        T_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaT = options["deltaT"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - T_guess) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / pressure
-                s = s + k * value(mole_frac[j])
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                T_guess = T_guess - deltaT
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-            else:
-                T_guess = T_guess + deltaT
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-        return round(T_guess, 3)
 
-    def temperature_dew_point(blk, pressure=None, mole_frac=None,
-                              options={"initial_guess": 298.15,
-                                       "tol": 1e-3,
-                                       "deltaT": 1e-3,
-                                       "max_iter": 1e4}):
+        if hasattr(self, "eq_bubble_temp"):
+            # Do not delete components if the block already has the components
+            clear_components = False
+
+        calculate_variable_from_constraint(self.temperature_bubble,
+                                           self.eq_bubble_temp)
+
+        return self.temperature_bubble.value
+
+        if clear_components is True:
+            self.del_component(self.eq_bubble_temp)
+            self.del_component(self._p_sat_bubbleT)
+            self.del_component(self.temperature_bubble)
+
+    def calculate_dew_point_temperature(self, clear_components=True):
         """"To compute the dew point temperature of the mixture."""
-        n = 0
-        T_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaT = options["deltaT"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - T_guess) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / pressure
-                s = s + value(mole_frac[j]) / k
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                n = n + 1
-                T_guess = T_guess + deltaT
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-            else:
-                n = n + 1
-                T_guess = T_guess - deltaT
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-        return round(T_guess, 3)
 
-    def pressure_bubble_point(blk, temperature=None, mole_frac=None,
-                              options={"initial_guess": 101325,
-                                       "tol": 1e-3,
-                                       "deltaP": 10,
-                                       "max_iter": 1e4}):
+        if hasattr(self, "eq_dew_temp"):
+            # Do not delete components if the block already has the components
+            clear_components = False
+
+        calculate_variable_from_constraint(self.temperature_dew,
+                                           self.eq_dew_temp)
+
+        return self.temperature_dew.value
+
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
+        if clear_components is True:
+            self.del_component(self.eq_dew_temp)
+            self.del_component(self._p_sat_dewT)
+            self.del_component(self.temperature_dew)
+
+    def calculate_bubble_point_pressure(self, clear_components=True):
         """"To compute the bubble point pressure of the mixture."""
-        n = 0
-        P_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaP = options["deltaP"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - temperature) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / P_guess
-                s = s + k * value(mole_frac[j])
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaP")
-                    break
-                P_guess = P_guess + deltaP
-            else:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaP")
-                    break
-                P_guess = P_guess - deltaP
-        return round(P_guess, 3)
 
-    def pressure_dew_point(blk, temperature=None, mole_frac=None,
-                           options={"initial_guess": 101325,
-                                    "tol": 1e-3,
-                                    "deltaP": 10,
-                                    "max_iter": 1e4}):
+        if hasattr(self, "eq_bubble_pressure"):
+            # Do not delete components if the block already has the components
+            clear_components = False
+
+        calculate_variable_from_constraint(self.pressure_bubble,
+                                           self.eq_bubble_pressure)
+
+        return self.pressure_bubble.value
+
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
+        if clear_components is True:
+            self.del_component(self.eq_bubble_pressure)
+            self.del_component(self._p_sat_bubbleP)
+            self.del_component(self.pressure_bubble)
+
+    def calculate_dew_point_pressure(self, clear_components=True):
         """"To compute the dew point pressure of the mixture."""
-        n = 0
-        P_guess = options["initial_guess"]
-        tol = options["tol"]
-        deltaP = options["deltaP"]
-        max_iter = options["max_iter"]
-        temp_var = {}
-        while True:
-            s = 0
-            for j in blk.component_list_ref:
-                temp_var[j] = (blk.temperature_critical[j] - temperature) \
-                    / blk.temperature_critical[j]
-                p_sat = blk.pressure_critical[j] * \
-                    exp((blk.pressure_sat_coeff[j, 'A'] * temp_var[j] +
-                        blk.pressure_sat_coeff[j, 'B'] * temp_var[j]**1.5 +
-                        blk.pressure_sat_coeff[j, 'C'] * temp_var[j]**3 +
-                        blk.pressure_sat_coeff[j, 'D'] * temp_var[j]**6) /
-                        (1 - temp_var[j]))
-                k = p_sat / P_guess
-                s = s + value(mole_frac[j]) / k
-            if abs(s - 1) <= tol:
-                break
-            elif s >= 1:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-                P_guess = P_guess - deltaP
-            else:
-                n = n + 1
-                if n >= max_iter:
-                    print("Maximum iterations reached."
-                          "Please provide a better value for deltaT")
-                    break
-                P_guess = P_guess + deltaP
-        return round(P_guess, 3)
+
+        if hasattr(self, "eq_dew_pressure"):
+            # Do not delete components if the block already has the components
+            clear_components = False
+
+        calculate_variable_from_constraint(self.pressure_dew,
+                                           self.eq_dew_pressure)
+
+        return self.pressure_dew.value
+
+        # Delete the var/constraint created in this method that are part of the
+        # IdealStateBlock if the user desires
+        if clear_components is True:
+            self.del_component(self.eq_dew_pressure)
+            self.del_component(self._p_sat_dewP)
+            self.del_component(self.pressure_dew)
