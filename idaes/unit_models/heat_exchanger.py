@@ -252,23 +252,6 @@ def _make_heat_exchanger_config(config):
 **HeatExchangerFlowPattern.countercurrent** - countercurrent flow,
 **HeatExchangerFlowPattern.cocurrent** - cocurrent flow,
 **HeatExchangerFlowPattern.crossflow** - cross flow, factor times countercurrent temperature difference.}"""))
-    config.declare("property_package", ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations,
-**default** - useDefault.
-**Valid values:** {
-**useDefault** - use default package from parent model or flowsheet,
-**PropertyParameterObject** - a PropertyParameterBlock object.}"""))
-    config.declare("property_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing property packages",
-        doc="""A ConfigBlock with arguments to be passed to a property block(s)
-and used when constructing these,
-**default** - None.
-**Valid values:** {
-see property package for documentation.}"""))
 
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
 class HeaterData(UnitModelBlockData):

@@ -27,15 +27,39 @@ from idaes.unit_models.heat_exchanger import HeatExchangerData
 from idaes.unit_models import Mixer, MomentumMixingType, HeatExchanger
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.ui.report import degrees_of_freedom
+from idaes.core import useDefault
 from .feedwater_heater_0D_config import _define_feedwater_heater_0D_config
 
 _log = logging.getLogger(__name__)
 
 def _set_port(p1, p2):
+    """
+    Copy the values from port p2 to port p1.
+
+    Args:
+        p1: port to copy values to
+        p2: port to compy values from
+    """
     for k, v in p1.vars.items():
         if isinstance(v, Var):
             for i in v:
                 v[i].value = value(p2.vars[k][i])
+
+def _set_prop_pack(hxcfg, fwhcfg):
+    """
+    Set the property package and property pacakge args to the values given for
+    the overall feedwater heater model if not otherwise specified.
+
+    Args:
+        hxcfg: Heat exchanger subblock config block
+        fwhcfg: Overall feedwater heater config block
+    """
+    if hxcfg.side_1.property_package == useDefault:
+        hxcfg.side_1.property_package = fwhcfg.property_package
+        hxcfg.side_1.property_package_args = fwhcfg.property_package_args
+    if hxcfg.side_2.property_package == useDefault:
+        hxcfg.side_2.property_package = fwhcfg.property_package
+        hxcfg.side_2.property_package_args = fwhcfg.property_package_args
 
 
 @declare_process_block_class("FWHCondensing0D",
@@ -97,6 +121,7 @@ class FWH0DData(UnitModelBlockData):
         config = self.config
 
         # All feedwater heaters have a condensing section
+        _set_prop_pack(config.condense, config)
         self.condense = FWHCondensing0D(default=config.condense)
 
         # Add a mixer to add the drain stream from another feedwater heater
@@ -117,6 +142,7 @@ class FWH0DData(UnitModelBlockData):
 
         # Add a desuperheat section before the condensing section
         if config.has_desuperheat:
+            _set_prop_pack(config.desuperheat, config)
             self.desuperheat = HeatExchanger(default=config.desuperheat)
             self.desuperheat.area.value = 10
             if config.has_drain_mixer:
@@ -133,6 +159,7 @@ class FWH0DData(UnitModelBlockData):
 
         # Add a drain cooling section after the condensing section
         if config.has_drain_cooling:
+            _set_prop_pack(config.cooling, config)
             self.cooling = HeatExchanger(default=config.cooling)
             self.cooling.area.value = 10
             self.cooling_out2_arc = Arc(
