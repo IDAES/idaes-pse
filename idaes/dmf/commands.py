@@ -26,18 +26,24 @@ import os
 import re
 import sys
 from typing import Any
+
 # Third-party
 from backports.shutil_get_terminal_size import get_terminal_size
 import jsonschema
 import pendulum
+
 # Local
 from .dmfbase import DMF, DMFConfig
 from .util import strlist
 from .util import is_jupyter_notebook, is_python, is_resource_json
 from .util import CPrint
 from .errors import (
-    ParseError, CommandError, WorkspaceNotFoundError,
-    WorkspaceConfNotFoundError, WorkspaceError, BadResourceError
+    ParseError,
+    CommandError,
+    WorkspaceNotFoundError,
+    WorkspaceConfNotFoundError,
+    WorkspaceError,
+    BadResourceError,
 )
 from . import resource
 from .workspace import Workspace, find_workspaces
@@ -73,13 +79,12 @@ def workspace_info(dirname):
         ws = Workspace(dirname, create=False)
     except WorkspaceNotFoundError:
         print('Workspace not found at path: {}'.format(dirname))
-        raise CommandError('info', 'find workspace',
-                           'not found at: {}'.format(dirname))
+        raise CommandError('info', 'find workspace', 'not found at: {}'.format(dirname))
     except WorkspaceConfNotFoundError:
-        print('No configuration found for workspace for path: {}'
-              .format(dirname))
-        raise CommandError('info', 'find workspace configuration',
-                           'not found at: {}'.format(dirname))
+        print('No configuration found for workspace for path: {}'.format(dirname))
+        raise CommandError(
+            'info', 'find workspace configuration', 'not found at: {}'.format(dirname)
+        )
     num_obj = DMF(path=ws.root).count()
     bullet = ' - '
     cp('\n@h[Workspace]')
@@ -96,8 +101,7 @@ def workspace_info(dirname):
     cp('{}@b[Location] = {}'.format(bullet, ws.root))
     info = ws.meta.copy()
     if '_id' in info:
-        cp('{}@b[Workspace identifier (_id)] = {}'
-           .format(bullet, info['_id']))
+        cp('{}@b[Workspace identifier (_id)] = {}'.format(bullet, info['_id']))
         del info['_id']
     else:
         cp('{}@b[Workspace identifier (_id)] = unknown'.format(bullet))
@@ -111,8 +115,7 @@ def workspace_info(dirname):
         cp('{}@b[Modified] = unknown'.format(bullet))
     cp('{}@b[Num. resources] = {:d}'.format(bullet, num_obj))
     cp('\n@h[Configuration]')
-    already_shown = (ws.CONF_MODIFIED, ws.CONF_CREATED, ws.CONF_NAME,
-                     ws.CONF_DESC)
+    already_shown = (ws.CONF_MODIFIED, ws.CONF_CREATED, ws.CONF_NAME, ws.CONF_DESC)
     for k in info.keys():
         if k in already_shown:
             continue
@@ -131,7 +134,7 @@ def init_conf(workspace):
     except IOError as err:
         print('Failed to open global configuration: {}'.format(err))
         try:
-            open(DMFConfig.filename, 'w')
+            open(DMFConfig._filename, 'w')
         except IOError:
             print('Failed to create new configuration file')
             return -1
@@ -145,7 +148,7 @@ def init_conf(workspace):
         conf.save()
     # Print contents of configuration file to standard output
     cp = CPrint()
-    cp('@h[DMF global configuration] <@g[{}]>'.format(conf.filename))
+    cp('@h[DMF global configuration] <@g[{}]>'.format(conf._filename))
     keys = conf.c.keys()
     if keys:
         for k in sorted(keys):
@@ -186,8 +189,10 @@ def workspace_import(path, patterns, exit_on_error):
                 try:
                     rsrc = _import_jupyternb(filename)
                 except ValueError as e:
-                    msg = 'Cannot create resource from Jupyter Notebook ' \
-                          '"{}": {}'.format(filename, e)
+                    msg = (
+                        'Cannot create resource from Jupyter Notebook '
+                        '"{}": {}'.format(filename, e)
+                    )
                     if exit_on_error:
                         raise BadResourceError(msg)
                     _log.error(msg)
@@ -198,8 +203,9 @@ def workspace_import(path, patterns, exit_on_error):
                 try:
                     rsrc = _import_python(filename)
                 except ValueError as e:
-                    msg = 'Cannot create resource from Python file ' \
-                          '"{}": {}'.format(filename, e)
+                    msg = 'Cannot create resource from Python file ' '"{}": {}'.format(
+                        filename, e
+                    )
                     if exit_on_error:
                         raise BadResourceError(msg)
                     _log.error(msg)
@@ -219,8 +225,9 @@ def workspace_import(path, patterns, exit_on_error):
                 try:
                     rsrc = _import_file(filename)
                 except ValueError as e:
-                    msg = 'Cannot create resource from file ' \
-                          '"{}": {}'.format(filename, e)
+                    msg = 'Cannot create resource from file ' '"{}": {}'.format(
+                        filename, e
+                    )
                     if exit_on_error:
                         raise BadResourceError(msg)
                     _log.error(msg)
@@ -248,16 +255,14 @@ def list_workspaces(root, stream=None):
     if colors:
         output_table = [('Path', 'Name')]
     else:
-        output_table = [('Path', 'Name'),
-                        ('----', '----')]
+        output_table = [('Path', 'Name'), ('----', '----')]
     widths = [4, 4]
     any_good_workspaces = False
     for w in sorted(workspaces):
         try:
             ws = Workspace(w)
             output_table.append((w, ws.name))
-            widths = [max(len(w), widths[0]),
-                      max(len(ws.name), widths[1])]
+            widths = [max(len(w), widths[0]), max(len(ws.name), widths[1])]
             any_good_workspaces = True
         except WorkspaceError:
             pass  # XXX: Should we print a warning?
@@ -273,8 +278,7 @@ def list_workspaces(root, stream=None):
                     if first_row:
                         fmt = '@_h[{t}]'.format(t=colfmts[i])
                     else:
-                        fmt = '@{c}[{t}]'.format(c=('b', 'w')[i],
-                                                 t=colfmts[i])
+                        fmt = '@{c}[{t}]'.format(c=('b', 'w')[i], t=colfmts[i])
                 else:
                     fmt = colfmts[i]
                 stream.write(fmt.format(row[i]))
@@ -303,9 +307,15 @@ def list_resources(path, long_format=None, relations=False):
         fmts = ['{{:{:d}s}}'.format(w) for w in widths]
         left_gutter = '| ' if relations else ''
         # table header
-        cp.println(' ' * len(left_gutter) +
-                   '  '.join([cp.colorize('@_h[{}]'.format(f).format(v))
-                              for f, v in zip(fmts, fields)]))
+        cp.println(
+            ' ' * len(left_gutter)
+            + '  '.join(
+                [
+                    cp.colorize('@_h[{}]'.format(f).format(v))
+                    for f, v in zip(fmts, fields)
+                ]
+            )
+        )
 
         def datestr(t):
             p = pendulum.from_timestamp(t)
@@ -317,14 +327,20 @@ def list_resources(path, long_format=None, relations=False):
             values.append(datestr(r.modified))
             values.append(datestr(r.created))
             if not values[1] and r.desc:
-                values[1] = r.desc[:widths[1]]
+                values[1] = r.desc[: widths[1]]
             else:
-                values[1] = values[1][:widths[1]]
+                values[1] = values[1][: widths[1]]
             if uuid_pfx < 32:
                 values[0] = values[0][:uuid_pfx]
-            cp.println(left_gutter +
-                       '  '.join([cp.colorize('@{}[{}]'.format(c, f.format(v)))
-                                  for c, f, v in zip(colors, fmts, values)]))
+            cp.println(
+                left_gutter
+                + '  '.join(
+                    [
+                        cp.colorize('@{}[{}]'.format(c, f.format(v)))
+                        for c, f, v in zip(colors, fmts, values)
+                    ]
+                )
+            )
             if relations and len(r.relations) > 0:
                 relitems = []
                 for rel in r.relations:
@@ -332,9 +348,11 @@ def list_resources(path, long_format=None, relations=False):
                         fmt = '@-w[{p}]->@b[{o}]'
                     else:
                         fmt = '@b[{s}]->@-w[{p}]'
-                    item = fmt.format(s=rel.subject[:uuid_pfx],
-                                      p=rel.predicate,
-                                      o=rel.object[:uuid_pfx])
+                    item = fmt.format(
+                        s=rel.subject[:uuid_pfx],
+                        p=rel.predicate,
+                        o=rel.object[:uuid_pfx],
+                    )
                     relitems.append(item)
                 cp.println('+-- {}'.format(' / '.join(relitems)))
     else:
@@ -349,8 +367,7 @@ def list_resources(path, long_format=None, relations=False):
             else:
                 name = r.uuid
                 name_color = 'g'
-            item = cp.colorize('@{}[{}]@y[:{}]'.format(
-                name_color, name, r.type))
+            item = cp.colorize('@{}[{}]@y[:{}]'.format(name_color, name, r.type))
             items.append(item)
         if items:
             tsz = get_terminal_size((80, 20))
@@ -532,8 +549,7 @@ def _import_python(path):
     """
     r = resource.Resource(type_=resource.TY_CODE)
     filename = os.path.splitext(os.path.split(path)[1])[0]
-    r.v['codes'].append({'name': filename, 'language': 'python',
-                         'type': 'module'})
+    r.v['codes'].append({'name': filename, 'language': 'python', 'type': 'module'})
     r.v['datafiles'].append({'desc': filename, 'path': path})
     r.validate()
     return r

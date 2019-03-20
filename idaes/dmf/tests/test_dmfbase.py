@@ -17,8 +17,10 @@ import json
 import logging
 import os
 import tempfile
+
 # third-party
 import pytest
+
 # package
 from idaes.dmf import resource
 from idaes.dmf import errors
@@ -38,21 +40,19 @@ prop_json = [
             "notes": "r is MEA weight fraction in aqueous soln.",
             "authors": "Amundsen, T.G., Lars, E.O., Eimer, D.A.",
             "title": "Density and Viscosity of Monoethanolamine + .etc.",
-            "date": "2009"
+            "date": "2009",
         },
         "data": [
-            {"name": "Viscosity Value",
-             "units": "mPa-s",
-             "values": [2.6, 6.2],
-             "error_type": "absolute",
-             "errors": [0.06, 0.004],
-             "type": "property"},
-            {"name": "r",
-             "units": "",
-             "values": [0.2, 1000],
-             "type": "state"
-             }
-        ]
+            {
+                "name": "Viscosity Value",
+                "units": "mPa-s",
+                "values": [2.6, 6.2],
+                "error_type": "absolute",
+                "errors": [0.06, 0.004],
+                "type": "property",
+            },
+            {"name": "r", "units": "", "values": [0.2, 1000], "type": "state"},
+        ],
     }
 ]
 
@@ -146,8 +146,7 @@ def test_dmf_init_strfile():
 
 def test_dmf_init_badfile():
     with TempDir() as tmpdir:
-        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w')\
-            .write('Hello: There')
+        open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w').write('Hello: There')
         pytest.raises(errors.WorkspaceError, DMF, path=tmpdir)
 
 
@@ -173,7 +172,8 @@ logging:
     crazy.little.logger:
         level: error
         output: _stderr_
-        ''')
+        '''
+        )
         d = DMF(path=tmpdir)
 
 
@@ -188,7 +188,8 @@ logging:
     idaes.dmf.util:
         level: "This is not a valid level"
         output: _stderr_
-        ''')
+        '''
+        )
         pytest.raises(errors.DMFError, DMF, path=tmpdir)
 
 
@@ -202,24 +203,27 @@ logging:
         level: debug
     idaes.dmf.util:
         output: {}
-        '''.format(os.path.join(os.path.sep, *map(str, range(10)))))
+        '''.format(
+                os.path.join(os.path.sep, *map(str, range(10)))
+            )
+        )
         pytest.raises(errors.DMFError, DMF, path=tmpdir)
 
 
 def test_dmf_init_workspace_name():
     with TempDir() as tmpdir:
         open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w').write(
-            '_id: this-is-a-temporary-config')
-        d = DMF(path=tmpdir, name='my workspace',
-                desc='It is a great place to work')
+            '_id: this-is-a-temporary-config'
+        )
+        d = DMF(path=tmpdir, name='my workspace', desc='It is a great place to work')
 
 
 def test_dmf_change_traits():
     with TempDir() as tmpdir:
         open(os.path.join(tmpdir, DMF.WORKSPACE_CONFIG), 'w').write(
-            '_id: this-is-a-temporary-config')
-        d = DMF(path=tmpdir, name='my workspace',
-                desc='It is a great place to work')
+            '_id: this-is-a-temporary-config'
+        )
+        d = DMF(path=tmpdir, name='my workspace', desc='It is a great place to work')
         assert d.db_file
         d.db_file = 'newdb.json'
         assert d.db_file == 'newdb.json'
@@ -253,9 +257,7 @@ def test_dmf_add(tmp_dmf):
     # This is ignored. It makes no sense to ask the file
     # to be removed, but not copied (just a file delete?!)
     r = resource.Resource(value={'desc': 'test resource'})
-    r.v['datafiles'].append({'path': 'foo',
-                             'do_copy': False,
-                             'is_tmp': True})
+    r.v['datafiles'].append({'path': 'foo', 'do_copy': False, 'is_tmp': True})
     tmp_dmf.add(r)
 
 
@@ -287,8 +289,7 @@ def test_dmf_add_tmp_no_copy(tmp_dmf):
     tmpdir = tempfile.mkdtemp()
     tmpfile = os.path.join(tmpdir, 'foo')
     open(tmpfile, 'w')
-    r.v['datafiles'].append({'path': tmpfile, 'is_tmp': True,
-                             'do_copy': True})
+    r.v['datafiles'].append({'path': tmpfile, 'is_tmp': True, 'do_copy': True})
     # we want an error trying to COPY this file; to get this,
     # change the permissions of the directory
     os.chmod(tmpdir, 0o400)
@@ -312,8 +313,7 @@ def test_dmf_add_tmp_no_unlink(tmp_dmf):
     tmpdir = tempfile.mkdtemp()
     tmpfile = os.path.join(tmpdir, 'foo')
     open(tmpfile, 'w')
-    r.v['datafiles'].append({'path': tmpfile, 'is_tmp': True,
-                             'do_copy': True})
+    r.v['datafiles'].append({'path': tmpfile, 'is_tmp': True, 'do_copy': True})
     # we want an error trying to UNLINK this file; to get this,
     # change the permissions of the dir read-only
     os.chmod(tmpdir, 0o500)
@@ -366,17 +366,17 @@ def test_dmf_remove_filter(tmp_dmf):
     assert tmp_dmf.count() == n
     # remove half of the added resources
     print('@@ remove half')
-    tmp_dmf.remove(filter_dict={'data.i': {'$lt': n/2}})
+    tmp_dmf.remove(filter_dict={'data.i': {'$lt': n / 2}})
     n2 = tmp_dmf.count()
     assert n2 == n / 2
     # try to remove the same group (should do nothing
     print('@@ remove more')
-    tmp_dmf.remove(filter_dict={'data.i': {'$lt': n/2}})
+    tmp_dmf.remove(filter_dict={'data.i': {'$lt': n / 2}})
     n2 = tmp_dmf.count()
     assert tmp_dmf.count() == n / 2
     # remove the rest
     print('@@ remove the rest')
-    tmp_dmf.remove(filter_dict={'data.i': {'$ge': n/2}})
+    tmp_dmf.remove(filter_dict={'data.i': {'$ge': n / 2}})
     assert tmp_dmf.count() == 0
 
 
@@ -391,8 +391,9 @@ def test_dmf_find(tmp_dmf):
         n = batchsz
         batch = 'batch{:d}'.format(i + 1)
         version = resource.version_list([1, 0, i + 1])
-        ids = add_resources(tmp_dmf, num=n, tags=['all', batch],
-                            version_info={'version': version})
+        ids = add_resources(
+            tmp_dmf, num=n, tags=['all', batch], version_info={'version': version}
+        )
         all_ids.extend(ids)
     if _log.isEnabledFor(logging.DEBUG):
         r = tmp_dmf.fetch_one(all_ids[0])
@@ -417,6 +418,7 @@ def test_dmf_str(tmp_dmf):
 # DMFConfig             #
 #########################
 
+
 @pytest.fixture
 def dmfconfig_tmp():
     """Default file is in user's home directory.
@@ -424,12 +426,12 @@ def dmfconfig_tmp():
        So switch it out and switch it back when the fixture
        is done.
     """
-    default_filename = DMFConfig.filename
+    default_filename = DMFConfig._filename
     tmpfile = tempfile.NamedTemporaryFile()
-    DMFConfig.filename = tmpfile.name
+    DMFConfig._filename = tmpfile.name
     yield tmpfile
     tmpfile.close()
-    DMFConfig.filename = default_filename
+    DMFConfig._filename = default_filename
 
 
 @pytest.fixture
@@ -437,11 +439,10 @@ def dmfconfig_none():
     """Default file is in user's home directory.
     Replace it with a nonexistent file.
     """
-    default_filename = DMFConfig.filename
-    DMFConfig.filename = os.path.join(os.path.sep, 'idaes',
-                                      *map(str, range(20)))
+    default_filename = DMFConfig._filename
+    DMFConfig._filename = os.path.join(os.path.sep, 'idaes', *map(str, range(20)))
     yield True
-    DMFConfig.filename = default_filename
+    DMFConfig._filename = default_filename
 
 
 def test_dmfconfig_init_defaults_nofile(dmfconfig_none):
@@ -484,6 +485,4 @@ def test_dmfconfig_save_nofile(dmfconfig_none):
 def test_dmfconfig_attrs(dmfconfig_tmp):
     config = DMFConfig()
     assert config.workspace is not None
-
-
 

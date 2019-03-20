@@ -16,16 +16,19 @@ Data Management Framework
 # stdlib
 import logging
 import os
+import pathlib
 import re
 import shutil
 import sys
 import uuid
+
 # third-party
 import pendulum
 import six
 from traitlets import HasTraits, default, observe
 from traitlets import Unicode
 import yaml
+
 # local
 from . import errors, workspace, resourcedb, propdata
 from . import resource
@@ -57,8 +60,9 @@ class DMFConfig(object):
 
     .. _YAML: http://www.yaml.org/
     """
+
     # configuration file location
-    filename = os.path.expanduser('~/.dmf')
+    _filename = os.path.expanduser('~/.dmf')
     # known keys
     WORKSPACE = 'workspace'
     _keys = [WORKSPACE]
@@ -84,24 +88,34 @@ class DMFConfig(object):
         # try to open the config file
         fp = None
         try:
-            if not os.path.exists(self.filename):
-                raise IOError('File not found: {}'.format(self.filename))
-            fp = open(self.filename, 'rb')
+            if not os.path.exists(self._filename):
+                raise IOError('File not found: {}'.format(self._filename))
+            fp = open(self._filename, 'rb')
         except IOError as err:
-            _log.debug('Unable to open global DMF configuration file '
-                       'for reading: {}. Using default configuration values.'
-                       .format(err))
+            _log.warn(
+                'Unable to open global DMF configuration file '
+                'for reading: {}. Using default configuration values.'.format(err)
+            )
         # if we got a config file, parse it
         if fp:
             try:
                 self._parse(fp)
             except ValueError as err:
-                raise ValueError('Parsing configuration at "{}": {}'
-                                 .format(self.filename, err))
+                raise ValueError(
+                    'Parsing configuration at "{}": {}'.format(self._filename, err)
+                )
+
+    @classmethod
+    def configuration_exists(cls):
+        return pathlib.Path(cls._filename).exists()
+
+    @classmethod
+    def configuration_path(cls) -> pathlib.Path:
+        return pathlib.Path(cls._filename)
 
     def save(self):
         try:
-            fp = open(self.filename, 'w')
+            fp = open(self._filename, 'w')
         except IOError:
             raise
         yaml.dump(self.c, fp)
@@ -132,21 +146,25 @@ class DMF(workspace.Workspace, HasTraits):
     documentation for :class:`DMFConfig` (global configuration) and
     :class:`idaes.dmf.workspace.Workspace`.
     """
+
     db_file = Unicode(help='Database file name')
-    datafile_dir = Unicode(help='Data file directory, '
-                                'relative to DMF root')
+    datafile_dir = Unicode(help='Data file directory, ' 'relative to DMF root')
 
     CONF_DB_FILE = 'db_file'
     CONF_DATA_DIR = 'datafile_dir'
     CONF_HELP_PATH = workspace.Fields.DOC_HTML_PATH
 
     # logging should really provide this
-    _levelnames = {'fatal': logging.FATAL, 'error': logging.ERROR,
-                   'warn': logging.WARN, 'warning': logging.WARN,
-                   'info': logging.INFO, 'debug': logging.DEBUG}
+    _levelnames = {
+        'fatal': logging.FATAL,
+        'error': logging.ERROR,
+        'warn': logging.WARN,
+        'warning': logging.WARN,
+        'info': logging.INFO,
+        'debug': logging.DEBUG,
+    }
 
-    def __init__(self, path='', name=None, desc=None, create=False,
-                 **ws_kwargs):
+    def __init__(self, path='', name=None, desc=None, create=False, **ws_kwargs):
         """Create or load DMF workspace.
 
         Args:
@@ -187,8 +205,7 @@ class DMF(workspace.Workspace, HasTraits):
             try:
                 self._configure_logging()
             except ValueError as err:
-                msg = 'Configuration "{}", logging section error: {}'.format(
-                    path, err)
+                msg = 'Configuration "{}", logging section error: {}'.format(path, err)
                 raise errors.WorkspaceError(msg)
         # set up rest of DMF
         path = os.path.join(self.root, self.db_file)
@@ -205,6 +222,8 @@ class DMF(workspace.Workspace, HasTraits):
         if desc:
             meta[_w.CONF_DESC] = desc
         self.set_meta(meta)
+        # save global config mods
+        conf.save()
 
     def _configure_logging(self):
         """Configure logging for DMF.
@@ -236,8 +255,10 @@ class DMF(workspace.Workspace, HasTraits):
                     try:
                         h = logging.FileHandler(dest)
                     except IOError:
-                        raise ValueError('Cannot open output file "{}" for '
-                                         'logger "{}"'.format(dest, lognm))
+                        raise ValueError(
+                            'Cannot open output file "{}" for '
+                            'logger "{}"'.format(dest, lognm)
+                        )
                 log.addHandler(h)
             log.setLevel(logging.NOTSET)
             if 'level' in subconf:
@@ -245,8 +266,10 @@ class DMF(workspace.Workspace, HasTraits):
                 level = self._levelnames.get(levelnm, None)
                 if level is None:
                     opt = ', '.join(self._levelnames.keys())
-                    raise ValueError('Bad level "{}" for logger "{}". Must be '
-                                     'one of: {}'.format(levelnm, lognm, opt))
+                    raise ValueError(
+                        'Bad level "{}" for logger "{}". Must be '
+                        'one of: {}'.format(levelnm, lognm, opt)
+                    )
                 log.setLevel(level)
             if 'format' in subconf:
                 fmt = logging.Formatter(subconf['format'])
@@ -276,10 +299,13 @@ class DMF(workspace.Workspace, HasTraits):
 
     def _validate_conf(self, c):
         if self.CONF_HELP_PATH not in c:
-            _log.warning('Path to built HTML documentation is not set. '
-                         'The DMF "help" command will not work. To set '
-                         'this path, set "{}" in the DMF configuration file.'
-                         .format(self.CONF_HELP_PATH))
+            _log.warning(
+                'Path to built HTML documentation is not set. '
+                'The DMF "help" command will not work. To set '
+                'this path, set "{}" in the DMF configuration file.'.format(
+                    self.CONF_HELP_PATH
+                )
+            )
 
     @default(CONF_DB_FILE)
     def _default_db_file(self):
@@ -295,6 +321,10 @@ class DMF(workspace.Workspace, HasTraits):
             return
         values = {change['name']: change['new']}
         self.set_meta(values)
+
+    @property
+    def datafiles_path(self):
+        return self._datafile_path
 
     def add(self, rsrc):
         """Add a resource and associated files.
@@ -342,8 +372,7 @@ class DMF(workspace.Workspace, HasTraits):
         try:
             mkdir_p(ddir)
         except os.error as err:
-            raise errors.DMFError('Cannot make dir "{}": {}'
-                                  .format(ddir, err))
+            raise errors.DMFError('Cannot make dir "{}": {}'.format(ddir, err))
         for datafile in rsrc.v['datafiles']:
             if 'do_copy' in datafile:
                 do_copy = datafile['do_copy']
@@ -357,13 +386,16 @@ class DMF(workspace.Workspace, HasTraits):
                 filepath = datafile['path']
                 filedir, filename = os.path.split(filepath)
                 copydir = os.path.join(ddir, filename)
-                _log.debug('Copying datafile "{}" to directory "{}"'
-                           .format(filepath, copydir))
+                _log.debug(
+                    'Copying datafile "{}" to directory "{}"'.format(filepath, copydir)
+                )
                 try:
                     shutil.copy2(filepath, copydir)
                 except (IOError, OSError) as err:
-                    msg = 'Cannot copy datafile from "{}" to DMF ' \
-                          'directory "{}": {}'.format(filepath, copydir, err)
+                    msg = (
+                        'Cannot copy datafile from "{}" to DMF '
+                        'directory "{}": {}'.format(filepath, copydir, err)
+                    )
                     _log.error(msg)
                     raise errors.DMFError(msg)
                 # The `is_tmp` flag means to remove the original resource file
@@ -373,13 +405,16 @@ class DMF(workspace.Workspace, HasTraits):
                 else:
                     is_tmp = rsrc.is_tmp
                 if is_tmp:
-                    _log.debug('Temporary datafile flag is on, removing '
-                               'original datafile "{}"'.format(filepath))
+                    _log.debug(
+                        'Temporary datafile flag is on, removing '
+                        'original datafile "{}"'.format(filepath)
+                    )
                     try:
                         os.unlink(filepath)
                     except OSError as err:
-                        _log.error('Removing temporary datafile "{}": {}'
-                                   .format(filepath, err))
+                        _log.error(
+                            'Removing temporary datafile "{}": {}'.format(filepath, err)
+                        )
                     if 'is_tmp' in datafile:  # remove this directive
                         del datafile['is_tmp']
                 datafile['path'] = filename
@@ -406,8 +441,7 @@ class DMF(workspace.Workspace, HasTraits):
         Returns:
             (resource.Resource) The found resource, or None if no match
         """
-        item = self._db.find_one({resource.Resource.ID_FIELD: rid},
-                                 id_only=id_only)
+        item = self._db.find_one({resource.Resource.ID_FIELD: rid}, id_only=id_only)
         if item is None:
             return None
         elif id_only:
@@ -455,11 +489,14 @@ class DMF(workspace.Workspace, HasTraits):
         Returns:
             (list of int|Resource) Depending on the value of `id_only`.
         """
-        return (self._postproc_resource(r) for r in
-                self._db.find(filter_dict=filter_dict, id_only=id_only))
+        return (
+            self._postproc_resource(r)
+            for r in self._db.find(filter_dict=filter_dict, id_only=id_only)
+        )
 
-    def find_related(self, rsrc, filter_dict=None, maxdepth=0, meta=None,
-                     outgoing=True):
+    def find_related(
+        self, rsrc, filter_dict=None, maxdepth=0, meta=None, outgoing=True
+    ):
         """Find related resources.
 
         Args:
@@ -482,8 +519,9 @@ class DMF(workspace.Workspace, HasTraits):
             NoSuchResourceError: if the starting resource is not found
         """
         try:
-            return self._db.find_related(rsrc.id, outgoing=outgoing,
-                                         maxdepth=maxdepth, meta=meta)
+            return self._db.find_related(
+                rsrc.id, outgoing=outgoing, maxdepth=maxdepth, meta=meta
+            )
         except KeyError:
             raise errors.NoSuchResourceError(id_=rsrc.id)
 
@@ -513,8 +551,11 @@ class DMF(workspace.Workspace, HasTraits):
                     rsrc = self._db.get(i)
                     rid_list.append(rsrc.id)
         if not id_list:
-            _log.info('Cannot remove resource-id={} filter={}: Not found'
-                      .format(identifier, filter_dict))
+            _log.info(
+                'Cannot remove resource-id={} filter={}: Not found'.format(
+                    identifier, filter_dict
+                )
+            )
             return
         self._db.delete(idlist=id_list, internal_ids=True)
         # If requested, remove deleted resources from all the relations
@@ -554,8 +595,7 @@ class DMF(workspace.Workspace, HasTraits):
         did_update = False
         # sanity-check input
         if not isinstance(rsrc, resource.Resource):
-            raise TypeError('Resource type expected, got: {}'.format(
-                type(rsrc)))
+            raise TypeError('Resource type expected, got: {}'.format(type(rsrc)))
         # synchronize relations
         if sync_relations:
             db_rsrc = self.fetch_one(rsrc.id)
@@ -573,8 +613,7 @@ class DMF(workspace.Workspace, HasTraits):
             else:
                 raise
         except ValueError as err:
-            raise errors.DMFError('Bad value for new resource: {}'
-                                  .format(err))
+            raise errors.DMFError('Bad value for new resource: {}'.format(err))
         return did_update
 
     def _postproc_resource(self, r):

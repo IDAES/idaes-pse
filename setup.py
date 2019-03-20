@@ -28,7 +28,13 @@ kwargs = dict(
     name=NAME,
     version=VERSION,
     packages=find_packages(),
-    install_requires=[],
+    install_requires=[
+        "Click",
+    ],
+    entry_points="""
+    [console_scripts]
+    dmf=idaes.dmf.cli:dmfcommand
+    """,
     extras_require={},
     package_data={
         # If any package contains *.template, *.json files, *.dll files, or
