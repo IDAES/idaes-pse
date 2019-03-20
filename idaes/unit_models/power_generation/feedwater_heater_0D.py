@@ -208,6 +208,8 @@ class FWH0DData(UnitModelBlockData):
         if config.has_desuperheat:
             _set_prop_pack(config.desuperheat, config)
             self.desuperheat = HeatExchanger(default=config.desuperheat)
+            # set default area less than condensing section area, this will
+            # almost always be overridden by the user fixing an area later
             self.desuperheat.area.value = 10
             if config.has_drain_mixer:
                 self.desuperheat_drain_arc = Arc(
@@ -225,6 +227,8 @@ class FWH0DData(UnitModelBlockData):
         if config.has_drain_cooling:
             _set_prop_pack(config.cooling, config)
             self.cooling = HeatExchanger(default=config.cooling)
+            # set default area less than condensing section area, this will
+            # almost always be overridden by the user fixing an area later
             self.cooling.area.value = 10
             self.cooling_out2_arc = Arc(
                 source=self.cooling.outlet_2,
