@@ -12,7 +12,17 @@
 ##############################################################################
 """
 This file contains 0D feedwater heater models. These models are suitable for
-steady state calculations. For dynamic modeling 1D models are required.
+steady state calculations. For dynamic modeling 1D models are required. There
+are two models included here.
+
+1) FWHCondensing0D: this is a regular 0D heat exchanger model with a constraint
+   added to ensure all the steam fed to the feedwater heater is condensed at the
+   outlet. At the side_1 outlet the molar enthalpy is equal to the the staurated
+   liquid molar enthalpy.
+2) FWH0D is a feedwater heater model with three sections and a mixer for
+   combining another feedwater heater's drain outlet with steam extracted from
+   the turbine.  The drain mixer, desuperheat, and drain cooling sections are
+   optional.  Only the condensing section is required.
 """
 
 __author__ = "John Eslick"
@@ -71,7 +81,6 @@ see property package for documentation.}"""))
     config.declare("desuperheat", HeatExchangerData.CONFIG())
     config.declare("cooling", HeatExchangerData.CONFIG())
 
-
 def _set_port(p1, p2):
     """
     Copy the values from port p2 to port p1.
@@ -102,8 +111,11 @@ def _set_prop_pack(hxcfg, fwhcfg):
         hxcfg.side_2.property_package_args = fwhcfg.property_package_args
 
 
-@declare_process_block_class("FWHCondensing0D",
-    doc="Feedwater heater condensing section")
+@declare_process_block_class("FWHCondensing0D", doc=
+"""Feedwater Heater Condensing Section
+The feedwater heater condensing section model is a normal 0D heat exchanger
+model with an added constraint to calculate the steam flow such that the outlet
+of side_1 is a saturated liquid.""")
 class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
@@ -151,7 +163,13 @@ class FWHCondensing0DData(HeatExchangerData):
         from_json(self, sd=istate, wts=sp)
 
 
-@declare_process_block_class("FWH0D", doc="Feedwater heater")
+@declare_process_block_class("FWH0D", doc="""Feedwater Heater Model
+This is a 0D feedwater heater model.  The model may contain three 0D heat
+exchanger models representing the desuperheat, condensing and drain cooling
+sections of the feedwater heater. Only the condensing section must be included.
+A drain mixer can also be optionally included, which mixes the drain outlet of
+another feedwater heater with the steam fed into the condensing section.
+""")
 class FWH0DData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
     _define_feedwater_heater_0D_config(CONFIG)
@@ -176,7 +194,13 @@ class FWH0DData(UnitModelBlockData):
             self.drain_mix = Mixer(default=mix_cfg)
             @self.drain_mix.Constraint(self.drain_mix.time_ref)
             def mixer_pressure_constraint(b, t):
+                """
+                Constraint to set the drain mixer pressure to the pressure of
+                the steam extracted from the turbine. The drain inlet should
+                always be a higher pressure than the steam inlet.
+                """
                 return b.steam_state[t].pressure == b.mixed_state[t].pressure
+            # Connect the mixer to the condensing section inlet
             self.mix_out_arc = Arc(source=self.drain_mix.outlet,
                                    destination=self.condense.inlet_1)
 
