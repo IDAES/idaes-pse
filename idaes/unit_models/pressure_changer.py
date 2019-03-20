@@ -241,10 +241,12 @@ see property package for documentation.}"""))
         add_object_reference(self, "deltaP", self.control_volume.deltaP)
 
         # Set reference to scaling factor for pressure in control volume
-        add_object_reference(self, "sfp", self.control_volume.scaling_factor_pressure)
+        add_object_reference(self, "sfp",
+                             self.control_volume.scaling_factor_pressure)
 
         # Set reference to scaling factor for energy in control volume
-        add_object_reference(self, "sfe", self.control_volume.scaling_factor_energy)
+        add_object_reference(self, "sfe",
+                             self.control_volume.scaling_factor_energy)
 
         # Performance Variables
         self.ratioP = Var(self.time_ref, initialize=1.0,
@@ -253,8 +255,9 @@ see property package for documentation.}"""))
         # Pressure Ratio
         @self.Constraint(self.time_ref, doc="Pressure ratio constraint")
         def ratioP_calculation(b, t):
-            return self.sfp*b.ratioP[t]*b.control_volume.properties_in[t].pressure \
-                == self.sfp*b.control_volume.properties_out[t].pressure
+            return (self.sfp*b.ratioP[t] *
+                    b.control_volume.properties_in[t].pressure ==
+                    self.sfp*b.control_volume.properties_out[t].pressure)
 
     def add_pump(self):
         """
@@ -284,7 +287,8 @@ see property package for documentation.}"""))
                     b.control_volume.properties_out[t].flow_vol)
 
         # Actual work
-        @self.Constraint(self.time_ref, doc="Actual mechanical work calculation")
+        @self.Constraint(self.time_ref,
+                         doc="Actual mechanical work calculation")
         def actual_work(b, t):
             if b.config.compressor:
                 return b.sfe*b.work_fluid[t] == b.sfe*(
@@ -305,7 +309,8 @@ see property package for documentation.}"""))
         """
         # Isothermal constraint
         @self.Constraint(self.time_ref,
-                         doc="For isothermal condition: Equate inlet and outlet temperature")
+                         doc="For isothermal condition: Equate inlet and "
+                         "outlet temperature")
         def isothermal(b, t):
             return b.control_volume.properties_in[t].temperature == \
                        b.control_volume.properties_out[t].temperature
@@ -322,7 +327,8 @@ see property package for documentation.}"""))
         """
         # Isothermal constraint
         @self.Constraint(self.time_ref,
-                         doc="For isothermal condition: Equate inlet and outlet enthalpy")
+                         doc="For isothermal condition: Equate inlet and "
+                         "outlet enthalpy")
         def adiabatic(b, t):
             return b.control_volume.properties_in[t].enth_mol == \
                        b.control_volume.properties_out[t].enth_mol
@@ -338,8 +344,10 @@ see property package for documentation.}"""))
             None
         """
         # Get indexing sets from control volume
-        add_object_reference(self, "phase_list", self.control_volume.phase_list_ref)
-        add_object_reference(self, "component_list", self.control_volume.component_list_ref)
+        add_object_reference(self, "phase_list",
+                             self.control_volume.phase_list_ref)
+        add_object_reference(self, "component_list",
+                             self.control_volume.component_list_ref)
 
         # Add isentropic variables
         self.efficiency_isentropic = Var(self.time_ref,
@@ -352,9 +360,11 @@ see property package for documentation.}"""))
                                    "process [-]")
 
         # Build isentropic state block
-        tmp_dict={}
+        tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = self.config.has_phase_equilibrium
         tmp_dict["parameters"] = self.config.property_package
+        tmp_dict["defined_state"] = False
+
         self.properties_isentropic = (
                     self.config.property_package.state_block_class(
                             self.time_ref,
@@ -362,7 +372,8 @@ see property package for documentation.}"""))
                             default=tmp_dict))
 
         # Connect isentropic state block properties
-        @self.Constraint(self.time_ref, doc="Pressure for isentropic calculations")
+        @self.Constraint(self.time_ref,
+                         doc="Pressure for isentropic calculations")
         def isentropic_pressure(b, t):
             return b.sfp*b.properties_isentropic[t].pressure == \
                 b.sfp*b.ratioP[t]*b.control_volume.properties_out[t].pressure
