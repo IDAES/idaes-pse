@@ -92,3 +92,35 @@ def test_tutorial_2():
 
     assert (m.fs.Tank1.volume[0].value == pytest.approx(1.215, abs=1e-2))
     assert (m.fs.Tank2.volume[0].value == pytest.approx(1.785, abs=1e-2))
+
+
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_tutorial_3():
+    f = import_file(join(example, "Tutorial_3_Dynamic_Flowsheets"))
+    m, results = f.main()
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    assert degrees_of_freedom(m) == 0
+
+    assert m.fs.time.last() == 8.0
+    assert len(m.fs.time) == 51
+
+    assert (m.fs.Tank2.outlet.flow_vol[8.0].value ==
+            pytest.approx(1.0, abs=1e-2))
+    assert (m.fs.Tank2.outlet.conc_mol_comp[8.0, "Ethanol"].value ==
+            pytest.approx(41.88, abs=1e-1))
+    assert (m.fs.Tank2.outlet.conc_mol_comp[8.0, "EthylAcetate"].value ==
+            pytest.approx(3.30, abs=1e-1))
+    assert (m.fs.Tank2.outlet.conc_mol_comp[8.0, "NaOH"].value ==
+            pytest.approx(8.12, abs=1e-1))
+    assert (m.fs.Tank2.outlet.conc_mol_comp[8.0, "SodiumAcetate"].value ==
+            pytest.approx(41.88, abs=1e-1))
+    assert (m.fs.Tank2.outlet.conc_mol_comp[8.0, "H2O"].value ==
+            pytest.approx(55388.0, abs=1))
+    assert (m.fs.Tank2.outlet.pressure[8.0].value ==
+            pytest.approx(101325, abs=1))
+    assert (m.fs.Tank2.outlet.temperature[8.0].value ==
+            pytest.approx(303.15, abs=1e-1))
