@@ -18,6 +18,7 @@ steady state calculations. For dynamic modeling 1D models are required.
 __author__ = "John Eslick"
 
 import logging
+from pyomo.common.config import ConfigValue, In, ConfigBlock
 from pyomo.environ import SolverFactory, TransformationFactory, Var, value
 from pyomo.opt import TerminationCondition
 from pyomo.network import Arc
@@ -28,9 +29,48 @@ from idaes.unit_models import Mixer, MomentumMixingType, HeatExchanger
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.ui.report import degrees_of_freedom
 from idaes.core import useDefault
-from .feedwater_heater_0D_config import _define_feedwater_heater_0D_config
+from idaes.core.util.config import is_physical_parameter_block
 
 _log = logging.getLogger(__name__)
+
+def _define_feedwater_heater_0D_config(config):
+    config.declare("has_drain_mixer", ConfigValue(
+            default=True,
+            domain=In([True, False]),
+            description="Add a mixer to the inlet of the condensing section",
+            doc="""Add a mixer to the inlet of the condensing section to add
+water from the drain of another feedwaterheater to the steam, if True"""))
+    config.declare("has_desuperheat", ConfigValue(
+            default=True,
+            domain=In([True, False]),
+            description="Add a mixer desuperheat section to the heat exchanger",
+            doc="Add a mixer desuperheat section to the heat exchanger"))
+    config.declare("has_drain_cooling", ConfigValue(
+            default=True,
+            domain=In([True, False]),
+            description="Add a section after condensing section cool condensate.",
+            doc="Add a section after condensing section to cool condensate."))
+    config.declare("property_package", ConfigValue(
+        default=useDefault,
+        domain=is_physical_parameter_block,
+        description="Property package to use for control volume",
+        doc="""Property parameter object used to define property calculations,
+**default** - useDefault.
+**Valid values:** {
+**useDefault** - use default package from parent model or flowsheet,
+**PropertyParameterObject** - a PropertyParameterBlock object.}"""))
+    config.declare("property_package_args", ConfigBlock(
+        implicit=True,
+        description="Arguments to use for constructing property packages",
+        doc="""A ConfigBlock with arguments to be passed to a property block(s)
+and used when constructing these,
+**default** - None.
+**Valid values:** {
+see property package for documentation.}"""))
+    config.declare("condense", HeatExchangerData.CONFIG())
+    config.declare("desuperheat", HeatExchangerData.CONFIG())
+    config.declare("cooling", HeatExchangerData.CONFIG())
+
 
 def _set_port(p1, p2):
     """
