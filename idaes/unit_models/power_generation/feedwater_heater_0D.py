@@ -118,7 +118,7 @@ class FWH0DData(UnitModelBlockData):
 
     def build(self):
         super().build()
-        config = self.config
+        config = self.config # sorter ref to config for less line splitting
 
         # All feedwater heaters have a condensing section
         _set_prop_pack(config.condense, config)
@@ -172,14 +172,14 @@ class FWH0DData(UnitModelBlockData):
         TransformationFactory("network.expand_arcs").apply_to(self)
 
     def initialize(self, *args, **kwargs):
-        config = self.config
+        config = self.config # sorter ref to config for less line splitting
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        # the initilization here isn't straight forward since the heatechanger
+        # the initilization here isn't straight forward since the heat exchanger
         # may have 3 stages and they are countercurrent.  For simplicity each
         # stage in initialized with the same cooling water inlet conditions then
-        # the whole feedwater heater is solved together.  There are more rubust
+        # the whole feedwater heater is solved together.  There are more robust
         # approaches which can be implimented if the need arises.
 
         # initialize desuperheat if include
@@ -223,7 +223,7 @@ class FWH0DData(UnitModelBlockData):
         results = opt.solve(self, tee=tee)
         if results.solver.termination_condition == TerminationCondition.optimal:
             if outlvl >= 2:
-                _log.info('{} Initialization Failed.'.format(self.name))
+                _log.info('{} Initialization Complete.'.format(self.name))
         else:
             _log.warning('{} Initialization Failed.'.format(self.name))
 
