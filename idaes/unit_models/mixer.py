@@ -309,7 +309,7 @@ linked to all inlet states and the mixed state,
             list of StateBlocks
         """
         # Setup StateBlock argument dict
-        tmp_dict = self.config.property_package_args
+        tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = True
@@ -338,7 +338,7 @@ linked to all inlet states and the mixed state,
             New StateBlock object
         """
         # Setup StateBlock argument dict
-        tmp_dict = self.config.property_package_args
+        tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = \
             self.config.calculate_phase_equilibrium
         tmp_dict["parameters"] = self.config.property_package

@@ -277,7 +277,7 @@ linked the mixed state and all outlet states,
             list of StateBlocks
         """
         # Setup StateBlock argument dict
-        tmp_dict = self.config.property_package_args
+        tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = False
@@ -306,7 +306,7 @@ linked the mixed state and all outlet states,
             New StateBlock object
         """
         # Setup StateBlock argument dict
-        tmp_dict = self.config.property_package_args
+        tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = True

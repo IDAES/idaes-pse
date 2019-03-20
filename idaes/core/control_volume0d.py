@@ -135,13 +135,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             default=tmp_dict))
 
             # Reverse defined_state
-            tmp_dict["defined_state"] = not tmp_dict["defined_state"]
+            tmp_dict_2 = dict(**tmp_dict)
+            tmp_dict_2["defined_state"] = not tmp_dict["defined_state"]
 
             self.properties_out = (
                     self.config.property_package.state_block_class(
                             self.time_ref,
                             doc="Material properties at outlet",
-                            default=tmp_dict))
+                            default=tmp_dict_2))
         except AttributeError:
             raise PropertyPackageError(
                     "{} physical property package has not implemented the "
