@@ -1665,19 +1665,19 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                     blk.properties[t, x].model_check()
                 except AttributeError:
                     _log.warning(
-                            '{} ControlVolume StateBlock has no '
-                            'model checks. To correct this, add a model_check'
-                            ' method to the associated StateBlock class.'
-                            .format(blk.name))
+                        '{} ControlVolume StateBlock has no '
+                        'model checks. To correct this, add a model_check'
+                        ' method to the associated StateBlock class.'
+                        .format(blk.name))
 
                 try:
                     blk.reactions[t, x].model_check()
                 except AttributeError:
                     _log.warning(
-                            '{} ControlVolume outlet reaction block has no '
-                            'model check. To correct this, add a '
-                            'model_check method to the associated '
-                            'ReactionBlock class.'.format(blk.name))
+                        '{} ControlVolume outlet reaction block has no '
+                        'model check. To correct this, add a '
+                        'model_check method to the associated '
+                        'ReactionBlock class.'.format(blk.name))
 
     def initialize(blk, state_args=None, outlvl=0, optarg=None,
                    solver='ipopt', hold_state=True):
@@ -1727,12 +1727,14 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         # TODO : Consider handling hold_state for length domain
         flags = blk.properties.initialize(outlvl=outlvl - 1,
                                           optarg=optarg,
+                                          hold_state=hold_state,
                                           solver=solver,
                                           **state_args)
 
         try:
             blk.reactions.initialize(outlvl=outlvl - 1,
                                      optarg=optarg,
+                                     hold_state=hold_state,
                                      solver=solver)
         except AttributeError:
             pass
