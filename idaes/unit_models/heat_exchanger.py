@@ -123,14 +123,14 @@ def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
         dynamic = config.dynamic
     if has_holdup is None:
         has_holdup = config.has_holdup
-    control_volume = ControlVolume0DBlock(default={
+    # we have to attach this control volume to the model for the rest of
+    # the steps to work
+    o.add_component(name, ControlVolume0DBlock(default={
         "dynamic": dynamic,
         "has_holdup": has_holdup,
         "property_package": config.property_package,
-        "property_package_args": config.property_package_args})
-    # we have to attach this control volume to the model for the rest of
-    # the steps to work
-    setattr(o, name, control_volume)
+        "property_package_args": config.property_package_args}))
+    control_volume = getattr(o, name)
     # Add inlet and outlet state blocks to control volume
     control_volume.add_state_blocks(
         has_phase_equilibrium=config.has_phase_equilibrium)
@@ -253,7 +253,6 @@ def _make_heat_exchanger_config(config):
 **HeatExchangerFlowPattern.cocurrent** - cocurrent flow,
 **HeatExchangerFlowPattern.crossflow** - cross flow, factor times countercurrent temperature difference.}"""))
 
-
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
 class HeaterData(UnitModelBlockData):
     """
@@ -315,7 +314,7 @@ class HeatExchangerData(UnitModelBlockData):
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(HeatExchangerData, self).build()
+        super().build()
         config = self.config
         # Add variables
         self.overall_heat_transfer_coefficient = Var(self.time_ref,
