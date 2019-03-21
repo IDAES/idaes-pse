@@ -17,9 +17,11 @@ Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
 from enum import Enum
+import json
 import logging
 import pathlib
 import sys
+from urllib.parse import urlparse, ParseResult
 
 # third-party
 from blessings import Terminal
@@ -27,8 +29,9 @@ import click
 import humanize
 
 # package
-from idaes.dmf import DMF, DMFConfig
-from idaes.dmf.errors import WorkspaceConfNotFoundError
+from . import DMF, DMFConfig, resource
+from .errors import WorkspaceConfNotFoundError
+from .util import is_jupyter_notebook, is_python, is_resource_json
 
 __author__ = "Dan Gunter"
 
@@ -45,6 +48,7 @@ class Code(Enum):
     OK = 0
     WORKSPACE_NOT_FOUND = 1
     CONFIGURATION_NOT_FOUND = 2
+    NOT_SUPPORTED = 3
 
 
 def level_from_verbosity(vb):
@@ -64,15 +68,29 @@ def level_from_verbosity(vb):
 
 
 class AliasedGroup(click.Group):
-    # Command aliases. Key is alias, value is canonical command.
-    aliases = {"info": "status"}
+    """Improved click.Group that will accept unique prefixes for the
+    commands, as well as a set of aliases.
+
+    For example, the following code will create `mycommand` as a group,
+    and alias the subcommand "info" to invoke the subcommand "status".
+    Any unique prefix of "info" (not conflicting with other subcommands or
+    aliases) or "status" will work, e.g. "inf" or "stat"::
+
+        @click.group(cls=AliasedGroup, aliases={"info": "status"})
+        def mycommand():
+            pass
+    """
+
+    def __init__(self, aliases=None, **attrs):
+        super().__init__(**attrs)
+        self._aliases = aliases
 
     def get_command(self, ctx, cmd_name):
         command = click.Group.get_command(self, ctx, cmd_name)
         if command is None:
             commands = self.list_commands(ctx)
             # if `cmd_name` is an alias, map to canonical name
-            matches = [key for key in self.aliases if key.startswith(cmd_name)]
+            matches = [key for key in self._aliases if key.startswith(cmd_name)]
             if len(matches) == 1:
                 # check that this alias does not also match a command directly
                 alias_matches = [x for x in commands if x.startswith(cmd_name)]
@@ -82,12 +100,14 @@ class AliasedGroup(click.Group):
                         f"{'s' if len(alias_matches) > 1 else ''}"
                         f": {' '.join(sorted(alias_matches))}"
                     )
-                cmd_name = self.aliases[matches[0]]
+                # rename to canonical (matched) command
+                cmd_name = self._aliases[matches[0]]
             elif len(matches) > 1:
                 ctx.fail(
-                    f"Prefix '{cmd_name}' matches multiple aliases: {' '.join(sorted(matches))}"
+                    f"Prefix '{cmd_name}' matches multiple aliases: "
+                    f"{' '.join(sorted(matches))}"
                 )
-            # try to match prefix of command (& alias, for error checking)
+            # try to match prefix of command
             matches = [x for x in commands if x.startswith(cmd_name)]
             if len(matches) == 1:
                 command = click.Group.get_command(self, ctx, matches[0])
@@ -100,7 +120,22 @@ class AliasedGroup(click.Group):
         return command  # matched, or None
 
 
-@click.group(cls=AliasedGroup)
+class URLType(click.ParamType):
+    """Click type for URLs.
+    """
+
+    name = "URL"
+    envvar_list_splitter = ","
+
+    def convert(self, value, param, ctx):
+        if isinstance(value, ParseResult):
+            result = value
+        else:
+            result = urlparse(value)
+        return result
+
+
+@click.group(cls=AliasedGroup, aliases={"describe": "status"})
 @click.option(
     "--verbose",
     "-v",
@@ -116,7 +151,7 @@ class AliasedGroup(click.Group):
     "only show critical messages. If "
     "given twice, show no messages.",
 )
-def dmfcommand(verbose, quiet):
+def base_command(verbose, quiet):
     if quiet > 0 and verbose > 0:
         raise click.BadArgumentUsage("Options for verbosity and quietness conflict")
     if verbose > 0:
@@ -163,8 +198,11 @@ def init(path, create, name, desc, html):
 
 @click.command(help="Status")
 @click.option("--color/--no-color", default=True, help="Use color for output")
-@click.option("--show", "-s", type=click.Choice(["files"]), multiple=True)
+@click.option(
+    "--show", "-s", type=click.Choice(["files", "htmldocs", "all"]), multiple=True
+)
 def status(color, show):
+    _log.debug(f"Get status. Show items: {' '.join(show) if show else '(basic)'}")
     t = _cterm if color else _noterm
     if not DMFConfig.configuration_exists():
         click.echo(f"No configuration found at '{DMFConfig.configuration_path()}'")
@@ -175,39 +213,84 @@ def status(color, show):
         _log.fatal(f"Cannot get status: {err}")
         click.echo(str(err))
         return Code.WORKSPACE_NOT_FOUND
-    print(f"# {t.bold}Workspace{t.normal}")
-    print(f"{t.green}Location:{t.normal} {d.root}")
-    print(f"{t.green}Name:{t.normal} {d.name}")
-    print(f"{t.green}Description:{t.normal} {d.description}")
-    print(f"{t.green}Created:{t.normal} {d.meta[d.CONF_CREATED]}")
-    print(f"{t.green}Modified:{t.normal} {d.meta[d.CONF_MODIFIED]}")
+
+    def item(key, value=None, before="", color=t.green):
+        after_key = "" if key == "-" else ":"
+        if value is None:
+            return f"{before}{color}{key}{after_key}{t.normal}"
+        return f"{before}{color}{key}{after_key}{t.normal} {value}"
+
+    indent_spc = "  "
+
+    print(item("settings", color=t.blue))
+    indent = indent_spc
+    conf = DMFConfig()  # note: must exist due to earlier check
+    for key, value in conf.c.items():
+        print(item(key, value, before=indent))
+
+    print(item("workspace", color=t.blue))
+    indent = indent_spc
+    for key, value in (
+        ("location", d.root),
+        ("name", d.name),
+        ("description", d.description),
+        ("created", d.meta[d.CONF_CREATED]),
+        ("modified", d.meta[d.CONF_MODIFIED]),
+    ):
+        print(item(key, value, before=indent))
+    # optional workspace items
     for thing in show:
-        if thing == "files":
-            print(f"{t.green}Files:{t.normal}")
+        if thing == "files" or thing == "all":
+            indent = indent_spc
+            print(item("files", before=indent))
             fpath = pathlib.Path(d.datafiles_path)
             fdirs = [dr for dr in fpath.glob("*") if dr.is_dir()]
-            print(f"  {t.green}Number of files:{t.normal} {len(fdirs)}")
+            indent = indent_spc * 2
+            print(item("count", len(fdirs), before=indent))
             total_size = sum(
                 (sum((fp.stat().st_size for fp in fd.glob("*"))) for fd in fdirs)
             )
-            print(
-                f"  {t.green}Total size:{t.normal} {humanize.naturalsize(total_size)}"
-            )
+            print(item("total_size", humanize.naturalsize(total_size), before=indent))
+        if thing == "htmldocs" or thing == "all":
+            indent = indent_spc
+            doc_paths = d.get_doc_paths()
+            print(item("html_documentation_paths", before=indent))
+            indent = indent_spc * 2
+            for p in doc_paths:
+                print(item("-", p, before=indent))
+
     return Code.OK
 
 
-@click.command(help="Add object(s)")
-@click.option("--parent", "-p", type=click.STRING, help="Parent object ID")
-@click.argument("objects", nargs=-1)
-def add(parent, objects):
-    if not objects:
-        raise click.BadArgumentUsage("Need at least one object to add")
-    _log.info(f"Add with parent={parent}, objects={objects}")
+@click.command(help="Register a new object in the DMF workspace")
+@click.argument("url", type=URLType(), metavar="FILE")
+@click.option(
+    "--type",
+    "-t",
+    type=click.Choice(tuple(resource.RESOURCE_TYPES)),
+    help="Resource type (default=determined from file)",
+)
+@click.option("--container", help="Contained in", metavar="OBJECT-ID", multiple=True)
+@click.option("--source", help="Derived from", metavar="OBJECT-ID", multiple=True)
+@click.option("--usedby", help="Used by", metavar="OBJECT-ID", multiple=True)
+@click.option("--prev", help="Version of previous", metavar="OBJECT-ID", multiple=True)
+def register(resource_type, url, container, source, usedby, prev):
+    _log.debug(f"Register object type='{type}' id='{object_id}'")
+    # process url
+    if url.scheme in ("file", ""):
+        path = url.path
+    else:
+        click.echo("Only bare or 'file' scheme allowed in URL")
+        return Code.NOT_SUPPORTED
+    # create the resource
+    rsrc = resource.Resource.from_file(path, as_type=resource_type)
+    # process relations
 
 
-dmfcommand.add_command(init)
-dmfcommand.add_command(status)
+# Register base commands
+base_command.add_command(init)
+base_command.add_command(register)
+base_command.add_command(status)
 
 if __name__ == '__main__':
-    sys.exit(dmfcommand())
-
+    sys.exit(base_command())

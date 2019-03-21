@@ -14,18 +14,24 @@
 Resource representaitons.
 """
 # stdlib
+import abc
 from collections import namedtuple
 from datetime import datetime
 import getpass
+import json
+from json import JSONDecodeError
 import logging
 import os
+import pathlib
 import pprint
 import re
 import uuid
+
 # third-party
 import jsonschema
 import pendulum
 import six
+
 # local
 from .util import datetime_timestamp
 
@@ -50,8 +56,17 @@ TY_CODE = 'code'
 TY_SURRMOD = 'surrogate_model'
 TY_DATA = 'data'
 TY_OTHER = 'other'
-RESOURCE_TYPES = {TY_EXPERIMENT, TY_TABULAR, TY_PROPERTY, TY_FLOWSHEET,
-                  TY_NOTEBOOK, TY_CODE, TY_SURRMOD, TY_DATA, TY_OTHER}
+RESOURCE_TYPES = {
+    TY_EXPERIMENT,
+    TY_TABULAR,
+    TY_PROPERTY,
+    TY_FLOWSHEET,
+    TY_NOTEBOOK,
+    TY_CODE,
+    TY_SURRMOD,
+    TY_DATA,
+    TY_OTHER,
+}
 
 # Constants for fields in stored relations
 RR_PRED = 'predicate'
@@ -72,19 +87,14 @@ RESOURCE_SCHEMA = {
                 {"type": "integer"},
                 {"type": "integer"},
                 {"type": "integer"},
-                {"type": "string"}
+                {"type": "string"},
             ],
-            "minItems": 4
+            "minItems": 4,
         }
     },
     "type": "object",
     "properties": {
-        "aliases": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
-        },
+        "aliases": {"type": "array", "items": {"type": "string"}},
         "codes": {
             "type": "array",
             "items": {
@@ -92,96 +102,77 @@ RESOURCE_SCHEMA = {
                 "properties": {
                     "type": {
                         "type": "string",
-                        "enum": ["method", "function", "module", "class",
-                                 "file",
-                                 "package", "repository", "notebook"]
+                        "enum": [
+                            "method",
+                            "function",
+                            "module",
+                            "class",
+                            "file",
+                            "package",
+                            "repository",
+                            "notebook",
+                        ],
                     },
                     "desc": {"type": "string"},
                     "name": {"type": "string"},
                     "language": {"type": "string"},
                     "idhash": {"type": "string"},
                     "location": {"type": "string"},
-                    "version": {"$ref": "#/definitions/SemanticVersion"}
+                    "version": {"$ref": "#/definitions/SemanticVersion"},
                 },
-                "required": ["name"]
-            }
+                "required": ["name"],
+            },
         },
         "collaborators": {
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
-                    "email": {
-                        "type": "string",
-                        "format": "email"
-                    },
-                    "name": {"type": "string"}
+                    "email": {"type": "string", "format": "email"},
+                    "name": {"type": "string"},
                 },
-                "required": ["name"]
-            }
+                "required": ["name"],
+            },
         },
-        "created": {
-            "type": "number"
-        },
+        "created": {"type": "number"},
         "creator": {
             "type": "object",
             "properties": {
-                "email": {
-                    "type": "string",
-                    "format": "email"
-                },
-                "name": {"type": "string"}
+                "email": {"type": "string", "format": "email"},
+                "name": {"type": "string"},
             },
-            "required": ["name"]
+            "required": ["name"],
         },
-        "data": {
-            "type": "object"
-        },
+        "data": {"type": "object"},
         "datafiles": {
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
                     "desc": {"type": "string"},
-                    "metadata": {
-                        "type": "object"
-                    },
+                    "metadata": {"type": "object"},
                     "mimetype": {"type": "string"},
                     "path": {"type": "string"},
-                    "is_copy": {"type": "boolean"}
+                    "is_copy": {"type": "boolean"},
                 },
-                "required": ["path"]
-            }
+                "required": ["path"],
+            },
         },
-        "datafiles_dir": {
-            "type": "string"
-        },
-        "desc": {
-            "type": "string"
-        },
-        "id_": {
-            "type": "string"
-        },
-        "modified": {
-            "type": "number"
-        },
+        "datafiles_dir": {"type": "string"},
+        "desc": {"type": "string"},
+        "id_": {"type": "string"},
+        "modified": {"type": "number"},
         "relations": {
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
-                    RR_PRED: {
-                        "type": "string",
-                        "enum": list(RELATION_PREDICATES)
-                    },
+                    RR_PRED: {"type": "string", "enum": list(RELATION_PREDICATES)},
                     RR_ID: {"type": "string"},
-                    RR_ROLE: {
-                        "type": "string",
-                        "enum": [RR_SUBJ, RR_OBJ]
-                    }
+                    RR_ROLE: {"type": "string", "enum": [RR_SUBJ, RR_OBJ]},
                 },
-                "required": [RR_PRED, RR_ID, RR_ROLE]
-            }
+                "required": [RR_PRED, RR_ID, RR_ROLE],
+            },
         },
         "sources": {
             "type": "array",
@@ -192,37 +183,30 @@ RESOURCE_SCHEMA = {
                     "doi": {"type": "string"},
                     "isbn": {"type": "string"},
                     "language": {"type": "string"},
-                    "source": {"type": "string"}
-                }
-            }
+                    "source": {"type": "string"},
+                },
+            },
         },
-        "tags": {
-            "type": "array",
-            "items": {
-                "type": "string",
-            }
-        },
-        "type": {
-            "type": "string",
-            "enum": list(RESOURCE_TYPES)
-        },
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "type": {"type": "string", "enum": list(RESOURCE_TYPES)},
         "version_info": {
             "type": "object",
             "properties": {
                 "created": {"type": "number"},
                 "name": {"type": "string"},
-                "version": {"$ref": "#/definitions/SemanticVersion"}
-            }
-        }
+                "version": {"$ref": "#/definitions/SemanticVersion"},
+            },
+        },
     },
     "required": ["id_"],
-    "additionalProperties": False
+    "additionalProperties": False,
 }
 
 
 class Dict(dict):
     """Subclass of dict that has a 'dirty' bit.
     """
+
     def __init__(self, *args, **kwargs):
         super(Dict, self).__init__(*args, **kwargs)
         self._dirty = True
@@ -241,7 +225,8 @@ class Dict(dict):
 class Resource(object):
     """Core object for the Data Management Framework.
     """
-    ID_FIELD = 'id_'     #: Identifier field name constant
+
+    ID_FIELD = 'id_'  #: Identifier field name constant
     TYPE_FIELD = 'type'  #: Resource type field name constant
 
     def __init__(self, value: dict = None, type_: str = None):
@@ -256,28 +241,26 @@ class Resource(object):
 
     def _set_defaults(self):
         now = date_float(pendulum.utcnow())
-        self.v = Dict({
-            self.ID_FIELD: identifier_str(),
-            self.TYPE_FIELD: TY_OTHER,
-            'aliases': [],
-            'codes': [],
-            'collaborators': [],
-            'created': now,
-            'modified': now,
-            'creator': {'name': getpass.getuser()},
-            'data': {},
-            'datafiles': [],
-            'datafiles_dir': '',
-            'desc': '',
-            'relations': [],
-            'sources': [],
-            'tags': [],
-            'version_info': {
+        self.v = Dict(
+            {
+                self.ID_FIELD: identifier_str(),
+                self.TYPE_FIELD: TY_OTHER,
+                'aliases': [],
+                'codes': [],
+                'collaborators': [],
                 'created': now,
-                'version': (0, 0, 0),
-                'name': ''
+                'modified': now,
+                'creator': {'name': getpass.getuser()},
+                'data': {},
+                'datafiles': [],
+                'datafiles_dir': '',
+                'desc': '',
+                'relations': [],
+                'sources': [],
+                'tags': [],
+                'version_info': {'created': now, 'version': (0, 0, 0), 'name': ''},
             }
-        })
+        )
 
     def _massage_values(self):
         try:
@@ -291,18 +274,19 @@ class Resource(object):
                 self.v['modified'] = date_float(self.v['modified'])
             if not isinstance(self.v['version_info']['created'], float):
                 self.v['version_info']['created'] = date_float(
-                    self.v['version_info']['created'])
+                    self.v['version_info']['created']
+                )
             # convert versions
             if not isinstance(self.v['version_info']['version'], list):
                 self.v['version_info']['version'] = version_list(
-                    self.v['version_info']['version'])
+                    self.v['version_info']['version']
+                )
             for i, code in enumerate(self.v['codes']):
                 if not isinstance(code['version'], list):
                     code['version'] = version_list(code['version'])
                     self.v['codes'][i] = code
         except (TypeError, ValueError, KeyError) as err:
-            raise ValueError('While converting resource values: {}'
-                             .format(err))
+            raise ValueError('While converting resource values: {}'.format(err))
         self.v.set_clean()
 
     def validate(self):
@@ -310,6 +294,69 @@ class Resource(object):
             self._massage_values()
             self._validator.validate(self.v)
             self._validations += 1
+
+    @classmethod
+    def from_file(
+        cls, path: str, as_type: str = None, strict: bool = True
+    ) -> 'Resource':
+        """Import resource from a file.
+
+        Args:
+            path: File path
+            as_type: Resource type. If None/empty, then inferred from path.
+            strict: If True, fail when file extension and contents don't match.
+                    If False, always fall through to generic resource.
+
+        Raises:
+            ValueError: if resource type does not match inferred/specified
+            TypeError: if resource import failed
+        """
+        if not as_type:
+            as_type = self._infer_resource_type()
+        Importer = cls._get_resource_importer(as_type, strict)
+        return Importer.create()
+
+    @staticmethod
+    def _infer_resource_type(path: str, strict: bool) -> 'ResourceImporter':
+        path = pathlib.Path(path)
+        try:
+            if path.suffix == ".ipynb":
+                try:
+                    nb = json.load(open(path))
+                except (UnicodeDecodeError, JSONDecodeError):
+                    raise ValueError("File ending in '.ipynb' is not valid JSON")
+                for key in 'cells', 'metadata', 'nbformat':
+                    if key not in nb:
+                        raise ValueError(f"Jupyter notebook file missing key: {key}")
+                return JupyterNotebookImporter(path)
+            if path.suffix == ".py":
+                return PythonImporter(path)
+            if path.suffix == ".json":
+                max_bytes = 1e6
+                # over max_bytes? no
+                file_size = path.stat().st_size
+                if file_size > max_bytes:
+                    _log.warn(
+                        f"Not attempting to parse JSON in file size {file_size} > {max_bytes}"
+                    )
+                    return FileImporter(path)
+                # see if it's a Resource
+                try:
+                    parsed = json.load(path.open())
+                except (UnicodeDecodeError, JSONDecodeError):
+                    raise ValueError("File ending in '.json' is not valid JSON")
+                try:
+                    jsonschema.Draft4Validator(RESOURCE_SCHEMA).validate(parsed)
+                except jsonschema.ValidationError:
+                    return FileImporter(path)
+                return SerializedResourceImporter(path, parsed)
+            # if file extension is not recognized..
+            return FileImporter(path)
+        except ValueError as err:
+            if strict:
+                raise
+            _log.warn(f"{err}: importing as generic file")
+            return FileImporter(path)
 
     @property
     def id(self):
@@ -358,6 +405,7 @@ class Resource(object):
     def _repr_text_(self):
         return pprint.pformat(self.v, indent=2)
 
+
 #
 # Function(s) to help creating [two-way] relations
 # between resources
@@ -391,17 +439,24 @@ def create_relation(rel):
                     of valid ones in RELATION_PREDICATES
     """
     if rel.predicate not in RELATION_PREDICATES:
-        raise ValueError('Bad predicate: "{}" not in: {}'.format(
-            rel.predicate, ', '.join(list(RELATION_PREDICATES))))
-    rel_d = {RR_PRED: rel.predicate,
-             RR_ID: rel.object.v[Resource.ID_FIELD],
-             RR_ROLE: RR_SUBJ}
+        raise ValueError(
+            'Bad predicate: "{}" not in: {}'.format(
+                rel.predicate, ', '.join(list(RELATION_PREDICATES))
+            )
+        )
+    rel_d = {
+        RR_PRED: rel.predicate,
+        RR_ID: rel.object.v[Resource.ID_FIELD],
+        RR_ROLE: RR_SUBJ,
+    }
     if rel_d in rel.subject.v['relations']:
         raise ValueError('Duplicate relation for subject: {}'.format(rel))
     rel.subject.v['relations'].append(rel_d)
-    rel_d = {RR_PRED: rel.predicate,
-             RR_ID: rel.subject.v[Resource.ID_FIELD],
-             RR_ROLE: RR_OBJ}
+    rel_d = {
+        RR_PRED: rel.predicate,
+        RR_ID: rel.subject.v[Resource.ID_FIELD],
+        RR_ROLE: RR_OBJ,
+    }
     # note: hard for this to happen unless the relation was added manually
     if rel_d in rel.object.v['relations']:
         raise ValueError('Duplicate relation for object: {}'.format(rel))
@@ -438,9 +493,10 @@ def triple_from_resource_relations(id_, rrel):
 def date_float(value):
     """Convert a date to a floating point seconds since the UNIX epoch.
     """
+
     def bad_date(e):
-        raise ValueError('Cannot convert date "{}" to float: {}'
-                         .format(value, e))
+        raise ValueError('Cannot convert date "{}" to float: {}'.format(value, e))
+
     dt, usec = None, 0
     if isinstance(value, pendulum.Pendulum):
         return value.timestamp()
@@ -523,8 +579,10 @@ def version_list(value):
     Returns:
         list: [major:int, minor:int, debug:int, release-type:str]
     """
+
     def bad_version(v):
         raise ValueError("Bad version: {}".format(v))
+
     ver = ()
     if isinstance(value, list) or isinstance(value, tuple):
         ver = value
@@ -613,6 +671,69 @@ def identifier_str(value=None):
     if value is None:
         value = uuid.uuid4().hex
     elif not re.match(id_expr, value):
-        raise ValueError('Bad format for identifier "{}": must match '
-                         'regular expression "{}"'.format(value, id_expr))
+        raise ValueError(
+            'Bad format for identifier "{}": must match '
+            'regular expression "{}"'.format(value, id_expr)
+        )
     return value
+
+
+#
+# Import Resource of varying types from file
+#
+
+
+class ResourceImporter(abc.ABC):
+    """Base class in the Factory pattern.
+    """
+
+    def __init__(self, path):
+        self.path = path
+
+    def create(self) -> Resource:
+        """Factory method.
+        """
+        r = self._create()
+        r.validate()
+        return r
+
+    @abc.abstractmethod
+    def _create(self) -> Resource:
+        pass
+
+
+class JupyterNotebookImporter(ResourceImporter):
+    def _create(self) -> Resource:
+        r = Resource(type_=TY_NOTEBOOK)
+        # XXX: add notebook 'metadata' as FilePath metadata attr
+        r.v["datafiles"].append({"desc": self.path.name, "path": str(self.path)})
+        r.v["desc"] = self.path.name
+        return r
+
+
+class PythonImporter(ResourceImporter):
+    def _create(self) -> Resource:
+        r = Resource(type_=TY_CODE)
+        r.v["codes"].append(
+            {"name": self.path.name, "language": "python", "type": "module"}
+        )
+        r.v["datafiles"].append({"desc": self.path.name, "path": str(self.path)})
+        return r
+
+
+class FileImporter(ResourceImporter):
+    def _create(self) -> Resource:
+        r = Resource(type_=TY_DATA)
+        r.v["datafiles"].append({"desc": self.path.name, "path": str(self.path)})
+        r.v["desc"] = str(self.path)
+        return r
+
+
+class SerializedResourceImporter(ResourceImporter):
+    def __init__(self, path, parsed):
+        super().__init__(path)
+        self.parsed = parsed
+
+    def _create(self) -> Resource:
+        r = Resource(value=self.parsed)
+        return r
