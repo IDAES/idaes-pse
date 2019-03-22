@@ -49,6 +49,7 @@ same arguments you would give the :class:`Version` constructor:
     >>> obj = MyClass()
     >>> print(obj.version)
     1.2.3a
+
 """
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 

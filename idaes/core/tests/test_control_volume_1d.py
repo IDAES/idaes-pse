@@ -93,7 +93,7 @@ class StateTestBlockData(StateBlockData):
 
         self.test_var = Var()
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
-        self.phase_equilibrium_list = \
+        self.phase_equilibrium_list_ref = \
             {"e1": ["c1", ("p1", "p2")],
              "e2": ["c2", ("p1", "p2")]}
 
@@ -453,7 +453,7 @@ def test_add_state_blocks_no_has_phase_equilibrium():
     m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv.add_geometry()
-    
+
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_state_blocks()
 
@@ -526,7 +526,7 @@ def test_add_reaction_blocks_no_has_equilibrium():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    
+
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_reaction_blocks()
 
@@ -1976,7 +1976,7 @@ def test_add_total_pressure_balances_default():
     mb = m.fs.cv.add_total_pressure_balances()
 
     assert isinstance(mb, Constraint)
-    assert len(mb) == 2
+    assert len(mb) == 1
     assert isinstance(m.fs.cv.pressure, Var)
     assert isinstance(m.fs.cv.pressure_linking_constraint, Constraint)
     assert isinstance(m.fs.cv.pressure_dx, DerivativeVar)
@@ -1998,7 +1998,7 @@ def test_add_total_pressure_balances_deltaP():
     mb = m.fs.cv.add_total_pressure_balances(has_pressure_change=True)
 
     assert isinstance(mb, Constraint)
-    assert len(mb) == 2
+    assert len(mb) == 1
     assert isinstance(m.fs.cv.deltaP, Var)
 
 
@@ -2023,7 +2023,7 @@ def test_add_total_pressure_balances_custom_term():
     mb = m.fs.cv.add_total_pressure_balances(custom_term=custom_method)
 
     assert isinstance(mb, Constraint)
-    assert len(mb) == 2
+    assert len(mb) == 1
 
 
 # -----------------------------------------------------------------------------

@@ -19,7 +19,7 @@ from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition, \
     SolverStatus, value
 
 from idaes.core import FlowsheetBlock
-from idaes.property_models.ideal.BTX_ideal_VLE import IdealParameterBlock
+from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
 from idaes.ui.report import degrees_of_freedom
 
 # See if ipopt is available and set up solver
@@ -37,21 +37,21 @@ m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid
-m.fs.properties_vl = IdealParameterBlock(default={"valid_phase":
-                                                  ('Liq', 'Vap')})
+m.fs.properties_vl = BTXParameterBlock(default={"valid_phase":
+                                       ('Liq', 'Vap')})
 m.fs.state_block_vl = m.fs.properties_vl.state_block_class(
     default={"parameters": m.fs.properties_vl,
              "defined_state": True})
 
 # liquid only
-m.fs.properties_l = IdealParameterBlock(default={"valid_phase": 'Liq'})
+m.fs.properties_l = BTXParameterBlock(default={"valid_phase": 'Liq'})
 m.fs.state_block_l = m.fs.properties_l.state_block_class(
     default={"parameters": m.fs.properties_l,
              "has_phase_equilibrium": False,
              "defined_state": True})
 
 # vapor only
-m.fs.properties_v = IdealParameterBlock(default={"valid_phase": 'Vap'})
+m.fs.properties_v = BTXParameterBlock(default={"valid_phase": 'Vap'})
 m.fs.state_block_v = m.fs.properties_v.state_block_class(
     default={"parameters": m.fs.properties_v,
              "has_phase_equilibrium": False,
@@ -162,55 +162,43 @@ def test_solve():
 
 
 def test_bubbleT_inlet_state_blocks():
-    assert m.fs.state_block_vl.temperature_bubble_point(
-        101325, m.fs.state_block_vl.mole_frac,
-        options={"initial_guess": 298.15,
-                 "tol": 1e-3,
-                 "deltaT": 1e-2,
-                 "max_iter": 1e4}) == \
-        pytest.approx(365.314, abs=1e-2)
+    assert m.fs.state_block_vl.calculate_bubble_point_temperature() == \
+        pytest.approx(365.347, abs=1e-2)
 
 
 def test_dewT_inlet_state_blocks():
-    assert m.fs.state_block_vl.temperature_dew_point(
-        101325, m.fs.state_block_vl.mole_frac,
-        options={"initial_guess": 298.15,
-                 "tol": 1e-3,
-                 "deltaT": 1e-2,
-                 "max_iter": 1e4}) == \
-        pytest.approx(371.987, abs=1e-2)
+    assert m.fs.state_block_vl.calculate_dew_point_temperature() == \
+        pytest.approx(372.02, abs=1e-2)
 
 
 def test_bubbleP_inlet_state_blocks():
-    assert m.fs.state_block_vl.pressure_bubble_point(
-        365.314, m.fs.state_block_vl.mole_frac) == \
-        pytest.approx(101325, abs=1e-1)
+    assert m.fs.state_block_vl.calculate_bubble_point_pressure() == \
+        pytest.approx(109479.22, abs=1e-2)
 
 
-def test_dewP_inlet_state_():
-    assert m.fs.state_block_vl.pressure_dew_point(
-        371.987, m.fs.state_block_vl.mole_frac) == \
-        pytest.approx(101325, abs=1e-1)
+def test_dewP_inlet_state_blocks():
+    assert m.fs.state_block_vl.calculate_dew_point_pressure() == \
+        pytest.approx(89819.72, abs=1e-2)
 
 
 # Create a flowsheet object to test outlet state blocks
 m.fs1 = FlowsheetBlock(default={"dynamic": False})
 # vapor-liquid
-m.fs1.properties_vl = IdealParameterBlock(default={"valid_phase":
-                                                   ('Liq', 'Vap')})
+m.fs1.properties_vl = BTXParameterBlock(default={"valid_phase":
+                                                 ('Liq', 'Vap')})
 m.fs1.state_block_vl = m.fs1.properties_vl.state_block_class(
     default={"parameters": m.fs1.properties_vl,
              "defined_state": False})
 
 # liquid only
-m.fs1.properties_l = IdealParameterBlock(default={"valid_phase": 'Liq'})
+m.fs1.properties_l = BTXParameterBlock(default={"valid_phase": 'Liq'})
 m.fs1.state_block_l = m.fs1.properties_l.state_block_class(
     default={"parameters": m.fs1.properties_l,
              "has_phase_equilibrium": False,
              "defined_state": False})
 
 # vapor only
-m.fs1.properties_v = IdealParameterBlock(default={"valid_phase": 'Vap'})
+m.fs1.properties_v = BTXParameterBlock(default={"valid_phase": 'Vap'})
 m.fs1.state_block_v = m.fs1.properties_v.state_block_class(
     default={"parameters": m.fs1.properties_v,
              "has_phase_equilibrium": False,

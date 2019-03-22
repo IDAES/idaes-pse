@@ -1,7 +1,0 @@
-idaes.core.process\_block module
-================================
-
-.. automodule:: idaes.core.process_block
-    :members:
-    :undoc-members:
-    :show-inheritance:
