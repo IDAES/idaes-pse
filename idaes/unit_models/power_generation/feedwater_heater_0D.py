@@ -262,6 +262,13 @@ class FWH0DData(UnitModelBlockData):
                 _set_port(self.drain_mix.steam, self.desuperheat.outlet_1)
             else:
                 _set_port(self.condense.inlet_1, self.desuperheat.outlet_1)
+            # fix the steam and fwh inlet for init
+            self.desuperheat.inlet_2.fix()
+            self.desuperheat.inlet_1.fix()
+            self.desuperheat.inlet_1.flow_mol.unfix() #unfix for extract calc
+        else:
+            self.condense.inlet_2.fix()
+
         # initialize mixer if included
         if config.has_drain_mixer:
             self.drain_mix.steam.fix()
