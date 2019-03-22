@@ -16,10 +16,12 @@ Resource database.
 # system
 from datetime import datetime
 import logging
+
 # third party
 import pendulum
 import six
 from tinydb import TinyDB, Query
+
 # local
 from . import errors
 from .resource import Resource
@@ -33,6 +35,7 @@ _log = logging.getLogger(__name__)
 class ResourceDB(object):
     """A database interface to all the resources within a given DMF workspace.
     """
+
     def __init__(self, dbfile=None, connection=None):
         """Initialize from DMF and given configuration field.
 
@@ -55,8 +58,7 @@ class ResourceDB(object):
             try:
                 db = TinyDB(dbfile)
             except IOError:
-                raise errors.FileError('Cannot open resource DB "{}"'
-                                       .format(dbfile))
+                raise errors.FileError('Cannot open resource DB "{}"'.format(dbfile))
             self._db = db
 
     def __len__(self):
@@ -74,10 +76,12 @@ class ResourceDB(object):
         Returns:
             (list of int|Resource) Depending on the value of `id_only`
         """
+
         def as_resource(_r):
             rsrc = Resource(value=_r)
             rsrc.v['doc_id'] = _r.doc_id
             return rsrc
+
         # with no filter, do a find-all
         if not filter_dict:
             for r in self._db.all():
@@ -123,43 +127,83 @@ class ResourceDB(object):
             # value is a match. If the key has a '!' appended, then
             # require all values for a match.
             if isinstance(v, list):
-                if qry_all:
-                    cond = qry.all(tuple(v))
-                else:
-                    cond = qry.any(tuple(v))
-                filter_expr = fadd(cond)
+                if len(v) > 0:
+                    # if values are dicts, nest a query
+                    # XXX: this only works one level deep
+                    # XXX: only one nested query is used/allowed
+                    if isinstance(v[0], dict):
+                        list_expr = None
+                        for list_k, list_v in v[0].items():
+                            list_qry = Query()
+                            for field in list_k.split('.'):
+                                list_qry = list_qry[field]
+                            list_cond = cls._expr_to_query(list_qry, list_v)
+                            if list_expr is None:
+                                list_expr = list_cond
+                            else:
+                                list_expr = list_expr & list_cond
+                        print(f"@@ list_expr={list_expr}")
+                    # otherwise, simply put the values in there
+                    else:
+                        list_expr = tuple(v)
+                    # add nested "query" (or value tuple)
+                    if qry_all:
+                        cond = qry.all(list_expr)
+                    else:
+                        cond = qry.any(list_expr)
             else:
-                # There are two types of non-list values:
-                # - equality is just {key: value}
-                # - inequalities are {key: {op: value, ...}}
-                #   operators are "$<shell test op>", such as "$lt",
-                #   just like in MongoDB; see _op_cond() method for details.
-                if isinstance(v, dict):
-                    for op_key, op_value in six.iteritems(v):
-                        tv = cls._value_transform(op_value)
-                        cond = cls._op_cond(qry, op_key, tv)
-                        filter_expr = fadd(cond)
-                elif v is True:
-                    cond = qry.exists()
-                    filter_expr = fadd(cond)
-                elif v is False:
-                    cond = ~ qry.exists()
-                    filter_expr = fadd(cond)
-                else:
-                    tv = cls._value_transform(v)
-                    cond = qry == tv
-                    filter_expr = fadd(cond)
+                cond = cls._expr_to_query(qry, v)
+            filter_expr = fadd(cond)
         return filter_expr
+
+    @classmethod
+    def _expr_to_query(cls, qry, v):
+        """Get a query from a filter expr.
+
+        There are two types of non-list values:
+         1. equality is just {key: value}
+         2. inequalities are {key: {op: value, ...}}
+           operators are "$<shell test op>", such as "$lt",
+           just like in MongoDB; see _op_cond() method for details.
+        """
+        result = None
+        if isinstance(v, dict):
+            for op_key, op_value in v.items():
+                tv = cls._value_transform(op_value)
+                cond = cls._op_cond(qry, op_key, tv)
+                result = cond if result is None else result & cond
+        elif v is True:
+            result = qry.exists()
+        elif v is False:
+            result = ~qry.exists()
+        else:
+            tv = cls._value_transform(v)
+            result = qry == tv
+        return result
 
     @staticmethod
     def _value_transform(v):
         if isinstance(v, datetime) or isinstance(v, pendulum.Pendulum):
             if isinstance(v, datetime):
-                pv = pendulum.create(v.year, v.month, v.day, v.hour, v.minute,
-                                     v.second, v.microsecond, v.tzname())
+                pv = pendulum.create(
+                    v.year,
+                    v.month,
+                    v.day,
+                    v.hour,
+                    v.minute,
+                    v.second,
+                    v.microsecond,
+                    v.tzname(),
+                )
             else:
                 pv = v
             return pv.timestamp()
+        elif isinstance(v, str) and len(v) > 0 and v[0] == '@':
+            if v == '@true':
+                return True
+            if v == '@false':
+                return False
+            return v
         else:
             return v
 
@@ -189,8 +233,7 @@ class ResourceDB(object):
             break
         return result
 
-    def find_related(self, id_, filter_dict=None, outgoing=True,
-                     maxdepth=0, meta=None):
+    def find_related(self, id_, filter_dict=None, outgoing=True, maxdepth=0, meta=None):
         """Find all resources connected to the identified one.
 
         Args:
@@ -220,8 +263,9 @@ class ResourceDB(object):
                 uuid = rsrc[Resource.ID_FIELD]
                 rel = triple_from_resource_relations(uuid, rrel)
                 # skip start of edge, get metadata, etc. at end of edge
-                if (outgoing and rel.subject == uuid) or \
-                        (not outgoing and rel.object == uuid):
+                if (outgoing and rel.subject == uuid) or (
+                    not outgoing and rel.object == uuid
+                ):
                     continue
                 # add entry in map
                 key = rel.subject if outgoing else rel.object
@@ -270,10 +314,12 @@ class ResourceDB(object):
         Returns:
             (Resource) A resource or None
         """
+
         def as_resource(_r):
             rsrc = Resource(value=_r)
             rsrc.v['doc_id'] = _r.doc_id
             return rsrc
+
         item = self._db.get(doc_id=identifier)
         if item is None:
             return None
@@ -299,8 +345,7 @@ class ResourceDB(object):
         # add resource
         self._db.insert(resource.v)
 
-    def delete(self, id_=None, idlist=None, filter_dict=None,
-               internal_ids=False):
+    def delete(self, id_=None, idlist=None, filter_dict=None, internal_ids=False):
         """Delete one or more resources with given identifiers.
 
         Args:
@@ -347,11 +392,11 @@ class ResourceDB(object):
             raise KeyError('Cannot find resource id={}'.format(id_))
         T = Resource.TYPE_FIELD
         if old.v[T] != new_dict[T]:
-            raise ValueError('New resource type="{}" does not '
-                             'match current resource type "{}"'
-                             .format(new_dict[T], old.v[T]))
+            raise ValueError(
+                'New resource type="{}" does not '
+                'match current resource type "{}"'.format(new_dict[T], old.v[T])
+            )
 
-        changed = {k: v for k, v in six.iteritems(new_dict)
-                   if old.v.get(k, None) != v}
+        changed = {k: v for k, v in six.iteritems(new_dict) if old.v.get(k, None) != v}
         # note: above does not check for missing/new keys
         self._db.update(changed, self._create_filter_expr(id_cond))

@@ -17,7 +17,6 @@ Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
 from enum import Enum
-import json
 import logging
 import pathlib
 import sys
@@ -30,8 +29,7 @@ import humanize
 
 # package
 from . import DMF, DMFConfig, resource
-from .errors import WorkspaceConfNotFoundError
-from .util import is_jupyter_notebook, is_python, is_resource_json
+from . import errors
 
 __author__ = "Dan Gunter"
 
@@ -49,6 +47,9 @@ class Code(Enum):
     WORKSPACE_NOT_FOUND = 1
     CONFIGURATION_NOT_FOUND = 2
     NOT_SUPPORTED = 3
+    IMPORT_RESOURCE = 4
+    DMF = 5
+    DMF_OPER = 6
 
 
 def level_from_verbosity(vb):
@@ -135,7 +136,7 @@ class URLType(click.ParamType):
         return result
 
 
-@click.group(cls=AliasedGroup, aliases={"describe": "status"})
+@click.group(cls=AliasedGroup, aliases={"describe": "status", "add": "register"})
 @click.option(
     "--verbose",
     "-v",
@@ -188,7 +189,7 @@ def init(path, create, name, desc, html):
         _log.info("Use existing workspace")
         try:
             _ = DMF(path=path, create=False)
-        except WorkspaceConfNotFoundError:
+        except errors.WorkspaceConfNotFoundError:
             click.echo(f"Workspace not found at path='{path}'")
             if path == '.':  # probably just the default
                 click.echo("Use --path option to set workspace path.")
@@ -209,7 +210,7 @@ def status(color, show):
         return Code.CONFIGURATION_NOT_FOUND
     try:
         d = DMF()
-    except WorkspaceConfNotFoundError as err:
+    except errors.WorkspaceConfNotFoundError as err:
         _log.fatal(f"Cannot get status: {err}")
         click.echo(str(err))
         return Code.WORKSPACE_NOT_FOUND
@@ -265,17 +266,42 @@ def status(color, show):
 @click.command(help="Register a new object in the DMF workspace")
 @click.argument("url", type=URLType(), metavar="FILE")
 @click.option(
-    "--type",
+    "--copy/--no-copy",
+    help="Whether input file is copied into DMF "
+    "workspace, or referred to by location",
+)
+@click.option(
+    "--resource-type",
     "-t",
     type=click.Choice(tuple(resource.RESOURCE_TYPES)),
     help="Resource type (default=determined from file)",
 )
-@click.option("--container", help="Contained in", metavar="OBJECT-ID", multiple=True)
-@click.option("--source", help="Derived from", metavar="OBJECT-ID", multiple=True)
-@click.option("--usedby", help="Used by", metavar="OBJECT-ID", multiple=True)
-@click.option("--prev", help="Version of previous", metavar="OBJECT-ID", multiple=True)
-def register(resource_type, url, container, source, usedby, prev):
-    _log.debug(f"Register object type='{type}' id='{object_id}'")
+@click.option(
+    "--strict/--no-strict",
+    help="If inferring the type fails, "
+    "with --strict report an error, and with --no-strict fall back "
+    "to importing as a generic file",
+)
+@click.option(
+    "--contained",
+    help="Add 'contained in' relation",
+    metavar="OBJECT-ID",
+    multiple=True,
+)
+@click.option(
+    "--derived", help="Add 'derived from' relation", metavar="OBJECT-ID", multiple=True
+)
+@click.option(
+    "--used", help="Add 'used by' relation", metavar="OBJECT-ID", multiple=True
+)
+@click.option(
+    "--prev",
+    help="Add 'version of previous' relation",
+    metavar="OBJECT-ID",
+    multiple=True,
+)
+def register(resource_type, url, copy, strict, contained, derived, used, prev):
+    _log.debug(f"Register object type='{resource_type}' url/path='{url.path}'")
     # process url
     if url.scheme in ("file", ""):
         path = url.path
@@ -283,8 +309,34 @@ def register(resource_type, url, container, source, usedby, prev):
         click.echo("Only bare or 'file' scheme allowed in URL")
         return Code.NOT_SUPPORTED
     # create the resource
-    rsrc = resource.Resource.from_file(path, as_type=resource_type)
+    _log.debug("create resource")
+    try:
+        rsrc = resource.Resource.from_file(path, as_type=resource_type, strict=strict)
+    except resource.Resource.InferResourceTypeError as err:
+        click.echo(f"Failed to infer resource: {err}")
+        return Code.IMPORT_RESOURCE
+    except resource.Resource.LoadResourceError as err:
+        click.echo(f"Failed to load resource: {err}")
+        return Code.IMPORT_RESOURCE
     # process relations
+    _log.debug("add relations")
+    # XXX
+    # add the resource
+    _log.debug("add resource begin")
+    try:
+        d = DMF()
+        new_id = d.add(rsrc)
+    except errors.WorkspaceError as err:
+        click.echo(f"Failed to connect to DMF: {err}")
+        return Code.WORKSPACE_NOT_FOUND
+    except errors.DMFError as err:
+        click.echo(f"Failed to connect to DMF: {err}")
+        return Code.DMF
+    except errors.DuplicateResourceError as err:
+        click.echo(f"Failed to add resource: {err}")
+        return Code.DMF_OPER
+    _log.debug(f"added resource: {new_id}")
+    click.echo(new_id)
 
 
 # Register base commands

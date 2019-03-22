@@ -18,6 +18,7 @@ import abc
 from collections import namedtuple
 from datetime import datetime
 import getpass
+import hashlib
 import json
 from json import JSONDecodeError
 import logging
@@ -39,6 +40,31 @@ __author__ = 'Dan Gunter'
 
 _log = logging.getLogger(__name__)
 
+
+class ProgLangExt:
+    """Helper class to map from file extensions to
+    names of the programming language.
+    """
+
+    _extmap = {
+        "py": "Python",
+        "pyc": "Python/compiled",
+        "c": "C",
+        "cpp": "C++",
+        "cxx": "C++",
+        "f": "FORTRAN",
+        "f77": "FORTRAN",
+        "f90": "FORTRAN",
+        "js": "JavaScript",
+        "jl": "Julia",
+    }
+
+    @classmethod
+    def guess(cls, ext, default=None):
+        ext = ext.lower()
+        return cls._extmap.get(ext, default)
+
+
 #: Constants for relation predicates
 PR_DERIVED = 'derived'  # derivedFrom
 PR_CONTAINS = 'contains'
@@ -55,7 +81,9 @@ TY_NOTEBOOK = 'notebook'
 TY_CODE = 'code'
 TY_SURRMOD = 'surrogate_model'
 TY_DATA = 'data'
+TY_JSON = 'json'
 TY_OTHER = 'other'
+TY_RESOURCE_JSON = 'resource_json'
 RESOURCE_TYPES = {
     TY_EXPERIMENT,
     TY_TABULAR,
@@ -66,6 +94,8 @@ RESOURCE_TYPES = {
     TY_SURRMOD,
     TY_DATA,
     TY_OTHER,
+    TY_JSON,
+    TY_RESOURCE_JSON,
 }
 
 # Constants for fields in stored relations
@@ -153,6 +183,7 @@ RESOURCE_SCHEMA = {
                     "metadata": {"type": "object"},
                     "mimetype": {"type": "string"},
                     "path": {"type": "string"},
+                    "sha1": {"type": "string"},
                     "is_copy": {"type": "boolean"},
                 },
                 "required": ["path"],
@@ -295,9 +326,17 @@ class Resource(object):
             self._validator.validate(self.v)
             self._validations += 1
 
+    # Some exceptions for communicating problems on import
+    class InferResourceTypeError(Exception):
+        pass
+
+    class LoadResourceError(Exception):
+        def __init__(self, inferred_type, msg):
+            super().__init__(f"resource type '{inferred_type}': {msg}")
+
     @classmethod
     def from_file(
-        cls, path: str, as_type: str = None, strict: bool = True
+        cls, path: str, as_type: str = None, strict: bool = True, do_copy: bool = True
     ) -> 'Resource':
         """Import resource from a file.
 
@@ -308,38 +347,35 @@ class Resource(object):
                     If False, always fall through to generic resource.
 
         Raises:
-            ValueError: if resource type does not match inferred/specified
-            TypeError: if resource import failed
+            InferResourceTypeError: if resource type does not match inferred/specified
+            LoadResourceError: if resource import failed
         """
+        path = pathlib.Path(path)
         if not as_type:
-            as_type = self._infer_resource_type()
-        Importer = cls._get_resource_importer(as_type, strict)
+            as_type, parsed = cls._infer_resource_type(path, strict)
+        Importer = cls._get_resource_importer(
+            as_type, path, parsed=parsed, do_copy=do_copy
+        )
         return Importer.create()
 
-    @staticmethod
-    def _infer_resource_type(path: str, strict: bool) -> 'ResourceImporter':
-        path = pathlib.Path(path)
+    @classmethod
+    def _infer_resource_type(cls, path: pathlib.Path, strict: bool) -> str:
+        default_type = TY_OTHER
         try:
             if path.suffix == ".ipynb":
-                try:
-                    nb = json.load(open(path))
-                except (UnicodeDecodeError, JSONDecodeError):
-                    raise ValueError("File ending in '.ipynb' is not valid JSON")
-                for key in 'cells', 'metadata', 'nbformat':
-                    if key not in nb:
-                        raise ValueError(f"Jupyter notebook file missing key: {key}")
-                return JupyterNotebookImporter(path)
+                return TY_NOTEBOOK, None
             if path.suffix == ".py":
-                return PythonImporter(path)
+                return TY_CODE, None
             if path.suffix == ".json":
                 max_bytes = 1e6
-                # over max_bytes? no
+                # over max_bytes? generic
                 file_size = path.stat().st_size
                 if file_size > max_bytes:
                     _log.warn(
-                        f"Not attempting to parse JSON in file size {file_size} > {max_bytes}"
+                        f"Not attempting to parse JSON, file size "
+                        f"{file_size} > {max_bytes}"
                     )
-                    return FileImporter(path)
+                    return default_type, None
                 # see if it's a Resource
                 try:
                     parsed = json.load(path.open())
@@ -348,15 +384,36 @@ class Resource(object):
                 try:
                     jsonschema.Draft4Validator(RESOURCE_SCHEMA).validate(parsed)
                 except jsonschema.ValidationError:
-                    return FileImporter(path)
-                return SerializedResourceImporter(path, parsed)
-            # if file extension is not recognized..
-            return FileImporter(path)
+                    return TY_JSON, parsed  # generic JSON
+                return TY_RESOURCE_JSON, parsed
         except ValueError as err:
             if strict:
-                raise
-            _log.warn(f"{err}: importing as generic file")
-            return FileImporter(path)
+                raise cls.InferResourceTypeError(str(err))
+            _log.warn(f"{err}: treating as generic file")
+        return default_type, None
+
+    @classmethod
+    def _get_resource_importer(
+        cls, type_: str, path: pathlib.Path, parsed=None, **kwargs
+    ) -> 'ResourceImporter':
+        E = cls.LoadResourceError  # alias for exception raised
+        if type_ == TY_NOTEBOOK:
+            try:
+                nb = json.load(open(path))
+            except (UnicodeDecodeError, JSONDecodeError):
+                raise E(TY_NOTEBOOK, "not valid JSON")
+            for key in 'cells', 'metadata', 'nbformat':
+                if key not in nb:
+                    raise E(TY_NOTEBOOK, f"missing key: {key}")
+            return JupyterNotebookImporter(path, **kwargs)
+        if type_ == TY_CODE:
+            language = ProgLangExt.guess(path.suffix, default="unknown")
+            return CodeImporter(path, language, **kwargs)
+        if type == TY_JSON:
+            return JsonFileImporter(path, **kwargs)
+        if type_ == TY_RESOURCE_JSON:
+            return SerializedResourceImporter(path, parsed, **kwargs)
+        return FileImporter(path, **kwargs)
 
     @property
     def id(self):
@@ -684,11 +741,12 @@ def identifier_str(value=None):
 
 
 class ResourceImporter(abc.ABC):
-    """Base class in the Factory pattern.
+    """Base class for Resource importers.
     """
 
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, path: pathlib.Path, do_copy: bool):
+        self._path = path
+        self._do_copy = do_copy
 
     def create(self) -> Resource:
         """Factory method.
@@ -701,31 +759,64 @@ class ResourceImporter(abc.ABC):
     def _create(self) -> Resource:
         pass
 
+    def _add_datafiles(self, r):
+        abspath = str(self._path.absolute())
+        file_hash = self._hash_file(abspath)
+        r.v["datafiles"].append(
+            {
+                "desc": self._path.name,
+                "path": abspath,
+                "do_copy": self._do_copy,
+                "sha1": file_hash,
+            }
+        )
+
+    def _hash_file(self, path):
+        blksz, h = 1 << 16, hashlib.sha1()
+        with open(path, 'rb') as f:
+            blk = f.read(blksz)
+            while blk:
+                h.update(blk)
+                blk = f.read(blksz)
+        return h.hexdigest()
+
 
 class JupyterNotebookImporter(ResourceImporter):
     def _create(self) -> Resource:
         r = Resource(type_=TY_NOTEBOOK)
         # XXX: add notebook 'metadata' as FilePath metadata attr
-        r.v["datafiles"].append({"desc": self.path.name, "path": str(self.path)})
-        r.v["desc"] = self.path.name
+        self._add_datafiles(r)
+        r.v["desc"] = self._path.name
         return r
 
 
-class PythonImporter(ResourceImporter):
+class CodeImporter(ResourceImporter):
+    def __init__(self, path, language):
+        super().__init__(path)
+        self.language = language
+
     def _create(self) -> Resource:
         r = Resource(type_=TY_CODE)
         r.v["codes"].append(
-            {"name": self.path.name, "language": "python", "type": "module"}
+            {"name": self._path.name, "language": self.language, "type": "module"}
         )
-        r.v["datafiles"].append({"desc": self.path.name, "path": str(self.path)})
+        self._add_datafiles(r)
         return r
 
 
 class FileImporter(ResourceImporter):
     def _create(self) -> Resource:
         r = Resource(type_=TY_DATA)
-        r.v["datafiles"].append({"desc": self.path.name, "path": str(self.path)})
-        r.v["desc"] = str(self.path)
+        self._add_datafiles(r)
+        r.v["desc"] = str(self._path)
+        return r
+
+
+class JsonFileImporter(ResourceImporter):
+    def _create(self) -> Resource:
+        r = Resource(type_=TY_JSON)
+        self._add_datafiles(r)
+        r.v["desc"] = str(self._path)
         return r
 
 

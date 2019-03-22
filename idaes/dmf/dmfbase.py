@@ -455,11 +455,15 @@ class DMF(workspace.Workspace, HasTraits):
         The filter syntax is a subset of the MongoDB filter syntax.
         This means that it is represented as a dictionary, where
         each key is an attribute or nested attribute name, and each
-        value is the value against which to match. There are five
+        value is the value against which to match. There are six
         possible types of values:
 
         1. scalar string or number (int, float): Match resources that
            have this exact value for the given attribute.
+        2. special scalars "@<value>":
+
+                - "@true"/"@false": boolean (bare True/False will test existence)
+
         2. date, as datetime.datetime or pendulum.Pendulum instance: Match
            resources that have this exact date for the given attribute.
         3. list: Match resources that have a list value for this attribute,
