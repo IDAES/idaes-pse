@@ -182,17 +182,32 @@ def init(path, create, name, desc, html):
             name = click.prompt("New workspace name")
         if not desc:
             desc = click.prompt("New workspace description")
-        hpath = None if html is None else [html]
-        d = DMF(path=path, create=True, name=name, desc=desc, html_paths=hpath)
+        if html is None:
+            # guess html path
+            # XXX: don't try to verify the guess
+            errfile = pathlib.Path(errors.__file__)
+            docsdir = errfile.parent.parent.parent / 'docs'
+            hpath = [str(docsdir / 'build')]
+        else:
+            hpath = [html]
+        try:
+            d = DMF(path=path, create=True, name=name, desc=desc, html_paths=hpath)
+        except errors.WorkspaceError as err:
+            click.echo(f"Cannot create workspace: {err}")
+            return Code.DMF_OPER
         click.echo(f"Configuration in '{d.configuration_file}")
     else:
         _log.info("Use existing workspace")
         try:
             _ = DMF(path=path, create=False)
         except errors.WorkspaceConfNotFoundError:
-            click.echo(f"Workspace not found at path='{path}'")
+            click.echo(f"Workspace configuration not found at path='{path}'")
             if path == '.':  # probably just the default
                 click.echo("Use --path option to set workspace path.")
+            return Code.WORKSPACE_NOT_FOUND
+        except errors.WorkspaceNotFoundError:
+            click.echo(f"Existing workspace not found at path='{path}'")
+            click.echo("Add --create flag to create a workspace.")
             return Code.WORKSPACE_NOT_FOUND
     return Code.OK
 
@@ -283,6 +298,12 @@ def status(color, show):
     "to importing as a generic file",
 )
 @click.option(
+    "--unique/--no-unique",
+    default=True,
+    help="Check that no other resource has a file matching this file's "
+    "name and contents",
+)
+@click.option(
     "--contained",
     help="Add 'contained in' relation",
     metavar="OBJECT-ID",
@@ -300,7 +321,7 @@ def status(color, show):
     metavar="OBJECT-ID",
     multiple=True,
 )
-def register(resource_type, url, copy, strict, contained, derived, used, prev):
+def register(resource_type, url, copy, strict, unique, contained, derived, used, prev):
     _log.debug(f"Register object type='{resource_type}' url/path='{url.path}'")
     # process url
     if url.scheme in ("file", ""):
@@ -318,20 +339,37 @@ def register(resource_type, url, copy, strict, contained, derived, used, prev):
     except resource.Resource.LoadResourceError as err:
         click.echo(f"Failed to load resource: {err}")
         return Code.IMPORT_RESOURCE
-    # process relations
-    _log.debug("add relations")
-    # XXX
-    # add the resource
-    _log.debug("add resource begin")
+    # connect to DMF
     try:
-        d = DMF()
-        new_id = d.add(rsrc)
+        dmf = DMF()
     except errors.WorkspaceError as err:
         click.echo(f"Failed to connect to DMF: {err}")
         return Code.WORKSPACE_NOT_FOUND
     except errors.DMFError as err:
         click.echo(f"Failed to connect to DMF: {err}")
         return Code.DMF
+    # check uniqueness
+    if unique:
+        df = rsrc.v["datafiles"][0]  # file info for this upload
+        query = {"datafiles": [{"sha1": df["sha1"]}]}
+        query_result, dup_ids = dmf.find(query), []
+        for dup in query_result:
+            dup_df = dup.v["datafiles"][0]
+            if dup_df["path"] in df["path"]:
+                dup_ids.append(dup.id)
+        n_dup = len(dup_ids)
+        if n_dup > 0:
+            click.echo(
+                f"This file is already in {n_dup} resources: " f"{' '.join(dup_ids)}"
+            )
+            return Code.DMF_OPER
+    # process relations
+    _log.debug("add relations")
+    # XXX
+    # add the resource
+    _log.debug("add resource begin")
+    try:
+        new_id = dmf.add(rsrc)
     except errors.DuplicateResourceError as err:
         click.echo(f"Failed to add resource: {err}")
         return Code.DMF_OPER

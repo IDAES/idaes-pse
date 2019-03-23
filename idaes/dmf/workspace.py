@@ -182,7 +182,7 @@ class Workspace(object):
                     raise WorkspaceCannotCreateError(self._wsdir)
                 if os.path.exists(self._conf):
                     raise WorkspaceError(
-                        'Existing configuration would be '
+                        'existing configuration would be '
                         'overwritten: {}'.format(self._conf)
                     )
                 _log.warning(
@@ -192,7 +192,7 @@ class Workspace(object):
                 self._create_new_config(add_defaults)
             except OSError as err:
                 raise WorkspaceError(
-                    'While creating new workspace ' 'configuration: {}'.format(err)
+                    'while creating new workspace ' 'configuration: {}'.format(err)
                 )
         else:
             # assert that the workspace exists

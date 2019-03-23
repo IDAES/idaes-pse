@@ -142,7 +142,6 @@ class ResourceDB(object):
                                 list_expr = list_cond
                             else:
                                 list_expr = list_expr & list_cond
-                        print(f"@@ list_expr={list_expr}")
                     # otherwise, simply put the values in there
                     else:
                         list_expr = tuple(v)
@@ -183,6 +182,7 @@ class ResourceDB(object):
 
     @staticmethod
     def _value_transform(v):
+        # transform dates into timestamps
         if isinstance(v, datetime) or isinstance(v, pendulum.Pendulum):
             if isinstance(v, datetime):
                 pv = pendulum.create(
@@ -198,12 +198,14 @@ class ResourceDB(object):
             else:
                 pv = v
             return pv.timestamp()
+        # support for special string '@' values
         elif isinstance(v, str) and len(v) > 0 and v[0] == '@':
             if v == '@true':
                 return True
             if v == '@false':
                 return False
             return v
+        # default is no transformation
         else:
             return v
 
