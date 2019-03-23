@@ -59,7 +59,8 @@ class ResourceDB(object):
                 db = TinyDB(dbfile)
             except IOError:
                 raise errors.FileError('Cannot open resource DB "{}"'.format(dbfile))
-            self._db = db
+            # turn off caching, otherwise update() does not work properly
+            self._db = db.table('resources', cache_size=0)
 
     def __len__(self):
         return len(self._db)
@@ -78,6 +79,7 @@ class ResourceDB(object):
         """
 
         def as_resource(_r):
+            _log.debug(f"as_resource: id_={_r['id_']}")
             rsrc = Resource(value=_r)
             rsrc.v['doc_id'] = _r.doc_id
             return rsrc
@@ -99,6 +101,7 @@ class ResourceDB(object):
             if id_only:
                 yield r.eid
             else:
+                _log.debug(f"got resource: {r}")
                 yield as_resource(r)
 
     @classmethod
@@ -340,6 +343,7 @@ class ResourceDB(object):
             errors.DuplicateResourceError: If there is already a resource
                 in the database with the same "id".
         """
+        _log.debug(f"put resource id={resource.id}")
         # check for same id
         qry = Query()
         if self._db.contains(qry.id_ == resource.id):
@@ -388,6 +392,7 @@ class ResourceDB(object):
             ValueError: If new resource is of wrong type
             KeyError: If old resource is not found
         """
+        _log.debug("update.start")
         id_cond = {Resource.ID_FIELD: id_}
         old = self.find_one(id_cond)
         if old is None:
@@ -398,7 +403,12 @@ class ResourceDB(object):
                 'New resource type="{}" does not '
                 'match current resource type "{}"'.format(new_dict[T], old.v[T])
             )
-
-        changed = {k: v for k, v in six.iteritems(new_dict) if old.v.get(k, None) != v}
-        # note: above does not check for missing/new keys
+        _log.debug(f"update old resource: {old.v}")
+        changed = {}
+        for k, v in new_dict.items():
+            if k not in old.v:
+                changed[k] = v
+            elif old.v[k] != v:
+                changed[k] = v
+        _log.debug(f"update resource {id_} with new values: {changed}")
         self._db.update(changed, self._create_filter_expr(id_cond))

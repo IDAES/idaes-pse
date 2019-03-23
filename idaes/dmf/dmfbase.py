@@ -164,7 +164,8 @@ class DMF(workspace.Workspace, HasTraits):
         'debug': logging.DEBUG,
     }
 
-    def __init__(self, path='', name=None, desc=None, create=False, **ws_kwargs):
+    def __init__(self, path='', name=None, desc=None, create=False,
+                 save_path=False, **ws_kwargs):
         """Create or load DMF workspace.
 
         Args:
@@ -178,6 +179,7 @@ class DMF(workspace.Workspace, HasTraits):
             create (bool): If the path to the workspace does not exist,
                            this controls whether to create it or raise
                            an error.
+            save_path: If True, save provided path globally
             **ws_kwargs: Keyword arguments for :meth:`workspace.Workspace()`
                          constructor.
         Raises:
@@ -189,6 +191,8 @@ class DMF(workspace.Workspace, HasTraits):
         # get path, if not specified, from configuration
         if not path:
             path = conf.c.get(DMFConfig.WORKSPACE, '.')
+        elif save_path:
+            conf.c[DMFConfig.WORKSPACE] = os.path.abspath(path)
         # set up workspace
         ws_kwargs['create'] = create
         try:
@@ -602,10 +606,9 @@ class DMF(workspace.Workspace, HasTraits):
             raise TypeError('Resource type expected, got: {}'.format(type(rsrc)))
         # synchronize relations
         if sync_relations:
+            _log.debug("synchronize relations")
             db_rsrc = self.fetch_one(rsrc.id)
             if db_rsrc is not None:
-                # print('@@ updating relations ({}) to ({})'
-                #       .format(rsrc.v['relations'], db_rsrc.v['relations']))
                 rsrc.v['relations'] = db_rsrc.v['relations']
         # update or insert new values
         try:

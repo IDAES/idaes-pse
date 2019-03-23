@@ -28,8 +28,8 @@ import click
 import humanize
 
 # package
-from . import DMF, DMFConfig, resource
-from . import errors
+from idaes.dmf import DMF, DMFConfig, resource
+from idaes.dmf import errors
 
 __author__ = "Dan Gunter"
 
@@ -199,7 +199,7 @@ def init(path, create, name, desc, html):
     else:
         _log.info("Use existing workspace")
         try:
-            _ = DMF(path=path, create=False)
+            _ = DMF(path=path, create=False, save_path=True)
         except errors.WorkspaceConfNotFoundError:
             click.echo(f"Workspace configuration not found at path='{path}'")
             if path == '.':  # probably just the default
@@ -365,7 +365,28 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
             return Code.DMF_OPER
     # process relations
     _log.debug("add relations")
-    # XXX
+    rel_to_add = {  # translate into standard relation names
+        resource.PR_CONTAINS: contained,
+        resource.PR_DERIVED: derived,
+        resource.PR_USES: used,
+        resource.PR_VERSION: prev
+    }
+    target_resources = {}  # keep target resources in dict, update at end
+    for rel_name, rel_ids in rel_to_add.items():
+        for rel_id in rel_ids:
+            if rel_id in target_resources:
+                rel_subj = target_resources[rel_id]
+            else:
+                rel_subj = dmf.fetch_one(rel_id)
+                target_resources[rel_id] = rel_subj
+            if rel_subj is None:
+                click.echo(f"Relation {rel_name} target not found: {rel_id}")
+                return Code.DMF_OPER
+            resource.create_relation_args(rel_subj, rel_name, rsrc)
+            _log.debug(f"added relation {rsrc.id} <-- {rel_name} -- {rel_id}")
+    _log.debug("update resource relations")
+    for rel_rsrc in target_resources.values():
+        dmf.update(rel_rsrc)
     # add the resource
     _log.debug("add resource begin")
     try:

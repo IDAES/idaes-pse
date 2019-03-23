@@ -263,6 +263,7 @@ class Resource(object):
     def __init__(self, value: dict = None, type_: str = None):
         self._set_defaults()
         if value:
+            _log.debug(f"update resource with values: {value}")
             self.v.update(value)
         if type_ is not None:
             self.v[self.TYPE_FIELD] = type_
@@ -313,9 +314,10 @@ class Resource(object):
                     self.v['version_info']['version']
                 )
             for i, code in enumerate(self.v['codes']):
-                if not isinstance(code['version'], list):
-                    code['version'] = version_list(code['version'])
-                    self.v['codes'][i] = code
+                if 'version' in code:
+                    if not isinstance(code['version'], list):
+                        code['version'] = version_list(code['version'])
+                        self.v['codes'][i] = code
         except (TypeError, ValueError, KeyError) as err:
             raise ValueError('While converting resource values: {}'.format(err))
         self.v.set_clean()
@@ -359,7 +361,7 @@ class Resource(object):
         return Importer.create()
 
     @classmethod
-    def _infer_resource_type(cls, path: pathlib.Path, strict: bool) -> str:
+    def _infer_resource_type(cls, path: pathlib.Path, strict: bool):
         default_type = TY_OTHER
         try:
             if path.suffix == ".ipynb":
@@ -371,7 +373,7 @@ class Resource(object):
                 # over max_bytes? generic
                 file_size = path.stat().st_size
                 if file_size > max_bytes:
-                    _log.warn(
+                    _log.warning(
                         f"Not attempting to parse JSON, file size "
                         f"{file_size} > {max_bytes}"
                     )
@@ -399,7 +401,7 @@ class Resource(object):
         E = cls.LoadResourceError  # alias for exception raised
         if type_ == TY_NOTEBOOK:
             try:
-                nb = json.load(open(path))
+                nb = json.load(open(str(path)))
             except (UnicodeDecodeError, JSONDecodeError):
                 raise E(TY_NOTEBOOK, "not valid JSON")
             for key in 'cells', 'metadata', 'nbformat':
@@ -744,7 +746,7 @@ class ResourceImporter(abc.ABC):
     """Base class for Resource importers.
     """
 
-    def __init__(self, path: pathlib.Path, do_copy: bool):
+    def __init__(self, path: pathlib.Path, do_copy: bool = None):
         self._path = path
         self._do_copy = do_copy
 
@@ -791,8 +793,8 @@ class JupyterNotebookImporter(ResourceImporter):
 
 
 class CodeImporter(ResourceImporter):
-    def __init__(self, path, language):
-        super().__init__(path)
+    def __init__(self, path, language, **kwargs):
+        super().__init__(path, **kwargs)
         self.language = language
 
     def _create(self) -> Resource:
@@ -821,8 +823,8 @@ class JsonFileImporter(ResourceImporter):
 
 
 class SerializedResourceImporter(ResourceImporter):
-    def __init__(self, path, parsed):
-        super().__init__(path)
+    def __init__(self, path, parsed, **kwargs):
+        super().__init__(path, **kwargs)
         self.parsed = parsed
 
     def _create(self) -> Resource:
