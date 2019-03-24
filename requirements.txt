@@ -18,6 +18,7 @@ Sphinx>=1.7.4
 sphinx-rtd-theme>=0.1.9
 sphinxcontrib-napoleon>=0.5.0
 sphinx-argparse
+sphinx-click==2.0.1
 # DMF
 backports.tempfile
 backports.shutil_get_terminal_size
