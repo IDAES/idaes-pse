@@ -6,6 +6,12 @@ Data Management Framework
 
 .. contents::
 
+DMF contents
+------------
+
+.. toctree::
+    
+    dmf-cli
 
 Overview
 --------
@@ -147,3 +153,5 @@ Reference
 ---------
 See the :mod:`idaes.dmf` package documentation that is generated
 automatically from the source code.
+
+.. include:: ../global.rst
