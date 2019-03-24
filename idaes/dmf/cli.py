@@ -30,6 +30,7 @@ import humanize
 # package
 from idaes.dmf import DMF, DMFConfig, resource
 from idaes.dmf import errors
+from idaes.dmf.workspace import Fields
 
 __author__ = "Dan Gunter"
 
@@ -136,7 +137,11 @@ class URLType(click.ParamType):
         return result
 
 
-@click.group(cls=AliasedGroup, aliases={"describe": "status", "add": "register"})
+@click.group(
+    cls=AliasedGroup,
+    aliases={"describe": "status", "add": "register"},
+    help="Data management framework command wrapper",
+)
 @click.option(
     "--verbose",
     "-v",
@@ -153,6 +158,11 @@ class URLType(click.ParamType):
     "given twice, show no messages.",
 )
 def base_command(verbose, quiet):
+    """Data management framework command wrapper.
+
+    This command does nothing by itself except provide global
+    options and list subcommands.
+    """
     if quiet > 0 and verbose > 0:
         raise click.BadArgumentUsage("Options for verbosity and quietness conflict")
     if verbose > 0:
@@ -161,11 +171,18 @@ def base_command(verbose, quiet):
         _log.setLevel(level_from_verbosity(-quiet))
 
 
-@click.command(help="Initialize")
+@click.command(
+    help="Initialize the current workspace. Optionally, create a new workspace."
+)
 @click.option(
     "--path", default=".", type=click.Path(), show_default=True, help="Workspace path"
 )
-@click.option("--create/--no-create", default=False, help="Create new workspace")
+@click.option(
+    "--create/--no-create",
+    default=False,
+    help="Create new workspace. If `--name` and `--desc` are not provided, these will be "
+    "prompted for interactively.",
+)
 @click.option("--name", type=click.STRING, help="Workspace name")
 @click.option("--desc", type=click.STRING, help="Workspace description")
 @click.option(
@@ -175,6 +192,9 @@ def base_command(verbose, quiet):
     help="Path to built HTML documentation",
 )
 def init(path, create, name, desc, html):
+    """Initialize the current workspace used for the data management framework commands.
+    Optionally, create a new workspace.
+    """
     _log.info(f"Initialize with workspace path={path}")
     if create:
         _log.info("Create new workspace")
@@ -212,10 +232,13 @@ def init(path, create, name, desc, html):
     return Code.OK
 
 
-@click.command(help="Status")
+@click.command(help="Get status of workspace")
 @click.option("--color/--no-color", default=True, help="Use color for output")
 @click.option(
-    "--show", "-s", type=click.Choice(["files", "htmldocs", "all"]), multiple=True
+    "--show",
+    "-s",
+    type=click.Choice(["files", "htmldocs", "logging", "all"]),
+    multiple=True,
 )
 def status(color, show):
     _log.debug(f"Get status. Show items: {' '.join(show) if show else '(basic)'}")
@@ -231,9 +254,11 @@ def status(color, show):
         return Code.WORKSPACE_NOT_FOUND
 
     def item(key, value=None, before="", color=t.green):
-        after_key = "" if key == "-" else ":"
+        after_key = "" if key == "" else ":"
         if value is None:
             return f"{before}{color}{key}{after_key}{t.normal}"
+        elif key is None:
+            return f"{before}{color}{value}{t.normal}"
         return f"{before}{color}{key}{after_key}{t.normal} {value}"
 
     indent_spc = "  "
@@ -274,7 +299,19 @@ def status(color, show):
             indent = indent_spc * 2
             for p in doc_paths:
                 print(item("-", p, before=indent))
-
+        if thing == "logging" or thing == "all":
+            indent = indent_spc
+            print(item("logging", before=indent))
+            log_conf = d.meta.get(Fields.LOG_CONF, None)
+            indent = 2 * indent_spc
+            if log_conf is None:
+                print(item(None, "not configured", before=indent, color=t.yellow))
+            else:
+                for subconf in sorted(log_conf.keys()):
+                    print(item(subconf, before=indent))
+                    indent2 = indent + indent_spc
+                    for i2, v2 in log_conf[subconf].items():
+                        print(item(i2, v2, before=indent2))
     return Code.OK
 
 
@@ -294,31 +331,34 @@ def status(color, show):
 @click.option(
     "--strict/--no-strict",
     help="If inferring the type fails, "
-    "with --strict report an error, and with --no-strict fall back "
+    "with `--strict` report an error, and with `--no-strict` fall back "
     "to importing as a generic file",
 )
 @click.option(
     "--unique/--no-unique",
     default=True,
-    help="Check that no other resource has a file matching this file's "
+    help="Stop if another resource has a file matching this file's "
     "name and contents",
 )
 @click.option(
     "--contained",
-    help="Add 'contained in' relation",
-    metavar="OBJECT-ID",
+    help="Add a 'contained in' relation to the given resource",
+    metavar="RESOURCE-ID",
     multiple=True,
 )
 @click.option(
     "--derived", help="Add 'derived from' relation", metavar="OBJECT-ID", multiple=True
 )
 @click.option(
-    "--used", help="Add 'used by' relation", metavar="OBJECT-ID", multiple=True
+    "--used",
+    help="Add 'used by' relation to the given resource",
+    metavar="RESOURCE-ID",
+    multiple=True,
 )
 @click.option(
     "--prev",
-    help="Add 'version of previous' relation",
-    metavar="OBJECT-ID",
+    help="Add 'version of previous' relation to the given resource",
+    metavar="RESOURCE-ID",
     multiple=True,
 )
 def register(resource_type, url, copy, strict, unique, contained, derived, used, prev):
@@ -327,7 +367,7 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
     if url.scheme in ("file", ""):
         path = url.path
     else:
-        click.echo("Only bare or 'file' scheme allowed in URL")
+        click.echo("Currently, URL must be a file")
         return Code.NOT_SUPPORTED
     # create the resource
     _log.debug("create resource")
@@ -369,7 +409,7 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
         resource.PR_CONTAINS: contained,
         resource.PR_DERIVED: derived,
         resource.PR_USES: used,
-        resource.PR_VERSION: prev
+        resource.PR_VERSION: prev,
     }
     target_resources = {}  # keep target resources in dict, update at end
     for rel_name, rel_ids in rel_to_add.items():
