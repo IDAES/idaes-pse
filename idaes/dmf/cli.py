@@ -26,6 +26,7 @@ from urllib.parse import urlparse, ParseResult
 from blessings import Terminal
 import click
 import humanize
+import pendulum
 
 # package
 from idaes.dmf import DMF, DMFConfig, resource
@@ -453,10 +454,132 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
     click.echo(new_id)
 
 
+@click.command(help="List resources in the workspace")
+@click.option("--screen", "mode", flag_value="fullscreen")
+@click.option("--text", "mode", flag_value="text", default=True)
+@click.option(
+    "--show",
+    "-s",
+    type=click.Choice(["type", "desc", "created", "modified", "files", "codes"]),
+    multiple=True,
+)
+def ls(mode, show):
+    d = DMF()
+    if mode == "text":
+        _ls_basic(d, show)
+
+
+# The following classes define how to retrieve and transform the
+# user-specified field into a string for display by 'ls'.
+
+
+class _Field:
+    def __init__(self, key):
+        self._key = key
+        self.value = ""
+
+    def set_value(self, rsrc):
+        self.value = rsrc.v[self._key]
+
+
+class _IdentityField(_Field):
+    def __str__(self):
+        return str(self.value)
+
+
+class _DateField(_Field):
+    def __str__(self):
+        return pendulum.from_timestamp(self.value).to_datetime_string()
+
+
+class _FilesField(_Field):
+    def __str__(self):
+        if len(self.value) > 1:
+            return f"{self.value[0]['path']} ..."
+        elif len(self.value) == 1:
+            return f"{self.value[0]['path']}"
+        return "<none>"
+
+
+class _CodesField(_Field):
+    def __str__(self):
+        if len(self.value) > 1:
+            return f"{self.value[0]['name']} ..."
+        elif len(self.value) == 1:
+            return f"{self.value[0]['name']}"
+        return "<none>"
+
+
+class _IdField(_Field):
+    def __init__(self, key):
+        super().__init__(key)
+        self.pfxlen = 32
+
+    def __str__(self):
+        if self.pfxlen < len(self.value):
+            return self.value[: self.pfxlen]
+        return self.value
+
+
+# Map from the field name to the correct class to handle its values
+
+_show_fields = {
+    "id": _IdField(resource.Resource.ID_FIELD),
+    "type": _IdentityField("type"),
+    "desc": _IdentityField("desc"),
+    "created": _DateField("created"),
+    "modified": _DateField("modified"),
+    "files": _FilesField("datafiles"),
+    "codes": _CodesField("codes"),
+}
+
+
+def _ls_basic(d, show_fields):
+    """Text-mode `ls`.
+    """
+    t = Terminal()
+    resources = list(d.find())
+    uuid_len = _uuid_prefix_len([r.id for r in resources])
+    fields = ["id"] + list(show_fields)
+    nfields = len(fields)
+    # calculate table body. do this first to get widths.
+    rows, maxwid, widths = [], 40, [0] * nfields
+    for r in resources:
+        row = []
+        for i, fld in enumerate(fields):
+            transformer = _show_fields[fld]
+            transformer.set_value(r)
+            if hasattr(transformer, "pfxlen"):
+                transformer.pfxlen = uuid_len
+            s = str(transformer)
+            if len(s) > widths[i]:
+                widths[i] = min(len(s), maxwid)
+            row.append(s)
+        rows.append(row)
+    # print table header
+    hdr_columns = [t.bold + f"{f:{w}}" for f, w in zip(fields, widths)]
+    print(" ".join(hdr_columns) + t.normal)
+    for row in rows:
+        row_columns = [f"{f:{w}}" for f, w in zip(row, widths)]
+        print(" ".join(row_columns))
+
+
+def _uuid_prefix_len(uuids, step=4, maxlen=32):
+    """Get smallest multiple of `step` len prefix that gives unique values.
+    """
+    full = set(uuids)
+    for n in range(step, maxlen, step):
+        prefixes = {u[:n] for u in uuids}
+        if len(prefixes) == len(full):
+            return n
+    return maxlen
+
+
 # Register base commands
 base_command.add_command(init)
 base_command.add_command(register)
 base_command.add_command(status)
+base_command.add_command(ls)
 
 if __name__ == '__main__':
     sys.exit(base_command())

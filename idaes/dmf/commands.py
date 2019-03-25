@@ -558,7 +558,7 @@ def _import_python(path):
 def _import_file(path):
     """Create & import a resource from a generic file at `path`.
     Assume that `path` exists.
-
+ 
     Args:
         path (str): File name.
     Returns:
