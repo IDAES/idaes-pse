@@ -240,7 +240,14 @@ def init(path, create, name, desc, html):
     type=click.Choice(["files", "htmldocs", "logging", "all"]),
     multiple=True,
 )
-def status(color, show):
+@click.option(
+    "--all", "-a", "show_all", flag_value="yes", help="Synonym for `--show all`"
+)
+def status(color, show, show_all):
+    if show_all == "yes":
+        if show:
+            click.echo(f"note: option `--all` overrides `--show`")
+        show = ["all"]
     _log.debug(f"Get status. Show items: {' '.join(show) if show else '(basic)'}")
     t = _cterm if color else _noterm
     if not DMFConfig.configuration_exists():
@@ -253,6 +260,7 @@ def status(color, show):
         click.echo(str(err))
         return Code.WORKSPACE_NOT_FOUND
 
+    # pretty-display a key/value pair or list value
     def item(key, value=None, before="", color=t.green):
         after_key = "" if key == "" else ":"
         if value is None:
@@ -279,40 +287,47 @@ def status(color, show):
         ("modified", d.meta[d.CONF_MODIFIED]),
     ):
         print(item(key, value, before=indent))
-    # optional workspace items
-    for thing in show:
+
+    _show_optional_workspace_items(d, show, indent_spc, item)
+
+    return Code.OK
+
+
+def _show_optional_workspace_items(d, items, indent_spc, item_fn):
+    indent = indent_spc
+    for thing in items:
         if thing == "files" or thing == "all":
-            indent = indent_spc
-            print(item("files", before=indent))
+            print(item_fn("files", before=indent))
             fpath = pathlib.Path(d.datafiles_path)
             fdirs = [dr for dr in fpath.glob("*") if dr.is_dir()]
             indent = indent_spc * 2
-            print(item("count", len(fdirs), before=indent))
+            print(item_fn("count", len(fdirs), before=indent))
             total_size = sum(
                 (sum((fp.stat().st_size for fp in fd.glob("*"))) for fd in fdirs)
             )
-            print(item("total_size", humanize.naturalsize(total_size), before=indent))
+            print(
+                item_fn("total_size", humanize.naturalsize(total_size), before=indent)
+            )
         if thing == "htmldocs" or thing == "all":
             indent = indent_spc
             doc_paths = d.get_doc_paths()
-            print(item("html_documentation_paths", before=indent))
+            print(item_fn("html_documentation_paths", before=indent))
             indent = indent_spc * 2
             for p in doc_paths:
-                print(item("-", p, before=indent))
+                print(item_fn("-", p, before=indent))
         if thing == "logging" or thing == "all":
             indent = indent_spc
-            print(item("logging", before=indent))
+            print(item_fn("logging", before=indent))
             log_conf = d.meta.get(Fields.LOG_CONF, None)
             indent = 2 * indent_spc
             if log_conf is None:
-                print(item(None, "not configured", before=indent, color=t.yellow))
+                print(item_fn(None, "not configured", before=indent, color=t.yellow))
             else:
                 for subconf in sorted(log_conf.keys()):
-                    print(item(subconf, before=indent))
+                    print(item_fn(subconf, before=indent))
                     indent2 = indent + indent_spc
                     for i2, v2 in log_conf[subconf].items():
-                        print(item(i2, v2, before=indent2))
-    return Code.OK
+                        print(item_fn(i2, v2, before=indent2))
 
 
 @click.command(help="Register a new object in the DMF workspace")
