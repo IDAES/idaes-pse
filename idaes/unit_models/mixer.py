@@ -453,13 +453,18 @@ linked to all inlet states and the mixed state,
         """
         Add energy mixing equations (total enthalpy balance).
         """
+        self.scaling_factor_energy = Param(
+                        default=1e-6,
+                        mutable=True,
+                        doc='Energy balance scaling parameter')
         @self.Constraint(self.time_ref, doc="Energy balances")
         def enthalpy_mixing_equations(b, t):
-            return 0 == (sum(sum(inlet_blocks[i][t].get_enthalpy_flow_terms(p)
-                                 for p in b.phase_list_ref)
-                             for i in range(len(inlet_blocks))) -
-                         sum(mixed_block[t].get_enthalpy_flow_terms(p)
-                             for p in b.phase_list_ref))
+            return 0 == self.scaling_factor_energy*(
+                sum(sum(inlet_blocks[i][t].get_enthalpy_flow_terms(p)
+                    for p in b.phase_list_ref)
+                        for i in range(len(inlet_blocks))) -
+                        sum(mixed_block[t].get_enthalpy_flow_terms(p)
+                            for p in b.phase_list_ref))
 
     def add_pressure_minimization_equations(self, inlet_blocks, mixed_block):
         """
