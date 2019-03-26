@@ -73,7 +73,7 @@ back the initial state.
 .. XXX Test fails, so for now make this a regular code block
 .. XXX
 
-.. code-block::
+.. code-block:: python
 
   model = setup_model01()
   to_json(model, fname="ex.json.gz", gz=True, human_read=True)
