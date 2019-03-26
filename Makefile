@@ -1,4 +1,4 @@
-ALL: iapws95 cubic_eos
+ALL: iapws95 cubic_eos functions
 
 # can add contrib and core ... if needed
 
@@ -16,7 +16,13 @@ cubic_eos:
 cubic_eos_clean:
 	$(MAKE) -C ./idaes/property_models/cubic_eos clean
 
-clean: iapws95_clean cubic_eos_clean
+functions:
+	$(MAKE) -C ./idaes/functions
+
+functions_clean:
+	$(MAKE) -C ./idaes/functions clean
+
+clean: iapws95_clean cubic_eos_clean functions_clean
 
 
 # Couldn't help throwing this in

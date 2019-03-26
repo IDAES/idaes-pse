@@ -33,7 +33,7 @@ Example Models
 This section provides some boilerplate and functions to create a couple simple
 test models.  The second model is a little more complicated and includes suffixes.
 
-.. testcode:: 
+.. testcode::
 
   from pyomo.environ import *
   from idaes.core.util import to_json, from_json, StoreSpec
@@ -76,7 +76,7 @@ back the initial state.
   to_json(model, fname="ex.json.gz", gz=True, human_read=True)
   model.b[1].a = 3000.4
   from_json(model, fname="ex.json.gz", gz=True)
-  print(model.b[1].a)
+  print(value(model.b[1].a))
 
 This next example show how to save only suffixes.
 
@@ -91,7 +91,7 @@ This next example show how to save only suffixes.
   store_spec = StoreSpec.suffix()
   to_json(model, fname="ex.json", wts=store_spec)
   # Do something and now I want my suffixes back
-  from_json(model, fname="ex.json.gz", wts=store_spec)
+  from_json(model, fname="ex.json", wts=store_spec)
 
 to_json
 -------
@@ -141,7 +141,7 @@ The example json below shows the top-level structure.  The
 serialized. The top level component is the only place were the component name does
 not matter when reading the serialized data.
 
-.. testcode:: 
+.. testcode::
 
   {
       "__metadata__": {

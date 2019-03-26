@@ -18,8 +18,8 @@ __author__ = "John Eslick"
 
 import logging
 # Import Pyomo libraries
-from pyomo.environ import (Var, log, Expression, Constraint,
-                           PositiveReals, SolverFactory)
+from pyomo.environ import (Var, log, Expression, Constraint, Param,
+                           PositiveReals, SolverFactory, ExternalFunction)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
 from pyutilib.enum import Enum
@@ -36,6 +36,7 @@ from idaes.core import (ControlVolume0DBlock,
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
+from idaes.functions import functions_lib, functions_available
 
 _log = logging.getLogger(__name__)
 
@@ -66,19 +67,29 @@ def delta_temperature_amtd_rule(b, t):
     dT2 = b.delta_temperature_out[t]
     return (dT1 + dT2) * 0.5
 
-def delta_temperature_lmtd_approx_underwood_rule(b, t):
+def delta_temperature_underwood_rule(b, t):
     """
     This is a rule for a temperaure difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using log-mean temperature
     difference (LMTD) approximation given by Underwood (1970).  It can be
     supplied to "delta_temperature_rule" HeatExchanger configuration option.
     """
-    # TODO <jce>: If we combined this with a cube root function that returns the
-    #   real negative root when dT is negative, we would always be able to
-    #   evaluate this approximation.  Something to consider for the future.
     dT1 = b.delta_temperature_in[t]
     dT2 = b.delta_temperature_out[t]
     return ((dT1**(1.0/3.0) + dT2**(1.0/3.0))/2.0)**3
+
+def delta_temperature_underwood2_rule(b, t):
+    """
+    This is a rule for a temperaure difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
+    difference (LMTD) approximation given by Underwood (1970).  It can be
+    supplied to "delta_temperature_rule" HeatExchanger configuration option.
+    This uses a cube root function that works with negative numbers returning
+    the real negative root.  This function should always evaluate successfully.
+    """
+    dT1 = b.delta_temperature_in[t]
+    dT2 = b.delta_temperature_out[t]
+    return ((b.cbrt(dT1) + b.cbrt(dT2))/2.0)**3
 
 def _heat_transfer_rule(b, t):
     """
@@ -89,7 +100,7 @@ def _heat_transfer_rule(b, t):
     a = b.area
     q = b.heat_duty[t]
     deltaT = b.delta_temperature[t]
-    return q == u*a*deltaT
+    return 0 == (u*a*deltaT - q)*b.side_1.scaling_factor_energy
 
 def _cross_flow_heat_transfer_rule(b, t):
     """
@@ -101,7 +112,7 @@ def _cross_flow_heat_transfer_rule(b, t):
     q = b.heat_duty[t]
     deltaT = b.delta_temperature[t]
     f = b.crossflow_factor[t]
-    return q == f*u*a*deltaT
+    return 0 == (f*u*a*deltaT - q)*b.side_1.scaling_factor_energy
 
 def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
     """
@@ -112,14 +123,14 @@ def _make_heater_control_volume(o, name, config, dynamic=None, has_holdup=None):
         dynamic = config.dynamic
     if has_holdup is None:
         has_holdup = config.has_holdup
-    control_volume = ControlVolume0DBlock(default={
+    # we have to attach this control volume to the model for the rest of
+    # the steps to work
+    o.add_component(name, ControlVolume0DBlock(default={
         "dynamic": dynamic,
         "has_holdup": has_holdup,
         "property_package": config.property_package,
-        "property_package_args": config.property_package_args})
-    # we have to attach this control volume to the model for the rest of
-    # the steps to work
-    setattr(o, name, control_volume)
+        "property_package_args": config.property_package_args}))
+    control_volume = getattr(o, name)
     # Add inlet and outlet state blocks to control volume
     control_volume.add_state_blocks(
         has_phase_equilibrium=config.has_phase_equilibrium)
@@ -242,7 +253,6 @@ def _make_heat_exchanger_config(config):
 **HeatExchangerFlowPattern.cocurrent** - cocurrent flow,
 **HeatExchangerFlowPattern.crossflow** - cross flow, factor times countercurrent temperature difference.}"""))
 
-
 @declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
 class HeaterData(UnitModelBlockData):
     """
@@ -281,6 +291,19 @@ class HeatExchangerData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
     _make_heat_exchanger_config(CONFIG)
 
+    def set_scaling_factor_energy(self, f):
+        """
+        This function sets scaling_factor_energy for both side_1 and side_2.
+        This factor multiplies the energy balance and heat transfer equations
+        in the heat exchnager.  The value of this factor should be about
+        1/(expected heat duty).
+
+        Args:
+            f: Energy balance scaling factor
+        """
+        self.side_1.scaling_factor_energy.value = f
+        self.side_2.scaling_factor_energy.value = f
+
     def build(self):
         """
         Building model
@@ -291,7 +314,8 @@ class HeatExchangerData(UnitModelBlockData):
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(HeatExchangerData, self).build()
+        super().build()
+        config = self.config
         # Add variables
         self.overall_heat_transfer_coefficient = Var(self.time_ref,
             domain=PositiveReals, initialize=100,
@@ -300,16 +324,21 @@ class HeatExchangerData(UnitModelBlockData):
         self.area = Var(domain=PositiveReals, initialize=1000,
             doc="Heat exchange area")
         self.area.latex_symbol = "A"
-        if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+        if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(self.time_ref, initialize=1,
                 doc="Factor to adjust coutercurrent flow heat transfer "
                     "calculation for cross flow.")
 
+        if config.delta_temperature_rule == delta_temperature_underwood2_rule:
+            # Define a cube root function that return the real negative root
+            # for the cube root of a negative number.
+            self.cbrt = ExternalFunction(library=functions_lib(),function="cbrt")
+
         # Add Control Volumes
-        _make_heater_control_volume(self, "side_1", self.config.side_1,
-            dynamic=self.config.dynamic, has_holdup=self.config.has_holdup)
-        _make_heater_control_volume(self, "side_2", self.config.side_2,
-            dynamic=self.config.dynamic, has_holdup=self.config.has_holdup)
+        _make_heater_control_volume(self, "side_1", config.side_1,
+            dynamic=config.dynamic, has_holdup=config.has_holdup)
+        _make_heater_control_volume(self, "side_2", config.side_2,
+            dynamic=config.dynamic, has_holdup=config.has_holdup)
         # Add Ports
         self.add_inlet_port(name="inlet_1", block=self.side_1)
         self.add_inlet_port(name="inlet_2", block=self.side_2)
@@ -356,11 +385,11 @@ class HeatExchangerData(UnitModelBlockData):
         # Add heat transfer equation
         self.delta_temperature = Expression(
             self.time_ref,
-            rule=self.config.delta_temperature_rule,
+            rule=config.delta_temperature_rule,
             doc="Temperature difference driving force for heat transfer")
         self.delta_temperature.latex_symbol = "\\Delta T"
 
-        if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+        if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.heat_transfer_equation = Constraint(
                 self.time_ref, rule=_cross_flow_heat_transfer_rule)
         else:
@@ -368,7 +397,7 @@ class HeatExchangerData(UnitModelBlockData):
                 self.time_ref, rule=_heat_transfer_rule)
 
     def initialize(self, state_args_1=None, state_args_2=None, outlvl=0,
-                   solver='ipopt', optarg={'tol': 1e-6}, duty=10000):
+                   solver='ipopt', optarg={'tol': 1e-6}, duty=1000):
         """
         Heat exchanger initialization method.
 
@@ -394,20 +423,10 @@ class HeatExchangerData(UnitModelBlockData):
             None
 
         """
-
-        self.heat_duty.value = duty  # probably best start with a positive duty
-        self.side_1.heat.value = duty  # probably best start with a positive duty
-        self.side_2.heat.value = duty  # probably best start with a positive duty
         # Set solver options
-        if outlvl > 3:
-            stee = True
-        else:
-            stee = False
-
+        tee = True if outlvl >= 3 else False
         opt = SolverFactory(solver)
         opt.options = optarg
-        opt.options.update(halt_on_ampl_error="yes")
-
         flags1 = self.side_1.initialize(outlvl=outlvl - 1,
                                         optarg=optarg,
                                         solver=solver,
@@ -426,9 +445,10 @@ class HeatExchangerData(UnitModelBlockData):
             _log.info('{} Initialization Step 1b (side_2) Complete.'
                       .format(self.name))
         # ---------------------------------------------------------------------
-        # Solve unit
-        results = opt.solve(self, tee=stee, symbolic_solver_labels=True)
-
+        # Solve unit without heat transfer equation
+        self.heat_transfer_equation.deactivate()
+        self.side_2.heat.fix(duty)
+        results = opt.solve(self, tee=tee, symbolic_solver_labels=True)
         if outlvl > 0:
             if results.solver.termination_condition == \
                     TerminationCondition.optimal:
@@ -437,7 +457,19 @@ class HeatExchangerData(UnitModelBlockData):
             else:
                 _log.warning('{} Initialization Step 2 Failed.'
                              .format(self.name))
-
+        self.side_2.heat.unfix()
+        self.heat_transfer_equation.activate()
+        # ---------------------------------------------------------------------
+        # Solve unit
+        results = opt.solve(self, tee=tee, symbolic_solver_labels=True)
+        if outlvl > 0:
+            if results.solver.termination_condition == \
+                    TerminationCondition.optimal:
+                _log.info('{} Initialization Step 3 Complete.'
+                          .format(self.name))
+            else:
+                _log.warning('{} Initialization Step 3 Failed.'
+                             .format(self.name))
         # ---------------------------------------------------------------------
         # Release Inlet state
         self.side_1.release_state(flags1, outlvl - 1)
