@@ -34,6 +34,7 @@ from idaes.core import (ControlVolume1DBlock,
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
+from idaes.core.control_volume1d import DistributedVars
 
 
 # -----------------------------------------------------------------------------
@@ -208,7 +209,7 @@ def test_base_build():
 
     m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
 
-    assert len(m.fs.cv.config) == 7
+    assert len(m.fs.cv.config) == 8
     assert m.fs.cv.config.dynamic is False
     assert m.fs.cv.config.has_holdup is False
     assert m.fs.cv.config.property_package == m.fs.pp
@@ -218,6 +219,7 @@ def test_base_build():
     assert isinstance(m.fs.cv.config.reaction_package_args, ConfigBlock)
     assert len(m.fs.cv.config.reaction_package_args) == 0
     assert m.fs.cv.config.auto_construct is False
+    assert m.fs.cv.config.area_definition == DistributedVars.uniform
 
     assert hasattr(m.fs.cv, "time_ref")
     assert hasattr(m.fs.cv, "phase_list_ref")
@@ -237,16 +239,12 @@ def test_add_geometry_default():
 
     assert isinstance(m.fs.cv.length_domain, ContinuousSet)
     assert len(m.fs.cv.length_domain) == 2
-    assert isinstance(m.fs.cv.volume, Var)
-    assert len(m.fs.cv.volume) == 1.0
-    assert m.fs.cv.volume.value == 1.0
     assert isinstance(m.fs.cv.area, Var)
     assert len(m.fs.cv.area) == 1.0
     assert m.fs.cv.area.value == 1.0
     assert isinstance(m.fs.cv.length, Var)
     assert len(m.fs.cv.length) == 1.0
     assert m.fs.cv.length.value == 1.0
-    assert isinstance(m.fs.cv.geometry_constraint, Constraint)
     assert m.fs.cv._flow_direction == FlowDirection.forward
 
 
