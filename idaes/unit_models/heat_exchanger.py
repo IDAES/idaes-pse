@@ -397,7 +397,7 @@ class HeatExchangerData(UnitModelBlockData):
                 self.time_ref, rule=_heat_transfer_rule)
 
     def initialize(self, state_args_1=None, state_args_2=None, outlvl=0,
-                   solver='ipopt', optarg={'tol': 1e-6}, duty=10000):
+                   solver='ipopt', optarg={'tol': 1e-6}, duty=1000):
         """
         Heat exchanger initialization method.
 
@@ -423,20 +423,10 @@ class HeatExchangerData(UnitModelBlockData):
             None
 
         """
-
-        self.heat_duty.value = duty  # probably best start with a positive duty
-        self.side_1.heat.value = duty  # probably best start with a positive duty
-        self.side_2.heat.value = duty  # probably best start with a positive duty
         # Set solver options
-        if outlvl > 3:
-            stee = True
-        else:
-            stee = False
-
+        tee = True if outlvl >= 3 else False
         opt = SolverFactory(solver)
         opt.options = optarg
-        #opt.options.update(halt_on_ampl_error="yes")
-
         flags1 = self.side_1.initialize(outlvl=outlvl - 1,
                                         optarg=optarg,
                                         solver=solver,
@@ -455,9 +445,10 @@ class HeatExchangerData(UnitModelBlockData):
             _log.info('{} Initialization Step 1b (side_2) Complete.'
                       .format(self.name))
         # ---------------------------------------------------------------------
-        # Solve unit
-        results = opt.solve(self, tee=stee, symbolic_solver_labels=True)
-
+        # Solve unit without heat transfer equation
+        self.heat_transfer_equation.deactivate()
+        self.side_2.heat.fix(duty)
+        results = opt.solve(self, tee=tee, symbolic_solver_labels=True)
         if outlvl > 0:
             if results.solver.termination_condition == \
                     TerminationCondition.optimal:
@@ -466,7 +457,19 @@ class HeatExchangerData(UnitModelBlockData):
             else:
                 _log.warning('{} Initialization Step 2 Failed.'
                              .format(self.name))
-
+        self.side_2.heat.unfix()
+        self.heat_transfer_equation.activate()
+        # ---------------------------------------------------------------------
+        # Solve unit
+        results = opt.solve(self, tee=tee, symbolic_solver_labels=True)
+        if outlvl > 0:
+            if results.solver.termination_condition == \
+                    TerminationCondition.optimal:
+                _log.info('{} Initialization Step 3 Complete.'
+                          .format(self.name))
+            else:
+                _log.warning('{} Initialization Step 3 Failed.'
+                             .format(self.name))
         # ---------------------------------------------------------------------
         # Release Inlet state
         self.side_1.release_state(flags1, outlvl - 1)

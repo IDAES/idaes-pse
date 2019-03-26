@@ -299,7 +299,7 @@ class TurbineMultistageData(UnitModelBlockData):
             value: The value to fix the turbine inlet flow coefficients at
         """
         for i in self.throttle_valve:
-            self.throttle_valve.Cv.fix(value)
+            self.throttle_valve[i].Cv.fix(value)
 
     def turbine_inlet_cf_fix(self, value):
         """
@@ -310,8 +310,19 @@ class TurbineMultistageData(UnitModelBlockData):
         Args:
             value: The value to fix the turbine inlet flow coefficients at
         """
-        for i in self.throttle_valve:
-            self.inlet_stage.flow_coeff.fix(value)
+        for i in self.inlet_stage:
+            self.inlet_stage[i].flow_coeff.fix(value)
+
+    def turbine_outlet_cf_fix(self, value):
+        """
+        Fix the inlet turbine stage flow coefficient.  These are
+        generally the same for each of the parallel stages so this provides
+        a convenient way to set them.
+
+        Args:
+            value: The value to fix the turbine inlet flow coefficients at
+        """
+        self.outlet_stage.flow_coeff.fix(value)
 
     def initialize(self, outlvl=0, solver='ipopt',
         optarg={'tol':1e-6, 'max_iter':35}):
