@@ -18,6 +18,7 @@ Uses "Click" to handle command-line parsing and dispatch.
 # stdlib
 from enum import Enum
 import logging
+from operator import itemgetter
 import pathlib
 import sys
 from urllib.parse import urlparse, ParseResult
@@ -289,12 +290,12 @@ def status(color, show, show_all):
     ):
         print(item(key, value, before=indent))
 
-    _show_optional_workspace_items(d, show, indent_spc, item)
+    _show_optional_workspace_items(d, show, indent_spc, item, t=t)
 
     return Code.OK
 
 
-def _show_optional_workspace_items(d, items, indent_spc, item_fn):
+def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
     indent = indent_spc
     for thing in items:
         if thing == "files" or thing == "all":
@@ -455,18 +456,85 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
 
 
 @click.command(help="List resources in the workspace")
-@click.option("--screen", "mode", flag_value="fullscreen")
-@click.option("--text", "mode", flag_value="text", default=True)
 @click.option(
     "--show",
     "-s",
-    type=click.Choice(["type", "desc", "created", "modified", "files", "codes"]),
+    type=click.Choice(
+        ["type", "desc", "created", "modified", "version", "files", "codes"]
+    ),
     multiple=True,
+    help="Show given field in listing",
 )
-def ls(mode, show):
+@click.option(
+    "--sort",
+    "-S",
+    "sort_by",
+    type=click.Choice(["id", "type", "desc", "created", "modified", "version"]),
+    multiple=True,
+    help="Sort by given field; if repeated, combine to make a compound sort key",
+)
+@click.option(
+    "--prefix/--no-prefix",
+    "prefix",
+    help="By default, shown 'id' is the shortest unique prefix; `--no-prefix` shows full id",
+    default=True,
+)
+@click.option("--reverse", "-r", "reverse", flag_value="yes", help="Reverse sort order")
+def ls(show, sort_by, reverse, prefix):
     d = DMF()
-    if mode == "text":
-        _ls_basic(d, show)
+    reverse = bool(reverse == "yes")
+    if not sort_by:
+        sort_by = ["id"]
+    _ls_basic(d, show, sort_by, reverse, prefix)
+
+
+def _ls_basic(d, show_fields, sort_by, reverse, prefix):
+    """Text-mode `ls`.
+    """
+    t = Terminal()
+    resources = list(d.find())
+    uuid_len = _uuid_prefix_len([r.id for r in resources])
+    full_len = max((len(r.id) for r in resources)) if not prefix else uuid_len
+    fields = ["id"] + list(show_fields)
+    nfields = len(fields)
+    # calculate table body. do this first to get widths.
+    rows, maxwid, widths = [], 40, [0] * nfields
+    for r in resources:
+        row = []
+        for i, fld in enumerate(fields):
+            transformer = _show_fields[fld]
+            transformer.set_value(r)
+            if hasattr(transformer, "pfxlen"):
+                transformer.term = t
+                transformer.pfxlen = uuid_len
+                transformer.flen = full_len
+            s = str(transformer)
+            slen = len(s)
+            if slen > widths[i]:
+                if slen > maxwid:
+                    s, widths[i] = s[:maxwid], maxwid
+                else:
+                    widths[i] = slen
+            row.append(s)
+        # append sort keys (not displayed)
+        sort_obj = [_show_fields[fld] for fld in sort_by]
+        for o in sort_obj:
+            o.set_value(r)
+        row.extend([o.value for o in sort_obj])
+        # add row to table body
+        rows.append(row)
+    # sort rows
+    nsort = len(sort_by)
+    if nsort > 0:
+        sort_key_idx = tuple(range(nfields, nfields + nsort))
+        rows.sort(key=itemgetter(*sort_key_idx), reverse=reverse)
+    # print table header
+    hdr_columns = [t.bold + f"{f:{w}}" for f, w in zip(fields, widths)]
+    print(" ".join(hdr_columns) + t.normal)
+    # print table body
+    for row in rows:
+        row_columns = [f"{f:{w}}" for f, w in zip(row[:nfields], widths)]
+        print(" ".join(row_columns))
 
 
 # The following classes define how to retrieve and transform the
@@ -479,7 +547,13 @@ class _Field:
         self.value = ""
 
     def set_value(self, rsrc):
-        self.value = rsrc.v[self._key]
+        if isinstance(self._key, list) or isinstance(self._key, tuple):
+            v = rsrc.v
+            for k in self._key:
+                v = v[k]
+            self.value = v
+        else:
+            self.value = rsrc.v[self._key]
 
 
 class _IdentityField(_Field):
@@ -513,15 +587,31 @@ class _CodesField(_Field):
 class _IdField(_Field):
     def __init__(self, key):
         super().__init__(key)
-        self.pfxlen = 32
+        self.pfxlen = 0
+        self.flen = 0
+        self.term = None
 
     def __str__(self):
         if self.pfxlen < len(self.value):
-            return self.value[: self.pfxlen]
+            if self.flen > self.pfxlen:
+                return (
+                    self.value[: self.pfxlen]
+                    + self.term.dim
+                    + self.value[self.pfxlen + 1 : self.flen]
+                    + self.term.normal
+                )
+            else:
+                return self.value[: self.pfxlen]
         return self.value
 
 
-# Map from the field name to the correct class to handle its values
+class _VersionField(_Field):
+    def __str__(self):
+        return resource.format_version(self.value)
+
+
+# Mapping from the field name to an instance of a subclass
+# of _Field that can extract sortable and formatted values.
 
 _show_fields = {
     "id": _IdField(resource.Resource.ID_FIELD),
@@ -531,46 +621,22 @@ _show_fields = {
     "modified": _DateField("modified"),
     "files": _FilesField("datafiles"),
     "codes": _CodesField("codes"),
+    "version": _VersionField(("version_info", "version")),
 }
-
-
-def _ls_basic(d, show_fields):
-    """Text-mode `ls`.
-    """
-    t = Terminal()
-    resources = list(d.find())
-    uuid_len = _uuid_prefix_len([r.id for r in resources])
-    fields = ["id"] + list(show_fields)
-    nfields = len(fields)
-    # calculate table body. do this first to get widths.
-    rows, maxwid, widths = [], 40, [0] * nfields
-    for r in resources:
-        row = []
-        for i, fld in enumerate(fields):
-            transformer = _show_fields[fld]
-            transformer.set_value(r)
-            if hasattr(transformer, "pfxlen"):
-                transformer.pfxlen = uuid_len
-            s = str(transformer)
-            if len(s) > widths[i]:
-                widths[i] = min(len(s), maxwid)
-            row.append(s)
-        rows.append(row)
-    # print table header
-    hdr_columns = [t.bold + f"{f:{w}}" for f, w in zip(fields, widths)]
-    print(" ".join(hdr_columns) + t.normal)
-    for row in rows:
-        row_columns = [f"{f:{w}}" for f, w in zip(row, widths)]
-        print(" ".join(row_columns))
 
 
 def _uuid_prefix_len(uuids, step=4, maxlen=32):
     """Get smallest multiple of `step` len prefix that gives unique values.
+
+    The algorithm is not fancy, but good enough: build *sets* of
+    the ids at increasing prefix lengths until the set has all ids (no duplicates).
+    Experimentally this takes ~.1ms for 1000 duplicate ids (the worst case).
     """
     full = set(uuids)
+    all_of_them = len(full)
     for n in range(step, maxlen, step):
         prefixes = {u[:n] for u in uuids}
-        if len(prefixes) == len(full):
+        if len(prefixes) == all_of_them:
             return n
     return maxlen
 
