@@ -37,7 +37,7 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-
+from idaes.ui.report import degrees_of_freedom
 __author__ = "Jaffer Ghouse"
 
 # Set up logger
@@ -417,7 +417,7 @@ tube side flows from 1 to 0"""))
                                                      self.N_tubes *
                                                      self.d_tube_outer**2))
 
-    def initialize(blk, shell_state_args={}, tube_state_args={}, outlvl=1,
+    def initialize(blk, shell_state_args=None, tube_state_args=None, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-6}):
         """
         Initialisation routine for the unit (default solver ipopt).
@@ -480,6 +480,7 @@ tube side flows from 1 to 0"""))
             blk.wall_0D_model.deactivate()
 
             results = opt.solve(blk, tee=stee)
+
             if outlvl > 0:
                 if results.solver.termination_condition \
                         == TerminationCondition.optimal:
@@ -513,10 +514,8 @@ tube side flows from 1 to 0"""))
                 else:
                     _log.warning('{} Initialisation Step 4 Failed.'
                                  .format(blk.name))
-        # ---------------------------------------------------------------------
-        # TODO: Needs to be revisited to handle length domain.
-        blk.shell.release_state(flags_shell, outlvl - 1)
-        blk.tube.release_state(flags_tube, outlvl - 1)
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete.'.format(blk.name))
+        blk.shell.release_state(flags_shell)
+        blk.tube.release_state(flags_tube)

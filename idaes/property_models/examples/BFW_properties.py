@@ -143,9 +143,7 @@ class _StateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, flow_mol=0.5, pressure=1.01325E5,
-                   temperature=500, vapor_frac=None,
-                   hold_state=False, outlvl=0,
+    def initialize(blk, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Declare initialisation routine.
@@ -181,38 +179,6 @@ class _StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
-        # Fix state variables if not already fixed
-        Fcflag = {}
-        Pflag = {}
-        Tflag = {}
-
-        for k in blk.keys():
-            if blk[k].flow_mol.fixed is True:
-                Fcflag[k] = True
-            else:
-                Fcflag[k] = False
-                if flow_mol is None:
-                    blk[k].flow_mol.fix(1.0)
-                else:
-                    blk[k].flow_mol.fix(flow_mol)
-            if blk[k].pressure.fixed is True:
-                Pflag[k] = True
-            else:
-                Pflag[k] = False
-                if pressure is None:
-                    blk[k].pressure.fix(101325.0)
-                else:
-                    blk[k].pressure.fix(pressure)
-
-            if blk[k].temperature.fixed is True:
-                Tflag[k] = True
-            else:
-                Tflag[k] = False
-                if temperature is None:
-                    blk[k].temperature.fix(300.0)
-                else:
-                    blk[k].temperature.fix(temperature)
-
         # Set solver options
         if outlvl > 1:
             stee = True
@@ -238,42 +204,9 @@ class _StateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
-        flags = {"Fcflag": Fcflag, "Pflag": Pflag,
-                 "Tflag": Tflag}
-
         if outlvl > 0:
             if outlvl > 0:
                 _log.info('{} Initialisation Complete.'.format(blk.name))
-
-        if hold_state is True:
-            return flags
-        else:
-            blk.release_state(flags)
-
-    def release_state(blk, flags, outlvl=0):
-        """
-        Relase state variables fixed during initialisation.
-
-        Keyword Arguments:
-            flags : dict containing information of which state variables
-                    were fixed during initialization, and should now be
-                    unfixed. This dict is returned by initialize if
-                    hold_state=True.
-            outlvl : sets output level of of logging
-        """
-        # Unfix state variables
-        for k in blk.keys():
-            if flags['Fcflag'][k] is False:
-                blk[k].flow_mol.unfix()
-            if flags['Pflag'][k] is False:
-                blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
-                blk[k].temperature.unfix()
-
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} State Released.'.format(blk.name))
-
 
 @declare_process_block_class("BFWStateBlock",
                              block_class=_StateBlock)

@@ -1680,7 +1680,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                         'ReactionBlock class.'.format(blk.name))
 
     def initialize(blk, state_args=None, outlvl=0, optarg=None,
-                   solver='ipopt', hold_state=True):
+                   solver='ipopt', hold_state=False):
         '''
         Initialisation routine for 1D control volume (default solver ipopt)
 
@@ -1723,24 +1723,64 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                 else:
                     state_args[k] = state_dict[k].value
 
+        # Fix state variables if not already fixed
+        flags = {}
+        for k in blk.properties.keys():
+            for j in state_args.keys():
+                if isinstance(state_args[j], dict):
+                    for i in state_args[j].keys():
+                        flags[k, j, i] = True
+                else:
+                    flags[k, j] = True
+
+            for j in state_args.keys():
+                if isinstance(state_args[j], dict):
+                    for i in state_args[j].keys():
+                        if blk.properties[k].component(j)[i].fixed is True:
+                            pass
+                        else:
+                            blk.properties[k].component(j)[i].\
+                                fix(state_args[j][i])
+                            flags[k, j, i] = False
+                else:
+                    if blk.properties[k].component(j).fixed is True:
+                        pass
+                    else:
+                        blk.properties[k].component(j).fix(state_args[j])
+                        flags[k, j] = False
+
         # Initialize state blocks
-        # TODO : Consider handling hold_state for length domain
-        flags = blk.properties.initialize(outlvl=outlvl - 1,
-                                          optarg=optarg,
-                                          hold_state=hold_state,
-                                          solver=solver,
-                                          **state_args)
+        blk.properties.initialize(outlvl=outlvl - 1,
+                                  optarg=optarg,
+                                  solver=solver)
 
         try:
             blk.reactions.initialize(outlvl=outlvl - 1,
                                      optarg=optarg,
-                                     hold_state=hold_state,
                                      solver=solver)
         except AttributeError:
             pass
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete'.format(blk.name))
+
+        # Unfix the state vars fixed for discretized blocks other than inlet
+        for k in blk.properties.keys():
+            if k[1] == blk.length_domain.first() and \
+                    blk._flow_direction == FlowDirection.forward:
+                pass
+            elif k[1] == blk.length_domain.last() and \
+                    blk._flow_direction == FlowDirection.backward:
+                pass
+            else:
+                for j in state_args.keys():
+                    if isinstance(state_args[j], dict):
+                        for i in state_args[j].keys():
+                            if flags[k, j, i] is False:
+                                blk.properties[k].component(j)[i].unfix()
+                    else:
+                        if flags[k, j] is False:
+                            blk.properties[k].component(j).unfix()
 
         return flags
 
@@ -1758,8 +1798,42 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         Returns:
             None
         '''
-        # TODO: Need to check this. Does not work as intended.
-        blk.properties.release_state(flags, outlvl=outlvl - 1)
+        state_args = {}
+        state_dict = \
+            blk.properties[blk.time_ref.first(), 0].define_port_members()
+
+        for k in state_dict.keys():
+            if state_dict[k].is_indexed():
+                state_args[k] = {}
+                for m in state_dict[k].keys():
+                    state_args[k][m] = state_dict[k][m].value
+            else:
+                state_args[k] = state_dict[k].value
+
+        # Unfix the state vars if fixed for the inlet during initialization
+        for k in blk.properties.keys():
+            # for forward flow direction (inlet is at x = 0)
+            if k[1] == blk.length_domain.first() and \
+                    blk._flow_direction == FlowDirection.forward:
+                for j in state_args.keys():
+                    if isinstance(state_args[j], dict):
+                        for i in state_args[j].keys():
+                            if flags[k, j, i] is False:
+                                blk.properties[k].component(j)[i].unfix()
+                    else:
+                        if flags[k, j] is False:
+                            blk.properties[k].component(j).unfix()
+            # for backward flow direction (inlet is at x = 1)
+            if k[1] == blk.length_domain.last() and \
+                    blk._flow_direction == FlowDirection.backward:
+                for j in state_args.keys():
+                    if isinstance(state_args[j], dict):
+                        for i in state_args[j].keys():
+                            if flags[k, j, i] is False:
+                                blk.properties[k].component(j)[i].unfix()
+                    else:
+                        if flags[k, j] is False:
+                            blk.properties[k].component(j).unfix()
 
     def _add_phase_fractions(self):
         """
