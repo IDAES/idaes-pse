@@ -192,42 +192,37 @@ def main():
 
 
 def plot_results(m):
-    time = []
-    a1 = []
-    b1 = []
-    c1 = []
-    d1 = []
-    a2 = []
-    b2 = []
-    c2 = []
-    d2 = []
-
-    for t in m.fs.time:
-        time.append(t)
-        a1.append(m.fs.Tank1.outlet.conc_mol_comp[t, "NaOH"].value)
-        b1.append(m.fs.Tank1.outlet.conc_mol_comp[t, "EthylAcetate"].value)
-        c1.append(m.fs.Tank1.outlet.conc_mol_comp[t, "SodiumAcetate"].value)
-        d1.append(m.fs.Tank1.outlet.conc_mol_comp[t, "Ethanol"].value)
-        a2.append(m.fs.Tank2.outlet.conc_mol_comp[t, "NaOH"].value)
-        b2.append(m.fs.Tank2.outlet.conc_mol_comp[t, "EthylAcetate"].value)
-        c2.append(m.fs.Tank2.outlet.conc_mol_comp[t, "SodiumAcetate"].value)
-        d2.append(m.fs.Tank2.outlet.conc_mol_comp[t, "Ethanol"].value)
-
     plt.figure("Tank 1 Outlet")
-    plt.plot(time, a1, label='NaOH')
-    plt.plot(time, b1, label='EthylAcetate')
-    plt.plot(time, c1, label='SodiumAcetate')
-    plt.plot(time, d1, label='Ethanol')
+    plt.plot(m.fs.time,
+             list(m.fs.Tank1.outlet.conc_mol_comp[:, "NaOH"].value),
+             label='NaOH')
+    plt.plot(m.fs.time,
+             list(m.fs.Tank1.outlet.conc_mol_comp[:, "EthylAcetate"].value),
+             label='EthylAcetate')
+    plt.plot(m.fs.time,
+             list(m.fs.Tank1.outlet.conc_mol_comp[:, "SodiumAcetate"].value),
+             label='SodiumAcetate')
+    plt.plot(m.fs.time,
+             list(m.fs.Tank1.outlet.conc_mol_comp[:, "NaOH"].value),
+             label='Ethanol')
     plt.legend()
     plt.grid()
     plt.xlabel("Time [s]")
     plt.ylabel("Concentration [mol/m^3]")
 
     plt.figure("Tank 2 Outlet")
-    plt.plot(time, a2, label='NaOH')
-    plt.plot(time, b2, label='EthylAcetate')
-    plt.plot(time, c2, label='SodiumAcetate')
-    plt.plot(time, d2, label='Ethanol')
+    plt.plot(m.fs.time,
+             list(m.fs.Tank2.outlet.conc_mol_comp[:, "NaOH"].value),
+             label='NaOH')
+    plt.plot(m.fs.time,
+             list(m.fs.Tank2.outlet.conc_mol_comp[:, "EthylAcetate"].value),
+             label='EthylAcetate')
+    plt.plot(m.fs.time,
+             list(m.fs.Tank2.outlet.conc_mol_comp[:, "SodiumAcetate"].value),
+             label='SodiumAcetate')
+    plt.plot(m.fs.time,
+             list(m.fs.Tank2.outlet.conc_mol_comp[:, "NaOH"].value),
+             label='Ethanol')
     plt.legend()
     plt.grid()
     plt.xlabel("Time [s]")
