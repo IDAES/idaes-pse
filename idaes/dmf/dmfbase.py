@@ -30,9 +30,12 @@ from traitlets import Unicode
 import yaml
 
 # local
-from . import errors, workspace, resourcedb, propdata
+from . import errors
 from . import resource
+from . import resourcedb
+from . import workspace
 from .util import mkdir_p
+
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
@@ -164,8 +167,9 @@ class DMF(workspace.Workspace, HasTraits):
         'debug': logging.DEBUG,
     }
 
-    def __init__(self, path='', name=None, desc=None, create=False,
-                 save_path=False, **ws_kwargs):
+    def __init__(
+        self, path='', name=None, desc=None, create=False, save_path=False, **ws_kwargs
+    ):
         """Create or load DMF workspace.
 
         Args:
@@ -634,4 +638,6 @@ class DMF(workspace.Workspace, HasTraits):
 
 
 def get_propertydb_table(rsrc):
+    from idaes.dmf import propdata
+
     return propdata.PropertyTable.load(rsrc.datafiles[0].fullpath)
