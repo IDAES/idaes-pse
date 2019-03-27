@@ -1762,9 +1762,11 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                         flags[k, j] = False
 
         # Initialize state blocks
+        state_vars_fixed = True
         blk.properties.initialize(outlvl=outlvl - 1,
                                   optarg=optarg,
-                                  solver=solver)
+                                  solver=solver,
+                                  state_vars_fixed=state_vars_fixed)
 
         try:
             blk.reactions.initialize(outlvl=outlvl - 1,

@@ -143,8 +143,10 @@ class _StateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, state_args=None, outlvl=0, hold_state=False,
-                   solver='ipopt', optarg={'tol': 1e-8}):
+    def initialize(blk, flow_mol=None, temperature=None, pressure=None,
+                   vapor_frac=None, outlvl=0, hold_state=False,
+                   state_vars_fixed=False, solver='ipopt',
+                   optarg={'tol': 1e-8}):
         """
         Declare initialisation routine.
 
@@ -175,6 +177,52 @@ class _StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
+        # Fix state variables if not already fixed by the control volume block
+        if state_vars_fixed is False:
+            Fflag = {}
+            Pflag = {}
+            Tflag = {}
+            vfflag = {}
+
+            for k in blk.keys():
+                if blk[k].flow_mol.fixed is True:
+                    Fflag[k] = True
+                else:
+                    Fflag[k] = False
+                    if flow_mol is None:
+                        blk[k].flow_mol.fix(1.0)
+                    else:
+                        blk[k].flow_mol.fix(flow_mol)
+                if blk[k].pressure.fixed is True:
+                    Pflag[k] = True
+                else:
+                    Pflag[k] = False
+                    if pressure is None:
+                        blk[k].pressure.fix(101325.0)
+                    else:
+                        blk[k].pressure.fix(pressure)
+
+                if blk[k].temperature.fixed is True:
+                    Tflag[k] = True
+                else:
+                    Tflag[k] = False
+                    if temperature is None:
+                        blk[k].temperature.fix(300.0)
+                    else:
+                        blk[k].temperature.fix(temperature)
+
+                if blk[k].vapor_frac.fixed is True:
+                    vfflag[k] = True
+                else:
+                    vfflag[k] = False
+                    if vapor_frac is None:
+                        blk[k].vapor_frac.fix(300.0)
+                    else:
+                        blk[k].vapor_frac.fix(temperature)
+
+            flags = {"Fflag": Fflag, "Pflag": Pflag,
+                     "Tflag": Tflag, "vfflag": vfflag}
+
         # Set solver options
         if outlvl > 1:
             stee = True
@@ -199,21 +247,35 @@ class _StateBlock(StateBlock):
                              .format(blk.name))
 
         # ---------------------------------------------------------------------
+        if state_vars_fixed is False:
+            # release state vars fixed during initialization if control
+            # volume didn't fix the state vars
+            if hold_state is True:
+                return flags
+            else:
+                blk.release_state(flags)
+
         if outlvl > 0:
             if outlvl > 0:
                 _log.info('{} Initialisation Complete.'.format(blk.name))
 
-    def release_state(blk, flags):
+    def release_state(blk, flags, outlvl=0):
         # Method to release states only if explicitly called and there is no
         # parent control volume
-        for k in flags.keys():
-            if isinstance(k, dict):
-                for j in flags[k].keys():
-                    if flags[k, j] is False:
-                        blk[k].component(k)[j].unfix()
-            else:
-                if flags[k] is False:
-                    blk[k].component(k).unfix()
+        # Unfix state variables
+        for k in blk.keys():
+            if flags['Fflag'][k] is False:
+                blk[k].flow_mol.unfix()
+            if flags['Pflag'][k] is False:
+                blk[k].pressure.unfix()
+            if flags['Tflag'][k] is False:
+                blk[k].temperature.unfix()
+            if flags['vfflag'][k] is False:
+                blk[k].vapor_frac.unfix()
+
+        if outlvl > 0:
+            if outlvl > 0:
+                _log.info('{} State Released.'.format(blk.name))
 
 @declare_process_block_class("BFWStateBlock",
                              block_class=_StateBlock)

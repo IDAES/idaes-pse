@@ -117,7 +117,7 @@ class _StateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
     def initialize(blk, flow_vol=None, temperature=None, pressure=None,
-                   conc_mol_comp=None,
+                   conc_mol_comp=None, state_vars_fixed=False,
                    hold_state=False, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-8}):
         '''
