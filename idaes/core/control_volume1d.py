@@ -1761,8 +1761,11 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                         blk.properties[k].component(j).fix(state_args[j])
                         flags[k, j] = False
 
-        # Initialize state blocks
+        # Flag to indicate that CV1D has fixed state vars for the state blocks
+        # If this is False, state block does its own handling of state vars
         state_vars_fixed = True
+
+        # Initialize state blocks
         blk.properties.initialize(outlvl=outlvl - 1,
                                   optarg=optarg,
                                   solver=solver,
