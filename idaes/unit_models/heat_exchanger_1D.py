@@ -515,7 +515,8 @@ tube side flows from 1 to 0"""))
                     _log.warning('{} Initialisation Step 4 Failed.'
                                  .format(blk.name))
 
-        if outlvl > 0:
-            _log.info('{} Initialisation Complete.'.format(blk.name))
         blk.shell.release_state(flags_shell)
         blk.tube.release_state(flags_tube)
+
+        if outlvl > 0:
+            _log.info('{} Initialisation Complete.'.format(blk.name))
