@@ -215,40 +215,68 @@ tube side flows from 1 to 0"""))
         if self.config.flow_type == "co_current":
             set_direction_shell = FlowDirection.forward
             set_direction_tube = FlowDirection.forward
-            if (self.config.shell_side.transformation_method or
-                    self.config.tube_side.transformation_method) is useDefault:
+            if self.config.shell_side.transformation_method is useDefault:
                 _log.warning("Discretization method was "
-                             "not specified for the co-current heat exchanger."
-                             " Defaulting to finite "
-                             "difference method on shell and tube side.")
+                             "not specified for the shell side of the "
+                             "co-current heat exchanger. "
+                             "Defaulting to finite "
+                             "difference method on the shell side.")
                 self.config.shell_side.transformation_method = \
                     "dae.finite_difference"
+            if self.config.tube_side.transformation_method is useDefault:
+                _log.warning("Discretization method was "
+                             "not specified for the tube side of the "
+                             "co-current heat exchanger. "
+                             "Defaulting to finite "
+                             "difference method on the tube side.")
                 self.config.tube_side.transformation_method = \
                     "dae.finite_difference"
-            if (self.config.shell_side.transformation_scheme or
-                    self.config.tube_side.transformation_scheme) is useDefault:
+            if self.config.shell_side.transformation_scheme is useDefault:
                 _log.warning("Discretization scheme was "
-                             "not specified for the co-current heat exchanger."
-                             " Defaulting to backward finite "
-                             "difference on shell and tube side.")
+                             "not specified for the shell side of the "
+                             "co-current heat exchanger. "
+                             "Defaulting to backward finite "
+                             "difference on the shell side.")
                 self.config.shell_side.transformation_scheme = "BACKWARD"
+            if self.config.tube_side.transformation_scheme is useDefault:
+                _log.warning("Discretization scheme was "
+                             "not specified for the tube side of the "
+                             "co-current heat exchanger. "
+                             "Defaulting to backward finite "
+                             "difference on the tube side.")
                 self.config.tube_side.transformation_scheme = "BACKWARD"
         else:
             set_direction_shell = FlowDirection.forward
             set_direction_tube = FlowDirection.backward
-            if (self.config.shell_side.transformation_method or
-                    self.config.tube_side.transformation_method) is useDefault:
+            if self.config.shell_side.transformation_method is useDefault:
                 _log.warning("Discretization method was "
-                             "not specified for the counter-current heat "
-                             "exchanger. Defaulting to finite "
-                             "difference method on shell side and tube side.")
+                             "not specified for the shell side of the "
+                             "counter-current heat exchanger. "
+                             "Defaulting to finite "
+                             "difference method on the shell side.")
                 self.config.shell_side.transformation_method = \
                     "dae.finite_difference"
+            if self.config.tube_side.transformation_method is useDefault:
+                _log.warning("Discretization method was "
+                             "not specified for the tube side of the "
+                             "counter-current heat exchanger. "
+                             "Defaulting to finite "
+                             "difference method on the tube side.")
                 self.config.tube_side.transformation_method = \
                     "dae.finite_difference"
-            if (self.config.shell_side.transformation_scheme or
-                    self.config.tube_side.transformation_scheme) is useDefault:
+            if self.config.shell_side.transformation_scheme is useDefault:
+                _log.warning("Discretization scheme was "
+                             "not specified for the shell side of the "
+                             "counter-current heat exchanger. "
+                             "Defaulting to backward finite "
+                             "difference on the shell side.")
                 self.config.shell_side.transformation_scheme = "BACKWARD"
+            if self.config.tube_side.transformation_scheme is useDefault:
+                _log.warning("Discretization scheme was "
+                             "not specified for the tube side of the "
+                             "counter-current heat exchanger. "
+                             "Defaulting to forward finite "
+                             "difference on the tube side.")
                 self.config.tube_side.transformation_scheme = "FORWARD"
 
         # Control volume 1D for shell
