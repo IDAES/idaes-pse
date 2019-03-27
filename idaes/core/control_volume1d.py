@@ -1707,7 +1707,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
 
         Returns:
             If hold_states is True, returns a dict containing flags for which
-            states were fixed during initialization.
+            states were fixed during initialization else the release state is
+            triggered.
         '''
         # Get inlet state if not provided
         if state_args is None:
@@ -1719,21 +1720,32 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                 if state_dict[k].is_indexed():
                     state_args[k] = {}
                     for m in state_dict[k].keys():
-                        state_args[k][m] = state_dict[k][m].value
+                        if state_dict[k][m].value is not None:
+                            state_args[k][m] = state_dict[k][m].value
+                        else:
+                            raise Exception("State variables have not been "
+                                            "fixed nor have been given "
+                                            "initial values.")
                 else:
-                    state_args[k] = state_dict[k].value
+                    if state_dict[k].value is not None:
+                        state_args[k] = state_dict[k].value
+                    else:
+                        raise Exception("State variables have not been "
+                                        "fixed nor have been given "
+                                        "initial values.")
 
-        # Fix state variables if not already fixed
+        # Create a dict to hold the flags; default to True (i,e. already fixed)
         flags = {}
         for k in blk.properties.keys():
             for j in state_args.keys():
+                # Check if var is an indexed var
                 if isinstance(state_args[j], dict):
                     for i in state_args[j].keys():
                         flags[k, j, i] = True
                 else:
                     flags[k, j] = True
 
-            for j in state_args.keys():
+            # Assign values to state vars and flag accordingly
                 if isinstance(state_args[j], dict):
                     for i in state_args[j].keys():
                         if blk.properties[k].component(j)[i].fixed is True:
@@ -1766,6 +1778,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
 
         # Unfix the state vars fixed for discretized blocks other than inlet
         for k in blk.properties.keys():
+            # k is a tuple (t, x)
             if k[1] == blk.length_domain.first() and \
                     blk._flow_direction == FlowDirection.forward:
                 pass
@@ -1784,6 +1797,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
 
         if hold_state is True:
             return flags
+        else:
+            blk.release_state(flags)
 
     def release_state(blk, flags, outlvl=0):
         '''
@@ -1799,6 +1814,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         Returns:
             None
         '''
+        # Extracting the keys i.e. the state variables
         state_args = {}
         state_dict = \
             blk.properties[blk.time_ref.first(), 0].define_port_members()
@@ -1807,9 +1823,9 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             if state_dict[k].is_indexed():
                 state_args[k] = {}
                 for m in state_dict[k].keys():
-                    state_args[k][m] = state_dict[k][m].value
+                    state_args[k][m] = None
             else:
-                state_args[k] = state_dict[k].value
+                state_args[k] = None
 
         # Unfix the state vars if fixed for the inlet during initialization
         for k in blk.properties.keys():

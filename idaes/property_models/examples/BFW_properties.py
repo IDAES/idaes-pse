@@ -143,18 +143,14 @@ class _StateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, outlvl=0,
+    def initialize(blk, state_args=None, outlvl=0, hold_state=False,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Declare initialisation routine.
 
         Keyword Arguments:
-            flow_mol : value at which to initialize component flows
-                             (default=27.5e3 mol/s)
-            pressure : value at which to initialize pressure
-                       (default=2.97e7 Pa)
-            temperature : value at which to initialize temperature
-                          (default=866.5 K)
+            state_args = to be used if state block initialized independent of
+                         control volume initialize
             outlvl : sets output level of initialisation routine
 
                      * 0 = no output (default)
@@ -203,10 +199,21 @@ class _StateBlock(StateBlock):
                              .format(blk.name))
 
         # ---------------------------------------------------------------------
-        # If input block, return flags, else release state
         if outlvl > 0:
             if outlvl > 0:
                 _log.info('{} Initialisation Complete.'.format(blk.name))
+
+    def release_state(blk, flags):
+        # Method to release states only if explicitly called and there is no
+        # parent control volume
+        for k in flags.keys():
+            if isinstance(k, dict):
+                for j in flags[k].keys():
+                    if flags[k, j] is False:
+                        blk[k].component(k)[j].unfix()
+            else:
+                if flags[k] is False:
+                    blk[k].component(k).unfix()
 
 @declare_process_block_class("BFWStateBlock",
                              block_class=_StateBlock)
