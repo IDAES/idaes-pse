@@ -1680,7 +1680,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                         'ReactionBlock class.'.format(blk.name))
 
     def initialize(blk, state_args=None, outlvl=0, optarg=None,
-                   solver='ipopt', hold_state=False):
+                   solver='ipopt', hold_state=True):
         '''
         Initialisation routine for 1D control volume (default solver ipopt)
 
@@ -1782,7 +1782,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                         if flags[k, j] is False:
                             blk.properties[k].component(j).unfix()
 
-        return flags
+        if hold_state is True:
+            return flags
 
     def release_state(blk, flags, outlvl=0):
         '''
@@ -1823,6 +1824,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                     else:
                         if flags[k, j] is False:
                             blk.properties[k].component(j).unfix()
+
             # for backward flow direction (inlet is at x = 1)
             if k[1] == blk.length_domain.last() and \
                     blk._flow_direction == FlowDirection.backward:

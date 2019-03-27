@@ -37,7 +37,7 @@ from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-from idaes.ui.report import degrees_of_freedom
+
 __author__ = "Jaffer Ghouse"
 
 # Set up logger
