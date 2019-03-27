@@ -45,7 +45,7 @@ def main():
 
     # Add a flowsheet object to the model
     m.fs = FlowsheetBlock(default={"dynamic": True,
-                                   "time_set": [0, 1, 8]})
+                                   "time_set": [0, 1, 10]})
 
     # Add property packages to flowsheet library
     m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
@@ -60,8 +60,7 @@ def main():
                                "has_holdup": True,
                                "has_equilibrium_reactions": False,
                                "has_heat_transfer": True,
-                               "has_pressure_change": False,
-                               "dynamic": False})
+                               "has_pressure_change": False})
     m.fs.Tank2 = CSTR(default={"property_package": m.fs.thermo_params,
                                "reaction_package": m.fs.reaction_params,
                                "has_holdup": True,
