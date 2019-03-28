@@ -162,6 +162,8 @@ class _StateBlock(StateBlock):
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
+            state_vars_fixed: Flag to denote if state vars have already been
+                              fixed for the state block.
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -260,8 +262,11 @@ class _StateBlock(StateBlock):
                 _log.info('{} Initialisation Complete.'.format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
-        # Method to release states only if explicitly called and there is no
-        # parent control volume
+        # Method to release states only if explicitly called
+
+        if flags is None:
+            return
+
         # Unfix state variables
         for k in blk.keys():
             if flags['Fflag'][k] is False:

@@ -376,6 +376,9 @@ class _IdealStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
+        if flags is None:
+            return
+
         # Unfix state variables
         for k in blk.keys():
             if flags['Fflag'][k] is False:
