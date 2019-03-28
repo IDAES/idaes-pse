@@ -231,7 +231,7 @@ class _StateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
     def initialize(blk, flow_mol_comp=None, temperature=None, pressure=None,
-                   hold_state=False, outlvl=0,
+                   hold_state=False, outlvl=0, state_vars_fixed=False,
                    solver='ipopt', optarg={'tol': 1e-8}):
         '''
         Initialisation routine for property package.
@@ -266,44 +266,50 @@ class _StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         '''
-        # Fix state variables if not already fixed
-        Fcflag = {}
-        Pflag = {}
-        Tflag = {}
+        if state_vars_fixed is False:
+            # Fix state variables if not already fixed
+            Fcflag = {}
+            Pflag = {}
+            Tflag = {}
 
-        for k in blk.keys():
-            for j in blk[k].component_list_ref:
-                if blk[k].flow_mol_comp[j].fixed is True:
-                    Fcflag[k, j] = True
-                else:
-                    Fcflag[k, j] = False
-                    if flow_mol_comp is None:
-                        blk[k].flow_mol_comp[j].fix(1.0)
+            for k in blk.keys():
+                for j in blk[k].component_list_ref:
+                    if blk[k].flow_mol_comp[j].fixed is True:
+                        Fcflag[k, j] = True
                     else:
-                        blk[k].flow_mol_comp[j].fix(flow_mol_comp[j])
+                        Fcflag[k, j] = False
+                        if flow_mol_comp is None:
+                            blk[k].flow_mol_comp[j].fix(1.0)
+                        else:
+                            blk[k].flow_mol_comp[j].fix(flow_mol_comp[j])
 
-            if blk[k].pressure.fixed is True:
-                Pflag[k] = True
-            else:
-                Pflag[k] = False
-                if pressure is None:
-                    blk[k].pressure.fix(101325.0)
+                if blk[k].pressure.fixed is True:
+                    Pflag[k] = True
                 else:
-                    blk[k].pressure.fix(pressure)
+                    Pflag[k] = False
+                    if pressure is None:
+                        blk[k].pressure.fix(101325.0)
+                    else:
+                        blk[k].pressure.fix(pressure)
 
-            if blk[k].temperature.fixed is True:
-                Tflag[k] = True
-            else:
-                Tflag[k] = False
-                if temperature is None:
-                    blk[k].temperature.fix(1500.0)
+                if blk[k].temperature.fixed is True:
+                    Tflag[k] = True
                 else:
-                    blk[k].temperature.fix(temperature)
+                    Tflag[k] = False
+                    if temperature is None:
+                        blk[k].temperature.fix(1500.0)
+                    else:
+                        blk[k].temperature.fix(temperature)
 
-            for j in blk[k].component_list_ref:
-                blk[k].mole_frac[j] = (value(blk[k].flow_mol_comp[j]) /
-                                       sum(value(blk[k].flow_mol_comp[i])
-                                           for i in blk[k].component_list_ref))
+                for j in blk[k].component_list_ref:
+                    blk[k].mole_frac[j] = \
+                        (value(blk[k].flow_mol_comp[j]) /
+                         sum(value(blk[k].flow_mol_comp[i])
+                             for i in blk[k].component_list_ref))
+
+            # If input block, return flags, else release state
+            flags = {"Fcflag": Fcflag, "Pflag": Pflag,
+                     "Tflag": Tflag}
 
         # Set solver options
         if outlvl > 1:
@@ -380,18 +386,15 @@ class _StateBlock(StateBlock):
                              .format(blk.name))
 
         # ---------------------------------------------------------------------
-        # If input block, return flags, else release state
-        flags = {"Fcflag": Fcflag, "Pflag": Pflag,
-                 "Tflag": Tflag}
-
         if outlvl > 0:
             if outlvl > 0:
                 _log.info('{} Initialisation Complete.'.format(blk.name))
 
-        if hold_state is True:
-            return flags
-        else:
-            blk.release_state(flags)
+        if state_vars_fixed is False:
+            if hold_state is True:
+                return flags
+            else:
+                blk.release_state(flags)
 
     def release_state(blk, flags, outlvl=0):
         '''

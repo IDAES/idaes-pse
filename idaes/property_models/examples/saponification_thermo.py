@@ -153,69 +153,70 @@ class _StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         '''
-        # Fix state variables if not already fixed
-        Fflag = {}
-        Pflag = {}
-        Tflag = {}
-        Cflag = {}
+        if state_vars_fixed is False:
+            # Fix state variables if not already fixed
+            Fflag = {}
+            Pflag = {}
+            Tflag = {}
+            Cflag = {}
 
-        for k in blk.keys():
-            if blk[k].flow_vol.fixed is True:
-                Fflag[k] = True
-            else:
-                Fflag[k] = False
-                if flow_vol is None:
-                    blk[k].flow_vol.fix(1.0)
+            for k in blk.keys():
+                if blk[k].flow_vol.fixed is True:
+                    Fflag[k] = True
                 else:
-                    blk[k].flow_vol.fix(flow_vol)
-
-            for j in blk[k].component_list_ref:
-                if blk[k].conc_mol_comp[j].fixed is True:
-                    Cflag[k, j] = True
-                else:
-                    Cflag[k, j] = False
-                    if conc_mol_comp is None:
-                        if j == "H2O":
-                            blk[k].conc_mol_comp[j].fix(55388.0)
-                        else:
-                            blk[k].conc_mol_comp[j].fix(100.0)
+                    Fflag[k] = False
+                    if flow_vol is None:
+                        blk[k].flow_vol.fix(1.0)
                     else:
-                        blk[k].conc_mol_comp[j].fix(conc_mol_comp[j])
+                        blk[k].flow_vol.fix(flow_vol)
 
-            if blk[k].pressure.fixed is True:
-                Pflag[k] = True
-            else:
-                Pflag[k] = False
-                if pressure is None:
-                    blk[k].pressure.fix(101325.0)
-                else:
-                    blk[k].pressure.fix(pressure)
+                for j in blk[k].component_list_ref:
+                    if blk[k].conc_mol_comp[j].fixed is True:
+                        Cflag[k, j] = True
+                    else:
+                        Cflag[k, j] = False
+                        if conc_mol_comp is None:
+                            if j == "H2O":
+                                blk[k].conc_mol_comp[j].fix(55388.0)
+                            else:
+                                blk[k].conc_mol_comp[j].fix(100.0)
+                        else:
+                            blk[k].conc_mol_comp[j].fix(conc_mol_comp[j])
 
-            if blk[k].temperature.fixed is True:
-                Tflag[k] = True
-            else:
-                Tflag[k] = False
-                if temperature is None:
-                    blk[k].temperature.fix(298.15)
+                if blk[k].pressure.fixed is True:
+                    Pflag[k] = True
                 else:
-                    blk[k].temperature.fix(temperature)
+                    Pflag[k] = False
+                    if pressure is None:
+                        blk[k].pressure.fix(101325.0)
+                    else:
+                        blk[k].pressure.fix(pressure)
+
+                if blk[k].temperature.fixed is True:
+                    Tflag[k] = True
+                else:
+                    Tflag[k] = False
+                    if temperature is None:
+                        blk[k].temperature.fix(298.15)
+                    else:
+                        blk[k].temperature.fix(temperature)
+
+            # If input block, return flags, else release state
+            flags = {"Fflag": Fflag, "Pflag": Pflag,
+                     "Tflag": Tflag, "Cflag": Cflag}
 
         opt = SolverFactory(solver)
         opt.options = optarg
-
-        # ---------------------------------------------------------------------
-        # If input block, return flags, else release state
-        flags = {"Fflag": Fflag, "Pflag": Pflag,
-                 "Tflag": Tflag, "Cflag": Cflag}
 
         if outlvl > 0:
             if outlvl > 0:
                 _log.info('{} Initialisation Complete.'.format(blk.name))
 
-        if hold_state is True:
-            return flags
-        else:
-            blk.release_state(flags)
+        if state_vars_fixed is False:
+            if hold_state is True:
+                return flags
+            else:
+                blk.release_state(flags)
 
     def release_state(blk, flags, outlvl=0):
         '''

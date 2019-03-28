@@ -135,7 +135,7 @@ class _IdealStateBlock(StateBlock):
     """
 
     def initialize(blk, flow_mol=None, mole_frac=None,
-                   temperature=None, pressure=None,
+                   temperature=None, pressure=None, state_vars_fixed=False,
                    hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
@@ -170,50 +170,58 @@ class _IdealStateBlock(StateBlock):
 
         _log.info('Starting {} initialisation'.format(blk.name))
 
-        # Fix state variables if not already fixed
-        Fflag = {}
-        Xflag = {}
-        Pflag = {}
-        Tflag = {}
+        if state_vars_fixed is False:
+            # Fix state variables if not already fixed
+            Fflag = {}
+            Xflag = {}
+            Pflag = {}
+            Tflag = {}
 
-        for k in blk.keys():
-            if blk[k].flow_mol.fixed is True:
-                Fflag[k] = True
-            else:
-                Fflag[k] = False
-                if flow_mol is None:
-                    blk[k].flow_mol.fix(1.0)
+            for k in blk.keys():
+                if blk[k].flow_mol.fixed is True:
+                    Fflag[k] = True
                 else:
-                    blk[k].flow_mol.fix(flow_mol)
-
-            for j in blk[k].component_list_ref:
-                if blk[k].mole_frac[j].fixed is True:
-                    Xflag[k, j] = True
-                else:
-                    Xflag[k, j] = False
-                    if mole_frac is None:
-                        blk[k].mole_frac[j].fix(1 / len(blk[k].
-                                                component_list_ref))
+                    Fflag[k] = False
+                    if flow_mol is None:
+                        blk[k].flow_mol.fix(1.0)
                     else:
-                        blk[k].mole_frac[j].fix(mole_frac[j])
+                        blk[k].flow_mol.fix(flow_mol)
 
-            if blk[k].pressure.fixed is True:
-                Pflag[k] = True
-            else:
-                Pflag[k] = False
-                if pressure is None:
-                    blk[k].pressure.fix(101325.0)
-                else:
-                    blk[k].pressure.fix(pressure)
+                for j in blk[k].component_list_ref:
+                    if blk[k].mole_frac[j].fixed is True:
+                        Xflag[k, j] = True
+                    else:
+                        Xflag[k, j] = False
+                        if mole_frac is None:
+                            blk[k].mole_frac[j].fix(1 / len(blk[k].
+                                                    component_list_ref))
+                        else:
+                            blk[k].mole_frac[j].fix(mole_frac[j])
 
-            if blk[k].temperature.fixed is True:
-                Tflag[k] = True
-            else:
-                Tflag[k] = False
-                if temperature is None:
-                    blk[k].temperature.fix(325)
+                if blk[k].pressure.fixed is True:
+                    Pflag[k] = True
                 else:
-                    blk[k].temperature.fix(temperature)
+                    Pflag[k] = False
+                    if pressure is None:
+                        blk[k].pressure.fix(101325.0)
+                    else:
+                        blk[k].pressure.fix(pressure)
+
+                if blk[k].temperature.fixed is True:
+                    Tflag[k] = True
+                else:
+                    Tflag[k] = False
+                    if temperature is None:
+                        blk[k].temperature.fix(325)
+                    else:
+                        blk[k].temperature.fix(temperature)
+
+            # ---------------------------------------------------------------------
+            # If input block, return flags, else release state
+            flags = {"Fflag": Fflag,
+                     "Xflag": Xflag,
+                     "Pflag": Pflag,
+                     "Tflag": Tflag}
 
         # Set solver options
         if outlvl > 1:
@@ -349,17 +357,11 @@ class _IdealStateBlock(StateBlock):
             if (blk[k].config.defined_state is False):
                 blk[k].eq_mol_frac_out.activate()
 
-        # ---------------------------------------------------------------------
-        # If input block, return flags, else release state
-        flags = {"Fflag": Fflag,
-                 "Xflag": Xflag,
-                 "Pflag": Pflag,
-                 "Tflag": Tflag}
-
-        if hold_state is True:
-            return flags
-        else:
-            blk.release_state(flags)
+        if state_vars_fixed is False:
+            if hold_state is True:
+                return flags
+            else:
+                blk.release_state(flags)
 
         if outlvl > 0:
             _log.info("Initialisation completed for {}".format(blk.name))
@@ -374,7 +376,6 @@ class _IdealStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
-        # Unfix state variables
         # Unfix state variables
         for k in blk.keys():
             if flags['Fflag'][k] is False:
