@@ -166,13 +166,22 @@ class ProcessBlockData(_BlockData):
         for obj in self.component_objects(Block, descend_into=True):
             # Try to unfix material_accumulation @ first time point
             try:
-                obj.material_accumulation[obj.time_ref.first(), ...].unfix()
+                obj.material_accumulation[obj.time_ref.first(),
+                                          ...].unfix()
             except AttributeError:
                 pass
 
-            # Try to unfix energy_accumulation @ first time point
+            # Try to fix element_accumulation @ first time point
             try:
-                obj.energy_accumulation[obj.time_ref.first(), ...].unfix()
+                obj.element_accumulation[obj.time_ref.first(),
+                                         ...].unfix()
+            except AttributeError:
+                pass
+
+            # Try to fix enthalpy_accumulation @ first time point
+            try:
+                obj.enthalpy_accumulation[obj.time_ref.first(),
+                                          ...].unfix()
             except AttributeError:
                 pass
 
