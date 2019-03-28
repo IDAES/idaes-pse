@@ -107,7 +107,7 @@ class ResourceDB(object):
                 yield as_resource(r)
 
     @classmethod
-    def _create_filter_expr(cls, filter_dict, flags):
+    def _create_filter_expr(cls, filter_dict, flags=0):
         # convert filter to expression for TinyDB
         q = Query()
         filter_expr = None
@@ -291,7 +291,7 @@ class ResourceDB(object):
                     relation_map[key] = [value]
                 else:
                     value_list.append(value)
-        # print('@@ built relation map: {}'.format(relation_map))
+        _log.debug(f"built relation map: {relation_map}")
         # make sure root node exists
         if id_ not in relation_map:
             raise KeyError('Resource not found: {}'.format(id_))
@@ -302,7 +302,6 @@ class ResourceDB(object):
         visited.add(id_)
         while len(q) > 0 and depth < maxdepth:
             depth += 1
-            # print('@@ depth={:d}. Queue: {}'.format(depth, q))
             # visit all the nodes in the queue
             n = len(q)
             for i in range(n):
