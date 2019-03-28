@@ -179,7 +179,7 @@ def main():
 
     # Make a step disturbance in feed and solve again
     for t in m.fs.time:
-        if t > 1.0:
+        if t >= 1.0:
             m.fs.mix.inlet_2.conc_mol_comp[t, "EthylAcetate"].fix(90.0)
     results = solver.solve(m.fs)
 
