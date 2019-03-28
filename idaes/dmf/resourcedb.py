@@ -16,6 +16,7 @@ Resource database.
 # system
 from datetime import datetime
 import logging
+import re
 
 # third party
 import pendulum
@@ -65,7 +66,7 @@ class ResourceDB(object):
     def __len__(self):
         return len(self._db)
 
-    def find(self, filter_dict, id_only=False):
+    def find(self, filter_dict, id_only=False, flags=0):
         """Find and return records based on the provided filter.
 
         Args:
@@ -73,9 +74,10 @@ class ResourceDB(object):
                                 :meth:`.dmf.DMF.find`.
             id_only (bool): If true, return only the identifier of each
                 resource; otherwise a Resource object is returned.
+            flags (int): Flag values for, e.g., regex searches
 
         Returns:
-            (list of int|Resource) Depending on the value of `id_only`
+            generator of int|Resource, depending on the value of `id_only`
         """
 
         def as_resource(_r):
@@ -92,7 +94,7 @@ class ResourceDB(object):
                 else:
                     yield as_resource(r)
             return
-        filter_expr = self._create_filter_expr(filter_dict)
+        filter_expr = self._create_filter_expr(filter_dict, flags)
 
         # return results for query
         _log.debug('Find resources matching: {}'.format(filter_expr))
@@ -105,7 +107,7 @@ class ResourceDB(object):
                 yield as_resource(r)
 
     @classmethod
-    def _create_filter_expr(cls, filter_dict):
+    def _create_filter_expr(cls, filter_dict, flags):
         # convert filter to expression for TinyDB
         q = Query()
         filter_expr = None
@@ -140,7 +142,9 @@ class ResourceDB(object):
                             list_qry = Query()
                             for field in list_k.split('.'):
                                 list_qry = list_qry[field]
-                            list_cond = cls._expr_to_query(list_qry, list_v)
+                            list_cond = cls._expr_to_query(
+                                list_qry, list_v, flags=flags
+                            )
                             if list_expr is None:
                                 list_expr = list_cond
                             else:
@@ -154,12 +158,12 @@ class ResourceDB(object):
                     else:
                         cond = qry.any(list_expr)
             else:
-                cond = cls._expr_to_query(qry, v)
+                cond = cls._expr_to_query(qry, v, flags=flags)
             filter_expr = fadd(cond)
         return filter_expr
 
     @classmethod
-    def _expr_to_query(cls, qry, v):
+    def _expr_to_query(cls, qry, v, flags=None):
         """Get a query from a filter expr.
 
         There are two types of non-list values:
@@ -174,13 +178,16 @@ class ResourceDB(object):
                 tv = cls._value_transform(op_value)
                 cond = cls._op_cond(qry, op_key, tv)
                 result = cond if result is None else result & cond
-        elif v is True:
-            result = qry.exists()
-        elif v is False:
-            result = ~qry.exists()
         else:
             tv = cls._value_transform(v)
-            result = qry == tv
+            if v is True:
+                result = qry.exists()
+            elif tv is False:
+                result = ~qry.exists()
+            elif hasattr(tv, "match"):  # regex
+                result = qry.matches(tv.pattern, flags=flags)
+            else:
+                result = qry == tv
         return result
 
     @staticmethod
@@ -208,6 +215,9 @@ class ResourceDB(object):
             if v == '@false':
                 return False
             return v
+        # for a regex, return a Python regex obj
+        elif isinstance(v, str) and len(v) > 0 and v[0] == '~':
+            return re.compile(v[1:])
         # default is no transformation
         else:
             return v

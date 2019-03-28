@@ -53,6 +53,7 @@ class Code(Enum):
     IMPORT_RESOURCE = 4
     DMF = 5
     DMF_OPER = 6
+    INPUT_VALUE = 7
 
 
 def level_from_verbosity(vb):
@@ -141,7 +142,7 @@ class URLType(click.ParamType):
 
 @click.group(
     cls=AliasedGroup,
-    aliases={"describe": "status", "add": "register"},
+    aliases={"describe": "status", "add": "register", "resource": "info"},
     help="Data management framework command wrapper",
 )
 @click.option(
@@ -216,7 +217,7 @@ def init(path, create, name, desc, html):
             d = DMF(path=path, create=True, name=name, desc=desc, html_paths=hpath)
         except errors.WorkspaceError as err:
             click.echo(f"Cannot create workspace: {err}")
-            return Code.DMF_OPER
+            sys.exit(Code.DMF_OPER.value)
         click.echo(f"Configuration in '{d.configuration_file}")
     else:
         _log.info("Use existing workspace")
@@ -226,12 +227,11 @@ def init(path, create, name, desc, html):
             click.echo(f"Workspace configuration not found at path='{path}'")
             if path == '.':  # probably just the default
                 click.echo("Use --path option to set workspace path.")
-            return Code.WORKSPACE_NOT_FOUND
+            sys.exit(Code.WORKSPACE_NOT_FOUND.value)
         except errors.WorkspaceNotFoundError:
             click.echo(f"Existing workspace not found at path='{path}'")
             click.echo("Add --create flag to create a workspace.")
-            return Code.WORKSPACE_NOT_FOUND
-    return Code.OK
+            sys.exit(Code.WORKSPACE_NOT_FOUND.value)
 
 
 @click.command(help="Get status of workspace")
@@ -254,13 +254,13 @@ def status(color, show, show_all):
     t = _cterm if color else _noterm
     if not DMFConfig.configuration_exists():
         click.echo(f"No configuration found at '{DMFConfig.configuration_path()}'")
-        return Code.CONFIGURATION_NOT_FOUND
+        sys.exit(Code.CONFIGURATION_NOT_FOUND.value)
     try:
         d = DMF()
     except errors.WorkspaceConfNotFoundError as err:
         _log.fatal(f"Cannot get status: {err}")
         click.echo(str(err))
-        return Code.WORKSPACE_NOT_FOUND
+        sys.exit(Code.WORKSPACE_NOT_FOUND.value)
 
     # pretty-display a key/value pair or list value
     def item(key, value=None, before="", color=t.green):
@@ -291,8 +291,6 @@ def status(color, show, show_all):
         print(item(key, value, before=indent))
 
     _show_optional_workspace_items(d, show, indent_spc, item, t=t)
-
-    return Code.OK
 
 
 def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
@@ -385,26 +383,26 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
         path = url.path
     else:
         click.echo("Currently, URL must be a file")
-        return Code.NOT_SUPPORTED
+        sys.exit(Code.NOT_SUPPORTED.value)
     # create the resource
     _log.debug("create resource")
     try:
         rsrc = resource.Resource.from_file(path, as_type=resource_type, strict=strict)
     except resource.Resource.InferResourceTypeError as err:
         click.echo(f"Failed to infer resource: {err}")
-        return Code.IMPORT_RESOURCE
+        sys.exit(Code.IMPORT_RESOURCE.value)
     except resource.Resource.LoadResourceError as err:
         click.echo(f"Failed to load resource: {err}")
-        return Code.IMPORT_RESOURCE
+        sys.exit(Code.IMPORT_RESOURCE.value)
     # connect to DMF
     try:
         dmf = DMF()
     except errors.WorkspaceError as err:
         click.echo(f"Failed to connect to DMF: {err}")
-        return Code.WORKSPACE_NOT_FOUND
+        sys.exit(Code.WORKSPACE_NOT_FOUND.value)
     except errors.DMFError as err:
         click.echo(f"Failed to connect to DMF: {err}")
-        return Code.DMF
+        sys.exit(Code.DMF.value)
     # check uniqueness
     if unique:
         df = rsrc.v["datafiles"][0]  # file info for this upload
@@ -419,7 +417,7 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
             click.echo(
                 f"This file is already in {n_dup} resources: " f"{' '.join(dup_ids)}"
             )
-            return Code.DMF_OPER
+            sys.exit(Code.DMF_OPER.value)
     # process relations
     _log.debug("add relations")
     rel_to_add = {  # translate into standard relation names
@@ -438,7 +436,7 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
                 target_resources[rel_id] = rel_subj
             if rel_subj is None:
                 click.echo(f"Relation {rel_name} target not found: {rel_id}")
-                return Code.DMF_OPER
+                sys.exit(Code.DMF_OPER.value)
             resource.create_relation_args(rel_subj, rel_name, rsrc)
             _log.debug(f"added relation {rsrc.id} <-- {rel_name} -- {rel_id}")
     _log.debug("update resource relations")
@@ -450,7 +448,7 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
         new_id = dmf.add(rsrc)
     except errors.DuplicateResourceError as err:
         click.echo(f"Failed to add resource: {err}")
-        return Code.DMF_OPER
+        sys.exit(Code.DMF_OPER.value)
     _log.debug(f"added resource: {new_id}")
     click.echo(new_id)
 
@@ -482,6 +480,8 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
 @click.option("--reverse", "-r", "reverse", flag_value="yes", help="Reverse sort order")
 def ls(show, sort_by, reverse, prefix):
     d = DMF()
+    if not show:
+        show = ["type", "desc", "modified"]  # note: 'id' is always first
     reverse = bool(reverse == "yes")
     if not sort_by:
         sort_by = ["id"]
@@ -535,6 +535,36 @@ def _ls_basic(d, show_fields, sort_by, reverse, prefix):
     for row in rows:
         row_columns = [f"{f:{w}}" for f, w in zip(row[:nfields], widths)]
         print(" ".join(row_columns))
+
+
+@click.command(help="Information about a resource")  # aliases: resource
+@click.argument("identifier")
+@click.option("--multiple/--no-multiple", default=False)
+def info(identifier, multiple):
+    _log.debug(f"info for resource id='{identifier}'")
+    try:
+        resource.identifier_str(identifier, allow_prefix=True)
+    except ValueError as err:
+        click.echo(f"{err}")
+        sys.exit(Code.INPUT_VALUE.value)
+    d = DMF()
+    rsrc_list = list(d.find_by_id(identifier))
+    n = len(rsrc_list)
+    if n > 1 and not multiple:
+        click.echo(
+            f"Too many ({n}) resources match prefix '{identifier}'. "
+            "Add option --multiple to allow multiple matches."
+        )
+        sys.exit(Code.DMF_OPER.value)
+    elif n == 0:
+        click.echo("Resource not found")
+        sys.exit(Code.DMF_OPER.value)
+    for rsrc in rsrc_list:
+        _show_info(rsrc)
+
+
+def _show_info(rsrc):
+    print(f"Resource {rsrc.id}")
 
 
 # The following classes define how to retrieve and transform the
@@ -646,6 +676,8 @@ base_command.add_command(init)
 base_command.add_command(register)
 base_command.add_command(status)
 base_command.add_command(ls)
+base_command.add_command(info)
+
 
 if __name__ == '__main__':
-    sys.exit(base_command())
+    base_command()

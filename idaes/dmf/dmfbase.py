@@ -21,6 +21,7 @@ import re
 import shutil
 import sys
 import uuid
+from typing import Generator
 
 # third-party
 import pendulum
@@ -457,7 +458,7 @@ class DMF(workspace.Workspace, HasTraits):
         else:
             return self._postproc_resource(item)
 
-    def find(self, filter_dict=None, id_only=False):
+    def find(self, filter_dict=None, id_only=False, re_flags=0):
         """Find and return resources matching the filter.
 
         The filter syntax is a subset of the MongoDB filter syntax.
@@ -472,14 +473,14 @@ class DMF(workspace.Workspace, HasTraits):
 
                 - "@true"/"@false": boolean (bare True/False will test existence)
 
-        2. date, as datetime.datetime or pendulum.Pendulum instance: Match
+        3. date, as datetime.datetime or pendulum.Pendulum instance: Match
            resources that have this exact date for the given attribute.
-        3. list: Match resources that have a list value for this attribute,
+        4. list: Match resources that have a list value for this attribute,
            and for which any of the values in the provided list are in the
            resource's corresponding value. If a '!' is appended to the key
            name, then this will be interpreted as a directive to only match
            resources for which *all* values in the provided list are present.
-        4. dict: This is an inequality, with one or more key/value pairs.
+        5. dict: This is an inequality, with one or more key/value pairs.
            The key is the type of inequality and the value is the numeric
            value for that range. All keys begin with '$'. The possible
            inequalities are:
@@ -490,21 +491,39 @@ class DMF(workspace.Workspace, HasTraits):
                 - "$ge": Greater than or equal (>=)
                 - "$ne": Not equal to (!=)
 
-        5. Boolean True means does the field exist, and False means
+        6. Boolean True means does the field exist, and False means
            does it *not* exist.
+        7. Regular expression, string "~<expr>" and `re_flags`
+           for flags (understood: re.IGNORECASE)
 
         Args:
             filter_dict (dict): Search filter.
             id_only (bool): If true, return only the identifier of each
                 resource; otherwise a Resource object is returned.
+            re_flags (int): Flags for regex filters
 
         Returns:
             (list of int|Resource) Depending on the value of `id_only`.
         """
         return (
             self._postproc_resource(r)
-            for r in self._db.find(filter_dict=filter_dict, id_only=id_only)
+            for r in self._db.find(
+                filter_dict=filter_dict, id_only=id_only, flags=re_flags
+            )
         )
+
+    def find_by_id(self, identifier: str, id_only=False) -> Generator:
+        """Find resources by their identifier or identifier prefix.
+        """
+        if len(identifier) == resource.Resource.ID_LENGTH:
+            rsrc = self._db.get(identifier)
+            yield rsrc.id if id_only else rsrc
+        else:
+            regex, flags = f"{identifier}[a-z]*", re.IGNORECASE
+            for rsrc in self._db.find(
+                {resource.Resource.ID_FIELD: '~' + regex}, flags=flags, id_only=id_only
+            ):
+                yield rsrc
 
     def find_related(
         self, rsrc, filter_dict=None, maxdepth=0, meta=None, outgoing=True

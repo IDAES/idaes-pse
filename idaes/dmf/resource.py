@@ -258,6 +258,7 @@ class Resource(object):
     """
 
     ID_FIELD = 'id_'  #: Identifier field name constant
+    ID_LENGTH  = 32   #: Full-length of identifier
     TYPE_FIELD = 'type'  #: Resource type field name constant
 
     def __init__(self, value: dict = None, type_: str = None):
@@ -695,7 +696,7 @@ def format_version(values):
     return s
 
 
-def identifier_str(value=None):
+def identifier_str(value=None, allow_prefix=False):
     """Generate or validate a unique identifier.
 
     If generating, you will get a UUID in hex format
@@ -726,7 +727,10 @@ def identifier_str(value=None):
         ValuError, if a value is given, and it is invalid.
     """
     # regular expression for identifier: hex string len=32
-    id_expr = '[0-9a-f]{32}'
+    if allow_prefix:
+        id_expr = '[0-9a-f]{1,32}'
+    else:
+        id_expr = '[0-9a-f]{32}'
     if value is None:
         value = uuid.uuid4().hex
     elif not re.match(id_expr, value):
