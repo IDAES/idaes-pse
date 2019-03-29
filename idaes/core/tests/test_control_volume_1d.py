@@ -78,12 +78,6 @@ class SBlockBase(StateBlock):
                    hold_state=False, **state_args):
         for k in blk.keys():
             blk[k].init_test = True
-            blk[k].hold_state = hold_state
-
-    def release_state(blk, flags=None, outlvl=0):
-        for k in blk.keys():
-            blk[k].hold_state = not blk[k].hold_state
-
 
 @declare_process_block_class("TestStateBlock", block_class=SBlockBase)
 class StateTestBlockData(StateBlockData):
@@ -111,6 +105,10 @@ class StateTestBlockData(StateBlockData):
 
     def get_enthalpy_density_terms(b, p):
         return b.test_var
+
+    def define_state_vars(b):
+        """Define state variables for ports."""
+        return {}
 
     def model_check(self):
         self.check = True
@@ -2123,11 +2121,4 @@ def test_initialize():
     for t in m.fs.time:
         for x in m.fs.cv.length_domain:
             assert m.fs.cv.properties[t, x].init_test is True
-            assert m.fs.cv.properties[t, x].hold_state is False
             assert m.fs.cv.reactions[t, x].init_test is True
-
-    m.fs.cv.release_state(flags=f)
-
-    for t in m.fs.time:
-        for x in m.fs.cv.length_domain:
-            assert m.fs.cv.properties[t, x].hold_state is True
