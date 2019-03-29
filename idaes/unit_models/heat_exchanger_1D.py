@@ -151,17 +151,15 @@ and used when constructing these
     # TODO : We should probably think about adding a consistency check for the
     # TODO : discretisation methdos as well.
     _SideTemplate.declare("transformation_method", ConfigValue(
-        default="dae.finite_difference",
-        description="Method to use for DAE transformation",
-        doc="""Method to use to transform domain. Must be a method recognised
-by the Pyomo TransformationFactory,
-**default** - "dae.finite_difference"."""))
+        default=useDefault,
+        description="Discretization method to use for DAE transformation",
+        doc="""Discretization method to use for DAE transformation. See Pyomo
+documentation for supported transformations."""))
     _SideTemplate.declare("transformation_scheme", ConfigValue(
-        default="BACKWARD",
-        description="Scheme to use for DAE transformation",
-        doc="""Scheme to use when transformating domain. See Pyomo
-documentation for supported schemes,
-**default** - "BACKWARD"."""))
+        default=useDefault,
+        description="Discretization scheme to use for DAE transformation",
+        doc="""Discretization scheme to use when transformating domain. See Pyomo
+documentation for supported schemes."""))
 
     # Create individual config blocks for shell and tube side
     CONFIG.declare("shell_side",
@@ -212,13 +210,74 @@ tube side flows from 1 to 0"""))
         # Call UnitModel.build to setup dynamics
         super(HeatExchanger1DData, self).build()
 
-        # Set flow directions for the control volume blocks
+        # Set flow directions for the control volume blocks and specify
+        # dicretisation if not specified.
         if self.config.flow_type == "co_current":
             set_direction_shell = FlowDirection.forward
             set_direction_tube = FlowDirection.forward
+            if self.config.shell_side.transformation_method is useDefault:
+                _log.warning("Discretization method was "
+                             "not specified for the shell side of the "
+                             "co-current heat exchanger. "
+                             "Defaulting to finite "
+                             "difference method on the shell side.")
+                self.config.shell_side.transformation_method = \
+                    "dae.finite_difference"
+            if self.config.tube_side.transformation_method is useDefault:
+                _log.warning("Discretization method was "
+                             "not specified for the tube side of the "
+                             "co-current heat exchanger. "
+                             "Defaulting to finite "
+                             "difference method on the tube side.")
+                self.config.tube_side.transformation_method = \
+                    "dae.finite_difference"
+            if self.config.shell_side.transformation_scheme is useDefault:
+                _log.warning("Discretization scheme was "
+                             "not specified for the shell side of the "
+                             "co-current heat exchanger. "
+                             "Defaulting to backward finite "
+                             "difference on the shell side.")
+                self.config.shell_side.transformation_scheme = "BACKWARD"
+            if self.config.tube_side.transformation_scheme is useDefault:
+                _log.warning("Discretization scheme was "
+                             "not specified for the tube side of the "
+                             "co-current heat exchanger. "
+                             "Defaulting to backward finite "
+                             "difference on the tube side.")
+                self.config.tube_side.transformation_scheme = "BACKWARD"
         else:
             set_direction_shell = FlowDirection.forward
             set_direction_tube = FlowDirection.backward
+            if self.config.shell_side.transformation_method is useDefault:
+                _log.warning("Discretization method was "
+                             "not specified for the shell side of the "
+                             "counter-current heat exchanger. "
+                             "Defaulting to finite "
+                             "difference method on the shell side.")
+                self.config.shell_side.transformation_method = \
+                    "dae.finite_difference"
+            if self.config.tube_side.transformation_method is useDefault:
+                _log.warning("Discretization method was "
+                             "not specified for the tube side of the "
+                             "counter-current heat exchanger. "
+                             "Defaulting to finite "
+                             "difference method on the tube side.")
+                self.config.tube_side.transformation_method = \
+                    "dae.finite_difference"
+            if self.config.shell_side.transformation_scheme is useDefault:
+                _log.warning("Discretization scheme was "
+                             "not specified for the shell side of the "
+                             "counter-current heat exchanger. "
+                             "Defaulting to backward finite "
+                             "difference on the shell side.")
+                self.config.shell_side.transformation_scheme = "BACKWARD"
+            if self.config.tube_side.transformation_scheme is useDefault:
+                _log.warning("Discretization scheme was "
+                             "not specified for the tube side of the "
+                             "counter-current heat exchanger. "
+                             "Defaulting to forward finite "
+                             "difference on the tube side.")
+                self.config.tube_side.transformation_scheme = "FORWARD"
 
         # Control volume 1D for shell
         self.shell = ControlVolume1DBlock(default={
@@ -386,10 +445,10 @@ tube side flows from 1 to 0"""))
                                                      self.N_tubes *
                                                      self.d_tube_outer**2))
 
-    def initialize(blk, shell_state_args={}, tube_state_args={}, outlvl=0,
+    def initialize(blk, shell_state_args=None, tube_state_args=None, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-6}):
         """
-        Initialisation routine for isothermal unit (default solver ipopt).
+        Initialisation routine for the unit (default solver ipopt).
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
@@ -421,15 +480,15 @@ tube side flows from 1 to 0"""))
 
         # ---------------------------------------------------------------------
         # Initialize shell block
-        flags = blk.shell.initialize(outlvl=outlvl - 1,
-                                     optarg=optarg,
-                                     solver=solver,
-                                     state_args=shell_state_args)
+        flags_shell = blk.shell.initialize(outlvl=outlvl - 1,
+                                           optarg=optarg,
+                                           solver=solver,
+                                           state_args=shell_state_args)
 
-        flags = blk.tube.initialize(outlvl=outlvl - 1,
-                                    optarg=optarg,
-                                    solver=solver,
-                                    state_args=tube_state_args)
+        flags_tube = blk.tube.initialize(outlvl=outlvl - 1,
+                                         optarg=optarg,
+                                         solver=solver,
+                                         state_args=tube_state_args)
 
         if outlvl > 0:
             _log.info('{} Initialisation Step 1 Complete.'.format(blk.name))
@@ -449,6 +508,7 @@ tube side flows from 1 to 0"""))
             blk.wall_0D_model.deactivate()
 
             results = opt.solve(blk, tee=stee)
+
             if outlvl > 0:
                 if results.solver.termination_condition \
                         == TerminationCondition.optimal:
@@ -482,11 +542,9 @@ tube side flows from 1 to 0"""))
                 else:
                     _log.warning('{} Initialisation Step 4 Failed.'
                                  .format(blk.name))
-        # ---------------------------------------------------------------------
-        #TODO: Some weird bug with the release state loop. Needs fixing in core.
-        # Release Inlet state
-        # blk.shell.release_state(flags, outlvl - 1)
-        # blk.tube.release_state(flags, outlvl - 1)
+
+        blk.shell.release_state(flags_shell)
+        blk.tube.release_state(flags_tube)
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete.'.format(blk.name))
