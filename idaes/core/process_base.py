@@ -22,6 +22,7 @@ import logging
 from pyomo.core.base.block import _BlockData
 from pyomo.environ import Block
 from pyomo.common.config import ConfigBlock
+from pyutilib.enum import Enum
 
 from idaes.core.process_block import declare_process_block_class
 from idaes.core.util.exceptions import (ConfigurationError,
@@ -42,6 +43,13 @@ useDefault = object()
 
 # Set up logger
 _log = logging.getLogger(__name__)
+
+
+# Enumerate options for material flow basis
+MaterialFlowBasis = Enum(
+    'molar',
+    'mass',
+    'other')
 
 
 @declare_process_block_class("ProcessBaseBlock")

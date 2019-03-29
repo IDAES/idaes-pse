@@ -22,6 +22,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
+from idaes.core import MaterialFlowBasis
 from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
@@ -217,6 +218,13 @@ should be constructed in this reaction block,
                             'does not support mixed associations of property '
                             'and reaction packages.'
                             .format(self.name))
+
+    def get_reaction_rate_basis(self):
+        """
+        Method which returns an Enum indicating the basis of the reaction rate
+        term.
+        """
+        return MaterialFlowBasis.other
 
     def __getattr__(self, attr):
         """

@@ -557,7 +557,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                     return b.length*accumulation_term(b, t, x, p, j) == (
                         b._flow_direction_term *
                         b.material_flow_dx[t, x, p, j] +
-                        b.length*kinetic_term(b, t, x, p, j) +
+                        b.length*kinetic_term(b, t, x, p, j) *
+                        b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                         b.length*equilibrium_term(b, t, x, p, j) +
                         b.length*phase_equilibrium_term(b, t, x, p, j) +
                         b.length*transfer_term(b, t, x, p, j) +
@@ -928,7 +929,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                                  for p in cplist) ==
                     b._flow_direction_term*sum(b.material_flow_dx[t, x, p, j]
                                                for p in cplist) +
-                    b.length*sum(kinetic_term(b, t, x, p, j) for p in cplist) +
+                    b.length*sum(kinetic_term(b, t, x, p, j) for p in cplist) *
+                    b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                     b.length*sum(equilibrium_term(b, t, x, p, j)
                                  for p in cplist) +
                     b.length*sum(transfer_term(b, t, x, p, j)

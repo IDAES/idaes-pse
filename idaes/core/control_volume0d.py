@@ -29,6 +29,7 @@ from idaes.core import (declare_process_block_class,
                         FlowDirection,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
+                                        BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
@@ -478,7 +479,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 return accumulation_term(b, t, p, j) == (
                         b.properties_in[t].get_material_flow_terms(p, j) -
                         b.properties_out[t].get_material_flow_terms(p, j) +
-                        kinetic_term(b, t, p, j) +
+                        kinetic_term(b, t, p, j) *
+                        b._rxn_rate_conv(t, j, has_rate_reactions) +
                         equilibrium_term(b, t, p, j) +
                         phase_equilibrium_term(b, t, p, j) +
                         transfer_term(b, t, p, j) +
@@ -805,7 +807,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     for p in cplist) -
                 sum(b.properties_out[t].get_material_flow_terms(p, j)
                     for p in cplist) +
-                sum(kinetic_term(b, t, p, j) for p in cplist) +
+                sum(kinetic_term(b, t, p, j) for p in cplist) *
+                b._rxn_rate_conv(t, j, has_rate_reactions) +
                 sum(equilibrium_term(b, t, p, j) for p in cplist) +
                 sum(transfer_term(b, t, p, j) for p in cplist) +
                 user_term_mol(b, t, j) + user_term_mass(b, t, j))
@@ -1546,3 +1549,11 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              doc='Volume fraction of holdup by phase')
             def phase_fraction(self, t, p):
                 return 1
+
+    def _rxn_rate_conv(b, t, j, has_rate_reactions):
+        """
+        Wrapper method for the _rxn_rate_conv method to hide the x argument
+        required for 1D control volumes.
+        """
+        # Call the method in control_volume_base with x=None
+        return super()._rxn_rate_conv(t, None, j, has_rate_reactions)

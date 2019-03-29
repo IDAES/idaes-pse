@@ -34,6 +34,7 @@ from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
+                        MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock)
@@ -328,6 +329,9 @@ class SaponificationStateBlockData(StateBlockData):
                 "conc_mol_comp": b.conc_mol_comp,
                 "temperature": b.temperature,
                 "pressure": b.pressure}
+
+    def get_material_flow_basis(b):
+        return MaterialFlowBasis.molar
 
     def model_check(blk):
         """

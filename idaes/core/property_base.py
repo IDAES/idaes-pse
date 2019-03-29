@@ -22,6 +22,7 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 from idaes.core.process_block import ProcessBlock
 from idaes.core import ProcessBlockData
 from idaes.core import property_meta
+from idaes.core import MaterialFlowBasis
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError,
@@ -153,9 +154,8 @@ should be constructed in this state block,
 
     def get_material_flow_terms(self, *args, **kwargs):
         """
-        Method which returns a tuple containing a valid expression to use in
-        the material balances and a constant indicating the basis of this
-        expression (mass, mole or None).
+        Method which returns a valid expression for material flow to use in
+        the material balances.
         """
         raise NotImplementedError('{} property package has not implemented the'
                                   ' get_material_flow_terms method. Please '
@@ -163,9 +163,8 @@ should be constructed in this state block,
 
     def get_material_density_terms(self, *args, **kwargs):
         """
-        Method which returns a tuple containing a valid expression to use in
-        the material balances and a constant indicating the basis of this
-        expression (mass, mole or None).
+        Method which returns a valid expression for material density to use in
+        the material balances .
         """
         raise NotImplementedError('{} property package has not implemented the'
                                   ' get_material_density_terms method. Please '
@@ -173,9 +172,8 @@ should be constructed in this state block,
 
     def get_material_diffusion_terms(self, *args, **kwargs):
         """
-        Method which returns a tuple containing a valid expression to use in
-        the material balances and a constant indicating the basis of this
-        expression (mass, mole or None).
+        Method which returns a valid expression for material diffusion to use
+        in the material balances.
         """
         raise NotImplementedError('{} property package has not implemented the'
                                   ' get_material_diffusion_terms method. '
@@ -184,9 +182,8 @@ should be constructed in this state block,
 
     def get_enthalpy_flow_terms(self, *args, **kwargs):
         """
-        Method which returns a tuple containing a valid expression to use in
-        the energy balances and a constant indicating the basis of this
-        expression (mass, mole or None).
+        Method which returns a valid expression for enthalpy flow to use in
+        the energy balances.
         """
         raise NotImplementedError('{} property package has not implemented the'
                                   ' get_energy_flow_terms method. Please '
@@ -194,9 +191,8 @@ should be constructed in this state block,
 
     def get_enthalpy_density_terms(self, *args, **kwargs):
         """
-        Method which returns a tuple containing a valid expression to use in
-        the energy balances and a constant indicating the basis of this
-        expression (mass, mole or None).
+        Method which returns a valid expression for enthalpy density to use in
+        the energy balances.
         """
         raise NotImplementedError('{} property package has not implemented the'
                                   ' get_energy_density_terms method. Please '
@@ -204,14 +200,20 @@ should be constructed in this state block,
 
     def get_energy_diffusion_terms(self, *args, **kwargs):
         """
-        Method which returns a tuple containing a valid expression to use in
-        the energy balances and a constant indicating the basis of this
-        expression (mass, mole or None).
+        Method which returns a valid expression for energy diffusion to use in
+        the energy balances.
         """
         raise NotImplementedError('{} property package has not implemented the'
                                   ' get_energy_diffusion_terms method. '
                                   'Please contact the property package '
                                   'developer.')
+
+    def get_material_flow_basis(self, *args, **kwargs):
+        """
+        Method which returns an Enum indicating the basis of the material flow
+        term.
+        """
+        return MaterialFlowBasis.other
 
     def calculate_bubble_point_temperature(self, *args, **kwargs):
         """

@@ -25,12 +25,15 @@ from pyutilib.enum import Enum
 
 # Import IDAES cores
 from idaes.core import (ProcessBlockData,
+                        MaterialFlowBasis,
                         useDefault,
                         declare_process_block_class)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
-from idaes.core.util.exceptions import (ConfigurationError,
-                                        DynamicError)
+from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
+                                        DynamicError,
+                                        PropertyNotSupportedError)
 from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee"
@@ -67,12 +70,6 @@ MomentumBalanceType = Enum(
 FlowDirection = Enum(
     'forward',
     'backward')
-
-# Enumerate options for material flow basis
-MaterialFlowBasis = Enum(
-    'molar',
-    'mass',
-    'other')
 
 # Set up example ConfigBlock that will work with ControlVolume autobuild method
 CONFIG_Template = ProcessBlockData.CONFIG()
@@ -772,3 +769,61 @@ have a config block which derives from CONFIG_Base,
                 "add_total_momentum_balances. Please contact the "
                 "developer of the ControlVolume class you are using."
                 .format(self.name))
+
+    def _rxn_rate_conv(b, t, x, j, has_rate_reactions):
+        """
+        Method to determine conversion term for reaction rate terms in material
+        balance equations. This method gets the basis of the material flow
+        and reaction rate terms and determines the correct conversion factor.
+        """
+        # If rate reactions are not required, skip the rest and return 1
+        if not has_rate_reactions:
+            return 1
+
+        if x is None:
+            # 0D control volume
+            flow_basis = b.properties_out[t].get_material_flow_basis()
+            prop = b.properties_out[t]
+            rxn_basis = b.reactions[t].get_reaction_rate_basis()
+        else:
+            # 1D control volume
+            flow_basis = b.properties[t, x].get_material_flow_basis()
+            prop = b.properties[t, x]
+            rxn_basis = b.reactions[t, x].get_reaction_rate_basis()
+
+        # Check for undefined basis
+        if flow_basis == MaterialFlowBasis.other:
+            raise ConfigurationError(
+                    "{} contains reaction terms, but the property package "
+                    "used an undefined basis (MaterialFlowBasis.other). "
+                    "Rate based reaction terms require the property "
+                    "package to define the basis of the material flow "
+                    "terms.".format(b.name))
+        if rxn_basis == MaterialFlowBasis.other:
+            raise ConfigurationError(
+                    "{} contains reaction terms, but the reaction package "
+                    "used an undefined basis (MaterialFlowBasis.other). "
+                    "Rate based reaction terms require the reaction "
+                    "package to define the basis of the reaction rate "
+                    "terms.".format(b.name))
+
+        try:
+            if flow_basis == rxn_basis:
+                return 1
+            elif (flow_basis == MaterialFlowBasis.mass and
+                  rxn_basis == MaterialFlowBasis.molar):
+                return prop.mw[j]
+            elif (flow_basis == MaterialFlowBasis.molar and
+                  rxn_basis == MaterialFlowBasis.mass):
+                return 1/prop.mw[j]
+            else:
+                raise BurntToast(
+                        "{} encountered unrecognsied combination of bases "
+                        "for reaction rate terms. Please contact the IDAES"
+                        " developers with this bug.".format(b.name))
+        except AttributeError:
+            raise PropertyNotSupportedError(
+                            "{} property package does not support "
+                            "molecular weight (mw), which is required for "
+                            "using property and reaction packages with "
+                            "different bases.".format(b.name))
