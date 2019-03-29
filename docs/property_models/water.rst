@@ -1,6 +1,11 @@
 Water/Steam
 ===========
 
+.. index::
+  pair: idaes.property_models.iapws95.iapws95_wrap_ph; Iapws95StateBlock
+
+.. module:: idaes.property_models.iapws95.iapws95_wrap_ph
+
 Two property modules are available for pure water and steam properties.  The
 property modules use the same calculations and yield consistent results, but one
 uses pressure and molar enthalpy as state variables and the other uses
@@ -256,7 +261,6 @@ func_phir_tau2       phir_tau2      :math:`\frac{\partial^2 \phi_r}{\partial \ta
 func_phir_delta_tau  phir_delta_tau :math:`\frac{\partial^2 \phi_r}{\partial \delta \partial \tau}`  :math:`\delta, \tau`
 ==================== ============== ================================================================ ===========================
 
-
 Initialization
 --------------
 
@@ -306,3 +310,33 @@ International Association for the Properties of Water and Steam (2008).
 IAPWS R12-08, "Release on the IAPWS Formulation 2008 for the Viscosity of
 Ordinary Water Substance,"
 URL: http://iapws.org/relguide/visc.pdf.
+
+
+Convenience Functions
+---------------------
+
+.. autofunction:: htpx
+
+Iapws95StateBlock Class
+------------------------
+
+.. autoclass:: Iapws95StateBlock
+  :members:
+
+Iapws95StateBlockData Class
+---------------------------
+
+.. autoclass:: Iapws95StateBlockData
+  :members:
+
+Iapws95ParameterBlock Class
+---------------------------
+
+.. autoclass:: Iapws95ParameterBlock
+  :members:
+
+Iapws95ParameterBlockData Class
+-------------------------------
+
+.. autoclass:: Iapws95ParameterBlockData
+  :members:
