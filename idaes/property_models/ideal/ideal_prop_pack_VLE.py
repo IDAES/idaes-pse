@@ -242,9 +242,7 @@ class _IdealStateBlock(StateBlock):
         else:
             # Check when the state vars are fixed already result in dof 0
             for k in blk.keys():
-                if degrees_of_freedom(blk[k]) == 0:
-                    pass
-                else:
+                if degrees_of_freedom(blk[k]) != 0:
                     raise Exception("State vars fixed but degrees of freedom "
                                     "for state block is not zero during "
                                     "initialization.")
