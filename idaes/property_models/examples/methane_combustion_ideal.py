@@ -323,9 +323,7 @@ class _StateBlock(StateBlock):
         else:
             # Check when the state vars are fixed already result in dof 0
             for k in blk.keys():
-                if degrees_of_freedom(blk[k]) == 0:
-                    pass
-                else:
+                if degrees_of_freedom(blk[k]) != 0:
                     raise Exception("State vars fixed but degrees of freedom "
                                     "for state block is not zero during "
                                     "initialization.")
@@ -345,7 +343,8 @@ class _StateBlock(StateBlock):
 
                 if hasattr(blk[k], "cp_shomate_eqn"):
                     calculate_variable_from_constraint(blk[k].cp_mol_comp[j],
-                                                      blk[k].cp_shomate_eqn[j])
+                                                       blk[k].
+                                                       cp_shomate_eqn[j])
 
                 if hasattr(blk[k], "enthalpy_shomate_eqn"):
                     calculate_variable_from_constraint(
