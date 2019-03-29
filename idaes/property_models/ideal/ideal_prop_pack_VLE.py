@@ -38,6 +38,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.ui.report import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -151,6 +152,15 @@ class _IdealStateBlock(StateBlock):
                      * 1 = return solver state for each step in routine
                      * 2 = include solver output infomation (tee=True)
             optarg : solver options dictionary object (default=None)
+            state_vars_fixed: Flag to denote if state vars have already been
+                              fixed.
+                              - True - states have already been fixed by the
+                                       control volume 1D. Control volume 0D
+                                       does not fix the state vars, so will
+                                       be False if this state block is used
+                                       with 0D blocks.
+                             - False - states have not been fixed. The state
+                                       block will deal with fixing/unfixing.
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
             hold_state : flag indicating whether the initialization routine
@@ -170,8 +180,14 @@ class _IdealStateBlock(StateBlock):
 
         _log.info('Starting {} initialisation'.format(blk.name))
 
+        # Deactivate the constraints specific for outlet block i.e.
+        # when defined state is False
+        for k in blk.keys():
+            if blk[k].config.defined_state is False:
+                blk[k].eq_mol_frac_out.deactivate()
+
+        # Fix state variables if not already fixed
         if state_vars_fixed is False:
-            # Fix state variables if not already fixed
             Fflag = {}
             Xflag = {}
             Pflag = {}
@@ -223,6 +239,15 @@ class _IdealStateBlock(StateBlock):
                      "Pflag": Pflag,
                      "Tflag": Tflag}
 
+        else:
+            # Check when the state vars are fixed already result in dof 0
+            for k in blk.keys():
+                if degrees_of_freedom(blk[k]) == 0:
+                    pass
+                else:
+                    raise Exception("State vars fixed but degrees of freedom "
+                                    "for state block is not zero during "
+                                    "initialization.")
         # Set solver options
         if outlvl > 1:
             stee = True
@@ -242,8 +267,6 @@ class _IdealStateBlock(StateBlock):
 
             blk[k].eq_total.deactivate()
             blk[k].eq_comp.deactivate()
-            if (blk[k].config.defined_state is False):
-                blk[k].eq_mol_frac_out.deactivate()
             if (blk[k].config.has_phase_equilibrium) or \
                     (blk[k].config.parameters.config.valid_phase ==
                         ('Liq', 'Vap')) or \

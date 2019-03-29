@@ -1761,15 +1761,14 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                         blk.properties[k].component(j).fix(state_args[j])
                         flags[k, j] = False
 
-        # Flag to indicate that CV1D has fixed state vars for the state blocks
-        # If this is False, state block does its own handling of state vars
-        state_vars_fixed = True
+        # state_vars_fixed is a flag to denote if the variables have been
+        # fixed here. If CV1D initialize is triggered, this is always True.
 
         # Initialize state blocks
         blk.properties.initialize(outlvl=outlvl - 1,
                                   optarg=optarg,
                                   solver=solver,
-                                  state_vars_fixed=state_vars_fixed)
+                                  state_vars_fixed=True)
 
         try:
             blk.reactions.initialize(outlvl=outlvl - 1,

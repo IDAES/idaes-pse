@@ -35,6 +35,8 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.initialization import solve_indexed_blocks
+from idaes.ui.report import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -163,7 +165,14 @@ class _StateBlock(StateBlock):
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
             state_vars_fixed: Flag to denote if state vars have already been
-                              fixed for the state block.
+                              fixed.
+                              - True - states have already been fixed by the
+                                       control volume 1D. Control volume 0D
+                                       does not fix the state vars, so will
+                                       be False if this state block is used
+                                       with 0D blocks.
+                             - False - states have not been fixed. The state
+                                       block will deal with fixing/unfixing.
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
@@ -225,6 +234,16 @@ class _StateBlock(StateBlock):
             flags = {"Fflag": Fflag, "Pflag": Pflag,
                      "Tflag": Tflag, "vfflag": vfflag}
 
+        else:
+            # Check when the state vars are fixed already result in dof 0
+            for k in blk.keys():
+                if degrees_of_freedom(blk[k]) == 0:
+                    pass
+                else:
+                    raise Exception("State vars fixed but degrees of freedom "
+                                    "for state block is not zero during "
+                                    "initialization.")
+
         # Set solver options
         if outlvl > 1:
             stee = True
@@ -236,8 +255,7 @@ class _StateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # Solve property correlation
-        for k in blk.keys():
-            results = opt.solve(blk[k], tee=stee)
+        results = solve_indexed_blocks(opt, [blk], tee=stee)
 
         if outlvl > 0:
             if results.solver.termination_condition \

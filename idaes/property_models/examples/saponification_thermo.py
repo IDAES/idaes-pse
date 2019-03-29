@@ -38,6 +38,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock)
 from idaes.core.util.misc import add_object_reference
+from idaes.ui.report import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -134,7 +135,15 @@ class _StateBlock(StateBlock):
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = include solver output infomation (tee=True)
-
+            state_vars_fixed: Flag to denote if state vars have already been
+                              fixed.
+                              - True - states have already been fixed by the
+                                       control volume 1D. Control volume 0D
+                                       does not fix the state vars, so will
+                                       be False if this state block is used
+                                       with 0D blocks.
+                             - False - states have not been fixed. The state
+                                       block will deal with fixing/unfixing.
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -153,6 +162,12 @@ class _StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         '''
+        # Deactivate the constraints specific for outlet block i.e.
+        # when defined state is False
+        for k in blk.keys():
+            if blk[k].config.defined_state is False:
+                blk[k].conc_water_eqn.deactivate()
+
         if state_vars_fixed is False:
             # Fix state variables if not already fixed
             Fflag = {}
@@ -161,6 +176,7 @@ class _StateBlock(StateBlock):
             Cflag = {}
 
             for k in blk.keys():
+                # Fix state vars if not already fixed
                 if blk[k].flow_vol.fixed is True:
                     Fflag[k] = True
                 else:
@@ -205,18 +221,34 @@ class _StateBlock(StateBlock):
             flags = {"Fflag": Fflag, "Pflag": Pflag,
                      "Tflag": Tflag, "Cflag": Cflag}
 
+        else:
+            # Check when the state vars are fixed already result in dof 0
+            for k in blk.keys():
+                if degrees_of_freedom(blk[k]) == 0:
+                    pass
+                else:
+                    raise Exception("State vars fixed but degrees of freedom "
+                                    "for state block is not zero during "
+                                    "initialization.")
+
         opt = SolverFactory(solver)
         opt.options = optarg
 
-        if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
+        # Post initialization reactivate constraints specific for
+        # all blocks other than the inlet
+        for k in blk.keys():
+            if not blk[k].config.defined_state:
+                blk[k].conc_water_eqn.activate()
 
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
             else:
                 blk.release_state(flags)
+
+        if outlvl > 0:
+            if outlvl > 0:
+                _log.info('{} Initialisation Complete.'.format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''
