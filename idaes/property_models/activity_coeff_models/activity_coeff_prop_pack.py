@@ -61,6 +61,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.ui.report import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -163,7 +164,7 @@ class _ActivityCoeffStateBlock(StateBlock):
 
     def initialize(blk, flow_mol=None, mole_frac=None,
                    temperature=None, pressure=None,
-                   hold_state=False, outlvl=1,
+                   hold_state=False, state_vars_fixed=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialisation routine for property package.
@@ -194,50 +195,70 @@ class _ActivityCoeffStateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         """
-        # Fix state variables if not already fixed
-        Fflag = {}
-        Xflag = {}
-        Pflag = {}
-        Tflag = {}
-
+        # Deactivate the constraints specific for outlet block i.e.
+        # when defined state is False
         for k in blk.keys():
-            if blk[k].flow_mol.fixed is True:
-                Fflag[k] = True
-            else:
-                Fflag[k] = False
-                if flow_mol is None:
-                    blk[k].flow_mol.fix(1.0)
-                else:
-                    blk[k].flow_mol.fix(flow_mol)
+            if (blk[k].config.defined_state is False):
+                blk[k].eq_mol_frac_out.deactivate()
 
-            for j in blk[k].component_list_ref:
-                if blk[k].mole_frac[j].fixed is True:
-                    Xflag[k, j] = True
+        # Fix state variables if not already fixed
+        if state_vars_fixed is False:
+            Fflag = {}
+            Xflag = {}
+            Pflag = {}
+            Tflag = {}
+
+            for k in blk.keys():
+                if blk[k].flow_mol.fixed is True:
+                    Fflag[k] = True
                 else:
-                    Xflag[k, j] = False
-                    if mole_frac is None:
-                        blk[k].mole_frac[j].fix(1 / len(blk[k].
-                                                component_list_ref))
+                    Fflag[k] = False
+                    if flow_mol is None:
+                        blk[k].flow_mol.fix(1.0)
                     else:
-                        blk[k].mole_frac[j].fix(mole_frac[j])
+                        blk[k].flow_mol.fix(flow_mol)
 
-            if blk[k].pressure.fixed is True:
-                Pflag[k] = True
-            else:
-                Pflag[k] = False
-                if pressure is None:
-                    blk[k].pressure.fix(101325.0)
-                else:
-                    blk[k].pressure.fix(pressure)
+                for j in blk[k].component_list_ref:
+                    if blk[k].mole_frac[j].fixed is True:
+                        Xflag[k, j] = True
+                    else:
+                        Xflag[k, j] = False
+                        if mole_frac is None:
+                            blk[k].mole_frac[j].fix(1 / len(blk[k].
+                                                    component_list_ref))
+                        else:
+                            blk[k].mole_frac[j].fix(mole_frac[j])
 
-            if blk[k].temperature.fixed is True:
-                Tflag[k] = True
-            else:
-                Tflag[k] = False
-                if temperature is None:
-                    blk[k].temperature.fix(325)
+                if blk[k].pressure.fixed is True:
+                    Pflag[k] = True
                 else:
-                    blk[k].temperature.fix(temperature)
+                    Pflag[k] = False
+                    if pressure is None:
+                        blk[k].pressure.fix(101325.0)
+                    else:
+                        blk[k].pressure.fix(pressure)
+
+                if blk[k].temperature.fixed is True:
+                    Tflag[k] = True
+                else:
+                    Tflag[k] = False
+                    if temperature is None:
+                        blk[k].temperature.fix(325)
+                    else:
+                        blk[k].temperature.fix(temperature)
+
+            # ---------------------------------------------------------------------
+            # If input block, return flags, else release state
+            flags = {"Fflag": Fflag,
+                     "Xflag": Xflag,
+                     "Pflag": Pflag,
+                     "Tflag": Tflag}
+        else:
+            for k in blk.keys():
+                if degrees_of_freedom(blk[k]) != 0:
+                    raise Exception("State vars fixed but degrees of freedom "
+                                    "for state block is not zero during "
+                                    "initialization.")
 
         # Set solver options
         if outlvl > 1:
@@ -258,8 +279,6 @@ class _ActivityCoeffStateBlock(StateBlock):
 
             blk[k].eq_total.deactivate()
             blk[k].eq_comp.deactivate()
-            if (blk[k].config.defined_state is False):
-                blk[k].eq_mol_frac_out.deactivate()
             if (blk[k].config.has_phase_equilibrium) or \
                     (blk[k].config.parameters.config.valid_phase ==
                         ('Liq', 'Vap')) or \
@@ -414,17 +433,12 @@ class _ActivityCoeffStateBlock(StateBlock):
         for k in blk.keys():
             if (blk[k].config.defined_state is False):
                 blk[k].eq_mol_frac_out.activate()
-        # ---------------------------------------------------------------------
-        # If input block, return flags, else release state
-        flags = {"Fflag": Fflag,
-                 "Xflag": Xflag,
-                 "Pflag": Pflag,
-                 "Tflag": Tflag}
 
-        if hold_state is True:
-            return flags
-        else:
-            blk.release_state(flags)
+        if state_vars_fixed is False:
+            if hold_state is True:
+                return flags
+            else:
+                blk.release_state(flags)
 
         if outlvl > 0:
             if outlvl > 0:
@@ -440,7 +454,9 @@ class _ActivityCoeffStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
-        # Unfix state variables
+        if flags is None:
+            return
+
         # Unfix state variables
         for k in blk.keys():
             if flags['Fflag'][k] is False:
