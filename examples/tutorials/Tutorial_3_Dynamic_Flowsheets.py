@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -8,7 +8,7 @@
 #
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes".
+# at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
 Demonstration and test flowsheet for a dynamic flowsheet.
@@ -44,8 +44,10 @@ def main():
     m = ConcreteModel()
 
     # Add a flowsheet object to the model
+    # time_set has points at 0 and 20 as the start and end of the domain,
+    # and a point at t=1 to allow for a step-change at this time
     m.fs = FlowsheetBlock(default={"dynamic": True,
-                                   "time_set": [0, 1, 10]})
+                                   "time_set": [0, 1, 20]})
 
     # Add property packages to flowsheet library
     m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
@@ -59,12 +61,14 @@ def main():
                                "reaction_package": m.fs.reaction_params,
                                "has_holdup": True,
                                "has_equilibrium_reactions": False,
+                               "has_heat_of_reaction": True,
                                "has_heat_transfer": True,
                                "has_pressure_change": False})
     m.fs.Tank2 = CSTR(default={"property_package": m.fs.thermo_params,
                                "reaction_package": m.fs.reaction_params,
                                "has_holdup": True,
                                "has_equilibrium_reactions": False,
+                               "has_heat_of_reaction": True,
                                "has_heat_transfer": True,
                                "has_pressure_change": False})
 
@@ -84,7 +88,7 @@ def main():
 
     def outlet_flowrate(b, t):
         return b.control_volume.properties_out[t].flow_vol == \
-                    b.flow_coeff[t]*b.height[t]
+                    b.flow_coeff[t]*b.height[t]**0.5
     m.fs.Tank1.outlet_flowrate = Constraint(m.fs.time,
                                             rule=outlet_flowrate)
 
@@ -147,8 +151,8 @@ def main():
     m.fs.Tank2.flow_coeff.fix(0.5)
     m.fs.Tank2.heat_duty.fix(0.0)
 
-    # Set initial conditions
-    m.fs.fix_initial_conditions()
+    # Set initial conditions - accumulation = 0 at time = 0
+    m.fs.fix_initial_conditions(state="steady-state")
 
     # Initialize Units
     m.fs.mix.initialize()

@@ -105,22 +105,22 @@ def test_tutorial_3():
 
     assert degrees_of_freedom(m) == 0
 
-    assert m.fs.time.last() == 10.0
+    assert m.fs.time.last() == 20.0
     assert len(m.fs.time) == 51
 
-    assert (m.fs.Tank2.outlet.flow_vol[10.0].value ==
+    assert (m.fs.Tank2.outlet.flow_vol[20.0].value ==
             pytest.approx(1.0, abs=1e-2))
-    assert (m.fs.Tank2.outlet.conc_mol_comp[10.0, "Ethanol"].value ==
-            pytest.approx(42.00, abs=1e-1))
-    assert (m.fs.Tank2.outlet.conc_mol_comp[10.0, "EthylAcetate"].value ==
-            pytest.approx(3.30, abs=1e-1))
-    assert (m.fs.Tank2.outlet.conc_mol_comp[10.0, "NaOH"].value ==
-            pytest.approx(8.00, abs=1e-1))
-    assert (m.fs.Tank2.outlet.conc_mol_comp[10.0, "SodiumAcetate"].value ==
-            pytest.approx(42.00, abs=1e-1))
-    assert (m.fs.Tank2.outlet.conc_mol_comp[10.0, "H2O"].value ==
+    assert (m.fs.Tank2.outlet.conc_mol_comp[20.0, "Ethanol"].value ==
+            pytest.approx(43.62, abs=1e-1))
+    assert (m.fs.Tank2.outlet.conc_mol_comp[20.0, "EthylAcetate"].value ==
+            pytest.approx(1.65, abs=1e-1))
+    assert (m.fs.Tank2.outlet.conc_mol_comp[20.0, "NaOH"].value ==
+            pytest.approx(6.38, abs=1e-1))
+    assert (m.fs.Tank2.outlet.conc_mol_comp[20.0, "SodiumAcetate"].value ==
+            pytest.approx(43.62, abs=1e-1))
+    assert (m.fs.Tank2.outlet.conc_mol_comp[20.0, "H2O"].value ==
             pytest.approx(55388.0, abs=1))
-    assert (m.fs.Tank2.outlet.pressure[10.0].value ==
+    assert (m.fs.Tank2.outlet.pressure[20.0].value ==
             pytest.approx(101325, abs=1))
-    assert (m.fs.Tank2.outlet.temperature[10.0].value ==
-            pytest.approx(303.15, abs=1e-1))
+    assert (m.fs.Tank2.outlet.temperature[20.0].value ==
+            pytest.approx(303.66, abs=1e-1))

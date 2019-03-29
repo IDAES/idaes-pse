@@ -240,7 +240,7 @@ def test_build_method():
     assert isinstance(fs.time, Set)
 
 
-def test_fix_unfix__initial_conditions():
+def test_fix_unfix_initial_conditions():
     fs = Flowsheet(default={"dynamic": True, "time_set": [0, 1, 2]},
                    concrete=True)
     fs._setup_dynamics()
