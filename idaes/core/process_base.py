@@ -21,6 +21,7 @@ import logging
 
 from pyomo.core.base.block import _BlockData
 from pyomo.environ import Block
+from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
 
 from idaes.core.process_block import declare_process_block_class
@@ -101,7 +102,7 @@ class ProcessBlockData(_BlockData):
         if self._pb_configured:
             return
         self._pb_configured = True
-        idx_map = self.parent_component()._idx_map # index map function
+        idx_map = self.parent_component()._idx_map  # index map function
         try:
             idx = self.index()
         except:
@@ -135,10 +136,17 @@ class ProcessBlockData(_BlockData):
                 except AttributeError:
                     pass
 
-                # Try to fix energy_accumulation @ first time point
+                # Try to fix element_accumulation @ first time point
                 try:
-                    obj.energy_accumulation[obj.time_ref.first(),
-                                            ...].fix(0.0)
+                    obj.element_accumulation[obj.time_ref.first(),
+                                             ...].fix(0.0)
+                except AttributeError:
+                    pass
+
+                # Try to fix enthalpy_accumulation @ first time point
+                try:
+                    obj.enthalpy_accumulation[obj.time_ref.first(),
+                                              ...].fix(0.0)
                 except AttributeError:
                     pass
 
@@ -158,13 +166,22 @@ class ProcessBlockData(_BlockData):
         for obj in self.component_objects(Block, descend_into=True):
             # Try to unfix material_accumulation @ first time point
             try:
-                obj.material_accumulation[obj.time_ref.first(), ...].unfix()
+                obj.material_accumulation[obj.time_ref.first(),
+                                          ...].unfix()
             except AttributeError:
                 pass
 
-            # Try to unfix energy_accumulation @ first time point
+            # Try to fix element_accumulation @ first time point
             try:
-                obj.energy_accumulation[obj.time_ref.first(), ...].unfix()
+                obj.element_accumulation[obj.time_ref.first(),
+                                         ...].unfix()
+            except AttributeError:
+                pass
+
+            # Try to fix enthalpy_accumulation @ first time point
+            try:
+                obj.enthalpy_accumulation[obj.time_ref.first(),
+                                          ...].unfix()
             except AttributeError:
                 pass
 
