@@ -199,6 +199,12 @@ class CVFrameData(ControlVolume1DBlock):
 
 
 # -----------------------------------------------------------------------------
+# Test DistributedVars Enum
+def test_DistributedVars():
+    assert len(DistributedVars) == 2
+
+
+# -----------------------------------------------------------------------------
 # Basic tests
 def test_base_build():
     m = ConcreteModel()
@@ -294,6 +300,20 @@ def test_add_geometry_flow_direction_invalid():
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_geometry(flow_direction="foo")
+
+
+def test_add_geometry_discretized_area():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(default={
+            "property_package": m.fs.pp,
+            "area_definition": DistributedVars.variant})
+
+    m.fs.cv.add_geometry()
+
+    assert len(m.fs.cv.area) == 2
 
 
 # -----------------------------------------------------------------------------
@@ -594,6 +614,27 @@ def test_add_phase_component_balances_default():
 
     m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_phase_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+
+
+def test_add_phase_component_balances_distrubuted_area():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                                "property_package": m.fs.pp,
+                                "reaction_package": m.fs.rp,
+                                "area_definition": DistributedVars.variant})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1073,6 +1114,27 @@ def test_add_total_component_balances_default():
     assert len(mb) == 2
 
 
+def test_add_total_component_balances_distrubuted_area():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                                "property_package": m.fs.pp,
+                                "reaction_package": m.fs.rp,
+                                "area_definition": DistributedVars.variant})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_total_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 2
+
+
 def test_add_total_component_balances_dynamic():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": True})
@@ -1486,6 +1548,27 @@ def test_add_total_element_balances_default():
     assert len(mb) == 3
 
 
+def test_add_total_element_balances_distrubuted_area():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                                "property_package": m.fs.pp,
+                                "reaction_package": m.fs.rp,
+                                "area_definition": DistributedVars.variant})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_total_element_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 3
+
+
 def test_add_total_element_balances_properties_not_supported():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1744,6 +1827,30 @@ def test_add_total_enthalpy_balances_default():
 
     m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
                                        "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    eb = m.fs.cv.add_total_enthalpy_balances()
+
+    assert isinstance(eb, Constraint)
+    assert len(eb) == 1
+    assert isinstance(m.fs.cv._enthalpy_flow, Var)
+    assert isinstance(m.fs.cv.enthalpy_flow_linking_constraint, Constraint)
+    assert isinstance(m.fs.cv.enthalpy_flow_dx, DerivativeVar)
+
+
+def test_add_total_enthalpy_balances_distributed_area():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+            "property_package": m.fs.pp,
+            "reaction_package": m.fs.rp,
+            "area_definition": DistributedVars.variant})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)

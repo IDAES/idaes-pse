@@ -558,11 +558,6 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             else:
                 return 0
 
-        def area_func(b, t, x):
-            if self.config.area_definition == DistributedVars.uniform:
-                return b.area
-            return b.area[t, x]
-
         # Add component balances
         @self.Constraint(self.time_ref,
                          self.length_domain,
@@ -606,7 +601,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def material_holdup_calculation(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.material_holdup[t, x, p, j] == (
-                          area_func(b, t, x)*self.phase_fraction[t, x, p] *
+                          b._area_func(t, x)*self.phase_fraction[t, x, p] *
                           b.properties[t, x].get_material_density_terms(p, j))
                 else:
                     return b.material_holdup[t, x, p, j] == 0
@@ -959,11 +954,6 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                     b.length*user_term_mol(b, t, x, j) +
                     b.length*user_term_mass(b, t, x, j))
 
-        def area_func(b, t, x):
-            if self.config.area_definition == DistributedVars.uniform:
-                return b.area
-            return b.area[t, x]
-
         # TODO: Need to set material_holdup = 0 for non-present component-phase
         # pairs. Not ideal, but needed to close DoF. Is there a better way?
 
@@ -980,7 +970,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def material_holdup_calculation(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.material_holdup[t, x, p, j] == (
-                          area_func(b, t, x)*self.phase_fraction[t, x, p] *
+                          b._area_func(t, x)*self.phase_fraction[t, x, p] *
                           b.properties[t, x].get_material_density_terms(p, j))
                 else:
                     return b.material_holdup[t, x, p, j] == 0
@@ -1235,11 +1225,6 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             else:
                 return 0
 
-        def area_func(b, t, x):
-            if self.config.area_definition == DistributedVars.uniform:
-                return b.area
-            return b.area[t, x]
-
         # Element balances
         @self.Constraint(self.time_ref,
                          self.length_domain,
@@ -1271,7 +1256,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Elemental holdup calculation")
             def elemental_holdup_calculation(b, t, x, e):
                 return b.element_holdup[t, x, e] == (
-                    area_func(b, t, x) *
+                    b._area_func(t, x) *
                     sum(b.phase_fraction[t, x, p] *
                         b.properties[t, x].get_material_density_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
@@ -1445,11 +1430,6 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             else:
                 return 0
 
-        def area_func(b, t, x):
-            if self.config.area_definition == DistributedVars.uniform:
-                return b.area
-            return b.area[t, x]
-
         # Energy balance equation
         @self.Constraint(self.time_ref,
                          self.length_domain,
@@ -1484,7 +1464,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Enthalpy holdup constraint")
             def enthalpy_holdup_calculation(b, t, x, p):
                 return b.enthalpy_holdup[t, x, p] == (
-                            area_func(b, t, x)*self.phase_fraction[t, x, p] *
+                            b._area_func(t, x)*self.phase_fraction[t, x, p] *
                             b.properties[t, x].get_enthalpy_density_terms(p))
 
         return self.enthalpy_balances
@@ -1913,3 +1893,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc='Volume fraction of holdup by phase')
             def phase_fraction(self, t, x, p):
                 return 1
+
+    def _area_func(b, t, x):
+        if b.config.area_definition == DistributedVars.uniform:
+            return b.area
+        return b.area[t, x]
