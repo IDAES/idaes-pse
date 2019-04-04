@@ -84,7 +84,10 @@ def _set_value(o, d):
     if isinstance(o, Param) and not o._mutable:
         return #ignore requests to set immutable params
     else:
-        o.value = d
+        try:
+            o.value = d
+        except AttributeError:
+            o = d # this would be an index parameter
 
 def _set_lb(o, d):
     """
