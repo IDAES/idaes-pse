@@ -303,22 +303,6 @@ class SaponificationStateBlockData(StateBlockData):
                              "component_list_ref",
                              self.config.parameters.component_list)
 
-        # Heat capacity - no _ref ending as this is the actual property
-        add_object_reference(self,
-                             "cp_mol",
-                             self.config.parameters.cp_mol)
-
-        # Density - no _ref ending as this is the actual property
-        add_object_reference(self,
-                             "dens_mol",
-                             self.config.parameters.dens_mol)
-
-        # Thermodynamic reference state
-        add_object_reference(self, "pressure_ref_ref",
-                             self.config.parameters.pressure_ref)
-        add_object_reference(self, "temperature_ref_ref",
-                             self.config.parameters.temperature_ref)
-
         # Create state variables
         self.flow_vol = Var(initialize=1.0,
                             domain=NonNegativeReals,
@@ -339,20 +323,21 @@ class SaponificationStateBlockData(StateBlockData):
 
         if self.config.defined_state is False:
             self.conc_water_eqn = Constraint(expr=self.conc_mol_comp["H2O"] ==
-                                             self.dens_mol)
+                                             self._params.dens_mol)
 
     def get_material_flow_terms(b, p, j):
         return b.flow_vol*b.conc_mol_comp[j]
 
     def get_enthalpy_flow_terms(b, p):
-        return (b.flow_vol*b.dens_mol*b.cp_mol *
-                (b.temperature - b.temperature_ref_ref))
+        return (b.flow_vol*b._params.dens_mol*b._params.cp_mol *
+                (b.temperature - b._params.temperature_ref))
 
     def get_material_density_terms(b, p, j):
         return b.conc_mol_comp[j]
 
     def get_enthalpy_density_terms(b, p):
-        return b.dens_mol*b.cp_mol*(b.temperature - b.temperature_ref_ref)
+        return b._params.dens_mol*b._params.cp_mol*(
+                b.temperature - b._params.temperature_ref)
 
     def define_state_vars(b):
         return {"flow_vol": b.flow_vol,

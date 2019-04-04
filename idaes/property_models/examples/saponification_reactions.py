@@ -179,27 +179,11 @@ class ReactionBlockData(ReactionBlockDataBase):
                 "rate_reaction_stoichiometry",
                 self.config.parameters.rate_reaction_stoichiometry)
 
-        # Arrhenius constant
-        add_object_reference(
-                self,
-                "arrhenius_ref",
-                self.config.parameters.arrhenius)
-
-        # Activation energy
-        add_object_reference(
-                self,
-                "energy_activation_ref",
-                self.config.parameters.energy_activation)
-
         # Heat of reaction - no _ref as this is the actual property
         add_object_reference(
                 self,
                 "dh_rxn",
                 self.config.parameters.dh_rxn)
-
-        # Gas constant
-        add_object_reference(self, "gas_const_ref",
-                             self.config.parameters.gas_const)
 
     # Rate constant method
     def _rate_constant(self):
@@ -207,11 +191,10 @@ class ReactionBlockData(ReactionBlockDataBase):
                          doc="Rate constant [m^3/mol.s]")
 
         try:
-            self.arrhenius_eqn = Constraint(expr=self.k_rxn ==
-                                            self.arrhenius_ref *
-                                            exp(-self.energy_activation_ref /
-                                                (self.gas_const_ref *
-                                                 self.temperature_ref)))
+            self.arrhenius_eqn = Constraint(
+                    expr=self.k_rxn == self._params.arrhenius *
+                    exp(-self._params.energy_activation /
+                        (self._params.gas_const*self.temperature_ref)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.k_rxn)

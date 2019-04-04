@@ -476,26 +476,6 @@ class MethaneCombustionStateBlockData(StateBlockData):
                              "element_comp_ref",
                              self.config.parameters.element_comp)
 
-        # Heat capacity correlation parameters
-        add_object_reference(self,
-                             "cp_params_ref",
-                             self.config.parameters.cp_params)
-
-        # Heat of formation
-        add_object_reference(self,
-                             "enth_mol_form_ref",
-                             self.config.parameters.enth_mol_form)
-
-        # Gas constant
-        add_object_reference(self, "gas_const_ref",
-                             self.config.parameters.gas_const)
-
-        # Thermodynamic reference state
-        add_object_reference(self, "pressure_ref_ref",
-                             self.config.parameters.pressure_ref)
-        add_object_reference(self, "temperature_ref_ref",
-                             self.config.parameters.temperature_ref)
-
         # Create state variables
         self.flow_mol_comp = Var(self.component_list_ref,
                                  initialize=1.0,
@@ -528,7 +508,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
                                   doc="Molar density")
 
         def ideal_gas(b, p):
-            return (b.dens_mol_phase[p]*b.gas_const_ref*b.temperature ==
+            return (b.dens_mol_phase[p]*b._params.gas_const*b.temperature ==
                     b.pressure)
         try:
             # Try to build constraint
@@ -549,11 +529,11 @@ class MethaneCombustionStateBlockData(StateBlockData):
 
         def pure_component_cp_mol(b, j):
             return b.cp_mol_comp[j] == (
-                        b.cp_params_ref[j, 1] +
-                        b.cp_params_ref[j, 2]*(b.temperature*1e-3) +
-                        b.cp_params_ref[j, 3]*(b.temperature*1e-3)**2 +
-                        b.cp_params_ref[j, 4]*(b.temperature*1e-3)**3 +
-                        b.cp_params_ref[j, 5]/(b.temperature*1e-3)**2)
+                        b._params.cp_params[j, 1] +
+                        b._params.cp_params[j, 2]*(b.temperature*1e-3) +
+                        b._params.cp_params[j, 3]*(b.temperature*1e-3)**2 +
+                        b._params.cp_params[j, 4]*(b.temperature*1e-3)**3 +
+                        b._params.cp_params[j, 5]/(b.temperature*1e-3)**2)
         try:
             # Try to build constraint
             self.cp_shomate_eqn = Constraint(self.component_list_ref,
@@ -594,15 +574,15 @@ class MethaneCombustionStateBlockData(StateBlockData):
 
         def pure_comp_enthalpy(b, j):
             return b.enth_mol_phase_comp["Vap", j] == (1e3*(
-                    b.cp_params_ref[j, 1]*(b.temperature*1e-3) +
-                    b.cp_params_ref[j, 2]*(b.temperature*1e-3)**2/2 +
-                    b.cp_params_ref[j, 3]*(b.temperature*1e-3)**3/3 +
-                    b.cp_params_ref[j, 4]*(b.temperature*1e-3)**4/4 -
-                    b.cp_params_ref[j, 5]/(b.temperature*1e-3) +
-                    b.cp_params_ref[j, 6] -
-                    b.cp_params_ref[j, 8]) -
-                    b.cp_params_ref[j, 9] +
-                    b.enth_mol_form_ref[j])
+                    b._params.cp_params[j, 1]*(b.temperature*1e-3) +
+                    b._params.cp_params[j, 2]*(b.temperature*1e-3)**2/2 +
+                    b._params.cp_params[j, 3]*(b.temperature*1e-3)**3/3 +
+                    b._params.cp_params[j, 4]*(b.temperature*1e-3)**4/4 -
+                    b._params.cp_params[j, 5]/(b.temperature*1e-3) +
+                    b._params.cp_params[j, 6] -
+                    b._params.cp_params[j, 8]) -
+                    b._params.cp_params[j, 9] +
+                    b._params.enth_mol_form[j])
         try:
             # Try to build constraint
             self.enthalpy_shomate_eqn = Constraint(self.component_list_ref,
@@ -642,14 +622,14 @@ class MethaneCombustionStateBlockData(StateBlockData):
 
         def partial_comp_entropy(b, j):
             return b.entr_mol_phase_comp["Vap", j] == (
-                    b.cp_params_ref[j, 1]*log((b.temperature*1e-3)) +
-                    b.cp_params_ref[j, 2]*(b.temperature*1e-3) +
-                    b.cp_params_ref[j, 3]*(b.temperature*1e-3)**2/2 +
-                    b.cp_params_ref[j, 4]*(b.temperature*1e-3)**3/3 -
-                    b.cp_params_ref[j, 5]/(2*(b.temperature*1e-3)**2) +
-                    b.cp_params_ref[j, 7] -
-                    b.gas_const_ref*log(b.mole_frac[j] *
-                                        b.pressure/b.pressure_ref_ref))
+                    b._params.cp_params[j, 1]*log((b.temperature*1e-3)) +
+                    b._params.cp_params[j, 2]*(b.temperature*1e-3) +
+                    b._params.cp_params[j, 3]*(b.temperature*1e-3)**2/2 +
+                    b._params.cp_params[j, 4]*(b.temperature*1e-3)**3/3 -
+                    b._params.cp_params[j, 5]/(2*(b.temperature*1e-3)**2) +
+                    b._params.cp_params[j, 7] -
+                    b._params.gas_const*log(b.mole_frac[j] *
+                                        b.pressure/b._params.pressure_ref))
         try:
             # Try to build constraint
             self.entropy_shomate_eqn = Constraint(self.component_list_ref,
