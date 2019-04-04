@@ -87,7 +87,7 @@ def _set_value(o, d):
         try:
             o.value = d
         except AttributeError:
-            o = d # this would be an index parameter
+            o = d # this would be an indexed parameter
 
 def _set_lb(o, d):
     """
