@@ -123,10 +123,12 @@ Variable                        Standard Name
 =============================== =====================
 Activity                        act
 Activity Coefficient            act_coeff
-Bubble Temperature              t_bub
+Bubble Pressure                 pressure_bub
+Bubble Temperature              temperature_bub
 Compressibility Factor          compress_fact
 Concentration                   conc
 Density                         dens
+Dew Pressure                    pressure_dew
 Dew Temperature                 temperature_dew
 Diffusivity                     diffus
 Diffusion Coefficient (binary)  diffus_binary
