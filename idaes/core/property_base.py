@@ -26,6 +26,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
+from idaes.core.util.misc import add_object_reference
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -133,6 +134,7 @@ should be constructed in this state block,
             None
         """
         super(StateBlockData, self).build()
+        add_object_reference(self, "_params", self.config.parameters)
 
     def define_state_vars(self):
         """
