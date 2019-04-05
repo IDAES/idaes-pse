@@ -189,7 +189,7 @@ class _IdealStateBlock(StateBlock):
         # when defined state is False
         for k in blk.keys():
             if blk[k].config.defined_state is False:
-                blk[k].eq_mol_frac_out.deactivate()
+                blk[k].sum_mole_frac_out.deactivate()
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
@@ -268,21 +268,21 @@ class _IdealStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
         for k in blk.keys():
-            if hasattr(blk[k], "eq_bubble_temp"):
+            if hasattr(blk[k], "eq_temperature_bub"):
                 calculate_variable_from_constraint(blk[k].temperature_bub,
-                                                   blk[k].eq_bubble_temp)
+                                                   blk[k].eq_temperature_bub)
 
-            if hasattr(blk[k], "eq_dew_temp"):
+            if hasattr(blk[k], "eq_temperature_dew"):
                 calculate_variable_from_constraint(blk[k].temperature_dew,
-                                                   blk[k].eq_dew_temp)
+                                                   blk[k].eq_temperature_dew)
 
-            if hasattr(blk[k], "eq_bubble_pressure"):
+            if hasattr(blk[k], "eq_tpressure_bub"):
                 calculate_variable_from_constraint(blk[k].pressure_bub,
-                                                   blk[k].eq_bubble_pressure)
+                                                   blk[k].eq_tpressure_bub)
 
-            if hasattr(blk[k], "eq_dew_pressure"):
+            if hasattr(blk[k], "eq_pressure_dew"):
                 calculate_variable_from_constraint(blk[k].pressure_dew,
-                                                   blk[k].eq_dew_pressure)
+                                                   blk[k].eq_pressure_dew)
 
         if outlvl > 0:
             _log.info("Dew and bubble points initialization for "
@@ -330,25 +330,26 @@ class _IdealStateBlock(StateBlock):
                     blk[k].mole_frac_phase['Liq', j].value = \
                         blk[k].mole_frac[j].value
 
-                    calculate_variable_from_constraint(blk[k].pressure_sat[j],
-                                                       blk[k].eq_P_sat[j])
+                    calculate_variable_from_constraint(
+                            blk[k].pressure_sat[j],
+                            blk[k].eq_pressure_sat[j])
 
         # ---------------------------------------------------------------------
         # Solve phase equilibrium constraints
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
                 # Deactivate all property constraints
-                if c.local_name not in ("eq_total",
-                                        "eq_comp",
+                if c.local_name not in ("total_flow_balance",
+                                        "component_flow_balances",
                                         "equilibrium_constraint",
-                                        "eq_sum_mol_frac",
+                                        "sum_mole_frac",
                                         "_t1_constraint",
                                         "_teq_constraint",
-                                        "eq_dew_pressure",
-                                        "eq_bubble_pressure",
-                                        "eq_dew_temp",
-                                        "eq_bubble_temp",
-                                        "eq_P_sat"):
+                                        "eq_pressure_dew",
+                                        "eq_tpressure_bub",
+                                        "eq_temperature_dew",
+                                        "eq_temperature_bub",
+                                        "eq_pressure_sat"):
                     c.deactivate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
@@ -366,8 +367,8 @@ class _IdealStateBlock(StateBlock):
         # Initialize other properties
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
-                # Activate all constraints except eq_mol_frac_out
-                if c.local_name not in ("eq_mol_frac_out"):
+                # Activate all constraints except sum_mole_frac_out
+                if c.local_name not in ("sum_mole_frac_out"):
                     c.activate()
 
         if outlvl > 0:
@@ -383,7 +384,7 @@ class _IdealStateBlock(StateBlock):
         # Return state to initial conditions
         for k in blk.keys():
             if (blk[k].config.defined_state is False):
-                blk[k].eq_mol_frac_out.activate()
+                blk[k].sum_mole_frac_out.activate()
 
         if state_vars_fixed is False:
             if hold_state is True:
@@ -488,32 +489,32 @@ class IdealStateBlockData(StateBlockData):
     def _make_liq_phase_eq(self):
         def rule_total_mass_balance(b):
             return b.flow_mol_phase['Liq'] == b.flow_mol
-        self.eq_total = Constraint(rule=rule_total_mass_balance)
+        self.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
             return b.mole_frac[i] == b.mole_frac_phase['Liq', i]
-        self.eq_comp = Constraint(self._params.component_list,
-                                  rule=rule_comp_mass_balance)
+        self.component_flow_balances = Constraint(self._params.component_list,
+                                                  rule=rule_comp_mass_balance)
 
         if self.config.defined_state is False:
             # applied at outlet only
-            self.eq_mol_frac_out = Constraint(
+            self.sum_mole_frac_out = Constraint(
                     expr=1 == sum(self.mole_frac[i]
                                   for i in self._params.component_list))
 
     def _make_vap_phase_eq(self):
         def rule_total_mass_balance(b):
             return b.flow_mol_phase['Vap'] == b.flow_mol
-        self.eq_total = Constraint(rule=rule_total_mass_balance)
+        self.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
             return b.mole_frac[i] == b.mole_frac_phase['Vap', i]
-        self.eq_comp = Constraint(self._params.component_list,
-                                  rule=rule_comp_mass_balance)
+        self.component_flow_balances = Constraint(self._params.component_list,
+                                                  rule=rule_comp_mass_balance)
 
         if self.config.defined_state is False:
             # applied at outlet only
-            self.eq_mol_frac_out = Constraint(
+            self.sum_mole_frac_out = Constraint(
                     expr=1 == sum(self.mole_frac[i]
                                   for i in self._params.component_list))
 
@@ -525,25 +526,25 @@ class IdealStateBlockData(StateBlockData):
         def rule_total_mass_balance(b):
             return b.flow_mol_phase['Liq'] + \
                 b.flow_mol_phase['Vap'] == b.flow_mol
-        self.eq_total = Constraint(rule=rule_total_mass_balance)
+        self.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
             return b.flow_mol * b.mole_frac[i] == \
                 b.flow_mol_phase['Liq'] * b.mole_frac_phase['Liq', i] + \
                 b.flow_mol_phase['Vap'] * b.mole_frac_phase['Vap', i]
-        self.eq_comp = Constraint(self._params.component_list,
-                                  rule=rule_comp_mass_balance)
+        self.component_flow_balances = Constraint(self._params.component_list,
+                                                  rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b):
             return sum(b.mole_frac_phase['Liq', i]
                        for i in b._params.component_list) -\
                 sum(b.mole_frac_phase['Vap', i]
                     for i in b._params.component_list) == 0
-        self.eq_sum_mol_frac = Constraint(rule=rule_mole_frac)
+        self.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
         if self.config.defined_state is False:
             # applied at outlet only
-            self.eq_mol_frac_out = Constraint(
+            self.sum_mole_frac_out = Constraint(
                     expr=1 == sum(self.mole_frac[i]
                                   for i in self._params.component_list))
 
@@ -714,74 +715,74 @@ class IdealStateBlockData(StateBlockData):
     def calculate_bubble_point_temperature(self, clear_components=True):
         """"To compute the bubble point temperature of the mixture."""
 
-        if hasattr(self, "eq_bubble_temp"):
+        if hasattr(self, "eq_temperature_bub"):
             # Do not delete components if the block already has the components
             clear_components = False
 
         calculate_variable_from_constraint(self.temperature_bub,
-                                           self.eq_bubble_temp)
+                                           self.eq_temperature_bub)
 
         return self.temperature_bub.value
 
         if clear_components is True:
-            self.del_component(self.eq_bubble_temp)
+            self.del_component(self.eq_temperature_bub)
             self.del_component(self._p_sat_bubbleT)
             self.del_component(self.temperature_bub)
 
     def calculate_dew_point_temperature(self, clear_components=True):
         """"To compute the dew point temperature of the mixture."""
 
-        if hasattr(self, "eq_dew_temp"):
+        if hasattr(self, "eq_temperature_dew"):
             # Do not delete components if the block already has the components
             clear_components = False
 
         calculate_variable_from_constraint(self.temperature_dew,
-                                           self.eq_dew_temp)
+                                           self.eq_temperature_dew)
 
         return self.temperature_dew.value
 
         # Delete the var/constraint created in this method that are part of the
         # IdealStateBlock if the user desires
         if clear_components is True:
-            self.del_component(self.eq_dew_temp)
+            self.del_component(self.eq_temperature_dew)
             self.del_component(self._p_sat_dewT)
             self.del_component(self.temperature_dew)
 
     def calculate_bubble_point_pressure(self, clear_components=True):
         """"To compute the bubble point pressure of the mixture."""
 
-        if hasattr(self, "eq_bubble_pressure"):
+        if hasattr(self, "eq_tpressure_bub"):
             # Do not delete components if the block already has the components
             clear_components = False
 
         calculate_variable_from_constraint(self.pressure_bub,
-                                           self.eq_bubble_pressure)
+                                           self.eq_tpressure_bub)
 
         return self.pressure_bub.value
 
         # Delete the var/constraint created in this method that are part of the
         # IdealStateBlock if the user desires
         if clear_components is True:
-            self.del_component(self.eq_bubble_pressure)
+            self.del_component(self.eq_tpressure_bub)
             self.del_component(self._p_sat_bubbleP)
             self.del_component(self.pressure_bub)
 
     def calculate_dew_point_pressure(self, clear_components=True):
         """"To compute the dew point pressure of the mixture."""
 
-        if hasattr(self, "eq_dew_pressure"):
+        if hasattr(self, "eq_pressure_dew"):
             # Do not delete components if the block already has the components
             clear_components = False
 
         calculate_variable_from_constraint(self.pressure_dew,
-                                           self.eq_dew_pressure)
+                                           self.eq_pressure_dew)
 
         return self.pressure_dew.value
 
         # Delete the var/constraint created in this method that are part of the
         # IdealStateBlock if the user desires
         if clear_components is True:
-            self.del_component(self.eq_dew_pressure)
+            self.del_component(self.eq_pressure_dew)
             self.del_component(self._p_sat_dewP)
             self.del_component(self.pressure_dew)
 
@@ -823,7 +824,7 @@ class IdealStateBlockData(StateBlockData):
                 return sum(b._p_sat_bubbleT[i] * b.mole_frac[i]
                            for i in b._params.component_list) - \
                     b.pressure == 0
-            self.eq_bubble_temp = Constraint(rule=rule_temp_bubble)
+            self.eq_temperature_bub = Constraint(rule=rule_temp_bubble)
 
         except AttributeError:
             # If expression fails, clean up so that DAE can try again later
@@ -864,7 +865,7 @@ class IdealStateBlockData(StateBlockData):
                                         b._p_sat_dewT[i]
                                         for i in b._params.component_list) \
                     - 1 == 0
-            self.eq_dew_temp = Constraint(rule=rule_temp_dew)
+            self.eq_temperature_dew = Constraint(rule=rule_temp_dew)
         except AttributeError:
             # If expression fails, clean up so that DAE can try again later
             # Deleting only var/expression as expression construction will fail
@@ -902,7 +903,7 @@ class IdealStateBlockData(StateBlockData):
                 return sum(b._p_sat_bubbleP[i] * b.mole_frac[i]
                            for i in b._params.component_list) \
                     - b.pressure_bub == 0
-            self.eq_bubble_pressure = Constraint(rule=rule_pressure_bubble)
+            self.eq_tpressure_bub = Constraint(rule=rule_pressure_bubble)
         except AttributeError:
             # If expression fails, clean up so that DAE can try again later
             # Deleting only var/expression as expression construction will fail
@@ -941,7 +942,7 @@ class IdealStateBlockData(StateBlockData):
                     sum(b.mole_frac[i] / b._p_sat_dewP[i]
                         for i in b._params.component_list) \
                     - 1 == 0
-            self.eq_dew_pressure = Constraint(rule=rule_pressure_dew)
+            self.eq_pressure_dew = Constraint(rule=rule_pressure_dew)
         except AttributeError:
             # If expression fails, clean up so that DAE can try again later
             # Deleting only var/expression as expression construction will fail
@@ -979,8 +980,8 @@ class IdealStateBlockData(StateBlockData):
                  b._params.pressure_sat_coeff[j, 'B']*(1-b._tr_eq[j])**1.5 +
                  b._params.pressure_sat_coeff[j, 'C']*(1-b._tr_eq[j])**3 +
                  b._params.pressure_sat_coeff[j, 'D']*(1-b._tr_eq[j])**6)
-        self.eq_P_sat = Constraint(self._params.component_list,
-                                   rule=rule_P_sat)
+        self.eq_pressure_sat = Constraint(self._params.component_list,
+                                          rule=rule_P_sat)
 
     def _enth_mol_comp_liq(b, j):
         return b.enth_mol_phase_comp['Liq', j] * 1E3 == \
