@@ -163,16 +163,6 @@ class ReactionBlockData(ReactionBlockDataBase):
                              "temperature_ref",
                              self.state_ref.temperature)
 
-        # Component list - a list of component identifiers
-        add_object_reference(self,
-                             "component_list_ref",
-                             self.config.parameters.component_list)
-
-        # Reaction list - a list of reaction identifiers
-        add_object_reference(self,
-                             "rate_reaction_idx_ref",
-                             self.config.parameters.rate_reaction_idx)
-
         # Reaction stoichiometry - no _ref as this is a property
         add_object_reference(
                 self,
@@ -203,7 +193,7 @@ class ReactionBlockData(ReactionBlockDataBase):
 
     # Rate of reaction method
     def _rxn_rate(self):
-        self.reaction_rate = Var(self.rate_reaction_idx_ref,
+        self.reaction_rate = Var(self._params.rate_reaction_idx,
                                  initialize=0,
                                  doc="Rate of reaction [mol/m^3.s]")
 
@@ -212,7 +202,7 @@ class ReactionBlockData(ReactionBlockDataBase):
                 return b.reaction_rate[r] == (
                             b.k_rxn*b.conc_mol_comp_ref["EthylAcetate"] *
                             b.conc_mol_comp_ref["NaOH"])
-            self.rate_expression = Constraint(self.rate_reaction_idx_ref,
+            self.rate_expression = Constraint(self._params.rate_reaction_idx,
                                               rule=rate_rule)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
