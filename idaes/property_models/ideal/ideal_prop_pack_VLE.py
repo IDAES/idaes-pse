@@ -461,14 +461,6 @@ class IdealStateBlockData(StateBlockData):
         add_object_reference(self, "component_list_ref",
                              self.config.parameters.component_list)
 
-        # List of Reaction Indicies
-        add_object_reference(self, "phase_equilibrium_idx_ref",
-                             self.config.parameters.phase_equilibrium_idx)
-
-        # Reaction Stoichiometry
-        add_object_reference(self, "phase_equilibrium_list_ref",
-                             self.config.parameters.phase_equilibrium_list)
-
         # Thermodynamic reference state
         add_object_reference(self, "pressure_ref_ref",
                              self.config.parameters.pressure_reference)
