@@ -202,4 +202,3 @@ see property package for documentation.}"""))
             add_object_reference(self,
                                  "deltaP",
                                  self.control_volume.deltaP)
-

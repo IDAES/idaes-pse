@@ -27,13 +27,13 @@ from pyomo.environ import (SolverFactory, Var, Param, Constraint,
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
+from idaes.core import (ControlVolume1DBlock,
+                        UnitModelBlockData,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         FlowDirection,
-                        UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
@@ -107,14 +107,6 @@ Must be True if dynamic = True,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    _SideTemplate.declare("has_heat_transfer", ConfigValue(
-        default=True,
-        domain=In([True]),
-        description="Heat transfer term construction flag",
-        doc="""Indicates whether terms for heat transfer should be constructed,
-**default** - False.
-**Valid values:** {
-**True** - include heat transfer terms}"""))
     _SideTemplate.declare("has_pressure_change", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -158,8 +150,8 @@ documentation for supported transformations."""))
     _SideTemplate.declare("transformation_scheme", ConfigValue(
         default=useDefault,
         description="Discretization scheme to use for DAE transformation",
-        doc="""Discretization scheme to use when transformating domain. See Pyomo
-documentation for supported schemes."""))
+        doc="""Discretization scheme to use when transformating domain. See
+Pyomo documentation for supported schemes."""))
 
     # Create individual config blocks for shell and tube side
     CONFIG.declare("shell_side",
@@ -311,7 +303,7 @@ tube side flows from 1 to 0"""))
 
         self.shell.add_energy_balances(
             balance_type=self.config.shell_side.energy_balance_type,
-            has_heat_transfer=self.config.shell_side.has_heat_transfer)
+            has_heat_transfer=True)
 
         self.shell.add_momentum_balances(
             balance_type=self.config.shell_side.momentum_balance_type,
@@ -330,7 +322,7 @@ tube side flows from 1 to 0"""))
 
         self.tube.add_energy_balances(
             balance_type=self.config.tube_side.energy_balance_type,
-            has_heat_transfer=self.config.tube_side.has_heat_transfer)
+            has_heat_transfer=True)
 
         self.tube.add_momentum_balances(
             balance_type=self.config.tube_side.momentum_balance_type,

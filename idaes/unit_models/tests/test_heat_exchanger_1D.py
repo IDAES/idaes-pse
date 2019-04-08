@@ -61,7 +61,7 @@ def test_build():
     assert m.fs.HX_co_current.config.flow_type == "co_current"
     assert m.fs.HX_co_current.config.has_wall_conduction == "none"
 
-    assert len(m.fs.HX_co_current.config.shell_side) == 12
+    assert len(m.fs.HX_co_current.config.shell_side) == 11
     assert not m.fs.HX_co_current.config.shell_side.has_holdup
     assert m.fs.HX_co_current.config.shell_side.material_balance_type == \
         MaterialBalanceType.componentTotal
@@ -69,11 +69,10 @@ def test_build():
         EnergyBalanceType.enthalpyTotal
     assert m.fs.HX_co_current.config.shell_side.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
-    assert m.fs.HX_co_current.config.shell_side.has_heat_transfer
     assert not m.fs.HX_co_current.config.shell_side.has_pressure_change
     assert not m.fs.HX_co_current.config.shell_side.has_phase_equilibrium
 
-    assert len(m.fs.HX_co_current.config.tube_side) == 12
+    assert len(m.fs.HX_co_current.config.tube_side) == 11
     assert not m.fs.HX_co_current.config.tube_side.has_holdup
     assert m.fs.HX_co_current.config.tube_side.material_balance_type == \
         MaterialBalanceType.componentTotal
@@ -81,7 +80,6 @@ def test_build():
         EnergyBalanceType.enthalpyTotal
     assert m.fs.HX_co_current.config.tube_side.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
-    assert m.fs.HX_co_current.config.tube_side.has_heat_transfer
     assert not m.fs.HX_co_current.config.tube_side.has_pressure_change
     assert not m.fs.HX_co_current.config.tube_side.has_phase_equilibrium
 
@@ -96,7 +94,7 @@ def test_build():
     assert m.fs.HX_counter_current.config.flow_type == "counter_current"
     assert m.fs.HX_counter_current.config.has_wall_conduction == "none"
 
-    assert len(m.fs.HX_counter_current.config.shell_side) == 12
+    assert len(m.fs.HX_counter_current.config.shell_side) == 11
     assert not m.fs.HX_counter_current.config.shell_side.has_holdup
     assert m.fs.HX_counter_current.config.shell_side.material_balance_type == \
         MaterialBalanceType.componentTotal
@@ -104,11 +102,10 @@ def test_build():
         EnergyBalanceType.enthalpyTotal
     assert m.fs.HX_counter_current.config.shell_side.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
-    assert m.fs.HX_counter_current.config.shell_side.has_heat_transfer
     assert not m.fs.HX_counter_current.config.shell_side.has_pressure_change
     assert not m.fs.HX_counter_current.config.shell_side.has_phase_equilibrium
 
-    assert len(m.fs.HX_counter_current.config.tube_side) == 12
+    assert len(m.fs.HX_counter_current.config.tube_side) == 11
     assert not m.fs.HX_counter_current.config.tube_side.has_holdup
     assert m.fs.HX_counter_current.config.tube_side.material_balance_type == \
         MaterialBalanceType.componentTotal
@@ -116,7 +113,6 @@ def test_build():
         EnergyBalanceType.enthalpyTotal
     assert m.fs.HX_counter_current.config.tube_side.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
-    assert m.fs.HX_counter_current.config.tube_side.has_heat_transfer
     assert not m.fs.HX_counter_current.config.tube_side.has_pressure_change
     assert not m.fs.HX_counter_current.config.tube_side.has_phase_equilibrium
 

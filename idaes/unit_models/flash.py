@@ -47,22 +47,8 @@ class FlashData(UnitModelBlockData):
     Standard Flash Unit Model Class
     """
 
-    CONFIG = ConfigBlock()
-    CONFIG.declare("dynamic", ConfigValue(
-        default=useDefault,
-        domain=In([useDefault, True, False]),
-        description="Dynamic model flag",
-        doc="""Indicates whether the model is dynamic"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
+    CONFIG = UnitModelBlockData.CONFIG()
+
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
@@ -99,15 +85,6 @@ Must be True if dynamic = True,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    CONFIG.declare("has_phase_equilibrium", ConfigValue(
-        default=True,
-        domain=In([True, False]),
-        description="Phase equilibrium term construction flag",
-        doc="""Indicates whether terms for phase equilibrium should be constructed,
-**default** - True.
-**Valid values:** {
-**True** - include phase equilibrium term,
-**False** - exclude phase equlibirum terms.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=True,
         domain=In([True, False]),
@@ -166,11 +143,11 @@ see property package for documentation.}"""))
             "property_package_args": self.config.property_package_args})
 
         self.control_volume.add_state_blocks(
-            has_phase_equilibrium=self.config.has_phase_equilibrium)
+            has_phase_equilibrium=True)
 
         self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type,
-            has_phase_equilibrium=self.config.has_phase_equilibrium)
+            has_phase_equilibrium=True)
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,

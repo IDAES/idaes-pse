@@ -41,27 +41,8 @@ class StoichiometricReactorData(UnitModelBlockData):
     reaction has a fixed rate_reaction extent which has to be specified by the
     user.
     """
-    CONFIG = ConfigBlock()
-    CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
-        default=False,
-        description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic or not,
-**default** = False.
-**Valid values:** {
-**useDefault** - get flag from parent (default = False),
-**True** - set as a dynamic model,
-**False** - set as a steady-state model.}"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([useDefault, True, False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
+    CONFIG = UnitModelBlockData.CONFIG()
+
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),

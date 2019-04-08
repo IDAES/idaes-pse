@@ -80,7 +80,19 @@ class MixerData(UnitModelBlockData):
     in these cases the unit model developer should write their own mixing
     equations.
     """
-    CONFIG = UnitModelBlockData.CONFIG()
+    CONFIG = ConfigBlock()
+    CONFIG.declare("dynamic", ConfigValue(
+        domain=In([False]),
+        default=False,
+        description="Dynamic model flag - must be False",
+        doc="""Indicates whether this model will be dynamic or not,
+**default** = False. Product blocks are always steady-state."""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Holdup construction flag - must be False",
+        doc="""Product blocks do not contain holdup, thus this must be
+False."""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -117,7 +129,7 @@ used if inlet_list arg is provided,
 provided,
 **int** - number of inlets to create (will be named with sequential integers
 from 1 to num_inlets).}"""))
-    CONFIG.declare("calculate_phase_equilibrium", ConfigValue(
+    CONFIG.declare("has_phase_equilibrium", ConfigValue(
         default=False,
         domain=In([True, False]),
         description="Calculate phase equilibrium in mixed stream",
@@ -250,7 +262,7 @@ linked to all inlet states and the mixed state,
             self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
                                                  mixed_block=mixed_block)
         elif self.config.momentum_mixing_type == \
-            MomentumMixingType.minimize_and_equality:
+                MomentumMixingType.minimize_and_equality:
             self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
                                                      mixed_block=mixed_block)
             self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
@@ -340,7 +352,7 @@ linked to all inlet states and the mixed state,
         # Setup StateBlock argument dict
         tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = \
-            self.config.calculate_phase_equilibrium
+            self.config.has_phase_equilibrium
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = False
 
@@ -382,7 +394,7 @@ linked to all inlet states and the mixed state,
         Add material mixing equations (phase-component balances).
         """
         # Create equilibrium generation term and constraints if required
-        if self.config.calculate_phase_equilibrium is True:
+        if self.config.has_phase_equilibrium is True:
             # Get units from property package
             units = {}
             for u in ['holdup', 'time']:
@@ -412,7 +424,7 @@ linked to all inlet states and the mixed state,
 
         # Define terms to use in mixing equation
         def phase_equilibrium_term(b, t, p, j):
-            if self.config.calculate_phase_equilibrium:
+            if self.config.has_phase_equilibrium:
                 sd = {}
                 sblock = mixed_block[t]
                 for r in b.phase_equilibrium_idx_ref:

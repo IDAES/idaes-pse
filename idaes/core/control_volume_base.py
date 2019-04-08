@@ -248,8 +248,11 @@ and used when constructing these,
 **Valid values:** {
 see reaction package for documentation.}"""))
 
-@declare_process_block_class("ControlVolume", doc="This class is not usually "
-    "used directly. Use ControlVolume0DBlock or ControlVolume1DBlock instead.")
+
+@declare_process_block_class("ControlVolume",
+                             doc="This class is not usually used directly. "
+                             "Use ControlVolume0DBlock or ControlVolume1DBlock"
+                             " instead.")
 class ControlVolumeBlockData(ProcessBlockData):
     """
     The ControlVolumeBlockData Class forms the base class for all IDAES
@@ -257,10 +260,10 @@ class ControlVolumeBlockData(ProcessBlockData):
     common to all control volume blockss and ensure that the necessary
     attributes of a control volume block are present.
 
-    The most signfiicant role of the ControlVolumeBlockData class is to set up the
-    bconstruction arguments for the control volume block, automatically link to
-    the time domain of the parent block, and to get the information about the
-    property and reaction packages.
+    The most signfiicant role of the ControlVolumeBlockData class is to set up
+    the construction arguments for the control volume block, automatically link
+    to the time domain of the parent block, and to get the information about
+    the property and reaction packages.
     """
 
     CONFIG = ProcessBlockData.CONFIG()
@@ -433,10 +436,10 @@ have a config block which derives from CONFIG_Base,
                 energy balance should be constructed.
             has_heat_of_reaction (bool): whether terms for heat of reaction
                 should be included in energy balance
-            has_heat_transfer (bool): whether generic heat transfer terms should
-                be included in energy balances
-            has_work_transfer (bool): whether generic mass transfer terms should
-                be included in energy balances
+            has_heat_transfer (bool): whether generic heat transfer terms
+                should be included in energy balances
+            has_work_transfer (bool): whether generic mass transfer terms
+                should be included in energy balances
             custom_term (Expression): a Pyomo Expression representing custom
                 terms to be included in energy balances
 

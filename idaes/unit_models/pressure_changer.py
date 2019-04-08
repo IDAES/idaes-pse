@@ -20,7 +20,7 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import SolverFactory, value, Var, Reals, display
+from pyomo.environ import SolverFactory, value, Var
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -32,7 +32,7 @@ from idaes.core import (ControlVolume0DBlock,
                         MaterialBalanceType,
                         UnitModelBlockData,
                         useDefault)
-from idaes.core.util.config import is_physical_parameter_block, list_of_strings
+from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
@@ -44,27 +44,8 @@ class PressureChangerData(UnitModelBlockData):
     """
     Standard Compressor/Expander Unit Model Class
     """
-    CONFIG = ConfigBlock()
+    CONFIG = UnitModelBlockData.CONFIG()
 
-    CONFIG.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
-        default=False,
-        description="Dynamic model flag",
-        doc="""Indicates whether or not dynamics should be considered.
-**default** - False.
-**Valid values:** {
-**True** - dynamics considered,
-**False** - no dynamics considered}"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-         default=useDefault,
-         domain=In([useDefault, True, False]),
-         description="Holdup construction flag",
-         doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),

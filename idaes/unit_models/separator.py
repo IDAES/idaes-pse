@@ -78,7 +78,19 @@ class SeparatorData(UnitModelBlockData):
     single unit model - in these cases the unit model developer should write
     their own splitting equations.
     """
-    CONFIG = UnitModelBlockData.CONFIG()
+    CONFIG = ConfigBlock()
+    CONFIG.declare("dynamic", ConfigValue(
+        domain=In([False]),
+        default=False,
+        description="Dynamic model flag - must be False",
+        doc="""Indicates whether this model will be dynamic or not,
+**default** = False. Product blocks are always steady-state."""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Holdup construction flag - must be False",
+        doc="""Product blocks do not contain holdup, thus this must be
+False."""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
