@@ -17,6 +17,7 @@ from __future__ import absolute_import  # disable implicit relative imports
 from __future__ import division, print_function
 
 import logging
+from enum import Enum
 
 from pyomo.environ import (Constraint,
                            Expression,
@@ -28,7 +29,6 @@ from pyomo.environ import (Constraint,
                            value)
 from pyomo.network import Port
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyutilib.enum import Enum
 
 from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
@@ -47,15 +47,16 @@ _log = logging.getLogger(__name__)
 
 
 # Enumerate options for balances
-SplittingType = Enum(
-    'totalFlow',
-    'phaseFlow',
-    'componentFlow',
-    'phaseComponentFlow')
+class SplittingType(Enum):
+    totalFlow = 1
+    phaseFlow = 2
+    componentFlow = 3
+    phaseComponentFlow = 4
 
-EnergySplittingType = Enum(
-    'equal_temperature',
-    'equal_molar_enthalpy')
+
+class EnergySplittingType(Enum):
+    equal_temperature = 1
+    equal_molar_enthalpy = 2
 
 
 @declare_process_block_class("Separator")
@@ -146,8 +147,8 @@ split fraction indexed by both time, outlet, phase and components).}"""))
         default=EnergySplittingType.equal_temperature,
         domain=EnergySplittingType,
         description="Type of constraint to write for energy splitting",
-        doc="""Argument indicating basis to use for splitting energy this is not
-used for when ideal_separation == True.
+        doc="""Argument indicating basis to use for splitting energy this is
+not used for when ideal_separation == True.
 **default** - EnergySplittingType.equal_temperature.
 **Valid values:** {
 **EnergySplittingType.equal_temperature** - outlet temperatures equal inlet

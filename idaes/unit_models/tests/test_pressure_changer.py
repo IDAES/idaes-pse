@@ -17,8 +17,9 @@ Author: Andrew Lee, Emmanuel Ogbe
 """
 import pytest
 from pyomo.environ import ConcreteModel, SolverFactory
-from idaes.core import FlowsheetBlock, declare_process_block_class
-from idaes.unit_models.pressure_changer import PressureChanger
+from idaes.core import FlowsheetBlock
+from idaes.unit_models.pressure_changer import (PressureChanger,
+                                                ThermodynamicAssumption)
 from idaes.ui.report import degrees_of_freedom
 
 # Import property package for testing
@@ -33,6 +34,9 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
+
+def test_ThermodynamicAssumption():
+    assert len(ThermodynamicAssumption) == 4
 
 def test_build_pc():
     m = ConcreteModel()
@@ -77,7 +81,7 @@ def test_make_isothermal():
 
     m.fs.pc = PressureChanger(default={
             "property_package": m.fs.props,
-            "thermodynamic_assumption": 'isothermal'})
+            "thermodynamic_assumption": ThermodynamicAssumption.isothermal})
 
     assert hasattr(m.fs.pc, "isothermal")
 
@@ -89,7 +93,7 @@ def test_make_pump():
 
     m.fs.pc = PressureChanger(default={
             "property_package": m.fs.props,
-            "thermodynamic_assumption": 'pump'})
+            "thermodynamic_assumption": ThermodynamicAssumption.pump})
 
     assert hasattr(m.fs.pc, "work_fluid")
     assert hasattr(m.fs.pc, "efficiency_pump")
@@ -104,7 +108,7 @@ def test_make_isentropic():
 
     m.fs.pc = PressureChanger(default={
             "property_package": m.fs.props,
-            "thermodynamic_assumption": 'isentropic'})
+            "thermodynamic_assumption": ThermodynamicAssumption.isentropic})
 
     assert hasattr(m.fs.pc, "efficiency_isentropic")
     assert hasattr(m.fs.pc, "work_isentropic")
@@ -123,7 +127,7 @@ def test_initialization_isothermal():
 
     m.fs.pc = PressureChanger(default={
             "property_package": m.fs.props,
-            "thermodynamic_assumption": 'isothermal'})
+            "thermodynamic_assumption": ThermodynamicAssumption.isothermal})
 
     m.fs.pc.deltaP.fix(-1e3)
     m.fs.pc.inlet.flow_mol.fix(27.5e3)
@@ -158,7 +162,7 @@ def test_initialization_pump():
 
     m.fs.pc = PressureChanger(default={
             "property_package": m.fs.props,
-            "thermodynamic_assumption": 'pump'})
+            "thermodynamic_assumption": ThermodynamicAssumption.pump})
 
     m.fs.pc.inlet.flow_mol.fix(27.5e3)
     m.fs.pc.inlet.enth_mol.fix(4000)
@@ -195,7 +199,7 @@ def test_initialization_adiabatic():
 
     m.fs.pc = PressureChanger(default={
             "property_package": m.fs.props,
-            "thermodynamic_assumption": 'adiabatic'})
+            "thermodynamic_assumption": ThermodynamicAssumption.adiabatic})
 
     init_state = {
         "flow_mol": 27.5e3,
@@ -231,7 +235,7 @@ def test_initialization_isentropic():
 
     m.fs.pc = PressureChanger(default={
             "property_package": m.fs.props,
-            "thermodynamic_assumption": 'isentropic'})
+            "thermodynamic_assumption": ThermodynamicAssumption.isentropic})
 
     init_state = {
         "flow_mol": 27.5e3,

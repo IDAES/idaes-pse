@@ -124,7 +124,7 @@ constructed,
 and used when constructing these,
 **default** - None.
 **Valid values:** {
-see property package for documentation.}"""))   
+see property package for documentation.}"""))
     CONFIG.declare("reaction_package", ConfigValue(
         default=None,
         domain=is_reaction_parameter_block,
@@ -142,7 +142,7 @@ and used when constructing these,
 **default** - None.
 **Valid values:** {
 see reaction package for documentation.}"""))
-        
+
     def build(self):
         """
         Begin building model (pre-DAE transformation).

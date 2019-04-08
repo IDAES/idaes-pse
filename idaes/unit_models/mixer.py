@@ -17,18 +17,17 @@ from __future__ import absolute_import  # disable implicit relative imports
 from __future__ import division, print_function
 
 import logging
+from enum import Enum
 
 from pyomo.environ import (Constraint,
                            Param,
                            PositiveReals,
                            Reals,
-                           Set,
                            RangeSet,
                            SolverFactory,
                            TerminationCondition,
                            Var)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyutilib.enum import Enum
 
 from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
@@ -50,15 +49,16 @@ _log = logging.getLogger(__name__)
 
 
 # Enumerate options for balances
-MixingType = Enum(
-    'none',
-    'extensive')
+class MixingType(Enum):
+    none = 0
+    extensive = 1
 
-MomentumMixingType = Enum(
-    'none',
-    'minimize',
-    'equality',
-    'minimize_and_equality')
+
+class MomentumMixingType(Enum):
+    none = 0
+    minimize = 1
+    equality = 2
+    minimize_and_equality = 3
 
 
 @declare_process_block_class("Mixer")

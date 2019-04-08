@@ -22,6 +22,8 @@ from pyomo.environ import (ConcreteModel, SolverFactory, TerminationCondition,
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType)
 from idaes.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
+from idaes.unit_models.heat_exchanger_1D import WallConductionType
+from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
 from idaes.property_models.examples.BFW_properties import BFWParameterBlock
 from idaes.ui.report import degrees_of_freedom
@@ -47,19 +49,21 @@ m.fs.properties = BFWParameterBlock()
 m.fs.HX_co_current = HX1D(
     default={"shell_side": {"property_package": m.fs.properties},
              "tube_side": {"property_package": m.fs.properties},
-             "flow_type": "co_current"})
+             "flow_type": HeatExchangerFlowPattern.cocurrent})
 
 m.fs.HX_counter_current = HX1D(
     default={"shell_side": {"property_package": m.fs.properties},
              "tube_side": {"property_package": m.fs.properties},
-             "flow_type": "counter_current"})
+             "flow_type": HeatExchangerFlowPattern.countercurrent})
 
 
 def test_build():
     # Check build for co-current configuration
     assert len(m.fs.HX_co_current.config) == 8
-    assert m.fs.HX_co_current.config.flow_type == "co_current"
-    assert m.fs.HX_co_current.config.has_wall_conduction == "none"
+    assert m.fs.HX_co_current.config.flow_type == \
+        HeatExchangerFlowPattern.cocurrent
+    assert m.fs.HX_co_current.config.has_wall_conduction == \
+        WallConductionType.none
 
     assert len(m.fs.HX_co_current.config.shell_side) == 11
     assert not m.fs.HX_co_current.config.shell_side.has_holdup
@@ -91,8 +95,10 @@ def test_build():
 
     # Check build for counter-current configuration
     assert len(m.fs.HX_counter_current.config) == 8
-    assert m.fs.HX_counter_current.config.flow_type == "counter_current"
-    assert m.fs.HX_counter_current.config.has_wall_conduction == "none"
+    assert m.fs.HX_counter_current.config.flow_type == \
+        HeatExchangerFlowPattern.countercurrent
+    assert m.fs.HX_counter_current.config.has_wall_conduction == \
+        WallConductionType.none
 
     assert len(m.fs.HX_counter_current.config.shell_side) == 11
     assert not m.fs.HX_counter_current.config.shell_side.has_holdup
