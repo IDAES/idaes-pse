@@ -56,6 +56,10 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
         self.element_comp = {"c1": {"H": 1, "He": 2, "Li": 3},
                              "c2": {"H": 4, "He": 5, "Li": 6}}
 
+        self.phase_equilibrium_list = \
+            {"e1": ["c1", ("p1", "p2")],
+             "e2": ["c2", ("p1", "p2")]}
+
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
 
@@ -86,11 +90,6 @@ class StateTestBlockData(StateBlockData):
         super(StateTestBlockData, self).build()
 
         self.test_var = Var()
-        self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
-        self.phase_equilibrium_list_ref = \
-            {"e1": ["c1", ("p1", "p2")],
-             "e2": ["c2", ("p1", "p2")]}
-
         self.pressure = Var()
 
     def get_material_flow_terms(b, p, j):
@@ -131,6 +130,24 @@ class _ReactionParameterBlock(ReactionParameterBlock):
         self.rate_reaction_idx = Set(initialize=["r1", "r2"])
         self.equilibrium_reaction_idx = Set(initialize=["e1", "e2"])
 
+        self.rate_reaction_stoichiometry = {("r1", "p1", "c1"): 1,
+                                            ("r1", "p1", "c2"): 1,
+                                            ("r1", "p2", "c1"): 1,
+                                            ("r1", "p2", "c2"): 1,
+                                            ("r2", "p1", "c1"): 1,
+                                            ("r2", "p1", "c2"): 1,
+                                            ("r2", "p2", "c1"): 1,
+                                            ("r2", "p2", "c2"): 1}
+        self.equilibrium_reaction_stoichiometry = {
+                                            ("e1", "p1", "c1"): 1,
+                                            ("e1", "p1", "c2"): 1,
+                                            ("e1", "p2", "c1"): 1,
+                                            ("e1", "p2", "c2"): 1,
+                                            ("e2", "p1", "c1"): 1,
+                                            ("e2", "p1", "c2"): 1,
+                                            ("e2", "p2", "c1"): 1,
+                                            ("e2", "p2", "c2"): 1}
+
         self.reaction_block_class = ReactionBlock
 
     @classmethod
@@ -161,26 +178,7 @@ class ReactionBlockData(ReactionBlockDataBase):
     def build(self):
         super(ReactionBlockData, self).build()
 
-        self.rate_reaction_idx = Set(initialize=["r1", "r2"])
-        self.reaction_rate = Var(self.rate_reaction_idx)
-        self.rate_reaction_stoichiometry = {("r1", "p1", "c1"): 1,
-                                            ("r1", "p1", "c2"): 1,
-                                            ("r1", "p2", "c1"): 1,
-                                            ("r1", "p2", "c2"): 1,
-                                            ("r2", "p1", "c1"): 1,
-                                            ("r2", "p1", "c2"): 1,
-                                            ("r2", "p2", "c1"): 1,
-                                            ("r2", "p2", "c2"): 1}
-        self.equilibrium_reaction_idx = Set(initialize=["e1", "e2"])
-        self.equilibrium_reaction_stoichiometry = {
-                                            ("e1", "p1", "c1"): 1,
-                                            ("e1", "p1", "c2"): 1,
-                                            ("e1", "p2", "c1"): 1,
-                                            ("e1", "p2", "c2"): 1,
-                                            ("e2", "p1", "c1"): 1,
-                                            ("e2", "p1", "c2"): 1,
-                                            ("e2", "p2", "c1"): 1,
-                                            ("e2", "p2", "c2"): 1}
+        self.reaction_rate = Var(["r1", "r2"])
 
         self.dh_rxn = {"r1": 1,
                        "r2": 2,
