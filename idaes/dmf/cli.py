@@ -17,11 +17,13 @@ Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
 from enum import Enum
+import json
 import logging
 from operator import itemgetter
 import pathlib
 import sys
 from urllib.parse import urlparse, ParseResult
+import yaml
 
 # third-party
 from blessings import Terminal
@@ -35,7 +37,6 @@ from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
 
 __author__ = "Dan Gunter"
-
 
 _log = logging.getLogger(__name__)
 _cterm = Terminal()  # color terminal (as per TERM env)
@@ -493,6 +494,9 @@ def _ls_basic(d, show_fields, sort_by, reverse, prefix):
     """
     t = Terminal()
     resources = list(d.find())
+    if len(resources) == 0:
+        print("no resources to display")
+        return
     uuid_len = _uuid_prefix_len([r.id for r in resources])
     full_len = max((len(r.id) for r in resources)) if not prefix else uuid_len
     fields = ["id"] + list(show_fields)
@@ -502,12 +506,15 @@ def _ls_basic(d, show_fields, sort_by, reverse, prefix):
     for r in resources:
         row = []
         for i, fld in enumerate(fields):
+            # transform field for display
             transformer = _show_fields[fld]
             transformer.set_value(r)
-            if hasattr(transformer, "pfxlen"):
+            # if it's a UUID field, add info about unique prefix length
+            if isinstance(transformer, _IdField):
                 transformer.term = t
                 transformer.pfxlen = uuid_len
                 transformer.flen = full_len
+            # extract display string and set field width
             s = str(transformer)
             slen = len(s)
             if slen > widths[i]:
@@ -559,19 +566,117 @@ def info(identifier, multiple):
     elif n == 0:
         click.echo("Resource not found")
         sys.exit(Code.DMF_OPER.value)
+    pfxlen = len(identifier)
     for rsrc in rsrc_list:
-        _show_info(rsrc)
+        _show_info_term(rsrc, pfxlen)
 
 
-def _show_info(rsrc):
-    print(f"Resource {rsrc.id}")
+def _show_info_term(rsrc, pfxlen):
+    t = Terminal()
+    contents_indent, json_indent = 4, 2
+    rval = _human_readable_values(rsrc.v)
+    width = min(t.width, _longest_line(rval, json_indent) + 3 + contents_indent)
+    _print_info_term_header(t, rsrc, pfxlen, width)
+    top_keys = sorted(rval.keys())
+    for rownum, tk in enumerate(top_keys):
+        val = rval[tk]
+        if _has_values(val):
+            contents_str = yaml.dump(
+                yaml.load(json.dumps(val)), default_flow_style=False,
+                explicit_end=False
+            )
+            if contents_str.endswith('...\n'):
+                contents_str = contents_str[:-4]
+            print(
+                f"{t.on_cyan} {t.normal} {t.bold}{t.cyan}{tk}{t.normal}"
+                f"{' ' * (width - len(tk) - 3)}{t.on_cyan} {t.normal}"
+            )
+            _print_info_contents_term(t, contents_str, contents_indent, width)
+    print(f"{t.on_cyan}{' ' * width}{t.normal}")
 
 
-# The following classes define how to retrieve and transform the
-# user-specified field into a string for display by 'ls'.
+def _longest_line(r, i):
+    longest = 0
+    for k, v in r.items():
+        v_longest = max((len(s) for s in json.dumps(v, indent=i).split('\n')))
+        longest = max((longest, v_longest))
+    return longest
 
 
-class _Field:
+def _print_info_term_header(t, rsrc, pfxlen, width):
+    frame = f"{t.on_cyan}{' ' * width}{t.normal}"
+    spacer = f"{t.on_cyan} {t.normal}{' ' * (width - 2)}{t.on_cyan} {t.normal}"
+    print(frame)
+    print(spacer)
+    print(
+        f"{t.on_cyan} {t.normal} {t.bold}Resource {t.normal}{t.green}{rsrc.id[:pfxlen]}"
+        f"{t.normal}{rsrc.id[pfxlen:]}"
+        f"{' ' * (width - len(rsrc.id) - 12)}{t.on_cyan} {t.normal}"
+    )
+    print(spacer)
+    print(frame)
+
+
+def _print_info_contents_term(t, s, n, width):
+    contents_width = width - 2 - n
+    indent = " " * n
+    for line in s.split('\n'):
+        p = 0
+        while p < len(line):
+            print_line = line[p : p + contents_width]
+            print(
+                f"{t.on_cyan} {t.normal}{indent}{print_line}"
+                f"{' ' * (contents_width - len(print_line))}{t.on_cyan} {t.normal}"
+            )
+            p += contents_width
+
+
+def _human_readable_values(val):
+    result = {}
+
+    def dateize(v):
+        return pendulum.from_timestamp(v).to_datetime_string()
+
+    for k, v in val.items():
+        if k in ("created", "modified"):
+            result[k] = dateize(v)
+        elif k == "version_info":
+            result[
+                "version"
+            ] = f"{resource.format_version(v['version'])} @ {dateize(v['created'])}"
+        elif k == "relations":
+            relations = []
+            for rel in v:
+                is_object = rel["role"] == "object"
+                predicate = f"--[{rel['predicate']}]--"
+                if is_object:
+                    s = f"{rel['identifier']} {predicate}> ME"
+                else:
+                    s = f"{rel['identifier']} <{predicate} ME"
+                relations.append(s)
+            if relations:
+                result[k] = relations
+        else:
+            if isinstance(v, list):
+                result[k] = v[:]
+            elif isinstance(v, dict):
+                result[k] = v.copy()
+            else:
+                result[k] = v
+    return result
+
+
+def _has_values(data):
+    if isinstance(data, list) or isinstance(data, dict):
+        return bool(data)
+    return True
+
+
+class _LsField:
+    """Subclasses define how to retrieve and transform the
+    user-specified field into a string for display by 'ls'.
+    """
+
     def __init__(self, key):
         self._key = key
         self.value = ""
@@ -586,17 +691,17 @@ class _Field:
             self.value = rsrc.v[self._key]
 
 
-class _IdentityField(_Field):
+class _IdentityField(_LsField):
     def __str__(self):
         return str(self.value)
 
 
-class _DateField(_Field):
+class _DateField(_LsField):
     def __str__(self):
         return pendulum.from_timestamp(self.value).to_datetime_string()
 
 
-class _FilesField(_Field):
+class _FilesField(_LsField):
     def __str__(self):
         if len(self.value) > 1:
             return f"{self.value[0]['path']} ..."
@@ -605,7 +710,7 @@ class _FilesField(_Field):
         return "<none>"
 
 
-class _CodesField(_Field):
+class _CodesField(_LsField):
     def __str__(self):
         if len(self.value) > 1:
             return f"{self.value[0]['name']} ..."
@@ -614,7 +719,7 @@ class _CodesField(_Field):
         return "<none>"
 
 
-class _IdField(_Field):
+class _IdField(_LsField):
     def __init__(self, key):
         super().__init__(key)
         self.pfxlen = 0
@@ -635,7 +740,7 @@ class _IdField(_Field):
         return self.value
 
 
-class _VersionField(_Field):
+class _VersionField(_LsField):
     def __str__(self):
         return resource.format_version(self.value)
 
@@ -677,7 +782,6 @@ base_command.add_command(register)
 base_command.add_command(status)
 base_command.add_command(ls)
 base_command.add_command(info)
-
 
 if __name__ == '__main__':
     base_command()
