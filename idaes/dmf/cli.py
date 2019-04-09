@@ -544,10 +544,21 @@ def _ls_basic(d, show_fields, sort_by, reverse, prefix):
         print(" ".join(row_columns))
 
 
-@click.command(help="Information about a resource")  # aliases: resource
+@click.command(help="Show detailed information about a resource")  # aliases: resource
 @click.argument("identifier")
 @click.option("--multiple/--no-multiple", default=False)
-def info(identifier, multiple):
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    type=click.Choice(["term", "json", "jsonc"]),
+    multiple=False,
+    default="term",
+    help="Output format: `term` (the default) shows terminal-friendly output, with "
+    "some colors; `json` outputs JSON text; `jsonc` outputs compact JSON (no indents"
+    "or line breaks)",
+)
+def info(identifier, multiple, output_format):
     _log.debug(f"info for resource id='{identifier}'")
     try:
         resource.identifier_str(identifier, allow_prefix=True)
@@ -567,109 +578,135 @@ def info(identifier, multiple):
         click.echo("Resource not found")
         sys.exit(Code.DMF_OPER.value)
     pfxlen = len(identifier)
+    si = _ShowInfo(output_format, pfxlen)
     for rsrc in rsrc_list:
-        _show_info_term(rsrc, pfxlen)
+        si.show(rsrc)
 
 
-def _show_info_term(rsrc, pfxlen):
-    t = Terminal()
-    contents_indent, json_indent = 4, 2
-    rval = _human_readable_values(rsrc.v)
-    width = min(t.width, _longest_line(rval, json_indent) + 3 + contents_indent)
-    _print_info_term_header(t, rsrc, pfxlen, width)
-    top_keys = sorted(rval.keys())
-    for rownum, tk in enumerate(top_keys):
-        val = rval[tk]
-        if _has_values(val):
-            contents_str = yaml.dump(
-                yaml.load(json.dumps(val)), default_flow_style=False,
-                explicit_end=False
+class _ShowInfo:
+    """Container for methods, etc. to show info about a resource.
+    """
+
+    contents_indent, json_indent = 4, 2  # for `term` output
+
+    def __init__(self, output_format, pfxlen):
+        self._terminal = Terminal()
+        self._pfxlen = pfxlen
+        self._fmt = output_format
+        self._resource = None
+
+    def show(self, rsrc):
+        self._resource = rsrc
+        getattr(self, f"show_{self._fmt}")()
+
+    def show_json(self):
+        json.dump(self._resource.v, sys.stdout, indent=self.json_indent)
+        print()
+        
+    def show_jsonc(self):
+        json.dump(self._resource.v, sys.stdout)
+        print()
+
+    def show_term(self):
+        t, r = self._terminal, self._resource  # aliases
+        rval = self._human_readable_values()
+        width = min(t.width, self._longest_line(rval) + 3 + self.contents_indent)
+        self._print_info_term_header(width)
+        top_keys = sorted(rval.keys())
+        for rownum, tk in enumerate(top_keys):
+            val = rval[tk]
+            if self._has_values(val):
+                contents_str = yaml.dump(
+                    yaml.load(json.dumps(val)),
+                    default_flow_style=False,
+                    explicit_end=False,
+                )
+                if contents_str.endswith('...\n'):
+                    contents_str = contents_str[:-4]
+                print(
+                    f"{t.on_cyan} {t.normal} {t.bold}{t.cyan}{tk}{t.normal}"
+                    f"{' ' * (width - len(tk) - 3)}{t.on_cyan} {t.normal}"
+                )
+                self._print_info_contents_term(contents_str, width)
+        print(f"{t.on_cyan}{' ' * width}{t.normal}")
+
+    def _longest_line(self, formatted_resource):
+        longest = 0
+        for k, v in formatted_resource.items():
+            v_longest = max(
+                (len(s) for s in json.dumps(v, indent=self.json_indent).split('\n'))
             )
-            if contents_str.endswith('...\n'):
-                contents_str = contents_str[:-4]
-            print(
-                f"{t.on_cyan} {t.normal} {t.bold}{t.cyan}{tk}{t.normal}"
-                f"{' ' * (width - len(tk) - 3)}{t.on_cyan} {t.normal}"
-            )
-            _print_info_contents_term(t, contents_str, contents_indent, width)
-    print(f"{t.on_cyan}{' ' * width}{t.normal}")
+            longest = max((longest, v_longest))
+        return longest
 
+    def _print_info_term_header(self, width):
+        t, r = self._terminal, self._resource
+        frame = f"{t.on_cyan}{' ' * width}{t.normal}"
+        spacer = f"{t.on_cyan} {t.normal}{' ' * (width - 2)}{t.on_cyan} {t.normal}"
+        print(frame)
+        print(spacer)
+        print(
+            f"{t.on_cyan} {t.normal} {t.bold}Resource {t.normal}{t.green}"
+            f"{r.id[:self._pfxlen]}"
+            f"{t.normal}{r.id[self._pfxlen:]}"
+            f"{' ' * (width - len(r.id) - 12)}{t.on_cyan} {t.normal}"
+        )
+        print(spacer)
+        print(frame)
 
-def _longest_line(r, i):
-    longest = 0
-    for k, v in r.items():
-        v_longest = max((len(s) for s in json.dumps(v, indent=i).split('\n')))
-        longest = max((longest, v_longest))
-    return longest
+    def _print_info_contents_term(self, s, width):
+        t, n = self._terminal, self.contents_indent
+        contents_width = width - 2 - n
+        indent = " " * n
+        for line in s.split('\n'):
+            p = 0
+            while p < len(line):
+                print_line = line[p : p + contents_width]
+                print(
+                    f"{t.on_cyan} {t.normal}{indent}{print_line}"
+                    f"{' ' * (contents_width - len(print_line))}{t.on_cyan} {t.normal}"
+                )
+                p += contents_width
 
+    def _human_readable_values(self):
+        val, result = self._resource.v, {}
 
-def _print_info_term_header(t, rsrc, pfxlen, width):
-    frame = f"{t.on_cyan}{' ' * width}{t.normal}"
-    spacer = f"{t.on_cyan} {t.normal}{' ' * (width - 2)}{t.on_cyan} {t.normal}"
-    print(frame)
-    print(spacer)
-    print(
-        f"{t.on_cyan} {t.normal} {t.bold}Resource {t.normal}{t.green}{rsrc.id[:pfxlen]}"
-        f"{t.normal}{rsrc.id[pfxlen:]}"
-        f"{' ' * (width - len(rsrc.id) - 12)}{t.on_cyan} {t.normal}"
-    )
-    print(spacer)
-    print(frame)
+        def dateize(v):
+            return pendulum.from_timestamp(v).to_datetime_string()
 
-
-def _print_info_contents_term(t, s, n, width):
-    contents_width = width - 2 - n
-    indent = " " * n
-    for line in s.split('\n'):
-        p = 0
-        while p < len(line):
-            print_line = line[p : p + contents_width]
-            print(
-                f"{t.on_cyan} {t.normal}{indent}{print_line}"
-                f"{' ' * (contents_width - len(print_line))}{t.on_cyan} {t.normal}"
-            )
-            p += contents_width
-
-
-def _human_readable_values(val):
-    result = {}
-
-    def dateize(v):
-        return pendulum.from_timestamp(v).to_datetime_string()
-
-    for k, v in val.items():
-        if k in ("created", "modified"):
-            result[k] = dateize(v)
-        elif k == "version_info":
-            result[
-                "version"
-            ] = f"{resource.format_version(v['version'])} @ {dateize(v['created'])}"
-        elif k == "relations":
-            relations = []
-            for rel in v:
-                is_object = rel["role"] == "object"
-                predicate = f"--[{rel['predicate']}]--"
-                if is_object:
-                    s = f"{rel['identifier']} {predicate}> ME"
-                else:
-                    s = f"{rel['identifier']} <{predicate} ME"
-                relations.append(s)
-            if relations:
-                result[k] = relations
-        else:
-            if isinstance(v, list):
-                result[k] = v[:]
-            elif isinstance(v, dict):
-                result[k] = v.copy()
+        for k, v in val.items():
+            if k in ("created", "modified"):
+                result[k] = dateize(v)
+            elif k == "version_info":
+                result[
+                    "version"
+                ] = f"{resource.format_version(v['version'])} @ {dateize(v['created'])}"
+            elif k == "relations":
+                relations = []
+                for rel in v:
+                    is_object = rel["role"] == "object"
+                    predicate = f"--[{rel['predicate']}]--"
+                    if is_object:
+                        s = f"{rel['identifier']} {predicate}> ME"
+                    else:
+                        s = f"{rel['identifier']} <{predicate} ME"
+                    relations.append(s)
+                if relations:
+                    result[k] = relations
             else:
-                result[k] = v
-    return result
+                if isinstance(v, list):
+                    result[k] = v[:]
+                elif isinstance(v, dict):
+                    result[k] = v.copy()
+                else:
+                    result[k] = v
+        return result
 
-
-def _has_values(data):
-    if isinstance(data, list) or isinstance(data, dict):
-        return bool(data)
-    return True
+    @staticmethod
+    def _has_values(data):
+        if isinstance(data, list) or isinstance(data, dict):
+            return bool(data)
+        return True
 
 
 class _LsField:
