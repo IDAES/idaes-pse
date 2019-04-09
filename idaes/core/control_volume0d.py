@@ -1318,22 +1318,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Returns:
             Constraint object representing pressure balances
         """
-        # Get dynamic and holdup flags from config block
-        dynamic = self.config.dynamic
-        has_holdup = self.config.has_holdup
-
-        if dynamic:
-            _log.info("{} add_total_pressure_balances was provided with "
-                      "argument dynamic = True. Total pressure balances do "
-                      "not support dynamic terms (yet), and this argument "
-                      "will be ignored.".format(self.name))
-
-        if has_holdup:
-            _log.info("{} add_total_pressure_balances was provided with "
-                      "argument has_holdup = True. Total pressure balances do "
-                      "not support holdup terms (yet), and this argument "
-                      "will be ignored.".format(self.name))
-
         # Get units from property package
         try:
             p_units = (self.config.property_package.get_metadata().

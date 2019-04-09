@@ -18,10 +18,10 @@ from __future__ import division
 
 # Import Python libraries
 import logging
+from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyutilib.enum import Enum
 
 # Import IDAES cores
 from idaes.core import (ProcessBlockData,
@@ -43,33 +43,44 @@ _log = logging.getLogger(__name__)
 
 
 # Enumerate options for material balances
-MaterialBalanceType = Enum(
-    'none',
-    'componentPhase',
-    'componentTotal',
-    'elementTotal',
-    'total')
+class MaterialBalanceType(Enum):
+    none = 0
+    componentPhase = 1
+    componentTotal = 2
+    elementTotal = 3
+    total = 4
+
 
 # Enumerate options for energy balances
-EnergyBalanceType = Enum(
-    'none',
-    'enthalpyPhase',
-    'enthalpyTotal',
-    'energyPhase',
-    'energyTotal')
+class EnergyBalanceType(Enum):
+    none = 0
+    enthalpyPhase = 1
+    enthalpyTotal = 2
+    energyPhase = 3
+    energyTotal = 4
+
 
 # Enumerate options for momentum balances
-MomentumBalanceType = Enum(
-    'none',
-    'pressureTotal',
-    'pressurePhase',
-    'momentumTotal',
-    'momentumPhase')
+class MomentumBalanceType(Enum):
+    none = 0
+    pressureTotal = 1
+    pressurePhase = 2
+    momentumTotal = 3
+    momentumPhase = 4
+
 
 # Enumerate options for flow direction
-FlowDirection = Enum(
-    'forward',
-    'backward')
+class FlowDirection(Enum):
+    forward = 1
+    backward = 2
+
+
+# Enumerate options for material flow basis
+class MaterialFlowBasis(Enum):
+    molar = 1
+    mass = 2
+    other = 3
+
 
 # Set up example ConfigBlock that will work with ControlVolume autobuild method
 CONFIG_Template = ProcessBlockData.CONFIG()
