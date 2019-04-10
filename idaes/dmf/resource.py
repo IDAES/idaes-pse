@@ -354,12 +354,14 @@ class Resource(object):
             LoadResourceError: if resource import failed
         """
         path = pathlib.Path(path)
-        if not as_type:
+        if as_type:
+            parsed = None
+        else:
             as_type, parsed = cls._infer_resource_type(path, strict)
-        Importer = cls._get_resource_importer(
+        importer = cls._get_resource_importer(
             as_type, path, parsed=parsed, do_copy=do_copy
         )
-        return Importer.create()
+        return importer.create()
 
     @classmethod
     def _infer_resource_type(cls, path: pathlib.Path, strict: bool):
@@ -392,7 +394,7 @@ class Resource(object):
         except ValueError as err:
             if strict:
                 raise cls.InferResourceTypeError(str(err))
-            _log.warn(f"{err}: treating as generic file")
+            _log.warning(f"{err}: treating as generic file")
         return default_type, None
 
     @classmethod

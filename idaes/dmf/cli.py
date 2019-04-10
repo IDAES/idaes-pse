@@ -58,6 +58,7 @@ class Code(Enum):
 
 
 def level_from_verbosity(vb):
+    level = 0  # for pycharm
     if vb >= 3:
         level = logging.DEBUG
     elif vb == 2:
@@ -143,7 +144,13 @@ class URLType(click.ParamType):
 
 @click.group(
     cls=AliasedGroup,
-    aliases={"describe": "status", "add": "register", "resource": "info"},
+    aliases={
+        "describe": "status",
+        "add": "register",
+        "resource": "info",
+        "show": "info",
+        "list": "ls",
+    },
     help="Data management framework command wrapper",
 )
 @click.option(
@@ -202,6 +209,10 @@ def init(path, create, name, desc, html):
     _log.info(f"Initialize with workspace path={path}")
     if create:
         _log.info("Create new workspace")
+        # pre-check that there is no file/dir by this name
+        if pathlib.Path(path).exists():
+            click.echo(f"Cannot create workspace: path '{path}' already exists")
+            sys.exit(Code.DMF_OPER.value)
         if not name:
             name = click.prompt("New workspace name")
         if not desc:
@@ -475,7 +486,8 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
 @click.option(
     "--prefix/--no-prefix",
     "prefix",
-    help="By default, shown 'id' is the shortest unique prefix; `--no-prefix` shows full id",
+    help="By default, shown 'id' is the shortest unique prefix; "
+    "`--no-prefix` shows full id",
     default=True,
 )
 @click.option("--reverse", "-r", "reverse", flag_value="yes", help="Reverse sort order")
@@ -510,13 +522,14 @@ def _ls_basic(d, show_fields, sort_by, reverse, prefix):
             transformer = _show_fields[fld]
             transformer.set_value(r)
             # if it's a UUID field, add info about unique prefix length
-            if isinstance(transformer, _IdField):
+            is_id_field = isinstance(transformer, _IdField)
+            if is_id_field:
                 transformer.term = t
                 transformer.pfxlen = uuid_len
                 transformer.flen = full_len
             # extract display string and set field width
             s = str(transformer)
-            slen = len(s)
+            slen = full_len if is_id_field else len(s)
             if slen > widths[i]:
                 if slen > maxwid:
                     s, widths[i] = s[:maxwid], maxwid
@@ -602,7 +615,7 @@ class _ShowInfo:
     def show_json(self):
         json.dump(self._resource.v, sys.stdout, indent=self.json_indent)
         print()
-        
+
     def show_jsonc(self):
         json.dump(self._resource.v, sys.stdout)
         print()
@@ -764,13 +777,12 @@ class _IdField(_LsField):
         self.term = None
 
     def __str__(self):
+        t = self.term
         if self.pfxlen < len(self.value):
             if self.flen > self.pfxlen:
                 return (
-                    self.value[: self.pfxlen]
-                    + self.term.dim
-                    + self.value[self.pfxlen + 1 : self.flen]
-                    + self.term.normal
+                    f"{t.cyan}{self.value[: self.pfxlen]}{t.normal}"
+                    f"{self.value[self.pfxlen: self.flen]}"
                 )
             else:
                 return self.value[: self.pfxlen]
