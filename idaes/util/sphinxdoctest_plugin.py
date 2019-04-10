@@ -185,6 +185,9 @@ class SphinxDoctestItem(pytest.Item):
     def runtest(self):
         """Run the Sphinx doctest.
         """
+        self._insert_items_at = self._sess.items.index(self) + 1
+        #  print(f"\n@@ SphinxDoctestItem.run(): session items: {self._sess.items}.\n"
+        #      f"Insert at: {self._insert_items_at}\n")
         if self.__executed:
             return
         self.__executed = True
@@ -194,12 +197,9 @@ class SphinxDoctestItem(pytest.Item):
             os.chdir(self.wd)
             args = self.cmd.split()
             try:
-                # print(f"Running [{self.cmd}] from dir {self.wd}")
-                proc = subprocess.Popen(
-                    args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                )
+                # print(f"@@ Running [{self.cmd}] from dir {self.wd}")
+                proc = subprocess.run(args, capture_output=True, timeout=300, encoding='utf-8')
                 self._parse_output(proc.stdout)
-                proc.wait()
             except Exception as exc:
                 print(f"Unexpected failure in Sphinx doctest command: {exc}")
                 raise SphinxCommandFailed(self.cmd, str(exc))
@@ -219,7 +219,7 @@ class SphinxDoctestItem(pytest.Item):
         summary = f"Sphinx doctests in {self.wd}"
         return f"doctests in {self.wd}", 0, summary
 
-    def _parse_output(self, input_stream):
+    def _parse_output(self, output):
         """Parse output of Sphinx doctest.
         """
 
@@ -239,9 +239,9 @@ class SphinxDoctestItem(pytest.Item):
 
         state, failed_msg = "ok", ""
         cur_doc, n_passed, n_failed = "", -1, -1
-        for line_bytes in input_stream:
-            line = line_bytes.decode('utf-8').rstrip()
-            #print(line)
+        for line in output.split('\n'):
+            line = line.rstrip()
+            # print(f"@@ doctest: {line}")
             try:
                 if state == "ok":
                     if line.startswith('****'):
@@ -275,6 +275,7 @@ class SphinxDoctestItem(pytest.Item):
             except Exception as exc:
                 print(f"Parse error on line '{line}' :: {exc}")
                 raise
+        # print(f"@@ done doctest output")
 
     def tests_ok(self, context, num):
         #print(f"Tests in {context}: {num} OK")
@@ -283,13 +284,13 @@ class SphinxDoctestItem(pytest.Item):
             test_name += " ({i})"
         for i in range(num, 0, -1):
             success_item = SphinxDoctestSuccess(test_name.format(**locals()), self.parent)
-            self._sess.items.insert(0, success_item)
+            self._sess.items.insert(self._insert_items_at, success_item)
         self._sess.testscollected += num
 
     def test_failed(self, context, failure):
         test_name = "Sphinx doctest in: {context}.rst"
         item = SphinxDoctestFailure(test_name.format(**locals()), self.parent, failure)
-        self._sess.items.insert(0, item)
+        self._sess.items.insert(self._insert_items_at, item)
         self._sess.testscollected += 1
 
 class SphinxDoctestSuccess(pytest.Item):
