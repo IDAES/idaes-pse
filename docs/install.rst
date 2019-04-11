@@ -314,7 +314,7 @@ Compiling ASL
 The AMPL Solver Library (ASL) is required to compile some user-defined functions used in parts of the IDAES framework (mainly some property packages).
 
 1. Open the MSYS2 MinGW 64-bit terminal (go to: start menu/MSYS2 64Bit/MSYS2 MinGW 64Bit).
-2. Create a directory for complied source code in a convenient location which will be referred to as ``src`` in these instructions.  For example (obviously change the user name and /c is the location of the C: drive in Windows) ``mkdir /c/Users/jeslick/src``.
+2. Create a directory for complied source code in a convenient location which will be referred to as ``src`` in these instructions.  For example (obviously change the user name and ``/c`` is the location of the C: drive in Windows) ``mkdir /c/Users/jeslick/src``.
 3. Go to the source directory (again replace src with the actual directory)
 
  - ``cd src``
@@ -337,7 +337,7 @@ IDAES uses some additional user defined AMPL functions for various purposes, but
 
   - ``export ASL_BUILD=C:/.../src/solvers/sys.x86_64.MINGW64_NT-10.0``
 
-3. Goto the IDAES directory (replace /c/idaes_dir with the location of the IDAES files)
+3. Goto the IDAES directory (replace ``/c/idaes_dir`` with the location of the IDAES files)
 
   - ``cd /c/idaes_dir/idaes_pse/``
 
@@ -355,6 +355,10 @@ Install IDAES
 
   - ``conda create -n idaes python=3 pip``
   - ``conda activate idaes``
+
+.. note::
+  If you are using a version of conda older than 4.4 the command on Windows to
+  activate a conda environment (for example idaes) is ``activate idaes``.
 
 3. Install requirements
 
@@ -396,7 +400,7 @@ It's not required to compile Ipopt yourself, and these are pretty much the stand
 
 1. Download Ipopt from https://www.coin-or.org/download/source/Ipopt/, and put the zip file in the ``src`` directory created above.
 2. Open the MSYS2 MinGW 64-bit terminal (go to: start menu/MSYS2 64Bit/MSYS2 MinGW 64Bit).
-3. Unzip IPOPT
+3. Unzip IPOPT (the ``*`` here represents the portion of the file names with the Ipopt version information)
 
   - ``unzip Ipopt*.zip``
   - ``cd Ipopt*``
