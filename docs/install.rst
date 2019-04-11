@@ -266,7 +266,7 @@ MSYS2 provides a shell which will allow use of Linux style build tools.  It also
 
   - ``pacman -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-boost unzip patch make``
 
-8. While MinGW does produce Windows native binaries, depending on linking options, some DLLs may be required.  Add the MinWG/MSYS2 DLLs to your path.  For example if MSYS2 was installed in the default location you would probably want to add ``C:\msys64\mingw64\bin``. See Section :ref:`Modifying the Path Environment Variable <install:Modifying the Path Environment Variable>`
+8. While MinGW does produce Windows native binaries, depending on linking options, some DLLs may be required.  Add the MinWG/MSYS2 DLLs to your path.  For example if MSYS2 was installed in the default location you would probably want to add ``C:\msys64\mingw64\bin``. See Section :ref:`Modifying the Path Environment Variable <install:Modifying the Path Environment Variable>`.
 
 .. note::
 
@@ -301,7 +301,7 @@ To clone a repository:
 
   - ``git clone https://github.com/Githhub_Account/idaes-pse``
 
-4. The clone command should have create a new idaes-pse subdirectory with a local repository.
+4. The clone command should create a new idaes-pse subdirectory with a local repository.
 
 IDAES Location
 """"""""""""""
@@ -333,7 +333,7 @@ Compiling IDAES AMPL Function Extensions
 IDAES uses some additional user defined AMPL functions for various purposes, but mainly for physical properties.  Before installing IDAES these functions must be compiled.
 
 1. Open the MSYS2 MinGW 64-bit terminal.
-2. Set the ASL_BUILD environment variable (the directory may differ depending on the architecture and replace .../src with the actual location of your src directory)
+2. Set the ASL_BUILD environment variable (the directory may differ depending on the architecture and replace ``.../src`` with the actual location of your src directory)
 
   - ``export ASL_BUILD=C:/.../src/solvers/sys.x86_64.MINGW64_NT-10.0``
 
@@ -415,7 +415,7 @@ It's not required to compile Ipopt yourself, and these are pretty much the stand
   - ``./configure``
   - ``make``
 
-6. The Ipopt AMPL executable will be in ./Ipopt/src/Apps/AmplSolver/ipopt.exe, you can move the executable to a location in the path (environment variable).
+6. The Ipopt AMPL executable will be in ./Ipopt/src/Apps/AmplSolver/ipopt.exe, you can move the executable to a location in the path (environment variable). See Section :ref:`Modifying the Path Environment Variable <install:Modifying the Path Environment Variable>`.
 
 
 Modifying the Path Environment Variable
@@ -427,7 +427,8 @@ The Windows ``Path`` environment variable provides a search path for executable 
 
 This method will modify the path for the whole system.  Running programs especially open command windows will need to be restarted for this change to take effect.
 
-Any version of Windows:
+Any version of Windows
+
   1. Press the "Windows Key."
   2. Start to type "Control Panel"
   3. Click on "Control Panel" in the start menu.
@@ -436,7 +437,8 @@ Any version of Windows:
   6. Click "Advanced system settings."
   7. Click "Environment Variables."
 
-In Windows 10:
+In Windows 10
+
   1. Press the "Windows Key."
   2. Start to type "Environment"
   3. Click on "Edit the system environment" in the start menu.
