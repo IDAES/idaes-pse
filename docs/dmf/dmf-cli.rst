@@ -77,7 +77,13 @@ In addition, there are some aliases for some of the sub-commands:
 - info => resource, show
 - ls => list
 
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: ../_images/blue-white-band.png
+    :width: 100%
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. program:: dmf-init
+
 
 dmf init
 --------
@@ -107,8 +113,8 @@ Workspace description, used by :option:`--create`
 
 dmf init usage
 ^^^^^^^^^^^^^^
-In the following examples, the current working directory is
-set to ``/home/myuser``.
+.. note:: In the following examples, the current working directory is
+          set to ``/home/myuser``.
 
 This command sets a value in the user-global configuration file
 in ``.dmf``, in the user's home directory, so that all other dmf
@@ -203,6 +209,11 @@ If the workspace exists, you cannot create it:
         assert result.exit_code != 0
         assert 'exists' in result.output
 
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: ../_images/blue-white-band.png
+    :width: 100%
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. program:: dmf-status
 
 dmf status
@@ -245,9 +256,8 @@ This option is just an alias for "--show all".
 
 dmf status usage
 ^^^^^^^^^^^^^^^^
-
-In the following examples, the current working directory is
-set to ``/home/myuser`` and the workspace is named ``ws``.
+.. note:: In the following examples, the current working directory is
+          set to ``/home/myuser`` and the workspace is named ``ws``.
 
 Also note that the output shown below is plain (black) text. This is due to our
 limited understanding of how to do colored text in our documentation tool
@@ -379,6 +389,11 @@ However, showing everything is less typing, and not overwhelming:
     assert "html" in result.output
     assert "logging:" in result.output
 
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: ../_images/blue-white-band.png
+    :width: 100%
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. program:: dmf-ls
 
 dmf ls
@@ -437,8 +452,8 @@ Reverse the order of the sorting given by (or implied by absence of) the
 
 dmf ls usage
 ^^^^^^^^^^^^
-In the following examples, the current working directory is
-set to ``/home/myuser`` and the workspace is named ``ws``.
+.. note:: In the following examples, the current working directory is
+          set to ``/home/myuser`` and the workspace is named ``ws``.
 
 .. testsetup:: dmf-ls
 
@@ -553,6 +568,11 @@ Add ``--no-prefix`` to show the full identifier:
     6c9a85629cb24e9796a2d123e9b03601 data foo14
     d3d5981106ce4d9d8cccd4e86c2cd184 data bar1
 
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: ../_images/blue-white-band.png
+    :width: 100%
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. program:: dmf-info
 
 dmf info
@@ -594,6 +614,8 @@ The default is to show, with some terminal colors, a summary of the resource:
 
 
 .. code-block:: console
+
+    $ dmf info 0b62
 
                               Resource 0b62d999f0c44b678980d6a5e4f5d37d
       created
@@ -679,6 +701,13 @@ And one more time, in "compact" JSON:
         $ dmf info --format jsonc 0b62
         {"id_": "0b62d999f0c44b678980d6a5e4f5d37d", "type": "data", "aliases": [], "codes": [], "collaborators": [], "created": 1553363375.817961, "modified": 1553363375.817961, "creator": {"name": "dang"}, "data": {}, "datafiles": [{"desc": "foo13", "path": "foo13", "sha1": "feee44ad365b6b1ec75c5621a0ad067371102854", "is_copy": true}], "datafiles_dir": "/home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52", "desc": "foo13", "relations": [{"predicate": "derived", "identifier": "1e41e6ae882b4622ba9043f4135f2143", "role": "object"}], "sources": [], "tags": [], "version_info": {"created": 1553363375.817961, "version": [0, 0, 0, ""], "name": ""}, "doc_id": 4}
 
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: ../_images/blue-white-band.png
+    :width: 100%
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. program:: dmf-register
+
 dmf register
 ------------
 Register a new resource with the DMF, using a file as an input.
@@ -726,11 +755,16 @@ Add a 'used by' relation to the given resource.
 
 Add a 'version of previous' relation to the given resource.
 
+.. option:: --is-subject
+
+If given, reverse the sense of any relation(s) added to the resource so that the
+newly created resource is the subject and the existing resource is the object.
+Otherwise, the new resource is the object of the relation.
 
 dmf register usage
 ^^^^^^^^^^^^^^^^^^
-In the following examples, the current working directory is
-set to ``/home/myuser`` and the workspace is named ``ws``.
+.. note:: In the following examples, the current working directory is
+          set to ``/home/myuser`` and the workspace is named ``ws``.
 
 Register a new file, which is a CSV data file, and use the ``--info``
 option to show the created resource.
@@ -763,6 +797,128 @@ option to show the created resource.
      data
   version
      0.0.0 @ 2019-04-11 03:58:52
+
+If you try to register (add) the same file twice, it will be an error by default.
+You need to add the :option:`--no-unique` option to allow it.
+
+.. code-block:: console
+
+    $ printf "index,time,value\n1,0.1,1.0\n2,0.2,1.3\n" > timeseries.csv
+    $ dmf add timeseries.csv
+    2315bea239c147e4bc6d2e1838e4101f
+    $ dmf add timeseries.csv
+    This file is already in 1 resource(s): 2315bea239c147e4bc6d2e1838e4101f
+    $ dmf add --no-unique timeseries.csv
+    3f95851e4931491b995726f410998491
+
+You can add links to existing resources with the options :option:`--contained`,
+:option:`--derived`, :option:`--used`, and :option:`--prev`. For all of these,
+the new resource being registered is the target of the relation and the
+option argument is the identifier of an existing resource that is the subject of the
+relation.
+
+For example, here we add a "shoebox" resource and then some "shoes" that are contained
+in it:
+
+.. code-block:: console
+
+    $ touch shoebox.txt shoes.txt closet.txt
+    $ dmf add shoebox.txt
+    755374b6503a47a09870dfbdc572e561
+    $ dmf add shoes.txt --contained 755374b6503a47a09870dfbdc572e561
+    dba0a5dc7d194040ac646bf18ab5eb50
+    $ dmf info 7553  # the "shoebox" contains the "shoes"
+                                Resource 755374b6503a47a09870dfbdc572e561
+      created
+         '2019-04-11 20:16:50'
+      creator
+         name: dang
+      datafiles
+         - desc: shoebox.txt
+           is_copy: true
+           path: shoebox.txt
+           sha1: da39a3ee5e6b4b0d3255bfef95601890afd80709
+      datafiles_dir
+         /home/dang/src/idaes/dangunter/idaes-dev/docs/ws/files/7f3ff820676b41689bb32bc325fd2d1b
+      desc
+         shoebox.txt
+      doc_id
+         9
+      id_
+         755374b6503a47a09870dfbdc572e561
+      modified
+         '2019-04-11 20:16:50'
+      relations
+         - dba0a5dc7d194040ac646bf18ab5eb50 <--[contains]-- ME
+      type
+         data
+      version
+         0.0.0 @ 2019-04-11 20:16:50
+
+    $ dmf info dba0  # the "shoes" are in the "shoebox"
+                                Resource dba0a5dc7d194040ac646bf18ab5eb50
+      created
+         '2019-04-11 20:17:28'
+      creator
+         name: dang
+      datafiles
+         - desc: shoes.txt
+           is_copy: true
+           path: shoes.txt
+           sha1: da39a3ee5e6b4b0d3255bfef95601890afd80709
+      datafiles_dir
+         /home/dang/src/idaes/dangunter/idaes-dev/docs/ws/files/a27f98c24d1848eaba1b26e5ef87be88
+      desc
+         shoes.txt
+      doc_id
+         10
+      id_
+         dba0a5dc7d194040ac646bf18ab5eb50
+      modified
+         '2019-04-11 20:17:28'
+      relations
+         - 755374b6503a47a09870dfbdc572e561 --[contains]--> ME
+      type
+         data
+      version
+         0.0.0 @ 2019-04-11 20:17:28
+
+To reverse the sense of the relation, add the :option:`--is-subject` flag.
+For example, we now add a "closet" resource that contains the existing "shoebox".
+This means the shoebox now has two different "contains" type of relations.
+
+.. code-block:: console
+
+    $ dmf add closet.txt --is-subject --contained 755374b6503a47a09870dfbdc572e561
+    22ace0f8ed914fa3ac3e7582748924e4
+    $ dmf info 7553
+                                Resource 755374b6503a47a09870dfbdc572e561
+      created
+         '2019-04-11 20:16:50'
+      creator
+         name: dang
+      datafiles
+         - desc: shoebox.txt
+           is_copy: true
+           path: shoebox.txt
+           sha1: da39a3ee5e6b4b0d3255bfef95601890afd80709
+      datafiles_dir
+         /home/dang/src/idaes/dangunter/idaes-dev/docs/ws/files/7f3ff820676b41689bb32bc325fd2d1b
+      desc
+         shoebox.txt
+      doc_id
+         9
+      id_
+         755374b6503a47a09870dfbdc572e561
+      modified
+         '2019-04-11 20:16:50'
+      relations
+         - dba0a5dc7d194040ac646bf18ab5eb50 <--[contains]-- ME
+         - 22ace0f8ed914fa3ac3e7582748924e4 --[contains]--> ME
+      type
+         data
+      version
+         0.0.0 @ 2019-04-11 20:16:50
 
 
 .. include:: ../global.rst
