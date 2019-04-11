@@ -389,8 +389,24 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
     metavar="RESOURCE-ID",
     multiple=True,
 )
+@click.option(
+    "--is-subject",
+    flag_value="yes",
+    help="If given, this resource will be the subject rather than the object "
+    "of any and all relations added.",
+)
 def register(
-    resource_type, url, info, copy, strict, unique, contained, derived, used, prev
+    resource_type,
+    url,
+    info,
+    copy,
+    strict,
+    unique,
+    contained,
+    derived,
+    used,
+    prev,
+    is_subject,
 ):
     _log.debug(f"Register object type='{resource_type}' url/path='{url.path}'")
     # process url
@@ -432,7 +448,7 @@ def register(
         n_dup = len(dup_ids)
         if n_dup > 0:
             click.echo(
-                f"This file is already in {n_dup} resources: " f"{' '.join(dup_ids)}"
+                f"This file is already in {n_dup} resource(s): " f"{' '.join(dup_ids)}"
             )
             sys.exit(Code.DMF_OPER.value)
     # process relations
@@ -454,7 +470,10 @@ def register(
             if rel_subj is None:
                 click.echo(f"Relation {rel_name} target not found: {rel_id}")
                 sys.exit(Code.DMF_OPER.value)
-            resource.create_relation_args(rel_subj, rel_name, rsrc)
+            if is_subject == "yes":
+                resource.create_relation_args(rsrc, rel_name, rel_subj)
+            else:
+                resource.create_relation_args(rel_subj, rel_name, rsrc)
             _log.debug(f"added relation {rsrc.id} <-- {rel_name} -- {rel_id}")
     _log.debug("update resource relations")
     for rel_rsrc in target_resources.values():
@@ -633,7 +652,7 @@ class _ShowInfo:
         print()
 
     def show_term(self):
-        t, r = self._terminal, self._resource  # aliases
+        t = self._terminal  # alias
         rval = self._human_readable_values()
         width = min(t.width, self._longest_line(rval) + 3 + self.contents_indent)
         self._print_info_term_header(width)
