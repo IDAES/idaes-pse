@@ -231,17 +231,18 @@ def init(path, create, name, desc, html):
         click.echo(f"Configuration in '{d.configuration_file}")
     else:
         _log.info("Use existing workspace")
-        try:
-            _ = DMF(path=path, create=False, save_path=True)
-        except errors.WorkspaceConfNotFoundError:
-            click.echo(f"Workspace configuration not found at path='{path}'")
-            if path == '.':  # probably just the default
-                click.echo("Use --path option to set workspace path.")
-            sys.exit(Code.WORKSPACE_NOT_FOUND.value)
-        except errors.WorkspaceNotFoundError:
-            click.echo(f"Existing workspace not found at path='{path}'")
-            click.echo("Add --create flag to create a workspace.")
-            sys.exit(Code.WORKSPACE_NOT_FOUND.value)
+    # In either case, switch to provided config
+    try:
+        _ = DMF(path=path, create=False, save_path=True)
+    except errors.WorkspaceConfNotFoundError:
+        click.echo(f"Workspace configuration not found at path='{path}'")
+        if path == '.':  # probably just the default
+            click.echo("Use --path option to set workspace path.")
+        sys.exit(Code.WORKSPACE_NOT_FOUND.value)
+    except errors.WorkspaceNotFoundError:
+        click.echo(f"Existing workspace not found at path='{path}'")
+        click.echo("Add --create flag to create a workspace.")
+        sys.exit(Code.WORKSPACE_NOT_FOUND.value)
 
 
 @click.command(help="Get status of workspace")
@@ -476,6 +477,7 @@ def register(
 
 
 @click.command(help="List resources in the workspace")
+@click.option("--color/--no-color", default=True, help="Use color for output")
 @click.option(
     "--show",
     "-s",
@@ -501,20 +503,20 @@ def register(
     default=True,
 )
 @click.option("--reverse", "-r", "reverse", flag_value="yes", help="Reverse sort order")
-def ls(show, sort_by, reverse, prefix):
+def ls(color, show, sort_by, reverse, prefix):
     d = DMF()
     if not show:
         show = ["type", "desc", "modified"]  # note: 'id' is always first
     reverse = bool(reverse == "yes")
     if not sort_by:
         sort_by = ["id"]
-    _ls_basic(d, show, sort_by, reverse, prefix)
+    _ls_basic(d, show, sort_by, reverse, prefix, color)
 
 
-def _ls_basic(d, show_fields, sort_by, reverse, prefix):
+def _ls_basic(d, show_fields, sort_by, reverse, prefix, color):
     """Text-mode `ls`.
     """
-    t = Terminal()
+    t = _cterm if color else _noterm
     resources = list(d.find())
     if len(resources) == 0:
         print("no resources to display")

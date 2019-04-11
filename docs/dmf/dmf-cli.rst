@@ -115,6 +115,14 @@ in ``.dmf``, in the user's home directory, so that all other dmf
 commands know which workspace to use. With the :option:`--create` option,
 a new empty workspace can be created.
 
+.. testsetup:: dmf-init
+
+    import pathlib
+    from click.testing import CliRunner
+    from idaes.dmf.cli import init
+    from idaes.dmf.workspace import Workspace
+    from idaes.dmf.dmfbase import DMFConfig
+    runner = CliRunner()
 
 Create new workspace in sub-directory ``ws``, with given name and description:
 
@@ -122,6 +130,16 @@ Create new workspace in sub-directory ``ws``, with given name and description:
 
     $ dmf init ws --create --name "foo" --desc "foo workspace description"
     Configuration in '/home/myuser/ws/config.yaml
+
+.. testcode:: dmf-init
+    :hide:
+
+    with runner.isolated_filesystem():
+        DMFConfig._filename = str(pathlib.Path('.dmf').absolute())
+        result = runner.invoke(init, ['ws', '--create', '--name', 'foo',
+            '--desc', 'foo workspace description'])
+        assert result.exit_code == 0
+        assert (pathlib.Path('ws') / Workspace.WORKSPACE_CONFIG).exists()
 
 Create new workspace in sub-directory ``ws``, providing the name and
 description interactively:
@@ -132,6 +150,15 @@ description interactively:
     New workspace name: foo
     New workspace description: foo workspace description
     Configuration in '/home/myuser/ws/config.yaml
+
+.. testcode:: dmf-init
+    :hide:
+
+    with runner.isolated_filesystem():
+        DMFConfig._filename = str(pathlib.Path('.dmf').absolute())
+        result = runner.invoke(init, ['ws', '--create'], input='foo\nfoo desc\n')
+        assert result.exit_code == 0
+        assert (pathlib.Path('ws') / Workspace.WORKSPACE_CONFIG).exists()
 
 Switch to workspace ``ws2``:
 
@@ -147,6 +174,16 @@ If you try to switch to a non-existent workspace, you will get an error message:
     Existing workspace not found at path='doesnotexist'
     Add --create flag to create a workspace.
 
+.. testcode:: dmf-init
+    :hide:
+
+    with runner.isolated_filesystem():
+        DMFConfig._filename = str(pathlib.Path('.dmf').absolute())
+        runner.invoke(init, ['ws', '--create'], input='foo\nfoo desc\n')
+        result = runner.invoke(init, ['doesnotexist'])
+        assert result.exit_code != 0
+        assert 'not found' in result.output
+
 If the workspace exists, you cannot create it:
 
 .. code-block:: console
@@ -155,6 +192,16 @@ If the workspace exists, you cannot create it:
     Configuration in '/home/myuser/ws/config.yaml
     $ dmf init ws --create
     Cannot create workspace: path 'ws' already exists
+
+.. testcode:: dmf-init
+    :hide:
+
+    with runner.isolated_filesystem():
+        DMFConfig._filename = str(pathlib.Path('.dmf').absolute())
+        runner.invoke(init, ['ws', '--create'], input='foo\nfoo desc\n')
+        result = runner.invoke(init, ['ws', '--create'])
+        assert result.exit_code != 0
+        assert 'exists' in result.output
 
 .. program:: dmf-status
 
@@ -206,6 +253,23 @@ Also note that the output shown below is plain (black) text. This is due to our
 limited understanding of how to do colored text in our documentation tool
 (Sphinx). In a color-capable terminal, the output will be more colorful.
 
+.. testsetup:: dmf-status
+
+    from pathlib import Path
+    from click.testing import CliRunner
+    from idaes.dmf.cli import init, status
+    from idaes.dmf.dmfbase import DMFConfig
+    runner = CliRunner()
+
+    fsctx = runner.isolated_filesystem()
+    fsctx.__enter__()
+    DMFConfig._filename = str(Path('.dmf').absolute())
+    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
+
+.. testcleanup:: dmf-status
+
+    fsctx.__exit__(None, None, None)
+    DMFConfig._filename = str(Path('~/.dmf').expanduser())
 
 Show basic workspace status:
 
@@ -220,6 +284,14 @@ Show basic workspace status:
       description: my workspace
       created: 2019-04-09 12:46:40
       modified: 2019-04-09 12:46:40
+
+.. testcode:: dmf-status
+    :hide:
+
+    result = runner.invoke(status, ['--no-color'])
+    assert result.exit_code == 0
+    assert "settings" in result.output
+    assert "name: foo" in result.output
 
 Add the file information:
 
@@ -237,6 +309,15 @@ Add the file information:
       files:
         count: 3
         total_size: 1.3 MB
+
+.. testcode:: dmf-status
+    :hide:
+
+    result = runner.invoke(status, ['--no-color', '--show', 'files'])
+    assert result.exit_code == 0
+    assert "settings" in result.output
+    assert "name: foo" in result.output
+    assert "files:" in result.output
 
 You can repeat the :option:`-s,--show` option to add more things:
 
@@ -256,6 +337,16 @@ You can repeat the :option:`-s,--show` option to add more things:
         total_size: 1.3 MB
       html_documentation_paths:
         -: /home/myuser/idaes/docs/build
+
+.. testcode:: dmf-status
+    :hide:
+
+    result = runner.invoke(status, ['--no-color', '--show', 'files',
+        '--show', 'htmldocs'])
+    assert result.exit_code == 0
+    assert "settings" in result.output
+    assert "name: foo" in result.output
+    assert "html" in result.output
 
 However, showing everything is less typing, and not overwhelming:
 
@@ -278,6 +369,16 @@ However, showing everything is less typing, and not overwhelming:
       logging:
         not configured
 
+.. testcode:: dmf-status
+    :hide:
+
+    result = runner.invoke(status, ['--no-color', '-a'])
+    assert result.exit_code == 0
+    assert "settings" in result.output
+    assert "name: foo" in result.output
+    assert "html" in result.output
+    assert "logging:" in result.output
+
 .. program:: dmf-ls
 
 dmf ls
@@ -286,6 +387,14 @@ This command lists resources in the current workspace.
 
 dmf ls options
 ^^^^^^^^^^^^^^
+
+.. option:: --color
+
+Allow (if terminal supports it) colored terminal output. This is the default.
+
+.. option:: --no-color
+
+Disallow, even if terminal supports it, colored terminal output.
 
 .. option:: -s,--show
 
@@ -331,6 +440,31 @@ dmf ls usage
 In the following examples, the current working directory is
 set to ``/home/myuser`` and the workspace is named ``ws``.
 
+.. testsetup:: dmf-ls
+
+    from pathlib import Path
+    from click.testing import CliRunner
+    from idaes.dmf.cli import init, ls, register
+    from idaes.dmf.dmfbase import DMFConfig
+    runner = CliRunner()
+
+    fsctx = runner.isolated_filesystem()
+    fsctx.__enter__()
+    DMFConfig._filename = str(Path('.dmf').absolute())
+    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
+    files = [f"foo1{n}" for n in range(5)]
+    files.append("bar1")
+    for f in files:
+        with open(f, 'w') as fp:
+            fp.write("This is some sample data")
+        runner.invoke(register, [f])  # add file to DMF
+
+.. testcleanup:: dmf-ls
+
+    fsctx.__exit__(None, None, None)
+    DMFConfig._filename = str(Path('~/.dmf').expanduser())
+
+
 Without arguments, show the resources in an arbitrary (though consistent)
 order:
 
@@ -345,6 +479,15 @@ order:
     e780 data foo11 2019-03-23 17:48:11
     eb60 data foo12 2019-03-23 17:49:08
 
+.. testcode:: dmf-ls
+    :hide:
+
+    result = runner.invoke(ls, ['--no-color'])
+    assert result.exit_code == 0
+    output1 = result.output
+    result = runner.invoke(ls, ['--no-color'])
+    assert result.output == output1
+
 Add a sort key to sort by, e.g. modified date
 
 .. code-block:: console
@@ -357,6 +500,16 @@ Add a sort key to sort by, e.g. modified date
     0b62 data foo13 2019-03-23 17:49:35
     6c9a data foo14 2019-03-23 17:51:59
     d3d5 data bar1  2019-03-26 13:07:02
+
+
+.. testcode:: dmf-ls
+    :hide:
+
+    result = runner.invoke(ls, ['--no-color', '-S', 'modified'])
+    assert result.exit_code == 0
+    output1 = result.output
+    result = runner.invoke(ls, ['--no-color', '--sort', 'modified'])
+    assert result.output == output1
 
 
 Especially for resources of type "data", showing the first (possibly only) file
