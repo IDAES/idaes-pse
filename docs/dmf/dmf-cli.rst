@@ -576,6 +576,8 @@ Add a 'version of previous' relation to the given resource.
 
 dmf register usage
 ^^^^^^^^^^^^^^^^^^
+In the following examples, the current working directory is
+set to ``/home/myuser`` and the workspace is named ``ws``.
 
 Register a new file, which is a CSV data file, and use the ``--info``
 option to show the created resource.
@@ -584,34 +586,30 @@ option to show the created resource.
 
     $ printf "index,time,value\n1,0.1,1.0\n2,0.2,1.3\n" > file.csv
     $ dmf reg file.csv --info
-                          Resource 7fbd197c58374e4abcb6bb0334102ca0
-    created
-     '2019-04-11 03:51:06'
-    creator
+                          Resource 117a42287aec4c5ca333e0ff3ac89639
+  created
+     '2019-04-11 03:58:52'
+  creator
      name: dang
-    datafiles
+  datafiles
      - desc: file.csv
-       do_copy: false
-       is_copy: false
-       path: /home/dang/src/idaes/dangunter/idaes-dev/docs/file.csv
+       is_copy: true
+       path: file.csv
        sha1: f1171a6442bd6ce22a718a0e6127866740c9b52c
-    datafiles_dir
-     /home/dang/src/idaes/dangunter/idaes-dev/ws2/files/9fa4f1eabe8d457aa7b6a19a23e61f53
-    desc
+  datafiles_dir
+     /home/myuser/ws/files/4db42d92baf3431ab31d4f91ab1a673b
+  desc
      file.csv
-    doc_id
+  doc_id
      1
-    id_
-     7fbd197c58374e4abcb6bb0334102ca0
-    modified
-     '2019-04-11 03:51:06'
-    type
+  id_
+     117a42287aec4c5ca333e0ff3ac89639
+  modified
+     '2019-04-11 03:58:52'
+  type
      data
-    version
-     0.0.0 @ 2019-04-11 03:51:06
-
-    eaa0d83e1ff04200a5359150790fb319
-
+  version
+     0.0.0 @ 2019-04-11 03:58:52
 
 
 .. include:: ../global.rst

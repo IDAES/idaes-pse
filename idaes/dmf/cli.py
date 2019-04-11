@@ -345,6 +345,7 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
 @click.option("--info", help="Show info on created resource", flag_value="yes")
 @click.option(
     "--copy/--no-copy",
+    default=True,
     help="Whether input file is copied into DMF "
     "workspace, or referred to by location",
 )
