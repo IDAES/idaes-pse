@@ -266,7 +266,7 @@ MSYS2 provides a shell which will allow use of Linux style build tools.  It also
 
   - ``pacman -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-boost unzip patch make``
 
-8. While MinGW does produce Windows native binaries, depending on linking options, some DLLs may be required.  Add the MinWG/MSYS2 DLLs to your path.  For example if MSYS2 was installed in the default location you would probably want to add ``C:\msys64\mingw64\bin``.
+8. While MinGW does produce Windows native binaries, depending on linking options, some DLLs may be required.  Add the MinWG/MSYS2 DLLs to your path.  For example if MSYS2 was installed in the default location you would probably want to add ``C:\msys64\mingw64\bin``. See Section :ref:`Modifying the Path Environment Variable <install:Modifying the Path Environment Variable>`
 
 .. note::
 
@@ -371,6 +371,24 @@ Install IDAES
 Extras
 ^^^^^^
 
+Building Documentation
+""""""""""""""""""""""
+
+Most users do not need to build this documentation, but if necessary you can.  The instructions here use the ```make``` from the MSYS2 installed above.
+
+  1. Open the Anaconda Command prompt, and activate the IDAES environment
+  2. Go to the IDAES directory
+  3. Go to the docs subdirectory
+  4. Add the MSYS2 bin directory to your path temporarily.  For example, if MSYS2 is installed in the default location:
+
+    - ``set Path=%Path%;C:\msys64\usr\bin``
+
+  5. Run make (from MSYS2):
+
+    - ``make html``
+
+The HTML documentation will be in the "build" subdirectory.
+
 Compiling Ipopt
 """""""""""""""
 
@@ -398,3 +416,36 @@ It's not required to compile Ipopt yourself, and these are pretty much the stand
   - ``make``
 
 6. The Ipopt AMPL executable will be in ./Ipopt/src/Apps/AmplSolver/ipopt.exe, you can move the executable to a location in the path (environment variable).
+
+
+Modifying the Path Environment Variable
+"""""""""""""""""""""""""""""""""""""""
+
+The Windows ``Path`` environment variable provides a search path for executable code and dynamically linked libraries (DLLs).  You can temporarily modify the path in a command windows session of permanently modify it for the whole system.
+
+**Changing Path Via the Control Panel**
+
+This method will modify the path for the whole system.  Running programs especially open command windows will need to be restarted for this change to take effect.
+
+Any version of Windows:
+  1. Press the "Windows Key."
+  2. Start to type "Control Panel"
+  3. Click on "Control Panel" in the start menu.
+  4. Click "System and Security."
+  5. Click "System."
+  6. Click "Advanced system settings."
+  7. Click "Environment Variables."
+
+In Windows 10:
+  1. Press the "Windows Key."
+  2. Start to type "Environment"
+  3. Click on "Edit the system environment" in the start menu.
+  4. Click "Environment Variables."
+
+**Temporary Change in Command Window**
+
+This method temporarily changes the path in just the active command window.  Once the command window is closed the change will be lost.
+
+Just set the Path variable to include and additional directories you want to add to the path.  Replace ``added_directory`` with the directory you want to add.
+
+  1. ``set Path=%Path%;added_directory``
