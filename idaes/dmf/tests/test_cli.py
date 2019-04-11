@@ -19,22 +19,6 @@ def runner():
     # trivial, but allows later flexibility
     return CliRunner()
 
-
-def test_init_args(runner):
-    with runner.isolated_filesystem():
-        result = runner.invoke(
-            cli.init, ["--path", "ws", "--create", "--name", "x", "--desc", "X"]
-        )
-        assert result.exit_code == 0
-        # second time, no --create required
-        result = runner.invoke(cli.init, ["--path", "ws"])
-        assert result.exit_code == 0
-
-
-def test_init_prompt(runner):
-    with runner.isolated_filesystem():
-        result = runner.invoke(cli.init, ["--path", "ws", "--create"], input="x\nX\n")
-        assert result.exit_code == 0
-        # second time, no --create required
-        result = runner.invoke(cli.init, ["--path", "ws"])
-        assert result.exit_code == 0
+# Note: at some point, we may put some more involved
+# tests in here, but for now all the tests are in the
+# dmf-cli.rst file in testcode directives.
