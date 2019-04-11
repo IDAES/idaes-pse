@@ -12,7 +12,7 @@
 ##############################################################################
 
 """
-This module contains miscalaneous utility functions for use in IDAES models.
+This module contains miscellaneous utility functions for use in IDAES models.
 """
 
 import pyomo.environ as pyo
