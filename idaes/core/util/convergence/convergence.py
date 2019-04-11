@@ -27,27 +27,32 @@ takes that set of sampled points and solves the model at each of the points,
 collecting convergence statistics (success/failure, iterations, and solution
 time).
 
-To find help on convergence.py:
+To find help on convergence.py::
+
    $ python convergence.py --help
 
 You will see that there are some subcommands. To find help on a particular
-subcommand:
+subcommand::
+
    $ python convergence.py  <subcommand> --help
 
 To create a sample file, you can use a command-line like the following (this
-should be done once by the  model developer for a few different sample sizes):
+should be done once by the  model developer for a few different sample sizes)::
+
    $ python ../../../core/util/convergence/convergence.py create-sample-file
          -s PressureChanger-10.json
          -N 10 --seed=42
          -e idaes.models.convergence.pressure_changer.
              pressure_changer_conv_eval.PressureChangerConvergenceEvaluation
 
-More commonly, to run the convergence evaluation:
+More commonly, to run the convergence evaluation::
+
    $ python ../../../core/util/convergence/convergence.py run-eval
          -s PressureChanger-10.json
 
 Note that the convergence evaluation can also be run in parallel if you have
-installed MPI and mpi4py using a command line like the following:
+installed MPI and mpi4py using a command line like the following::
+
    $ mpirun -np 4 python ../../../core/util/convergence/convergence.py run-eval
          -s PressureChanger-10.json
 

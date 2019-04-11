@@ -34,6 +34,7 @@ Overview
 
 .. automodule:: idaes.ver
     :members: package_version, __version__
+    :noindex:
 
 Version class
 ^^^^^^^^^^^^^
@@ -41,6 +42,7 @@ The versioning semantics are encapsulated in a class called `Version`.
 
 .. autoclass:: idaes.ver.Version
     :members: __init__, __iter__, __str__
+    :noindex:
 
 HasVersion class
 ^^^^^^^^^^^^^^^^
@@ -49,3 +51,4 @@ you can use the `HasVersion` mixin class.
 
 .. autoclass:: idaes.ver.HasVersion
     :members: __init__
+    :noindex:
