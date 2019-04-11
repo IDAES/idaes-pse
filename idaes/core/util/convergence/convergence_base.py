@@ -35,18 +35,19 @@ decreasing with framework and/or model changes.
 
 In order to write a convergence evaluation for your model, you must inherit a
 class from ConvergenceEvaluation, and implement three methods:
-   - get_specification: This method should create and return a
-     ConvergenceEvaluationSpecification object. There are methods on
-     ConvergenceEvaluationSpecification to add inputs. These inputs contain a
-     string that identifies a Pyomo Param or Var object, the lower and upper
-     bounds, and the mean and standard deviation to be used for sampling. When
-     samples are generated, they are drawn from a normal distribution, and then
-     truncated by the lower or upper bounds.
-   - get_initialized_model: This method should create and return a Pyomo model
-     object that is already initialized and ready to be solved. This model will
-     be modified according to the sampled inputs, and then it will be solved.
-   - get_solver: This method should return an instance of the Pyomo solver that
-     will be used for the analysis.
+
+- get_specification: This method should create and return a
+    ConvergenceEvaluationSpecification object. There are methods on
+    ConvergenceEvaluationSpecification to add inputs. These inputs contain a
+    string that identifies a Pyomo Param or Var object, the lower and upper
+    bounds, and the mean and standard deviation to be used for sampling. When
+    samples are generated, they are drawn from a normal distribution, and then
+    truncated by the lower or upper bounds.
+- get_initialized_model: This method should create and return a Pyomo model
+    object that is already initialized and ready to be solved. This model will
+    be modified according to the sampled inputs, and then it will be solved.
+- get_solver: This method should return an instance of the Pyomo solver that
+    will be used for the analysis.
 
 There are methods to create the sample points file (on
 ConvergenceEvaluationSpecification), to run a convergence evaluation
