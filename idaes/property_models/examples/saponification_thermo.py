@@ -38,6 +38,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock)
 from idaes.core.util.misc import add_object_reference
+from idaes.ui.report import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -117,7 +118,7 @@ class _StateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
     def initialize(blk, flow_vol=None, temperature=None, pressure=None,
-                   conc_mol_comp=None,
+                   conc_mol_comp=None, state_vars_fixed=False,
                    hold_state=False, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-8}):
         '''
@@ -134,7 +135,15 @@ class _StateBlock(StateBlock):
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = include solver output infomation (tee=True)
-
+            state_vars_fixed: Flag to denote if state vars have already been
+                              fixed.
+                              - True - states have already been fixed by the
+                                       control volume 1D. Control volume 0D
+                                       does not fix the state vars, so will
+                                       be False if this state block is used
+                                       with 0D blocks.
+                             - False - states have not been fixed. The state
+                                       block will deal with fixing/unfixing.
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -153,69 +162,91 @@ class _StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         '''
-        # Fix state variables if not already fixed
-        Fflag = {}
-        Pflag = {}
-        Tflag = {}
-        Cflag = {}
-
+        # Deactivate the constraints specific for outlet block i.e.
+        # when defined state is False
         for k in blk.keys():
-            if blk[k].flow_vol.fixed is True:
-                Fflag[k] = True
-            else:
-                Fflag[k] = False
-                if flow_vol is None:
-                    blk[k].flow_vol.fix(1.0)
-                else:
-                    blk[k].flow_vol.fix(flow_vol)
+            if blk[k].config.defined_state is False:
+                blk[k].conc_water_eqn.deactivate()
 
-            for j in blk[k].component_list_ref:
-                if blk[k].conc_mol_comp[j].fixed is True:
-                    Cflag[k, j] = True
+        if state_vars_fixed is False:
+            # Fix state variables if not already fixed
+            Fflag = {}
+            Pflag = {}
+            Tflag = {}
+            Cflag = {}
+
+            for k in blk.keys():
+                # Fix state vars if not already fixed
+                if blk[k].flow_vol.fixed is True:
+                    Fflag[k] = True
                 else:
-                    Cflag[k, j] = False
-                    if conc_mol_comp is None:
-                        if j == "H2O":
-                            blk[k].conc_mol_comp[j].fix(55388.0)
-                        else:
-                            blk[k].conc_mol_comp[j].fix(100.0)
+                    Fflag[k] = False
+                    if flow_vol is None:
+                        blk[k].flow_vol.fix(1.0)
                     else:
-                        blk[k].conc_mol_comp[j].fix(conc_mol_comp[j])
+                        blk[k].flow_vol.fix(flow_vol)
 
-            if blk[k].pressure.fixed is True:
-                Pflag[k] = True
-            else:
-                Pflag[k] = False
-                if pressure is None:
-                    blk[k].pressure.fix(101325.0)
-                else:
-                    blk[k].pressure.fix(pressure)
+                for j in blk[k]._params.component_list:
+                    if blk[k].conc_mol_comp[j].fixed is True:
+                        Cflag[k, j] = True
+                    else:
+                        Cflag[k, j] = False
+                        if conc_mol_comp is None:
+                            if j == "H2O":
+                                blk[k].conc_mol_comp[j].fix(55388.0)
+                            else:
+                                blk[k].conc_mol_comp[j].fix(100.0)
+                        else:
+                            blk[k].conc_mol_comp[j].fix(conc_mol_comp[j])
 
-            if blk[k].temperature.fixed is True:
-                Tflag[k] = True
-            else:
-                Tflag[k] = False
-                if temperature is None:
-                    blk[k].temperature.fix(298.15)
+                if blk[k].pressure.fixed is True:
+                    Pflag[k] = True
                 else:
-                    blk[k].temperature.fix(temperature)
+                    Pflag[k] = False
+                    if pressure is None:
+                        blk[k].pressure.fix(101325.0)
+                    else:
+                        blk[k].pressure.fix(pressure)
+
+                if blk[k].temperature.fixed is True:
+                    Tflag[k] = True
+                else:
+                    Tflag[k] = False
+                    if temperature is None:
+                        blk[k].temperature.fix(298.15)
+                    else:
+                        blk[k].temperature.fix(temperature)
+
+            # If input block, return flags, else release state
+            flags = {"Fflag": Fflag, "Pflag": Pflag,
+                     "Tflag": Tflag, "Cflag": Cflag}
+
+        else:
+            # Check when the state vars are fixed already result in dof 0
+            for k in blk.keys():
+                if degrees_of_freedom(blk[k]) != 0:
+                    raise Exception("State vars fixed but degrees of freedom "
+                                    "for state block is not zero during "
+                                    "initialization.")
 
         opt = SolverFactory(solver)
         opt.options = optarg
 
-        # ---------------------------------------------------------------------
-        # If input block, return flags, else release state
-        flags = {"Fflag": Fflag, "Pflag": Pflag,
-                 "Tflag": Tflag, "Cflag": Cflag}
+        # Post initialization reactivate constraints specific for
+        # all blocks other than the inlet
+        for k in blk.keys():
+            if not blk[k].config.defined_state:
+                blk[k].conc_water_eqn.activate()
+
+        if state_vars_fixed is False:
+            if hold_state is True:
+                return flags
+            else:
+                blk.release_state(flags)
 
         if outlvl > 0:
             if outlvl > 0:
                 _log.info('{} Initialisation Complete.'.format(blk.name))
-
-        if hold_state is True:
-            return flags
-        else:
-            blk.release_state(flags)
 
     def release_state(blk, flags, outlvl=0):
         '''
@@ -234,7 +265,7 @@ class _StateBlock(StateBlock):
         for k in blk.keys():
             if flags['Fflag'][k] is False:
                 blk[k].flow_vol.unfix()
-            for j in blk[k].component_list_ref:
+            for j in blk[k]._params.component_list:
                 if flags['Cflag'][k, j] is False:
                     blk[k].conc_mol_comp[j].unfix()
             if flags['Pflag'][k] is False:
@@ -261,33 +292,6 @@ class SaponificationStateBlockData(StateBlockData):
         """
         super(SaponificationStateBlockData, self).build()
 
-        # Create references to package parameters
-        # List of valid phases in property package
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.config.parameters.phase_list)
-
-        # Component list - a list of component identifiers
-        add_object_reference(self,
-                             "component_list_ref",
-                             self.config.parameters.component_list)
-
-        # Heat capacity - no _ref ending as this is the actual property
-        add_object_reference(self,
-                             "cp_mol",
-                             self.config.parameters.cp_mol)
-
-        # Density - no _ref ending as this is the actual property
-        add_object_reference(self,
-                             "dens_mol",
-                             self.config.parameters.dens_mol)
-
-        # Thermodynamic reference state
-        add_object_reference(self, "pressure_ref_ref",
-                             self.config.parameters.pressure_ref)
-        add_object_reference(self, "temperature_ref_ref",
-                             self.config.parameters.temperature_ref)
-
         # Create state variables
         self.flow_vol = Var(initialize=1.0,
                             domain=NonNegativeReals,
@@ -300,7 +304,7 @@ class SaponificationStateBlockData(StateBlockData):
                                initialize=298.15,
                                bounds=(298.15, 323.15),
                                doc='State temperature [K]')
-        self.conc_mol_comp = Var(self.component_list_ref,
+        self.conc_mol_comp = Var(self._params.component_list,
                                  domain=NonNegativeReals,
                                  initialize=100.0,
                                  doc='Component molar concentrations '
@@ -308,20 +312,21 @@ class SaponificationStateBlockData(StateBlockData):
 
         if self.config.defined_state is False:
             self.conc_water_eqn = Constraint(expr=self.conc_mol_comp["H2O"] ==
-                                             self.dens_mol)
+                                             self._params.dens_mol)
 
     def get_material_flow_terms(b, p, j):
         return b.flow_vol*b.conc_mol_comp[j]
 
     def get_enthalpy_flow_terms(b, p):
-        return (b.flow_vol*b.dens_mol*b.cp_mol *
-                (b.temperature - b.temperature_ref_ref))
+        return (b.flow_vol*b._params.dens_mol*b._params.cp_mol *
+                (b.temperature - b._params.temperature_ref))
 
     def get_material_density_terms(b, p, j):
         return b.conc_mol_comp[j]
 
     def get_enthalpy_density_terms(b, p):
-        return b.dens_mol*b.cp_mol*(b.temperature - b.temperature_ref_ref)
+        return b._params.dens_mol*b._params.cp_mol*(
+                b.temperature - b._params.temperature_ref)
 
     def define_state_vars(b):
         return {"flow_vol": b.flow_vol,

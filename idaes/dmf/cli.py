@@ -185,14 +185,12 @@ def base_command(verbose, quiet):
 @click.command(
     help="Initialize the current workspace. Optionally, create a new workspace."
 )
-@click.option(
-    "--path", default=".", type=click.Path(), show_default=True, help="Workspace path"
-)
+@click.argument("path", type=click.Path())
 @click.option(
     "--create/--no-create",
     default=False,
-    help="Create new workspace. If `--name` and `--desc` are not provided, these will be "
-    "prompted for interactively.",
+    help="Create new workspace. If `--name` and `--desc` are not provided, these will"
+    " be prompted for interactively.",
 )
 @click.option("--name", type=click.STRING, help="Workspace name")
 @click.option("--desc", type=click.STRING, help="Workspace description")
@@ -344,6 +342,7 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
 
 @click.command(help="Register a new object in the DMF workspace")
 @click.argument("url", type=URLType(), metavar="FILE")
+@click.option("--info", help="Show info on created resource", flag_value="yes")
 @click.option(
     "--copy/--no-copy",
     help="Whether input file is copied into DMF "
@@ -388,7 +387,9 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
     metavar="RESOURCE-ID",
     multiple=True,
 )
-def register(resource_type, url, copy, strict, unique, contained, derived, used, prev):
+def register(
+    resource_type, url, info, copy, strict, unique, contained, derived, used, prev
+):
     _log.debug(f"Register object type='{resource_type}' url/path='{url.path}'")
     # process url
     if url.scheme in ("file", ""):
@@ -399,7 +400,9 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
     # create the resource
     _log.debug("create resource")
     try:
-        rsrc = resource.Resource.from_file(path, as_type=resource_type, strict=strict)
+        rsrc = resource.Resource.from_file(
+            path, as_type=resource_type, strict=strict, do_copy=copy
+        )
     except resource.Resource.InferResourceTypeError as err:
         click.echo(f"Failed to infer resource: {err}")
         sys.exit(Code.IMPORT_RESOURCE.value)
@@ -462,7 +465,13 @@ def register(resource_type, url, copy, strict, unique, contained, derived, used,
         click.echo(f"Failed to add resource: {err}")
         sys.exit(Code.DMF_OPER.value)
     _log.debug(f"added resource: {new_id}")
-    click.echo(new_id)
+    if info == "yes":
+        pfxlen = len(new_id)
+        si = _ShowInfo("term", pfxlen)
+        for rsrc in dmf.find_by_id(new_id):
+            si.show(rsrc)
+    else:
+        click.echo(new_id)
 
 
 @click.command(help="List resources in the workspace")
@@ -514,7 +523,7 @@ def _ls_basic(d, show_fields, sort_by, reverse, prefix):
     fields = ["id"] + list(show_fields)
     nfields = len(fields)
     # calculate table body. do this first to get widths.
-    rows, maxwid, widths = [], 40, [0] * nfields
+    rows, maxwid, widths = [], 60, [0] * nfields
     for r in resources:
         row = []
         for i, fld in enumerate(fields):
@@ -654,18 +663,18 @@ class _ShowInfo:
 
     def _print_info_term_header(self, width):
         t, r = self._terminal, self._resource
-        frame = f"{t.on_cyan}{' ' * width}{t.normal}"
-        spacer = f"{t.on_cyan} {t.normal}{' ' * (width - 2)}{t.on_cyan} {t.normal}"
-        print(frame)
-        print(spacer)
+        padding = width - len(r.id) - 10
+        if padding % 2 == 1:
+            lpad = padding // 2
+            rpad = padding // 2 + 1
+        else:
+            lpad = rpad = padding // 2
         print(
-            f"{t.on_cyan} {t.normal} {t.bold}Resource {t.normal}{t.green}"
-            f"{r.id[:self._pfxlen]}"
-            f"{t.normal}{r.id[self._pfxlen:]}"
-            f"{' ' * (width - len(r.id) - 12)}{t.on_cyan} {t.normal}"
+            f"{t.bold_white_on_cyan}{lpad * ' '} Resource {t.normal}"
+            f"{t.black_on_cyan}{r.id[:self._pfxlen]}"
+            f"{t.white_on_cyan}{r.id[self._pfxlen:]}"
+            f"{rpad * ' '}{t.normal}"
         )
-        print(spacer)
-        print(frame)
 
     def _print_info_contents_term(self, s, width):
         t, n = self._terminal, self.contents_indent

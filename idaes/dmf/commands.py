@@ -25,7 +25,6 @@ import math
 import os
 import re
 import sys
-from typing import Any
 
 # Third-party
 from backports.shutil_get_terminal_size import get_terminal_size
@@ -239,7 +238,6 @@ def workspace_import(path, patterns, exit_on_error):
 
 
 def list_workspaces(root, stream=None):
-    # type: (str, Any) -> None
     """List workspaces found from a given root path.
 
     Args:

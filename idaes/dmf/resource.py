@@ -72,18 +72,20 @@ PR_USES = 'uses'
 PR_VERSION = 'version'
 RELATION_PREDICATES = {PR_DERIVED, PR_CONTAINS, PR_USES, PR_VERSION}
 
+
+TY_EXPERIMENT = 'experiment' #: Resource type for experiments
+TY_TABULAR = 'tabular_data'  #: Resource type for tabular data
+TY_PROPERTY = 'propertydb'   #: Resource type for property data
+TY_FLOWSHEET = 'flowsheet'   #: Resource type for a process flowsheet
+TY_NOTEBOOK = 'notebook'     #: Resource type for a Jupyter Notebook
+TY_CODE = 'code'             #: Resource type for source code
+TY_SURRMOD = 'surrogate_model' #: Resource type for a surrogate model
+TY_DATA = 'data'             #: Resource type for generic data
+TY_JSON = 'json'             #: Resource type for JSON data
+TY_OTHER = 'other'           #: Resource type for unspecified type of resource
+TY_RESOURCE_JSON = 'resource_json'  #: Resource type for a JSON serialized resource
+
 #: Constants for resource 'types'
-TY_EXPERIMENT = 'experiment'
-TY_TABULAR = 'tabular_data'
-TY_PROPERTY = 'propertydb'
-TY_FLOWSHEET = 'flowsheet'
-TY_NOTEBOOK = 'notebook'
-TY_CODE = 'code'
-TY_SURRMOD = 'surrogate_model'
-TY_DATA = 'data'
-TY_JSON = 'json'
-TY_OTHER = 'other'
-TY_RESOURCE_JSON = 'resource_json'
 RESOURCE_TYPES = {
     TY_EXPERIMENT,
     TY_TABULAR,
@@ -348,6 +350,7 @@ class Resource(object):
             as_type: Resource type. If None/empty, then inferred from path.
             strict: If True, fail when file extension and contents don't match.
                     If False, always fall through to generic resource.
+            do_copy: If True (the default), copy the files; else do not
 
         Raises:
             InferResourceTypeError: if resource type does not match inferred/specified

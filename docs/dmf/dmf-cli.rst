@@ -10,7 +10,8 @@ DMF Command-line Interface
 dmf
 ---
 
-Data management framework command wrapper.
+Data management framework command wrapper. This base command has
+some options for verbosity that can be applied to any sub-command.
 
 dmf options
 ^^^^^^^^^^^
@@ -27,7 +28,7 @@ debugging messages.
 Increase quietness. If given once, only show critical messages.
 If given twice, show no messages.
 
-.. program:: dmf-init
+.. program:: dmf
 
 dmf usage
 ^^^^^^^^^
@@ -62,6 +63,21 @@ Run ``sub-command`` with no logging at all:
 
     $ dmf -qq <sub-command>
 
+dmf subcommands
+^^^^^^^^^^^^^^^
+The subcommands are detailed below. For each, keep in mind that any unique
+prefix of that command will be accepted. For example, for ``dmf init``, the
+user may also type ``dmf ini``. However, ``dmf in`` will not work because that
+would also be a valid prefix for ``dmf info``.
+
+In addition, there are some aliases for some of the sub-commands:
+
+- status => describe
+- register => add
+- info => resource, show
+- ls => list
+
+.. program:: dmf-init
 
 dmf init
 --------
@@ -70,13 +86,13 @@ Initialize the current workspace. Optionally, create a new workspace.
 dmf init options
 ^^^^^^^^^^^^^^^^
 
-.. option:: --path path
+.. option:: path
 
-Use the provided ``path`` as the workspace path.
+Use the provided ``path`` as the workspace path. This is required.
 
 .. option:: --create
 
-Create a new workspace at location provided by :option:`--path`. Use the
+Create a new workspace at location provided by :option:`path`. Use the
 :option:`--name` and :option:`--desc` options to set the workspace name and
 description, respectively. If these are not given, they will be prompted for
 interactively.
@@ -91,19 +107,20 @@ Workspace description, used by :option:`--create`
 
 dmf init usage
 ^^^^^^^^^^^^^^
+In the following examples, the current working directory is
+set to ``/home/myuser``.
+
 This command sets a value in the user-global configuration file
 in ``.dmf``, in the user's home directory, so that all other dmf
 commands know which workspace to use. With the :option:`--create` option,
 a new empty workspace can be created.
 
-.. note:: In the following examples, the current working directory is
-          set to ``/home/myuser``.
 
 Create new workspace in sub-directory ``ws``, with given name and description:
 
 .. code-block:: console
 
-    $ dmf init --path ws --create --name "foo" --desc "foo workspace description"
+    $ dmf init ws --create --name "foo" --desc "foo workspace description"
     Configuration in '/home/myuser/ws/config.yaml
 
 Create new workspace in sub-directory ``ws``, providing the name and
@@ -111,7 +128,7 @@ description interactively:
 
 .. code-block:: console
 
-    $ dmf init --path ws --create
+    $ dmf init  ws --create
     New workspace name: foo
     New workspace description: foo workspace description
     Configuration in '/home/myuser/ws/config.yaml
@@ -120,13 +137,13 @@ Switch to workspace ``ws2``:
 
 .. code-block:: console
 
-    $ dmf init --path ws2
+    $ dmf init  ws2
 
 If you try to switch to a non-existent workspace, you will get an error message:
 
 .. code-block:: console
 
-    $ dmf init --path doesnotexist
+    $ dmf init doesnotexist
     Existing workspace not found at path='doesnotexist'
     Add --create flag to create a workspace.
 
@@ -134,10 +151,12 @@ If the workspace exists, you cannot create it:
 
 .. code-block:: console
 
-    $ dmf init --path ws --create --name "foo" --desc "foo workspace description"
+    $ dmf init ws --create --name "foo" --desc "foo workspace description"
     Configuration in '/home/myuser/ws/config.yaml
-    $ dmf init --path ws --create
+    $ dmf init ws --create
     Cannot create workspace: path 'ws' already exists
+
+.. program:: dmf-status
 
 dmf status
 ----------
@@ -259,6 +278,8 @@ However, showing everything is less typing, and not overwhelming:
       logging:
         not configured
 
+.. program:: dmf-ls
+
 dmf ls
 ------
 This command lists resources in the current workspace.
@@ -379,5 +400,219 @@ Add ``--no-prefix`` to show the full identifier:
     6c9a85629cb24e9796a2d123e9b03601 data foo14
     d3d5981106ce4d9d8cccd4e86c2cd184 data bar1
 
+.. program:: dmf-info
+
+dmf info
+--------
+Show detailed information about a resource.
+This command may also be referred to as ``dmf show``.
+
+dmf info options
+^^^^^^^^^^^^^^^^
+
+.. option:: identifier
+
+Identifier, or unique prefix thereof, of the resource.
+Any unique prefix of the identifier will work, but if that prefix
+matches multiple identifiers, you need to add :option:`--multiple`
+to allow multiple records in the output.
+
+.. option:: --multiple
+
+Allow multiple records in the output (see :option:`identifier`)
+
+.. option:: -f,--format value
+
+Output format. Accepts the following values:
+
+term
+    Terminal output (colored, if the terminal supports it), with values
+    that are empty left out and some values simplified for easy reading.
+json
+    Raw JSON value for the resource, with newlines and indents for readability.
+jsonc
+    Raw JSON value for the resource, "compact" version with no extra whitespace
+    added.
+
+dmf info usage
+^^^^^^^^^^^^^^
+
+The default is to show, with some terminal colors, a summary of the resource:
+
+
+.. code-block:: console
+
+                              Resource 0b62d999f0c44b678980d6a5e4f5d37d
+      created
+         '2019-03-23 17:49:35'
+      creator
+         name: dang
+      datafiles
+         - desc: foo13
+           is_copy: true
+           path: foo13
+           sha1: feee44ad365b6b1ec75c5621a0ad067371102854
+      datafiles_dir
+         /home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52
+      desc
+         foo13
+      doc_id
+         4
+      id_
+         0b62d999f0c44b678980d6a5e4f5d37d
+      modified
+         '2019-03-23 17:49:35'
+      relations
+         - 1e41e6ae882b4622ba9043f4135f2143 --[derived]--> ME
+      type
+         data
+      version
+         0.0.0 @ 2019-03-23 17:49:35
+
+
+The same resource in JSON format:
+
+.. code-block:: console
+
+        $ dmf info --format json 0b62
+        {
+          "id_": "0b62d999f0c44b678980d6a5e4f5d37d",
+          "type": "data",
+          "aliases": [],
+          "codes": [],
+          "collaborators": [],
+          "created": 1553363375.817961,
+          "modified": 1553363375.817961,
+          "creator": {
+            "name": "dang"
+          },
+          "data": {},
+          "datafiles": [
+            {
+              "desc": "foo13",
+              "path": "foo13",
+              "sha1": "feee44ad365b6b1ec75c5621a0ad067371102854",
+              "is_copy": true
+            }
+          ],
+          "datafiles_dir": "/home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52",
+          "desc": "foo13",
+          "relations": [
+            {
+              "predicate": "derived",
+              "identifier": "1e41e6ae882b4622ba9043f4135f2143",
+              "role": "object"
+            }
+          ],
+          "sources": [],
+          "tags": [],
+          "version_info": {
+            "created": 1553363375.817961,
+            "version": [
+              0,
+              0,
+              0,
+              ""
+            ],
+            "name": ""
+          },
+          "doc_id": 4
+        }
+
+And one more time, in "compact" JSON:
+
+.. code-block:: console
+
+        $ dmf info --format jsonc 0b62
+        {"id_": "0b62d999f0c44b678980d6a5e4f5d37d", "type": "data", "aliases": [], "codes": [], "collaborators": [], "created": 1553363375.817961, "modified": 1553363375.817961, "creator": {"name": "dang"}, "data": {}, "datafiles": [{"desc": "foo13", "path": "foo13", "sha1": "feee44ad365b6b1ec75c5621a0ad067371102854", "is_copy": true}], "datafiles_dir": "/home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52", "desc": "foo13", "relations": [{"predicate": "derived", "identifier": "1e41e6ae882b4622ba9043f4135f2143", "role": "object"}], "sources": [], "tags": [], "version_info": {"created": 1553363375.817961, "version": [0, 0, 0, ""], "name": ""}, "doc_id": 4}
+
+dmf register
+------------
+Register a new resource with the DMF, using a file as an input.
+An alias for this command is ``dmf add``.
+
+dmf register options
+^^^^^^^^^^^^^^^^^^^^
+
+.. option:: --no-copy
+
+Do not copy the file, instead remember path to current location.
+Default is to copy the file under the workspace directory.
+
+.. option:: -t,--resource-type
+
+Explicitly specify the type of resource. If this is not given, then
+try to infer the resource type from the file. The default will be 'data'.
+The full list of resource types is in :py:data:`idaes.dmf.resource.RESOURCE_TYPES`
+
+
+.. option:: --strict
+
+If inferring the type fails, report an error. With ``--no-strict``, or no option,
+if inferring the type fails, fall back to importing as a generic file.
+
+.. option:: --no-unique
+
+Allow duplicate files. The default is ``--unique``, which will
+stop and print an error if another resource has a file matching this
+file's name and contents.
+
+.. option:: --contained resource
+
+Add a 'contained in' relation to the given resource.
+
+.. option:: --derived resource
+
+Add a 'derived from' relation to the given resource.
+
+.. option:: --used resource
+
+Add a 'used by' relation to the given resource.
+
+.. option:: --prev resource
+
+Add a 'version of previous' relation to the given resource.
+
+
+dmf register usage
+^^^^^^^^^^^^^^^^^^
+
+Register a new file, which is a CSV data file, and use the ``--info``
+option to show the created resource.
+
+.. code-block:: console
+
+    $ printf "index,time,value\n1,0.1,1.0\n2,0.2,1.3\n" > file.csv
+    $ dmf reg file.csv --info
+                          Resource 7fbd197c58374e4abcb6bb0334102ca0
+    created
+     '2019-04-11 03:51:06'
+    creator
+     name: dang
+    datafiles
+     - desc: file.csv
+       do_copy: false
+       is_copy: false
+       path: /home/dang/src/idaes/dangunter/idaes-dev/docs/file.csv
+       sha1: f1171a6442bd6ce22a718a0e6127866740c9b52c
+    datafiles_dir
+     /home/dang/src/idaes/dangunter/idaes-dev/ws2/files/9fa4f1eabe8d457aa7b6a19a23e61f53
+    desc
+     file.csv
+    doc_id
+     1
+    id_
+     7fbd197c58374e4abcb6bb0334102ca0
+    modified
+     '2019-04-11 03:51:06'
+    type
+     data
+    version
+     0.0.0 @ 2019-04-11 03:51:06
+
+    eaa0d83e1ff04200a5359150790fb319
+
+
 
 .. include:: ../global.rst
+

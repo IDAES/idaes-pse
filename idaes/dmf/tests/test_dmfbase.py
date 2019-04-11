@@ -134,8 +134,8 @@ def test_find_propertydata(tmp_dmf):
     assert len(pdata) == n
 
 
-def test_dmf_init_minimal():
-    pytest.raises(errors.DMFError, DMF)
+# def test_dmf_init_minimal():
+#    pytest.raises(errors.DMFError, DMF)
 
 
 def test_dmf_init_strfile():

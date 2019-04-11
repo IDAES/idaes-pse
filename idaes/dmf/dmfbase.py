@@ -516,8 +516,10 @@ class DMF(workspace.Workspace, HasTraits):
         """Find resources by their identifier or identifier prefix.
         """
         if len(identifier) == resource.Resource.ID_LENGTH:
-            rsrc = self._db.get(identifier)
-            yield rsrc.id if id_only else rsrc
+            for rsrc in self._db.find(
+                {resource.Resource.ID_FIELD: identifier}, id_only=id_only
+            ):
+                yield rsrc
         else:
             regex, flags = f"{identifier}[a-z]*", re.IGNORECASE
             for rsrc in self._db.find(
