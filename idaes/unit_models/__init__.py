@@ -13,3 +13,4 @@ from .equilibrium_reactor import EquilibriumReactor
 from .feed import Feed
 from .product import Product
 from .feed_flash import FeedFlash
+from .node import Node
