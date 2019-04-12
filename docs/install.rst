@@ -270,7 +270,7 @@ MSYS2 provides a shell which will allow use of Linux style build tools.  It also
 
 .. note::
 
-  The MSYS2 terminal the directory structure looks different than the regular windows directory structure.  The Windows C: drive is located at /c.
+  In the MSYS2 terminal the directory structure looks different than the regular Windows directory structure.  The Windows C: drive is located at ``/c``.
 
 Python
 ^^^^^^
