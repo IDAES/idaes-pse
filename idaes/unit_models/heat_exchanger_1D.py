@@ -48,9 +48,9 @@ _log = logging.getLogger(__name__)
 
 
 class WallConductionType(Enum):
-    none = 0
-    oneD = 1
-    twoD = 2
+    zero_dimensional = 0
+    one_dimensional = 1
+    two_dimensional = 2
 
 
 @declare_process_block_class("HeatExchanger1D")
@@ -190,14 +190,15 @@ discretizing length domain (default=3)"""))
 - HeatExchangerFlowPattern.countercurrent: shell side flows from 0 to 1
 tube side flows from 1 to 0"""))
     CONFIG.declare("has_wall_conduction", ConfigValue(
-        default=WallConductionType.none,
+        default=WallConductionType.zero_dimensional,
         domain=In(WallConductionType),
         description="Conduction model for tube wall",
         doc="""Argument to enable type of wall heat conduction model.
-- WallConductionType.none - 0D wall model
-- WallConductionType.oneD - 1D wall model along the thickness of the tube
-- WallConductionType.twoD - 2D wall model along the lenghth and thickness of
-the tube"""))
+- WallConductionType.zero_dimensional - 0D wall model,
+- WallConductionType.one_dimensional - 1D wall model along the thickness of the
+tube,
+- WallConductionType.two_dimensional - 2D wall model along the lenghth and
+thickness of the tube"""))
 
     def build(self):
         """
@@ -411,7 +412,8 @@ the tube"""))
                                                   "coefficient")
 
         # Wall 0D model (Q_shell = Q_tube*N_tubes)
-        if self.config.has_wall_conduction == WallConductionType.none:
+        if (self.config.has_wall_conduction ==
+                WallConductionType.zero_dimensional):
             self.temperature_wall = Var(self.time_ref, self.tube.length_domain,
                                         initialize=298.15)
 
@@ -510,7 +512,8 @@ the tube"""))
         # ---------------------------------------------------------------------
         # Solve unit
         # Wall 0D
-        if blk.config.has_wall_conduction == WallConductionType.none:
+        if blk.config.has_wall_conduction == \
+                WallConductionType.zero_dimensional:
             for t in blk.time_ref:
                 for z in blk.shell.length_domain:
                     blk.temperature_wall[t, z].fix(value(

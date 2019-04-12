@@ -63,7 +63,7 @@ def test_build():
     assert m.fs.HX_co_current.config.flow_type == \
         HeatExchangerFlowPattern.cocurrent
     assert m.fs.HX_co_current.config.has_wall_conduction == \
-        WallConductionType.none
+        WallConductionType.zero_dimensional
 
     assert len(m.fs.HX_co_current.config.shell_side) == 11
     assert not m.fs.HX_co_current.config.shell_side.has_holdup
@@ -98,7 +98,7 @@ def test_build():
     assert m.fs.HX_counter_current.config.flow_type == \
         HeatExchangerFlowPattern.countercurrent
     assert m.fs.HX_counter_current.config.has_wall_conduction == \
-        WallConductionType.none
+        WallConductionType.zero_dimensional
 
     assert len(m.fs.HX_counter_current.config.shell_side) == 11
     assert not m.fs.HX_counter_current.config.shell_side.has_holdup
