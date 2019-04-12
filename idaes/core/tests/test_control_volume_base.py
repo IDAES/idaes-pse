@@ -24,7 +24,9 @@ from idaes.core import (ControlVolumeBlockData, CONFIG_Template,
                         MomentumBalanceType, FlowDirection,
                         declare_process_block_class,
                         FlowsheetBlockData, UnitModelBlockData, useDefault,
-                        PhysicalParameterBlock, ReactionParameterBlock)
+                        PhysicalParameterBlock, ReactionParameterBlock,
+                        MaterialFlowBasis, StateBlock, StateBlockData,
+                        ReactionBlockBase, ReactionBlockDataBase)
 from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
                                         PropertyPackageError, BurntToast)
 
