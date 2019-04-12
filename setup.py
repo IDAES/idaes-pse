@@ -28,7 +28,11 @@ kwargs = dict(
     name=NAME,
     version=VERSION,
     packages=find_packages(),
-    install_requires=[],
+    install_requires=["Click"],
+    entry_points="""
+    [console_scripts]
+    dmf=idaes.dmf.cli:base_command
+    """,
     extras_require={},
     package_data={
         # If any package contains *.template, *.json files, *.dll files, or
@@ -50,7 +54,7 @@ kwargs = dict(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
-        "Topic :: Software Development :: Libraries :: Python Modules"
+        "Topic :: Software Development :: Libraries :: Python Modules",
     ],
 )
 

@@ -426,12 +426,12 @@ def dmfconfig_tmp():
        So switch it out and switch it back when the fixture
        is done.
     """
-    default_filename = DMFConfig.filename
+    default_filename = DMFConfig._filename
     tmpfile = tempfile.NamedTemporaryFile()
-    DMFConfig.filename = tmpfile.name
+    DMFConfig._filename = tmpfile.name
     yield tmpfile
     tmpfile.close()
-    DMFConfig.filename = default_filename
+    DMFConfig._filename = default_filename
 
 
 @pytest.fixture
@@ -439,10 +439,10 @@ def dmfconfig_none():
     """Default file is in user's home directory.
     Replace it with a nonexistent file.
     """
-    default_filename = DMFConfig.filename
-    DMFConfig.filename = os.path.join(os.path.sep, 'idaes', *map(str, range(20)))
+    default_filename = DMFConfig._filename
+    DMFConfig._filename = os.path.join(os.path.sep, 'idaes', *map(str, range(20)))
     yield True
-    DMFConfig.filename = default_filename
+    DMFConfig._filename = default_filename
 
 
 def test_dmfconfig_init_defaults_nofile(dmfconfig_none):

@@ -16,15 +16,23 @@ Workspace classes and functions.
 # stdlib
 import logging
 import os
+from typing import List
 import uuid
 import yaml
+
 # third-party
 import jsonschema
 import six
+
 # local
-from .errors import (ParseError, WorkspaceError, WorkspaceNotFoundError,
-                     WorkspaceConfNotFoundError, WorkspaceConfMissingField,
-                     WorkspaceCannotCreateError)
+from .errors import (
+    ParseError,
+    WorkspaceError,
+    WorkspaceNotFoundError,
+    WorkspaceConfNotFoundError,
+    WorkspaceConfMissingField,
+    WorkspaceCannotCreateError,
+)
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
@@ -35,34 +43,29 @@ CONFIG_SCHEMA = {
     "id": "http://idaes.org/dmf/workspace-config",
     "type": "object",
     "properties": {
-        "_id": {
-            "description": "Unique workspace identifier",
-            "type": "string"
-        },
+        "_id": {"description": "Unique workspace identifier", "type": "string"},
         "htmldocs": {
             "description": "HTML documentation paths",
             "type": "array",
             "items": {
                 "type": "string",
-                "description": "directory containing Sphinx HTML docs"
+                "description": "directory containing Sphinx HTML docs",
             },
-            "default": "{dmf_root}/docs/build/html"
+            "default": "{dmf_root}/docs/build/html",
         },
         "description": {
             "description": "A human-readable description of the workspace",
-            "type": "string"
+            "type": "string",
         },
-        "name": {
-            "description": "A short name for the workspace",
-            "type": "string"
-        }
-    }
+        "name": {"description": "A short name for the workspace", "type": "string"},
+    },
 }
 
 
 class Fields(object):
     """Workspace configuration fields.
     """
+
     DOC_HTML_PATH = 'htmldocs'  # path to documentation html dir
     LOG_CONF = 'logging'  # logging config
 
@@ -141,6 +144,7 @@ class Workspace(object):
     This may be useful for
     passing additional user-defined information into the DMF at startup.
     """
+
     #: Name of configuration file placed in WORKSPACE_DIR
     WORKSPACE_CONFIG = 'config.yaml'
     #: Name of ID field
@@ -151,13 +155,14 @@ class Workspace(object):
     CONF_CREATED = 'created'  #: Configuration field for created date
     CONF_MODIFIED = 'modified'  #: Configuration field for modified date
 
-    def __init__(self, path, create=False, add_defaults=False):
+    def __init__(self, path, create=False, add_defaults=False, html_paths=None):
         """Load or create a workspace rooted at `path`
 
         Args:
             (str) path: Path for root of workspace
             (bool) create: Create the workspace if it does not exist.
             (bool) add_defaults: Add default values to new config
+            html_paths: One or more paths to HTML docs (or None)
         Raises:
             WorkspaceNotFoundError: if ws is not found (and create is false)
             WorkspaceConfNotFoundError: if ws config is not found (& ~create)
@@ -176,15 +181,19 @@ class Workspace(object):
                 if not os.path.exists(self._wsdir):
                     raise WorkspaceCannotCreateError(self._wsdir)
                 if os.path.exists(self._conf):
-                    raise WorkspaceError('Existing configuration would be '
-                                         'overwritten: {}'.format(self._conf))
-                _log.warning('Using existing path for new DMF workspace: {}'
-                             .format(self._wsdir))
+                    raise WorkspaceError(
+                        'existing configuration would be '
+                        'overwritten: {}'.format(self._conf)
+                    )
+                _log.warning(
+                    'Using existing path for new DMF workspace: {}'.format(self._wsdir)
+                )
             try:
                 self._create_new_config(add_defaults)
             except OSError as err:
-                raise WorkspaceError('While creating new workspace '
-                                     'configuration: {}'.format(err))
+                raise WorkspaceError(
+                    'while creating new workspace ' 'configuration: {}'.format(err)
+                )
         else:
             # assert that the workspace exists
             try:
@@ -200,6 +209,8 @@ class Workspace(object):
             self._id = self.meta[self.ID_FIELD]
         except KeyError:
             raise WorkspaceConfMissingField(path, self.ID_FIELD, 'ID field')
+        if html_paths:
+            self.set_doc_paths(html_paths)
 
     def _create_new_config(self, add_defaults):
         conf = open(self._conf, 'w')  # create the file
@@ -214,8 +225,12 @@ class Workspace(object):
 
         Note: this will *overwrite* any existing values!
         """
-        values = {key: val for key, (desc, val) in
-                  WorkspaceConfig().get_fields(only_defaults=True).items()}
+        values = {
+            key: val
+            for key, (desc, val) in WorkspaceConfig()
+            .get_fields(only_defaults=True)
+            .items()
+        }
         self.set_meta(values)
 
     @property
@@ -304,25 +319,40 @@ class Workspace(object):
             paths = [paths]  # make a str into a list
         return paths
 
+    def set_doc_paths(self, paths: List[str], replace: bool = False):
+        """Set paths to generated HTML Sphinx docs.
+
+        Args:
+            paths: New paths to add.
+            replace: If True, replace any existing paths. Otherwise merge
+                     new paths with existing ones.
+        """
+        existing_paths = self.get_doc_paths()
+        if replace:
+            new_paths = list(set(existing_paths + paths))
+        else:
+            new_paths = paths
+        if new_paths != existing_paths:
+            self.set_meta({Fields.DOC_HTML_PATH: new_paths})
+
     def _read_conf(self):
         #: type (None) -> dict
         if self._cached_conf is None:
-            _log.debug('Load workspace configuration from "{}"'
-                       .format(self._conf))
+            _log.debug('Load workspace configuration from "{}"'.format(self._conf))
             conf = open(self._conf, 'r')
             try:
                 contents = yaml.load(conf)
             except Exception as err:
-                raise ParseError('Cannot load config file "{f}": {e}'
-                                 .format(f=self._conf, e=err))
+                raise ParseError(
+                    'Cannot load config file "{f}": {e}'.format(f=self._conf, e=err)
+                )
             if contents is None:  # empty file
                 contents = {}
             self._cached_conf = contents
         else:
             contents = self._cached_conf
         if isinstance(contents, str):
-            raise ParseError('File contents cannot be simple str ({})'
-                             .format(contents))
+            raise ParseError('File contents cannot be simple str ({})'.format(contents))
         else:
             return contents.copy()
 
@@ -330,9 +360,9 @@ class Workspace(object):
         # leave paths bracketed by _underscores_ alone
         if len(path) > 2 and path[0] == '_' and path[-1] == '_':
             return path
-        return os.path.realpath(path.format(
-            ws_root=self.root,
-            dmf_root=self._install_dir))
+        return os.path.realpath(
+            path.format(ws_root=self.root, dmf_root=self._install_dir)
+        )
 
     def _write_conf(self, contents):
         #: type (dict) -> None
@@ -348,6 +378,12 @@ class Workspace(object):
         return self._wsdir
 
     @property
+    def configuration_file(self):
+        """Configuration file path.
+        """
+        return self._conf
+
+    @property
     def name(self):
         return self.meta.get(self.CONF_NAME, 'none')
 
@@ -357,10 +393,7 @@ class Workspace(object):
 
 
 class WorkspaceConfig(object):
-    DEFAULTS = {'string': '',
-                'number': 0,
-                'boolean': False,
-                'array': []}
+    DEFAULTS = {'string': '', 'number': 0, 'boolean': False, 'array': []}
 
     def __init__(self):
         self._schema = jsonschema.Draft4Validator(CONFIG_SCHEMA)
@@ -390,8 +423,9 @@ class WorkspaceConfig(object):
             type_ = item['type']
             # morph unknown types to string
             if type_ not in self.DEFAULTS:
-                _log.warning('Unknown schema type "{}".'
-                             'Using "string" instead'.format(type_))
+                _log.warning(
+                    'Unknown schema type "{}".' 'Using "string" instead'.format(type_)
+                )
                 type_ = 'string'
             # figure out value type, look for default values
             default_value = None
@@ -434,8 +468,7 @@ def find_workspaces(root):
     for (dirpath, dirnames, filenames) in os.walk(root):
         for dmfdir in dirnames:
             dmfpath = os.path.join(dirpath, dmfdir)
-            conf_file = os.path.join(dmfpath,
-                                     Workspace.WORKSPACE_CONFIG)
+            conf_file = os.path.join(dmfpath, Workspace.WORKSPACE_CONFIG)
             if os.path.exists(conf_file):
                 w.append(dmfpath)
     # also try root itself
