@@ -613,6 +613,36 @@ dmf info usage
 The default is to show, with some terminal colors, a summary of the resource:
 
 
+.. testsetup:: dmf-info
+
+    from pathlib import Path
+    from click.testing import CliRunner
+    from idaes.dmf.cli import init, register, info
+    from idaes.dmf.dmfbase import DMFConfig
+    runner = CliRunner()
+
+    fsctx = runner.isolated_filesystem()
+    fsctx.__enter__()
+    DMFConfig._filename = str(Path('.dmf').absolute())
+    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
+    filename = "foo.txt"
+    with open(filename, 'w') as fp:
+        fp.write("This is some sample data")
+    result = runner.invoke(register, [filename])
+    id_all = result.output.strip()
+    id_4 = id_all[:4]
+    open("/tmp/dmf-cli.debug", "w")
+    def dbg(s):
+        with open("/tmp/dmf-cli.debug", "a") as fp:
+            fp.write(s + "\n")
+    dbg(f"id_all='{id_all}' id_4='{id_4}'")
+
+
+.. testcleanup:: dmf-info
+
+    fsctx.__exit__(None, None, None)
+    DMFConfig._filename = str(Path('~/.dmf').expanduser())
+
 .. code-block:: console
 
     $ dmf info 0b62
@@ -644,6 +674,13 @@ The default is to show, with some terminal colors, a summary of the resource:
       version
          0.0.0 @ 2019-03-23 17:49:35
 
+
+.. testcode:: dmf-info
+    :hide:
+
+    result = runner.invoke(info, ["--no-color", id_4], catch_exceptions=False)
+    assert result.exit_code == 0
+    assert filename in result.output
 
 The same resource in JSON format:
 
@@ -693,6 +730,17 @@ The same resource in JSON format:
           },
           "doc_id": 4
         }
+
+.. testcode:: dmf-info
+    :hide:
+
+    result = runner.invoke(info, ["--no-color", "--format", "json", id_4],
+                           catch_exceptions=False)
+    assert result.exit_code == 0
+    assert filename in result.output
+    out = result.output.strip()
+    assert out.startswith("{") and out.endswith("}")
+    assert '"relations"' in out
 
 And one more time, in "compact" JSON:
 

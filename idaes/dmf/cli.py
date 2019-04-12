@@ -602,7 +602,12 @@ def _ls_basic(d, show_fields, sort_by, reverse, prefix, color):
     "some colors; `json` outputs JSON text; `jsonc` outputs compact JSON (no indents"
     "or line breaks)",
 )
-def info(identifier, multiple, output_format):
+@click.option(
+    "--color/--no-color",
+    default=True,
+    help="In term mode, use (or do not use)" " color for output",
+)
+def info(identifier, multiple, output_format, color):
     _log.debug(f"info for resource id='{identifier}'")
     try:
         resource.identifier_str(identifier, allow_prefix=True)
@@ -622,7 +627,7 @@ def info(identifier, multiple, output_format):
         click.echo("Resource not found")
         sys.exit(Code.DMF_OPER.value)
     pfxlen = len(identifier)
-    si = _ShowInfo(output_format, pfxlen)
+    si = _ShowInfo(output_format, pfxlen, color=color)
     for rsrc in rsrc_list:
         si.show(rsrc)
 
@@ -633,8 +638,8 @@ class _ShowInfo:
 
     contents_indent, json_indent = 4, 2  # for `term` output
 
-    def __init__(self, output_format, pfxlen):
-        self._terminal = Terminal()
+    def __init__(self, output_format, pfxlen, color=None):
+        self._terminal = _cterm if color else _noterm
         self._pfxlen = pfxlen
         self._fmt = output_format
         self._resource = None
@@ -652,9 +657,10 @@ class _ShowInfo:
         print()
 
     def show_term(self):
-        t = self._terminal  # alias
+        t = self._terminal
         rval = self._human_readable_values()
-        width = min(t.width, self._longest_line(rval) + 3 + self.contents_indent)
+        term_width = t.width or 80
+        width = min(term_width, self._longest_line(rval) + 3 + self.contents_indent)
         self._print_info_term_header(width)
         top_keys = sorted(rval.keys())
         for rownum, tk in enumerate(top_keys):
