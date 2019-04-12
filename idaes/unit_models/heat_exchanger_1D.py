@@ -20,6 +20,7 @@ from __future__ import division
 # Import Python libraries
 import math
 import logging
+from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import (SolverFactory, Var, Param, Constraint,
@@ -27,21 +28,29 @@ from pyomo.environ import (SolverFactory, Var, Param, Constraint,
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import (ControlVolume1DBlock, UnitModelBlockData,
+from idaes.core import (ControlVolume1DBlock,
+                        UnitModelBlockData,
                         declare_process_block_class,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType,
                         FlowDirection,
-                        UnitModelBlockData,
                         useDefault)
+from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "Jaffer Ghouse"
 
 # Set up logger
 _log = logging.getLogger(__name__)
+
+
+class WallConductionType(Enum):
+    zero_dimensional = 0
+    one_dimensional = 1
+    two_dimensional = 2
 
 
 @declare_process_block_class("HeatExchanger1D")
@@ -107,14 +116,6 @@ Must be True if dynamic = True,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    _SideTemplate.declare("has_heat_transfer", ConfigValue(
-        default=True,
-        domain=In([True]),
-        description="Heat transfer term construction flag",
-        doc="""Indicates whether terms for heat transfer should be constructed,
-**default** - False.
-**Valid values:** {
-**True** - include heat transfer terms}"""))
     _SideTemplate.declare("has_pressure_change", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -149,7 +150,7 @@ and used when constructing these
 - 'use_parent_value' - get package from parent (default = None)
 - a dict (see property package for documentation)"""))
     # TODO : We should probably think about adding a consistency check for the
-    # TODO : discretisation methdos as well.
+    # TODO : discretisation methods as well.
     _SideTemplate.declare("transformation_method", ConfigValue(
         default=useDefault,
         description="Discretization method to use for DAE transformation",
@@ -158,8 +159,8 @@ documentation for supported transformations."""))
     _SideTemplate.declare("transformation_scheme", ConfigValue(
         default=useDefault,
         description="Discretization scheme to use for DAE transformation",
-        doc="""Discretization scheme to use when transformating domain. See Pyomo
-documentation for supported schemes."""))
+        doc="""Discretization scheme to use when transformating domain. See
+Pyomo documentation for supported schemes."""))
 
     # Create individual config blocks for shell and tube side
     CONFIG.declare("shell_side",
@@ -181,21 +182,23 @@ domain (default=20)"""))
         doc="""Number of collocation points to use per finite element when
 discretizing length domain (default=3)"""))
     CONFIG.declare("flow_type", ConfigValue(
-        default="co_current",
-        domain=In(['co_current', 'counter_current']),
+        default=HeatExchangerFlowPattern.cocurrent,
+        domain=In(HeatExchangerFlowPattern),
         description="Flow configuration of heat exchanger",
         doc="""Flow configuration of heat exchanger
-- co_current: shell and tube flows from 0 to 1
-- counter_current: shell side flows from 0 to 1
+- HeatExchangerFlowPattern.cocurrent: shell and tube flows from 0 to 1
+- HeatExchangerFlowPattern.countercurrent: shell side flows from 0 to 1
 tube side flows from 1 to 0"""))
     CONFIG.declare("has_wall_conduction", ConfigValue(
-        default="none",
-        domain=In(["none", "1D", "2D"]),
+        default=WallConductionType.zero_dimensional,
+        domain=In(WallConductionType),
         description="Conduction model for tube wall",
         doc="""Argument to enable type of wall heat conduction model.
-- none - 0D wall model
-- 1D - 1D wall model along the thickness of the tube
-- 2D - 2D wall model along the lenghth and thickness of the tube"""))
+- WallConductionType.zero_dimensional - 0D wall model,
+- WallConductionType.one_dimensional - 1D wall model along the thickness of the
+tube,
+- WallConductionType.two_dimensional - 2D wall model along the lenghth and
+thickness of the tube"""))
 
     def build(self):
         """
@@ -212,7 +215,7 @@ tube side flows from 1 to 0"""))
 
         # Set flow directions for the control volume blocks and specify
         # dicretisation if not specified.
-        if self.config.flow_type == "co_current":
+        if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
             set_direction_shell = FlowDirection.forward
             set_direction_tube = FlowDirection.forward
             if self.config.shell_side.transformation_method is useDefault:
@@ -245,7 +248,7 @@ tube side flows from 1 to 0"""))
                              "Defaulting to backward finite "
                              "difference on the tube side.")
                 self.config.tube_side.transformation_scheme = "BACKWARD"
-        else:
+        elif self.config.flow_type == HeatExchangerFlowPattern.countercurrent:
             set_direction_shell = FlowDirection.forward
             set_direction_tube = FlowDirection.backward
             if self.config.shell_side.transformation_method is useDefault:
@@ -278,6 +281,13 @@ tube side flows from 1 to 0"""))
                              "Defaulting to forward finite "
                              "difference on the tube side.")
                 self.config.tube_side.transformation_scheme = "FORWARD"
+        else:
+            raise ConfigurationError(
+                    "{} HeatExchanger1D only supports cocurrent and "
+                    "countercurrent flow patterns, but flow_type configuration"
+                    " argument was set to {}."
+                    .format(self.name,
+                            self.config.flow_type))
 
         # Control volume 1D for shell
         self.shell = ControlVolume1DBlock(default={
@@ -311,7 +321,7 @@ tube side flows from 1 to 0"""))
 
         self.shell.add_energy_balances(
             balance_type=self.config.shell_side.energy_balance_type,
-            has_heat_transfer=self.config.shell_side.has_heat_transfer)
+            has_heat_transfer=True)
 
         self.shell.add_momentum_balances(
             balance_type=self.config.shell_side.momentum_balance_type,
@@ -330,7 +340,7 @@ tube side flows from 1 to 0"""))
 
         self.tube.add_energy_balances(
             balance_type=self.config.tube_side.energy_balance_type,
-            has_heat_transfer=self.config.tube_side.has_heat_transfer)
+            has_heat_transfer=True)
 
         self.tube.add_momentum_balances(
             balance_type=self.config.tube_side.momentum_balance_type,
@@ -402,7 +412,8 @@ tube side flows from 1 to 0"""))
                                                   "coefficient")
 
         # Wall 0D model (Q_shell = Q_tube*N_tubes)
-        if self.config.has_wall_conduction == "none":
+        if (self.config.has_wall_conduction ==
+                WallConductionType.zero_dimensional):
             self.temperature_wall = Var(self.time_ref, self.tube.length_domain,
                                         initialize=298.15)
 
@@ -434,6 +445,11 @@ tube side flows from 1 to 0"""))
             def wall_0D_model(self, t, x):
                 return self.tube.heat[t, x] == -(self.shell.heat[t, x] /
                                                  self.N_tubes)
+
+        else:
+            raise NotImplementedError(
+                    "{} HeatExchanger1D has not yet implemented support for "
+                    "wall conduction models.")
 
         # Define tube area in terms of tube diameter
         self.area_calc_tube = Constraint(expr=4 * self.tube_area == self.pi *
@@ -496,7 +512,8 @@ tube side flows from 1 to 0"""))
         # ---------------------------------------------------------------------
         # Solve unit
         # Wall 0D
-        if blk.config.has_wall_conduction == "none":
+        if blk.config.has_wall_conduction == \
+                WallConductionType.zero_dimensional:
             for t in blk.time_ref:
                 for z in blk.shell.length_domain:
                     blk.temperature_wall[t, z].fix(value(
