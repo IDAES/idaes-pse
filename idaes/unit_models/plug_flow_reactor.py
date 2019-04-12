@@ -16,6 +16,7 @@ Standard IDAES PFR model.
 from __future__ import division
 
 # Import Pyomo libraries
+from pyomo.environ import Constraint, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -285,9 +286,14 @@ domain,
         add_object_reference(self,
                              "area",
                              self.control_volume.area)
-        add_object_reference(self,
-                             "volume",
-                             self.control_volume.volume)
+
+        # Add volume variable for full reactor
+        # TODO : Need to add units
+        self.volume = Var(initialize=1,
+                          doc="Reactor Volume")
+
+        self.geometry = Constraint(expr=self.volume == self.area*self.length)
+
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != 'none'):
             add_object_reference(self, "heat_duty", self.control_volume.heat)
