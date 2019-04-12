@@ -208,8 +208,12 @@ def init(path, create, name, desc, html):
     if create:
         _log.info("Create new workspace")
         # pre-check that there is no file/dir by this name
-        if pathlib.Path(path).exists():
-            click.echo(f"Cannot create workspace: path '{path}' already exists")
+        try:
+            if pathlib.Path(path).exists():
+                click.echo(f"Cannot create workspace: path '{path}' already exists")
+                sys.exit(Code.DMF_OPER.value)
+        except PermissionError:
+            click.echo(f"Cannot create workspace: path '{path}' not accessible")
             sys.exit(Code.DMF_OPER.value)
         if not name:
             name = click.prompt("New workspace name")
@@ -236,8 +240,6 @@ def init(path, create, name, desc, html):
         _ = DMF(path=path, create=False, save_path=True)
     except errors.WorkspaceConfNotFoundError:
         click.echo(f"Workspace configuration not found at path='{path}'")
-        if path == '.':  # probably just the default
-            click.echo("Use --path option to set workspace path.")
         sys.exit(Code.WORKSPACE_NOT_FOUND.value)
     except errors.WorkspaceNotFoundError:
         click.echo(f"Existing workspace not found at path='{path}'")
@@ -258,8 +260,6 @@ def init(path, create, name, desc, html):
 )
 def status(color, show, show_all):
     if show_all == "yes":
-        if show:
-            click.echo(f"note: option `--all` overrides `--show`")
         show = ["all"]
     _log.debug(f"Get status. Show items: {' '.join(show) if show else '(basic)'}")
     t = _cterm if color else _noterm

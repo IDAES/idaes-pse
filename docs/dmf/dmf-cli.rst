@@ -124,6 +124,7 @@ a new empty workspace can be created.
 .. testsetup:: dmf-init
 
     import pathlib
+    import os
     from click.testing import CliRunner
     from idaes.dmf.cli import init
     from idaes.dmf.workspace import Workspace
@@ -179,6 +180,9 @@ If you try to switch to a non-existent workspace, you will get an error message:
     $ dmf init doesnotexist
     Existing workspace not found at path='doesnotexist'
     Add --create flag to create a workspace.
+    $ mkdir some_random_directory
+    $ dmf init some_random_directory
+    Workspace configuration not found at path='some_random_directory/'
 
 .. testcode:: dmf-init
     :hide:
@@ -189,6 +193,9 @@ If you try to switch to a non-existent workspace, you will get an error message:
         result = runner.invoke(init, ['doesnotexist'])
         assert result.exit_code != 0
         assert 'not found' in result.output
+        os.mkdir('some_random_directory')
+        result = runner.invoke(init, ['some_random_directory'])
+        assert result.exit_code != 0
 
 If the workspace exists, you cannot create it:
 
@@ -208,6 +215,27 @@ If the workspace exists, you cannot create it:
         result = runner.invoke(init, ['ws', '--create'])
         assert result.exit_code != 0
         assert 'exists' in result.output
+
+And, of course, you can't create workspaces anywhere you don't
+have permissions to creat directories:
+
+.. code-block:: console
+
+    $ mkdir forbidden
+    $ chmod 000 forbidden
+    $ dmf init forbidden/ws --create
+    Cannot create workspace: path 'forbidden/ws' not accessible
+
+.. testcode:: dmf-init
+    :hide:
+
+    with runner.isolated_filesystem():
+        DMFConfig._filename = str(pathlib.Path('.dmf').absolute())
+        os.mkdir('forbidden')
+        os.chmod('forbidden', 0)
+        result = runner.invoke(init, ['forbidden/ws', '--create'])
+        assert result.exit_code != 0
+        os.chmod('forbidden', 0o700)
 
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. image:: ../_images/blue-white-band.png
@@ -631,11 +659,6 @@ The default is to show, with some terminal colors, a summary of the resource:
     result = runner.invoke(register, [filename])
     id_all = result.output.strip()
     id_4 = id_all[:4]
-    open("/tmp/dmf-cli.debug", "w")
-    def dbg(s):
-        with open("/tmp/dmf-cli.debug", "a") as fp:
-            fp.write(s + "\n")
-    dbg(f"id_all='{id_all}' id_4='{id_4}'")
 
 
 .. testcleanup:: dmf-info
@@ -749,6 +772,18 @@ And one more time, in "compact" JSON:
         $ dmf info --format jsonc 0b62
         {"id_": "0b62d999f0c44b678980d6a5e4f5d37d", "type": "data", "aliases": [], "codes": [], "collaborators": [], "created": 1553363375.817961, "modified": 1553363375.817961, "creator": {"name": "dang"}, "data": {}, "datafiles": [{"desc": "foo13", "path": "foo13", "sha1": "feee44ad365b6b1ec75c5621a0ad067371102854", "is_copy": true}], "datafiles_dir": "/home/dang/src/idaes/dangunter/idaes-dev/ws2/files/71d101327d224302aa8875802ed2af52", "desc": "foo13", "relations": [{"predicate": "derived", "identifier": "1e41e6ae882b4622ba9043f4135f2143", "role": "object"}], "sources": [], "tags": [], "version_info": {"created": 1553363375.817961, "version": [0, 0, 0, ""], "name": ""}, "doc_id": 4}
 
+.. testcode:: dmf-info
+    :hide:
+
+    result = runner.invoke(info, ["--no-color", "--format", "jsonc", id_4],
+                           catch_exceptions=False)
+    assert result.exit_code == 0
+    assert filename in result.output
+    out = result.output.strip()
+    import json
+    j = json.loads(out)
+    assert len(j['datafiles']) == 1
+
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. image:: ../_images/blue-white-band.png
     :width: 100%
@@ -817,6 +852,30 @@ dmf register usage
 Register a new file, which is a CSV data file, and use the ``--info``
 option to show the created resource.
 
+.. testsetup:: dmf-register
+
+    from pathlib import Path
+    import re, json
+    from click.testing import CliRunner
+    from idaes.dmf.cli import init, register, info
+    from idaes.dmf.dmfbase import DMFConfig
+    runner = CliRunner()
+
+    fsctx = runner.isolated_filesystem()
+    fsctx.__enter__()
+    DMFConfig._filename = str(Path('.dmf').absolute())
+    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
+    filename = "file.csv"
+    with open(filename, 'w') as fp:
+        fp.write("index,time,value\n1,0.1,1.0\n2,0.2,1.3\n")
+
+
+.. testcleanup:: dmf-register
+
+    fsctx.__exit__(None, None, None)
+    DMFConfig._filename = str(Path('~/.dmf').expanduser())
+
+
 .. code-block:: console
 
     $ printf "index,time,value\n1,0.1,1.0\n2,0.2,1.3\n" > file.csv
@@ -846,6 +905,14 @@ option to show the created resource.
   version
      0.0.0 @ 2019-04-11 03:58:52
 
+.. testcode:: dmf-register
+    :hide:
+
+    result = runner.invoke(register, ["file.csv", "--info"], catch_exceptions=False)
+    assert result.exit_code == 0
+    assert filename in result.output
+    assert "version" in result.output
+
 If you try to register (add) the same file twice, it will be an error by default.
 You need to add the :option:`--no-unique` option to allow it.
 
@@ -858,6 +925,65 @@ You need to add the :option:`--no-unique` option to allow it.
     This file is already in 1 resource(s): 2315bea239c147e4bc6d2e1838e4101f
     $ dmf add --no-unique timeseries.csv
     3f95851e4931491b995726f410998491
+
+.. testcode:: dmf-register
+    :hide:
+
+    result = runner.invoke(register, ["file.csv",], catch_exceptions=False)
+    assert result.exit_code != 0
+    result = runner.invoke(register, ["file.csv", "--no-unique"], catch_exceptions=False)
+    assert result.exit_code == 0
+
+If you register a file ending in ".json", it will be parsed (unless it is
+over 1MB) and, if it passes, registered as type JSON. If the parse fails, it
+will be registerd as a generic file *unless* the :option:`--strict` option is
+given (with this option, failure to parse will be an error):
+
+.. code-block:: console
+
+    $ echo "totally bogus" > notreally.json
+    $ dmf reg notreally.json
+    2019-04-12 06:06:47,003 [WARNING] idaes.dmf.resource: File ending in '.json' is not valid JSON: treating as generic file
+    d22727c678a1499ab2c5224e2d83d9df
+    $ dmf reg --strict notreally.json
+    Failed to infer resource: File ending in '.json' is not valid JSON
+
+.. testcode:: dmf-register
+    :hide:
+
+    not_json = "notreally.json"
+    with open(not_json, "w") as fp:
+        fp.write("totally bogus\n")
+    result = runner.invoke(register, [not_json], catch_exceptions=False)
+    assert result.exit_code == 0
+    result = runner.invoke(register, [not_json, "--strict", "--no-unique"], catch_exceptions=False)
+    assert result.exit_code != 0
+
+You can explicitly specify the type of the resource with the
+:option:`-t,--resource-type` option. In that case, any failure
+to validate will be an error. For example, if you say the resource is a Jupyter
+Notebook file, and it is not, it will fail. But the same file with type "data"
+will be fine:
+
+.. code-block:: console
+
+    $ echo "Ceci n'est pas une notebook" > my.ipynb
+    $ dmf reg -t notebook my.ipynb
+    Failed to load resource: resource type 'notebook': not valid JSON
+    $ dmf reg -t data my.ipynb
+    0197a82abab44ecf980d6e42e299b258
+
+.. testcode:: dmf-register
+    :hide:
+
+    not_nb = "my.ipynb"
+    with open(not_nb, "w") as fp:
+        fp.write("foo\n")
+    result = runner.invoke(register, [not_nb, '-t', 'notebook'])
+    assert result.exit_code != 0
+    result = runner.invoke(register, [not_nb, '-t', 'data'])
+    assert result.exit_code == 0
+
 
 You can add links to existing resources with the options :option:`--contained`,
 :option:`--derived`, :option:`--used`, and :option:`--prev`. For all of these,
@@ -931,6 +1057,20 @@ in it:
       version
          0.0.0 @ 2019-04-11 20:17:28
 
+.. testcode:: dmf-register
+    :hide:
+
+    for text_file in "shoebox", "shoes", "closet":
+        open(f"{text_file}.txt", "w")
+    result = runner.invoke(register, ["shoebox.txt"], catch_exceptions=False)
+    assert result.exit_code == 0
+    shoebox_id = result.output.strip()
+    result = runner.invoke(register, ["shoes.txt", "--contained", shoebox_id], catch_exceptions=False)
+    assert result.exit_code == 0
+    shoe_id = result.output.strip()
+    result = runner.invoke(info, [shoe_id, "--format", "jsonc"])
+    assert result.exit_code == 0
+
 To reverse the sense of the relation, add the :option:`--is-subject` flag.
 For example, we now add a "closet" resource that contains the existing "shoebox".
 This means the shoebox now has two different "contains" type of relations.
@@ -967,6 +1107,26 @@ This means the shoebox now has two different "contains" type of relations.
          data
       version
          0.0.0 @ 2019-04-11 20:16:50
+
+.. testcode:: dmf-register
+    :hide:
+
+    for text_file in "shoebox", "shoes", "closet":
+        open(f"{text_file}.txt", "w")
+    result = runner.invoke(register, ["closet.txt", "--is-subject",
+                           "--contained", shoebox_id], catch_exceptions=False)
+    assert result.exit_code == 0
+    closet_id = result.output.strip()
+    result = runner.invoke(info, [shoebox_id, "--format", "jsonc"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert len(data["relations"]) == 2
+    for rel in data["relations"]:
+        if rel["role"] == "subject":
+            assert rel["identifier"] == shoe_id
+        else:
+            assert rel["identifier"] == closet_id
+
 
 
 .. include:: ../global.rst
