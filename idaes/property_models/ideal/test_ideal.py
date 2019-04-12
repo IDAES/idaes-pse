@@ -66,14 +66,14 @@ def test_build_inlet_state_blocks():
         m.fs.properties_vl.config.valid_phase == ('Liq', 'Vap')
     assert len(m.fs.properties_vl.phase_list) == 2
     assert m.fs.properties_vl.phase_list == ["Liq", "Vap"]
-    assert hasattr(m.fs.state_block_vl, "eq_Keq")
+    assert hasattr(m.fs.state_block_vl, "equilibrium_constraint")
     assert not hasattr(m.fs.state_block_vl, "eq_mol_frac_out")
 
     # liquid only
     assert m.fs.properties_l.config.valid_phase == "Liq"
     assert len(m.fs.properties_l.phase_list) == 1
     assert m.fs.properties_l.phase_list == ["Liq"]
-    assert not hasattr(m.fs.state_block_l, "eq_Keq")
+    assert not hasattr(m.fs.state_block_l, "equilibrium_constraint")
     assert not hasattr(m.fs.state_block_vl, "eq_h_vap")
     assert not hasattr(m.fs.state_block_l, "eq_mol_frac_out")
 
@@ -81,7 +81,7 @@ def test_build_inlet_state_blocks():
     assert m.fs.properties_v.config.valid_phase == "Vap"
     assert len(m.fs.properties_v.phase_list) == 1
     assert m.fs.properties_v.phase_list == ["Vap"]
-    assert not hasattr(m.fs.state_block_v, "eq_Keq")
+    assert not hasattr(m.fs.state_block_v, "equilibrium_constraint")
     assert not hasattr(m.fs.state_block_vl, "eq_h_liq")
     assert not hasattr(m.fs.state_block_v, "eq_mol_frac_out")
 
@@ -213,24 +213,24 @@ def test_build_outlet_state_blocks():
         m.fs1.properties_vl.config.valid_phase == ('Liq', 'Vap')
     assert len(m.fs1.properties_vl.phase_list) == 2
     assert m.fs1.properties_vl.phase_list == ["Liq", "Vap"]
-    assert hasattr(m.fs1.state_block_vl, "eq_Keq")
-    assert hasattr(m.fs1.state_block_vl, "eq_mol_frac_out")
+    assert hasattr(m.fs1.state_block_vl, "equilibrium_constraint")
+    assert hasattr(m.fs1.state_block_vl, "sum_mole_frac_out")
 
     # liquid only
     assert m.fs1.properties_l.config.valid_phase == "Liq"
     assert len(m.fs1.properties_l.phase_list) == 1
     assert m.fs1.properties_l.phase_list == ["Liq"]
-    assert not hasattr(m.fs1.state_block_l, "eq_Keq")
+    assert not hasattr(m.fs1.state_block_l, "equilibrium_constraint")
     assert not hasattr(m.fs1.state_block_vl, "eq_h_vap")
-    assert hasattr(m.fs1.state_block_l, "eq_mol_frac_out")
+    assert hasattr(m.fs1.state_block_l, "sum_mole_frac_out")
 
     # vapor only
     assert m.fs1.properties_v.config.valid_phase == "Vap"
     assert len(m.fs1.properties_v.phase_list) == 1
     assert m.fs1.properties_v.phase_list == ["Vap"]
-    assert not hasattr(m.fs1.state_block_v, "eq_Keq")
+    assert not hasattr(m.fs1.state_block_v, "equilibrium_constraint")
     assert not hasattr(m.fs1.state_block_vl, "eq_h_liq")
-    assert hasattr(m.fs1.state_block_v, "eq_mol_frac_out")
+    assert hasattr(m.fs1.state_block_v, "sum_mole_frac_out")
 
 
 def test_setInputs_outlet_state_blocks():
