@@ -101,7 +101,7 @@ see property package for documentation.}"""))
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This method initializes the Node block by calling the initialize method
-        properties block.
+        on the properties block.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
