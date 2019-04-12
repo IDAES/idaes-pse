@@ -112,12 +112,12 @@ conditions, and thus corresponding constraints  should be included,
                                      'units': 'J/mol'},
              'entr_mol_phase': {'method': '_entr_mol_phase',
                                 'units': 'J/mol'},
-             'temperature_bub': {'method': '_temperature_bub',
-                                 'units': 'K'},
+             'temperature_bubble': {'method': '_temperature_bubble',
+                                    'units': 'K'},
              'temperature_dew': {'method': '_temperature_dew',
                                  'units': 'K'},
-             'pressure_bub': {'method': '_pressure_bub',
-                              'units': 'Pa'},
+             'pressure_bubble': {'method': '_pressure_bubble',
+                                 'units': 'Pa'},
              'pressure_dew': {'method': '_pressure_dew',
                               'units': 'Pa'},
              'fug_vap': {'method': '_fug_vap', 'units': 'Pa'},
@@ -268,17 +268,18 @@ class _IdealStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
         for k in blk.keys():
-            if hasattr(blk[k], "eq_temperature_bub"):
-                calculate_variable_from_constraint(blk[k].temperature_bub,
-                                                   blk[k].eq_temperature_bub)
+            if hasattr(blk[k], "eq_temperature_bubble"):
+                calculate_variable_from_constraint(
+                        blk[k].temperature_bubble,
+                        blk[k].eq_temperature_bubble)
 
             if hasattr(blk[k], "eq_temperature_dew"):
                 calculate_variable_from_constraint(blk[k].temperature_dew,
                                                    blk[k].eq_temperature_dew)
 
-            if hasattr(blk[k], "eq_tpressure_bub"):
-                calculate_variable_from_constraint(blk[k].pressure_bub,
-                                                   blk[k].eq_tpressure_bub)
+            if hasattr(blk[k], "eq_pressure_bubble"):
+                calculate_variable_from_constraint(blk[k].pressure_bubble,
+                                                   blk[k].eq_pressure_bubble)
 
             if hasattr(blk[k], "eq_pressure_dew"):
                 calculate_variable_from_constraint(blk[k].pressure_dew,
@@ -293,7 +294,7 @@ class _IdealStateBlock(StateBlock):
         for k in blk.keys():
             if blk[k].config.has_phase_equilibrium:
                 blk[k]._t1.value = max(blk[k].temperature.value,
-                                       blk[k].temperature_bub.value)
+                                       blk[k].temperature_bubble.value)
                 blk[k]._teq.value = min(blk[k]._t1.value,
                                         blk[k].temperature_dew.value)
 
@@ -346,9 +347,9 @@ class _IdealStateBlock(StateBlock):
                                         "_t1_constraint",
                                         "_teq_constraint",
                                         "eq_pressure_dew",
-                                        "eq_tpressure_bub",
+                                        "eq_pressure_bubble",
                                         "eq_temperature_dew",
-                                        "eq_temperature_bub",
+                                        "eq_temperature_bubble",
                                         "eq_pressure_sat"):
                     c.deactivate()
 
@@ -557,15 +558,17 @@ class IdealStateBlockData(StateBlockData):
                            doc='Intermediate temperature for calculating Teq')
 
             self.eps_1 = Param(default=0.01,
+                               mutable=True,
                                doc='Smoothing parameter for Teq')
             self.eps_2 = Param(default=0.0005,
+                               mutable=True,
                                doc='Smoothing parameter for Teq')
 
             # PSE paper Eqn 13
             def rule_t1(b):
                 return b._t1 == 0.5*(
-                        b.temperature + b.temperature_bub +
-                        sqrt((b.temperature-b.temperature_bub)**2 +
+                        b.temperature + b.temperature_bubble +
+                        sqrt((b.temperature-b.temperature_bubble)**2 +
                              b.eps_1**2))
             self._t1_constraint = Constraint(rule=rule_t1)
 
@@ -715,19 +718,19 @@ class IdealStateBlockData(StateBlockData):
     def calculate_bubble_point_temperature(self, clear_components=True):
         """"To compute the bubble point temperature of the mixture."""
 
-        if hasattr(self, "eq_temperature_bub"):
+        if hasattr(self, "eq_temperature_bubble"):
             # Do not delete components if the block already has the components
             clear_components = False
 
-        calculate_variable_from_constraint(self.temperature_bub,
-                                           self.eq_temperature_bub)
+        calculate_variable_from_constraint(self.temperature_bubble,
+                                           self.eq_temperature_bubble)
 
-        return self.temperature_bub.value
+        return self.temperature_bubble.value
 
         if clear_components is True:
-            self.del_component(self.eq_temperature_bub)
+            self.del_component(self.eq_temperature_bubble)
             self.del_component(self._p_sat_bubbleT)
-            self.del_component(self.temperature_bub)
+            self.del_component(self.temperature_bubble)
 
     def calculate_dew_point_temperature(self, clear_components=True):
         """"To compute the dew point temperature of the mixture."""
@@ -751,21 +754,21 @@ class IdealStateBlockData(StateBlockData):
     def calculate_bubble_point_pressure(self, clear_components=True):
         """"To compute the bubble point pressure of the mixture."""
 
-        if hasattr(self, "eq_tpressure_bub"):
+        if hasattr(self, "eq_pressure_bubble"):
             # Do not delete components if the block already has the components
             clear_components = False
 
-        calculate_variable_from_constraint(self.pressure_bub,
-                                           self.eq_tpressure_bub)
+        calculate_variable_from_constraint(self.pressure_bubble,
+                                           self.eq_pressure_bubble)
 
-        return self.pressure_bub.value
+        return self.pressure_bubble.value
 
         # Delete the var/constraint created in this method that are part of the
         # IdealStateBlock if the user desires
         if clear_components is True:
-            self.del_component(self.eq_tpressure_bub)
+            self.del_component(self.eq_pressure_bubble)
             self.del_component(self._p_sat_bubbleP)
-            self.del_component(self.pressure_bub)
+            self.del_component(self.pressure_bubble)
 
     def calculate_dew_point_pressure(self, clear_components=True):
         """"To compute the dew point pressure of the mixture."""
@@ -795,25 +798,25 @@ class IdealStateBlockData(StateBlockData):
 # Core class writes a set of constraints Phi_L_i == Phi_V_i
 # Phi_L_i and Phi_V_i make calls to submethods which add shadow compositions
 # as needed
-    def _temperature_bub(self):
-        self.temperature_bub = Var(initialize=298.15,
-                                   doc="Bubble point temperature (K)")
+    def _temperature_bubble(self):
+        self.temperature_bubble = Var(initialize=298.15,
+                                      doc="Bubble point temperature (K)")
 
         def rule_psat_bubble(b, j):
             return b._params.pressure_crit[j] * \
                 exp((b._params.pressure_sat_coeff[j, 'A'] *
-                     (1 - b.temperature_bub /
+                     (1 - b.temperature_bubble /
                       b._params.temperature_crit[j]) +
                      b._params.pressure_sat_coeff[j, 'B'] *
-                     (1 - b.temperature_bub /
+                     (1 - b.temperature_bubble /
                       b._params.temperature_crit[j])**1.5 +
                      b._params.pressure_sat_coeff[j, 'C'] *
-                     (1 - b.temperature_bub /
+                     (1 - b.temperature_bubble /
                       b._params.temperature_crit[j])**3 +
                      b._params.pressure_sat_coeff[j, 'D'] *
-                     (1 - b.temperature_bub /
+                     (1 - b.temperature_bubble /
                       b._params.temperature_crit[j])**6) /
-                    (1 - (1 - b.temperature_bub /
+                    (1 - (1 - b.temperature_bubble /
                           b._params.temperature_crit[j])))
         try:
             # Try to build expression
@@ -824,13 +827,13 @@ class IdealStateBlockData(StateBlockData):
                 return sum(b._p_sat_bubbleT[i] * b.mole_frac[i]
                            for i in b._params.component_list) - \
                     b.pressure == 0
-            self.eq_temperature_bub = Constraint(rule=rule_temp_bubble)
+            self.eq_temperature_bubble = Constraint(rule=rule_temp_bubble)
 
         except AttributeError:
             # If expression fails, clean up so that DAE can try again later
             # Deleting only var/expression as expression construction will fail
             # first; if it passes then constraint construction will not fail.
-            self.del_component(self.temperature_bub)
+            self.del_component(self.temperature_bubble)
             self.del_component(self._p_sat_bubbleT)
 
     def _temperature_dew(self):
@@ -873,9 +876,9 @@ class IdealStateBlockData(StateBlockData):
             self.del_component(self.temperature_dew)
             self.del_component(self._p_sat_dewT)
 
-    def _pressure_bub(self):
-        self.pressure_bub = Var(initialize=298.15,
-                                doc="Bubble point pressure (Pa)")
+    def _pressure_bubble(self):
+        self.pressure_bubble = Var(initialize=298.15,
+                                   doc="Bubble point pressure (Pa)")
 
         def rule_psat_bubble(b, j):
             return b._params.pressure_crit[j] * \
@@ -902,13 +905,13 @@ class IdealStateBlockData(StateBlockData):
             def rule_pressure_bubble(b):
                 return sum(b._p_sat_bubbleP[i] * b.mole_frac[i]
                            for i in b._params.component_list) \
-                    - b.pressure_bub == 0
-            self.eq_tpressure_bub = Constraint(rule=rule_pressure_bubble)
+                    - b.pressure_bubble == 0
+            self.eq_pressure_bubble = Constraint(rule=rule_pressure_bubble)
         except AttributeError:
             # If expression fails, clean up so that DAE can try again later
             # Deleting only var/expression as expression construction will fail
             # first; if it passes then constraint construction will not fail.
-            self.del_component(self.pressure_bub)
+            self.del_component(self.pressure_bubble)
             self.del_component(self._p_sat_bubbleP)
 
     def _pressure_dew(self):
