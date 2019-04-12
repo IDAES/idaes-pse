@@ -69,17 +69,17 @@ These examples can be appended to the boilerplate code above.
 The first example creates a model, saves the state, changes a value, then reads
 back the initial state.
 
-.. XXX
-.. XXX Test fails, so for now make this a regular code block
-.. XXX
-
-.. code-block:: python
+.. testcode::
 
   model = setup_model01()
   to_json(model, fname="ex.json.gz", gz=True, human_read=True)
   model.b[1].a = 3000.4
   from_json(model, fname="ex.json.gz", gz=True)
   print(value(model.b[1].a))
+
+.. testoutput::
+
+  2
 
 This next example show how to save only suffixes.
 
