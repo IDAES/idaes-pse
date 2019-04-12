@@ -14,6 +14,7 @@ Unit Model Library
     heat_exchanger
     heat_exchanger_1D
     mixer
+    node
     pfr
     pressure_changer
     product
