@@ -128,8 +128,9 @@ def test_StateBlock_NotImplementedErrors():
         m.p.calculate_bubble_point_pressure()
     with pytest.raises(NotImplementedError):
         m.p.calculate_dew_point_pressure()
+
 # -----------------------------------------------------------------------------
-# Test properties __getattr__ method
+# Test parameter block reference attribute
 @declare_process_block_class("Parameters")
 class _Parameters(PhysicalParameterBlock):
     def build(self):
@@ -147,6 +148,22 @@ class _Parameters(PhysicalParameterBlock):
                                 'method': '_does_not_create_component'}})
 
 
+@declare_process_block_class("StateTest", block_class=StateBlock)
+class _StateTest(StateBlockData):
+    def build(self):
+        super(_StateTest, self).build()
+
+
+def test_param_ref():
+    m = ConcreteModel()
+    m.pb = Parameters()
+    m.p = StateTest(default={"parameters": m.pb})
+
+    assert m.p._params == m.p.config.parameters
+
+
+# -----------------------------------------------------------------------------
+# Test properties __getattr__ method
 @declare_process_block_class("State", block_class=StateBlock)
 class _State(StateBlockData):
     def build(self):
