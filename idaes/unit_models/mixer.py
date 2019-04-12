@@ -86,12 +86,12 @@ class MixerData(UnitModelBlockData):
         default=False,
         description="Dynamic model flag - must be False",
         doc="""Indicates whether this model will be dynamic or not,
-**default** = False. Product blocks are always steady-state."""))
+**default** = False. Mixer blocks are always steady-state."""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
         domain=In([False]),
         description="Holdup construction flag - must be False",
-        doc="""Product blocks do not contain holdup, thus this must be
+        doc="""Mixer blocks do not contain holdup, thus this must be
 False."""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,

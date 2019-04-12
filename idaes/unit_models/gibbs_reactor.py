@@ -57,7 +57,7 @@ False."""))
         default=False,
         domain=In([False]),
         description="Holdup construction flag",
-        doc="""Gibbs reactors do not support dynamic models, thus this must be
+        doc="""Gibbs reactors do not have defined volume, thus this must be
 False."""))
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.enthalpyTotal,

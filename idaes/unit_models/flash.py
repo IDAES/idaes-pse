@@ -46,9 +46,20 @@ class FlashData(UnitModelBlockData):
     """
     Standard Flash Unit Model Class
     """
-
-    CONFIG = UnitModelBlockData.CONFIG()
-
+    CONFIG = ConfigBlock()
+    CONFIG.declare("dynamic", ConfigValue(
+        domain=In([False]),
+        default=False,
+        description="Dynamic model flag - must be False",
+        doc="""Indicates whether this model will be dynamic or not,
+**default** = False. Flash units do not support dynamic behavior."""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Holdup construction flag - must be False",
+        doc="""Indicates whether holdup terms should be constructed or not.
+**default** - False. Flash units do not have defined volume, thus
+this must be False."""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
