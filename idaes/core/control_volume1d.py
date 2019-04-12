@@ -27,6 +27,8 @@ from pyomo.environ import (Constraint,
                            TransformationFactory,
                            Var)
 from pyomo.dae import ContinuousSet, DerivativeVar
+from pyomo.common.config import ConfigValue, In
+from pyutilib.enum import Enum
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -45,7 +47,12 @@ _log = logging.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
 # Diffusion terms need to be added
-# TODO : add support for heat of reaction terms
+
+
+# Enumerate options for area
+DistributedVars = Enum(
+    'variant',
+    'uniform')
 
 
 @declare_process_block_class("ControlVolume1DBlock", doc="""
@@ -66,6 +73,18 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
+    CONFIG = ControlVolumeBlockData.CONFIG()
+    CONFIG.declare("area_definition", ConfigValue(
+        default=DistributedVars.uniform,
+        domain=In(DistributedVars),
+        description="Argument for defining form of area variable",
+        doc="""Argument defining whether area variable should be spatially
+        variant or not. **default** - DistributedVars.uniform.
+        **Valid values:** {
+        DistributedVars.uniform - area does not vary across spatial domian,
+        DistributedVars.variant - area can vary over the domain and is indexed
+        by time and space.}"""))
+
     def build(self):
         """
         Build method for ControlVolume1DBlock blocks.
@@ -132,19 +151,18 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             self._flow_direction_term = 1
 
         # Add geomerty variables and constraints
-        self.volume = Var(initialize=1.0,
-                          doc='Holdup Volume [{}^3]'.format(l_units))
-        self.area = Var(initialize=1.0,
-                        doc='Cross-sectional area of Control Volume [{}^2]'
-                            .format(l_units))
+        if self.config.area_definition == DistributedVars.variant:
+            self.area = Var(self.time_ref,
+                            self.length_domain,
+                            initialize=1.0,
+                            doc='Cross-sectional area of Control Volume [{}^2]'
+                                .format(l_units))
+        else:
+            self.area = Var(initialize=1.0,
+                            doc='Cross-sectional area of Control Volume [{}^2]'
+                                .format(l_units))
         self.length = Var(initialize=1.0,
                           doc='Length of Control Volume [{}]'.format(l_units))
-
-        # TODO: This constraint needs to be checked
-        # i.e. it should be volume = area * (length/no. of finite elements)
-        @self.Constraint(doc="Control volume geometry constraint")
-        def geometry_constraint(b):
-            return self.volume == self.area*self.length
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
@@ -470,11 +488,12 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             if has_phase_equilibrium:
                 sd = {}
                 sblock = self.properties[t, x]
+                sparam = sblock.config.parameters
                 for r in b.phase_equilibrium_idx_ref:
-                    if sblock.phase_equilibrium_list_ref[r][0] == j:
-                        if sblock.phase_equilibrium_list_ref[r][1][0] == p:
+                    if sparam.phase_equilibrium_list[r][0] == j:
+                        if sparam.phase_equilibrium_list[r][1][0] == p:
                             sd[r] = 1
-                        elif sblock.phase_equilibrium_list_ref[r][1][1] == p:
+                        elif sparam.phase_equilibrium_list[r][1][1] == p:
                             sd[r] = -1
                         else:
                             sd[r] = 0
@@ -557,7 +576,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                     return b.length*accumulation_term(b, t, x, p, j) == (
                         b._flow_direction_term *
                         b.material_flow_dx[t, x, p, j] +
-                        b.length*kinetic_term(b, t, x, p, j) +
+                        b.length*kinetic_term(b, t, x, p, j) *
+                        b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                         b.length*equilibrium_term(b, t, x, p, j) +
                         b.length*phase_equilibrium_term(b, t, x, p, j) +
                         b.length*transfer_term(b, t, x, p, j) +
@@ -583,7 +603,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def material_holdup_calculation(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.material_holdup[t, x, p, j] == (
-                          b.area*self.phase_fraction[t, x, p] *
+                          b._area_func(t, x)*self.phase_fraction[t, x, p] *
                           b.properties[t, x].get_material_density_terms(p, j))
                 else:
                     return b.material_holdup[t, x, p, j] == 0
@@ -607,8 +627,9 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
+                    rparam = rblock[t, x].config.parameters
                     return b.rate_reaction_generation[t, x, p, j] == (
-                        sum(rblock[t, x].rate_reaction_stoichiometry[r, p, j] *
+                        sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, x, r]
                             for r in b.rate_reaction_idx_ref))
                 else:
@@ -634,7 +655,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.equilibrium_reaction_generation[t, x, p, j] == (
-                            sum(rblock[t, x].
+                            sum(rblock[t, x].config.parameters.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, x, r]
                                 for r in b.equilibrium_reaction_idx_ref))
@@ -928,7 +949,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                                  for p in cplist) ==
                     b._flow_direction_term*sum(b.material_flow_dx[t, x, p, j]
                                                for p in cplist) +
-                    b.length*sum(kinetic_term(b, t, x, p, j) for p in cplist) +
+                    b.length*sum(kinetic_term(b, t, x, p, j) for p in cplist) *
+                    b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                     b.length*sum(equilibrium_term(b, t, x, p, j)
                                  for p in cplist) +
                     b.length*sum(transfer_term(b, t, x, p, j)
@@ -952,7 +974,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def material_holdup_calculation(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.material_holdup[t, x, p, j] == (
-                          b.area*self.phase_fraction[t, x, p] *
+                          b._area_func(t, x)*self.phase_fraction[t, x, p] *
                           b.properties[t, x].get_material_density_terms(p, j))
                 else:
                     return b.material_holdup[t, x, p, j] == 0
@@ -976,8 +998,9 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
+                    rparam = rblock[t, x].config.parameters
                     return b.rate_reaction_generation[t, x, p, j] == (
-                        sum(rblock[t, x].rate_reaction_stoichiometry[r, p, j] *
+                        sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, x, r]
                             for r in b.rate_reaction_idx_ref))
                 else:
@@ -1003,7 +1026,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.equilibrium_reaction_generation[t, x, p, j] == (
-                            sum(rblock[t, x].
+                            sum(rblock[t, x].config.parameters.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, x, r]
                                 for r in b.equilibrium_reaction_idx_ref))
@@ -1238,7 +1261,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Elemental holdup calculation")
             def elemental_holdup_calculation(b, t, x, e):
                 return b.element_holdup[t, x, e] == (
-                    b.area *
+                    b._area_func(t, x) *
                     sum(b.phase_fraction[t, x, p] *
                         b.properties[t, x].get_material_density_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
@@ -1446,7 +1469,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Enthalpy holdup constraint")
             def enthalpy_holdup_calculation(b, t, x, p):
                 return b.enthalpy_holdup[t, x, p] == (
-                            b.area*self.phase_fraction[t, x, p] *
+                            b._area_func(t, x)*self.phase_fraction[t, x, p] *
                             b.properties[t, x].get_enthalpy_density_terms(p))
 
         return self.enthalpy_balances
@@ -1875,3 +1898,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc='Volume fraction of holdup by phase')
             def phase_fraction(self, t, x, p):
                 return 1
+
+    def _area_func(b, t, x):
+        if b.config.area_definition == DistributedVars.uniform:
+            return b.area
+        return b.area[t, x]
