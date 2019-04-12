@@ -39,7 +39,10 @@ from idaes.dmf.workspace import Fields
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
-_cterm = Terminal()  # color terminal (as per TERM env)
+try:
+    _cterm = Terminal()  # color terminal (as per TERM env)
+except:
+    pass
 _noterm = Terminal(force_styling=None)  # no styling, regardless of TERM
 
 
