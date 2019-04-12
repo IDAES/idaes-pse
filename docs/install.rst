@@ -228,7 +228,7 @@ Installation on Windows
 
   Windows is not officially supported at this time.
 
-Aside from the Extras section, this is intended to be a linear guide to installing the IDAES tools on Windows. This guide includes compiling C++ components.  In the future precompiled versions of these libraries will be made available simplifying the installation process.
+This is a complete guide to installing the IDAES framework on Windows.  The :ref:`Extras section<install:Extras>` includes additional information which may be useful. This guide includes compiling C++ components.  In the future precompiled versions of these libraries will be made available simplifying the installation process.
 
 Tools
 ^^^^^
@@ -291,7 +291,7 @@ Most users can download the release files from https://github.com/IDAES/idaes-ps
 Option 2: Fork and Clone the Repository
 """""""""""""""""""""""""""""""""""""""
 
-For people who are not IDAES core developers but would potentially like make contributions to the IDAES project or closely follow IDAES development, the best way to get the IDAES files is to fork the IDAES repo on Github, then clone the new fork. To fork the repository sign into your Github account. go to https://github.com/IDAES/idaes-pse, then click the "Fork" button in the upper righthand corner of the page.
+For people who are not IDAES core developers but potentially would like to make contributions to the IDAES project or closely follow IDAES development, the best way to get the IDAES files is to fork the IDAES repo on Github, then clone the new fork. To fork the repository sign into your Github account, and go to https://github.com/IDAES/idaes-pse. Then, click the "Fork" button in the upper righthand corner of the page.
 
 To clone a repository:
 
@@ -314,7 +314,7 @@ Compiling ASL
 The AMPL Solver Library (ASL) is required to compile some user-defined functions used in parts of the IDAES framework (mainly some property packages).
 
 1. Open the MSYS2 MinGW 64-bit terminal (go to: start menu/MSYS2 64Bit/MSYS2 MinGW 64Bit).
-2. Create a directory for complied source code in a convenient location which will be referred to as ``src`` in these instructions.  For example (obviously change the user name and ``/c`` is the location of the C: drive in Windows) ``mkdir /c/Users/jeslick/src``.
+2. Create a directory for complied source code in a convenient location, which will be referred to as ``src`` in these instructions.  For example (obviously change the user name and ``/c`` is the location of the C: drive in Windows) ``mkdir /c/Users/jeslick/src``.
 3. Go to the source directory (again replace src with the actual directory)
 
  - ``cd src``
@@ -337,7 +337,7 @@ IDAES uses some additional user defined AMPL functions for various purposes, but
 
   - ``export ASL_BUILD=C:/.../src/solvers/sys.x86_64.MINGW64_NT-10.0``
 
-3. Goto the IDAES directory (replace ``/c/idaes_dir`` with the location of the IDAES files)
+3. Go to the IDAES directory (replace ``/c/idaes_dir`` with the location of the IDAES files)
 
   - ``cd /c/idaes_dir/idaes_pse/``
 
@@ -378,7 +378,7 @@ Extras
 Building Documentation
 """"""""""""""""""""""
 
-Most users do not need to build this documentation, but if necessary you can.  The instructions here use the ```make``` from the MSYS2 installed above.
+Most users do not need to build this documentation, but if necessary you can.  The instructions here use the ``make`` from the MSYS2 installed above.
 
   1. Open the Anaconda Command prompt, and activate the IDAES environment
   2. Go to the IDAES directory
@@ -400,7 +400,7 @@ It's not required to compile Ipopt yourself, and these are pretty much the stand
 
 1. Download Ipopt from https://www.coin-or.org/download/source/Ipopt/, and put the zip file in the ``src`` directory created above.
 2. Open the MSYS2 MinGW 64-bit terminal (go to: start menu/MSYS2 64Bit/MSYS2 MinGW 64Bit).
-3. Unzip IPOPT (the ``*`` here represents the portion of the file names with the Ipopt version information)
+3. Unzip Ipopt (the ``*`` here represents the portion of the file names with the Ipopt version information)
 
   - ``unzip Ipopt*.zip``
   - ``cd Ipopt*``
@@ -425,7 +425,7 @@ It's not required to compile Ipopt yourself, and these are pretty much the stand
 Modifying the Path Environment Variable
 """""""""""""""""""""""""""""""""""""""
 
-The Windows ``Path`` environment variable provides a search path for executable code and dynamically linked libraries (DLLs).  You can temporarily modify the path in a command windows session of permanently modify it for the whole system.
+The Windows ``Path`` environment variable provides a search path for executable code and dynamically linked libraries (DLLs).  You can temporarily modify the path in a command window session or permanently modify it for the whole system.
 
 **Changing Path Via the Control Panel**
 
