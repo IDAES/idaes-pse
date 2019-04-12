@@ -32,6 +32,7 @@ from pyomo.environ import (Constraint,
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
+                        MaterialFlowBasis,
                         ReactionParameterBlock,
                         ReactionBlockDataBase,
                         ReactionBlockBase)
@@ -203,6 +204,9 @@ class ReactionBlockData(ReactionBlockDataBase):
             self.del_component(self.reaction_rate)
             self.del_component(self.rate_expression)
             raise
+
+    def get_reaction_rate_basis(b):
+        return MaterialFlowBasis.molar
 
     def model_check(blk):
         """
