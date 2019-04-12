@@ -11,14 +11,14 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for Node unit model.
+Tests for StateJunction unit model.
 Authors: Andrew Lee
 """
 
 import pytest
 from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
-from idaes.unit_models.node import Node
+from idaes.unit_models.statejunction import StateJunction
 from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)
 from idaes.ui.report import degrees_of_freedom
@@ -42,21 +42,21 @@ def test_build():
 
     m.fs.properties = SaponificationParameterBlock()
 
-    m.fs.node = Node(default={"property_package": m.fs.properties})
+    m.fs.sj = StateJunction(default={"property_package": m.fs.properties})
 
-    assert hasattr(m.fs.node, "inlet")
-    assert len(m.fs.node.inlet.vars) == 4
-    assert hasattr(m.fs.node.inlet, "flow_vol")
-    assert hasattr(m.fs.node.inlet, "conc_mol_comp")
-    assert hasattr(m.fs.node.inlet, "temperature")
-    assert hasattr(m.fs.node.inlet, "pressure")
+    assert hasattr(m.fs.sj, "inlet")
+    assert len(m.fs.sj.inlet.vars) == 4
+    assert hasattr(m.fs.sj.inlet, "flow_vol")
+    assert hasattr(m.fs.sj.inlet, "conc_mol_comp")
+    assert hasattr(m.fs.sj.inlet, "temperature")
+    assert hasattr(m.fs.sj.inlet, "pressure")
 
-    assert hasattr(m.fs.node, "outlet")
-    assert len(m.fs.node.outlet.vars) == 4
-    assert hasattr(m.fs.node.outlet, "flow_vol")
-    assert hasattr(m.fs.node.outlet, "conc_mol_comp")
-    assert hasattr(m.fs.node.outlet, "temperature")
-    assert hasattr(m.fs.node.outlet, "pressure")
+    assert hasattr(m.fs.sj, "outlet")
+    assert len(m.fs.sj.outlet.vars) == 4
+    assert hasattr(m.fs.sj.outlet, "flow_vol")
+    assert hasattr(m.fs.sj.outlet, "conc_mol_comp")
+    assert hasattr(m.fs.sj.outlet, "temperature")
+    assert hasattr(m.fs.sj.outlet, "pressure")
 
     assert degrees_of_freedom(m) == 0
 
@@ -68,24 +68,24 @@ def test_initialize():
 
     m.fs.properties = SaponificationParameterBlock()
 
-    m.fs.node = Node(default={"property_package": m.fs.properties})
+    m.fs.sj = StateJunction(default={"property_package": m.fs.properties})
 
-    m.fs.node.inlet.flow_vol.fix(1.0e-03)
-    m.fs.node.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-    m.fs.node.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-    m.fs.node.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-    m.fs.node.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-    m.fs.node.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+    m.fs.sj.inlet.flow_vol.fix(1.0e-03)
+    m.fs.sj.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+    m.fs.sj.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+    m.fs.sj.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+    m.fs.sj.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+    m.fs.sj.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-    m.fs.node.inlet.temperature.fix(303.15)
-    m.fs.node.inlet.pressure.fix(101325.0)
+    m.fs.sj.inlet.temperature.fix(303.15)
+    m.fs.sj.inlet.pressure.fix(101325.0)
 
-    m.fs.node.initialize(outlvl=5,
+    m.fs.sj.initialize(outlvl=5,
                          optarg={'tol': 1e-6})
 
     assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.node.outlet.pressure[0].value)
+            m.fs.sj.outlet.pressure[0].value)
     assert (pytest.approx(303.15, abs=1e-2) ==
-            m.fs.node.outlet.temperature[0].value)
+            m.fs.sj.outlet.temperature[0].value)
     assert (pytest.approx(100, abs=1e-2) ==
-            m.fs.node.outlet.conc_mol_comp[0, "EthylAcetate"].value)
+            m.fs.sj.outlet.conc_mol_comp[0, "EthylAcetate"].value)

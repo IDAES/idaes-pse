@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Standard IDAES Node model.
+Standard IDAES StateJunction model.
 """
 from __future__ import division
 import logging
@@ -32,10 +32,10 @@ __author__ = "Andrew Lee"
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("Node")
-class NodeData(UnitModelBlockData):
+@declare_process_block_class("StateJunction")
+class StateJunctionData(UnitModelBlockData):
     """
-    Standard Node Unit Model Class
+    Standard StateJunction Unit Model Class
     """
     CONFIG = ConfigBlock()
     CONFIG.declare("dynamic", ConfigValue(
@@ -49,12 +49,12 @@ class NodeData(UnitModelBlockData):
         domain=In([False]),
         description="Holdup construction flag - must be False",
         doc="""Indicates whether holdup terms should be constructed or not.
-**default** - False. Nodes do not have defined volume, thus
+**default** - False. StateJunctions do not have defined volume, thus
 this must be False."""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
-        description="Property package to use in node",
+        description="Property package to use in StateJunction",
         doc="""Property parameter object used to define property state block,
 **default** - useDefault.
 **Valid values:** {
@@ -78,7 +78,7 @@ see property package for documentation.}"""))
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(NodeData, self).build()
+        super(StateJunctionData, self).build()
 
         self.properties = \
                 self.config.property_package.state_block_class(
@@ -100,7 +100,7 @@ see property package for documentation.}"""))
     def initialize(blk, state_args={}, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
-        This method initializes the Node block by calling the initialize method
+        This method initializes the StateJunction block by calling the initialize method
         on the property block.
 
         Keyword Arguments:

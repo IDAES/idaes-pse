@@ -14,11 +14,11 @@ Unit Model Library
     heat_exchanger
     heat_exchanger_1D
     mixer
-    node
     pfr
     pressure_changer
     product
     separator
+    statejunction
     stoichiometric_reactor
     translator
     power_generation/index
