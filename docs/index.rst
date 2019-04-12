@@ -31,7 +31,7 @@ Contents
 --------
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
     install
     standards
@@ -43,6 +43,7 @@ Contents
     version
     examples/index
     developer/index
+    Modules <apidoc/modules>
     glossary
 
 Indices and tables
