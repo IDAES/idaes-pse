@@ -123,8 +123,8 @@ Variable                        Standard Name
 =============================== =====================
 Activity                        act
 Activity Coefficient            act_coeff
-Bubble Pressure                 pressure_bub
-Bubble Temperature              temperature_bub
+Bubble Pressure                 pressure_bubble
+Bubble Temperature              temperature_bubble
 Compressibility Factor          compress_fact
 Concentration                   conc
 Density                         dens
