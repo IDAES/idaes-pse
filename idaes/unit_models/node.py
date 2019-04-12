@@ -43,13 +43,13 @@ class NodeData(UnitModelBlockData):
         default=False,
         description="Dynamic model flag - must be False",
         doc="""Indicates whether this model will be dynamic or not,
-**default** = False. Equilibrium Reactors do not support dynamic behavior."""))
+**default** = False."""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
         domain=In([False]),
         description="Holdup construction flag - must be False",
         doc="""Indicates whether holdup terms should be constructed or not.
-**default** - False. Equilibrium reactors do not have defined volume, thus
+**default** - False. Nodes do not have defined volume, thus
 this must be False."""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
@@ -80,14 +80,14 @@ see property package for documentation.}"""))
         # Call UnitModel.build to setup dynamics
         super(NodeData, self).build()
 
-        self.properties = (
+        self.properties = \
                 self.config.property_package.state_block_class(
                         self.time_ref,
                         doc="Material properties",
                         default={"has_phase_equilibrium": False,
                                  "parameters": self.config.property_package,
                                  "defined_state": True,
-                                 **self.config.property_package_args}))
+                                 **self.config.property_package_args})
 
         # Add Ports
         self.add_inlet_port(name="inlet",
@@ -101,7 +101,7 @@ see property package for documentation.}"""))
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This method initializes the Node block by calling the initialize method
-        properties block.
+        on the properties block.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
