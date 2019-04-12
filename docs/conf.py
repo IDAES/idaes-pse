@@ -45,7 +45,6 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinxarg.ext',
     'sphinx.ext.doctest',
-    'sphinx_click.ext',
     #    'sphinx-jsonschema'
 ]
 
