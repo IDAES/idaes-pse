@@ -41,7 +41,7 @@ __author__ = "Dan Gunter"
 _log = logging.getLogger(__name__)
 try:
     _cterm = Terminal()  # color terminal (as per TERM env)
-except:
+except Exception:
     _cterm = Terminal(force_styling=None)
 _noterm = Terminal(force_styling=None)  # no styling, regardless of TERM
 
