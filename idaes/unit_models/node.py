@@ -80,14 +80,14 @@ see property package for documentation.}"""))
         # Call UnitModel.build to setup dynamics
         super(NodeData, self).build()
 
-        self.properties = (
+        self.properties = \
                 self.config.property_package.state_block_class(
                         self.time_ref,
                         doc="Material properties",
                         default={"has_phase_equilibrium": False,
                                  "parameters": self.config.property_package,
                                  "defined_state": True,
-                                 **self.config.property_package_args}))
+                                 **self.config.property_package_args})
 
         # Add Ports
         self.add_inlet_port(name="inlet",
