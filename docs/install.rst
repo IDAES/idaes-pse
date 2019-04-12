@@ -251,7 +251,7 @@ A git client is not necessary for all users, but if you are a developer or advan
 MSYS2
 """""
 
-MSYS2 provides a shell which will allow use of Linux style build tools.  It also provides a convenient package manager (pacman) with allows for easy installation of build tools.
+MSYS2 provides a shell which will allow use of Linux style build tools.  It also provides a convenient package manager (pacman) which allows for easy installation of build tools.
 
 1. Go to https://www.msys2.org/
 2. Download the x86_64 installer
