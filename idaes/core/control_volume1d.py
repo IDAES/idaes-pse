@@ -488,11 +488,12 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             if has_phase_equilibrium:
                 sd = {}
                 sblock = self.properties[t, x]
+                sparam = sblock.config.parameters
                 for r in b.phase_equilibrium_idx_ref:
-                    if sblock.phase_equilibrium_list_ref[r][0] == j:
-                        if sblock.phase_equilibrium_list_ref[r][1][0] == p:
+                    if sparam.phase_equilibrium_list[r][0] == j:
+                        if sparam.phase_equilibrium_list[r][1][0] == p:
                             sd[r] = 1
-                        elif sblock.phase_equilibrium_list_ref[r][1][1] == p:
+                        elif sparam.phase_equilibrium_list[r][1][1] == p:
                             sd[r] = -1
                         else:
                             sd[r] = 0
@@ -626,8 +627,9 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
+                    rparam = rblock[t, x].config.parameters
                     return b.rate_reaction_generation[t, x, p, j] == (
-                        sum(rblock[t, x].rate_reaction_stoichiometry[r, p, j] *
+                        sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, x, r]
                             for r in b.rate_reaction_idx_ref))
                 else:
@@ -653,7 +655,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.equilibrium_reaction_generation[t, x, p, j] == (
-                            sum(rblock[t, x].
+                            sum(rblock[t, x].config.parameters.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, x, r]
                                 for r in b.equilibrium_reaction_idx_ref))
@@ -996,8 +998,9 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
+                    rparam = rblock[t, x].config.parameters
                     return b.rate_reaction_generation[t, x, p, j] == (
-                        sum(rblock[t, x].rate_reaction_stoichiometry[r, p, j] *
+                        sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, x, r]
                             for r in b.rate_reaction_idx_ref))
                 else:
@@ -1023,7 +1026,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.equilibrium_reaction_generation[t, x, p, j] == (
-                            sum(rblock[t, x].
+                            sum(rblock[t, x].config.parameters.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, x, r]
                                 for r in b.equilibrium_reaction_idx_ref))
