@@ -133,7 +133,7 @@ def init_conf(workspace):
     except IOError as err:
         print('Failed to open global configuration: {}'.format(err))
         try:
-            open(DMFConfig.filename, 'w')
+            open(DMFConfig._filename, 'w')
         except IOError:
             print('Failed to create new configuration file')
             return -1
@@ -147,7 +147,7 @@ def init_conf(workspace):
         conf.save()
     # Print contents of configuration file to standard output
     cp = CPrint()
-    cp('@h[DMF global configuration] <@g[{}]>'.format(conf.filename))
+    cp('@h[DMF global configuration] <@g[{}]>'.format(conf._filename))
     keys = conf.c.keys()
     if keys:
         for k in sorted(keys):
@@ -556,7 +556,7 @@ def _import_python(path):
 def _import_file(path):
     """Create & import a resource from a generic file at `path`.
     Assume that `path` exists.
-
+ 
     Args:
         path (str): File name.
     Returns:

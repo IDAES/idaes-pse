@@ -45,7 +45,7 @@ m.fs.flash = FL(default={"property_package": m.fs.properties})
 
 
 def test_build():
-    assert len(m.fs.flash.config) == 10
+    assert len(m.fs.flash.config) == 9
     assert not m.fs.flash.config.has_holdup
     assert m.fs.flash.config.material_balance_type == \
         MaterialBalanceType.componentPhase
@@ -53,7 +53,6 @@ def test_build():
         EnergyBalanceType.enthalpyTotal
     assert m.fs.flash.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
-    assert m.fs.flash.config.has_phase_equilibrium
     assert m.fs.flash.config.has_heat_transfer
     assert m.fs.flash.config.has_pressure_change
 
