@@ -164,12 +164,6 @@ class ReactionBlockData(ReactionBlockDataBase):
                              "temperature_ref",
                              self.state_ref.temperature)
 
-        # Reaction stoichiometry - no _ref as this is a property
-        add_object_reference(
-                self,
-                "rate_reaction_stoichiometry",
-                self.config.parameters.rate_reaction_stoichiometry)
-
         # Heat of reaction - no _ref as this is the actual property
         add_object_reference(
                 self,
