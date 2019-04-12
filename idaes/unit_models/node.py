@@ -42,7 +42,7 @@ class NodeData(UnitModelBlockData):
         domain=In([False]),
         default=False,
         description="Dynamic model flag - must be False",
-        doc="""Indicates whether this model will be dynamic or not,
+        doc="""Indicates whether this unit will be dynamic or not,
 **default** = False."""))
     CONFIG.declare("has_holdup", ConfigValue(
         default=False,
@@ -54,8 +54,8 @@ this must be False."""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations,
+        description="Property package to use in node",
+        doc="""Property parameter object used to define property state block,
 **default** - useDefault.
 **Valid values:** {
 **useDefault** - use default package from parent model or flowsheet,
@@ -101,7 +101,7 @@ see property package for documentation.}"""))
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         This method initializes the Node block by calling the initialize method
-        on the properties block.
+        on the property block.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
