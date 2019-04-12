@@ -42,7 +42,7 @@ _log = logging.getLogger(__name__)
 try:
     _cterm = Terminal()  # color terminal (as per TERM env)
 except:
-    pass
+    _cterm = Terminal(force_styling=None)
 _noterm = Terminal(force_styling=None)  # no styling, regardless of TERM
 
 
