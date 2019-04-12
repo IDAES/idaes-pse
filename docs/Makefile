@@ -9,9 +9,25 @@ BUILDDIR      = ./build
 SCRIPTDIR     = scripts
 
 # Internal variables.
-SPHINXDOCDIR  = doctest
-SPHINXDOCTEST = $(SPHINXBUILD) -b $(SPHINXDOCDIR) .
-ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
+SPHINXDOCBUILDER  = doctest
+SPHINXDOCDIR  	  = doctest
+SPHINXDOCTEST     = $(SPHINXBUILD) -b $(SPHINXDOCBUILDER) .
+ALLSPHINXOPTS     = -d $(BUILDDIR)/doctrees $(SPHINXOPTS) .
+# For building API docs twice -- once indexed and once nonindexed --
+# which allows us to avoid warnings in some cases and have cross-references
+# work in the others. Fun!
+SPHINXAPIDOC_X	  	= SPHINX_APIDOC_OPTIONS="members,ignore-module-all,noindex"  sphinx-apidoc
+SPHINXAPIDOCOUT_X 	= apidoc_x
+SPHINXAPIDOC_I	  	= SPHINX_APIDOC_OPTIONS="members,ignore-module-all"  sphinx-apidoc
+SPHINXAPIDOCOUT_I 	= apidoc_i
+SPHINXAPIDOCOUT   	= apidoc
+SPHINXAPIDOCFLAGS 	= -fM 
+SPHINXAPIDOCSRC 	= ../idaes
+SPHINXAPIDOCEXCL  	= ../idaes/tests "../idaes/*/tests"
+SPHINX_X 			= $(SPHINXAPIDOC_X) -o $(SPHINXAPIDOCOUT_X) $(SPHINXAPIDOCFLAGS) $(SPHINXAPIDOCSRC) $(SPHINXAPIDOCEXCL) 
+SPHINX_I 			= $(SPHINXAPIDOC_I) -o $(SPHINXAPIDOCOUT_I) $(SPHINXAPIDOCFLAGS) $(SPHINXAPIDOCSRC) $(SPHINXAPIDOCEXCL) 
+#ALLSPHINXAPIDOCOPTS_X = $(SPHINXAPIDOCFLAGS) $(SPHINXAPIDOCSRC) $(SPHINXAPIDOCEXCL)
+
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(SPHINXOPTS) .
 
@@ -63,14 +79,24 @@ idaes: dep examples html
 
 .PHONY: apidoc
 apidoc:
-	sphinx-apidoc -fM --separate -o apidoc ../idaes ../idaes/tests "../idaes/*/tests"
+	@ echo "Build apidocs (twice)"
+	$(SPHINX_I) >/dev/null
+	$(SPHINX_X) >/dev/null
+	@ echo "Combine indexed and non-indexed docs"
+	@ mkdir -p apidoc
+	@ /bin/cp $(SPHINXAPIDOCOUT_X)/* apidoc
+	@for ix in idaes idaes.dmf idaes.vis ; do 	\
+		/bin/cp $(SPHINXAPIDOCOUT_I)/$${ix}.rst apidoc;		\
+	done
+	@ /bin/rm -rf $(SPHINXAPIDOCOUT_I) $(SPHINXAPIDOCOUT_X)
+	@ echo "Done: output in directory 'apidoc'"
 
 .PHONY: dep
 dep: apidoc
 	@echo "Done building all dependencies"
 
 .PHONY: html
-html:
+html: apidoc
 	mkdir -p $(BUILDDIR)/examples
 	SPHINX=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)
 	@/bin/cp examples/*.html $(BUILDDIR)/examples
