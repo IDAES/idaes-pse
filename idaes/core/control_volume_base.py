@@ -543,7 +543,7 @@ have a config block which derives from CONFIG_Base,
 
         If dynamic flag is 'use_parent_value', method attempts to get the value
         of the dynamic flag from the parent model, otherwise the local value is
-        used. The time domain is always collected from the parent model.
+        used.
 
         Finally, the method checks the has_holdup argument (if present), and
         ensures that has_holdup is True if dynamic is True.

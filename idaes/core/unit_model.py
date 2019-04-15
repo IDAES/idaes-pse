@@ -100,8 +100,7 @@ Must be True if dynamic = True,
          1) Determines if this is a top level flowsheet
          2) Gets dynamic flag from parent if not top level, or checks validity
             of argument provided
-         3) Gets time domain from parent, or creates domain if top level model
-         4) Checks has_holdup flag if present and dynamic = True
+         3) Checks has_holdup flag if present and dynamic = True
 
         Args:
             None
@@ -111,13 +110,15 @@ Must be True if dynamic = True,
         """
         # Check the dynamic flag, and retrieve if necessary
         if self.config.dynamic == useDefault:
-            # Get dynamic flag from parent
+            # Get flag from parent flowsheet
             try:
-                self.config.dynamic = self.parent_block().config.dynamic
-            except AttributeError:
-                # If parent does not have dynamic flag, raise Exception
-                raise DynamicError('{} has a parent model '
-                                   'with no dynamic attribute.'
+                self.config.dynamic = self.flowsheet().config.dynamic
+            except ConfigurationError:
+                # No flowsheet, raise exception
+                raise DynamicError('{} has no parent flowsheet from which to '
+                                   'get dynamic argument. Please provide a '
+                                   'value for this argument when constructing '
+                                   'the unit.'
                                    .format(self.name))
 
         # Check for case when dynamic=True, but parent dynamic=False
@@ -128,21 +129,6 @@ Must be True if dynamic = True,
                                'creating a dynamic flowsheet instead, and '
                                'declaring some models as steady-state.'
                                .format(self.name))
-
-        # Try to get reference to time object from parent
-        try:
-            # Guess parent is top level flowsheet, has time domain
-            add_object_reference(self, "time_ref", self.parent_block().time)
-        except AttributeError:
-            # Try to look for a reference to time domain (time_ref)
-            try:
-                add_object_reference(self,
-                                     "time_ref",
-                                     self.parent_block().time_ref)
-            except AttributeError:
-                # Can't find time domain
-                raise DynamicError('{} has a parent model '
-                                   'with no time domain'.format(self.name))
 
         # Set and validate has_holdup argument
         if self.config.has_holdup == useDefault:

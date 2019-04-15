@@ -50,9 +50,11 @@ class TurbineInletStageData(PressureChangerData):
     def build(self):
         super(TurbineInletStageData, self).build()
 
-        self.flow_coeff = Var(self.time_ref, initialize=1.053/3600.0,
+        self.flow_coeff = Var(self.flowsheet().config.time,
+                              initialize=1.053/3600.0,
             doc="Turbine flow coefficient [kg*C^0.5/Pa/s]")
-        self.delta_enth_isentropic = Var(self.time_ref, initialize=-1000,
+        self.delta_enth_isentropic = Var(self.flowsheet().config.time,
+                                         initialize=-1000,
             doc="Specific enthalpy change of isentropic process [J/mol]")
         self.blade_reaction = Var(initialize=0.9,
             doc="Blade reaction parameter")
@@ -73,7 +75,7 @@ class TurbineInletStageData(PressureChangerData):
         self.ratioP[:] = 1 # make sure these have a number value
         self.deltaP[:] = 0 #   to avoid an error later in initialize
 
-        @self.Expression(self.time_ref,
+        @self.Expression(self.flowsheet().config.time,
             doc="Entering steam velocity calculation [m/s]")
         def steam_entering_velocity(b, t):
             # 1.414 = 44.72/sqrt(1000) for SI if comparing to Liese (2014)
@@ -82,7 +84,8 @@ class TurbineInletStageData(PressureChangerData):
             return 1.414*sqrt(-(1-b.blade_reaction)*b.delta_enth_isentropic[t]/
                     b.control_volume.properties_in[t].mw*self.eff_nozzle)
 
-        @self.Constraint(self.time_ref, doc="Equation: Turbine inlet flow")
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Equation: Turbine inlet flow")
         def inlet_flow_constraint(b, t):
             # Some local vars to make the equation more readable
             g = b.control_volume.properties_in[t].heat_capacity_ratio
@@ -96,23 +99,26 @@ class TurbineInletStageData(PressureChangerData):
                 (1/b.flow_scale**2)*cf**2*Pin**2*
                 (g/(g - 1)*(Pratio**(2.0/g) - Pratio**((g + 1)/g))))
 
-        @self.Constraint(self.time_ref, doc="Equation: Isentropic enthalpy change")
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Equation: Isentropic enthalpy change")
         def isentropic_enthalpy(b, t):
             return b.work_isentropic[t] == (b.delta_enth_isentropic[t]*
                 b.control_volume.properties_in[t].flow_mol)
 
-        @self.Constraint(self.time_ref, doc="Equation: Efficiency")
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Equation: Efficiency")
         def efficiency_correlation(b, t):
             Vr = b.blade_velocity/b.steam_entering_velocity[t]
             eff = b.efficiency_isentropic[t]
             R = b.blade_reaction
             return eff == 2*Vr*((sqrt(1 - R) - Vr) +
                                  sqrt((sqrt(1 - R) - Vr)**2 + R))
-        @self.Expression(self.time_ref, doc="Thermodynamic power [J/s]")
+        @self.Expression(self.flowsheet().config.time,
+                         doc="Thermodynamic power [J/s]")
         def power_thermo(b, t):
             return b.control_volume.work[t]
 
-        @self.Expression(self.time_ref, doc="Shaft power [J/s]")
+        @self.Expression(self.flowsheet().config.time, doc="Shaft power [J/s]")
         def power_shaft(b, t):
             return b.power_thermo[t]*b.efficiency_mech
 
@@ -150,7 +156,7 @@ class TurbineInletStageData(PressureChangerData):
         self.blade_velocity.fix()
 
         # fix inlet and free outlet
-        for t in self.time_ref:
+        for t in self.flowsheet().config.time:
             for k, v in self.inlet.vars.items():
                 v[t].fix()
             for k, v in self.outlet.vars.items():
@@ -177,7 +183,7 @@ class TurbineInletStageData(PressureChangerData):
         self.deltaP[:] = value(Pout - Pin)
         self.ratioP[:] = value(Pout/Pin)
 
-        for t in self.time_ref:
+        for t in self.flowsheet().config.time:
             self.properties_isentropic[t].pressure.value = \
                 value(self.outlet.pressure[t])
             self.properties_isentropic[t].flow_mol.value = \

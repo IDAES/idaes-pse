@@ -106,15 +106,15 @@ class ProcessBlockData(_BlockData):
     def flowsheet(self):
         """
         This method returns the flowsheet object to which the model is attached
-        
+
         Args:
             None
-        
+
         Returns:
             Flowsheet object
         """
         parent = self.parent_block()
-        
+
         while True:
             if parent is None:
                 raise ConfigurationError(

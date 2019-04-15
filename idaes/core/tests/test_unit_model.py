@@ -147,17 +147,6 @@ def test_setup_dynamics_get_time():
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
 
-    assert m.fs.u.time_ref == m.fs.time
-
-
-def test_setup_dynamics_get_time_fails():
-    # Test that DynamicError is raised when parent does not have time domain
-    m = ConcreteModel()
-
-    m.u = Unit()
-    with pytest.raises(DynamicError):
-        m.u._setup_dynamics()
-
 
 def test_setup_dynamics_has_holdup():
     # Test that has_holdup argument is True when dynamic is True
