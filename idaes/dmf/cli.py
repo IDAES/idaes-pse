@@ -153,6 +153,7 @@ class URLType(click.ParamType):
         "resource": "info",
         "show": "info",
         "list": "ls",
+        "delete": "rm"
     },
     help="Data management framework command wrapper",
 )
@@ -635,6 +636,18 @@ def info(identifier, multiple, output_format, color):
         si.show(rsrc)
 
 
+@click.command(help="Remove a resource")  # aliases: delete
+@click.argument("identifier")
+def rm(identifier):
+    _log.info(f"remove resource '{identifier}'")
+    try:
+        resource.identifier_str(identifier)
+    except ValueError as errmsg:
+        click.echo(f"Invalid identifier. Details: {errmsg}")
+        return Code.INPUT_VALUE
+
+######################################################################################
+
 class _ShowInfo:
     """Container for methods, etc. to show info about a resource.
     """
@@ -864,6 +877,7 @@ def _uuid_prefix_len(uuids, step=4, maxlen=32):
             return n
     return maxlen
 
+######################################################################################
 
 # Register base commands
 base_command.add_command(init)
@@ -871,6 +885,7 @@ base_command.add_command(register)
 base_command.add_command(status)
 base_command.add_command(ls)
 base_command.add_command(info)
+base_command.add_command(rm)
 
 if __name__ == '__main__':
     base_command()
