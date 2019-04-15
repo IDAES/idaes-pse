@@ -740,7 +740,7 @@ def identifier_str(value=None, allow_prefix=False):
         value = uuid.uuid4().hex
     elif not re.match(id_expr, value):
         raise ValueError(
-            'Bad format for identifier "{}": must match '
+            'bad format for identifier "{}": must match '
             'regular expression "{}"'.format(value, id_expr)
         )
     return value
