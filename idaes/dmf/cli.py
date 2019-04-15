@@ -618,8 +618,7 @@ def info(identifier, multiple, output_format, color):
     except ValueError as err:
         click.echo(f"{err}")
         sys.exit(Code.INPUT_VALUE.value)
-    d = DMF()
-    rsrc_list = list(d.find_by_id(identifier))
+    rsrc_list = list(find_by_id(identifier))
     n = len(rsrc_list)
     if n > 1 and not multiple:
         click.echo(
@@ -638,15 +637,30 @@ def info(identifier, multiple, output_format, color):
 
 @click.command(help="Remove a resource")  # aliases: delete
 @click.argument("identifier")
-def rm(identifier):
+@click.option("-y", "--yes", help="No interactive confirmations; assume 'yes' answer to all")
+@click.option("--multiple/--no-multiple", default=False)
+def rm(identifier, yes, multiple):
     _log.info(f"remove resource '{identifier}'")
     try:
-        resource.identifier_str(identifier)
+        resource.identifier_str(identifier, allow_prefix=True)
     except ValueError as errmsg:
         click.echo(f"Invalid identifier. Details: {errmsg}")
-        return Code.INPUT_VALUE
+        sys.exit(Code.INPUT_VALUE.value)
+    rsrc_list = list(find_by_id(identifier))
+    if len(rsrc_list) > 1 and not multiple:
+        click.echo(
+            f"Too many ({len(rsrc_list)}) resources match prefix '{identifier}'. "
+            "Add option --multiple to allow multiple matches."
+        )
+        sys.exit(Code.DMF_OPER.value)
 
 ######################################################################################
+
+
+def find_by_id(identifier, dmf=None):
+    if dmf is None:
+        dmf = DMF()
+    return dmf.find_by_id(identifier)
 
 class _ShowInfo:
     """Container for methods, etc. to show info about a resource.
