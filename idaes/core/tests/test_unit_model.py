@@ -398,3 +398,36 @@ def test_add_inlet_port_CV0D_part_args():
 
     with pytest.raises(ConfigurationError):
         m.fs.u.add_outlet_port(name="foo")
+
+
+def test_fix_unfix_initial_conditions():
+    fs = Flowsheet(default={"dynamic": True, "time_set": [0, 1, 2]},
+                   concrete=True)
+    fs._setup_dynamics()
+
+    fs.b = Unit()
+
+    fs.b.material_accumulation = Var(fs.time, ["a", "b", "c"])
+    fs.b.element_accumulation = Var(fs.time, ["a", "b", "c"])
+    fs.b.enthalpy_accumulation = Var(fs.time)
+
+    fs.fix_initial_conditions()
+
+    for t in fs.time:
+        for j in ["a", "b", "c"]:
+            if t == 0:
+                assert fs.b.material_accumulation[t, j].fixed
+                assert fs.b.element_accumulation[t, j].fixed
+                assert fs.b.enthalpy_accumulation[t].fixed
+            else:
+                assert fs.b.material_accumulation[t, j].fixed is False
+                assert fs.b.element_accumulation[t, j].fixed is False
+                assert fs.b.enthalpy_accumulation[t].fixed is False
+
+    fs.unfix_initial_conditions()
+
+    for t in fs.time:
+        for j in ["a", "b", "c"]:
+            assert fs.b.material_accumulation[t, j].fixed is False
+            assert fs.b.element_accumulation[t, j].fixed is False
+            assert fs.b.enthalpy_accumulation[t].fixed is False

@@ -205,7 +205,8 @@ Must be True if dynamic = True,
         setattr(blk, name, p)
 
         # Get dict of Port members and names
-        member_list = block[blk.time_ref.first()].define_port_members()
+        member_list = block[
+                blk.flowsheet().config.time.first()].define_port_members()
 
         # Create References for port members
         for s in member_list:
@@ -226,7 +227,7 @@ Must be True if dynamic = True,
         """
         This is a method to build inlet Port objects in a unit model and
         connect these to a specified control volume or state block.
-        
+
         The name and block arguments are optional, but must be used together.
         i.e. either both arguments are provided or neither.
 
@@ -280,11 +281,13 @@ Must be True if dynamic = True,
         # Get dict of Port members and names
         if isinstance(block, ControlVolumeBlockData):
             try:
-                member_list = (block.properties_in[block.time_ref.first()]
+                member_list = (block.properties_in[
+                                    block.flowsheet().config.time.first()]
                                .define_port_members())
             except AttributeError:
                 try:
-                    member_list = (block.properties[block.time_ref.first(), 0]
+                    member_list = (block.properties[
+                                    block.flowsheet().config.time.first(), 0]
                                    .define_port_members())
                 except AttributeError:
                     raise PropertyPackageError(
@@ -293,7 +296,8 @@ Must be True if dynamic = True,
                             "Please contact the developer of the property "
                             "package.".format(blk.name))
         elif isinstance(block, StateBlock):
-            member_list = block[blk.time_ref.first()].define_port_members()
+            member_list = block[
+                    blk.flowsheet().config.time.first()].define_port_members()
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "
@@ -321,7 +325,7 @@ Must be True if dynamic = True,
                                     "developers with this bug."
                                     .format(blk.name))
                         slicer = (block.properties[:, _idx]
-                                      .component(member_list[s].local_name))
+                                  .component(member_list[s].local_name))
                 elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)
                 else:
@@ -424,11 +428,13 @@ Must be True if dynamic = True,
         # Get dict of Port members and names
         if isinstance(block, ControlVolumeBlockData):
             try:
-                member_list = (block.properties_out[block.time_ref.first()]
+                member_list = (block.properties_out[
+                                    block.flowsheet().config.time.first()]
                                .define_port_members())
             except AttributeError:
                 try:
-                    member_list = (block.properties[block.time_ref.first(), 0]
+                    member_list = (block.properties[
+                                    block.flowsheet().config.time.first(), 0]
                                    .define_port_members())
                 except AttributeError:
                     raise PropertyPackageError(
@@ -437,7 +443,8 @@ Must be True if dynamic = True,
                             "Please contact the developer of the property "
                             "package.".format(blk.name))
         elif isinstance(block, StateBlock):
-            member_list = block[blk.time_ref.first()].define_port_members()
+            member_list = block[
+                    blk.flowsheet().config.time.first()].define_port_members()
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "
@@ -465,7 +472,7 @@ Must be True if dynamic = True,
                                     "developers with this bug."
                                     .format(blk.name))
                         slicer = (block.properties[:, _idx]
-                                      .component(member_list[s].local_name))
+                                  .component(member_list[s].local_name))
                 elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)
                 else:

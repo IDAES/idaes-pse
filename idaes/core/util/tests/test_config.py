@@ -16,7 +16,8 @@ Tests for config utility methods.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import ConcreteModel
+from pyomo.environ import ConcreteModel, Set
+from pyomo.dae import ContinuousSet
 from pyomo.network import Port
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
@@ -29,7 +30,8 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
                                     list_of_floats,
                                     list_of_strings,
-                                    is_port)
+                                    is_port,
+                                    is_time_domain)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -177,3 +179,29 @@ def test_is_port_errors():
         is_port(1.0)  # float
     with pytest.raises(ConfigurationError):
         is_port(1)  # int
+
+def test_is_time_domain():
+    # Test that is_time_domain accepts Sets and ContinuousSets
+    m = ConcreteModel()
+    
+    m.s = Set(initialize=[1, 2, 3, 4])
+    m.cs = ContinuousSet(bounds=[0, 1])
+
+    assert isinstance(is_time_domain(m.s), Set)
+    assert isinstance(is_time_domain(m.cs), ContinuousSet)
+    
+
+def test_is_time_domain_errors():
+    # Test that is_time_domain returns errors wehn not Set or ContinuousSet
+    with pytest.raises(ConfigurationError):
+        assert is_time_domain("foo")
+    with pytest.raises(ConfigurationError):
+        assert is_time_domain(["foo", "bar"])
+    with pytest.raises(ConfigurationError):
+        assert is_time_domain(("foo", "bar"))
+    with pytest.raises(ConfigurationError):
+        assert is_time_domain({"foo": "bar"})
+    with pytest.raises(ConfigurationError):
+        assert is_time_domain(1)
+    with pytest.raises(ConfigurationError):
+        assert is_time_domain(1.0)

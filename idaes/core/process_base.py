@@ -103,6 +103,31 @@ class ProcessBlockData(_BlockData):
         """
         self._get_config_args()
 
+    def flowsheet(self):
+        """
+        This method returns the flowsheet object to which the model is attached
+        
+        Args:
+            None
+        
+        Returns:
+            Flowsheet object
+        """
+        parent = self.parent_block()
+        
+        while True:
+            if parent is None:
+                raise ConfigurationError(
+                        "{} has no flowsheet. Iteration reached top of model "
+                        "tree without finding an instance of FlowsheetBlock."
+                        .format(self.name))
+
+            if hasattr(parent, 'is_flowsheet') and parent.is_flowsheet():
+                return parent
+
+            else:
+                parent = parent.parent_block()
+
     def _get_config_args(self):
         """
         Get config arguments for this element and put them in the ConfigBlock
@@ -137,24 +162,26 @@ class ProcessBlockData(_BlockData):
         if state == 'steady-state':
             for obj in self.component_objects((Block, Disjunct),
                                               descend_into=True):
+                try:
+                    t0 = obj.flowsheet().config.time.first()
+                except AttributeError:
+                    break
+
                 # Try to fix material_accumulation @ first time point
                 try:
-                    obj.material_accumulation[obj.time_ref.first(),
-                                              ...].fix(0.0)
+                    obj.material_accumulation[t0, ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix element_accumulation @ first time point
                 try:
-                    obj.element_accumulation[obj.time_ref.first(),
-                                             ...].fix(0.0)
+                    obj.element_accumulation[t0, ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix enthalpy_accumulation @ first time point
                 try:
-                    obj.enthalpy_accumulation[obj.time_ref.first(),
-                                              ...].fix(0.0)
+                    obj.enthalpy_accumulation[t0, ...].fix(0.0)
                 except AttributeError:
                     pass
 
@@ -172,24 +199,26 @@ class ProcessBlockData(_BlockData):
             None
         """
         for obj in self.component_objects(Block, descend_into=True):
+            try:
+                t0 = obj.flowsheet().config.time.first()
+            except AttributeError:
+                break
+
             # Try to unfix material_accumulation @ first time point
             try:
-                obj.material_accumulation[obj.time_ref.first(),
-                                          ...].unfix()
+                obj.material_accumulation[t0, ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix element_accumulation @ first time point
             try:
-                obj.element_accumulation[obj.time_ref.first(),
-                                         ...].unfix()
+                obj.element_accumulation[t0, ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix enthalpy_accumulation @ first time point
             try:
-                obj.enthalpy_accumulation[obj.time_ref.first(),
-                                          ...].unfix()
+                obj.enthalpy_accumulation[t0, ...].unfix()
             except AttributeError:
                 pass
 
