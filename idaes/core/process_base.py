@@ -26,8 +26,9 @@ from pyomo.common.config import ConfigBlock
 from pyutilib.enum import Enum
 
 from idaes.core.process_block import declare_process_block_class
-from idaes.core.util.exceptions import (ConfigurationError,
-                                        BurntToast,
+from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
+                                        DynamicError,
                                         PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
 
@@ -217,6 +218,72 @@ class ProcessBlockData(_BlockData):
                         obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
+
+    def _setup_dynamics(self):
+        """
+        This method automates the setting of the dynamic flag and time domain
+        for unit models.
+
+        Performs the following:
+         1) Determines if this is a top level flowsheet
+         2) Gets dynamic flag from parent if not top level, or checks validity
+            of argument provided
+         3) Checks has_holdup flag if present and dynamic = True
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Get parent object
+        if hasattr(self.parent_block(), "config"):
+            # Parent block has a config block, so use this
+            parent = self.parent_block()
+        else:
+            # Use parent flowsheet
+            try:
+                parent = self.flowsheet()
+            except ConfigurationError:
+                raise DynamicError('{} has no parent flowsheet from which to '
+                                   'get dynamic argument. Please provide a '
+                                   'value for this argument when constructing '
+                                   'the unit.'
+                                   .format(self.name))
+
+        # Check the dynamic flag, and retrieve if necessary
+        if self.config.dynamic == useDefault:
+            # Get flag from parent flowsheet
+            try:
+                self.config.dynamic = parent.config.dynamic
+            except AttributeError:
+                # No flowsheet, raise exception
+                raise DynamicError('{} parent flowsheet has no dynamic '
+                                   'argument. Please provide a '
+                                   'value for this argument when constructing '
+                                   'the unit.'
+                                   .format(self.name))
+
+        # Check for case when dynamic=True, but parent dynamic=False
+        if (self.config.dynamic and not parent.config.dynamic):
+            raise DynamicError('{} trying to declare a dynamic model within '
+                               'a steady-state flowsheet. This is not '
+                               'supported by the IDAES framework. Try '
+                               'creating a dynamic flowsheet instead, and '
+                               'declaring some models as steady-state.'
+                               .format(self.name))
+
+        # Set and validate has_holdup argument
+        if self.config.has_holdup == useDefault:
+            # Default to same value as dynamic flag
+            self.config.has_holdup = self.config.dynamic
+        elif self.config.has_holdup is False:
+            if self.config.dynamic is True:
+                # Dynamic model must have has_holdup = True
+                raise ConfigurationError(
+                            "{} invalid arguments for dynamic and has_holdup. "
+                            "If dynamic = True, has_holdup must also be True "
+                            "(was False)".format(self.name))
 
     def _get_property_package(self):
         """

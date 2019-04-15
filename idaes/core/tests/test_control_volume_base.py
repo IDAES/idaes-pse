@@ -198,22 +198,36 @@ def test_setup_dynamics_use_parent_value():
 
 
 def test_setup_dynamics_use_parent_value_fail_no_dynamic():
+    # Test that default falls back to flowsheet
+    fs = Flowsheet(default={"dynamic": False}, concrete=True)
+
+    # Create a Block (with no dynamic attribute)
+    fs.b = Block()
+    fs.b.cv = CVFrame()
+    fs.b.cv._setup_dynamics()
+
+    assert fs.b.cv.config.dynamic is False
+
+
+def test_setup_dynamics_dynamic_in_ss():
     # Test that dynamic = None works correctly
     fs = Flowsheet(default={"dynamic": False}, concrete=True)
 
     # Create a Block (with no dynamic attribute)
     fs.b = Block()
+    # Add a time attribute to make sure the correct failure triggers
+    fs.b.time_ref = Set(initialize=[0])
 
-    fs.b.cv = CVFrame()
+    fs.b.cv = CVFrame(default={"dynamic": True, "has_holdup": True})
 
     # _setup_dynamics should return DynamicError
     with pytest.raises(DynamicError):
         fs.b.cv._setup_dynamics()
 
 
-def test_setup_dynamics_has_holdup_inconsistent():
+def test_setup_dynamics_dynamic_holdup_inconsistent():
     # Test that dynamic = None works correctly
-    fs = Flowsheet(default={"dynamic": False}, concrete=True)
+    fs = Flowsheet(default={"dynamic": True}, concrete=True)
 
     # Create a Block (with no dynamic attribute)
     fs.b = Block()

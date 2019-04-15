@@ -16,7 +16,7 @@ Tests for unit_model.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import ConcreteModel, Set, Var
+from pyomo.environ import Block, ConcreteModel, Set, Var
 from pyomo.network import Port
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
@@ -120,10 +120,12 @@ def test_setup_dynamics2():
     # dynamic config argument
 
     m = ConcreteModel()
-    m.u = Unit()
+    # Intermediate Block is required, as ConcreteModels have a config attribute
+    m.b = Block()
+    m.b.u = Unit()
 
     with pytest.raises(DynamicError):
-        m.u._setup_dynamics()
+        m.b.u._setup_dynamics()
 
 
 def test_setup_dynamics_dynamic_in_steady_state():

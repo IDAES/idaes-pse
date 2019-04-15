@@ -536,48 +536,48 @@ have a config block which derives from CONFIG_Base,
         except AttributeError:
             pass
 
-    def _setup_dynamics(self):
-        """
-        This method automates the setting of the dynamic flag and time domain
-        for control volume blocks.
-
-        If dynamic flag is 'use_parent_value', method attempts to get the value
-        of the dynamic flag from the parent model, otherwise the local value is
-        used.
-
-        Finally, the method checks the has_holdup argument (if present), and
-        ensures that has_holdup is True if dynamic is True.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Check the dynamic flag, and retrieve if necessary
-        if self.config.dynamic == useDefault:
-            # Get dynamic flag from parent
-            try:
-                self.config.dynamic = self.parent_block().config.dynamic
-            except AttributeError:
-                # If parent does not have dynamic flag, raise Exception
-                raise DynamicError('{} has a parent model '
-                                   'with no dynamic attribute.'
-                                   .format(self.name))
-
-        # Set and validate has_holdup argument
-        if self.config.has_holdup == useDefault:
-            # Default to same value as dynamic flag
-            self.config.has_holdup = self.config.dynamic
-        elif self.config.has_holdup is False:
-            if self.config.dynamic is True:
-                # Dynamic model must have has_holdup = True
-                raise ConfigurationError(
-                            '{} inconsistent arguments for control volume. '
-                            'dynamic was set to True, which requires that '
-                            'has_holdup = True (was False). Please correct '
-                            'your arguments to be consistent.'
-                            .format(self.name))
+#    def _setup_dynamics(self):
+#        """
+#        This method automates the setting of the dynamic flag and time domain
+#        for control volume blocks.
+#
+#        If dynamic flag is 'use_parent_value', method attempts to get the value
+#        of the dynamic flag from the parent model, otherwise the local value is
+#        used.
+#
+#        Finally, the method checks the has_holdup argument (if present), and
+#        ensures that has_holdup is True if dynamic is True.
+#
+#        Args:
+#            None
+#
+#        Returns:
+#            None
+#        """
+#        # Check the dynamic flag, and retrieve if necessary
+#        if self.config.dynamic == useDefault:
+#            # Get dynamic flag from parent
+#            try:
+#                self.config.dynamic = self.parent_block().config.dynamic
+#            except AttributeError:
+#                # If parent does not have dynamic flag, raise Exception
+#                raise DynamicError('{} has a parent model '
+#                                   'with no dynamic attribute.'
+#                                   .format(self.name))
+#
+#        # Set and validate has_holdup argument
+#        if self.config.has_holdup == useDefault:
+#            # Default to same value as dynamic flag
+#            self.config.has_holdup = self.config.dynamic
+#        elif self.config.has_holdup is False:
+#            if self.config.dynamic is True:
+#                # Dynamic model must have has_holdup = True
+#                raise ConfigurationError(
+#                            '{} inconsistent arguments for control volume. '
+#                            'dynamic was set to True, which requires that '
+#                            'has_holdup = True (was False). Please correct '
+#                            'your arguments to be consistent.'
+#                            .format(self.name))
 
     # Add placeholder methods for adding property and reaction packages
     def add_state_blocks(self, *args, **kwargs):

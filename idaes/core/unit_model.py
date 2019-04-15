@@ -91,57 +91,6 @@ Must be True if dynamic = True,
         # Set up dynamic flag and time domain
         self._setup_dynamics()
 
-    def _setup_dynamics(self):
-        """
-        This method automates the setting of the dynamic flag and time domain
-        for unit models.
-
-        Performs the following:
-         1) Determines if this is a top level flowsheet
-         2) Gets dynamic flag from parent if not top level, or checks validity
-            of argument provided
-         3) Checks has_holdup flag if present and dynamic = True
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Check the dynamic flag, and retrieve if necessary
-        if self.config.dynamic == useDefault:
-            # Get flag from parent flowsheet
-            try:
-                self.config.dynamic = self.flowsheet().config.dynamic
-            except ConfigurationError:
-                # No flowsheet, raise exception
-                raise DynamicError('{} has no parent flowsheet from which to '
-                                   'get dynamic argument. Please provide a '
-                                   'value for this argument when constructing '
-                                   'the unit.'
-                                   .format(self.name))
-
-        # Check for case when dynamic=True, but parent dynamic=False
-        if (self.config.dynamic and not self.parent_block().config.dynamic):
-            raise DynamicError('{} trying to declare a dynamic model within '
-                               'a steady-state flowsheet. This is not '
-                               'supported by the IDAES framework. Try '
-                               'creating a dynamic flowsheet instead, and '
-                               'declaring some models as steady-state.'
-                               .format(self.name))
-
-        # Set and validate has_holdup argument
-        if self.config.has_holdup == useDefault:
-            # Default to same value as dynamic flag
-            self.config.has_holdup = self.config.dynamic
-        elif self.config.has_holdup is False:
-            if self.config.dynamic is True:
-                # Dynamic model must have has_holdup = True
-                raise ConfigurationError(
-                            "{} invalid arguments for dynamic and has_holdup. "
-                            "If dynamic = True, has_holdup must also be True "
-                            "(was False)".format(self.name))
-
     def model_check(blk):
         """
         This is a general purpose initialization routine for simple unit
