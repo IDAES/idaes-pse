@@ -162,26 +162,24 @@ class ProcessBlockData(_BlockData):
         if state == 'steady-state':
             for obj in self.component_objects((Block, Disjunct),
                                               descend_into=True):
-                try:
-                    t0 = obj.flowsheet().config.time.first()
-                except AttributeError:
-                    break
-
                 # Try to fix material_accumulation @ first time point
                 try:
-                    obj.material_accumulation[t0, ...].fix(0.0)
+                    obj.material_accumulation[
+                            obj.flowsheet().config.time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix element_accumulation @ first time point
                 try:
-                    obj.element_accumulation[t0, ...].fix(0.0)
+                    obj.element_accumulation[
+                            obj.flowsheet().config.time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix enthalpy_accumulation @ first time point
                 try:
-                    obj.enthalpy_accumulation[t0, ...].fix(0.0)
+                    obj.enthalpy_accumulation[
+                            obj.flowsheet().config.time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
@@ -199,26 +197,24 @@ class ProcessBlockData(_BlockData):
             None
         """
         for obj in self.component_objects(Block, descend_into=True):
-            try:
-                t0 = obj.flowsheet().config.time.first()
-            except AttributeError:
-                break
-
             # Try to unfix material_accumulation @ first time point
             try:
-                obj.material_accumulation[t0, ...].unfix()
+                obj.material_accumulation[
+                        obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix element_accumulation @ first time point
             try:
-                obj.element_accumulation[t0, ...].unfix()
+                obj.element_accumulation[
+                        obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix enthalpy_accumulation @ first time point
             try:
-                obj.enthalpy_accumulation[t0, ...].unfix()
+                obj.enthalpy_accumulation[
+                        obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
 

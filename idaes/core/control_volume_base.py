@@ -565,23 +565,6 @@ have a config block which derives from CONFIG_Base,
                                    'with no dynamic attribute.'
                                    .format(self.name))
 
-        # Try to get reference to time object from parent
-        try:
-            # Guess that parent has a reference to time domain
-            add_object_reference(self,
-                                 "time_ref",
-                                 self.parent_block().time_ref)
-        except AttributeError:
-            try:
-                # Should not happen, but guess parent has actual time domain
-                add_object_reference(self,
-                                     "time_ref",
-                                     self.parent_block().time)
-            except AttributeError:
-                # Can't find time domain
-                raise DynamicError('{} has a parent model '
-                                   'with no time domain'.format(self.name))
-
         # Set and validate has_holdup argument
         if self.config.has_holdup == useDefault:
             # Default to same value as dynamic flag
