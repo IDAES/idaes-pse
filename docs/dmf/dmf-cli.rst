@@ -1127,6 +1127,103 @@ This means the shoebox now has two different "contains" type of relations.
         else:
             assert rel["identifier"] == closet_id
 
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: ../_images/blue-white-band.png
+    :width: 100%
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. program:: dmf-rm
+
+dmf rm
+-------
+Remove one or more resources. This also removes relations (links) to other resources.
+
+
+dmf rm options
+^^^^^^^^^^^^^^
+
+.. option:: identifier
+
+The identifier, or identifier prefix, of the resource(s) to remove
+
+.. option:: -y,--yes
+
+If given, do not confirm removal of the resource(s) with a prompt. This is useful for scripts
+that do not want to bother with input, or people with lots of confidence.
+
+.. option:: --multiple
+
+If given, allow multiple resources to be selected by an identifier prefix. Otherwise,
+if the given identifier matches more than one resource, the program will print a message and stop.
+
+dmf rm usage
+^^^^^^^^^^^^
+.. note:: In the following examples, there are 5 text files named "file1.txt", "file2.txt", .., "file5.txt", in the workspace.
+          Some of these files will be removed in the examples.
+
+.. testsetup:: dmf-rm
+
+    from pathlib import Path
+    import re, json
+    from click.testing import CliRunner
+    from idaes.dmf.cli import init, register, ls, rm
+    from idaes.dmf.dmfbase import DMFConfig
+    runner = CliRunner()
+
+    fsctx = runner.isolated_filesystem()
+    fsctx.__enter__()
+    DMFConfig._filename = str(Path('.dmf').absolute())
+    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
+    # add some files named `file{1-5}`
+    for i in range(1,6):
+        filename = f"file{i}.txt"
+        with open(filename, 'w') as fp:
+            fp.write(f"file #{i}")
+        runner.invoke(register, [filename])
+
+.. testcleanup:: dmf-register
+
+    fsctx.__exit__(None, None, None)
+    DMFConfig._filename = str(Path('~/.dmf').expanduser())
+
+Remove one resource, by its full identifier:
+
+.. code-block:: console
+
+    $ dmf ls --no-prefix
+    id                               type desc      modified           
+    096aa2491e234c4b941f32b537dd3017 data file5.txt 2019-04-16 02:51:30
+    821fc8f8e54e4c65b481f483be7f5a2d data file4.txt 2019-04-16 02:51:29
+    c20f3a6e338a40ee8a3a4972544adb74 data file1.txt 2019-04-16 02:51:25
+    c8f2b5cb80824e649008c414db5287f7 data file3.txt 2019-04-16 02:51:28
+    cd62e3bcb9a4459c9f2f5405ca442961 data file2.txt 2019-04-16 02:51:26
+    $ dmf rm c20f3a6e338a40ee8a3a4972544adb74
+    id                               type desc      modified           
+    c20f3a6e338a40ee8a3a4972544adb74 data file1.txt 2019-04-16 02:51:25
+    Remove this resource [y/N]? y
+    resource removed
+    [dmfcli-167 !?]idaes-dev$ dmf ls --no-prefix
+    id                               type desc      modified           
+    096aa2491e234c4b941f32b537dd3017 data file5.txt 2019-04-16 02:51:30
+    821fc8f8e54e4c65b481f483be7f5a2d data file4.txt 2019-04-16 02:51:29
+    c8f2b5cb80824e649008c414db5287f7 data file3.txt 2019-04-16 02:51:28
+    cd62e3bcb9a4459c9f2f5405ca442961 data file2.txt 2019-04-16 02:51:26
+
+.. testcode:: dmf-rm
+    :hide:
+
+    result = runner.invoke(ls, ['--no-color', '--no-prefix'])
+    assert result.exit_code == 0
+    output1 = result.output
+    output1_lines = output1.split('\n')
+    rsrc_id = output1_lines[1].split()[0] # first token
+    result = runner.invoke(rm, [rsrc_id], catch_exceptions=False)
+    assert result.exit_code == 0
+    result = runner.invoke(ls, ['--no-color', '--no-prefix'])
+    assert result.exit_code == 0
+    output2 = result.output
+    output2_lines = output1.split('\n')
+    assert len(output2_lines) == len(output1_lines) - 1
 
 
 .. include:: ../global.rst
