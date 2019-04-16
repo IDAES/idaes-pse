@@ -1159,7 +1159,7 @@ if the given identifier matches more than one resource, the program will print a
 dmf rm usage
 ^^^^^^^^^^^^
 .. note:: In the following examples, there are 5 text files named "file1.txt", "file2.txt", .., "file5.txt", in the workspace.
-          Some of these files will be removed in the examples.
+          The identifiers for these files may be different in each example.
 
 .. testsetup:: dmf-rm
 
@@ -1192,7 +1192,10 @@ dmf rm usage
     fsctx.__exit__(None, None, None)
     DMFConfig._filename = str(Path('~/.dmf').expanduser())
     # Comment to save log for debugging:
-    Path("/tmp/sphinx-dmf-cli.log").unlink()
+    try:
+        Path("/tmp/sphinx-dmf-cli.log").unlink()
+    except FileNotFoundError:
+        pass
 
 Remove one resource, by its full identifier:
 
@@ -1234,6 +1237,69 @@ Remove one resource, by its full identifier:
     output2_lines = output2.split('\n')
     assert len(output2_lines) == len(output1_lines) - 1
 
+Remove a single resource by its prefix:
+
+.. code-block:: console
+
+    $ dmf ls
+    id   type desc      modified           
+    6dd5 data file2.txt 2019-04-16 18:51:10
+    7953 data file3.txt 2019-04-16 18:51:12
+    7a06 data file4.txt 2019-04-16 18:51:13
+    e5d7 data file1.txt 2019-04-16 18:51:08
+    fe0c data file5.txt 2019-04-16 18:51:15
+    $ dmf rm 6d
+    id                               type desc      modified           
+    6dd57ecc50a24efb824a66109dda0956 data file2.txt 2019-04-16 18:51:10
+    Remove this resource [y/N]? y
+    resource removed
+    $ dmf ls
+    id   type desc      modified           
+    7953 data file3.txt 2019-04-16 18:51:12
+    7a06 data file4.txt 2019-04-16 18:51:13
+    e5d7 data file1.txt 2019-04-16 18:51:08
+    fe0c data file5.txt 2019-04-16 18:51:15
+
+.. testcode:: dmf-rm
+    :hide:
+
+    result = runner.invoke(ls, ['--no-color'])
+    assert result.exit_code == 0
+    output1 = result.output
+    output1_lines = output1.split('\n')
+    rsrc_id = output1_lines[1].split()[0] # first token
+    log.info(f"resource id=`{rsrc_id}`")
+    result = runner.invoke(rm, [rsrc_id, "--yes", "--no-list"], catch_exceptions=False)
+    assert result.exit_code == 0
+    result = runner.invoke(ls, ['--no-color', '--no-prefix'])
+    assert result.exit_code == 0
+    output2 = result.output
+    output2_lines = output2.split('\n')
+    assert len(output2_lines) == len(output1_lines) - 1
+
+Remove multiple resources that share a common prefix. In this case, use the
+:option:`-y,--yes` option to remove without prompting.
+
+.. code-block:: console
+
+    $ dmf ls
+    id   type desc      modified           
+    7953 data file3.txt 2019-04-16 18:51:12
+    7a06 data file4.txt 2019-04-16 18:51:13
+    e5d7 data file1.txt 2019-04-16 18:51:08
+    fe0c data file5.txt 2019-04-16 18:51:15
+    $ dmf rm --multiple --yes 7
+    id                               type desc      modified           
+    7953e67db4a543419b9988c52c820b68 data file3.txt 2019-04-16 18:51:12
+    7a06435c39b54890a3d01a9eab114314 data file4.txt 2019-04-16 18:51:13
+    2 resources removed
+    $ dmf ls
+    id   type desc      modified           
+    e5d7 data file1.txt 2019-04-16 18:51:08
+    fe0c data file5.txt 2019-04-16 18:51:15
+
+.. note this is harder to test since we need to force a non-unique
+.. prefix. Is it worth it??
 
 .. include:: ../global.rst
 
