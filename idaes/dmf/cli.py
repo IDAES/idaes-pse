@@ -533,14 +533,14 @@ def ls(color, show, sort_by, reverse, prefix):
     reverse = bool(reverse == "yes")
     if not sort_by:
         sort_by = ["id"]
-    _ls_basic(d, show, sort_by, reverse, prefix, color)
+    resources = list(d.find())
+    _ls_basic(resources, show, sort_by, reverse, prefix, color)
 
 
-def _ls_basic(d, show_fields, sort_by, reverse, prefix, color):
+def _ls_basic(resources, show_fields, sort_by, reverse, prefix, color):
     """Text-mode `ls`.
     """
     t = _cterm if color else _noterm
-    resources = list(d.find())
     if len(resources) == 0:
         print("no resources to display")
         return
@@ -647,12 +647,34 @@ def rm(identifier, yes, multiple):
         click.echo(f"Invalid identifier. Details: {errmsg}")
         sys.exit(Code.INPUT_VALUE.value)
     rsrc_list = list(find_by_id(identifier))
-    if len(rsrc_list) > 1 and not multiple:
+    found_multiple = len(rsrc_list) > 1
+    if found_multiple and not multiple:
         click.echo(
             f"Too many ({len(rsrc_list)}) resources match prefix '{identifier}'. "
             "Add option --multiple to allow multiple matches."
         )
         sys.exit(Code.DMF_OPER.value)
+    fields = ["type", "desc", "modified"]  # "id" is prepended by _ls_basic()
+    _ls_basic(rsrc_list, fields, ["id"], False, False, True)
+    if not yes:
+        if found_multiple:
+            s = f"these {len(rsrc_list)} resources"
+        else:
+            s = "this resource"
+        do_remove = click.confirm(f"Remove {s}", prompt_suffix="? ", default=False)
+        if not do_remove:
+            click.echo("aborted")
+            sys.exit(0)
+    d = DMF()
+    for r in rsrc_list:
+        _log.debug(f"begin remove-resource id={r.id}")
+        d.remove(identifier=r.id)
+        _log.debug(f"end remove-resource id={r.id}")
+    if found_multiple:
+        s = f"{len(rsrc_list)} resources removed"
+    else:
+        s = "resource removed"
+    click.echo(s)
 
 ######################################################################################
 
