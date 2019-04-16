@@ -58,6 +58,7 @@ class Code(Enum):
     DMF = 5
     DMF_OPER = 6
     INPUT_VALUE = 7
+    CANCELED = 8
 
 
 def level_from_verbosity(vb):
@@ -637,9 +638,10 @@ def info(identifier, multiple, output_format, color):
 
 @click.command(help="Remove a resource")  # aliases: delete
 @click.argument("identifier")
-@click.option("-y", "--yes", help="No interactive confirmations; assume 'yes' answer to all")
+@click.option("-y", "--yes", flag_value="yes", help="No interactive confirmations; assume 'yes' answer to all")
+@click.option("--list/--no-list", "list_resources", default=True)
 @click.option("--multiple/--no-multiple", default=False)
-def rm(identifier, yes, multiple):
+def rm(identifier, yes, multiple, list_resources):
     _log.info(f"remove resource '{identifier}'")
     try:
         resource.identifier_str(identifier, allow_prefix=True)
@@ -655,8 +657,9 @@ def rm(identifier, yes, multiple):
         )
         sys.exit(Code.DMF_OPER.value)
     fields = ["type", "desc", "modified"]  # "id" is prepended by _ls_basic()
-    _ls_basic(rsrc_list, fields, ["id"], False, False, True)
-    if not yes:
+    if list_resources:
+        _ls_basic(rsrc_list, fields, ["id"], False, False, True)
+    if yes != "yes":
         if found_multiple:
             s = f"these {len(rsrc_list)} resources"
         else:
@@ -664,7 +667,7 @@ def rm(identifier, yes, multiple):
         do_remove = click.confirm(f"Remove {s}", prompt_suffix="? ", default=False)
         if not do_remove:
             click.echo("aborted")
-            sys.exit(0)
+            sys.exit(Code.CANCELED.value)
     d = DMF()
     for r in rsrc_list:
         _log.debug(f"begin remove-resource id={r.id}")

@@ -1169,7 +1169,13 @@ dmf rm usage
     from idaes.dmf.cli import init, register, ls, rm
     from idaes.dmf.dmfbase import DMFConfig
     runner = CliRunner()
-
+    # logging
+    import logging
+    log = logging.getLogger("cli")
+    _h = logging.FileHandler("/tmp/sphinx-dmf-cli.log")
+    log.addHandler(_h)
+    log.setLevel(logging.INFO)
+    # setup workspace
     fsctx = runner.isolated_filesystem()
     fsctx.__enter__()
     DMFConfig._filename = str(Path('.dmf').absolute())
@@ -1185,6 +1191,8 @@ dmf rm usage
 
     fsctx.__exit__(None, None, None)
     DMFConfig._filename = str(Path('~/.dmf').expanduser())
+    # Comment to save log for debugging:
+    Path("/tmp/sphinx-dmf-cli.log").unlink()
 
 Remove one resource, by its full identifier:
 
@@ -1217,12 +1225,13 @@ Remove one resource, by its full identifier:
     output1 = result.output
     output1_lines = output1.split('\n')
     rsrc_id = output1_lines[1].split()[0] # first token
-    result = runner.invoke(rm, [rsrc_id], catch_exceptions=False)
+    log.info(f"resource id=`{rsrc_id}`")
+    result = runner.invoke(rm, [rsrc_id, "--yes", "--no-list"], catch_exceptions=False)
     assert result.exit_code == 0
     result = runner.invoke(ls, ['--no-color', '--no-prefix'])
     assert result.exit_code == 0
     output2 = result.output
-    output2_lines = output1.split('\n')
+    output2_lines = output2.split('\n')
     assert len(output2_lines) == len(output1_lines) - 1
 
 
