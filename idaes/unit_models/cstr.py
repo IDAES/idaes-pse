@@ -96,7 +96,7 @@ constructed,
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
