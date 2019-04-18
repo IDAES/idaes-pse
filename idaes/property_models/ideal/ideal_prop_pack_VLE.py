@@ -515,14 +515,11 @@ class IdealStateBlockData(StateBlockData):
 
         if self.config.defined_state is False:
             # applied at outlet only
-            self.sum_mole_frac_out = Constraint(
-                    expr=1 == sum(self.mole_frac[i]
-                                  for i in self._params.component_list))
+            self.sum_mole_frac_out = \
+                Constraint(expr=1 == sum(self.mole_frac[i]
+                           for i in self._params.component_list))
 
     def _make_flash_eq(self):
-        # Reaction Stoichiometry
-        add_object_reference(self, "phase_equilibrium_list_ref",
-                             self._params.phase_equilibrium_list)
 
         def rule_total_mass_balance(b):
             return b.flow_mol_phase['Liq'] + \
@@ -545,15 +542,15 @@ class IdealStateBlockData(StateBlockData):
 
         if self.config.defined_state is False:
             # applied at outlet only
-            self.sum_mole_frac_out = Constraint(
-                    expr=1 == sum(self.mole_frac[i]
-                                  for i in self._params.component_list))
+            self.sum_mole_frac_out = \
+                Constraint(expr=1 == sum(self.mole_frac[i]
+                           for i in self._params.component_list))
 
         if self.config.has_phase_equilibrium:
             # Definition of equilibrium temperature for smooth VLE
-            self._teq = Var(
-                    initialize=self.temperature.value,
-                    doc='Temperature for calculating phase equilibrium')
+            self._teq = Var(initialize=self.temperature.value,
+                            doc='Temperature for calculating '
+                                'phase equilibrium')
             self._t1 = Var(initialize=self.temperature.value,
                            doc='Intermediate temperature for calculating Teq')
 
@@ -566,31 +563,30 @@ class IdealStateBlockData(StateBlockData):
 
             # PSE paper Eqn 13
             def rule_t1(b):
-                return b._t1 == 0.5*(
-                        b.temperature + b.temperature_bubble +
-                        sqrt((b.temperature-b.temperature_bubble)**2 +
-                             b.eps_1**2))
+                return b._t1 == 0.5 * \
+                    (b.temperature + b.temperature_bubble +
+                     sqrt((b.temperature - b.temperature_bubble)**2 +
+                          b.eps_1**2))
             self._t1_constraint = Constraint(rule=rule_t1)
 
             # PSE paper Eqn 14
             # TODO : Add option for supercritical extension
             def rule_teq(b):
-                return b._teq == 0.5*(b._t1 + b.temperature_dew -
-                                      sqrt((b._t1-b.temperature_dew)**2 +
-                                           b.eps_2**2))
+                return b._teq == 0.5 * (b._t1 + b.temperature_dew -
+                                        sqrt((b._t1 - b.temperature_dew)**2 +
+                                             b.eps_2**2))
             self._teq_constraint = Constraint(rule=rule_teq)
 
             def rule_tr_eq(b, i):
                 return b._teq / b._params.temperature_crit[i]
-            self._tr_eq = Expression(
-                    self._params.component_list,
-                    rule=rule_tr_eq,
-                    doc='Component reduced temperatures [-]')
+            self._tr_eq = Expression(self._params.component_list,
+                                     rule=rule_tr_eq,
+                                     doc='Component reduced temperatures [-]')
 
             def rule_equilibrium(b, i):
                 return b.fug_vap[i] == b.fug_liq[i]
-            self.equilibrium_constraint = Constraint(
-                    self._params.component_list, rule=rule_equilibrium)
+            self.equilibrium_constraint = \
+                Constraint(self._params.component_list, rule=rule_equilibrium)
 
 # -----------------------------------------------------------------------------
 # Property Methods
@@ -1028,11 +1024,6 @@ class IdealStateBlockData(StateBlockData):
         self.fug_vap = Expression(self._params.component_list,
                                   rule=fug_vap_rule)
 
-    def _dh_vap(self):
-        # heat of vaporization
-        add_object_reference(self, "dh_vap",
-                             self._params.dh_vap)
-
     def _ds_vap(self):
         # entropy of vaporization = dh_Vap/T_boil
         # TODO : something more rigorous would be nice
@@ -1041,23 +1032,23 @@ class IdealStateBlockData(StateBlockData):
                           doc="Entropy of vaporization [J/mol.K]")
 
         def rule_ds_vap(b, j):
-            return b.dh_vap[j] == (b.ds_vap[j] *
-                                   b._params.temperature_boil[j])
+            return b._params.dh_vap[j] == (b.ds_vap[j] *
+                                           b._params.temperature_boil[j])
         self.eq_ds_vap = Constraint(self._params.component_list,
                                     rule=rule_ds_vap)
 
     def _enth_mol_comp_vap(b, j):
-        return b.enth_mol_phase_comp['Vap', j] == b.dh_vap[j] + \
-                ((b._params.cp_ig['Vap', j, '5'] / 5) *
-                    (b.temperature**5 - b._params.temperature_ref**5)
-                    + (b._params.cp_ig['Vap', j, '4'] / 4) *
-                      (b.temperature**4 - b._params.temperature_ref**4)
-                    + (b._params.cp_ig['Vap', j, '3'] / 3) *
-                      (b.temperature**3 - b._params.temperature_ref**3)
-                    + (b._params.cp_ig['Vap', j, '2'] / 2) *
-                      (b.temperature**2 - b._params.temperature_ref**2)
-                    + b._params.cp_ig['Vap', j, '1'] *
-                      (b.temperature - b._params.temperature_ref))
+        return b.enth_mol_phase_comp['Vap', j] == b._params.dh_vap[j] + \
+            ((b._params.cp_ig['Vap', j, '5'] / 5) *
+             (b.temperature**5 - b._params.temperature_ref**5)
+             + (b._params.cp_ig['Vap', j, '4'] / 4) *
+               (b.temperature**4 - b._params.temperature_ref**4)
+             + (b._params.cp_ig['Vap', j, '3'] / 3) *
+               (b.temperature**3 - b._params.temperature_ref**3)
+             + (b._params.cp_ig['Vap', j, '2'] / 2) *
+               (b.temperature**2 - b._params.temperature_ref**2)
+             + b._params.cp_ig['Vap', j, '1'] *
+               (b.temperature - b._params.temperature_ref))
 
     def _entr_mol_comp_vap(b, j):
         return b.entr_mol_phase_comp['Vap', j] == (

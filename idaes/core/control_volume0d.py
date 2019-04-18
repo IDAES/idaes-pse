@@ -29,7 +29,6 @@ from idaes.core import (declare_process_block_class,
                         FlowDirection,
                         MaterialFlowBasis)
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
-                                        BurntToast,
                                         ConfigurationError,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
@@ -355,23 +354,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Phase equilibrium generation
         if has_phase_equilibrium:
-            try:
-                add_object_reference(
-                    self,
-                    "phase_equilibrium_idx_ref",
-                    self.config.property_package.phase_equilibrium_idx)
-            except AttributeError:
-                raise PropertyNotSupportedError(
-                    "{} Property package does not contain a list of phase "
-                    "equilibrium reactions (phase_equilibrium_idx), thus does "
-                    "not support phase equilibrium.".format(self.name))
             self.phase_equilibrium_generation = Var(
-                        self.time_ref,
-                        self.phase_equilibrium_idx_ref,
-                        domain=Reals,
-                        doc="Amount of generation in unit by phase "
-                            "equilibria [{}/{}]"
-                            .format(units['holdup'], units['time']))
+                self.time_ref,
+                self.config.property_package.phase_equilibrium_idx,
+                domain=Reals,
+                doc="Amount of generation in unit by phase "
+                    "equilibria [{}/{}]"
+                    .format(units['holdup'], units['time']))
 
         # Material transfer term
         if has_mass_transfer:
@@ -400,8 +389,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             if has_phase_equilibrium:
                 sd = {}
                 sblock = self.properties_out[t]
-                sparam = sblock.config.parameters
-                for r in b.phase_equilibrium_idx_ref:
+                sparam = sblock._params
+                for r in sparam.phase_equilibrium_idx:
                     if sparam.phase_equilibrium_list[r][0] == j:
                         if sparam.phase_equilibrium_list[r][1][0] == p:
                             sd[r] = 1
@@ -412,8 +401,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     else:
                         sd[r] = 0
 
-                return sum(b.phase_equilibrium_generation[t, r]*sd[r]
-                           for r in b.phase_equilibrium_idx_ref)
+                return sum(b.phase_equilibrium_generation[t, r] * sd[r]
+                           for r in sparam.phase_equilibrium_idx)
             else:
                 return 0
 
@@ -524,7 +513,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, p, j):
                 if j in phase_component_list[p]:
-                    rparam = rblock[t].config.parameters
+                    rparam = rblock[t]._params
                     return b.rate_reaction_generation[t, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, r]
@@ -548,7 +537,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
                 if j in phase_component_list[p]:
                     return b.equilibrium_reaction_generation[t, p, j] == (
-                            sum(rblock[t].config.parameters.
+                            sum(rblock[t]._params.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, r]
                                 for r in b.equilibrium_reaction_idx_ref))
@@ -850,7 +839,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, p, j):
                 if j in phase_component_list[p]:
-                    rparam = rblock[t].config.parameters
+                    rparam = rblock[t]._params
                     return b.rate_reaction_generation[t, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, r]
@@ -874,7 +863,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
                 if j in phase_component_list[p]:
                     return b.equilibrium_reaction_generation[t, p, j] == (
-                            sum(rblock[t].config.parameters.
+                            sum(rblock[t]._params.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, r]
                                 for r in b.equilibrium_reaction_idx_ref))
@@ -989,17 +978,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             "constraints (has_phase_equilibrium=False). Please"
                             " correct your configuration arguments."
                             .format(self.name))
-                try:
-                    add_object_reference(
-                        self,
-                        "phase_equilibrium_idx_ref",
-                        self.config.property_package.phase_equilibrium_idx)
-                except AttributeError:
-                    raise PropertyNotSupportedError(
-                        "{} Property package does not contain a list of phase "
-                        "equilibrium reactions (phase_equilibrium_idx), thus "
-                        "does not support phase equilibrium."
-                        .format(self.name))
 
         # Test for components that must exist prior to calling this method
         if has_holdup:
@@ -1042,7 +1020,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              .format(units['amount'], units['time']))
         def elemental_flow_in(b, t, p, e):
             return sum(b.properties_in[t].get_material_flow_terms(p, j) *
-                       b.properties_out[t].config.parameters.element_comp[j][e]
+                       b.properties_out[t]._params.element_comp[j][e]
                        for j in b.component_list_ref)
 
         @self.Expression(self.time_ref,
@@ -1052,7 +1030,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                              .format(units['amount'], units['time']))
         def elemental_flow_out(b, t, p, e):
             return sum(b.properties_out[t].get_material_flow_terms(p, j) *
-                       b.properties_out[t].config.parameters.element_comp[j][e]
+                       b.properties_out[t]._params.element_comp[j][e]
                        for j in b.component_list_ref)
 
         # Create material balance terms as needed
@@ -1108,7 +1086,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     sum(b.phase_fraction[t, p] *
                         b.properties_out[t].get_material_density_terms(p, j) *
                         b.properties_out[t]
-                        .config.parameters.element_comp[j][e]
+                        ._params.element_comp[j][e]
                         for p in b.phase_list_ref
                         for j in b.component_list_ref))
 
