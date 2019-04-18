@@ -5,6 +5,7 @@ DMF Command-line Interface
 .. contents::
     :depth: 2
 
+
 .. program:: dmf
 
 dmf
@@ -1146,10 +1147,17 @@ dmf rm options
 
 The identifier, or identifier prefix, of the resource(s) to remove
 
+.. option:: --list,--no-list
+
+With the `--list` option, which is the default, the resources to remove, 
+or removed, will be listed as if by the ``dmf ls`` command. With 
+`--no-list`, then do not produce this output.  
+
 .. option:: -y,--yes
 
-If given, do not confirm removal of the resource(s) with a prompt. This is useful for scripts
-that do not want to bother with input, or people with lots of confidence.
+If given, do not confirm removal of the resource(s) with a prompt.
+This is useful for scripts that do not want to bother with input,
+or people with lots of confidence.
 
 .. option:: --multiple
 

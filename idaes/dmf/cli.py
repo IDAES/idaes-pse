@@ -35,6 +35,7 @@ import pendulum
 from idaes.dmf import DMF, DMFConfig, resource
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
+from idaes.dmf import util
 
 __author__ = "Dan Gunter"
 
@@ -242,7 +243,7 @@ def init(path, create, name, desc, html):
         _log.info("Use existing workspace")
     # In either case, switch to provided config
     try:
-        _ = DMF(path=path, create=False, save_path=True)
+        _ = DMF(path=path, create=False, save_path=True)  # noqa: F841
     except errors.WorkspaceConfNotFoundError:
         click.echo(f"Workspace configuration not found at path='{path}'")
         sys.exit(Code.WORKSPACE_NOT_FOUND.value)
@@ -545,7 +546,7 @@ def _ls_basic(resources, show_fields, sort_by, reverse, prefix, color):
     if len(resources) == 0:
         print("no resources to display")
         return
-    uuid_len = _uuid_prefix_len([r.id for r in resources])
+    uuid_len = util.uuid_prefix_len([r.id for r in resources])
     full_len = max((len(r.id) for r in resources)) if not prefix else uuid_len
     fields = ["id"] + list(show_fields)
     nfields = len(fields)
@@ -638,7 +639,8 @@ def info(identifier, multiple, output_format, color):
 
 @click.command(help="Remove a resource")  # aliases: delete
 @click.argument("identifier")
-@click.option("-y", "--yes", flag_value="yes", help="No interactive confirmations; assume 'yes' answer to all")
+@click.option("-y", "--yes", flag_value="yes",
+              help="No interactive confirmations; assume 'yes' answer to all")
 @click.option("--list/--no-list", "list_resources", default=True)
 @click.option("--multiple/--no-multiple", default=False)
 def rm(identifier, yes, multiple, list_resources):
@@ -686,6 +688,7 @@ def find_by_id(identifier, dmf=None):
     if dmf is None:
         dmf = DMF()
     return dmf.find_by_id(identifier)
+
 
 class _ShowInfo:
     """Container for methods, etc. to show info about a resource.
@@ -900,21 +903,6 @@ _show_fields = {
     "version": _VersionField(("version_info", "version")),
 }
 
-
-def _uuid_prefix_len(uuids, step=4, maxlen=32):
-    """Get smallest multiple of `step` len prefix that gives unique values.
-
-    The algorithm is not fancy, but good enough: build *sets* of
-    the ids at increasing prefix lengths until the set has all ids (no duplicates).
-    Experimentally this takes ~.1ms for 1000 duplicate ids (the worst case).
-    """
-    full = set(uuids)
-    all_of_them = len(full)
-    for n in range(step, maxlen, step):
-        prefixes = {u[:n] for u in uuids}
-        if len(prefixes) == all_of_them:
-            return n
-    return maxlen
 
 ######################################################################################
 

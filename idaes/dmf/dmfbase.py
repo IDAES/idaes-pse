@@ -551,6 +551,16 @@ class DMF(workspace.Workspace, HasTraits):
         Raises:
             NoSuchResourceError: if the starting resource is not found
         """
+        if meta is None:
+            meta = [
+                resource.Resource.ID_FIELD,
+                resource.Resource.TYPE_FIELD,
+                "desc",
+                "version_info",
+            ]
+        else:
+            if resource.Resource.ID_FIELD not in meta:
+                meta.insert(0, resource.Resource.ID_FIELD)
         try:
             return self._db.find_related(
                 rsrc.id, outgoing=outgoing, maxdepth=maxdepth, meta=meta
@@ -573,6 +583,12 @@ class DMF(workspace.Workspace, HasTraits):
             return None
         id_list, rid_list = None, None
         if identifier:
+            # sanity check identifier type
+            if not hasattr(identifier, "lower"):
+                raise TypeError(
+                    f"identifier argument is not a string. type={type(identifier)}"
+                )
+            identifier = str(identifier)
             id_one = self.fetch_one(identifier, id_only=True)
             id_list = None if id_one is None else [id_one]
             rid_list = [identifier]

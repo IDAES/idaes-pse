@@ -4,13 +4,9 @@
 Data Management Framework
 =========================
 
-.. contents::
-
-DMF contents
-------------
-
 .. toctree::
-    
+    :depth: 1
+        
     dmf-cli
 
 Overview

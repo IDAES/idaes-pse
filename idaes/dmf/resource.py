@@ -433,6 +433,16 @@ class Resource(object):
         self.v[self.ID_FIELD] = identifier_str(value)
 
     @property
+    def name(self):
+        """Get resource name (first alias).
+        """
+        try:
+            nm = self.v["aliases"][0]
+        except IndexError:
+            nm = ""
+        return nm
+
+    @property
     def type(self):
         """Get resource type.
         """

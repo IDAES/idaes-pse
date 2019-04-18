@@ -224,6 +224,9 @@ class ResourceDB(object):
 
     @staticmethod
     def _op_cond(query, op, value):
+        # sanity check that operator is truthy
+        if not op:
+            raise ValueError(f"empty operator for value `{value}`")
         # just a clumsy switch statement..
         if op == '$gt':
             cond = query > value
