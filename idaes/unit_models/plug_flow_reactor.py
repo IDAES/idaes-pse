@@ -78,7 +78,7 @@ class PFRData(UnitModelBlockData):
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
