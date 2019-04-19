@@ -706,7 +706,7 @@ def version_list(value):
 
 def format_version(values):
     s = '{}.{}.{}'.format(*values[:3])
-    if values[3]:
+    if len(values) > 3 and values[3]:
         s += '-{}'.format(values[3])
     return s
 
