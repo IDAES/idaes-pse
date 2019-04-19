@@ -295,9 +295,9 @@ class ResourceDB(object):
                 else:
                     value_list.append(value)
         _log.debug(f"built relation map: {relation_map}")
-        # make sure root node exists
+        # stop if there are no connections
         if id_ not in relation_map:
-            raise KeyError('Resource not found: {}'.format(id_))
+            return
         # Do a depth-first search through the edges, yield-ing
         # the relations as we go
         q, depth, visited = [], 0, set()
