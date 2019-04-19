@@ -563,7 +563,11 @@ class DMF(workspace.Workspace, HasTraits):
                 meta.insert(0, resource.Resource.ID_FIELD)
         try:
             return self._db.find_related(
-                rsrc.id, outgoing=outgoing, maxdepth=maxdepth, meta=meta
+                rsrc.id,
+                outgoing=outgoing,
+                maxdepth=maxdepth,
+                meta=meta,
+                filter_dict=filter_dict,
             )
         except KeyError:
             raise errors.NoSuchResourceError(id_=rsrc.id)
