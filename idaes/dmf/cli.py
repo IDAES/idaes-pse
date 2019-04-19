@@ -155,7 +155,8 @@ class URLType(click.ParamType):
         "resource": "info",
         "show": "info",
         "list": "ls",
-        "delete": "rm"
+        "delete": "rm",
+        "graph": "related"
     },
     help="Data management framework command wrapper",
 )
@@ -590,7 +591,18 @@ def _ls_basic(resources, show_fields, sort_by, reverse, prefix, color):
     print(" ".join(hdr_columns) + t.normal)
     # print table body
     for row in rows:
-        row_columns = [f"{f:{w}}" for f, w in zip(row[:nfields], widths)]
+        col = []
+        for i, fld in enumerate(fields):
+            if i == 0:
+                col.append(t.red)
+            elif fld == resource.Resource.TYPE_FIELD:
+                col.append(t.yellow)
+            elif fld != "desc":
+                col.append(t.green)
+            else:
+                col.append("")
+        row_columns = [f"{col[i]}{f:{w}}{t.normal}" for i, f, w in
+                       zip(range(len(widths)), row[:nfields], widths)]
         print(" ".join(row_columns))
 
 
@@ -635,6 +647,105 @@ def info(identifier, multiple, output_format, color):
     si = _ShowInfo(output_format, pfxlen, color=color)
     for rsrc in rsrc_list:
         si.show(rsrc)
+
+
+@click.command(help="Show resources related (connected) to a given resource")
+@click.argument("identifier")
+@click.option("-d", "--direction", type=click.Choice(["out", "in"]), default="out",
+              help="Direction of relationship to show (default=out[going])")
+@click.option(
+    "--color/--no-color",
+    default=True,
+    help="In term mode, use (or do not use)" " color for output",
+)
+@click.option(
+    "--unicode/--no-unicode",
+    default=True,
+    help="With `--unicode`, allow unicode characters for connecting "
+         "output items with 'lines'. With --no-unicode, use plain ASCII "
+         "characters for this",
+)
+def related(identifier, direction, color, unicode):
+    _log.debug(f"related to resource id='{identifier}'")
+    t = _cterm if color else _noterm
+    dmf = DMF()
+    try:
+        resource.identifier_str(identifier, allow_prefix=True)
+    except ValueError as err:
+        click.echo(f"{err}")
+        sys.exit(Code.INPUT_VALUE.value)
+    rsrc_list = list(find_by_id(identifier, dmf=dmf))
+    n = len(rsrc_list)
+    if n > 1:
+        click.echo(f"Too many resources matching `{identifier}`")
+        sys.exit(Code.INPUT_VALUE)
+    rsrc = rsrc_list[0]
+    # get related resources
+    outgoing = direction == "out"
+    rr = list(dmf.find_related(rsrc, meta=["aliases", "type"], outgoing=outgoing))
+    # stop if no relations
+    if not rr:
+        click.echo(f"No relations for resource `{identifier}`")
+        sys.exit(0)
+    # extract uuids & determine common UUID prefix length
+    uuids = [item[2][resource.Resource.ID_FIELD] for item in rr]
+    pfx = util.uuid_prefix_len(uuids)
+    # initialize queue with depth=1 items
+    q = [item for item in rr if item[0] == 1]
+    # print root resource
+    print(_related_item(rsrc.id, rsrc.name, rsrc.type, pfx, t, unicode))
+    # set up printing style
+    if unicode:
+        # connector chars
+        vrt, vrd, relbow, relbow2, rarr = '\u2502', '\u2506', '\u2514', '\u251C',\
+                                          '\u2500\u2500'
+        # relation prefix and arrow
+        relpre, relarr = ['\u2500\u25C0\u2500\u2524', '\u2524'][outgoing], \
+                         ['\u2502', '\u251C\u2500\u25B6'][outgoing]
+    else:
+        # connector chars
+        vrt, vrd, relbow, relbow2, rarr = '|', '.', '+', '+', '--'
+        # relation prefix and arrow
+        relpre, relarr = ['<-[', '-['][outgoing], \
+                         [']-', ']->'][outgoing]
+    # create map of #items at each level, so we can easily
+    # know when there are more at a given level, for drawing
+    n_at_level = {0: 0}
+    for item in rr:
+        depth = item[0]
+        if depth in n_at_level:
+            n_at_level[depth] += 1
+        else:
+            n_at_level[depth] = 1
+    # print tree
+    while q:
+        depth, rel, meta = q.pop()
+        n_at_level[depth] -= 1
+        # print(f"@@ n_at_level={n_at_level}")
+        indent = ''.join([f" {t.blue}{vrd if n_at_level[i - 1] else ' '}{t.normal} "
+                          for i in range(1, depth + 1)])
+        print(f"{indent} {t.blue}{vrt}{t.normal}")
+        rstr = f"{t.blue}{relpre}{t.yellow}{rel.predicate}{t.blue}{relarr}{t.normal}"
+        if meta["aliases"]:
+            item_name = meta["aliases"][0]
+        else:
+            item_name = meta.get("desc", "-")
+        istr = _related_item(meta[resource.Resource.ID_FIELD], item_name,
+                             meta["type"], pfx, t, unicode)
+        # determine correct connector (whether there is another one down the stack)
+        elbow = relbow if (not q or q[-1][0] != depth) else relbow2
+        print(f"{indent} {t.blue}{elbow}{rarr}{t.normal}{rstr} {istr}")
+        new_rr = []
+        for d2, rel2, _ in rr:
+            if d2 == depth + 1 and rel2.subject == rel.object:
+                q.append((d2, rel2, _))
+            else:
+                new_rr.append((d2, rel2, _))
+        rr = new_rr
+
+
+def _related_item(id_, name, type_, pfx, t, unicode):
+    return f"{t.red}{id_[:pfx]} {t.green}{type_} {t.normal}{name}"
 
 
 @click.command(help="Remove a resource")  # aliases: delete
@@ -912,6 +1023,7 @@ base_command.add_command(register)
 base_command.add_command(status)
 base_command.add_command(ls)
 base_command.add_command(info)
+base_command.add_command(related)
 base_command.add_command(rm)
 
 if __name__ == '__main__':
