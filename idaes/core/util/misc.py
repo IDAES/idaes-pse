@@ -14,7 +14,7 @@
 """
 This module contains miscellaneous utility functions for use in IDAES models.
 """
-
+import xml.dom.minidom
 import pyomo.environ as pyo
 
 # Author: Andrew Lee
@@ -72,6 +72,36 @@ def TagReference(s, description=""):
     r = pyo.Reference(s)
     r.description = description
     return r
+
+# Author John Eslick
+def svg_tag(tags, svg, outfile=None, time=None):
+    """
+    Replace text in a svg with tag values for the model.
+
+    Args:
+        tags: A dictionary where the key is the tag and the value is a Pyomo
+            Refernce indexed by time.
+        svg: a file pointer or a string continaing svg contents
+        outfile: a file name to save the results, if None return svg string
+        time: if None use the first time, otherwise a time in the time domain to
+            report results at.
+
+    Returns:
+        String for svg
+    """
+
+    if isinstance(svg, str):
+        svg_str = svg
+    elif hasattr(svg, "read"):
+        svg_str = svg.read()
+    else:
+        raise TypeError("SVG must either be a string or a file-like object")
+
+    doc = xml.dom.minidom.parseString(svg_str)
+    name = doc.getElementsByTagName('text')
+    for t in name:
+        if(t.attributes['id'].value in tags):
+            name = doc.getElementsByTagName('text')
 
 # Author: John Eslick
 def copy_port_values(destination, source):

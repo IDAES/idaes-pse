@@ -10,8 +10,6 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from __future__ import absolute_import, division, print_function
-
 from pyomo.core.base.symbolic import (_prod, _sum, _functionMap, _operatorMap,
                                       _pyomo_operator_map, _functionMap)
 
@@ -19,10 +17,10 @@ from pyomo.environ import ExternalFunction, Var, Expression, value
 from pyomo.core.base.constraint import _ConstraintData, Constraint
 from pyomo.core.base.expression import _ExpressionData
 from pyomo.core.base.block import _BlockData
-from pyomo.core.expr.expr_pyomo5 import (StreamBasedExpressionVisitor,
-                                         ExternalFunctionExpression,
-                                         ExpressionBase, native_types)
-import pyomo.core.expr.expr_pyomo5 as EXPR
+from pyomo.core.expr.expr import (StreamBasedExpressionVisitor,
+                                  ExternalFunctionExpression,
+                                  ExpressionBase)
+from pyomo.core.expr import current as EXPR, native_types
 from pyomo.core.kernel.component_map import ComponentMap
 
 import sympy
