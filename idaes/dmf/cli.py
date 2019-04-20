@@ -16,6 +16,7 @@ Command Line Interface for IDAES DMF.
 Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
+from collections import namedtuple
 from enum import Enum
 import json
 import logging
@@ -859,11 +860,18 @@ class _ShowInfo:
 
     contents_indent, json_indent = 4, 2  # for `term` output
 
-    def __init__(self, output_format, pfxlen, color=None):
+    def __init__(self, output_format, pfxlen, color=None, unicode=True):
         self._terminal = _cterm if color else _noterm
         self._pfxlen = pfxlen
         self._fmt = output_format
         self._resource = None
+        C = namedtuple('Corners', ['nw', 'ne', 'se', 'sw'])
+        if unicode:
+            self._corners = C._make('\u250C\u2510\u2518\u2514')
+            self._hz, self._vt = '\u2500', '\u2502'
+        else:
+            self._corners = C._make('++++')
+            self._hz, self._vt = '-', '|'
 
     def show(self, rsrc):
         self._resource = rsrc
@@ -895,11 +903,12 @@ class _ShowInfo:
                 if contents_str.endswith('...\n'):
                     contents_str = contents_str[:-4]
                 print(
-                    f"{t.on_cyan} {t.normal} {t.bold}{t.cyan}{tk}{t.normal}"
-                    f"{' ' * (width - len(tk) - 3)}{t.on_cyan} {t.normal}"
+                    f"{t.cyan}{self._vt}{t.normal} {t.bold}{t.cyan}{tk}{t.normal}"
+                    f"{' ' * (width - len(tk) - 3)}{t.cyan}{self._vt}{t.normal}"
                 )
                 self._print_info_contents_term(contents_str, width)
-        print(f"{t.on_cyan}{' ' * width}{t.normal}")
+        print(f"{t.cyan}{self._corners.sw}{self._hz * (width - 2)}"
+              f"{self._corners.se}{t.normal}")
 
     def _longest_line(self, formatted_resource):
         longest = 0
@@ -914,15 +923,15 @@ class _ShowInfo:
         t, r = self._terminal, self._resource
         padding = width - len(r.id) - 10
         if padding % 2 == 1:
-            lpad = padding // 2
-            rpad = padding // 2 + 1
+            lpad = padding // 2 - 1
+            rpad = padding // 2 - 1
         else:
-            lpad = rpad = padding // 2
+            lpad, rpad = padding // 2 - 1, padding // 2 - 2
         print(
-            f"{t.bold_white_on_cyan}{lpad * ' '} Resource {t.normal}"
-            f"{t.black_on_cyan}{r.id[:self._pfxlen]}"
-            f"{t.white_on_cyan}{r.id[self._pfxlen:]}"
-            f"{rpad * ' '}{t.normal}"
+            f"{t.cyan}{self._corners.nw}{lpad * self._hz}{t.normal} Resource "
+            f"{t.red}{r.id[:self._pfxlen]}"
+            f"{t.green}{r.id[self._pfxlen:]} "
+            f"{t.cyan}{rpad * self._hz}{self._corners.ne}{t.normal}"
         )
 
     def _print_info_contents_term(self, s, width):
@@ -934,8 +943,9 @@ class _ShowInfo:
             while p < len(line):
                 print_line = line[p : p + contents_width]
                 print(
-                    f"{t.on_cyan} {t.normal}{indent}{print_line}"
-                    f"{' ' * (contents_width - len(print_line))}{t.on_cyan} {t.normal}"
+                    f"{t.cyan}{self._vt}{t.normal}{indent}{print_line}"
+                    f"{' ' * (contents_width - len(print_line))}{t.cyan}{self._vt}"
+                    f"{t.normal}"
                 )
                 p += contents_width
 
