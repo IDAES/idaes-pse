@@ -5,8 +5,8 @@ Data Management Framework
 =========================
 
 .. toctree::
-    :depth: 1
-        
+    :maxdepth: 1
+
     dmf-cli
 
 Overview
