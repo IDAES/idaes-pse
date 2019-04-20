@@ -822,6 +822,7 @@ class CodeImporter(ResourceImporter):
             {"name": self._path.name, "language": self.language, "type": "module"}
         )
         self._add_datafiles(r)
+        r.v["desc"] = self._path.name
         return r
 
 
