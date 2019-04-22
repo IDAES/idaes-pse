@@ -1127,6 +1127,41 @@ In the following examples, we work with 4 resources arranged as a fully
 connected square (A, B, C, D). This is not currently possible just with the
 command-line, but the following Python code does the job:
 
+.. testsetup:: dmf-related
+
+    from pathlib import Path
+    import re, json
+    from click.testing import CliRunner
+    from idaes.dmf import DMF, resource
+    from idaes.dmf.cli import init, related
+    from idaes.dmf.dmfbase import DMFConfig
+    runner = CliRunner()
+
+    fsctx = runner.isolated_filesystem()
+    fsctx.__enter__()
+    DMFConfig._filename = str(Path('.dmf').absolute())
+    runner.invoke(init, ['ws', '--create', '--name', 'foo', '--desc', 'foo desc'])
+    # add the fully-connected 4 resources
+    dmf = DMF()
+    rlist = [resource.Resource(value={"desc": ltr, "aliases": [ltr],
+                               "tags": ["graph"]})
+             for ltr in "ABCD"]
+    A_id = rlist[0].id  # root resource id, used in testcode
+    relation = resource.PR_USES
+    for r in rlist:
+        for r2 in rlist:
+            if r is r2:
+                continue
+            resource.create_relation_args(r, relation, r2)
+    for r in rlist:
+        dmf.add(r)
+
+.. testcleanup:: dmf-related
+
+    fsctx.__exit__(None, None, None)
+    DMFConfig._filename = str(Path('~/.dmf').expanduser())
+
+
 .. code-block:: python
 
     from idaes.dmf import DMF, resource
@@ -1188,11 +1223,19 @@ four resource (e.g., `A`):
            │
            └──┤uses├─▶ ba67 other A
 
-If you change the direction of relations, you will
+.. testcode:: dmf-related
+    :hide:
 
-.. code-block:: console
+    result = runner.invoke(related, [A_id, '--no-unicode', '--no-color'],
+                           catch_exceptions=False)
+    assert result.exit_code == 0
+    rlines = result.output.split('\n')
+    nrelations = sum(1 for _ in filter(lambda s: resource.PR_USES in s, rlines))
+    assert nrelations == 12  # 3 blocks of (1 + 3)
 
-    $ dmf rel --direction in ba67
+
+If you change the direction of relations, you will get much the same
+result, but with the arrows reversed.
 
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. image:: ../_images/blue-white-band.png
