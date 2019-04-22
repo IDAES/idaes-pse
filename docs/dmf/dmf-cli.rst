@@ -171,6 +171,56 @@ commands, below is a simple example that uses each command:
     :width: 100%
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. program:: dmf-find
+
+dmf find
+--------
+Search for resources by a combination of their fields.
+
+dmf find options
+^^^^^^^^^^^^^^^^
+
+.. option:: --output value
+
+Output style/format. Possible values:
+
+list
+    (Default) Show results as a listing, as from the `ls` subcommand.
+info
+    Show results as individual records, as from the `info` subcommand.
+
+dmf find usage
+^^^^^^^^^^^^^^
+
+.. testsetup:: dmf-find
+
+    from pathlib import Path
+    from click.testing import CliRunner
+    from idaes.dmf.cli import init, register, info
+    from idaes.dmf.dmfbase import DMFConfig
+    runner = CliRunner()
+
+
+    fsctx = runner.isolated_filesystem()
+    fsctx.__enter__()
+    DMFConfig._filename = str(Path('.dmf').absolute())
+
+.. testcleanup:: dmf-find
+
+    fsctx.__exit__(None, None, None)
+    DMFConfig._filename = str(Path('~/.dmf').expanduser())
+
+.. code-block:: console
+
+    $ dmf ls
+    < show listing here >
+    $ dmf find --list type=data name=foo creator.name=dang "created after 2019.01"
+
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. image:: ../_images/blue-white-band.png
+    :width: 100%
+.. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. program:: dmf-info
 
 dmf info
