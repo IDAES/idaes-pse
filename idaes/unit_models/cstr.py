@@ -96,7 +96,7 @@ constructed,
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
@@ -183,7 +183,7 @@ see reaction package for documentation.}"""))
         self.control_volume.add_geometry()
 
         self.control_volume.add_state_blocks(
-                has_phase_equilibrium=self.config.has_equilibrium_reactions)
+                has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_reaction_blocks(
                 has_equilibrium=self.config.has_equilibrium_reactions)
