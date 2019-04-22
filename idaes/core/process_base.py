@@ -106,22 +106,21 @@ class ProcessBlockData(_BlockData):
 
     def flowsheet(self):
         """
-        This method returns the flowsheet object to which the model is attached
+        This method returns the components parent flowsheet object, i.e. the
+        flowsheet component to which the model is attached. If the component
+        has no parent flowsheet, the method returns None.
 
         Args:
             None
 
         Returns:
-            Flowsheet object
+            Flowsheet object or None
         """
         parent = self.parent_block()
 
         while True:
             if parent is None:
-                raise ConfigurationError(
-                        "{} has no flowsheet. Iteration reached top of model "
-                        "tree without finding an instance of FlowsheetBlock."
-                        .format(self.name))
+                return None
 
             if hasattr(parent, 'is_flowsheet') and parent.is_flowsheet():
                 return parent

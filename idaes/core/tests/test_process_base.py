@@ -32,13 +32,11 @@ def test_flowsheet():
     m = ConcreteModel()
     m.a = Flowsheet()
 
-    with pytest.raises(ConfigurationError):
-        m.a.flowsheet()
+    assert m.a.flowsheet() is None
 
     m.b = Block()
     m.b.c = Flowsheet()
-    with pytest.raises(ConfigurationError):
-        m.a.flowsheet()
+    assert m.b.c.flowsheet() is None
 
     m.a.d = Flowsheet()
     assert m.a.d.flowsheet() is m.a
