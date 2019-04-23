@@ -39,6 +39,8 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.config import (is_transformation_method,
+                                    is_transformation_scheme)
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
 
@@ -84,6 +86,30 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         DistributedVars.uniform - area does not vary across spatial domian,
         DistributedVars.variant - area can vary over the domain and is indexed
         by time and space.}"""))
+    CONFIG.declare("transformation_method", ConfigValue(
+        default=None,
+        domain=is_transformation_method,
+        description="DAE transformation method",
+        doc="""Method to use to transform domain. Must be a method recognised
+by the Pyomo TransformationFactory."""))
+    CONFIG.declare("transformation_scheme", ConfigValue(
+        default=None,
+        domain=is_transformation_scheme,
+        description="DAE transformation scheme",
+        doc="""Scheme to use when transformating domain. See Pyomo
+documentation for supported schemes."""))
+    CONFIG.declare("finite_elements", ConfigValue(
+        default=None,
+        domain=int,
+        description="Number of finite elements",
+        doc="""Number of finite elements to use in transformation (equivalent
+to Pyomo nfe argument)."""))
+    CONFIG.declare("collocation_points", ConfigValue(
+        default=None,
+        domain=int,
+        description="Number of collocation points",
+        doc="""Number of collocation points to use (equivalent to Pyomo ncp
+argument)."""))
 
     def build(self):
         """
@@ -94,6 +120,33 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         """
         # Call build method from base class
         super(ControlVolume1DBlockData, self).build()
+
+        self._validate_config_args()
+
+    def _validate_config_args(self):
+        # Validate DAE config arguments
+        if self.config.transformation_method is None:
+            raise ConfigurationError(
+                    "{} was not provided a value for the transformation_method"
+                    " configuration argument. Please provide a valid value."
+                    .format(self.name))
+
+        if self.config.transformation_scheme is None:
+            raise ConfigurationError(
+                    "{} was not provided a value for the transformation_scheme"
+                    " configuration argument. Please provide a valid value."
+                    .format(self.name))
+        elif ((self.config.transformation_method == "dae.finite_difference" and
+              self.config.transformation_scheme not in ["BACKWARD", "FORWARD"])
+                or (self.config.transformation_method == "dae.collocation" and
+                    self.config.transformation_scheme not in
+                    ["LAGRANGE-LEGENDRE", "LAGRANGE-RADAU"])):
+            raise ConfigurationError(
+                    "{} transformation_scheme configuration argument is not "
+                    "consistent with transformation_method argument. See Pyomo"
+                    " documentation for argumnet options."
+                    .format(self.name))
+
 
     def add_geometry(self,
                      length_domain=None,
@@ -1602,50 +1655,52 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                 "add_total_momentum_balances."
                 .format(self.name))
 
-    def apply_transformation(self,
-                             transformation_method="dae.finite_difference",
-                             transformation_scheme="BACKWARD",
-                             finite_elements=10,
-                             collocation_points=3):
+    def apply_transformation(self):
         """
         Method to apply DAE transformation to the Control Volume length domain.
-
-        Args:
-            transformation_method - method to use to transform domain. Must be
-                                    a method recognised by the Pyomo
-                                    TransformationFactory
-                                    (default = "dae.finite_difference")
-            transformation_scheme - scheme to use when transformating domain.
-                                    See Pyomo documentation for supported
-                                    schemes (default="BACKWARD")
-            finite_elements - number of finite elements to use in
-                              transformation (equivalent to Pyomo nfe argument,
-                              default = 10)
-            collocation_points - number of collocation points to use (
-                                 equivalent to Pyomo ncp argument, default = 3)
-
-        Returns:
-            None
+        Transformation applied will be based on the Control Volume
+        configuration arguments.
         """
+        if self.length_domain.parent_block() != self:
+            raise ConfigurationError(
+                    "{} tried to aplly a DAE transformation to an external "
+                    "domain. To avoid complications, the apply_transformation "
+                    "method only supports transformation of local domains."
+                    .format(self.name))
 
-        if transformation_method == "dae.finite_difference":
+        if self.config.finite_elements is None:
+            raise ConfigurationError(
+                    "{} was not provided a value for the finite_elements"
+                    " configuration argument. Please provide a valid value."
+                    .format(self.name))
+
+        if (self.config.collocation_points is None and
+                self.config.transformation_method == "dae.collocation"):
+            raise ConfigurationError(
+                    "{} was not provided a value for the collocation_points"
+                    " configuration argument. Please provide a valid value."
+                    .format(self.name))
+
+        if self.config.transformation_method == "dae.finite_difference":
             # TODO: Need to add a check that the transformation_scheme matches
             # the transformation method being passed.
-            self.discretizer = TransformationFactory('dae.finite_difference')
+            self.discretizer = TransformationFactory(
+                                    self.config.transformation_method)
             self.discretizer.apply_to(self,
-                                      nfe=finite_elements,
+                                      nfe=self.config.finite_elements,
                                       wrt=self.length_domain,
-                                      scheme=transformation_scheme)
-        elif transformation_method == "dae.collocation":
+                                      scheme=self.config.transformation_scheme)
+        elif self.config.transformation_method == "dae.collocation":
             # TODO: Need to add a check that the transformation_scheme matches
             # the transformation method being passed.
-            self.discretizer = TransformationFactory('dae.collocation')
+            self.discretizer = TransformationFactory(
+                                    self.config.transformation_method)
             self.discretizer.apply_to(
                 self,
                 wrt=self.length_domain,
-                nfe=finite_elements,
-                ncp=collocation_points,
-                scheme='LAGRANGE-RADAU')
+                nfe=self.config.finite_elements,
+                ncp=self.config.collocation_points,
+                scheme=self.config.transformation_scheme)
         else:
             raise ConfigurationError("{} unrecognised transfromation_method, "
                                      "must match one of the Transformations "
