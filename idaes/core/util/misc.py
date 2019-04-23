@@ -118,8 +118,12 @@ def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None, show_tags=False):
             if show_tags:
                 tspan.nodeValue = tag_map[id]
             else:
-                tspan.nodeValue = \
-                    "{:.4e}".format(pyo.value(tags[tag_map[id]][idx]))
+                try:
+                    tspan.nodeValue = \
+                        "{:.4e}".format(pyo.value(tags[tag_map[id]][idx]))
+                except ValueError: # whatever it is can't be scientific notation
+                    tspan.nodeValue = tags[tag_map[id]][idx]
+
     new_svg = doc.toxml()
     # If outfile is provided save to a file
     if outfile is not None:
