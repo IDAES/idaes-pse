@@ -32,6 +32,8 @@ Below is an illustration of these components.
     :width: 600px
 
 
+.. _dmf-config:
+
 Configuration
 -------------
 
@@ -46,10 +48,32 @@ keyword. For example::
 
 The per-workspace configuration has more options. See the documentation
 in the :class:`Workspace <idaes.dmf.workspace.Workspace>` class for details.
+The configuration file is in YAML (or JSON) format. Here is an example file, with some
+description in comments:
 
+.. code-block:: yaml
 
-You can use the DMF programmatically by instantiating the Python classes.
-For details see the :mod:`DMF package <idaes.dmf>` documentation.
+    settings:                               # Global settings
+      workspace: /home/myuser/ws            # Path to current workspace
+    workspace:                              # Per-workspace settings
+      location: /home/myuser/ws             # Path to this workspace
+      name: myws                            # Name of this workspace
+      description: my workspace             # Description (if any) of this workspace
+      created: 2019-04-09 12:55:05          # Date workspace was created
+      modified: 2019-04-09 12:55:05         # Date workspace was modified
+      files:                                # Basic information about data files
+        count: 3                            # How many files
+        total_size: 1.3 MB                  # Total size of the files
+      html_documentation_paths:             # List of paths for HTML documentation
+        -: /home/myuser/idaes/docs/build
+      logging:                              # Logging configuration
+        idaes.dmf:                          # Name of the logger
+            level: DEBUG                    # Log level (Python logging constant)
+            output: /tmp/debug.log          # File path or "_stdout_" or "_stderr_"
+
+This configuration file is used whether you use the DMF from the command-line,
+Jupyter notebook, or in a Python program. For details see the
+:mod:`DMF package <idaes.dmf>` documentation.
 
 Jupyter notebook usage
 ----------------------

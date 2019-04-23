@@ -1481,6 +1481,7 @@ This command shows basic information about the current active workspace
 and, optionally, some additional details. It does not (yet) give any way
 to modify the workspace configuration. To do that, you need to edit the
 ``config.yaml`` file in the workspace root directory.
+See :ref:`dmf-config`.
 
 dmf status options
 ^^^^^^^^^^^^^^^^^^
