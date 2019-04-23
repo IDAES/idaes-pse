@@ -266,7 +266,7 @@ argument)."""))
             self.time_ref,
             self.length_domain,
             doc="Material properties",
-            initialize={0: d0, 1: d1},
+            initialize={0: d0, 1: d1},                                          # TODO: What if the domain has differnt bounds?
             idx_map=idx_map)
 
     def add_reaction_blocks(self, has_equilibrium=None):
@@ -302,7 +302,7 @@ argument)."""))
                 self.time_ref,
                 self.length_domain,
                 doc="Reaction properties in control volume",
-                default=tmp_dict)
+                default=tmp_dict)                                               # TODO: Do we need something similar to above to skip equilibrium at bounds?
 
     def add_phase_component_balances(self,
                                      has_rate_reactions=False,
@@ -619,9 +619,9 @@ argument)."""))
                          self.component_list_ref,
                          doc="Material balances")
         def material_balances(b, t, x, p, j):
-            if ((b._flow_direction is FlowDirection.forward and
+            if ((b.config.transformation_scheme != "FORWARD" and
                  x == b.length_domain.first()) or
-                    (b._flow_direction is FlowDirection.backward and
+                    (b.config.transformation_scheme == "FORWARD" and
                      x == b.length_domain.last())):
                 return Constraint.Skip
             else:
@@ -987,9 +987,9 @@ argument)."""))
                          self.component_list_ref,
                          doc="Material balances")
         def material_balances(b, t, x, j):
-            if ((b._flow_direction is FlowDirection.forward and
+            if ((b.config.transformation_scheme != "FORWARD" and
                  x == b.length_domain.first()) or
-                    (b._flow_direction is FlowDirection.backward and
+                    (b.config.transformation_scheme == "FORWARD" and
                      x == b.length_domain.last())):
                 return Constraint.Skip
             else:
@@ -1289,10 +1289,10 @@ argument)."""))
                          self.element_list_ref,
                          doc="Elemental material balances")
         def element_balances(b, t, x, e):
-            if ((b._flow_direction is FlowDirection.forward and
+            if ((b.config.transformation_scheme != "FORWARD" and
                  x == b.length_domain.first()) or
-                (b._flow_direction is FlowDirection.backward and
-                 x == b.length_domain.last())):
+                    (b.config.transformation_scheme == "FORWARD" and
+                     x == b.length_domain.last())):
                 return Constraint.Skip
             else:
                 return b.length*accumulation_term(b, t, x, e) == (
@@ -1493,10 +1493,10 @@ argument)."""))
                          self.length_domain,
                          doc="Energy balances")
         def enthalpy_balances(b, t, x):
-            if ((b._flow_direction is FlowDirection.forward and
+            if ((b.config.transformation_scheme != "FORWARD" and
                  x == b.length_domain.first()) or
-                (b._flow_direction is FlowDirection.backward and
-                 x == b.length_domain.last())):
+                    (b.config.transformation_scheme == "FORWARD" and
+                     x == b.length_domain.last())):
                 return Constraint.Skip
             else:
                 return (b.length*sum(accumulation_term(b, t, x, p)
@@ -1622,10 +1622,10 @@ argument)."""))
                          self.length_domain,
                          doc='Momentum balance')
         def pressure_balance(b, t, x):
-            if ((b._flow_direction is FlowDirection.forward and
+            if ((b.config.transformation_scheme != "FORWARD" and
                  x == b.length_domain.first()) or
-                (b._flow_direction is FlowDirection.backward and
-                 x == b.length_domain.last())):
+                    (b.config.transformation_scheme == "FORWARD" and
+                     x == b.length_domain.last())):
                 return Constraint.Skip
             else:
                 return 0 == (b._flow_direction_term*b.pressure_dx[t, x] *

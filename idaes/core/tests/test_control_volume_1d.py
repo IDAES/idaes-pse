@@ -19,6 +19,7 @@ import pytest
 from pyomo.environ import ConcreteModel, Constraint, Expression, Set, Var
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
+from pyomo.core.base.constraint import _GeneralConstraintData
 from idaes.core import (ControlVolume1DBlock,
                         FlowsheetBlockData,
                         declare_process_block_class,
@@ -1053,6 +1054,41 @@ def test_add_phase_component_balances_default():
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
+    for p in m.fs.pp.phase_list:
+        for j in m.fs.pp.component_list:
+            with pytest.raises(KeyError):
+                assert m.fs.cv.material_balances[0, 0, p, j]
+            assert type(m.fs.cv.material_balances[0, 1, p, j]) is \
+                _GeneralConstraintData
+
+
+def test_add_phase_component_balances_default_FFD():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_phase_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+    for p in m.fs.pp.phase_list:
+        for j in m.fs.pp.component_list:
+            with pytest.raises(KeyError):
+                assert m.fs.cv.material_balances[0, 1, p, j]
+            assert type(m.fs.cv.material_balances[0, 0, p, j]) is \
+                _GeneralConstraintData
 
 
 def test_add_phase_component_balances_distrubuted_area():
@@ -1630,6 +1666,41 @@ def test_add_total_component_balances_default():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
+    for j in m.fs.pp.component_list:
+        with pytest.raises(KeyError):
+            assert m.fs.cv.material_balances[0, 0, j]
+        assert type(m.fs.cv.material_balances[0, 1, j]) is \
+            _GeneralConstraintData
+
+
+def test_add_total_component_balances_default_FFD():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_total_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 2
+
+    for j in m.fs.pp.component_list:
+        with pytest.raises(KeyError):
+            assert m.fs.cv.material_balances[0, 1, j]
+        assert type(m.fs.cv.material_balances[0, 0, j]) is \
+            _GeneralConstraintData
+
 
 def test_add_total_component_balances_distrubuted_area():
     m = ConcreteModel()
@@ -2143,6 +2214,41 @@ def test_add_total_element_balances_default():
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
 
+    for j in m.fs.pp.element_list:
+        with pytest.raises(KeyError):
+            assert m.fs.cv.element_balances[0, 0, j]
+        assert type(m.fs.cv.element_balances[0, 1, j]) is \
+            _GeneralConstraintData
+
+
+def test_add_total_element_balances_default_FFD():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_total_element_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 3
+
+    for j in m.fs.pp.element_list:
+        with pytest.raises(KeyError):
+            assert m.fs.cv.element_balances[0, 1, j]
+        assert type(m.fs.cv.element_balances[0, 0, j]) is \
+            _GeneralConstraintData
+
 
 def test_add_total_element_balances_distrubuted_area():
     m = ConcreteModel()
@@ -2495,6 +2601,42 @@ def test_add_total_enthalpy_balances_default():
     assert isinstance(m.fs.cv.enthalpy_flow_linking_constraint, Constraint)
     assert isinstance(m.fs.cv.enthalpy_flow_dx, DerivativeVar)
 
+    with pytest.raises(KeyError):
+        assert m.fs.cv.enthalpy_balances[0, 0]
+    assert type(m.fs.cv.enthalpy_balances[0, 1]) is \
+        _GeneralConstraintData
+
+
+def test_add_total_enthalpy_balances_default_FFD():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    eb = m.fs.cv.add_total_enthalpy_balances()
+
+    assert isinstance(eb, Constraint)
+    assert len(eb) == 1
+    assert isinstance(m.fs.cv._enthalpy_flow, Var)
+    assert isinstance(m.fs.cv.enthalpy_flow_linking_constraint, Constraint)
+    assert isinstance(m.fs.cv.enthalpy_flow_dx, DerivativeVar)
+
+    with pytest.raises(KeyError):
+        assert m.fs.cv.enthalpy_balances[0, 1]
+    assert type(m.fs.cv.enthalpy_balances[0, 0]) is \
+        _GeneralConstraintData
+
 
 def test_add_total_enthalpy_balances_distributed_area():
     m = ConcreteModel()
@@ -2785,6 +2927,42 @@ def test_add_total_pressure_balances_default():
     assert isinstance(m.fs.cv.pressure, Var)
     assert isinstance(m.fs.cv.pressure_linking_constraint, Constraint)
     assert isinstance(m.fs.cv.pressure_dx, DerivativeVar)
+
+    with pytest.raises(KeyError):
+        assert m.fs.cv.pressure_balance[0, 0]
+    assert type(m.fs.cv.pressure_balance[0, 1]) is \
+        _GeneralConstraintData
+
+
+def test_add_total_pressure_balances_default_FFD():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_total_pressure_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 1
+    assert isinstance(m.fs.cv.pressure, Var)
+    assert isinstance(m.fs.cv.pressure_linking_constraint, Constraint)
+    assert isinstance(m.fs.cv.pressure_dx, DerivativeVar)
+
+    with pytest.raises(KeyError):
+        assert m.fs.cv.pressure_balance[0, 1]
+    assert type(m.fs.cv.pressure_balance[0, 0]) is \
+        _GeneralConstraintData
 
 
 def test_add_total_pressure_balances_deltaP():
