@@ -33,7 +33,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
-from idaes.core.util.misc import add_object_reference
+from idaes.ui.report import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Andrew Lee, Jinliang Ma"
@@ -231,7 +231,7 @@ class _StateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
     def initialize(blk, flow_mol_comp=None, temperature=None, pressure=None,
-                   hold_state=False, outlvl=0,
+                   hold_state=False, outlvl=0, state_vars_fixed=False,
                    solver='ipopt', optarg={'tol': 1e-8}):
         '''
         Initialisation routine for property package.
@@ -247,7 +247,15 @@ class _StateBlock(StateBlock):
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
                      * 2 = include solver output infomation (tee=True)
-
+            state_vars_fixed: Flag to denote if state vars have already been
+                              fixed.
+                              - True - states have already been fixed by the
+                                       control volume 1D. Control volume 0D
+                                       does not fix the state vars, so will
+                                       be False if this state block is used
+                                       with 0D blocks.
+                             - False - states have not been fixed. The state
+                                       block will deal with fixing/unfixing.
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -266,45 +274,58 @@ class _StateBlock(StateBlock):
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
         '''
-        # Fix state variables if not already fixed
-        Fcflag = {}
-        Pflag = {}
-        Tflag = {}
+        if state_vars_fixed is False:
+            # Fix state variables if not already fixed
+            Fcflag = {}
+            Pflag = {}
+            Tflag = {}
 
-        for k in blk.keys():
-            for j in blk[k].component_list_ref:
-                if blk[k].flow_mol_comp[j].fixed is True:
-                    Fcflag[k, j] = True
-                else:
-                    Fcflag[k, j] = False
-                    if flow_mol_comp is None:
-                        blk[k].flow_mol_comp[j].fix(1.0)
+            for k in blk.keys():
+                for j in blk[k]._params.component_list:
+                    if blk[k].flow_mol_comp[j].fixed is True:
+                        Fcflag[k, j] = True
                     else:
-                        blk[k].flow_mol_comp[j].fix(flow_mol_comp[j])
+                        Fcflag[k, j] = False
+                        if flow_mol_comp is None:
+                            blk[k].flow_mol_comp[j].fix(1.0)
+                        else:
+                            blk[k].flow_mol_comp[j].fix(flow_mol_comp[j])
 
-            if blk[k].pressure.fixed is True:
-                Pflag[k] = True
-            else:
-                Pflag[k] = False
-                if pressure is None:
-                    blk[k].pressure.fix(101325.0)
+                if blk[k].pressure.fixed is True:
+                    Pflag[k] = True
                 else:
-                    blk[k].pressure.fix(pressure)
+                    Pflag[k] = False
+                    if pressure is None:
+                        blk[k].pressure.fix(101325.0)
+                    else:
+                        blk[k].pressure.fix(pressure)
 
-            if blk[k].temperature.fixed is True:
-                Tflag[k] = True
-            else:
-                Tflag[k] = False
-                if temperature is None:
-                    blk[k].temperature.fix(1500.0)
+                if blk[k].temperature.fixed is True:
+                    Tflag[k] = True
                 else:
-                    blk[k].temperature.fix(temperature)
+                    Tflag[k] = False
+                    if temperature is None:
+                        blk[k].temperature.fix(1500.0)
+                    else:
+                        blk[k].temperature.fix(temperature)
 
-            for j in blk[k].component_list_ref:
-                blk[k].mole_frac[j] = (value(blk[k].flow_mol_comp[j]) /
-                                       sum(value(blk[k].flow_mol_comp[i])
-                                           for i in blk[k].component_list_ref))
+                for j in blk[k]._params.component_list:
+                    blk[k].mole_frac[j] = \
+                        (value(blk[k].flow_mol_comp[j]) /
+                         sum(value(blk[k].flow_mol_comp[i])
+                             for i in blk[k]._params.component_list))
 
+            # If input block, return flags, else release state
+            flags = {"Fcflag": Fcflag, "Pflag": Pflag,
+                     "Tflag": Tflag}
+
+        else:
+            # Check when the state vars are fixed already result in dof 0
+            for k in blk.keys():
+                if degrees_of_freedom(blk[k]) != 0:
+                    raise Exception("State vars fixed but degrees of freedom "
+                                    "for state block is not zero during "
+                                    "initialization.")
         # Set solver options
         if outlvl > 1:
             stee = True
@@ -317,11 +338,12 @@ class _StateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialise values
         for k in blk.keys():
-            for j in blk[k].component_list_ref:
+            for j in blk[k]._params.component_list:
 
                 if hasattr(blk[k], "cp_shomate_eqn"):
                     calculate_variable_from_constraint(blk[k].cp_mol_comp[j],
-                                                      blk[k].cp_shomate_eqn[j])
+                                                       blk[k].
+                                                       cp_shomate_eqn[j])
 
                 if hasattr(blk[k], "enthalpy_shomate_eqn"):
                     calculate_variable_from_constraint(
@@ -380,18 +402,15 @@ class _StateBlock(StateBlock):
                              .format(blk.name))
 
         # ---------------------------------------------------------------------
-        # If input block, return flags, else release state
-        flags = {"Fcflag": Fcflag, "Pflag": Pflag,
-                 "Tflag": Tflag}
-
         if outlvl > 0:
             if outlvl > 0:
                 _log.info('{} Initialisation Complete.'.format(blk.name))
 
-        if hold_state is True:
-            return flags
-        else:
-            blk.release_state(flags)
+        if state_vars_fixed is False:
+            if hold_state is True:
+                return flags
+            else:
+                blk.release_state(flags)
 
     def release_state(blk, flags, outlvl=0):
         '''
@@ -404,9 +423,12 @@ class _StateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
+        if flags is None:
+            return
+
         # Unfix state variables
         for k in blk.keys():
-            for j in blk[k].component_list_ref:
+            for j in blk[k]._params.component_list:
                 if flags['Fcflag'][k, j] is False:
                     blk[k].flow_mol_comp[j].unfix()
             if flags['Pflag'][k] is False:
@@ -432,49 +454,8 @@ class MethaneCombustionStateBlockData(StateBlockData):
         """
         super(MethaneCombustionStateBlockData, self).build()
 
-        # Create references to package parameters
-        # List of valid phases in property package
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.config.parameters.phase_list)
-
-        # Component list - a list of component identifiers
-        add_object_reference(self,
-                             "component_list_ref",
-                             self.config.parameters.component_list)
-
-        # List of all chemical elements that constitute the chemical species
-        add_object_reference(self,
-                             "element_list_ref",
-                             self.config.parameters.element_list)
-
-        # Elemental composition of all species
-        add_object_reference(self,
-                             "element_comp_ref",
-                             self.config.parameters.element_comp)
-
-        # Heat capacity correlation parameters
-        add_object_reference(self,
-                             "cp_params_ref",
-                             self.config.parameters.cp_params)
-
-        # Heat of formation
-        add_object_reference(self,
-                             "enth_mol_form_ref",
-                             self.config.parameters.enth_mol_form)
-
-        # Gas constant
-        add_object_reference(self, "gas_const_ref",
-                             self.config.parameters.gas_const)
-
-        # Thermodynamic reference state
-        add_object_reference(self, "pressure_ref_ref",
-                             self.config.parameters.pressure_ref)
-        add_object_reference(self, "temperature_ref_ref",
-                             self.config.parameters.temperature_ref)
-
         # Create state variables
-        self.flow_mol_comp = Var(self.component_list_ref,
+        self.flow_mol_comp = Var(self._params.component_list,
                                  initialize=1.0,
                                  doc='Component molar flowrate [mol/s]')
         self.pressure = Var(domain=Reals,
@@ -485,7 +466,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
                                initialize=1500,
                                bounds=(1450, 3000),
                                doc='State temperature [K]')
-        self.mole_frac = Var(self.component_list_ref,
+        self.mole_frac = Var(self._params.component_list,
                              domain=Reals,
                              initialize=0.0,
                              doc='State component mole fractions [-]')
@@ -495,21 +476,23 @@ class MethaneCombustionStateBlockData(StateBlockData):
         def mole_frac_constraint(b, j):
             return b.flow_mol_comp[j] == (
                        b.mole_frac[j] *
-                       sum(b.flow_mol_comp[k] for k in b.component_list_ref))
-        self.mole_frac_constraint = Constraint(self.component_list_ref,
+                       sum(b.flow_mol_comp[k]
+                           for k in b._params.component_list))
+        self.mole_frac_constraint = Constraint(self._params.component_list,
                                                rule=mole_frac_constraint)
 
     def _dens_mol_phase(self):
         # Molar density
-        self.dens_mol_phase = Var(self.phase_list_ref,
+        self.dens_mol_phase = Var(self._params.phase_list,
                                   doc="Molar density")
 
         def ideal_gas(b, p):
-            return (b.dens_mol_phase[p]*b.gas_const_ref*b.temperature ==
+            return (b.dens_mol_phase[p]*b._params.gas_const*b.temperature ==
                     b.pressure)
         try:
             # Try to build constraint
-            self.ideal_gas = Constraint(self.phase_list_ref, rule=ideal_gas)
+            self.ideal_gas = Constraint(self._params.phase_list,
+                                        rule=ideal_gas)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.dens_mol_phase)
@@ -518,7 +501,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
 
     def _cp_mol_comp(self):
         # Pure component vapour heat capacities
-        self.cp_mol_comp = Var(self.component_list_ref,
+        self.cp_mol_comp = Var(self._params.component_list,
                                domain=Reals,
                                initialize=1.0,
                                doc="Pure component vapour heat capacities "
@@ -526,14 +509,14 @@ class MethaneCombustionStateBlockData(StateBlockData):
 
         def pure_component_cp_mol(b, j):
             return b.cp_mol_comp[j] == (
-                        b.cp_params_ref[j, 1] +
-                        b.cp_params_ref[j, 2]*(b.temperature*1e-3) +
-                        b.cp_params_ref[j, 3]*(b.temperature*1e-3)**2 +
-                        b.cp_params_ref[j, 4]*(b.temperature*1e-3)**3 +
-                        b.cp_params_ref[j, 5]/(b.temperature*1e-3)**2)
+                        b._params.cp_params[j, 1] +
+                        b._params.cp_params[j, 2]*(b.temperature*1e-3) +
+                        b._params.cp_params[j, 3]*(b.temperature*1e-3)**2 +
+                        b._params.cp_params[j, 4]*(b.temperature*1e-3)**3 +
+                        b._params.cp_params[j, 5]/(b.temperature*1e-3)**2)
         try:
             # Try to build constraint
-            self.cp_shomate_eqn = Constraint(self.component_list_ref,
+            self.cp_shomate_eqn = Constraint(self._params.component_list,
                                              rule=pure_component_cp_mol)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -549,7 +532,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
 
         def cp_mol(b):
             return b.cp_mol == sum(b.cp_mol_comp[j]*b.mole_frac[j]
-                                   for j in b.component_list_ref)
+                                   for j in b._params.component_list)
         try:
             # Try to build constraint
             self.mixture_heat_capacity_eqn = Constraint(
@@ -563,26 +546,26 @@ class MethaneCombustionStateBlockData(StateBlockData):
     def _enth_mol_phase_comp(self):
         # Pure component vapour enthalpies
         self.enth_mol_phase_comp = Var(
-                self.phase_list_ref,
-                self.component_list_ref,
+                self._params.phase_list,
+                self._params.component_list,
                 domain=Reals,
                 initialize=1.0,
                 doc="Pure component enthalpies [J/mol]")
 
         def pure_comp_enthalpy(b, j):
             return b.enth_mol_phase_comp["Vap", j] == (1e3*(
-                    b.cp_params_ref[j, 1]*(b.temperature*1e-3) +
-                    b.cp_params_ref[j, 2]*(b.temperature*1e-3)**2/2 +
-                    b.cp_params_ref[j, 3]*(b.temperature*1e-3)**3/3 +
-                    b.cp_params_ref[j, 4]*(b.temperature*1e-3)**4/4 -
-                    b.cp_params_ref[j, 5]/(b.temperature*1e-3) +
-                    b.cp_params_ref[j, 6] -
-                    b.cp_params_ref[j, 8]) -
-                    b.cp_params_ref[j, 9] +
-                    b.enth_mol_form_ref[j])
+                    b._params.cp_params[j, 1]*(b.temperature*1e-3) +
+                    b._params.cp_params[j, 2]*(b.temperature*1e-3)**2/2 +
+                    b._params.cp_params[j, 3]*(b.temperature*1e-3)**3/3 +
+                    b._params.cp_params[j, 4]*(b.temperature*1e-3)**4/4 -
+                    b._params.cp_params[j, 5]/(b.temperature*1e-3) +
+                    b._params.cp_params[j, 6] -
+                    b._params.cp_params[j, 8]) -
+                    b._params.cp_params[j, 9] +
+                    b._params.enth_mol_form[j])
         try:
             # Try to build constraint
-            self.enthalpy_shomate_eqn = Constraint(self.component_list_ref,
+            self.enthalpy_shomate_eqn = Constraint(self._params.component_list,
                                                    rule=pure_comp_enthalpy)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -598,10 +581,10 @@ class MethaneCombustionStateBlockData(StateBlockData):
         try:
             # Try to build constraint
             self.mixture_enthalpy_eqn = Constraint(expr=(
-                        self.enth_mol == sum(self.mole_frac[j] *
-                                             self.enth_mol_phase_comp["Vap", j]
-                                             for j in self.component_list_ref
-                                             )))
+                        self.enth_mol == sum(
+                                self.mole_frac[j] *
+                                self.enth_mol_phase_comp["Vap", j]
+                                for j in self._params.component_list)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.enth_mol)
@@ -611,25 +594,25 @@ class MethaneCombustionStateBlockData(StateBlockData):
     def _entr_mol_phase_comp(self):
         # Partial component entropies
         self.entr_mol_phase_comp = Var(
-                self.phase_list_ref,
-                self.component_list_ref,
+                self._params.phase_list,
+                self._params.component_list,
                 domain=Reals,
                 initialize=1.0,
                 doc="Partial component entropies [J/mol.K]")
 
         def partial_comp_entropy(b, j):
             return b.entr_mol_phase_comp["Vap", j] == (
-                    b.cp_params_ref[j, 1]*log((b.temperature*1e-3)) +
-                    b.cp_params_ref[j, 2]*(b.temperature*1e-3) +
-                    b.cp_params_ref[j, 3]*(b.temperature*1e-3)**2/2 +
-                    b.cp_params_ref[j, 4]*(b.temperature*1e-3)**3/3 -
-                    b.cp_params_ref[j, 5]/(2*(b.temperature*1e-3)**2) +
-                    b.cp_params_ref[j, 7] -
-                    b.gas_const_ref*log(b.mole_frac[j] *
-                                        b.pressure/b.pressure_ref_ref))
+                    b._params.cp_params[j, 1]*log((b.temperature*1e-3)) +
+                    b._params.cp_params[j, 2]*(b.temperature*1e-3) +
+                    b._params.cp_params[j, 3]*(b.temperature*1e-3)**2/2 +
+                    b._params.cp_params[j, 4]*(b.temperature*1e-3)**3/3 -
+                    b._params.cp_params[j, 5]/(2*(b.temperature*1e-3)**2) +
+                    b._params.cp_params[j, 7] -
+                    b._params.gas_const*log(b.mole_frac[j] *
+                                            b.pressure/b._params.pressure_ref))
         try:
             # Try to build constraint
-            self.entropy_shomate_eqn = Constraint(self.component_list_ref,
+            self.entropy_shomate_eqn = Constraint(self._params.component_list,
                                                   rule=partial_comp_entropy)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
@@ -645,10 +628,10 @@ class MethaneCombustionStateBlockData(StateBlockData):
         try:
             # Try to build constraint
             self.mixture_entropy_eqn = Constraint(expr=(
-                        self.entr_mol == sum(self.mole_frac[j] *
-                                             self.entr_mol_phase_comp["Vap", j]
-                                             for j in self.component_list_ref
-                                             )))
+                        self.entr_mol == sum(
+                                self.mole_frac[j] *
+                                self.entr_mol_phase_comp["Vap", j]
+                                for j in self._params.component_list)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.entr_mol)
@@ -664,9 +647,9 @@ class MethaneCombustionStateBlockData(StateBlockData):
         try:
             # Try to build constraint
             self.total_flow_eqn = Constraint(expr=(
-                        self.flow_mol == sum(self.flow_mol_comp[j]
-                                             for j in self.component_list_ref
-                                             )))
+                        self.flow_mol == sum(
+                                self.flow_mol_comp[j]
+                                for j in self._params.component_list)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.flow_mol)
@@ -676,8 +659,8 @@ class MethaneCombustionStateBlockData(StateBlockData):
     def _gibbs_mol_phase_comp(self):
         # Partial component Gibbs free energy
         self.gibbs_mol_phase_comp = Var(
-                            self.phase_list_ref,
-                            self.component_list_ref,
+                            self._params.phase_list,
+                            self._params.component_list,
                             domain=Reals,
                             initialize=0.0,
                             doc="Partial component Gibbs free energy [J/mol]")
@@ -690,7 +673,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
         try:
             # Try to build constraint
             self.partial_gibbs_energy_eqn = Constraint(
-                                            self.component_list_ref,
+                                            self._params.component_list,
                                             rule=comp_gibbs_energy_equation)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later

@@ -82,7 +82,7 @@ def htpx(T, P=None, x=None):
 
     if x is None:
         Tsat = 647.096/value(prop.func_tau_sat(P/1000))
-        if value(T) < Tsat or value(P) > 22064: #liquid
+        if value(T) < Tsat or value(P/1000) > 22064: #liquid
             return value(prop.func_hlpt(P/1000, 647.096/T)*prop.mw*1000.0)
         else: #vapor
             return value(prop.func_hvpt(P/1000, 647.096/T)*prop.mw*1000.0)

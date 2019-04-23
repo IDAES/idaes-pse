@@ -12,12 +12,12 @@
 ##############################################################################
 
 """
-This module contains miscalaneous utility functions for use in IDAES models.
+This module contains miscellaneous utility functions for use in IDAES models.
 """
+import xml.dom.minidom
+import pyomo.environ as pyo
 
-__author__ = "Andrew Lee"
-
-
+# Author: Andrew Lee
 def add_object_reference(self, local_name, remote_object):
     """
     Method to create a reference in the local model to a remote Pyomo object.
@@ -39,10 +39,7 @@ def add_object_reference(self, local_name, remote_object):
                              "object does not exist.".format(self.name,
                                                              remote_object))
 
-
-__author__ = "Jaffer Ghouse"
-
-
+# Author: Jaffer Ghouse
 def extract_data(data_dict):
     """
     General method that returns a rule to extract data from a python
@@ -56,3 +53,88 @@ def extract_data(data_dict):
         else:
             return data_dict[args[0]]
     return _rule_initialize
+
+# Author: John Eslick
+def TagReference(s, description=""):
+    """
+    Create a Pyomo reference with an added description string attribute to
+    describe the reference. The intended use for these references is to create a
+    time-indexed reference to variables in a model corresponding to plant
+    measurment tags.
+
+    Args:
+        s: Pyomo time slice of a variable or expression
+        description (str): A description the measurment
+
+    Returns:
+        A Pyomo Reference object with an added doc attribute
+    """
+    r = pyo.Reference(s)
+    r.description = description
+    return r
+
+# Author John Eslick
+def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None):
+    """
+    Replace text in a svg with tag values for the model. Although
+
+    Args:
+        tags: A dictionary where the key is the tag and the value is a Pyomo
+            Refernce.  The refernce could be indexed. In yypical IDAES
+            applications the references would be indexed by time.
+        svg: a file pointer or a string continaing svg contents
+        outfile: a file name to save the results, if None don't save
+        idx: if None not indexed, otherwise an index in the indexing set of the
+            reference
+        tag_map: dictionary with svg id keys and tag values, to map svg ids to
+            tags
+
+    Returns:
+        String for svg
+    """
+    if isinstance(svg, str): # assume this is svg content string
+        pass
+    elif hasattr(svg, "read"): # file-like object to svg
+        svg = svg.read()
+    else:
+        raise TypeError("SVG must either be a string or a file-like object")
+    # Make tag map here because the tags may not make valid XML IDs if no
+    # tag_map provided we'll go ahead and handle XML @ (maybe more in future)
+    if tag_map is None:
+        tag_map = dict()
+        for tag in tags:
+            new_tag = tag.replace("@", "_")
+            tag_map[new_tag] = tag
+    # Search for text in the svg that has an id in tags
+    doc = xml.dom.minidom.parseString(svg)
+    texts = doc.getElementsByTagName('text')
+    for t in texts:
+        id = t.attributes['id'].value
+        if(id in tag_map):
+            # if it's multiline change last line
+            tspan = t.getElementsByTagName('tspan')[-1].childNodes[0]
+            tspan.nodeValue = pyo.value(tags[tag_map[id]][idx])
+    new_svg = doc.toxml()
+    # If outfile is provided save to a file
+    if outfile is not None:
+        with open(outfile, "w") as f:
+            f.write(new_svg)
+    return new_svg
+
+# Author: John Eslick
+def copy_port_values(destination, source):
+    """
+    Copy the variable values in the source port to the destination port. The
+    ports must containt the same variables.
+
+    Args:
+        (pyomo.Port): Copy values from this port
+        (pyomo.Port): Copy values to this port
+
+    Returns:
+        None
+    """
+    for k, v in destination.vars.items():
+        if isinstance(v, pyo.Var):
+            for i in v:
+                v[i].value = pyo.value(source.vars[k][i])

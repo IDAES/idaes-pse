@@ -28,7 +28,8 @@ from pyomo.environ import (Var, Expression, Constraint, sqrt, SolverFactory,
 from pyomo.opt import TerminationCondition
 
 from idaes.core import declare_process_block_class
-from idaes.unit_models.pressure_changer import PressureChangerData
+from idaes.unit_models.pressure_changer import (PressureChangerData,
+                                                ThermodynamicAssumption)
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.ui.report import degrees_of_freedom
 
@@ -41,9 +42,11 @@ class TurbineInletStageData(PressureChangerData):
     CONFIG.compressor = False
     CONFIG.get('compressor')._default = False
     CONFIG.get('compressor')._domain = In([False])
-    CONFIG.thermodynamic_assumption = 'isentropic'
-    CONFIG.get('thermodynamic_assumption')._default = 'isentropic'
-    CONFIG.get('thermodynamic_assumption')._domain = In(['isentropic'])
+    CONFIG.thermodynamic_assumption = ThermodynamicAssumption.isentropic
+    CONFIG.get('thermodynamic_assumption')._default = \
+        ThermodynamicAssumption.isentropic
+    CONFIG.get('thermodynamic_assumption')._domain = \
+        In([ThermodynamicAssumption.isentropic])
     def build(self):
         super(TurbineInletStageData, self).build()
 

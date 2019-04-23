@@ -16,6 +16,7 @@ Standard IDAES PFR model.
 from __future__ import division
 
 # Import Pyomo libraries
+from pyomo.environ import Constraint, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -39,27 +40,7 @@ class PFRData(UnitModelBlockData):
     """
     Standard Plug Flow Reactor Unit Model Class
     """
-    CONFIG = ConfigBlock()
-    CONFIG.declare("dynamic", ConfigValue(
-        default=useDefault,
-        domain=In([useDefault, True, False]),
-        description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic or not,
-**default** = useDefault.
-**Valid values:** {
-**useDefault** - get flag from parent (default = False),
-**True** - set as a dynamic model,
-**False** - set as a steady-state model.}"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
+    CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
@@ -97,7 +78,7 @@ Must be True if dynamic = True,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
@@ -106,6 +87,16 @@ should be constructed,
 **Valid values:** {
 **True** - include equilibrium reaction terms,
 **False** - exclude equilibrium reaction terms.}"""))
+    CONFIG.declare("has_phase_equilibrium", ConfigValue(
+            default=False,
+            domain=In([True, False]),
+            description="Phase equilibrium construction flag",
+            doc="""Indicates whether terms for phase equilibrium should be
+constructed,
+**default** = False.
+**Valid values:** {
+**True** - include phase equilibrium terms
+**False** - exclude phase equilibrium terms.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -228,7 +219,8 @@ domain,
         self.control_volume.add_geometry(
                 length_domain_set=self.config.length_domain_set)
 
-        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
+        self.control_volume.add_state_blocks(
+                has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_reaction_blocks(
                 has_equilibrium=self.config.has_equilibrium_reactions)
@@ -236,7 +228,8 @@ domain,
         self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type,
             has_rate_reactions=True,
-            has_equilibrium_reactions=self.config.has_equilibrium_reactions)
+            has_equilibrium_reactions=self.config.has_equilibrium_reactions,
+            has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
@@ -285,9 +278,14 @@ domain,
         add_object_reference(self,
                              "area",
                              self.control_volume.area)
-        add_object_reference(self,
-                             "volume",
-                             self.control_volume.volume)
+
+        # Add volume variable for full reactor
+        # TODO : Need to add units
+        self.volume = Var(initialize=1,
+                          doc="Reactor Volume")
+
+        self.geometry = Constraint(expr=self.volume == self.area*self.length)
+
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != 'none'):
             add_object_reference(self, "heat_duty", self.control_volume.heat)

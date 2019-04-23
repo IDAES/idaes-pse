@@ -38,27 +38,8 @@ class CSTRData(UnitModelBlockData):
     """
     Standard CSTR Unit Model Class
     """
-    CONFIG = ConfigBlock()
-    CONFIG.declare("dynamic", ConfigValue(
-        domain=In([useDefault, True, False]),
-        default=useDefault,
-        description="Dynamic model flag",
-        doc="""Indicates whether this model will be dynamic or not,
-**default** = useDefault.
-**Valid values:** {
-**useDefault** - get flag from parent (default = False),
-**True** - set as a dynamic model,
-**False** - set as a steady-state model.}"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Holdup construction flag",
-        doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
+    CONFIG = UnitModelBlockData.CONFIG()
+
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
@@ -115,7 +96,7 @@ constructed,
 **True** - include pressure change terms,
 **False** - exclude pressure change terms.}"""))
     CONFIG.declare("has_equilibrium_reactions", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Equilibrium reaction construction flag",
         doc="""Indicates whether terms for equilibrium controlled reactions
@@ -124,6 +105,16 @@ should be constructed,
 **Valid values:** {
 **True** - include equilibrium reaction terms,
 **False** - exclude equilibrium reaction terms.}"""))
+    CONFIG.declare("has_phase_equilibrium", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Phase equilibrium construction flag",
+        doc="""Indicates whether terms for phase equilibrium should be
+constructed,
+**default** = False.
+**Valid values:** {
+**True** - include phase equilibrium terms
+**False** - exclude phase equilibrium terms.}"""))
     CONFIG.declare("has_heat_of_reaction", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -191,7 +182,8 @@ see reaction package for documentation.}"""))
 
         self.control_volume.add_geometry()
 
-        self.control_volume.add_state_blocks(has_phase_equilibrium=False)
+        self.control_volume.add_state_blocks(
+                has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         self.control_volume.add_reaction_blocks(
                 has_equilibrium=self.config.has_equilibrium_reactions)
@@ -199,7 +191,8 @@ see reaction package for documentation.}"""))
         self.control_volume.add_material_balances(
             balance_type=self.config.material_balance_type,
             has_rate_reactions=True,
-            has_equilibrium_reactions=self.config.has_equilibrium_reactions)
+            has_equilibrium_reactions=self.config.has_equilibrium_reactions,
+            has_phase_equilibrium=self.config.has_equilibrium_reactions)
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,

@@ -78,7 +78,6 @@ and used when constructing these,
 **Valid values:** {
 see property package for documentation.}"""))
 
-
     def build(self):
         """
         Begin building model.
