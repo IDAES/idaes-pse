@@ -184,9 +184,6 @@ see reaction package for documentation.}"""))
 
         # Add performance equations
         add_object_reference(self,
-                             "component_list_ref",
-                             self.control_volume.component_list_ref)
-        add_object_reference(self,
                              "phase_list_ref",
                              self.control_volume.phase_list_ref)
         add_object_reference(self,

@@ -298,15 +298,6 @@ class ProcessBlockData(_BlockData):
                     'contain a phase_list. '
                     'Please contact the developer of the property package.'
                     .format(self.name))
-        try:
-            add_object_reference(self, "component_list_ref",
-                                 self.config.property_package.component_list)
-        except AttributeError:
-            raise PropertyPackageError(
-                    '{} property_package provided does not '
-                    'contain a component_list. '
-                    'Please contact the developer of the property package.'
-                    .format(self.name))
 
     def _get_reaction_package(self):
         """
@@ -346,12 +337,12 @@ class ProcessBlockData(_BlockData):
         """
         # Get phase component list(s)
         if hasattr(self.config.property_package, "phase_component_list"):
-            phase_component_list = (
-                    self.config.property_package.phase_component_list)
+            phase_component_list =\
+                self.config.property_package.phase_component_list
         else:
             # Otherwise assume all components in all phases
             phase_component_list = {}
             for p in self.phase_list_ref:
-                phase_component_list[p] = self.component_list_ref
-
+                phase_component_list[p] = self.config.property_package.\
+                    component_list
         return phase_component_list

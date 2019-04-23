@@ -340,8 +340,6 @@ see property package for documentation.}"""))
         # Get indexing sets from control volume
         add_object_reference(self, "phase_list",
                              self.control_volume.phase_list_ref)
-        add_object_reference(self, "component_list",
-                             self.control_volume.component_list_ref)
 
         # Add isentropic variables
         self.efficiency_isentropic = Var(self.time_ref,
@@ -374,7 +372,7 @@ see property package for documentation.}"""))
 
         # This assumes isentropic composition is the same as outlet
         @self.Constraint(self.time_ref,
-                         self.component_list,
+                         self.config.property_package.component_list,
                          doc="Material flows for isentropic properties")
         def isentropic_material(b, t, j):
             return b.properties_isentropic[t].flow_mol_comp[j] == \

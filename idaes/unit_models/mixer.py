@@ -449,7 +449,7 @@ linked to all inlet states and the mixed state,
         # Write phase-component balances
         @self.Constraint(self.time_ref,
                          self.phase_list_ref,
-                         self.component_list_ref,
+                         self.config.property_package.component_list,
                          doc="Material mixing equations")
         def material_mixing_equations(b, t, p, j):
             if j in phase_component_list[p]:
