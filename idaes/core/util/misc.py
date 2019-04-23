@@ -115,14 +115,20 @@ def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None, show_tags=False):
         if(id in tag_map):
             # if it's multiline change last line
             tspan = t.getElementsByTagName('tspan')[-1].childNodes[0]
-            if show_tags:
-                tspan.nodeValue = tag_map[id]
-            else:
-                try:
-                    tspan.nodeValue = \
-                        "{:.4e}".format(pyo.value(tags[tag_map[id]][idx]))
-                except ValueError: # whatever it is can't be scientific notation
-                    tspan.nodeValue = tags[tag_map[id]][idx]
+            try:
+                if show_tags:
+                    val = tag_map[id]
+                elif idx is None:
+                    val = pyo.value(tags[tag_map[id]], exception=False)
+                else:
+                    val = pyo.value(tags[tag_map[id]][idx], exception=False)
+            except ZeroDivisionError:
+                val = "Divide_by_0"
+            try:
+                tspan.nodeValue = \
+                    "{:.4e}".format(val)
+            except ValueError: # whatever it is can't be scientific notation
+                tspan.nodeValue = val
 
     new_svg = doc.toxml()
     # If outfile is provided save to a file

@@ -201,3 +201,18 @@ def test_tag_reference():
     assert("3.33" in xml_str)
     assert("5.55" in xml_str)
     assert("7.77" in xml_str)
+
+    xml_str = svg_tag(m.tag, svg_test_str, show_tags=True)
+    # lazy testing
+    assert("TAGME@4.x" in xml_str)
+    assert("TAGME@4.y" in xml_str)
+    assert("TAGME@4.f" in xml_str)
+
+    tag_data_like = {}
+    tag_data_like["TAGME@4.x"] = 1.1212
+    tag_data_like["TAGME@4.y"] = 2.1212
+    tag_data_like["TAGME@4.f"] = "3.1212 Hello"
+    xml_str = svg_tag(tag_data_like, svg_test_str, idx=None)
+    assert("1.1212" in xml_str)
+    assert("2.1212" in xml_str)
+    assert("3.1212 Hello" in xml_str)
