@@ -1681,8 +1681,6 @@ argument)."""))
                     .format(self.name))
 
         if self.config.transformation_method == "dae.finite_difference":
-            # TODO: Need to add a check that the transformation_scheme matches
-            # the transformation method being passed.
             self.discretizer = TransformationFactory(
                                     self.config.transformation_method)
             self.discretizer.apply_to(self,
@@ -1690,8 +1688,6 @@ argument)."""))
                                       wrt=self.length_domain,
                                       scheme=self.config.transformation_scheme)
         elif self.config.transformation_method == "dae.collocation":
-            # TODO: Need to add a check that the transformation_scheme matches
-            # the transformation method being passed.
             self.discretizer = TransformationFactory(
                                     self.config.transformation_method)
             self.discretizer.apply_to(
