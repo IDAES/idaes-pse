@@ -180,19 +180,20 @@ def test_is_port_errors():
     with pytest.raises(ConfigurationError):
         is_port(1)  # int
 
+
 def test_is_time_domain():
     # Test that is_time_domain accepts Sets and ContinuousSets
     m = ConcreteModel()
-    
+
     m.s = Set(initialize=[1, 2, 3, 4])
     m.cs = ContinuousSet(bounds=[0, 1])
 
     assert isinstance(is_time_domain(m.s), Set)
     assert isinstance(is_time_domain(m.cs), ContinuousSet)
-    
+
 
 def test_is_time_domain_errors():
-    # Test that is_time_domain returns errors wehn not Set or ContinuousSet
+    # Test that is_time_domain returns errors when not Set or ContinuousSet
     with pytest.raises(ConfigurationError):
         assert is_time_domain("foo")
     with pytest.raises(ConfigurationError):
