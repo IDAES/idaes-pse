@@ -74,9 +74,10 @@ def TagReference(s, description=""):
     return r
 
 # Author John Eslick
-def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None):
+def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None, show_tags=False):
     """
-    Replace text in a svg with tag values for the model. Although
+    Replace text in a SVG with tag values for the model. This works by looking
+    for text elements in the SVG with IDs that match the tags or are in tag_map.
 
     Args:
         tags: A dictionary where the key is the tag and the value is a Pyomo
@@ -88,9 +89,10 @@ def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None):
             reference
         tag_map: dictionary with svg id keys and tag values, to map svg ids to
             tags
+        show_tags: Put tag labels of the diagram instead of numbers
 
     Returns:
-        String for svg
+        String for SVG
     """
     if isinstance(svg, str): # assume this is svg content string
         pass
@@ -113,7 +115,21 @@ def svg_tag(tags, svg, outfile=None, idx=None, tag_map=None):
         if(id in tag_map):
             # if it's multiline change last line
             tspan = t.getElementsByTagName('tspan')[-1].childNodes[0]
-            tspan.nodeValue = pyo.value(tags[tag_map[id]][idx])
+            try:
+                if show_tags:
+                    val = tag_map[id]
+                elif idx is None:
+                    val = pyo.value(tags[tag_map[id]], exception=False)
+                else:
+                    val = pyo.value(tags[tag_map[id]][idx], exception=False)
+            except ZeroDivisionError:
+                val = "Divide_by_0"
+            try:
+                tspan.nodeValue = \
+                    "{:.4e}".format(val)
+            except ValueError: # whatever it is can't be scientific notation
+                tspan.nodeValue = val
+
     new_svg = doc.toxml()
     # If outfile is provided save to a file
     if outfile is not None:
