@@ -288,7 +288,7 @@ class ProcessBlockData(_BlockData):
         Returns:
             None
         """
-        # Get phase and component list(s)
+        # Get phase list(s)
         try:
             add_object_reference(self, "phase_list_ref",
                                  self.config.property_package.phase_list)
@@ -298,6 +298,7 @@ class ProcessBlockData(_BlockData):
                     'contain a phase_list. '
                     'Please contact the developer of the property package.'
                     .format(self.name))
+
 
     def _get_reaction_package(self):
         """

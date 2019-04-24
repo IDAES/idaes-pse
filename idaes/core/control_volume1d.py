@@ -1192,7 +1192,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             return b.elemental_flow_term[t, x, e] == (
                     sum(sum(b.properties[t, x].get_material_flow_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
-                            for j in b.self.config.property_package.component_list)
+                            for j in b.config.property_package.component_list)
                         for p in b.phase_list_ref))
 
         self.elemental_flow_dx = DerivativeVar(self.elemental_flow_term,
@@ -1266,7 +1266,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                         b.properties[t, x].get_material_density_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
                         for p in b.phase_list_ref
-                        for j in b.self.config.property_package.component_list))
+                        for j in b.config.property_package.component_list))
 
         return self.element_balances
 

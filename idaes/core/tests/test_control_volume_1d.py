@@ -236,8 +236,6 @@ def test_base_build():
 
     assert hasattr(m.fs.cv, "time_ref")
     assert hasattr(m.fs.cv, "phase_list_ref")
-    assert hasattr(m.fs.cv, "component_list_ref")
-
 
 # -----------------------------------------------------------------------------
 # Test add_geometry
@@ -1099,7 +1097,7 @@ def test_add_phase_component_balances_custom_molar_term():
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1126,7 +1124,7 @@ def test_add_phase_component_balances_custom_molar_term_no_mw():
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1151,7 +1149,7 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1183,7 +1181,7 @@ def test_add_phase_component_balances_custom_molar_term_undefined_basis():
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1208,7 +1206,7 @@ def test_add_phase_component_balances_custom_mass_term():
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1235,7 +1233,7 @@ def test_add_phase_component_balances_custom_mass_term_no_mw():
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1260,7 +1258,7 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1292,7 +1290,7 @@ def test_add_phase_component_balances_custom_mass_term_undefined_basis():
 
     m.fs.cv.test_var = Var(m.fs.cv.time_ref,
                            m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1547,7 +1545,7 @@ def test_add_total_component_balances_custom_molar_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1572,7 +1570,7 @@ def test_add_total_component_balances_custom_molar_term_no_mw():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1595,7 +1593,7 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1625,7 +1623,7 @@ def test_add_total_component_balances_custom_molar_term_undefined_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1648,7 +1646,7 @@ def test_add_total_component_balances_custom_mass_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1673,7 +1671,7 @@ def test_add_total_component_balances_custom_mass_term_no_mw():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1696,7 +1694,7 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1726,7 +1724,7 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]

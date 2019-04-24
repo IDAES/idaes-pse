@@ -354,9 +354,19 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Phase equilibrium generation
         if has_phase_equilibrium:
+            try:
+                add_object_reference(
+                    self,
+                    "phase_equilibrium_idx_ref",
+                    self.config.property_package.phase_equilibrium_idx)
+            except AttributeError:
+                raise PropertyNotSupportedError(
+                    "{} Property package does not contain a list of phase "
+                    "equilibrium reactions (phase_equilibrium_idx), thus does "
+                    "not support phase equilibrium.".format(self.name))
             self.phase_equilibrium_generation = Var(
                 self.time_ref,
-                self.config.property_package.phase_equilibrium_idx,
+                self.phase_equilibrium_idx_ref,
                 domain=Reals,
                 doc="Amount of generation in unit by phase "
                     "equilibria [{}/{}]"
@@ -390,7 +400,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 sd = {}
                 sblock = self.properties_out[t]
                 sparam = sblock._params
-                for r in sparam.phase_equilibrium_idx:
+                for r in b.phase_equilibrium_idx_ref:
                     if sparam.phase_equilibrium_list[r][0] == j:
                         if sparam.phase_equilibrium_list[r][1][0] == p:
                             sd[r] = 1
@@ -402,7 +412,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         sd[r] = 0
 
                 return sum(b.phase_equilibrium_generation[t, r] * sd[r]
-                           for r in sparam.phase_equilibrium_idx)
+                           for r in b.phase_equilibrium_idx_ref)
             else:
                 return 0
 
@@ -978,6 +988,18 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             "constraints (has_phase_equilibrium=False). Please"
                             " correct your configuration arguments."
                             .format(self.name))
+
+                try:
+                    add_object_reference(
+                        self,
+                        "phase_equilibrium_idx_ref",
+                        self.config.property_package.phase_equilibrium_idx)
+                except AttributeError:
+                    raise PropertyNotSupportedError(
+                        "{} Property package does not contain a list of phase "
+                        "equilibrium reactions (phase_equilibrium_idx), thus "
+                        "does not support phase equilibrium."
+                        .format(self.name))
 
         # Test for components that must exist prior to calling this method
         if has_holdup:

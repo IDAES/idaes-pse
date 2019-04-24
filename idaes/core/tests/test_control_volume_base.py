@@ -337,7 +337,6 @@ def test_get_indexing_sets():
     m.cv._get_indexing_sets()
 
     assert hasattr(m.cv, "phase_list_ref")
-    assert hasattr(m.cv, "component_list_ref")
 
 
 def test_get_indexing_sets_missing_phase_list():
@@ -358,12 +357,10 @@ def test_get_indexing_sets_missing_component_list():
     m.cv = CVFrame(default={"property_package": m.pp})
     m.cv._get_property_package()
 
-    with pytest.raises(PropertyPackageError):
-        m.cv._get_indexing_sets()
-    assert hasattr(m.cv, "phase_list_ref")
+    with pytest.raises(AttributeError):
+        m.pp.component_list
 
 
-# -----------------------------------------------------------------------------
 # Test _get_reaction_package
 def test_get_reaction_package_none():
     m = ConcreteModel()
