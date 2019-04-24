@@ -144,9 +144,8 @@ argument)."""))
             raise ConfigurationError(
                     "{} transformation_scheme configuration argument is not "
                     "consistent with transformation_method argument. See Pyomo"
-                    " documentation for argumnet options."
+                    " documentation for argument options."
                     .format(self.name))
-
 
     def add_geometry(self,
                      length_domain=None,
@@ -1663,7 +1662,7 @@ argument)."""))
         """
         if self.length_domain.parent_block() != self:
             raise ConfigurationError(
-                    "{} tried to aplly a DAE transformation to an external "
+                    "{} tried to apply a DAE transformation to an external "
                     "domain. To avoid complications, the apply_transformation "
                     "method only supports transformation of local domains."
                     .format(self.name))

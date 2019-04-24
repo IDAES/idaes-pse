@@ -147,7 +147,7 @@ def is_transformation_method(arg):
     '''Domain validator for transformation methods
 
     Args:
-        arg : argument to be checked for membership in regognised strings
+        arg : argument to be checked for membership in recognized strings
 
     Returns:
         Recognised string or Exception
@@ -166,7 +166,7 @@ def is_transformation_scheme(arg):
     '''Domain validator for transformation scheme
 
     Args:
-        arg : argument to be checked for membership in regognised strings
+        arg : argument to be checked for membership in recognized strings
 
     Returns:
         Recognised string or Exception
