@@ -629,12 +629,12 @@ s_real tau_with_derivs(s_real ht, s_real pr, s_real *grad, s_real *hes){
       return tau_sat;
     }
     if(tau < 0.0 || tau > TAU_HIGH){
-        std::cout << "IAPWS LOW T CLIP WARNING: h = " << ht << " P= " << pr << " tau = " << tau << "\n";
+        std::cerr << "IAPWS LOW T CLIP WARNING: h = " << ht << " P= " << pr << " tau = " << tau << "\n";
         tau = TAU_HIGH;
         fun = hvpt_with_derivs(pr, tau, gradh, hesh) - ht;
     }
     else if(tau < TAU_LOW){
-        std::cout << "IAPWS HIGH T CLIP WARNING: h = " << ht << " P= " << pr << " tau = " << tau << "\n";
+        std::cerr << "IAPWS HIGH T CLIP WARNING: h = " << ht << " P= " << pr << " tau = " << tau << "\n";
         tau = TAU_LOW;
         fun = hvpt_with_derivs(pr, tau, gradh, hesh) - ht;
     }
