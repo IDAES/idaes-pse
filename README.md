@@ -25,7 +25,7 @@ make html
 ```
 
 To view the documentation you just built, open the file
-`doc/build/html/index.html` in a web browser.
+`docs/build/index.html` in a web browser.
 
 
 ## Running tests
