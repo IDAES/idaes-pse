@@ -27,6 +27,8 @@ from pyomo.environ import (Constraint,
                            TransformationFactory,
                            Var)
 from pyomo.dae import ContinuousSet, DerivativeVar
+from pyomo.common.config import ConfigValue, In
+from pyutilib.enum import Enum
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -37,6 +39,8 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.config import (is_transformation_method,
+                                    is_transformation_scheme)
 
 __author__ = "Andrew Lee, Jaffer Ghouse"
 
@@ -45,7 +49,12 @@ _log = logging.getLogger(__name__)
 
 # TODO : Custom terms in material balances, other types of material balances
 # Diffusion terms need to be added
-# TODO : add support for heat of reaction terms
+
+
+# Enumerate options for area
+DistributedVars = Enum(
+    'variant',
+    'uniform')
 
 
 @declare_process_block_class("ControlVolume1DBlock", doc="""
@@ -66,6 +75,42 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
     momentum balances. The form of the terms used in these constraints is
     specified in the chosen property package.
     """
+    CONFIG = ControlVolumeBlockData.CONFIG()
+    CONFIG.declare("area_definition", ConfigValue(
+        default=DistributedVars.uniform,
+        domain=In(DistributedVars),
+        description="Argument for defining form of area variable",
+        doc="""Argument defining whether area variable should be spatially
+        variant or not. **default** - DistributedVars.uniform.
+        **Valid values:** {
+        DistributedVars.uniform - area does not vary across spatial domian,
+        DistributedVars.variant - area can vary over the domain and is indexed
+        by time and space.}"""))
+    CONFIG.declare("transformation_method", ConfigValue(
+        default=None,
+        domain=is_transformation_method,
+        description="DAE transformation method",
+        doc="""Method to use to transform domain. Must be a method recognised
+by the Pyomo TransformationFactory."""))
+    CONFIG.declare("transformation_scheme", ConfigValue(
+        default=None,
+        domain=is_transformation_scheme,
+        description="DAE transformation scheme",
+        doc="""Scheme to use when transformating domain. See Pyomo
+documentation for supported schemes."""))
+    CONFIG.declare("finite_elements", ConfigValue(
+        default=None,
+        domain=int,
+        description="Number of finite elements",
+        doc="""Number of finite elements to use in transformation (equivalent
+to Pyomo nfe argument)."""))
+    CONFIG.declare("collocation_points", ConfigValue(
+        default=None,
+        domain=int,
+        description="Number of collocation points",
+        doc="""Number of collocation points to use (equivalent to Pyomo ncp
+argument)."""))
+
     def build(self):
         """
         Build method for ControlVolume1DBlock blocks.
@@ -75,6 +120,32 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         """
         # Call build method from base class
         super(ControlVolume1DBlockData, self).build()
+
+        self._validate_config_args()
+
+    def _validate_config_args(self):
+        # Validate DAE config arguments
+        if self.config.transformation_method is None:
+            raise ConfigurationError(
+                    "{} was not provided a value for the transformation_method"
+                    " configuration argument. Please provide a valid value."
+                    .format(self.name))
+
+        if self.config.transformation_scheme is None:
+            raise ConfigurationError(
+                    "{} was not provided a value for the transformation_scheme"
+                    " configuration argument. Please provide a valid value."
+                    .format(self.name))
+        elif ((self.config.transformation_method == "dae.finite_difference" and
+              self.config.transformation_scheme not in ["BACKWARD", "FORWARD"])
+                or (self.config.transformation_method == "dae.collocation" and
+                    self.config.transformation_scheme not in
+                    ["LAGRANGE-LEGENDRE", "LAGRANGE-RADAU"])):
+            raise ConfigurationError(
+                    "{} transformation_scheme configuration argument is not "
+                    "consistent with transformation_method argument. See Pyomo"
+                    " documentation for argument options."
+                    .format(self.name))
 
     def add_geometry(self,
                      length_domain=None,
@@ -132,19 +203,18 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             self._flow_direction_term = 1
 
         # Add geomerty variables and constraints
-        self.volume = Var(initialize=1.0,
-                          doc='Holdup Volume [{}^3]'.format(l_units))
-        self.area = Var(initialize=1.0,
-                        doc='Cross-sectional area of Control Volume [{}^2]'
-                            .format(l_units))
+        if self.config.area_definition == DistributedVars.variant:
+            self.area = Var(self.time_ref,
+                            self.length_domain,
+                            initialize=1.0,
+                            doc='Cross-sectional area of Control Volume [{}^2]'
+                                .format(l_units))
+        else:
+            self.area = Var(initialize=1.0,
+                            doc='Cross-sectional area of Control Volume [{}^2]'
+                                .format(l_units))
         self.length = Var(initialize=1.0,
                           doc='Length of Control Volume [{}]'.format(l_units))
-
-        # TODO: This constraint needs to be checked
-        # i.e. it should be volume = area * (length/no. of finite elements)
-        @self.Constraint(doc="Control volume geometry constraint")
-        def geometry_constraint(b):
-            return self.volume == self.area*self.length
 
     def add_state_blocks(self,
                          information_flow=FlowDirection.forward,
@@ -195,7 +265,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             self.time_ref,
             self.length_domain,
             doc="Material properties",
-            initialize={0: d0, 1: d1},
+            initialize={0: d0, 1: d1},                                          # TODO: What if the domain has differnt bounds?
             idx_map=idx_map)
 
     def add_reaction_blocks(self, has_equilibrium=None):
@@ -231,7 +301,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                 self.time_ref,
                 self.length_domain,
                 doc="Reaction properties in control volume",
-                default=tmp_dict)
+                default=tmp_dict)                                               # TODO: Do we need something similar to above to skip equilibrium at bounds?
 
     def add_phase_component_balances(self,
                                      has_rate_reactions=False,
@@ -470,11 +540,12 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             if has_phase_equilibrium:
                 sd = {}
                 sblock = self.properties[t, x]
+                sparam = sblock.config.parameters
                 for r in b.phase_equilibrium_idx_ref:
-                    if sblock.phase_equilibrium_list_ref[r][0] == j:
-                        if sblock.phase_equilibrium_list_ref[r][1][0] == p:
+                    if sparam.phase_equilibrium_list[r][0] == j:
+                        if sparam.phase_equilibrium_list[r][1][0] == p:
                             sd[r] = 1
-                        elif sblock.phase_equilibrium_list_ref[r][1][1] == p:
+                        elif sparam.phase_equilibrium_list[r][1][1] == p:
                             sd[r] = -1
                         else:
                             sd[r] = 0
@@ -547,9 +618,9 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                          self.component_list_ref,
                          doc="Material balances")
         def material_balances(b, t, x, p, j):
-            if ((b._flow_direction is FlowDirection.forward and
+            if ((b.config.transformation_scheme != "FORWARD" and
                  x == b.length_domain.first()) or
-                    (b._flow_direction is FlowDirection.backward and
+                    (b.config.transformation_scheme == "FORWARD" and
                      x == b.length_domain.last())):
                 return Constraint.Skip
             else:
@@ -557,7 +628,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                     return b.length*accumulation_term(b, t, x, p, j) == (
                         b._flow_direction_term *
                         b.material_flow_dx[t, x, p, j] +
-                        b.length*kinetic_term(b, t, x, p, j) +
+                        b.length*kinetic_term(b, t, x, p, j) *
+                        b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                         b.length*equilibrium_term(b, t, x, p, j) +
                         b.length*phase_equilibrium_term(b, t, x, p, j) +
                         b.length*transfer_term(b, t, x, p, j) +
@@ -583,7 +655,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def material_holdup_calculation(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.material_holdup[t, x, p, j] == (
-                          b.area*self.phase_fraction[t, x, p] *
+                          b._area_func(t, x)*self.phase_fraction[t, x, p] *
                           b.properties[t, x].get_material_density_terms(p, j))
                 else:
                     return b.material_holdup[t, x, p, j] == 0
@@ -607,8 +679,9 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
+                    rparam = rblock[t, x].config.parameters
                     return b.rate_reaction_generation[t, x, p, j] == (
-                        sum(rblock[t, x].rate_reaction_stoichiometry[r, p, j] *
+                        sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, x, r]
                             for r in b.rate_reaction_idx_ref))
                 else:
@@ -634,7 +707,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.equilibrium_reaction_generation[t, x, p, j] == (
-                            sum(rblock[t, x].
+                            sum(rblock[t, x].config.parameters.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, x, r]
                                 for r in b.equilibrium_reaction_idx_ref))
@@ -913,9 +986,9 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                          self.component_list_ref,
                          doc="Material balances")
         def material_balances(b, t, x, j):
-            if ((b._flow_direction is FlowDirection.forward and
+            if ((b.config.transformation_scheme != "FORWARD" and
                  x == b.length_domain.first()) or
-                    (b._flow_direction is FlowDirection.backward and
+                    (b.config.transformation_scheme == "FORWARD" and
                      x == b.length_domain.last())):
                 return Constraint.Skip
             else:
@@ -928,7 +1001,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                                  for p in cplist) ==
                     b._flow_direction_term*sum(b.material_flow_dx[t, x, p, j]
                                                for p in cplist) +
-                    b.length*sum(kinetic_term(b, t, x, p, j) for p in cplist) +
+                    b.length*sum(kinetic_term(b, t, x, p, j) for p in cplist) *
+                    b._rxn_rate_conv(t, x, j, has_rate_reactions) +
                     b.length*sum(equilibrium_term(b, t, x, p, j)
                                  for p in cplist) +
                     b.length*sum(transfer_term(b, t, x, p, j)
@@ -952,7 +1026,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def material_holdup_calculation(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.material_holdup[t, x, p, j] == (
-                          b.area*self.phase_fraction[t, x, p] *
+                          b._area_func(t, x)*self.phase_fraction[t, x, p] *
                           b.properties[t, x].get_material_density_terms(p, j))
                 else:
                     return b.material_holdup[t, x, p, j] == 0
@@ -976,8 +1050,9 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
+                    rparam = rblock[t, x].config.parameters
                     return b.rate_reaction_generation[t, x, p, j] == (
-                        sum(rblock[t, x].rate_reaction_stoichiometry[r, p, j] *
+                        sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, x, r]
                             for r in b.rate_reaction_idx_ref))
                 else:
@@ -1003,7 +1078,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
             def equilibrium_reaction_stoichiometry_constraint(b, t, x, p, j):
                 if j in phase_component_list[p]:
                     return b.equilibrium_reaction_generation[t, x, p, j] == (
-                            sum(rblock[t, x].
+                            sum(rblock[t, x].config.parameters.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, x, r]
                                 for r in b.equilibrium_reaction_idx_ref))
@@ -1213,10 +1288,10 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                          self.element_list_ref,
                          doc="Elemental material balances")
         def element_balances(b, t, x, e):
-            if ((b._flow_direction is FlowDirection.forward and
+            if ((b.config.transformation_scheme != "FORWARD" and
                  x == b.length_domain.first()) or
-                (b._flow_direction is FlowDirection.backward and
-                 x == b.length_domain.last())):
+                    (b.config.transformation_scheme == "FORWARD" and
+                     x == b.length_domain.last())):
                 return Constraint.Skip
             else:
                 return b.length*accumulation_term(b, t, x, e) == (
@@ -1238,7 +1313,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Elemental holdup calculation")
             def elemental_holdup_calculation(b, t, x, e):
                 return b.element_holdup[t, x, e] == (
-                    b.area *
+                    b._area_func(t, x) *
                     sum(b.phase_fraction[t, x, p] *
                         b.properties[t, x].get_material_density_terms(p, j) *
                         b.properties[t, x].config.parameters.element_comp[j][e]
@@ -1417,10 +1492,10 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                          self.length_domain,
                          doc="Energy balances")
         def enthalpy_balances(b, t, x):
-            if ((b._flow_direction is FlowDirection.forward and
+            if ((b.config.transformation_scheme != "FORWARD" and
                  x == b.length_domain.first()) or
-                (b._flow_direction is FlowDirection.backward and
-                 x == b.length_domain.last())):
+                    (b.config.transformation_scheme == "FORWARD" and
+                     x == b.length_domain.last())):
                 return Constraint.Skip
             else:
                 return (b.length*sum(accumulation_term(b, t, x, p)
@@ -1446,7 +1521,7 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc="Enthalpy holdup constraint")
             def enthalpy_holdup_calculation(b, t, x, p):
                 return b.enthalpy_holdup[t, x, p] == (
-                            b.area*self.phase_fraction[t, x, p] *
+                            b._area_func(t, x)*self.phase_fraction[t, x, p] *
                             b.properties[t, x].get_enthalpy_density_terms(p))
 
         return self.enthalpy_balances
@@ -1485,22 +1560,6 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
         Returns:
             Constraint object representing pressure balances
         """
-        # Get dynamic and holdup flags from config block
-        dynamic = self.config.dynamic
-        has_holdup = self.config.has_holdup
-
-        if dynamic:
-            _log.info("{} add_total_pressure_balances was provided with "
-                      "argument dynamic = True. Total pressure balances do "
-                      "not support dynamic terms (yet), and this argument "
-                      "will be ignored.".format(self.name))
-
-        if has_holdup:
-            _log.info("{} add_total_pressure_balances was provided with "
-                      "argument has_holdup = True. Total pressure balances do "
-                      "not support holdup terms (yet), and this argument "
-                      "will be ignored.".format(self.name))
-
         # Get units from property package
         units = {}
         for u in ['length', 'pressure']:
@@ -1562,10 +1621,10 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                          self.length_domain,
                          doc='Momentum balance')
         def pressure_balance(b, t, x):
-            if ((b._flow_direction is FlowDirection.forward and
+            if ((b.config.transformation_scheme != "FORWARD" and
                  x == b.length_domain.first()) or
-                (b._flow_direction is FlowDirection.backward and
-                 x == b.length_domain.last())):
+                    (b.config.transformation_scheme == "FORWARD" and
+                     x == b.length_domain.last())):
                 return Constraint.Skip
             else:
                 return 0 == (b._flow_direction_term*b.pressure_dx[t, x] *
@@ -1595,50 +1654,48 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                 "add_total_momentum_balances."
                 .format(self.name))
 
-    def apply_transformation(self,
-                             transformation_method="dae.finite_difference",
-                             transformation_scheme="BACKWARD",
-                             finite_elements=10,
-                             collocation_points=3):
+    def apply_transformation(self):
         """
         Method to apply DAE transformation to the Control Volume length domain.
-
-        Args:
-            transformation_method - method to use to transform domain. Must be
-                                    a method recognised by the Pyomo
-                                    TransformationFactory
-                                    (default = "dae.finite_difference")
-            transformation_scheme - scheme to use when transformating domain.
-                                    See Pyomo documentation for supported
-                                    schemes (default="BACKWARD")
-            finite_elements - number of finite elements to use in
-                              transformation (equivalent to Pyomo nfe argument,
-                              default = 10)
-            collocation_points - number of collocation points to use (
-                                 equivalent to Pyomo ncp argument, default = 3)
-
-        Returns:
-            None
+        Transformation applied will be based on the Control Volume
+        configuration arguments.
         """
+        if self.length_domain.parent_block() != self:
+            raise ConfigurationError(
+                    "{} tried to apply a DAE transformation to an external "
+                    "domain. To avoid complications, the apply_transformation "
+                    "method only supports transformation of local domains."
+                    .format(self.name))
 
-        if transformation_method == "dae.finite_difference":
-            # TODO: Need to add a check that the transformation_scheme matches
-            # the transformation method being passed.
-            self.discretizer = TransformationFactory('dae.finite_difference')
+        if self.config.finite_elements is None:
+            raise ConfigurationError(
+                    "{} was not provided a value for the finite_elements"
+                    " configuration argument. Please provide a valid value."
+                    .format(self.name))
+
+        if (self.config.collocation_points is None and
+                self.config.transformation_method == "dae.collocation"):
+            raise ConfigurationError(
+                    "{} was not provided a value for the collocation_points"
+                    " configuration argument. Please provide a valid value."
+                    .format(self.name))
+
+        if self.config.transformation_method == "dae.finite_difference":
+            self.discretizer = TransformationFactory(
+                                    self.config.transformation_method)
             self.discretizer.apply_to(self,
-                                      nfe=finite_elements,
+                                      nfe=self.config.finite_elements,
                                       wrt=self.length_domain,
-                                      scheme=transformation_scheme)
-        elif transformation_method == "dae.collocation":
-            # TODO: Need to add a check that the transformation_scheme matches
-            # the transformation method being passed.
-            self.discretizer = TransformationFactory('dae.collocation')
+                                      scheme=self.config.transformation_scheme)
+        elif self.config.transformation_method == "dae.collocation":
+            self.discretizer = TransformationFactory(
+                                    self.config.transformation_method)
             self.discretizer.apply_to(
                 self,
                 wrt=self.length_domain,
-                nfe=finite_elements,
-                ncp=collocation_points,
-                scheme='LAGRANGE-RADAU')
+                nfe=self.config.finite_elements,
+                ncp=self.config.collocation_points,
+                scheme=self.config.transformation_scheme)
         else:
             raise ConfigurationError("{} unrecognised transfromation_method, "
                                      "must match one of the Transformations "
@@ -1891,3 +1948,8 @@ class ControlVolume1DBlockData(ControlVolumeBlockData):
                              doc='Volume fraction of holdup by phase')
             def phase_fraction(self, t, x, p):
                 return 1
+
+    def _area_func(b, t, x):
+        if b.config.area_definition == DistributedVars.uniform:
+            return b.area
+        return b.area[t, x]

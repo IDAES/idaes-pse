@@ -18,9 +18,10 @@ from __future__ import division
 
 # Import Python libraries
 import logging
+from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import SolverFactory, value, Var, Reals, display
+from pyomo.environ import SolverFactory, value, Var
 from pyomo.opt import TerminationCondition
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
@@ -32,11 +33,18 @@ from idaes.core import (ControlVolume0DBlock,
                         MaterialBalanceType,
                         UnitModelBlockData,
                         useDefault)
-from idaes.core.util.config import is_physical_parameter_block, list_of_strings
+from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
 logger = logging.getLogger('idaes.unit_model')
+
+
+class ThermodynamicAssumption(Enum):
+    isothermal = 1
+    isentropic = 2
+    pump = 3
+    adiabatic = 4
 
 
 @declare_process_block_class("PressureChanger")
@@ -44,27 +52,8 @@ class PressureChangerData(UnitModelBlockData):
     """
     Standard Compressor/Expander Unit Model Class
     """
-    CONFIG = ConfigBlock()
+    CONFIG = UnitModelBlockData.CONFIG()
 
-    CONFIG.declare("dynamic", ConfigValue(
-        domain=In([True, False]),
-        default=False,
-        description="Dynamic model flag",
-        doc="""Indicates whether or not dynamics should be considered.
-**default** - False.
-**Valid values:** {
-**True** - dynamics considered,
-**False** - no dynamics considered}"""))
-    CONFIG.declare("has_holdup", ConfigValue(
-         default=useDefault,
-         domain=In([useDefault, True, False]),
-         description="Holdup construction flag",
-         doc="""Indicates whether holdup terms should be constructed or not.
-Must be True if dynamic = True,
-**default** - False.
-**Valid values:** {
-**True** - construct holdup terms,
-**False** - do not construct holdup terms}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
         default=MaterialBalanceType.componentPhase,
         domain=In(MaterialBalanceType),
@@ -105,8 +94,8 @@ Must be True if dynamic = True,
      default=False,
      domain=In([True, False]),
      description="Phase equilibrium construction flag",
-     doc="""Indicates whether terms for phase equilibrium should be constructed,
-**default** = False.
+     doc="""Indicates whether terms for phase equilibrium should be
+constructed, **default** = False.
 **Valid values:** {
 **True** - include phase equilibrium terms
 **False** - exclude phase equilibrium terms.}"""))
@@ -118,14 +107,14 @@ Must be True if dynamic = True,
             compressor (True (default), pressure increase) or an expander
             (False, pressure decrease)."""))
     CONFIG.declare("thermodynamic_assumption", ConfigValue(
-        default='isentropic',
-        domain=In(['isothermal', 'isentropic', 'pump', 'adiabatic']),
+        default=ThermodynamicAssumption.isentropic,
+        domain=In(ThermodynamicAssumption),
         description="Thermodynamic assumption to use",
         doc="""Flag to set the thermodynamic assumption to use for the unit.
-                - 'isothermal' (default)
-                - 'isentropic'
-                - 'pump'
-                - 'adiabatic'"""))
+                - ThermodynamicAssumption.isothermal (default)
+                - ThermodynamicAssumption.isentropic
+                - ThermodynamicAssumption.pump
+                - ThermodynamicAssumption.adiabatic"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -168,8 +157,8 @@ see property package for documentation.}"""))
             self.control_volume.add_geometry()
 
         # Add inlet and outlet state blocks to control volume
-        self.control_volume.add_state_blocks(has_phase_equilibrium=
-                                             self.config.has_phase_equilibrium)
+        self.control_volume.add_state_blocks(
+                has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         # Add mass balance
         # Set has_equilibrium is False for now
@@ -199,18 +188,23 @@ see property package for documentation.}"""))
         self.add_performance()
 
         # Construct equations for thermodynamic assumption
-        if self.config.thermodynamic_assumption == "isothermal":
+        if self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.isothermal:
             self.add_isothermal()
-        elif self.config.thermodynamic_assumption == "isentropic":
+        elif self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.isentropic:
             self.add_isentropic()
-        elif self.config.thermodynamic_assumption == "pump":
+        elif self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.pump:
             self.add_pump()
-        elif self.config.thermodynamic_assumption == "adiabatic":
+        elif self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.adiabatic:
             self.add_adiabatic()
 
     def set_geometry(self):
         """
-        Define the geometry of the unit as necessary, and link to control volume
+        Define the geometry of the unit as necessary, and link to control
+        volume
 
         Args:
             None
@@ -393,16 +387,19 @@ see property package for documentation.}"""))
                        b.control_volume.properties_out[t].entr_mol
 
         # Isentropic work
-        @self.Constraint(self.time_ref, doc="Calculate work of isentropic process")
+        @self.Constraint(self.time_ref,
+                         doc="Calculate work of isentropic process")
         def isentropic_energy_balance(b, t):
             return b.sfe*b.work_isentropic[t] == b.sfe*(
-			sum(b.properties_isentropic[t].get_enthalpy_flow_terms(p)
-                            for p in b.phase_list) -
-                        sum(b.control_volume.properties_out[t].get_enthalpy_flow_terms(p)
-                            for p in b.phase_list))
+                sum(b.properties_isentropic[t].get_enthalpy_flow_terms(p)
+                    for p in b.phase_list) -
+                sum(b.control_volume.properties_out[t]
+                    .get_enthalpy_flow_terms(p)
+                    for p in b.phase_list))
 
         # Actual work
-        @self.Constraint(self.time_ref, doc="Actual mechanical work calculation")
+        @self.Constraint(self.time_ref,
+                         doc="Actual mechanical work calculation")
         def actual_work(b, t):
             if b.config.compressor:
                 return b.sfe*b.work_isentropic[t] == b.sfe*(
@@ -441,7 +438,8 @@ see property package for documentation.}"""))
                                .format(blk.name))
             # Check that work is not negative
             if any(blk.work_mechanical[t].fixed and
-                   (value(blk.work_mechanical[t]) < 0.0) for t in blk.time_ref):
+                   (value(blk.work_mechanical[t]) < 0.0)
+                   for t in blk.time_ref):
                 logger.warning('{} Compressor maybe set with negative work.'
                                .format(blk.name))
         else:
@@ -463,7 +461,8 @@ see property package for documentation.}"""))
                                'increase.'.format(blk.name))
             # Check that work is not positive
             if any(blk.work_mechanical[t].fixed and
-                   (value(blk.work_mechanical[t]) > 0.0) for t in blk.time_ref):
+                   (value(blk.work_mechanical[t]) > 0.0)
+                   for t in blk.time_ref):
                 logger.warning('{} Expander/turbine set with positive work.'
                                .format(blk.name))
 
@@ -510,7 +509,7 @@ see property package for documentation.}"""))
             routine = blk.config.thermodynamic_assumption
 
         # Call initialisation routine
-        if routine is "isentropic":
+        if routine is ThermodynamicAssumption.isentropic:
             blk.init_isentropic(state_args=state_args,
                                 outlvl=outlvl,
                                 solver=solver,
@@ -557,9 +556,9 @@ see property package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Initialize Isentropic block
         blk.control_volume.properties_in.initialize(outlvl=outlvl-1,
-                                             optarg=optarg,
-                                             solver=solver,
-                                             **state_args)
+                                                    optarg=optarg,
+                                                    solver=solver,
+                                                    **state_args)
 
         if outlvl > 0:
             logger.info('{} Initialisation Step 1 Complete.'.format(blk.name))
@@ -567,16 +566,18 @@ see property package for documentation.}"""))
         # ---------------------------------------------------------------------
         # Initialize holdup block
         flags = blk.control_volume.initialize(outlvl=outlvl-1,
-                                      optarg=optarg,
-                                      solver=solver,
-                                      state_args=state_args)
+                                              optarg=optarg,
+                                              solver=solver,
+                                              state_args=state_args)
 
         if outlvl > 0:
             logger.info('{} Initialisation Step 2 Complete.'.format(blk.name))
 
         # ---------------------------------------------------------------------
         # Solve for isothermal conditions
-        if isinstance(blk.control_volume.properties_in[blk.time_ref[1]].temperature, Var):
+        if isinstance(
+                blk.control_volume.properties_in[blk.time_ref[1]].temperature,
+                Var):
             for t in blk.time_ref:
                 blk.control_volume.properties_in[t].temperature.fix()
             blk.isentropic.deactivate()

@@ -18,6 +18,7 @@ Unit Model Library
     pressure_changer
     product
     separator
+    statejunction
     stoichiometric_reactor
     translator
     power_generation/index

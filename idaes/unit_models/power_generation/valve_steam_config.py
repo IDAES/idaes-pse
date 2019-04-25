@@ -18,18 +18,29 @@ Define configuration block for the SteamValve model.
 
 __author__ = "John Eslick"
 
-from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
-from pyutilib.enum import Enum
+from enum import Enum
 
-ValveFunctionType = Enum("linear", "quick_opening", "equal_percentage", "custom")
+from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
+
+from idaes.unit_models.pressure_changer import ThermodynamicAssumption
+
+
+class ValveFunctionType(Enum):
+    linear = 1
+    quick_opening = 2
+    equal_percentage = 3
+    custom = 4
+
 
 def _define_config(config):
     config.compressor = False
     config.get('compressor')._default = False
     config.get('compressor')._domain = In([False])
-    config.thermodynamic_assumption = 'adiabatic'
-    config.get('thermodynamic_assumption')._default = 'adiabatic'
-    config.get('thermodynamic_assumption')._domain = In(['adiabatic'])
+    config.thermodynamic_assumption = ThermodynamicAssumption.adiabatic
+    config.get('thermodynamic_assumption')._default = \
+        ThermodynamicAssumption.adiabatic
+    config.get('thermodynamic_assumption')._domain = \
+        In([ThermodynamicAssumption.adiabatic])
     config.declare("valve_function", ConfigValue(
         default=ValveFunctionType.linear,
         domain=In(ValveFunctionType),

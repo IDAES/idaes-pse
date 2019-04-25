@@ -50,8 +50,9 @@ import os
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Param, PositiveReals,\
-                          RangeSet, Reals, Set, value, Var, ExternalFunction,\
-                          NonNegativeReals, exp, sqrt, log, tanh, ConcreteModel
+                          RangeSet, Reals, Set, value, Var, NonNegativeReals,\
+                          exp, sqrt, log, tanh, ConcreteModel
+from pyomo.environ import ExternalFunction as EF
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.core.kernel.component_set import ComponentSet
 from pyutilib.misc.config import ConfigValue
@@ -82,7 +83,7 @@ def htpx(T, P=None, x=None):
 
     if x is None:
         Tsat = 647.096/value(prop.func_tau_sat(P/1000))
-        if value(T) < Tsat or value(P) > 22064: #liquid
+        if value(T) < Tsat or value(P/1000) > 22064: #liquid
             return value(prop.func_hlpt(P/1000, 647.096/T)*prop.mw*1000.0)
         else: #vapor
             return value(prop.func_hvpt(P/1000, 647.096/T)*prop.mw*1000.0)
@@ -347,11 +348,11 @@ class Iapws95StateBlockData(StateBlockData):
         self.flow_mol.latex_symbol = "F"
 
         self.pressure = Var(domain=PositiveReals, initialize=1e5,
-            doc="Pressure [Pa]")
+            doc="Pressure [Pa]", bounds=(1, 1e9))
         self.pressure.latex_symbol = "P"
 
         self.enth_mol = Var(initialize=1000,
-            doc="Total molar enthalpy (J/mol)")
+            doc="Total molar enthalpy (J/mol)", bounds=(1,1e5))
         self.enth_mol.latex_symbol = "h"
 
         # For variables that show up in ports specify extensive and intensive
@@ -360,53 +361,36 @@ class Iapws95StateBlockData(StateBlockData):
 
         # External Functions (some of these are included only for testing)
         plib = self.config.parameters.plib
-        self.func_p = ExternalFunction(library=plib, function="p")
-        self.func_u = ExternalFunction(library=plib, function="u")
-        self.func_s = ExternalFunction(library=plib, function="s")
-        self.func_h = ExternalFunction(library=plib, function="h")
-        self.func_hvpt = ExternalFunction(library=plib, function="hvpt")
-        self.func_hlpt = ExternalFunction(library=plib, function="hlpt")
-        self.func_tau = ExternalFunction(library=plib, function="tau")
-        self.func_vf = ExternalFunction(library=plib, function="vf")
-        self.func_g = ExternalFunction(library=plib, function="g")
-        self.func_f = ExternalFunction(library=plib, function="f")
-        self.func_cv = ExternalFunction(library=plib, function="cv")
-        self.func_cp = ExternalFunction(library=plib, function="cp")
-        self.func_w = ExternalFunction(library=plib, function="w")
-        self.func_delta_liq = ExternalFunction(library=plib,
-            function="delta_liq")
-        self.func_delta_vap = ExternalFunction(library=plib,
-            function="delta_vap")
-        self.func_delta_sat_l = ExternalFunction(library=plib,
-            function="delta_sat_l")
-        self.func_delta_sat_v = ExternalFunction(library=plib,
-            function="delta_sat_v")
-        self.func_p_sat = ExternalFunction(library=plib,
-            function="p_sat")
-        self.func_tau_sat = ExternalFunction(library=plib,
-            function="tau_sat")
-        self.func_phi0 = ExternalFunction(library=plib,
-            function="phi0")
-        self.func_phi0_delta = ExternalFunction(library=plib,
-            function="phi0_delta")
-        self.func_phi0_delta2 = ExternalFunction(library=plib,
-            function="phi0_delta2")
-        self.func_phi0_tau = ExternalFunction(library=plib,
-            function="phi0_tau")
-        self.func_phi0_tau2 = ExternalFunction(library=plib,
-            function="phi0_tau2")
-        self.func_phir = ExternalFunction(library=plib,
-            function="phir")
-        self.func_phir_delta = ExternalFunction(library=plib,
-            function="phir_delta")
-        self.func_phir_delta2 = ExternalFunction(library=plib,
-            function="phir_delta2")
-        self.func_phir_tau = ExternalFunction(library=plib,
-            function="phir_tau")
-        self.func_phir_tau2 = ExternalFunction(library=plib,
-            function="phir_tau2")
-        self.func_phir_delta_tau = ExternalFunction(library=plib,
-            function="phir_delta_tau")
+        self.func_p = EF(library=plib, function="p")
+        self.func_u = EF(library=plib, function="u")
+        self.func_s = EF(library=plib, function="s")
+        self.func_h = EF(library=plib, function="h")
+        self.func_hvpt = EF(library=plib, function="hvpt")
+        self.func_hlpt = EF(library=plib, function="hlpt")
+        self.func_tau = EF(library=plib, function="tau")
+        self.func_vf = EF(library=plib, function="vf")
+        self.func_g = EF(library=plib, function="g")
+        self.func_f = EF(library=plib, function="f")
+        self.func_cv = EF(library=plib, function="cv")
+        self.func_cp = EF(library=plib, function="cp")
+        self.func_w = EF(library=plib, function="w")
+        self.func_delta_liq = EF(library=plib, function="delta_liq")
+        self.func_delta_vap = EF(library=plib, function="delta_vap")
+        self.func_delta_sat_l = EF(library=plib, function="delta_sat_l")
+        self.func_delta_sat_v = EF(library=plib, function="delta_sat_v")
+        self.func_p_sat = EF(library=plib, function="p_sat")
+        self.func_tau_sat = EF(library=plib, function="tau_sat")
+        self.func_phi0 = EF(library=plib, function="phi0")
+        self.func_phi0_delta = EF(library=plib, function="phi0_delta")
+        self.func_phi0_delta2 = EF(library=plib, function="phi0_delta2")
+        self.func_phi0_tau = EF(library=plib, function="phi0_tau")
+        self.func_phi0_tau2 = EF(library=plib, function="phi0_tau2")
+        self.func_phir = EF(library=plib, function="phir")
+        self.func_phir_delta = EF(library=plib, function="phir_delta")
+        self.func_phir_delta2 = EF(library=plib, function="phir_delta2")
+        self.func_phir_tau = EF(library=plib, function="phir_tau")
+        self.func_phir_tau2 = EF(library=plib, function="phir_tau2")
+        self.func_phir_delta_tau = EF(library=plib, function="phir_delta_tau")
 
         # Calcuations (In this case all expressions no constraints)
 
@@ -415,7 +399,6 @@ class Iapws95StateBlockData(StateBlockData):
             doc="molecular weight [kg/mol]")
         mw = self.mw
         mw.latex_symbol = "M"
-
         self.enth_mass = Expression(expr = self.enth_mol/mw,
             doc="Mass enthalpy (J/kg)")
 
