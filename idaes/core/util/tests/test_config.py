@@ -31,7 +31,7 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     list_of_floats,
                                     list_of_strings,
                                     is_port,
-                                    is_time_domain)
+                                    is_time_domain,
                                     is_transformation_method,
                                     is_transformation_scheme)
 from idaes.core.util.exceptions import ConfigurationError
