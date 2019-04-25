@@ -357,8 +357,8 @@ def test_get_indexing_sets_missing_component_list():
     m.cv = CVFrame(default={"property_package": m.pp})
     m.cv._get_property_package()
 
-    with pytest.raises(AttributeError):
-        m.pp.component_list
+    with pytest.raises(PropertyPackageError):
+        m.cv._get_indexing_sets()
 
 
 # Test _get_reaction_package

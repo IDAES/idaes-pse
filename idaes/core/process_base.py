@@ -294,11 +294,18 @@ class ProcessBlockData(_BlockData):
                                  self.config.property_package.phase_list)
         except AttributeError:
             raise PropertyPackageError(
-                    '{} property_package provided does not '
-                    'contain a phase_list. '
-                    'Please contact the developer of the property package.'
-                    .format(self.name))
+                '{} property_package provided does not '
+                'contain a phase_list. '
+                'Please contact the developer of the property package.'
+                .format(self.name))
 
+        # Check for component list(s)
+        if not hasattr(self.config.property_package, "component_list"):
+            raise PropertyPackageError(
+                '{} property_package provided does not '
+                'contain a component_list. '
+                'Please contact the developer of the property package.'
+                .format(self.name))
 
     def _get_reaction_package(self):
         """
