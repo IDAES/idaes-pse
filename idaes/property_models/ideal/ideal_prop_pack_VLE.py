@@ -463,11 +463,11 @@ class IdealStateBlockData(StateBlockData):
                                   doc='Phase molar flow rates [mol/s]')
 
         self.mole_frac_phase = Var(
-                self._params.phase_list,
-                self._params.component_list,
-                initialize=1/len(self._params.component_list),
-                bounds=(0, 1),
-                doc='Phase mole fractions [-]')
+            self._params.phase_list,
+            self._params.component_list,
+            initialize=1 / len(self._params.component_list),
+            bounds=(0, 1),
+            doc='Phase mole fractions [-]')
 
         if not self.config.has_phase_equilibrium and \
                 self._params.config.valid_phase == "Liq":
@@ -500,8 +500,8 @@ class IdealStateBlockData(StateBlockData):
         if self.config.defined_state is False:
             # applied at outlet only
             self.sum_mole_frac_out = Constraint(
-                    expr=1 == sum(self.mole_frac[i]
-                                  for i in self._params.component_list))
+                expr=1 == sum(self.mole_frac[i]
+                              for i in self._params.component_list))
 
     def _make_vap_phase_eq(self):
         def rule_total_mass_balance(b):
@@ -603,10 +603,10 @@ class IdealStateBlockData(StateBlockData):
                                             rule=rule_dens_mol_phase)
 
     def _enth_mol_phase_comp(self):
-        self.enth_mol_phase_comp = Var(
-                self._params.phase_list,
-                self._params.component_list,
-                doc='Phase-component molar specific enthalpies [J/mol]')
+        self.enth_mol_phase_comp = Var(self._params.phase_list,
+                                       self._params.component_list,
+                                       doc="Phase-component molar specific "
+                                           "enthalpies [J/mol]")
 
         def rule_enth_mol_phase_comp(b, p, j):
             if p == 'Vap':
@@ -614,28 +614,28 @@ class IdealStateBlockData(StateBlockData):
             else:
                 return b._enth_mol_comp_liq(j)
         self.eq_enth_mol_phase_comp = Constraint(
-                self._params.phase_list,
-                self._params.component_list,
-                rule=rule_enth_mol_phase_comp)
+            self._params.phase_list,
+            self._params.component_list,
+            rule=rule_enth_mol_phase_comp)
 
     def _enth_mol_phase(self):
         self.enth_mol_phase = Var(
-                self._params.phase_list,
-                doc='Phase molar specific enthalpies [J/mol]')
+            self._params.phase_list,
+            doc='Phase molar specific enthalpies [J/mol]')
 
         def rule_enth_mol_phase(b, p):
             return b.enth_mol_phase[p] == sum(
-                    b.enth_mol_phase_comp[p, i] *
-                    b.mole_frac_phase[p, i]
-                    for i in b._params.component_list)
+                b.enth_mol_phase_comp[p, i] *
+                b.mole_frac_phase[p, i]
+                for i in b._params.component_list)
         self.eq_enth_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_enth_mol_phase)
 
     def _entr_mol_phase_comp(self):
         self.entr_mol_phase_comp = Var(
-                self._params.phase_list,
-                self._params.component_list,
-                doc='Phase-component molar specific entropies [J/mol.K]')
+            self._params.phase_list,
+            self._params.component_list,
+            doc='Phase-component molar specific entropies [J/mol.K]')
 
         def rule_entr_mol_phase_comp(b, p, j):
             if p == 'Vap':
@@ -643,20 +643,20 @@ class IdealStateBlockData(StateBlockData):
             else:
                 return b._entr_mol_comp_liq(j)
         self.eq_entr_mol_phase_comp = Constraint(
-                self._params.phase_list,
-                self._params.component_list,
-                rule=rule_entr_mol_phase_comp)
+            self._params.phase_list,
+            self._params.component_list,
+            rule=rule_entr_mol_phase_comp)
 
     def _entr_mol_phase(self):
         self.entr_mol_phase = Var(
-                self._params.phase_list,
-                doc='Phase molar specific enthropies [J/mol.K]')
+            self._params.phase_list,
+            doc='Phase molar specific enthropies [J/mol.K]')
 
         def rule_entr_mol_phase(b, p):
             return b.entr_mol_phase[p] == sum(
-                    b.entr_mol_phase_comp[p, i] *
-                    b.mole_frac_phase[p, i]
-                    for i in b._params.component_list)
+                b.entr_mol_phase_comp[p, i] *
+                b.mole_frac_phase[p, i]
+                for i in b._params.component_list)
         self.eq_entr_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_entr_mol_phase)
 
@@ -952,14 +952,14 @@ class IdealStateBlockData(StateBlockData):
 # -----------------------------------------------------------------------------
 # Liquid phase properties
     def _dens_mol_liq(b):
-        return b.dens_mol_phase['Liq'] == 1e3*sum(
-                b.mole_frac_phase['Liq', j] *
-                b._params.dens_liq_params[j, '1'] /
-                b._params.dens_liq_params[j, '2'] **
-                (1 + (1-b.temperature /
-                      b._params.dens_liq_params[j, '3']) **
-                 b._params.dens_liq_params[j, '4'])
-                for j in b._params.component_list)
+        return b.dens_mol_phase['Liq'] == 1e3 * sum(
+            b.mole_frac_phase['Liq', j] *
+            b._params.dens_liq_params[j, '1'] /
+            b._params.dens_liq_params[j, '2'] **
+            (1 + (1 - b.temperature /
+                  b._params.dens_liq_params[j, '3']) **
+             b._params.dens_liq_params[j, '4'])
+            for j in b._params.component_list)
 
     def _fug_liq(self):
         def fug_liq_rule(b, i):
@@ -975,41 +975,41 @@ class IdealStateBlockData(StateBlockData):
         def rule_P_sat(b, j):
             return (b._tr_eq[j]) * \
                 log(b.pressure_sat[j] / b._params.pressure_crit[j]) == \
-                (b._params.pressure_sat_coeff[j, 'A']*(1-b._tr_eq[j]) +
-                 b._params.pressure_sat_coeff[j, 'B']*(1-b._tr_eq[j])**1.5 +
-                 b._params.pressure_sat_coeff[j, 'C']*(1-b._tr_eq[j])**3 +
-                 b._params.pressure_sat_coeff[j, 'D']*(1-b._tr_eq[j])**6)
+                (b._params.pressure_sat_coeff[j, 'A'] * (1 - b._tr_eq[j]) +
+                 b._params.pressure_sat_coeff[j, 'B'] * (1 - b._tr_eq[j])**1.5 +
+                 b._params.pressure_sat_coeff[j, 'C'] * (1 - b._tr_eq[j])**3 +
+                 b._params.pressure_sat_coeff[j, 'D'] * (1 - b._tr_eq[j])**6)
         self.eq_pressure_sat = Constraint(self._params.component_list,
                                           rule=rule_P_sat)
 
     def _enth_mol_comp_liq(b, j):
         return b.enth_mol_phase_comp['Liq', j] * 1E3 == \
-                ((b._params.cp_ig['Liq', j, '5'] / 5) *
-                    (b.temperature**5 - b._params.temperature_ref**5)
-                    + (b._params.cp_ig['Liq', j, '4'] / 4) *
-                      (b.temperature**4 - b._params.temperature_ref**4)
-                    + (b._params.cp_ig['Liq', j, '3'] / 3) *
-                      (b.temperature**3 - b._params.temperature_ref**3)
-                    + (b._params.cp_ig['Liq', j, '2'] / 2) *
-                      (b.temperature**2 - b._params.temperature_ref**2)
-                    + b._params.cp_ig['Liq', j, '1'] *
-                      (b.temperature - b._params.temperature_ref))
+            ((b._params.cp_ig['Liq', j, '5'] / 5) *
+                (b.temperature**5 - b._params.temperature_ref**5)
+                + (b._params.cp_ig['Liq', j, '4'] / 4) *
+                  (b.temperature**4 - b._params.temperature_ref**4)
+                + (b._params.cp_ig['Liq', j, '3'] / 3) *
+                  (b.temperature**3 - b._params.temperature_ref**3)
+                + (b._params.cp_ig['Liq', j, '2'] / 2) *
+                  (b.temperature**2 - b._params.temperature_ref**2)
+                + b._params.cp_ig['Liq', j, '1'] *
+                  (b.temperature - b._params.temperature_ref))
 
     def _entr_mol_comp_liq(b, j):
         return b.entr_mol_phase_comp['Liq', j] * 1E3 == (
-                ((b._params.cp_ig['Liq', j, '5'] / 4) *
-                    (b.temperature**4 - b._params.temperature_ref**4)
-                    + (b._params.cp_ig['Liq', j, '4'] / 3) *
-                      (b.temperature**3 - b._params.temperature_ref**3)
-                    + (b._params.cp_ig['Liq', j, '3'] / 2) *
-                      (b.temperature**2 - b._params.temperature_ref**2)
-                    + b._params.cp_ig['Liq', j, '2'] *
-                      (b.temperature - b._params.temperature_ref)
-                    + b._params.cp_ig['Liq', j, '1'] *
-                      log(b.temperature / b._params.temperature_ref)) -
-                b._params.gas_const *
-                log(b.mole_frac_phase['Liq', j]*b.pressure /
-                    b._params.pressure_ref))
+            ((b._params.cp_ig['Liq', j, '5'] / 4) *
+                (b.temperature**4 - b._params.temperature_ref**4)
+                + (b._params.cp_ig['Liq', j, '4'] / 3) *
+                  (b.temperature**3 - b._params.temperature_ref**3)
+                + (b._params.cp_ig['Liq', j, '3'] / 2) *
+                  (b.temperature**2 - b._params.temperature_ref**2)
+                + b._params.cp_ig['Liq', j, '2'] *
+                  (b.temperature - b._params.temperature_ref)
+                + b._params.cp_ig['Liq', j, '1'] *
+                  log(b.temperature / b._params.temperature_ref)) -
+            b._params.gas_const *
+            log(b.mole_frac_phase['Liq', j] * b.pressure /
+                b._params.pressure_ref))
 
 # -----------------------------------------------------------------------------
 # Vapour phase properties
@@ -1024,6 +1024,11 @@ class IdealStateBlockData(StateBlockData):
         self.fug_vap = Expression(self._params.component_list,
                                   rule=fug_vap_rule)
 
+    def _dh_vap(self):
+
+        # heat of vaporization
+        add_object_reference(self, "dh_vap", self._params.dh_vap)
+
     def _ds_vap(self):
         # entropy of vaporization = dh_Vap/T_boil
         # TODO : something more rigorous would be nice
@@ -1032,13 +1037,13 @@ class IdealStateBlockData(StateBlockData):
                           doc="Entropy of vaporization [J/mol.K]")
 
         def rule_ds_vap(b, j):
-            return b._params.dh_vap[j] == (b.ds_vap[j] *
-                                           b._params.temperature_boil[j])
+            return b.dh_vap[j] == (b.ds_vap[j] *
+                                   b._params.temperature_boil[j])
         self.eq_ds_vap = Constraint(self._params.component_list,
                                     rule=rule_ds_vap)
 
     def _enth_mol_comp_vap(b, j):
-        return b.enth_mol_phase_comp['Vap', j] == b._params.dh_vap[j] + \
+        return b.enth_mol_phase_comp['Vap', j] == b.dh_vap[j] + \
             ((b._params.cp_ig['Vap', j, '5'] / 5) *
              (b.temperature**5 - b._params.temperature_ref**5)
              + (b._params.cp_ig['Vap', j, '4'] / 4) *
@@ -1052,17 +1057,15 @@ class IdealStateBlockData(StateBlockData):
 
     def _entr_mol_comp_vap(b, j):
         return b.entr_mol_phase_comp['Vap', j] == (
-                b.ds_vap[j] +
-                ((b._params.cp_ig['Vap', j, '5'] / 4) *
-                    (b.temperature**4 - b._params.temperature_ref**4)
-                    + (b._params.cp_ig['Vap', j, '4'] / 3) *
-                      (b.temperature**3 - b._params.temperature_ref**3)
-                    + (b._params.cp_ig['Vap', j, '3'] / 2) *
-                      (b.temperature**2 - b._params.temperature_ref**2)
-                    + b._params.cp_ig['Vap', j, '2'] *
-                      (b.temperature - b._params.temperature_ref)
-                    + b._params.cp_ig['Vap', j, '1'] *
-                      log(b.temperature / b._params.temperature_ref)) -
-                b._params.gas_const *
-                log(b.mole_frac_phase['Vap', j]*b.pressure /
-                    b._params.pressure_ref))
+            b.ds_vap[j] + ((b._params.cp_ig['Vap', j, '5'] / 4) *
+                           (b.temperature**4 - b._params.temperature_ref**4)
+                           + (b._params.cp_ig['Vap', j, '4'] / 3) *
+                           (b.temperature**3 - b._params.temperature_ref**3)
+                           + (b._params.cp_ig['Vap', j, '3'] / 2) *
+                           (b.temperature**2 - b._params.temperature_ref**2)
+                           + b._params.cp_ig['Vap', j, '2'] *
+                           (b.temperature - b._params.temperature_ref)
+                           + b._params.cp_ig['Vap', j, '1'] *
+                           log(b.temperature / b._params.temperature_ref)) -
+            b._params.gas_const * log(b.mole_frac_phase['Vap', j] * b.pressure /
+                                      b._params.pressure_ref))
