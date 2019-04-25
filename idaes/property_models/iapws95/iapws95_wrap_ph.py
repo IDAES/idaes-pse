@@ -52,7 +52,7 @@ import os
 from pyomo.environ import Constraint, Expression, Param, PositiveReals,\
                           RangeSet, Reals, Set, value, Var, NonNegativeReals,\
                           exp, sqrt, log, tanh, ConcreteModel
-from pyomo.environ import EF as EF
+from pyomo.environ import ExternalFunction as EF
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.core.kernel.component_set import ComponentSet
 from pyutilib.misc.config import ConfigValue
