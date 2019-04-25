@@ -40,26 +40,6 @@ def read_data(fname, col):
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
-def test_limits():
-    model = ConcreteModel()
-    model.prop_param = iapws95.Iapws95ParameterBlock()
-    model.prop_in = iapws95.Iapws95StateBlock(
-        default={"parameters":model.prop_param})
-    x = value(model.prop_in.func_delta_liq(1e5, -1000))
-    assert(math.isnan(x))
-    x = value(model.prop_in.func_delta_liq(1e5, 100))
-    assert(math.isnan(x))
-    x = value(model.prop_in.func_delta_liq(1e5, 1e7))
-    assert(math.isnan(x))
-    x = value(model.prop_in.func_delta_vap(1e5, -1000))
-    assert(math.isnan(x))
-    x = value(model.prop_in.func_delta_vap(1e5, 100))
-    assert(math.isnan(x))
-    x = value(model.prop_in.func_delta_vap(1e5, 1e7))
-    assert(math.isnan(x))
-
-@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-@pytest.mark.nocircleci()
 def test_tau_sat():
     model = ConcreteModel()
     model.prop_param = iapws95.Iapws95ParameterBlock()

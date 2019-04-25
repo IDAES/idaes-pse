@@ -32,6 +32,8 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     list_of_strings,
                                     is_port,
                                     is_time_domain)
+                                    is_transformation_method,
+                                    is_transformation_scheme)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -180,6 +182,7 @@ def test_is_port_errors():
     with pytest.raises(ConfigurationError):
         is_port(1)  # int
 
+
 def test_is_time_domain():
     # Test that is_time_domain accepts Sets and ContinuousSets
     m = ConcreteModel()
@@ -205,3 +208,24 @@ def test_is_time_domain_errors():
         assert is_time_domain(1)
     with pytest.raises(ConfigurationError):
         assert is_time_domain(1.0)
+
+
+def test_is_transformation_method():
+    assert is_transformation_method("dae.finite_difference") == \
+        "dae.finite_difference"
+
+    assert is_transformation_method("dae.collocation") == \
+        "dae.collocation"
+
+    with pytest.raises(ConfigurationError):
+        is_transformation_method("dea.finite_difference")
+
+
+def test_is_transformation_scheme():
+    assert is_transformation_scheme("BACKWARD") == "BACKWARD"
+    assert is_transformation_scheme("FORWARD") == "FORWARD"
+    assert is_transformation_scheme("LAGRANGE-RADAU") == "LAGRANGE-RADAU"
+    assert is_transformation_scheme("LAGRANGE-LEGENDRE") == "LAGRANGE-LEGENDRE"
+
+    with pytest.raises(ConfigurationError):
+        is_transformation_scheme("foo")
