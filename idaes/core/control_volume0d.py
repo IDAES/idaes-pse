@@ -398,13 +398,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         def phase_equilibrium_term(b, t, p, j):
             if has_phase_equilibrium:
                 sd = {}
-                sblock = self.properties_out[t]
-                sparam = sblock._params
                 for r in b.phase_equilibrium_idx_ref:
-                    if sparam.phase_equilibrium_list[r][0] == j:
-                        if sparam.phase_equilibrium_list[r][1][0] == p:
+                    if b.config.property_package.\
+                            phase_equilibrium_list[r][0] == j:
+                        if b.config.property_package.\
+                                phase_equilibrium_list[r][1][0] == p:
                             sd[r] = 1
-                        elif sparam.phase_equilibrium_list[r][1][1] == p:
+                        elif b.config.property_package.\
+                                phase_equilibrium_list[r][1][1] == p:
                             sd[r] = -1
                         else:
                             sd[r] = 0
