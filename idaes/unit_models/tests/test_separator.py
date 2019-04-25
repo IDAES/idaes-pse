@@ -169,7 +169,7 @@ def test_inherited_methods():
     m.fs.sep._get_property_package()
     m.fs.sep._get_indexing_sets()
 
-    assert hasattr(m.fs.sep, "phase_list_ref")
+    assert hasattr(m.fs.sep.config.property_package, "phase_list")
 
 def test_create_outlet_list_default():
     m = ConcreteModel()
@@ -454,7 +454,7 @@ def test_add_split_fractions_phase():
 
     for t in m.fs.time:
         for o in m.fs.sep.outlet_idx:
-            for p in m.fs.sep.phase_list_ref:
+            for p in m.fs.sep.config.property_package.phase_list:
                 assert m.fs.sep.split_fraction[t, o, p] == 0.5
 
     assert isinstance(m.fs.sep.sum_split_frac, Constraint)
@@ -522,7 +522,7 @@ def test_add_split_fractions_phase_component():
 
     for t in m.fs.time:
         for o in m.fs.sep.outlet_idx:
-            for p in m.fs.sep.phase_list_ref:
+            for p in m.fs.sep.config.property_package.phase_list:
                 for j in m.fs.sep.config.property_package.component_list:
                     assert m.fs.sep.split_fraction[t, o, p, j] == 0.5
 

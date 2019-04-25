@@ -338,9 +338,6 @@ see property package for documentation.}"""))
             None
         """
         # Get indexing sets from control volume
-        add_object_reference(self, "phase_list",
-                             self.control_volume.phase_list_ref)
-
         # Add isentropic variables
         self.efficiency_isentropic = Var(self.time_ref,
                                          initialize=0.8,
@@ -390,10 +387,10 @@ see property package for documentation.}"""))
         def isentropic_energy_balance(b, t):
             return b.sfe*b.work_isentropic[t] == b.sfe*(
                 sum(b.properties_isentropic[t].get_enthalpy_flow_terms(p)
-                    for p in b.phase_list) -
+                    for p in b.config.property_package.phase_list) -
                 sum(b.control_volume.properties_out[t]
                     .get_enthalpy_flow_terms(p)
-                    for p in b.phase_list))
+                    for p in b.config.property_package.phase_list))
 
         # Actual work
         @self.Constraint(self.time_ref,

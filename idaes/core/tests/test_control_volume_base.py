@@ -329,16 +329,6 @@ def test_get_property_package_call_to_get_default_prop_pack():
 
 # -----------------------------------------------------------------------------
 # Test _get_indexing_sets
-def test_get_indexing_sets():
-    m = ConcreteModel()
-    m.pp = PropertyParameterBlock()
-    m.cv = CVFrame(default={"property_package": m.pp})
-    m.cv._get_property_package()
-    m.cv._get_indexing_sets()
-
-    assert hasattr(m.cv, "phase_list_ref")
-
-
 def test_get_indexing_sets_missing_phase_list():
     m = ConcreteModel()
     m.pp = PropertyParameterBlock()
@@ -361,6 +351,7 @@ def test_get_indexing_sets_missing_component_list():
         m.cv._get_indexing_sets()
 
 
+# -----------------------------------------------------------------------------
 # Test _get_reaction_package
 def test_get_reaction_package_none():
     m = ConcreteModel()

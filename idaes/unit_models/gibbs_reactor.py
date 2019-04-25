@@ -157,9 +157,6 @@ see property package for documentation.}"""))
 
         # Add performance equations
         add_object_reference(self,
-                             "phase_list_ref",
-                             self.control_volume.phase_list_ref)
-        add_object_reference(self,
                              "element_list_ref",
                              self.control_volume.element_list_ref)
 
@@ -175,7 +172,7 @@ see property package for documentation.}"""))
         # a similar order of magnitude as log(Yi)
 
         @self.Constraint(self.time_ref,
-                         self.phase_list_ref,
+                         self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Gibbs energy minimisation constraint")
         def gibbs_minimization(b, t, p, j):

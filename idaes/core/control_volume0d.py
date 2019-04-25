@@ -293,7 +293,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Material holdup and accumulation
         if has_holdup:
             self.material_holdup = Var(self.time_ref,
-                                       self.phase_list_ref,
+                                       self.config.property_package.phase_list,
                                        self.config.property_package.component_list,
                                        domain=Reals,
                                        doc="Material holdup in unit [{}]"
@@ -323,7 +323,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "rate-based reactions.".format(self.name))
             self.rate_reaction_generation = Var(
                         self.time_ref,
-                        self.phase_list_ref,
+                        self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
                         doc="Amount of component generated in "
@@ -345,7 +345,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     .format(self.name))
             self.equilibrium_reaction_generation = Var(
                         self.time_ref,
-                        self.phase_list_ref,
+                        self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
                         doc="Amount of component generated in unit "
@@ -376,7 +376,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_mass_transfer:
             self.mass_transfer_term = Var(
                         self.time_ref,
-                        self.phase_list_ref,
+                        self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
                         doc="Component material transfer into unit [{}/{}]"
@@ -471,7 +471,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Add component balances
         @self.Constraint(self.time_ref,
-                         self.phase_list_ref,
+                         self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Material balances")
         def material_balances(b, t, p, j):
@@ -497,7 +497,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self._add_phase_fractions()
 
             @self.Constraint(self.time_ref,
-                             self.phase_list_ref,
+                             self.config.property_package.phase_list,
                              self.config.property_package.component_list,
                              doc="Material holdup calculations")
             def material_holdup_calculation(b, t, p, j):
@@ -518,7 +518,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         .format(units['holdup'], units['time']))
 
             @self.Constraint(self.time_ref,
-                             self.phase_list_ref,
+                             self.config.property_package.phase_list,
                              self.config.property_package.component_list,
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, p, j):
@@ -541,7 +541,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                 .format(units['holdup'], units['time']))
 
             @self.Constraint(self.time_ref,
-                             self.phase_list_ref,
+                             self.config.property_package.phase_list,
                              self.config.property_package.component_list,
                              doc="Equilibrium reaction stoichiometry")
             def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
@@ -658,7 +658,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Material holdup and accumulation
         if has_holdup:
             self.material_holdup = Var(self.time_ref,
-                                       self.phase_list_ref,
+                                       self.config.property_package.phase_list,
                                        self.config.property_package.component_list,
                                        domain=Reals,
                                        doc="Material holdup in unit [{}]"
@@ -688,7 +688,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "rate-based reactions.".format(self.name))
             self.rate_reaction_generation = Var(
                         self.time_ref,
-                        self.phase_list_ref,
+                        self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
                         doc="Amount of component generated in "
@@ -710,7 +710,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     .format(self.name))
             self.equilibrium_reaction_generation = Var(
                         self.time_ref,
-                        self.phase_list_ref,
+                        self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
                         doc="Amount of component generated in unit "
@@ -721,7 +721,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_mass_transfer:
             self.mass_transfer_term = Var(
                         self.time_ref,
-                        self.phase_list_ref,
+                        self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
                         doc="Component material transfer into unit [{}/{}]"
@@ -799,7 +799,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          doc="Material balances")
         def material_balances(b, t, j):
             cplist = []
-            for p in self.phase_list_ref:
+            for p in self.config.property_package.phase_list:
                 if j in phase_component_list[p]:
                     cplist.append(p)
             return (
@@ -823,7 +823,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self._add_phase_fractions()
 
             @self.Constraint(self.time_ref,
-                             self.phase_list_ref,
+                             self.config.property_package.phase_list,
                              self.config.property_package.component_list,
                              doc="Material holdup calculations")
             def material_holdup_calculation(b, t, p, j):
@@ -844,7 +844,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         .format(units['holdup'], units['time']))
 
             @self.Constraint(self.time_ref,
-                             self.phase_list_ref,
+                             self.config.property_package.phase_list,
                              self.config.property_package.component_list,
                              doc="Kinetic reaction stoichiometry constraint")
             def rate_reaction_stoichiometry_constraint(b, t, p, j):
@@ -867,7 +867,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                 .format(units['holdup'], units['time']))
 
             @self.Constraint(self.time_ref,
-                             self.phase_list_ref,
+                             self.config.property_package.phase_list,
                              self.config.property_package.component_list,
                              doc="Equilibrium reaction stoichiometry")
             def equilibrium_reaction_stoichiometry_constraint(b, t, p, j):
@@ -1036,7 +1036,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         .format(units['amount'], units['time']))
 
         @self.Expression(self.time_ref,
-                         self.phase_list_ref,
+                         self.config.property_package.phase_list,
                          self.element_list_ref,
                          doc="Inlet elemental flow terms [{}/{}]"
                              .format(units['amount'], units['time']))
@@ -1046,7 +1046,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                        for j in b.config.property_package.component_list)
 
         @self.Expression(self.time_ref,
-                         self.phase_list_ref,
+                         self.config.property_package.phase_list,
                          self.element_list_ref,
                          doc="Outlet elemental flow terms [{}/{}]"
                              .format(units['amount'], units['time']))
@@ -1088,9 +1088,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         def element_balances(b, t, e):
             return accumulation_term(b, t, e) == (
                         sum(b.elemental_flow_in[t, p, e]
-                            for p in b.phase_list_ref) -
+                            for p in b.config.property_package.phase_list) -
                         sum(b.elemental_flow_out[t, p, e]
-                            for p in b.phase_list_ref) +
+                            for p in b.config.property_package.phase_list) +
                         transfer_term(b, t, e) +
                         user_term(t, e))
 
@@ -1109,7 +1109,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         b.properties_out[t].get_material_density_terms(p, j) *
                         b.properties_out[t]
                         ._params.element_comp[j][e]
-                        for p in b.phase_list_ref
+                        for p in b.config.property_package.phase_list
                         for j in b.config.property_package.component_list))
 
         return self.element_balances
@@ -1177,7 +1177,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_holdup:
             self.enthalpy_holdup = Var(
                         self.time_ref,
-                        self.phase_list_ref,
+                        self.config.property_package.phase_list,
                         domain=Reals,
                         doc="Enthalpy holdup in unit [{}]"
                         .format(units['energy']))
@@ -1259,13 +1259,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Energy balance equation
         @self.Constraint(self.time_ref, doc="Energy balances")
         def enthalpy_balances(b, t):
-            return (sum(accumulation_term(b, t, p) for p in b.phase_list_ref) *
+            return (sum(accumulation_term(b, t, p) for p in b.config.property_package.phase_list) *
                     b.scaling_factor_energy) == (
                         sum(b.properties_in[t].get_enthalpy_flow_terms(p)
-                            for p in b.phase_list_ref) *
+                            for p in b.config.property_package.phase_list) *
                         b.scaling_factor_energy -
                         sum(self.properties_out[t].get_enthalpy_flow_terms(p)
-                            for p in b.phase_list_ref) *
+                            for p in b.config.property_package.phase_list) *
                         b.scaling_factor_energy +
                         heat_term(b, t)*b.scaling_factor_energy +
                         work_term(b, t)*b.scaling_factor_energy +
@@ -1278,7 +1278,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self._add_phase_fractions()
 
             @self.Constraint(self.time_ref,
-                             self.phase_list_ref,
+                             self.config.property_package.phase_list,
                              doc="Enthalpy holdup constraint")
             def enthalpy_holdup_calculation(b, t, p):
                 return b.enthalpy_holdup[t, p] == (
@@ -1518,21 +1518,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Returns:
             None
         """
-        if len(self.phase_list_ref) > 1:
+        if len(self.config.property_package.phase_list) > 1:
             self.phase_fraction = Var(
                             self.time_ref,
-                            self.phase_list_ref,
-                            initialize=1/len(self.phase_list_ref),
+                            self.config.property_package.phase_list,
+                            initialize=1/len(self.config.property_package.phase_list),
                             doc='Volume fraction of holdup by phase')
 
             @self.Constraint(self.time_ref,
                              doc='Sum of phase fractions == 1')
             def sum_of_phase_fractions(self, t):
                 return 1 == sum(self.phase_fraction[t, p]
-                                for p in self.phase_list_ref)
+                                for p in self.config.property_package.phase_list)
         else:
             @self.Expression(self.time_ref,
-                             self.phase_list_ref,
+                             self.config.property_package.phase_list,
                              doc='Volume fraction of holdup by phase')
             def phase_fraction(self, t, p):
                 return 1

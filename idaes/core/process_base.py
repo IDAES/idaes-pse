@@ -249,9 +249,9 @@ class ProcessBlockData(_BlockData):
         while True:
             if not hasattr(parent, "config"):
                 raise BurntToast(
-                            '{} found parent object without a config block. '
-                            'This implies that no Flowsheet object is present '
-                            'in the parent tree.'.format(self.name))
+                    '{} found parent object without a config block. '
+                    'This implies that no Flowsheet object is present '
+                    'in the parent tree.'.format(self.name))
             if hasattr(parent.config, "default_property_package"):
                 if parent.config.default_property_package is not None:
                     break
@@ -260,14 +260,14 @@ class ProcessBlockData(_BlockData):
             else:
                 if parent.parent_block() is None:
                     raise ConfigurationError(
-                            '{} no property package provided and '
-                            'no default defined. Found end of '
-                            'parent tree.'.format(self.name))
+                        '{} no property package provided and '
+                        'no default defined. Found end of '
+                        'parent tree.'.format(self.name))
                 elif parent.parent_block() == parent:
                     raise ConfigurationError(
-                            '{} no property package provided and '
-                            'no default defined. Found recursive '
-                            'loop in parent tree.'.format(self.name))
+                        '{} no property package provided and '
+                        'no default defined. Found recursive '
+                        'loop in parent tree.'.format(self.name))
                 parent = parent.parent_block()
 
         _log.info('{} Using default property package'
@@ -288,11 +288,8 @@ class ProcessBlockData(_BlockData):
         Returns:
             None
         """
-        # Get phase list(s)
-        try:
-            add_object_reference(self, "phase_list_ref",
-                                 self.config.property_package.phase_list)
-        except AttributeError:
+        # Check for phase list(s)
+        if not hasattr(self.config.property_package, "phase_list"):
             raise PropertyPackageError(
                 '{} property_package provided does not '
                 'contain a phase_list. '
@@ -329,7 +326,7 @@ class ProcessBlockData(_BlockData):
             for k in self.config.reaction_package.config.default_arguments:
                 if k not in self.config.reaction_package_args:
                     self.config.reaction_package_args[k] = \
-                       self.config.reaction_package.config.default_arguments[k]
+                        self.config.reaction_package.config.default_arguments[k]
 
     def _get_phase_comp_list(self):
         """
@@ -350,7 +347,7 @@ class ProcessBlockData(_BlockData):
         else:
             # Otherwise assume all components in all phases
             phase_component_list = {}
-            for p in self.phase_list_ref:
+            for p in self.config.property_package.phase_list:
                 phase_component_list[p] = self.config.property_package.\
                     component_list
         return phase_component_list
