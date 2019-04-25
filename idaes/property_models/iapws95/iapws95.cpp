@@ -26,11 +26,15 @@
 
 #include<stdio.h>
 #include<cmath>
+#include<iostream>
 
 #include"iapws95_memo.h"
 #include"iapws95.h"
 #include"iapws95_param.h"
 #include"iapws95_deriv_parts.h"
+
+#define TAU_LOW 0.15
+#define TAU_HIGH 4.0
 
 void zero_derivs2(s_real *grad, s_real *hes){
   if(grad!=NULL){
@@ -623,6 +627,16 @@ s_real tau_with_derivs(s_real ht, s_real pr, s_real *grad, s_real *hes){
     else{
       zero_derivs2(grad, hes);
       return tau_sat;
+    }
+    if(tau < 0.0 || tau > TAU_HIGH){
+        std::cerr << "IAPWS LOW T CLIP WARNING: h = " << ht << " P= " << pr << " tau = " << tau << "\n";
+        tau = TAU_HIGH;
+        fun = hvpt_with_derivs(pr, tau, gradh, hesh) - ht;
+    }
+    else if(tau < TAU_LOW){
+        std::cerr << "IAPWS HIGH T CLIP WARNING: h = " << ht << " P= " << pr << " tau = " << tau << "\n";
+        tau = TAU_LOW;
+        fun = hvpt_with_derivs(pr, tau, gradh, hesh) - ht;
     }
     if(grad != NULL){
         grad[0] = 1.0/gradh[1];
