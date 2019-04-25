@@ -29,7 +29,9 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
                                     list_of_floats,
                                     list_of_strings,
-                                    is_port)
+                                    is_port,
+                                    is_transformation_method,
+                                    is_transformation_scheme)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -177,3 +179,24 @@ def test_is_port_errors():
         is_port(1.0)  # float
     with pytest.raises(ConfigurationError):
         is_port(1)  # int
+
+
+def test_is_transformation_method():
+    assert is_transformation_method("dae.finite_difference") == \
+        "dae.finite_difference"
+
+    assert is_transformation_method("dae.collocation") == \
+        "dae.collocation"
+
+    with pytest.raises(ConfigurationError):
+        is_transformation_method("dea.finite_difference")
+
+
+def test_is_transformation_scheme():
+    assert is_transformation_scheme("BACKWARD") == "BACKWARD"
+    assert is_transformation_scheme("FORWARD") == "FORWARD"
+    assert is_transformation_scheme("LAGRANGE-RADAU") == "LAGRANGE-RADAU"
+    assert is_transformation_scheme("LAGRANGE-LEGENDRE") == "LAGRANGE-LEGENDRE"
+
+    with pytest.raises(ConfigurationError):
+        is_transformation_scheme("foo")
