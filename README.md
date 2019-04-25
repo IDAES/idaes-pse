@@ -15,7 +15,7 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 in the LICENSE.txt and COPYRIGHT.txt files in this directory.**
 
 ## Getting Started
-For installation instructions, please refer to the [online documentation](https://idaes.github.io/idaes-pse/).
+For installation instructions, please refer to the [online documentation](https://idaes-pse.readthedocs.io/en/latest/).
 
 The documentation for IDAES is built using [Sphinx](http://www.sphinx-doc.org/). To generate the HTML version of the documentation, first make sure Sphinx is installed for your version of Python, then go to the "docs/" subdirectory and run the _Makefile_:
 
