@@ -306,7 +306,7 @@ def test_get_default_prop_pack_no_default():
     m.fs = Flowsheet()
 
     m.fs.cv = CVFrame()
-    with pytest.raises(BurntToast):
+    with pytest.raises(ConfigurationError):
         m.fs.cv._get_default_prop_pack()
 
 

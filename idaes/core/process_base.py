@@ -336,35 +336,19 @@ class ProcessBlockData(_BlockData):
         Returns:
             None
         """
-        parent = self.parent_block()
+        parent = self.flowsheet()
         while True:
-            if not hasattr(parent, "config"):
-                raise BurntToast(
-                            '{} found parent object without a config block. '
-                            'This implies that no Flowsheet object is present '
-                            'in the parent tree.'.format(self.name))
-            if hasattr(parent.config, "default_property_package"):
-                if parent.config.default_property_package is not None:
-                    break
-                else:
-                    parent = parent.parent_block()
-            else:
-                if parent.parent_block() is None:
-                    raise ConfigurationError(
+            if parent is None:
+                raise ConfigurationError(
                             '{} no property package provided and '
-                            'no default defined. Found end of '
-                            'parent tree.'.format(self.name))
-                elif parent.parent_block() == parent:
-                    raise ConfigurationError(
-                            '{} no property package provided and '
-                            'no default defined. Found recursive '
-                            'loop in parent tree.'.format(self.name))
-                parent = parent.parent_block()
+                            'no default defined by parent flowsheet(s).'
+                            .format(self.name))
+            elif parent.config.default_property_package is not None:
+                _log.info('{} Using default property package'
+                          .format(self.name))
+                return parent.config.default_property_package
 
-        _log.info('{} Using default property package'
-                  .format(self.name))
-
-        return parent.config.default_property_package
+            parent = parent.flowsheet()
 
     def _get_indexing_sets(self):
         """
