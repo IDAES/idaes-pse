@@ -156,7 +156,7 @@ Obtain the source code for IDAES from GitHub:
 
 .. code-block:: sh
 
-    git clone https://github.com/IDAES/idaes.git
+    git clone https://github.com/IDAES/idaes-pse.git
 
 Download and compile the AMPL Solver Library (ASL) and external property functions;
 this is required for steam properties and cubic equations of state. This step is
