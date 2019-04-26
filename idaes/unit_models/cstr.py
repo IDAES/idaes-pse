@@ -209,12 +209,6 @@ see reaction package for documentation.}"""))
 
         # Add object references
         add_object_reference(self,
-                             "component_list_ref",
-                             self.control_volume.component_list_ref)
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.control_volume.phase_list_ref)
-        add_object_reference(self,
                              "volume",
                              self.control_volume.volume)
         add_object_reference(self,

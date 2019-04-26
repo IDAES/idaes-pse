@@ -340,11 +340,6 @@ see property package for documentation.}"""))
             None
         """
         # Get indexing sets from control volume
-        add_object_reference(self, "phase_list",
-                             self.control_volume.phase_list_ref)
-        add_object_reference(self, "component_list",
-                             self.control_volume.component_list_ref)
-
         # Add isentropic variables
         self.efficiency_isentropic = Var(self.flowsheet().config.time,
                                          initialize=0.8,
@@ -376,7 +371,7 @@ see property package for documentation.}"""))
 
         # This assumes isentropic composition is the same as outlet
         @self.Constraint(self.flowsheet().config.time,
-                         self.component_list,
+                         self.config.property_package.component_list,
                          doc="Material flows for isentropic properties")
         def isentropic_material(b, t, j):
             return b.properties_isentropic[t].flow_mol_comp[j] == \
@@ -395,10 +390,10 @@ see property package for documentation.}"""))
         def isentropic_energy_balance(b, t):
             return b.sfe*b.work_isentropic[t] == b.sfe*(
                 sum(b.properties_isentropic[t].get_enthalpy_flow_terms(p)
-                    for p in b.phase_list) -
+                    for p in b.config.property_package.phase_list) -
                 sum(b.control_volume.properties_out[t]
                     .get_enthalpy_flow_terms(p)
-                    for p in b.phase_list))
+                    for p in b.config.property_package.phase_list))
 
         # Actual work
         @self.Constraint(self.flowsheet().config.time,
