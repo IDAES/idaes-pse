@@ -25,9 +25,10 @@ from pyomo.common.config import ConfigValue, In
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
                         UnitModelBlockData, useDefault)
-from idaes.core.util.config import is_physical_parameter_block, list_of_floats
+from idaes.core.util.config import (is_physical_parameter_block,
+                                    is_time_domain,
+                                    list_of_floats)
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
-from idaes.core.util.misc import add_object_reference
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -65,6 +66,14 @@ class FlowsheetBlockData(ProcessBlockData):
 **useDefault** - get flag from parent or False,
 **True** - set as a dynamic model,
 **False** - set as a steady-state model.}"""))
+    CONFIG.declare("time", ConfigValue(
+        default=None,
+        domain=is_time_domain,
+        description="Flowsheet time domain",
+        doc="""Pointer to the time domain for the flowsheet. Users may provide
+an existing time domain from another flowsheet, otherwise the flowsheet will
+seearch for a parent with a time domain or create a new time domain and
+reference it here."""))
     CONFIG.declare("time_set", ConfigValue(
         default=[0],
         domain=list_of_floats,
@@ -102,13 +111,26 @@ within this flowsheet if not otherwise specified,
         # Set up dynamic flag and time domain
         self._setup_dynamics()
 
+    def is_flowsheet(self):
+        """
+        Method which returns True to indicate that this component is a
+        flowsheet.
+
+        Args:
+            None
+
+        Returns:
+            True
+        """
+        return True
+
     # TODO [Qi]: this should be implemented as a transformation
     def model_check(self):
         """
         This method runs model checks on all unit models in a flowsheet.
 
-        This method searches for objects which inherit from UnitModelBlockData and
-        executes the model_check method if it exists.
+        This method searches for objects which inherit from UnitModelBlockData
+        and executes the model_check method if it exists.
 
         Args:
             None
@@ -128,114 +150,67 @@ within this flowsheet if not otherwise specified,
                                  .format(o.name))
 
     def _setup_dynamics(self):
-        """
-        This method automates the setting of the dynamic flag and time domain
-        for flowsheet models.
-
-        Performs the following:
-         1) Determines if this is a top level flowsheet
-         2) Gets dynamic flag from parent if not top level, or checks validity
-            of argument provided
-         3) Gets time domain from parent, or creates domain if top level model
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Test to ensure model is constructed
-        if not self._constructed:
-            raise ConfigurationError('{} flowsheet has no parent object but '
-                                     'has not yet been constructed. Either '
-                                     'attach the flowsheet to a ConcreteModel '
-                                     'or use the argument concrete = True.'
-                                     .format(self.name))
-
-        # Determine if this is top level flowsheet
-        if self.parent_block() is None:
-            # Flowsheet has no parent, so top level model
-            top_level = True
-        elif isinstance(self.parent_block(), pe.ConcreteModel):
-            # If flowsheet is attached to a ConcreteModel, this is a top level
-            # flowsheet. However, check if the ConcreteModel has time
-            try:
-                # If parent has time, it must be a ContinuousSet or Set
-                if isinstance(self.parent_block().time,
-                              (ContinuousSet, pe.Set)):
-                    _log.warning('{} parent ConcreteModel has an attribute '
-                                 'time. Flowsheet will use this as its time '
-                                 'domain, however this may be unexpected '
-                                 'behaviour'.format(self.name))
-                    top_level = False
-                else:
-                    raise DynamicError('{} has an attribute time which is not '
-                                       'a Set or ContinuousSet.'
-                                       .format(self.name))
-            except AttributeError:
-                # Set top level flag
-                top_level = True
-        else:
-            top_level = False
+        # Look for parent flowsheet
+        fs = self.flowsheet()
 
         # Check the dynamic flag, and retrieve if necessary
         if self.config.dynamic == useDefault:
-            # Check to see if this is a top level model
-            if top_level:
-                # If there is no parent, set dynamic to False by default and
-                # warn the user
+            if fs is None:
+                # No parent, so default to steady-state and warn user
                 _log.warning('{} is a top level flowhseet, but dynamic flag '
                              'set to useDefault. Dynamic '
                              'flag set to False by default'
                              .format(self.name))
                 self.config.dynamic = False
+
             else:
-                # Get dynamic flag from parent
-                try:
-                    self.config.dynamic = self.parent_block().config.dynamic
-                except AttributeError:
-                    # If parent does not have dynamic flag, raise Exception
-                    raise DynamicError('{} has a parent model '
-                                       'with no dynamic attribute.'
-                                       .format(self.name))
+                # Get dynamic flag from parent flowsheet
+                self.config.dynamic = fs.config.dynamic
 
         # Check for case when dynamic=True, but parent dynamic=False
-        if (not top_level and self.config.dynamic is True and
-                not self.parent_block().config.dynamic):
-            raise DynamicError('{} trying to declare a dynamic model within '
-                               'a steady-state flowsheet. This is not '
-                               'supported by the IDAES framework. Try '
-                               'creating a dynamic flowsheet instead, and '
-                               'declaring some models as  steady-state.'
-                               .format(self.name))
+        elif self.config.dynamic is True:
+            if fs is not None and fs.config.dynamic is False:
+                raise DynamicError(
+                        '{} trying to declare a dynamic model within '
+                        'a steady-state flowsheet. This is not '
+                        'supported by the IDAES framework. Try '
+                        'creating a dynamic flowsheet instead, and '
+                        'declaring some models as steady-state.'
+                        .format(self.name))
 
-        # Set up time domain
-        if not top_level:
-            # Try to get reference to time object from parent
-            try:
-                add_object_reference(self,
-                                     "time_ref",
-                                     self.parent_block().time)
-            except AttributeError:
-                raise DynamicError('{} has a parent model '
-                                   'with no time domain'.format(self.name))
+        if self.config.time is not None:
+            # Validate user provided time domain
+            if (self.config.dynamic is True and
+                    not isinstance(self.config.time, ContinuousSet)):
+                raise DynamicError(
+                        '{} was set as a dynamic flowsheet, but time domain '
+                        'provided was not a ContinuousSet.'.format(self.name))
         else:
-            # Create time domain
-            if self.config.dynamic:
-                # Check if time_set has at least two points
-                if len(self.config.time_set) < 2:
-                    # Check if time_set is at default value
-                    if self.config.time_set == [0.0]:
-                        # If default, set default end point to be 1.0
-                        self.config.time_set = [0.0, 1.0]
-                    else:
-                        # Invalid user input, raise Excpetion
-                        raise DynamicError("Flowsheet provided with invalid "
-                                           "time_set attribute - must have at "
-                                           "least two values (start and end).")
-                # For dynamics, need a ContinuousSet
-                self.time = ContinuousSet(initialize=self.config.time_set)
+            # If no parent flowsheet, set up time domain
+            if fs is None:
+                # Create time domain
+                if self.config.dynamic:
+                    # Check if time_set has at least two points
+                    if len(self.config.time_set) < 2:
+                        # Check if time_set is at default value
+                        if self.config.time_set == [0.0]:
+                            # If default, set default end point to be 1.0
+                            self.config.time_set = [0.0, 1.0]
+                        else:
+                            # Invalid user input, raise Excpetion
+                            raise DynamicError(
+                                    "Flowsheet provided with invalid "
+                                    "time_set attribute - must have at "
+                                    "least two values (start and end).")
+                    # For dynamics, need a ContinuousSet
+                    self.time = ContinuousSet(initialize=self.config.time_set)
+                else:
+                    # For steady-state, use an ordered Set
+                    self.time = pe.Set(initialize=self.config.time_set,
+                                       ordered=True)
+
+                # Set time config argument as reference to time domain
+                self.config.time = self.time
             else:
-                # For steady-state, use an ordered Set
-                self.time = pe.Set(initialize=self.config.time_set,
-                                   ordered=True)
+                # Set time config argument to parent time
+                self.config.time = fs.config.time

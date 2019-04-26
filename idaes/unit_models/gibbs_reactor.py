@@ -167,7 +167,7 @@ see property package for documentation.}"""))
                              self.control_volume.element_list_ref)
 
         # Add Lagrangian multiplier variables
-        self.lagrange_mult = Var(self.time_ref,
+        self.lagrange_mult = Var(self.flowsheet().config.time,
                                  self.element_list_ref,
                                  domain=Reals,
                                  initialize=100,
@@ -177,7 +177,7 @@ see property package for documentation.}"""))
         # Use RT*lagrange as the Lagrangian multiple such that lagrange is in
         # a similar order of magnitude as log(Yi)
 
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.phase_list_ref,
                          self.component_list_ref,
                          doc="Gibbs energy minimisation constraint")

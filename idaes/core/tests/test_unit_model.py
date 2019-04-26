@@ -16,7 +16,7 @@ Tests for unit_model.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import ConcreteModel, Set, Var
+from pyomo.environ import Block, ConcreteModel, Set, Var
 from pyomo.network import Port
 
 from idaes.core import (FlowsheetBlockData, declare_process_block_class,
@@ -120,10 +120,12 @@ def test_setup_dynamics2():
     # dynamic config argument
 
     m = ConcreteModel()
-    m.u = Unit()
+    # Intermediate Block is required, as ConcreteModels have a config attribute
+    m.b = Block()
+    m.b.u = Unit()
 
     with pytest.raises(DynamicError):
-        m.u._setup_dynamics()
+        m.b.u._setup_dynamics()
 
 
 def test_setup_dynamics_dynamic_in_steady_state():
@@ -146,17 +148,6 @@ def test_setup_dynamics_get_time():
 
     m.fs.u = Unit()
     m.fs.u._setup_dynamics()
-
-    assert m.fs.u.time_ref == m.fs.time
-
-
-def test_setup_dynamics_get_time_fails():
-    # Test that DynamicError is raised when parent does not have time domain
-    m = ConcreteModel()
-
-    m.u = Unit()
-    with pytest.raises(DynamicError):
-        m.u._setup_dynamics()
 
 
 def test_setup_dynamics_has_holdup():
@@ -398,3 +389,36 @@ def test_add_inlet_port_CV0D_part_args():
 
     with pytest.raises(ConfigurationError):
         m.fs.u.add_outlet_port(name="foo")
+
+
+def test_fix_unfix_initial_conditions():
+    fs = Flowsheet(default={"dynamic": True, "time_set": [0, 1, 2]},
+                   concrete=True)
+    fs._setup_dynamics()
+
+    fs.b = Unit()
+
+    fs.b.material_accumulation = Var(fs.time, ["a", "b", "c"])
+    fs.b.element_accumulation = Var(fs.time, ["a", "b", "c"])
+    fs.b.enthalpy_accumulation = Var(fs.time)
+
+    fs.fix_initial_conditions()
+
+    for t in fs.time:
+        for j in ["a", "b", "c"]:
+            if t == 0:
+                assert fs.b.material_accumulation[t, j].fixed
+                assert fs.b.element_accumulation[t, j].fixed
+                assert fs.b.enthalpy_accumulation[t].fixed
+            else:
+                assert fs.b.material_accumulation[t, j].fixed is False
+                assert fs.b.element_accumulation[t, j].fixed is False
+                assert fs.b.enthalpy_accumulation[t].fixed is False
+
+    fs.unfix_initial_conditions()
+
+    for t in fs.time:
+        for j in ["a", "b", "c"]:
+            assert fs.b.material_accumulation[t, j].fixed is False
+            assert fs.b.element_accumulation[t, j].fixed is False
+            assert fs.b.enthalpy_accumulation[t].fixed is False
