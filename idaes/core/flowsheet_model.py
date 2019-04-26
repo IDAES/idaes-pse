@@ -72,7 +72,7 @@ class FlowsheetBlockData(ProcessBlockData):
         description="Flowsheet time domain",
         doc="""Pointer to the time domain for the flowsheet. Users may provide
 an existing time domain from another flowsheet, otherwise the flowsheet will
-seearch for a parent with a time domain or create a new time domain and
+search for a parent with a time domain or create a new time domain and
 reference it here."""))
     CONFIG.declare("time_set", ConfigValue(
         default=[0],
