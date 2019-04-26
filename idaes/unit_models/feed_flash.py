@@ -108,7 +108,7 @@ see property package for documentation.}"""))
             has_phase_equilibrium=True)
 
         # Add isothermal constraint
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          doc="Isothermal constraint")
         def isothermal(b, t):
             return (b.control_volume.properties_in[t].temperature ==
@@ -119,7 +119,7 @@ see property package for documentation.}"""))
 
         # Add references to all feed state vars
         s_vars = self.control_volume.properties_in[
-                    self.time_ref.first()].define_state_vars()
+                    self.flowsheet().config.time.first()].define_state_vars()
         for s in s_vars:
             l_name = s_vars[s].local_name
             if s_vars[s].is_indexed():

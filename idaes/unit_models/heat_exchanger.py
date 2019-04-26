@@ -62,9 +62,9 @@ def delta_temperature_lmtd_rule(b, t):
 def delta_temperature_amtd_rule(b, t):
     """
     This is a rule for a temperaure difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using arithmetic-mean temperature
-    difference (AMTD).  It can be supplied to "delta_temperature_rule"
-    HeatExchanger configuration option.
+    :math:`\Delta T` in the heat exchanger model using arithmetic-mean
+    temperature difference (AMTD).  It can be supplied to
+    "delta_temperature_rule" HeatExchanger configuration option.
     """
     dT1 = b.delta_temperature_in[t]
     dT2 = b.delta_temperature_out[t]
@@ -331,7 +331,7 @@ class HeatExchangerData(UnitModelBlockData):
         config = self.config
         # Add variables
         self.overall_heat_transfer_coefficient = Var(
-                self.time_ref,
+                self.flowsheet().config.time,
                 domain=PositiveReals,
                 initialize=100,
                 doc="Overall heat transfer coefficient")
@@ -342,7 +342,7 @@ class HeatExchangerData(UnitModelBlockData):
         self.area.latex_symbol = "A"
         if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(
-                    self.time_ref,
+                    self.flowsheet().config.time,
                     initialize=1,
                     doc="Factor to adjust coutercurrent flow heat transfer "
                         "calculation for cross flow.")
@@ -370,7 +370,7 @@ class HeatExchangerData(UnitModelBlockData):
         self.side_1.heat.latex_symbol = "Q_1"
         self.side_2.heat.latex_symbol = "Q_2"
 
-        @self.Expression(self.time_ref,
+        @self.Expression(self.flowsheet().config.time,
                          doc="Temperature difference at the side 1 inlet end")
         def delta_temperature_in(b, t):
             if b.config.flow_pattern == \
@@ -387,7 +387,7 @@ class HeatExchangerData(UnitModelBlockData):
                 raise ConfigurationError(
                         "Flow pattern {} not supported"
                         .format(b.config.flow_pattern))
-        @self.Expression(self.time_ref,
+        @self.Expression(self.flowsheet().config.time,
                          doc="Temperature difference at the side 1 outlet end")
         def delta_temperature_out(b, t):
             if b.config.flow_pattern == \
@@ -405,20 +405,20 @@ class HeatExchangerData(UnitModelBlockData):
         def unit_heat_balance_rule(b, t):
             return 0 == self.side_1.heat[t] + self.side_2.heat[t]
         self.unit_heat_balance = Constraint(
-            self.time_ref, rule=unit_heat_balance_rule)
+            self.flowsheet().config.time, rule=unit_heat_balance_rule)
         # Add heat transfer equation
         self.delta_temperature = Expression(
-            self.time_ref,
+            self.flowsheet().config.time,
             rule=config.delta_temperature_rule,
             doc="Temperature difference driving force for heat transfer")
         self.delta_temperature.latex_symbol = "\\Delta T"
 
         if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.heat_transfer_equation = Constraint(
-                self.time_ref, rule=_cross_flow_heat_transfer_rule)
+                self.flowsheet().config.time, rule=_cross_flow_heat_transfer_rule)
         else:
             self.heat_transfer_equation = Constraint(
-                self.time_ref, rule=_heat_transfer_rule)
+                self.flowsheet().config.time, rule=_heat_transfer_rule)
 
     def initialize(self, state_args_1=None, state_args_2=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}, duty=1000):

@@ -332,7 +332,7 @@ linked to all inlet states and the mixed state,
         # Create an instance of StateBlock for all inlets
         for i in inlet_list:
             i_obj = self.config.property_package.state_block_class(
-                        self.time_ref,
+                        self.flowsheet().config.time,
                         doc="Material properties at inlet",
                         default=tmp_dict)
 
@@ -357,7 +357,7 @@ linked to all inlet states and the mixed state,
         tmp_dict["defined_state"] = False
 
         self.mixed_state = self.config.property_package.state_block_class(
-                                self.time_ref,
+                                self.flowsheet().config.time,
                                 doc="Material properties of mixed stream",
                                 default=tmp_dict)
 
@@ -378,7 +378,7 @@ linked to all inlet states and the mixed state,
 
         # Check that the user-provided StateBlock uses the same prop pack
         if (self.config.mixed_state_block[
-                self.time_ref.first()].config.parameters
+                self.flowsheet().config.time.first()].config.parameters
                 != self.config.property_package):
             raise ConfigurationError(
                     "{} StateBlock provided in mixed_state_block argument "
@@ -415,7 +415,7 @@ linked to all inlet states and the mixed state,
                     "equilibrium reactions (phase_equilibrium_idx), thus does "
                     "not support phase equilibrium.".format(self.name))
             self.phase_equilibrium_generation = Var(
-                        self.time_ref,
+                        self.flowsheet().config.time,
                         self.phase_equilibrium_idx_ref,
                         domain=Reals,
                         doc="Amount of generation in unit by phase "
@@ -447,7 +447,7 @@ linked to all inlet states and the mixed state,
         phase_component_list = self._get_phase_comp_list()
 
         # Write phase-component balances
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.phase_list_ref,
                          self.component_list_ref,
                          doc="Material mixing equations")
@@ -469,14 +469,15 @@ linked to all inlet states and the mixed state,
                         default=1e-6,
                         mutable=True,
                         doc='Energy balance scaling parameter')
-        @self.Constraint(self.time_ref, doc="Energy balances")
+
+        @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_mixing_equations(b, t):
             return 0 == self.scaling_factor_energy*(
                 sum(sum(inlet_blocks[i][t].get_enthalpy_flow_terms(p)
                     for p in b.phase_list_ref)
-                        for i in range(len(inlet_blocks))) -
-                        sum(mixed_block[t].get_enthalpy_flow_terms(p)
-                            for p in b.phase_list_ref))
+                    for i in range(len(inlet_blocks))) -
+                sum(mixed_block[t].get_enthalpy_flow_terms(p)
+                    for p in b.phase_list_ref))
 
     def add_pressure_minimization_equations(self, inlet_blocks, mixed_block):
         """
@@ -487,7 +488,7 @@ linked to all inlet states and the mixed state,
         if not hasattr(self, "inlet_idx"):
             self.inlet_idx = RangeSet(len(inlet_blocks))
         # Add variables
-        self.minimum_pressure = Var(self.time_ref,
+        self.minimum_pressure = Var(self.flowsheet().config.time,
                                     self.inlet_idx,
                                     doc='Variable for calculating '
                                         'minimum inlet pressure')
@@ -499,7 +500,7 @@ linked to all inlet states and the mixed state,
                                       'minimum inlet pressure')
 
         # Calculate minimum inlet pressure
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.inlet_idx,
                          doc='Calculation for minimum inlet pressure')
         def minimum_pressure_constraint(b, t, i):
@@ -513,7 +514,8 @@ linked to all inlet states and the mixed state,
                                    self.eps_pressure))
 
         # Set inlet pressure to minimum pressure
-        @self.Constraint(self.time_ref, doc='Link pressure to control volume')
+        @self.Constraint(self.flowsheet().config.time,
+                         doc='Link pressure to control volume')
         def mixture_pressure(b, t):
             return mixed_block[t].pressure == (
                        self.minimum_pressure[t,
@@ -527,8 +529,9 @@ linked to all inlet states and the mixed state,
         """
         if not hasattr(self, "inlet_idx"):
             self.inlet_idx = RangeSet(len(inlet_blocks))
+
         # Create equality constraints
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.inlet_idx,
                          doc='Calculation for minimum inlet pressure')
         def pressure_equality_constraints(b, t, i):
@@ -565,7 +568,7 @@ linked to all inlet states and the mixed state,
             None
         """
         # Try property block model check
-        for t in blk.time_ref:
+        for t in blk.flowsheet().config.time:
             try:
                 inlet_list = blk.create_inlet_list()
                 for i in inlet_list:
@@ -594,7 +597,7 @@ linked to all inlet states and the mixed state,
         MomentumMixingType.minimize_and_equality.
         """
         if self.config.momentum_mixing_type != \
-            MomentumMixingType.minimize_and_equality:
+                MomentumMixingType.minimize_and_equality:
             _log.warning(
 """use_minimum_inlet_pressure_constraint() can only be used when
 momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
@@ -603,13 +606,13 @@ momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
         self.pressure_equality_constraints.deactivate()
 
     def use_equal_pressure_constraint(self):
-        """Deactivate the mixer pressure = mimimum inlet pressure constraint and
-        activate the mixer pressure and all inlet pressures are equal
+        """Deactivate the mixer pressure = mimimum inlet pressure constraint
+        and activate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
         """
         if self.config.momentum_mixing_type != \
-            MomentumMixingType.minimize_and_equality:
+                MomentumMixingType.minimize_and_equality:
             _log.warning(
 """use_equal_pressure_constraint() can only be used when
 momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
@@ -672,7 +675,7 @@ momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
             mblock = blk.config.mixed_state_block
 
         # Calculate initial guesses for mixed stream state
-        for t in blk.time_ref:
+        for t in blk.flowsheet().config.time:
             # Iterate over state vars as defined by property package
             s_vars = mblock[t].define_state_vars()
             for s in s_vars:
