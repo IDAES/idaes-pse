@@ -1659,37 +1659,6 @@ def test_add_total_element_balances_eq_rxns():
         mb = m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
 
 
-def test_add_total_element_balances_eq_rxns_not_active():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
-
-
-def test_add_total_element_balances_eq_rxns_no_ReactionBlock():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
-
-
 def test_add_total_element_balances_phase_eq():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1701,23 +1670,6 @@ def test_add_total_element_balances_phase_eq():
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_element_balances(has_phase_equilibrium=True)
-
-
-def test_add_total_element_balances_phase_eq_not_active():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
     with pytest.raises(ConfigurationError):
