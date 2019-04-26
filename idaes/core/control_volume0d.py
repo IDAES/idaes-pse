@@ -921,7 +921,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 "{} property package provided does not contain a list of "
                 "elements (element_list), and thus does not support "
                 "elemental material balances. Please choose another type "
-                "of material balance or a property pakcage which supports "
+                "of material balance or a property package which supports "
                 "elemental balances.")
         # Check for valid arguments to write total elemental balance
         if has_rate_reactions:

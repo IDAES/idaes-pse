@@ -1127,7 +1127,7 @@ argument)."""))
                 "{} property package provided does not contain a list of "
                 "elements (element_list), and thus does not support "
                 "elemental material balances. Please choose another type "
-                "of material balance or a property pakcage which supports "
+                "of material balance or a property package which supports "
                 "elemental balances.")
 
         # Check validity of arguments to write the total elemental balance
