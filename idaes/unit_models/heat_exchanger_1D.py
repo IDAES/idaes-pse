@@ -295,14 +295,22 @@ thickness of the tube"""))
             "has_holdup": self.config.shell_side.has_holdup,
             "property_package": self.config.shell_side.property_package,
             "property_package_args":
-                self.config.shell_side.property_package_args})
+                self.config.shell_side.property_package_args,
+            "transformation_method": self.config.shell_side.transformation_method,
+            "transformation_scheme": self.config.shell_side.transformation_scheme,
+            "finite_elements": self.config.finite_elements,
+            "collocation_points": self.config.collocation_points})
 
         self.tube = ControlVolume1DBlock(default={
             "dynamic": self.config.tube_side.dynamic,
             "has_holdup": self.config.tube_side.has_holdup,
             "property_package": self.config.tube_side.property_package,
             "property_package_args":
-                self.config.tube_side.property_package_args})
+                self.config.tube_side.property_package_args,
+            "transformation_method": self.config.tube_side.transformation_method,
+            "transformation_scheme": self.config.tube_side.transformation_scheme,
+            "finite_elements": self.config.finite_elements,
+            "collocation_points": self.config.collocation_points})
 
         self.shell.add_geometry(flow_direction=set_direction_shell)
         self.tube.add_geometry(flow_direction=set_direction_tube)
@@ -327,11 +335,7 @@ thickness of the tube"""))
             balance_type=self.config.shell_side.momentum_balance_type,
             has_pressure_change=self.config.shell_side.has_pressure_change)
 
-        self.shell.apply_transformation(
-            transformation_method=self.config.shell_side.transformation_method,
-            transformation_scheme=self.config.shell_side.transformation_scheme,
-            finite_elements=self.config.finite_elements,
-            collocation_points=self.config.collocation_points)
+        self.shell.apply_transformation()
 
         # Populate tube
         self.tube.add_material_balances(
@@ -346,11 +350,7 @@ thickness of the tube"""))
             balance_type=self.config.tube_side.momentum_balance_type,
             has_pressure_change=self.config.tube_side.has_pressure_change)
 
-        self.tube.apply_transformation(
-            transformation_method=self.config.tube_side.transformation_method,
-            transformation_scheme=self.config.tube_side.transformation_scheme,
-            finite_elements=self.config.finite_elements,
-            collocation_points=self.config.collocation_points)
+        self.tube.apply_transformation()
 
         # Add Ports for shell side
         self.add_inlet_port(name="shell_inlet", block=self.shell)

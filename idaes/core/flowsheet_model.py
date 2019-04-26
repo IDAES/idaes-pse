@@ -151,11 +151,7 @@ within this flowsheet if not otherwise specified,
 
     def _setup_dynamics(self):
         # Look for parent flowsheet
-        try:
-            fs = self.flowsheet()
-        except ConfigurationError:
-            # If none found, set fs to None
-            fs = None
+        fs = self.flowsheet()
 
         # Check the dynamic flag, and retrieve if necessary
         if self.config.dynamic == useDefault:

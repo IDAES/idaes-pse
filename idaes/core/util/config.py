@@ -160,3 +160,39 @@ def is_time_domain(arg):
                                  'of a Pyomo Set or ContinuousSet object')
     return arg
 
+  
+def is_transformation_method(arg):
+    '''Domain validator for transformation methods
+
+    Args:
+        arg : argument to be checked for membership in recognized strings
+
+    Returns:
+        Recognised string or Exception
+    '''
+    if arg in ["dae.finite_difference",
+               "dae.collocation"]:
+        return arg
+    else:
+        raise ConfigurationError(
+                'Invalid value provided for transformation_method. '
+                'Please check the value and spelling of the argument provided.'
+                )
+
+
+def is_transformation_scheme(arg):
+    '''Domain validator for transformation scheme
+
+    Args:
+        arg : argument to be checked for membership in recognized strings
+
+    Returns:
+        Recognised string or Exception
+    '''
+    if arg in ["BACKWARD", "FORWARD", "LAGRANGE-RADAU", "LAGRANGE-LEGENDRE"]:
+        return arg
+    else:
+        raise ConfigurationError(
+                'Invalid value provided for transformation_scheme. '
+                'Please check the value and spelling of the argument provided.'
+                )
