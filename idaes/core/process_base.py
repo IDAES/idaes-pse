@@ -26,8 +26,9 @@ from pyomo.common.config import ConfigBlock
 from pyutilib.enum import Enum
 
 from idaes.core.process_block import declare_process_block_class
-from idaes.core.util.exceptions import (ConfigurationError,
-                                        BurntToast,
+from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
+                                        DynamicError,
                                         PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
 
@@ -103,6 +104,30 @@ class ProcessBlockData(_BlockData):
         """
         self._get_config_args()
 
+    def flowsheet(self):
+        """
+        This method returns the components parent flowsheet object, i.e. the
+        flowsheet component to which the model is attached. If the component
+        has no parent flowsheet, the method returns None.
+
+        Args:
+            None
+
+        Returns:
+            Flowsheet object or None
+        """
+        parent = self.parent_block()
+
+        while True:
+            if parent is None:
+                return None
+
+            if hasattr(parent, 'is_flowsheet') and parent.is_flowsheet():
+                return parent
+
+            else:
+                parent = parent.parent_block()
+
     def _get_config_args(self):
         """
         Get config arguments for this element and put them in the ConfigBlock
@@ -139,22 +164,22 @@ class ProcessBlockData(_BlockData):
                                               descend_into=True):
                 # Try to fix material_accumulation @ first time point
                 try:
-                    obj.material_accumulation[obj.time_ref.first(),
-                                              ...].fix(0.0)
+                    obj.material_accumulation[
+                            obj.flowsheet().config.time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix element_accumulation @ first time point
                 try:
-                    obj.element_accumulation[obj.time_ref.first(),
-                                             ...].fix(0.0)
+                    obj.element_accumulation[
+                            obj.flowsheet().config.time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
                 # Try to fix enthalpy_accumulation @ first time point
                 try:
-                    obj.enthalpy_accumulation[obj.time_ref.first(),
-                                              ...].fix(0.0)
+                    obj.enthalpy_accumulation[
+                            obj.flowsheet().config.time.first(), ...].fix(0.0)
                 except AttributeError:
                     pass
 
@@ -174,24 +199,90 @@ class ProcessBlockData(_BlockData):
         for obj in self.component_objects(Block, descend_into=True):
             # Try to unfix material_accumulation @ first time point
             try:
-                obj.material_accumulation[obj.time_ref.first(),
-                                          ...].unfix()
+                obj.material_accumulation[
+                        obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix element_accumulation @ first time point
             try:
-                obj.element_accumulation[obj.time_ref.first(),
-                                         ...].unfix()
+                obj.element_accumulation[
+                        obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
 
             # Try to fix enthalpy_accumulation @ first time point
             try:
-                obj.enthalpy_accumulation[obj.time_ref.first(),
-                                          ...].unfix()
+                obj.enthalpy_accumulation[
+                        obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
+
+    def _setup_dynamics(self):
+        """
+        This method automates the setting of the dynamic flag and time domain
+        for unit models.
+
+        Performs the following:
+         1) Determines if this is a top level flowsheet
+         2) Gets dynamic flag from parent if not top level, or checks validity
+            of argument provided
+         3) Checks has_holdup flag if present and dynamic = True
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        # Get parent object
+        if hasattr(self.parent_block(), "config"):
+            # Parent block has a config block, so use this
+            parent = self.parent_block()
+        else:
+            # Use parent flowsheet
+            try:
+                parent = self.flowsheet()
+            except ConfigurationError:
+                raise DynamicError('{} has no parent flowsheet from which to '
+                                   'get dynamic argument. Please provide a '
+                                   'value for this argument when constructing '
+                                   'the unit.'
+                                   .format(self.name))
+
+        # Check the dynamic flag, and retrieve if necessary
+        if self.config.dynamic == useDefault:
+            # Get flag from parent flowsheet
+            try:
+                self.config.dynamic = parent.config.dynamic
+            except AttributeError:
+                # No flowsheet, raise exception
+                raise DynamicError('{} parent flowsheet has no dynamic '
+                                   'argument. Please provide a '
+                                   'value for this argument when constructing '
+                                   'the unit.'
+                                   .format(self.name))
+
+        # Check for case when dynamic=True, but parent dynamic=False
+        if (self.config.dynamic and not parent.config.dynamic):
+            raise DynamicError('{} trying to declare a dynamic model within '
+                               'a steady-state flowsheet. This is not '
+                               'supported by the IDAES framework. Try '
+                               'creating a dynamic flowsheet instead, and '
+                               'declaring some models as steady-state.'
+                               .format(self.name))
+
+        # Set and validate has_holdup argument
+        if self.config.has_holdup == useDefault:
+            # Default to same value as dynamic flag
+            self.config.has_holdup = self.config.dynamic
+        elif self.config.has_holdup is False:
+            if self.config.dynamic is True:
+                # Dynamic model must have has_holdup = True
+                raise ConfigurationError(
+                            "{} invalid arguments for dynamic and has_holdup. "
+                            "If dynamic = True, has_holdup must also be True "
+                            "(was False)".format(self.name))
 
     def _get_property_package(self):
         """
@@ -245,35 +336,19 @@ class ProcessBlockData(_BlockData):
         Returns:
             None
         """
-        parent = self.parent_block()
+        parent = self.flowsheet()
         while True:
-            if not hasattr(parent, "config"):
-                raise BurntToast(
-                    '{} found parent object without a config block. '
-                    'This implies that no Flowsheet object is present '
-                    'in the parent tree.'.format(self.name))
-            if hasattr(parent.config, "default_property_package"):
-                if parent.config.default_property_package is not None:
-                    break
-                else:
-                    parent = parent.parent_block()
-            else:
-                if parent.parent_block() is None:
-                    raise ConfigurationError(
-                        '{} no property package provided and '
-                        'no default defined. Found end of '
-                        'parent tree.'.format(self.name))
-                elif parent.parent_block() == parent:
-                    raise ConfigurationError(
-                        '{} no property package provided and '
-                        'no default defined. Found recursive '
-                        'loop in parent tree.'.format(self.name))
-                parent = parent.parent_block()
+            if parent is None:
+                raise ConfigurationError(
+                            '{} no property package provided and '
+                            'no default defined by parent flowsheet(s).'
+                            .format(self.name))
+            elif parent.config.default_property_package is not None:
+                _log.info('{} Using default property package'
+                          .format(self.name))
+                return parent.config.default_property_package
 
-        _log.info('{} Using default property package'
-                  .format(self.name))
-
-        return parent.config.default_property_package
+            parent = parent.flowsheet()
 
     def _get_indexing_sets(self):
         """
