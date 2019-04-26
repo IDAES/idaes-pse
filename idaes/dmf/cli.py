@@ -554,10 +554,10 @@ def ls(color, show, sort_by, reverse, prefix):
     if not sort_by:
         sort_by = ["id"]
     resources = list(d.find())
-    _ls_basic(resources, show, sort_by, reverse, prefix, color)
+    _print_resource_table(resources, show, sort_by, reverse, prefix, color)
 
 
-def _ls_basic(resources, show_fields, sort_by, reverse, prefix, color):
+def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, color):
     """Text-mode `ls`.
     """
     t = _cterm if color else _noterm
@@ -623,6 +623,66 @@ def _ls_basic(resources, show_fields, sort_by, reverse, prefix, color):
             for i, f, w in zip(range(len(widths)), row[:nfields], widths)
         ]
         print(" ".join(row_columns))
+
+
+@click.command(help="Find resources in the workspace")
+@click.option("--color/--no-color", default=True, help="Use color for output")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["list", "info", "json"]),
+    default="list",
+    help="Output format",
+)
+@click.option(
+    "--show",
+    "-s",
+    type=click.Choice(
+        ["type", "desc", "created", "modified", "version", "files", "codes"]
+    ),
+    multiple=True,
+    help="Show given field in listing",
+)
+@click.option(
+    "--sort",
+    "-S",
+    "sort_by",
+    type=click.Choice(["id", "type", "desc", "created", "modified", "version"]),
+    multiple=True,
+    help="Sort by given field; if repeated, combine to make a compound sort key",
+)
+@click.option(
+    "--prefix/--no-prefix",
+    "prefix",
+    help="By default, shown 'id' is the shortest unique prefix; "
+    "`--no-prefix` shows full id",
+    default=True,
+)
+@click.option("--reverse", "-r", "reverse", flag_value="yes", help="Reverse sort order")
+def find(output_format, color, show, sort_by, reverse, prefix):
+    d = DMF()
+    if output_format == "list" and not show:
+        show = ["type", "desc", "modified"]  # note: 'id' is always first
+    reverse = bool(reverse == "yes")
+    if not sort_by:
+        sort_by = ["id"]
+
+    # XXX: Build query and use it!
+    resources = list(d.find())
+
+    if output_format == "list":
+        # print resources like `ls`
+        _print_resource_table(resources, show, sort_by, reverse, prefix, color)
+    elif output_format == "info":
+        # print resources one by one
+        si = _ShowInfo("term", 32, color=color)
+        for rsrc in resources:
+            si.show(rsrc)
+        print("NOPE!")
+    elif output_format == "json":
+        # print resources as JSON
+        for r in resources:
+            print(json.dumps(r.v, indent=2))
 
 
 @click.command(help="Show detailed information about a resource")  # aliases: resource
@@ -823,7 +883,7 @@ def rm(identifier, yes, multiple, list_resources):
         sys.exit(Code.DMF_OPER.value)
     fields = ["type", "desc", "modified"]  # "id" is prepended by _ls_basic()
     if list_resources:
-        _ls_basic(rsrc_list, fields, ["id"], False, False, True)
+        _print_resource_table(rsrc_list, fields, ["id"], False, False, True)
     if yes != "yes":
         if found_multiple:
             s = f"these {len(rsrc_list)} resources"
@@ -907,8 +967,10 @@ class _ShowInfo:
                     f"{' ' * (width - len(tk) - 3)}{t.cyan}{self._vt}{t.normal}"
                 )
                 self._print_info_contents_term(contents_str, width)
-        print(f"{t.cyan}{self._corners.sw}{self._hz * (width - 2)}"
-              f"{self._corners.se}{t.normal}")
+        print(
+            f"{t.cyan}{self._corners.sw}{self._hz * (width - 2)}"
+            f"{self._corners.se}{t.normal}"
+        )
 
     def _longest_line(self, formatted_resource):
         longest = 0
@@ -1084,6 +1146,7 @@ base_command.add_command(init)
 base_command.add_command(register)
 base_command.add_command(status)
 base_command.add_command(ls)
+base_command.add_command(find)
 base_command.add_command(info)
 base_command.add_command(related)
 base_command.add_command(rm)
