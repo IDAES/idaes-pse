@@ -19,6 +19,8 @@ the `domain` argument in ConfigBlocks.
 
 __author__ = "Andrew Lee"
 
+from pyomo.environ import Set
+from pyomo.dae import ContinuousSet
 from pyomo.network import Port
 from idaes.core import useDefault
 from idaes.core.util.exceptions import ConfigurationError
@@ -140,6 +142,22 @@ def is_port(arg):
     if not isinstance(arg, Port):
         raise ConfigurationError('Invalid argument type. Expected an instance '
                                  'of a Pyomo Port object')
+    return arg
+
+
+def is_time_domain(arg):
+    '''Domain validator for time domains
+
+    Args:
+        arg : argument to be checked as a time domain (i.e. Set or
+        ContinuousSet)
+
+    Returns:
+        Set, ContinuousSet or Exception
+    '''
+    if not isinstance(arg, (Set, ContinuousSet)):
+        raise ConfigurationError('Invalid argument type. Expected an instance '
+                                 'of a Pyomo Set or ContinuousSet object')
     return arg
 
 
