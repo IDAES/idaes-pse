@@ -17,6 +17,7 @@ Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
 from collections import namedtuple
+import datetime
 from enum import Enum
 import json
 import logging
@@ -651,6 +652,7 @@ def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, colo
     multiple=True,
     help="Sort by given field; if repeated, combine to make a compound sort key",
 )
+@click.option("--reverse", "-r", "reverse", flag_value="yes", help="Reverse sort order")
 @click.option(
     "--prefix/--no-prefix",
     "prefix",
@@ -658,8 +660,26 @@ def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, colo
     "`--no-prefix` shows full id",
     default=True,
 )
-@click.option("--reverse", "-r", "reverse", flag_value="yes", help="Reverse sort order")
-def find(output_format, color, show, sort_by, reverse, prefix):
+@click.option("--by", default="", help="Creator name")
+@click.option("--created", default="", help="Creation date or date range")
+@click.option("--file", "filedesc", default="", help="File desc(ription)")
+@click.option("--modified", default="", help="Modification date or date range")
+@click.option("--name", default="", help="Matches any of the aliases")
+@click.option("--type", "datatype", default="", help="The resource type")
+def find(
+    output_format,
+    color,
+    show,
+    sort_by,
+    prefix,
+    reverse,
+    by,
+    created,
+    filedesc,
+    modified,
+    name,
+    datatype,
+):
     d = DMF()
     if output_format == "list" and not show:
         show = ["type", "desc", "modified"]  # note: 'id' is always first
@@ -667,9 +687,36 @@ def find(output_format, color, show, sort_by, reverse, prefix):
     if not sort_by:
         sort_by = ["id"]
 
-    # XXX: Build query and use it!
-    resources = list(d.find())
+    # Build query
+    query = {}
+    if by:
+        query["creator.name"] = by
+    if created:
+        try:
+            query["created"] = _date_query(created)
+        except ValueError as err:
+            click.echo(f"bad date for 'created': {err}")
+            sys.exit(Code.INPUT_VALUE.value)
+    if filedesc:
+        query["datafiles"] = [{"desc": filedesc}]
+    if modified:
+        try:
+            query["modified"] = _date_query(modified)
+        except ValueError as err:
+            click.echo(f"bad date for 'modified': {err}")
+            sys.exit(Code.INPUT_VALUE.value)
+    if name:
+        query["aliases"] = [name]
+    if datatype:
+        query["type"] = datatype
 
+    # Execute query
+    _log.info(f"find: query = '{query}'")
+    _log.debug("find.begin")
+    resources = list(d.find(query))
+    _log.debug("find.end")
+
+    # Print result
     if output_format == "list":
         # print resources like `ls`
         _print_resource_table(resources, show, sort_by, reverse, prefix, color)
@@ -683,6 +730,32 @@ def find(output_format, color, show, sort_by, reverse, prefix):
         # print resources as JSON
         for r in resources:
             print(json.dumps(r.v, indent=2))
+
+
+def _date_query(datestr):
+    """Transform date(s) into a query.
+    """
+    def _ts(x): # get timestamp of date or time
+        try:
+            return x.timestamp()
+        except AttributeError:
+            return datetime.datetime(*x.timetuple()[:6]).timestamp()
+
+    dates = datestr.split("..", 1)
+    try:
+        parsed_dates = [pendulum.parser.parse(d, exact=True) for d in dates]
+    except pendulum.exceptions.ParserError as err:
+        raise ValueError(str(err))
+    if len(parsed_dates) == 2:
+        query = {'$ge': _ts(parsed_dates[0]), '$le': _ts(parsed_dates[1])}
+    else:
+        pd = parsed_dates[0]
+        if isinstance(pd, pendulum.Pendulum):
+            _log.warning("datetime given, must match to the second")
+            query = _ts(pd)
+        else:
+            query = {'$ge': _ts(pd), '$le': _ts(pd) + 60*60*24} # 1 day
+    return query
 
 
 @click.command(help="Show detailed information about a resource")  # aliases: resource
