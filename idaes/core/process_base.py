@@ -338,18 +338,17 @@ class ProcessBlockData(_BlockData):
         """
         parent = self.flowsheet()
         while True:
-            if parent.config.default_property_package is not None:
-                _log.info('{} Using default property package'
-                          .format(self.name))
-                return parent.config.default_property_package
-            else:
-                try:
-                    parent = parent.flowsheet()
-                except ConfigurationError:
-                    raise ConfigurationError(
+            if parent is None:
+                raise ConfigurationError(
                             '{} no property package provided and '
                             'no default defined by parent flowsheet(s).'
                             .format(self.name))
+            elif parent.config.default_property_package is not None:
+                _log.info('{} Using default property package'
+                          .format(self.name))
+                return parent.config.default_property_package
+
+            parent = parent.flowsheet()
 
     def _get_indexing_sets(self):
         """
