@@ -219,7 +219,7 @@ see reaction package for documentation.}"""))
                              self.control_volume.rate_reaction_idx_ref)
 
         # Add CSTR performance equation
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.rate_reaction_idx_ref,
                          doc="CSTR performance equation")
         def cstr_performance_eqn(b, t, r):

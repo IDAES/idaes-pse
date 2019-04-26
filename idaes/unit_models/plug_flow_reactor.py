@@ -214,7 +214,11 @@ domain,
                 "property_package": self.config.property_package,
                 "property_package_args": self.config.property_package_args,
                 "reaction_package": self.config.reaction_package,
-                "reaction_package_args": self.config.reaction_package_args})
+                "reaction_package_args": self.config.reaction_package_args,
+                "transformation_method": self.config.transformation_method,
+                "transformation_scheme": self.config.transformation_scheme,
+                "finite_elements": self.config.finite_elements,
+                "collocation_points": self.config.collocation_points})
 
         self.control_volume.add_geometry(
                 length_domain_set=self.config.length_domain_set)
@@ -240,11 +244,7 @@ domain,
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-        self.control_volume.apply_transformation(
-                transformation_method=self.config.transformation_method,
-                transformation_scheme=self.config.transformation_scheme,
-                finite_elements=self.config.finite_elements,
-                collocation_points=self.config.collocation_points)
+        self.control_volume.apply_transformation()
 
         # Add Ports
         self.add_inlet_port()
@@ -259,7 +259,7 @@ domain,
                              self.config.reaction_package.rate_reaction_idx)
 
         # Add PFR performance equation
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.control_volume.length_domain,
                          self.rate_reaction_idx_ref,
                          doc="PFR performance equation")

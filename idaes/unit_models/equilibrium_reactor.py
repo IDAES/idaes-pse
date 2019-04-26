@@ -240,7 +240,7 @@ see reaction package for documentation.}"""))
 
         if self.config.has_rate_reactions:
             # Add equilibrium reactor performance equation
-            @self.Constraint(self.time_ref,
+            @self.Constraint(self.flowsheet().config.time,
                              self.rate_reaction_idx_ref,
                              doc="Rate reaction equilibrium constraint")
             def rate_reaction_constraint(b, t, r):

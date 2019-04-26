@@ -19,8 +19,8 @@ import pytest
 from pyomo.environ import ConcreteModel, Constraint, Expression, Set, Var
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo.common.config import ConfigBlock
+from pyomo.core.base.constraint import _GeneralConstraintData
 from idaes.core import (ControlVolume1DBlock,
-                        ControlVolumeBlockData,
                         FlowsheetBlockData,
                         declare_process_block_class,
                         FlowDirection,
@@ -31,6 +31,7 @@ from idaes.core import (ControlVolume1DBlock,
                         ReactionBlockBase,
                         ReactionBlockDataBase,
                         MaterialFlowBasis)
+from idaes.core.control_volume1d import ControlVolume1DBlockData
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
@@ -202,9 +203,9 @@ class ReactionBlockData(ReactionBlockDataBase):
 
 
 @declare_process_block_class("CVFrame")
-class CVFrameData(ControlVolume1DBlock):
+class CVFrameData(ControlVolume1DBlockData):
     def build(self):
-        super(ControlVolumeBlockData, self).build()
+        super(ControlVolume1DBlockData, self).build()
 
 
 # -----------------------------------------------------------------------------
@@ -220,9 +221,9 @@ def test_base_build():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = CVFrame(default={"property_package": m.fs.pp})
 
-    assert len(m.fs.cv.config) == 8
+    assert len(m.fs.cv.config) == 12
     assert m.fs.cv.config.dynamic is False
     assert m.fs.cv.config.has_holdup is False
     assert m.fs.cv.config.property_package == m.fs.pp
@@ -233,9 +234,80 @@ def test_base_build():
     assert len(m.fs.cv.config.reaction_package_args) == 0
     assert m.fs.cv.config.auto_construct is False
     assert m.fs.cv.config.area_definition == DistributedVars.uniform
+    assert m.fs.cv.config.transformation_method is None
+    assert m.fs.cv.config.transformation_scheme is None
+    assert m.fs.cv.config.finite_elements is None
+    assert m.fs.cv.config.collocation_points is None
 
-    assert hasattr(m.fs.cv, "time_ref")
     assert hasattr(m.fs.cv, "phase_list_ref")
+
+def test_validate_config_args_transformation_method_none():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+
+
+def test_validate_config_args_transformation_scheme_none():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference"})
+
+
+def test_validate_config_args_transformation_scheme_invalid_1():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "LAGRANGE-RADAU"})
+
+
+def test_validate_config_args_transformation_scheme_invalid_2():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "LAGRANGE-LEGENDRE"})
+
+
+def test_validate_config_args_transformation_scheme_invalid_3():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "BACKWARD"})
+
+
+def test_validate_config_args_transformation_scheme_invalid_4():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "FORWARD"})
+
 
 # -----------------------------------------------------------------------------
 # Test add_geometry
@@ -244,7 +316,11 @@ def test_add_geometry_default():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
 
@@ -265,7 +341,10 @@ def test_add_geometry_inherited_domain():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.domain = ContinuousSet(bounds=(0, 1))
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD"})
 
     m.fs.cv.add_geometry(length_domain=m.fs.domain)
 
@@ -277,7 +356,10 @@ def test_add_geometry_length_domain_set():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD"})
 
     m.fs.cv.add_geometry(length_domain_set=[0.0, 0.2, 0.7, 1.0])
 
@@ -291,7 +373,10 @@ def test_add_geometry_flow_direction():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD"})
 
     m.fs.cv.add_geometry(flow_direction=FlowDirection.backward)
 
@@ -303,7 +388,10 @@ def test_add_geometry_flow_direction_invalid():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD"})
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_geometry(flow_direction="foo")
@@ -315,8 +403,10 @@ def test_add_geometry_discretized_area():
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.cv = ControlVolume1DBlock(default={
-            "property_package": m.fs.pp,
-            "area_definition": DistributedVars.variant})
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "area_definition": DistributedVars.variant})
 
     m.fs.cv.add_geometry()
 
@@ -325,12 +415,47 @@ def test_add_geometry_discretized_area():
 
 # -----------------------------------------------------------------------------
 # Test apply_transformation
-def test_apply_transformation_default():
+def test_apply_transformation_finite_elements_none():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD"})
+
+    m.fs.cv.add_geometry()
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.apply_transformation()
+
+
+def test_apply_transformation_collocation_points_none():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-RADAU",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.apply_transformation()
+
+
+def test_apply_transformation_BFD_10():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.apply_transformation()
@@ -338,65 +463,76 @@ def test_apply_transformation_default():
     assert len(m.fs.cv.length_domain) == 11
 
 
-def test_apply_transformation_FFD():
+def test_apply_transformation_FFD_12():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 12})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.apply_transformation(transformation_method="dae.finite_difference",
-                                 transformation_scheme="FORWARD",
-                                 finite_elements=10)
+    m.fs.cv.apply_transformation()
 
-    assert len(m.fs.cv.length_domain) == 11
+    assert len(m.fs.cv.length_domain) == 13
 
 
-def test_apply_transformation_Lagrange_Radau():
+def test_apply_transformation_Lagrange_Radau_8_3():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-RADAU",
+                "finite_elements": 8,
+                "collocation_points": 3})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.apply_transformation(transformation_method="dae.collocation",
-                                 transformation_scheme="LAGRANGE_RADAU",
-                                 finite_elements=10)
+    m.fs.cv.apply_transformation()
 
-    assert len(m.fs.cv.length_domain) == 31
+    assert len(m.fs.cv.length_domain) == 25
 
 
-def test_apply_transformation_Lagrange_Legendre():
+def test_apply_transformation_Lagrange_Legendre_3_7():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
+                "finite_elements": 9,
+                "collocation_points": 4})
 
     m.fs.cv.add_geometry()
-    m.fs.cv.apply_transformation(transformation_method="dae.collocation",
-                                 transformation_scheme="LAGRANGE_LEGENDRE",
-                                 finite_elements=10)
+    m.fs.cv.apply_transformation()
 
-    assert len(m.fs.cv.length_domain) == 31
+    assert len(m.fs.cv.length_domain) == 46
 
 
-def test_apply_transformation_collocation_points():
+def test_apply_transformation_external_domain():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
+
+    m.fs.cset = ContinuousSet(bounds=(0, 1))
+
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
-    m.fs.cv.add_geometry()
-    m.fs.cv.apply_transformation(transformation_method="dae.collocation",
-                                 transformation_scheme="LAGRANGE_RADAU",
-                                 finite_elements=20,
-                                 collocation_points=5)
-
-    assert len(m.fs.cv.length_domain) == 101
+    m.fs.cv.add_geometry(length_domain=m.fs.cset)
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.apply_transformation()
 
 
 # -----------------------------------------------------------------------------
@@ -406,7 +542,11 @@ def test_add_state_blocks():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -429,7 +569,11 @@ def test_add_state_block_forward_flow():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(information_flow=FlowDirection.forward,
@@ -444,7 +588,11 @@ def test_add_state_block_backward_flow():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(information_flow=FlowDirection.backward,
@@ -459,7 +607,11 @@ def test_add_state_blocks_has_phase_equilibrium():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -473,7 +625,11 @@ def test_add_state_blocks_no_has_phase_equilibrium():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
 
@@ -486,9 +642,12 @@ def test_add_state_blocks_custom_args():
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "property_package_args":
-                                                {"test": "test"}})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10,
+                "property_package_args": {"test": "test"}})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -506,8 +665,12 @@ def test_add_reaction_blocks():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -528,8 +691,12 @@ def test_add_reaction_blocks_has_equilibrium():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -544,8 +711,12 @@ def test_add_reaction_blocks_no_has_equilibrium():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -561,9 +732,12 @@ def test_add_reaction_blocks_custom_args():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume1DBlock(default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "reaction_package_args": {"test1": 1}})
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10,
+                "reaction_package_args": {"test1": 1}})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -580,8 +754,12 @@ def test_add_phase_fractions():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv._add_phase_fractions()
@@ -600,8 +778,12 @@ def test_add_phase_fractions_single_phase():
 
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv._add_phase_fractions()
@@ -620,8 +802,12 @@ def test_rxn_rate_conv_no_rxns():
     m.fs.pp.basis_switch = 3
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -641,8 +827,12 @@ def test_rxn_rate_conv_property_basis_other():
     m.fs.pp.basis_switch = 3
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -662,8 +852,12 @@ def test_rxn_rate_conv_reaction_basis_other():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.basis_switch = 3
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -682,8 +876,12 @@ def test_rxn_rate_conv_both_molar():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -704,8 +902,12 @@ def test_rxn_rate_conv_both_mass():
     m.fs.pp.basis_switch = 2
     m.fs.rp.basis_switch = 2
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -726,8 +928,12 @@ def test_rxn_rate_conv_mole_mass_no_mw():
     m.fs.pp.basis_switch = 1
     m.fs.rp.basis_switch = 2
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -748,8 +954,12 @@ def test_rxn_rate_conv_mass_mole_no_mw():
     m.fs.pp.basis_switch = 2
     m.fs.rp.basis_switch = 1
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -770,8 +980,12 @@ def test_rxn_rate_conv_mole_mass():
     m.fs.pp.basis_switch = 1
     m.fs.rp.basis_switch = 2
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -794,8 +1008,12 @@ def test_rxn_rate_conv_mass_mole():
     m.fs.pp.basis_switch = 2
     m.fs.rp.basis_switch = 1
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -818,8 +1036,12 @@ def test_add_phase_component_balances_default():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -829,6 +1051,41 @@ def test_add_phase_component_balances_default():
 
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
+    for p in m.fs.pp.phase_list:
+        for j in m.fs.pp.component_list:
+            with pytest.raises(KeyError):
+                assert m.fs.cv.material_balances[0, 0, p, j]
+            assert type(m.fs.cv.material_balances[0, 1, p, j]) is \
+                _GeneralConstraintData
+
+
+def test_add_phase_component_balances_default_FFD():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_phase_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+    for p in m.fs.pp.phase_list:
+        for j in m.fs.pp.component_list:
+            with pytest.raises(KeyError):
+                assert m.fs.cv.material_balances[0, 1, p, j]
+            assert type(m.fs.cv.material_balances[0, 0, p, j]) is \
+                _GeneralConstraintData
 
 
 def test_add_phase_component_balances_distrubuted_area():
@@ -838,9 +1095,12 @@ def test_add_phase_component_balances_distrubuted_area():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume1DBlock(default={
-                                "property_package": m.fs.pp,
-                                "reaction_package": m.fs.rp,
-                                "area_definition": DistributedVars.variant})
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10,
+                "area_definition": DistributedVars.variant})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -858,9 +1118,13 @@ def test_add_phase_component_balances_dynamic():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp,
-                                            "dynamic": True})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10,
+                "dynamic": True})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -881,8 +1145,12 @@ def test_add_phase_component_balances_rate_rxns():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -905,7 +1173,11 @@ def test_add_phase_component_balances_rate_rxns_no_ReactionBlock():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -921,8 +1193,12 @@ def test_add_phase_component_balances_rate_rxns_no_rxn_idx():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.del_component(m.fs.rp.rate_reaction_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -938,8 +1214,12 @@ def test_add_phase_component_balances_eq_rxns():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -962,8 +1242,12 @@ def test_add_phase_component_balances_eq_rxns_not_active():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -980,8 +1264,12 @@ def test_add_phase_component_balances_eq_rxns_no_idx():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -997,7 +1285,11 @@ def test_add_phase_component_balances_eq_rxns_no_ReactionBlock():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1012,8 +1304,12 @@ def test_add_phase_component_balances_phase_eq():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -1033,8 +1329,12 @@ def test_add_phase_component_balances_phase_eq_not_active():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1051,8 +1351,12 @@ def test_add_phase_component_balances_phase_eq_no_idx():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -1068,8 +1372,12 @@ def test_add_phase_component_balances_mass_transfer():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1088,14 +1396,18 @@ def test_add_phase_component_balances_custom_molar_term():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
                            m.fs.cv.phase_list_ref,
                            m.fs.pp.component_list)
 
@@ -1115,14 +1427,18 @@ def test_add_phase_component_balances_custom_molar_term_no_mw():
     m.fs.pp.basis_switch = 2
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
                            m.fs.cv.phase_list_ref,
                            m.fs.pp.component_list)
 
@@ -1140,14 +1456,18 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
     m.fs.pp.basis_switch = 2
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
                            m.fs.cv.phase_list_ref,
                            m.fs.pp.component_list)
 
@@ -1172,14 +1492,18 @@ def test_add_phase_component_balances_custom_molar_term_undefined_basis():
     m.fs.pp.basis_switch = 3
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
                            m.fs.cv.phase_list_ref,
                            m.fs.pp.component_list)
 
@@ -1197,14 +1521,18 @@ def test_add_phase_component_balances_custom_mass_term():
     m.fs.pp.basis_switch = 2
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
                            m.fs.cv.phase_list_ref,
                            m.fs.pp.component_list)
 
@@ -1224,14 +1552,18 @@ def test_add_phase_component_balances_custom_mass_term_no_mw():
     m.fs.pp.basis_switch = 1
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
                            m.fs.cv.phase_list_ref,
                            m.fs.pp.component_list)
 
@@ -1249,14 +1581,18 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
     m.fs.pp.basis_switch = 2
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
                            m.fs.cv.phase_list_ref,
                            m.fs.pp.component_list)
 
@@ -1281,14 +1617,18 @@ def test_add_phase_component_balances_custom_mass_term_undefined_basis():
     m.fs.pp.basis_switch = 3
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
                            m.fs.cv.phase_list_ref,
                            m.fs.pp.component_list)
 
@@ -1307,8 +1647,12 @@ def test_add_total_component_balances_default():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1319,6 +1663,41 @@ def test_add_total_component_balances_default():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
 
+    for j in m.fs.pp.component_list:
+        with pytest.raises(KeyError):
+            assert m.fs.cv.material_balances[0, 0, j]
+        assert type(m.fs.cv.material_balances[0, 1, j]) is \
+            _GeneralConstraintData
+
+
+def test_add_total_component_balances_default_FFD():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_total_component_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 2
+
+    for j in m.fs.pp.component_list:
+        with pytest.raises(KeyError):
+            assert m.fs.cv.material_balances[0, 1, j]
+        assert type(m.fs.cv.material_balances[0, 0, j]) is \
+            _GeneralConstraintData
+
 
 def test_add_total_component_balances_distrubuted_area():
     m = ConcreteModel()
@@ -1327,9 +1706,12 @@ def test_add_total_component_balances_distrubuted_area():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume1DBlock(default={
-                                "property_package": m.fs.pp,
-                                "reaction_package": m.fs.rp,
-                                "area_definition": DistributedVars.variant})
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10,
+                "area_definition": DistributedVars.variant})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1347,9 +1729,13 @@ def test_add_total_component_balances_dynamic():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp,
-                                            "dynamic": True})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10,
+                "dynamic": True})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1370,8 +1756,12 @@ def test_add_total_component_balances_rate_rxns():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1394,7 +1784,11 @@ def test_add_total_component_balances_rate_rxns_no_ReactionBlock():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1410,8 +1804,12 @@ def test_add_total_component_balances_rate_rxns_no_rxn_idx():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.del_component(m.fs.rp.rate_reaction_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1427,8 +1825,12 @@ def test_add_total_component_balances_eq_rxns():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1451,8 +1853,12 @@ def test_add_total_component_balances_eq_rxns_not_active():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1469,8 +1875,12 @@ def test_add_total_component_balances_eq_rxns_no_idx():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1486,7 +1896,11 @@ def test_add_total_component_balances_eq_rxns_no_ReactionBlock():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1501,8 +1915,12 @@ def test_add_total_component_balances_phase_eq_not_active():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1518,8 +1936,12 @@ def test_add_total_component_balances_mass_transfer():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1538,14 +1960,19 @@ def test_add_total_component_balances_custom_molar_term():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1563,14 +1990,19 @@ def test_add_total_component_balances_custom_molar_term_no_mw():
     m.fs.pp.basis_switch = 2
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1586,14 +2018,19 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
     m.fs.pp.basis_switch = 2
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1616,14 +2053,19 @@ def test_add_total_component_balances_custom_molar_term_undefined_basis():
     m.fs.pp.basis_switch = 3
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1639,14 +2081,19 @@ def test_add_total_component_balances_custom_mass_term():
     m.fs.pp.basis_switch = 2
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1664,14 +2111,19 @@ def test_add_total_component_balances_custom_mass_term_no_mw():
     m.fs.pp.basis_switch = 1
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1687,14 +2139,19 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
     m.fs.pp.basis_switch = 2
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1717,14 +2174,19 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
     m.fs.pp.basis_switch = 3
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.component_list)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.pp.component_list)
 
     def custom_method(t, x, j):
         return m.fs.cv.test_var[t, j]
@@ -1741,8 +2203,12 @@ def test_add_total_element_balances_default():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1753,6 +2219,41 @@ def test_add_total_element_balances_default():
     assert isinstance(mb, Constraint)
     assert len(mb) == 3
 
+    for j in m.fs.pp.element_list:
+        with pytest.raises(KeyError):
+            assert m.fs.cv.element_balances[0, 0, j]
+        assert type(m.fs.cv.element_balances[0, 1, j]) is \
+            _GeneralConstraintData
+
+
+def test_add_total_element_balances_default_FFD():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_total_element_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 3
+
+    for j in m.fs.pp.element_list:
+        with pytest.raises(KeyError):
+            assert m.fs.cv.element_balances[0, 1, j]
+        assert type(m.fs.cv.element_balances[0, 0, j]) is \
+            _GeneralConstraintData
+
 
 def test_add_total_element_balances_distrubuted_area():
     m = ConcreteModel()
@@ -1761,9 +2262,12 @@ def test_add_total_element_balances_distrubuted_area():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume1DBlock(default={
-                                "property_package": m.fs.pp,
-                                "reaction_package": m.fs.rp,
-                                "area_definition": DistributedVars.variant})
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10,
+                "area_definition": DistributedVars.variant})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1782,8 +2286,12 @@ def test_add_total_element_balances_properties_not_supported():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.element_list)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1799,9 +2307,13 @@ def test_add_total_element_balances_dynamic():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp,
-                                            "dynamic": True})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10,
+                "dynamic": True})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1822,8 +2334,12 @@ def test_add_total_element_balances_rate_rxns():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1839,8 +2355,12 @@ def test_add_total_element_balances_eq_rxns():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1859,8 +2379,12 @@ def test_add_total_element_balances_eq_rxns_not_active():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1877,8 +2401,12 @@ def test_add_total_element_balances_eq_rxns_no_idx():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1894,7 +2422,11 @@ def test_add_total_element_balances_eq_rxns_no_ReactionBlock():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1909,8 +2441,12 @@ def test_add_total_element_balances_phase_eq():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -1929,8 +2465,12 @@ def test_add_total_element_balances_phase_eq_not_active():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1947,8 +2487,12 @@ def test_add_total_element_balances_phase_eq_no_idx():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -1964,8 +2508,12 @@ def test_add_total_element_balances_mass_transfer():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -1984,14 +2532,19 @@ def test_add_total_element_balances_custom_term():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.element_list)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.pp.element_list)
 
     def custom_method(t, x, e):
         return m.fs.cv.test_var[t, e]
@@ -2012,8 +2565,12 @@ def test_add_total_material_balances():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -2031,8 +2588,12 @@ def test_add_total_enthalpy_balances_default():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -2046,6 +2607,42 @@ def test_add_total_enthalpy_balances_default():
     assert isinstance(m.fs.cv.enthalpy_flow_linking_constraint, Constraint)
     assert isinstance(m.fs.cv.enthalpy_flow_dx, DerivativeVar)
 
+    with pytest.raises(KeyError):
+        assert m.fs.cv.enthalpy_balances[0, 0]
+    assert type(m.fs.cv.enthalpy_balances[0, 1]) is \
+        _GeneralConstraintData
+
+
+def test_add_total_enthalpy_balances_default_FFD():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    eb = m.fs.cv.add_total_enthalpy_balances()
+
+    assert isinstance(eb, Constraint)
+    assert len(eb) == 1
+    assert isinstance(m.fs.cv._enthalpy_flow, Var)
+    assert isinstance(m.fs.cv.enthalpy_flow_linking_constraint, Constraint)
+    assert isinstance(m.fs.cv.enthalpy_flow_dx, DerivativeVar)
+
+    with pytest.raises(KeyError):
+        assert m.fs.cv.enthalpy_balances[0, 1]
+    assert type(m.fs.cv.enthalpy_balances[0, 0]) is \
+        _GeneralConstraintData
+
 
 def test_add_total_enthalpy_balances_distributed_area():
     m = ConcreteModel()
@@ -2054,9 +2651,12 @@ def test_add_total_enthalpy_balances_distributed_area():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
     m.fs.cv = ControlVolume1DBlock(default={
-            "property_package": m.fs.pp,
-            "reaction_package": m.fs.rp,
-            "area_definition": DistributedVars.variant})
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10,
+                "area_definition": DistributedVars.variant})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -2077,9 +2677,13 @@ def test_add_total_enthalpy_balances_dynamic():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp,
-                                            "dynamic": True})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10,
+                "dynamic": True})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -2100,8 +2704,12 @@ def test_add_total_enthalpy_balances_heat_transfer():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -2120,8 +2728,12 @@ def test_add_total_enthalpy_balances_work_transfer():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -2140,14 +2752,18 @@ def test_add_total_enthalpy_balances_custom_term():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time)
 
     def custom_method(t, x):
         return m.fs.cv.test_var[t]
@@ -2164,8 +2780,12 @@ def test_add_total_enthalpy_balances_dh_rxn_no_extents():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -2181,8 +2801,12 @@ def test_add_total_enthalpy_balances_dh_rxn_rate_rxns():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -2199,8 +2823,12 @@ def test_add_total_enthalpy_balances_dh_rxn_equil_rxns():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -2220,8 +2848,12 @@ def test_add_phase_enthalpy_balances():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -2238,8 +2870,12 @@ def test_add_phase_energy_balances():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -2256,8 +2892,12 @@ def test_add_total_energy_balances():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -2275,8 +2915,12 @@ def test_add_total_pressure_balances_default():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -2290,6 +2934,42 @@ def test_add_total_pressure_balances_default():
     assert isinstance(m.fs.cv.pressure_linking_constraint, Constraint)
     assert isinstance(m.fs.cv.pressure_dx, DerivativeVar)
 
+    with pytest.raises(KeyError):
+        assert m.fs.cv.pressure_balance[0, 0]
+    assert type(m.fs.cv.pressure_balance[0, 1]) is \
+        _GeneralConstraintData
+
+
+def test_add_total_pressure_balances_default_FFD():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "FORWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_total_pressure_balances()
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 1
+    assert isinstance(m.fs.cv.pressure, Var)
+    assert isinstance(m.fs.cv.pressure_linking_constraint, Constraint)
+    assert isinstance(m.fs.cv.pressure_dx, DerivativeVar)
+
+    with pytest.raises(KeyError):
+        assert m.fs.cv.pressure_balance[0, 1]
+    assert type(m.fs.cv.pressure_balance[0, 0]) is \
+        _GeneralConstraintData
+
 
 def test_add_total_pressure_balances_deltaP():
     m = ConcreteModel()
@@ -2297,8 +2977,12 @@ def test_add_total_pressure_balances_deltaP():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
@@ -2317,14 +3001,18 @@ def test_add_total_pressure_balances_custom_term():
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time)
 
     def custom_method(t, x):
         return m.fs.cv.test_var[t]
@@ -2344,8 +3032,12 @@ def test_add_phase_pressure_balances():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -2362,8 +3054,12 @@ def test_add_phase_momentum_balances():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -2380,8 +3076,12 @@ def test_add_total_momentum_balances():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -2400,8 +3100,12 @@ def test_model_checks():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
@@ -2422,8 +3126,12 @@ def test_initialize():
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
     m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
 
-    m.fs.cv = ControlVolume1DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
 
     m.fs.cv.add_geometry()
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
