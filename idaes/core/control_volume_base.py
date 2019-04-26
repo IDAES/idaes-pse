@@ -34,7 +34,6 @@ from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         DynamicError,
                                         PropertyNotSupportedError)
-from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee"
 

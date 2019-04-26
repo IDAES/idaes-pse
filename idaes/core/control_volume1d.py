@@ -488,12 +488,8 @@ argument)."""))
 
         # Phase equilibrium generation
         if has_phase_equilibrium:
-            try:
-                add_object_reference(
-                    self,
-                    "phase_equilibrium_idx_ref",
-                    self.config.property_package.phase_equilibrium_idx)
-            except AttributeError:
+            if not hasattr(self.config.property_package,
+                           "phase_equilibrium_idx"):
                 raise PropertyNotSupportedError(
                     "{} Property package does not contain a list of phase "
                     "equilibrium reactions (phase_equilibrium_idx), thus does "
@@ -501,7 +497,7 @@ argument)."""))
             self.phase_equilibrium_generation = Var(
                         self.flowsheet().config.time,
                         self.length_domain,
-                        self.phase_equilibrium_idx_ref,
+                        self.config.property_package.phase_equilibrium_idx,
                         domain=Reals,
                         doc="Amount of generation in unit by phase "
                             "equilibria per unit length [{}/{}.{}]"
@@ -539,7 +535,7 @@ argument)."""))
         def phase_equilibrium_term(b, t, x, p, j):
             if has_phase_equilibrium:
                 sd = {}
-                for r in b.phase_equilibrium_idx_ref:
+                for r in b.config.property_package.phase_equilibrium_idx:
                     if b.config.property_package.\
                             phase_equilibrium_list[r][0] == j:
                         if b.config.property_package.\
@@ -554,7 +550,7 @@ argument)."""))
                         sd[r] = 0
 
                 return sum(b.phase_equilibrium_generation[t, x, r] * sd[r]
-                           for r in b.phase_equilibrium_idx_ref)
+                           for r in b.config.property_package.phase_equilibrium_idx)
             else:
                 return 0
 
@@ -1121,14 +1117,6 @@ argument)."""))
         dynamic = self.config.dynamic
         has_holdup = self.config.has_holdup
 
-        if has_rate_reactions:
-            raise ConfigurationError(
-                    "{} add_total_element_balances method as provided with "
-                    "argument has_rate_reactions = True. Total element "
-                    "balances do not support rate based reactions, "
-                    "please correct your configuration arguments"
-                    .format(self.name))
-
         # Check that property package supports element balances
         try:
             add_object_reference(self,
@@ -1136,71 +1124,37 @@ argument)."""))
                                  self.config.property_package.element_list)
         except AttributeError:
             raise PropertyNotSupportedError(
-                    "{} property package provided does not contain a list of "
-                    "elements (element_list), and thus does not support "
-                    "elemental material balances. Please choose another type "
-                    "of material balance or a property pakcage which supports "
-                    "elemental balances.")
+                "{} property package provided does not contain a list of "
+                "elements (element_list), and thus does not support "
+                "elemental material balances. Please choose another type "
+                "of material balance or a property pakcage which supports "
+                "elemental balances.")
 
-        # Check that reaction block exists if required
-        if has_equilibrium_reactions:
-            try:
-                rblock = self.reactions
-            except AttributeError:
-                raise ConfigurationError(
-                        "{} does not contain a Reaction Block, but material "
-                        "balances have been set to contain reaction terms. "
-                        "Please construct a reaction block before adding "
-                        "balance equations.".format(self.name))
+        # Check validity of arguments to write the total elemental balance
+        if has_rate_reactions:
+            raise ConfigurationError(
+                "{} add_total_element_balances method as provided with "
+                "argument has_rate_reactions = True. Total element "
+                "balances do not support rate based reactions, "
+                "please correct your configuration arguments"
+                .format(self.name))
 
         if has_equilibrium_reactions:
-            # Check that reaction block is set to calculate equilibrium
-            for t in self.flowsheet().config.time:
-                for x in self.length_domain:
-                    if self.reactions[t, x].config.has_equilibrium is False:
-                        raise ConfigurationError(
-                            "{} material balance was set to include "
-                            "equilibrium reactions, however the associated "
-                            "ReactionBlock was not set to include equilibrium "
-                            "constraints (has_equilibrium_reactions=False). "
-                            "Please correct your configuration arguments."
-                            .format(self.name))
-                try:
-                    add_object_reference(
-                        self,
-                        "equilibrium_reaction_idx_ref",
-                        self.config.reaction_package.equilibrium_reaction_idx)
-                except AttributeError:
-                    raise PropertyNotSupportedError(
-                        "{} Reaction package does not contain a list of "
-                        "equilibrium reactions (equilibrium_reaction_idx), "
-                        "thus does not support equilibrium-based reactions."
-                        .format(self.name))
+            raise ConfigurationError(
+                "{} add_total_element_balances method as provided with "
+                "argument has_equilibrium_reactions = True. Total element "
+                "balances do not support equilibrium based reactions, "
+                "please correct your configuration arguments"
+                .format(self.name))
 
         if has_phase_equilibrium:
             # Check that state blocks are set to calculate equilibrium
-            for t in self.flowsheet().config.time:
-                for x in self.length_domain:
-                    if (not self.properties[t, x]
-                            .config.has_phase_equilibrium):
-                        raise ConfigurationError(
-                            "{} material balance was set to include phase "
-                            "equilibrium, however the associated outlet "
-                            "StateBlock was not set to include equilibrium "
-                            "constraints (has_phase_equilibrium=False). Please"
-                            " correct your configuration arguments."
-                            .format(self.name))
-                try:
-                    add_object_reference(
-                        self,
-                        "phase_equilibrium_idx_ref",
-                        self.config.property_package.phase_equilibrium_idx)
-                except AttributeError:
-                    raise PropertyNotSupportedError(
-                        "{} Property package does not contain a list of phase "
-                        "equilibrium reactions (phase_equilibrium_idx), thus "
-                        "does not support phase equilibrium."
-                        .format(self.name))
+            raise ConfigurationError(
+                "{} add_total_element_balances method as provided with "
+                "argument has_phase_equilibrium = True. Total element "
+                "balances do not support equilibrium based reactions, "
+                "please correct your configuration arguments"
+                .format(self.name))
 
         # Get units from property package
         units = {}
