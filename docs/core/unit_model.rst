@@ -13,7 +13,7 @@ The UnitModelBlock class by default has only one construction argument, which is
 Collecting Time Domain
 ----------------------
 
-The next task of the UnitModelBlock class is to establish the time domain for the unit by collecting the necessary information from the parent Flowsheet model. If the dynamic construction argument is set to useDefault then the Unit model looks to its parent model for the dynamic argument, otherwise the value provided at construction is used.
+The next task of the UnitModelBlock class is to establish the time domain for the unit by collecting the necessary information from the parent Flowsheet model. If the dynamic construction argument is set to `useDefault` then the Unit model looks to its parent model for the dynamic argument, otherwise the value provided at construction is used.
 
 Finally, if the Unit model has a construction argument named "has_holdup" (not part of the base class), then this is checked to ensure that if dynamic = True then has_holdup is also True. If this check fails then a ConfigurationError exception will be thrown.
 
