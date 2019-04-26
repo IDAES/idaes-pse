@@ -157,9 +157,6 @@ see property package for documentation.}"""))
 
         # Add performance equations
         add_object_reference(self,
-                             "component_list_ref",
-                             self.control_volume.component_list_ref)
-        add_object_reference(self,
                              "phase_list_ref",
                              self.control_volume.phase_list_ref)
         add_object_reference(self,
@@ -179,7 +176,7 @@ see property package for documentation.}"""))
 
         @self.Constraint(self.flowsheet().config.time,
                          self.phase_list_ref,
-                         self.component_list_ref,
+                         self.config.property_package.component_list,
                          doc="Gibbs energy minimisation constraint")
         def gibbs_minimization(b, t, p, j):
             # Use natural log of species mole flow to avoid Pyomo solver
