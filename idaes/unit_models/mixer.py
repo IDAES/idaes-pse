@@ -448,7 +448,7 @@ linked to all inlet states and the mixed state,
 
         # Write phase-component balances
         @self.Constraint(self.flowsheet().config.time,
-                         self.phase_list_ref,
+                         self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Material mixing equations")
         def material_mixing_equations(b, t, p, j):
@@ -474,10 +474,10 @@ linked to all inlet states and the mixed state,
         def enthalpy_mixing_equations(b, t):
             return 0 == self.scaling_factor_energy*(
                 sum(sum(inlet_blocks[i][t].get_enthalpy_flow_terms(p)
-                    for p in b.phase_list_ref)
+                    for p in b.config.property_package.phase_list)
                     for i in range(len(inlet_blocks))) -
                 sum(mixed_block[t].get_enthalpy_flow_terms(p)
-                    for p in b.phase_list_ref))
+                    for p in b.config.property_package.phase_list))
 
     def add_pressure_minimization_equations(self, inlet_blocks, mixed_block):
         """
