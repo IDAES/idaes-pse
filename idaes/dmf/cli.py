@@ -24,6 +24,7 @@ import logging
 from operator import itemgetter
 import pathlib
 import sys
+from typing import List
 from urllib.parse import urlparse, ParseResult
 import yaml
 
@@ -62,6 +63,10 @@ class Code(Enum):
     DMF_OPER = 6
     INPUT_VALUE = 7
     CANCELED = 8
+
+
+# Some common fields we can show
+SHOW_FIELDS = "type, desc, creator, created, modified, fikes, codes, version"
 
 
 def level_from_verbosity(vb):
@@ -525,11 +530,8 @@ def register(
 @click.option(
     "--show",
     "-s",
-    type=click.Choice(
-        ["type", "desc", "created", "modified", "version", "files", "codes"]
-    ),
     multiple=True,
-    help="Show given field in listing",
+    help=f"Show given field(s) in listing. Common fields: {SHOW_FIELDS}",
 )
 @click.option(
     "--sort",
@@ -551,11 +553,53 @@ def ls(color, show, sort_by, reverse, prefix):
     d = DMF()
     if not show:
         show = ["type", "desc", "modified"]  # note: 'id' is always first
+    else:
+        try:
+            show = _split_and_validate_fields(show)
+        except ValueError as err:
+            click.echo(f"Bad fields for --show option: {err}")
+            sys.exit(Code.INPUT_VALUE.value)
     reverse = bool(reverse == "yes")
     if not sort_by:
         sort_by = ["id"]
     resources = list(d.find())
     _print_resource_table(resources, show, sort_by, reverse, prefix, color)
+
+
+def _split_and_validate_fields(fields: List[str]) -> List[str]:
+    """Split comma-separated 'show' fields, validate that they are
+    part of a resource, and return a list of tuples.
+
+    Raises:
+        ValueError: if the fields do not validate
+    Returns:
+
+    """
+    dummy = resource.DUMMY_RESOURCE
+    # Find every field in the resource
+    result = []
+    for grp in fields:
+        for f in grp.split(","):
+            f = f.strip()
+            if f in _show_fields:
+                result.append(f)
+                continue
+            if "." in f:
+                keys, v = f.split("."), dummy
+                try:
+                    for k in keys:
+                        try:
+                            v = v[k]
+                        except TypeError:
+                            raise ValueError(f"bad field {f}")
+                except KeyError:
+                    raise ValueError(f"bad field {f} (error at " f"sub-field {k})")
+                result.append(tuple(keys))
+            elif f not in dummy:
+                raise ValueError(f"bad field {f}")
+            else:
+                result.append(f)
+    return result
 
 
 def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, color):
@@ -570,12 +614,16 @@ def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, colo
     fields = ["id"] + list(show_fields)
     nfields = len(fields)
     # calculate table body. do this first to get widths.
-    rows, maxwid, widths = [], 60, [len(f) for f in fields]
+    hdr_fields = [".".join(f) if isinstance(f, tuple) else f for f in fields]
+    rows, maxwid, widths = [], 60, [len(f) for f in hdr_fields]
     for r in resources:
         row = []
         for i, fld in enumerate(fields):
             # transform field for display
-            transformer = _show_fields[fld]
+            try:
+                transformer = _show_fields[fld]
+            except KeyError:
+                transformer = _IdentityField(fld)
             transformer.set_value(r)
             # if it's a UUID field, add info about unique prefix length
             is_id_field = isinstance(transformer, _IdField)
@@ -605,7 +653,7 @@ def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, colo
         sort_key_idx = tuple(range(nfields, nfields + nsort))
         rows.sort(key=itemgetter(*sort_key_idx), reverse=reverse)
     # print table header
-    hdr_columns = [t.bold + f"{f:{w}}" for f, w in zip(fields, widths)]
+    hdr_columns = [t.bold + f"{f:{w}}" for f, w in zip(hdr_fields, widths)]
     print(" ".join(hdr_columns) + t.normal)
     # print table body
     for row in rows:
@@ -638,11 +686,8 @@ def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, colo
 @click.option(
     "--show",
     "-s",
-    type=click.Choice(
-        ["type", "desc", "created", "modified", "version", "files", "codes"]
-    ),
     multiple=True,
-    help="Show given field in listing",
+    help=f"Show given field(s) in listing. Common fields: {SHOW_FIELDS}",
 )
 @click.option(
     "--sort",
@@ -681,8 +726,15 @@ def find(
     datatype,
 ):
     d = DMF()
-    if output_format == "list" and not show:
-        show = ["type", "desc", "modified"]  # note: 'id' is always first
+    if output_format == "list":
+        if not show:
+            show = ["type", "desc", "modified"]  # note: 'id' is always first
+        else:
+            try:
+                show = _split_and_validate_fields(show)
+            except ValueError as err:
+                click.echo(f"Bad fields for --show option: {err}")
+                sys.exit(Code.INPUT_VALUE.value)
     reverse = bool(reverse == "yes")
     if not sort_by:
         sort_by = ["id"]
@@ -725,7 +777,6 @@ def find(
         si = _ShowInfo("term", 32, color=color)
         for rsrc in resources:
             si.show(rsrc)
-        print("NOPE!")
     elif output_format == "json":
         # print resources as JSON
         for r in resources:
@@ -735,26 +786,38 @@ def find(
 def _date_query(datestr):
     """Transform date(s) into a query.
     """
-    def _ts(x): # get timestamp of date or time
+
+    def _ts(x):  # get timestamp of date or time
         try:
             return x.timestamp()
         except AttributeError:
             return datetime.datetime(*x.timetuple()[:6]).timestamp()
 
     dates = datestr.split("..", 1)
+    _log.debug(f"date '{datestr}', split: {dates}")
     try:
-        parsed_dates = [pendulum.parser.parse(d, exact=True) for d in dates]
+        parsed_dates = [
+            pendulum.parser.parse(d, exact=True, tz=pendulum.local_timezone())
+            if d
+            else None
+            for d in dates
+        ]
     except pendulum.exceptions.ParserError as err:
         raise ValueError(str(err))
     if len(parsed_dates) == 2:
-        query = {'$ge': _ts(parsed_dates[0]), '$le': _ts(parsed_dates[1])}
+        begin_date, end_date = parsed_dates
+        query = {}
+        if begin_date:
+            query['$ge'] = _ts(begin_date)
+        if end_date:
+            query['$le'] = _ts(end_date)
     else:
         pd = parsed_dates[0]
         if isinstance(pd, pendulum.Pendulum):
             _log.warning("datetime given, must match to the second")
             query = _ts(pd)
         else:
-            query = {'$ge': _ts(pd), '$le': _ts(pd) + 60*60*24} # 1 day
+            query = {'$ge': _ts(pd), '$le': _ts(pd) + 60 * 60 * 24}  # 1 day
     return query
 
 
@@ -1088,7 +1151,7 @@ class _ShowInfo:
         val, result = self._resource.v, {}
 
         def dateize(v):
-            return pendulum.from_timestamp(v).to_datetime_string()
+            return pendulum.fromtimestamp(v).to_datetime_string()
 
         for k, v in val.items():
             if k in ("created", "modified"):
@@ -1151,7 +1214,7 @@ class _IdentityField(_LsField):
 
 class _DateField(_LsField):
     def __str__(self):
-        return pendulum.from_timestamp(self.value).to_datetime_string()
+        return pendulum.fromtimestamp(self.value).to_datetime_string()
 
 
 class _FilesField(_LsField):
@@ -1204,6 +1267,7 @@ _show_fields = {
     "id": _IdField(resource.Resource.ID_FIELD),
     "type": _IdentityField("type"),
     "desc": _IdentityField("desc"),
+    "creator": _IdentityField(("creator", "name")),
     "created": _DateField("created"),
     "modified": _DateField("modified"),
     "files": _FilesField("datafiles"),

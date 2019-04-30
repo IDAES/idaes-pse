@@ -275,7 +275,7 @@ class Resource(object):
         self.do_copy = self.is_tmp = False  # flags for copying datafiles
 
     def _set_defaults(self):
-        now = date_float(pendulum.utcnow())
+        now = date_float(pendulum.now())
         self.v = Dict(
             {
                 self.ID_FIELD: identifier_str(),
@@ -850,3 +850,59 @@ class SerializedResourceImporter(ResourceImporter):
     def _create(self) -> Resource:
         r = Resource(value=self.parsed)
         return r
+
+
+#
+# Fill any JSON-schema-constrained instance with
+# dummy values
+#
+
+
+def add_dummy_values(validator_class):
+    validate_properties = validator_class.VALIDATORS["properties"]
+
+    dummy_for_type = {
+        "object": {},
+        "boolean": False,
+        "null": None,
+        "number": 0,
+        "integer": 0,
+        "string": "",
+        "any": "",
+    }
+
+    def set_defaults(validator, properties, instance, schema):
+        for prop, subschema in properties.items():
+            # print(f"@@ at prop={prop}")
+            if "$ref" in subschema:
+                refkey = subschema["$ref"].split("/")[-1]
+                subschema = RESOURCE_SCHEMA["definitions"][refkey]
+                # print(f"@@ ref {refkey} resolved, schema={subschema}")
+            if "enum" in subschema:
+                value = subschema["enum"][0]
+            elif subschema["type"] == "array":
+                # print("@@ array subschema")
+                if "minItems" in subschema:
+                    value = [
+                        dummy_for_type[item["type"]] for item in subschema["items"]
+                    ]
+                elif subschema["items"]["type"] == "object":
+                    value = [{}]
+                else:
+                    value = []
+                # print(f"@@ array value = {value}")
+            else:
+                value = dummy_for_type[subschema["type"]]
+            instance.setdefault(prop, value)
+        for error in validate_properties(validator, properties, instance, schema):
+            yield error
+
+    return jsonschema.validators.extend(validator_class, {"properties": set_defaults})
+
+
+# Create dummy resource
+
+DummyValueValidator = add_dummy_values(jsonschema.Draft4Validator)
+DUMMY_RESOURCE = {}
+DummyValueValidator(RESOURCE_SCHEMA).validate(DUMMY_RESOURCE)
+# print("@@ dummy resource:\n{}".format(DUMMY_RESOURCE))

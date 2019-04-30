@@ -255,13 +255,38 @@ dmf find usage
     fsctx.__exit__(None, None, None)
     DMFConfig._filename = str(Path('~/.dmf').expanduser())
 
-By default, find will essentially provide
+By default, find will essentially provide a filtered listing of
+resources. If used without options, it is basically an alias for
+`ls`.
+
 .. code-block:: console
 
     $ dmf ls
-    < show listing here >
-    $ dmf find --type data --name foo --by dang --created 2019-01-01..
-    < show find result here >
+    id   type desc      modified
+    2517 data file1.txt 2019-04-29 17:29:00
+    344c data file2.txt 2019-04-29 17:29:01
+    5d98 data A         2019-04-29 17:28:41
+    602a data B         2019-04-29 17:28:56
+    8c55 data C         2019-04-29 17:28:58
+    9cbe data D         2019-04-29 17:28:59
+    $ dmf find
+    id   type desc      modified
+    2517 data file1.txt 2019-04-29 17:29:00
+    344c data file2.txt 2019-04-29 17:29:01
+    5d98 data A         2019-04-29 17:28:41
+    602a data B         2019-04-29 17:28:56
+    8c55 data C         2019-04-29 17:28:58
+    9cbe data D         2019-04-29 17:28:59
+
+The find-specific options add filters. In the example above, the find
+filters for files that were modified after the given date and time.
+
+.. code-block:: console
+
+    $ dmf  find --modified 2019-04-29T17:29:00..
+    id   type desc      modified
+    2517 data file1.txt 2019-04-29 17:29:00
+    344c data file2.txt 2019-04-29 17:29:01
 
 .. ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. image:: ../_images/blue-white-band.png
