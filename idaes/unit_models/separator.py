@@ -954,7 +954,7 @@ linked the mixed state and all outlet states,
         flags = mblock.initialize(outlvl=outlvl-1,
                                   optarg=optarg,
                                   solver=solver,
-                                  hold_state=hold_state)
+                                  hold_state=True)
 
         if blk.config.ideal_separation:
             # If using ideal splitting, initialisation should be complete
@@ -1022,7 +1022,10 @@ linked the mixed state and all outlet states,
         else:
             _log.info('{} Initialisation Complete.'.format(blk.name))
 
-        return flags
+        if hold_state is True:
+            return flags
+        else:
+            blk.release_state(flags, outlvl=outlvl-1)
 
     def release_state(blk, flags, outlvl=0):
         '''

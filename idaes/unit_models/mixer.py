@@ -668,7 +668,7 @@ linked to all inlet states and the mixed state,
             flags[i] = i_block.initialize(outlvl=outlvl-1,
                                           optarg=optarg,
                                           solver=solver,
-                                          hold_state=hold_state)
+                                          hold_state=True)
 
         # Initialize mixed state block
         if blk.config.mixed_state_block is None:
@@ -722,7 +722,10 @@ linked to all inlet states and the mixed state,
         else:
             _log.info('{} Initialisation Complete.'.format(blk.name))
 
-        return flags
+        if hold_state is True:
+            return flags
+        else:
+            blk.release_state(flags, outlvl=outlvl-1)
 
     def release_state(blk, flags, outlvl=0):
         '''
