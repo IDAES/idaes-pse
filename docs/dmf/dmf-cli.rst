@@ -661,8 +661,9 @@ Disallow, even if terminal supports it, colored terminal output.
 
 .. option:: -s,--show
 
-Pick field to show in output table. This field can be repeated to show
-any known subset of fields. Default fields, if this option is not
+Pick field to show in output table. This option can be repeated to show
+any known subset of fields. Also the option value can have commas
+ in it to hold multiple fields. Default fields, if this option is not
 specified at all, are "type", "desc", and "modified". The resource identifier
 field is always shown first.
 
@@ -680,6 +681,11 @@ type
     Name of the type of resource.
 version
     Resource version.
+
+You can specify other fields from the schema, as long as they are not
+arrays of objects, i.e. you can say ``--show tags`` or ``--show version_info.version``,
+but ``--show sources`` is too complicated for a tabular listing. To
+see detailed values in a record use the `dmf info`_ command.
 
 .. option:: -S,--sort
 
