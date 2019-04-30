@@ -687,7 +687,7 @@ def test_initialize():
     # Change one inlet pressure to check initialization calculations
     m.fs.mix.inlet_1_state[0].pressure = 8e4
 
-    f = m.fs.mix.initialize()
+    f = m.fs.mix.initialize(hold_state=True)
 
     assert m.fs.mix.inlet_1_state[0].init_test is True
     assert m.fs.mix.inlet_2_state[0].init_test is True

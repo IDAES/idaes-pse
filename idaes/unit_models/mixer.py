@@ -599,8 +599,9 @@ linked to all inlet states and the mixed state,
         if self.config.momentum_mixing_type != \
                 MomentumMixingType.minimize_and_equality:
             _log.warning(
-"""use_minimum_inlet_pressure_constraint() can only be used when
-momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
+                """use_minimum_inlet_pressure_constraint() can only be used
+                when momentum_mixing_type ==
+                MomentumMixingType.minimize_and_equality""")
             return
         self.minimum_pressure_constraint.activate()
         self.pressure_equality_constraints.deactivate()
@@ -614,14 +615,15 @@ momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
         if self.config.momentum_mixing_type != \
                 MomentumMixingType.minimize_and_equality:
             _log.warning(
-"""use_equal_pressure_constraint() can only be used when
-momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
+                """use_equal_pressure_constraint() can only be used when
+                momentum_mixing_type ==
+                MomentumMixingType.minimize_and_equality""")
             return
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
     def initialize(blk, outlvl=0, optarg={},
-                   solver='ipopt', hold_state=True):
+                   solver='ipopt', hold_state=False):
         '''
         Initialisation routine for mixer (default solver ipopt)
 
@@ -635,7 +637,7 @@ momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
                      initialization (default = 'ipopt')
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
-                     initialization, **default** - True. **Valid values:**
+                     initialization, **default** - False. **Valid values:**
                      **True** - states variables are not unfixed, and a dict of
                      returned containing flags for which states were fixed
                      during initialization, **False** - state variables are
