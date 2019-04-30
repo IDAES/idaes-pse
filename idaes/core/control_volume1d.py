@@ -1118,11 +1118,7 @@ argument)."""))
         has_holdup = self.config.has_holdup
 
         # Check that property package supports element balances
-        try:
-            add_object_reference(self,
-                                 "element_list_ref",
-                                 self.config.property_package.element_list)
-        except AttributeError:
+        if not hasattr(self.config.property_package, "element_list"):
             raise PropertyNotSupportedError(
                 "{} property package provided does not contain a list of "
                 "elements (element_list), and thus does not support "
@@ -1170,7 +1166,7 @@ argument)."""))
             self.element_holdup = Var(
                     self.flowsheet().config.time,
                     self.length_domain,
-                    self.element_list_ref,
+                    self.config.property_package.element_list,
                     domain=Reals,
                     doc="Elemental holdup per unit length [{}/{}]"
                         .format(units['amount'], units['length']))
@@ -1186,14 +1182,14 @@ argument)."""))
 
         self.elemental_flow_term = Var(self.flowsheet().config.time,
                                        self.length_domain,
-                                       self.element_list_ref,
+                                       self.config.property_package.element_list,
                                        doc="Elemental flow terms [{}/{}]"
                                            .format(units['amount'],
                                                    units['time']))
 
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
-                         self.element_list_ref,
+                         self.config.property_package.element_list,
                          doc="Elemental flow constraints")
         def elemental_flow_constraint(b, t, x, e):
             return b.elemental_flow_term[t, x, e] == (
@@ -1212,7 +1208,7 @@ argument)."""))
             self.elemental_mass_transfer_term = Var(
                             self.flowsheet().config.time,
                             self.length_domain,
-                            self.element_list_ref,
+                            self.config.property_package.element_list,
                             domain=Reals,
                             doc="Element material transfer into unit per unit "
                                 "length [{}/{}.{}]"
@@ -1240,7 +1236,7 @@ argument)."""))
         # Element balances
         @self.Constraint(self.flowsheet().config.time,
                          self.length_domain,
-                         self.element_list_ref,
+                         self.config.property_package.element_list,
                          doc="Elemental material balances")
         def element_balances(b, t, x, e):
             if ((b.config.transformation_scheme != "FORWARD" and
@@ -1264,7 +1260,7 @@ argument)."""))
 
             @self.Constraint(self.flowsheet().config.time,
                              self.length_domain,
-                             self.element_list_ref,
+                             self.config.property_package.element_list,
                              doc="Elemental holdup calculation")
             def elemental_holdup_calculation(b, t, x, e):
                 return b.element_holdup[t, x, e] == (

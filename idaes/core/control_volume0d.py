@@ -912,11 +912,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         has_holdup = self.config.has_holdup
 
         # Check that property package supports element balances
-        try:
-            add_object_reference(self,
-                                 "element_list_ref",
-                                 self.config.property_package.element_list)
-        except AttributeError:
+        if not hasattr(self.config.property_package, "element_list"):
             raise PropertyNotSupportedError(
                 "{} property package provided does not contain a list of "
                 "elements (element_list), and thus does not support "
@@ -970,7 +966,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_holdup:
             self.element_holdup = Var(
                     self.flowsheet().config.time,
-                    self.element_list_ref,
+                    self.config.property_package.element_list,
                     domain=Reals,
                     doc="Elemental holdup in unit [{}]"
                         .format(units['amount']))
@@ -984,7 +980,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         @self.Expression(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
-                         self.element_list_ref,
+                         self.config.property_package.element_list,
                          doc="Inlet elemental flow terms [{}/{}]"
                              .format(units['amount'], units['time']))
         def elemental_flow_in(b, t, p, e):
@@ -994,7 +990,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         @self.Expression(self.flowsheet().config.time,
                          self.config.property_package.phase_list,
-                         self.element_list_ref,
+                         self.config.property_package.element_list,
                          doc="Outlet elemental flow terms [{}/{}]"
                              .format(units['amount'], units['time']))
         def elemental_flow_out(b, t, p, e):
@@ -1006,7 +1002,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_mass_transfer:
             self.elemental_mass_transfer_term = Var(
                             self.flowsheet().config.time,
-                            self.element_list_ref,
+                            self.config.property_package.element_list,
                             domain=Reals,
                             doc="Element material transfer into unit [{}/{}]"
                             .format(units['amount'], units['time']))
@@ -1030,7 +1026,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Element balances
         @self.Constraint(self.flowsheet().config.time,
-                         self.element_list_ref,
+                         self.config.property_package.element_list,
                          doc="Elemental material balances")
         def element_balances(b, t, e):
             return accumulation_term(b, t, e) == (
@@ -1047,7 +1043,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self._add_phase_fractions()
 
             @self.Constraint(self.flowsheet().config.time,
-                             self.element_list_ref,
+                             self.config.property_package.element_list,
                              doc="Elemental holdup calculation")
             def elemental_holdup_calculation(b, t, e):
                 return b.element_holdup[t, e] == (
