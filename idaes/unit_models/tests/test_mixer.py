@@ -153,8 +153,7 @@ def test_inherited_methods():
     m.fs.mix._get_property_package()
     m.fs.mix._get_indexing_sets()
 
-    assert hasattr(m.fs.mix, "phase_list_ref")
-    assert hasattr(m.fs.mix, "component_list_ref")
+    assert hasattr(m.fs.mix.config.property_package, "phase_list")
 
 
 def test_create_inlet_list_default():
@@ -688,7 +687,7 @@ def test_initialize():
     # Change one inlet pressure to check initialization calculations
     m.fs.mix.inlet_1_state[0].pressure = 8e4
 
-    f = m.fs.mix.initialize()
+    f = m.fs.mix.initialize(hold_state=True)
 
     assert m.fs.mix.inlet_1_state[0].init_test is True
     assert m.fs.mix.inlet_2_state[0].init_test is True

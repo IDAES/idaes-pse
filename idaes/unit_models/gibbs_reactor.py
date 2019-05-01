@@ -16,7 +16,7 @@ Standard IDAES Gibbs reactor model.
 from __future__ import division
 
 # Import Pyomo libraries
-from pyomo.environ import Reals,  Var
+from pyomo.environ import Reals, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -157,17 +157,11 @@ see property package for documentation.}"""))
 
         # Add performance equations
         add_object_reference(self,
-                             "component_list_ref",
-                             self.control_volume.component_list_ref)
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.control_volume.phase_list_ref)
-        add_object_reference(self,
                              "element_list_ref",
                              self.control_volume.element_list_ref)
 
         # Add Lagrangian multiplier variables
-        self.lagrange_mult = Var(self.time_ref,
+        self.lagrange_mult = Var(self.flowsheet().config.time,
                                  self.element_list_ref,
                                  domain=Reals,
                                  initialize=100,
@@ -177,9 +171,9 @@ see property package for documentation.}"""))
         # Use RT*lagrange as the Lagrangian multiple such that lagrange is in
         # a similar order of magnitude as log(Yi)
 
-        @self.Constraint(self.time_ref,
-                         self.phase_list_ref,
-                         self.component_list_ref,
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
                          doc="Gibbs energy minimisation constraint")
         def gibbs_minimization(b, t, p, j):
             # Use natural log of species mole flow to avoid Pyomo solver

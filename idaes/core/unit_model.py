@@ -30,9 +30,7 @@ from .property_base import StateBlock
 from .control_volume_base import ControlVolumeBlockData, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
-                                        DynamicError,
                                         PropertyPackageError)
-from idaes.core.util.misc import add_object_reference
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -91,71 +89,6 @@ Must be True if dynamic = True,
         # Set up dynamic flag and time domain
         self._setup_dynamics()
 
-    def _setup_dynamics(self):
-        """
-        This method automates the setting of the dynamic flag and time domain
-        for unit models.
-
-        Performs the following:
-         1) Determines if this is a top level flowsheet
-         2) Gets dynamic flag from parent if not top level, or checks validity
-            of argument provided
-         3) Gets time domain from parent, or creates domain if top level model
-         4) Checks has_holdup flag if present and dynamic = True
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Check the dynamic flag, and retrieve if necessary
-        if self.config.dynamic == useDefault:
-            # Get dynamic flag from parent
-            try:
-                self.config.dynamic = self.parent_block().config.dynamic
-            except AttributeError:
-                # If parent does not have dynamic flag, raise Exception
-                raise DynamicError('{} has a parent model '
-                                   'with no dynamic attribute.'
-                                   .format(self.name))
-
-        # Check for case when dynamic=True, but parent dynamic=False
-        if (self.config.dynamic and not self.parent_block().config.dynamic):
-            raise DynamicError('{} trying to declare a dynamic model within '
-                               'a steady-state flowsheet. This is not '
-                               'supported by the IDAES framework. Try '
-                               'creating a dynamic flowsheet instead, and '
-                               'declaring some models as steady-state.'
-                               .format(self.name))
-
-        # Try to get reference to time object from parent
-        try:
-            # Guess parent is top level flowsheet, has time domain
-            add_object_reference(self, "time_ref", self.parent_block().time)
-        except AttributeError:
-            # Try to look for a reference to time domain (time_ref)
-            try:
-                add_object_reference(self,
-                                     "time_ref",
-                                     self.parent_block().time_ref)
-            except AttributeError:
-                # Can't find time domain
-                raise DynamicError('{} has a parent model '
-                                   'with no time domain'.format(self.name))
-
-        # Set and validate has_holdup argument
-        if self.config.has_holdup == useDefault:
-            # Default to same value as dynamic flag
-            self.config.has_holdup = self.config.dynamic
-        elif self.config.has_holdup is False:
-            if self.config.dynamic is True:
-                # Dynamic model must have has_holdup = True
-                raise ConfigurationError(
-                            "{} invalid arguments for dynamic and has_holdup. "
-                            "If dynamic = True, has_holdup must also be True "
-                            "(was False)".format(self.name))
-
     def model_check(blk):
         """
         This is a general purpose initialization routine for simple unit
@@ -205,7 +138,8 @@ Must be True if dynamic = True,
         setattr(blk, name, p)
 
         # Get dict of Port members and names
-        member_list = block[blk.time_ref.first()].define_port_members()
+        member_list = block[
+                blk.flowsheet().config.time.first()].define_port_members()
 
         # Create References for port members
         for s in member_list:
@@ -226,7 +160,7 @@ Must be True if dynamic = True,
         """
         This is a method to build inlet Port objects in a unit model and
         connect these to a specified control volume or state block.
-        
+
         The name and block arguments are optional, but must be used together.
         i.e. either both arguments are provided or neither.
 
@@ -280,11 +214,13 @@ Must be True if dynamic = True,
         # Get dict of Port members and names
         if isinstance(block, ControlVolumeBlockData):
             try:
-                member_list = (block.properties_in[block.time_ref.first()]
+                member_list = (block.properties_in[
+                                    block.flowsheet().config.time.first()]
                                .define_port_members())
             except AttributeError:
                 try:
-                    member_list = (block.properties[block.time_ref.first(), 0]
+                    member_list = (block.properties[
+                                    block.flowsheet().config.time.first(), 0]
                                    .define_port_members())
                 except AttributeError:
                     raise PropertyPackageError(
@@ -293,7 +229,8 @@ Must be True if dynamic = True,
                             "Please contact the developer of the property "
                             "package.".format(blk.name))
         elif isinstance(block, StateBlock):
-            member_list = block[blk.time_ref.first()].define_port_members()
+            member_list = block[
+                    blk.flowsheet().config.time.first()].define_port_members()
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "
@@ -321,7 +258,7 @@ Must be True if dynamic = True,
                                     "developers with this bug."
                                     .format(blk.name))
                         slicer = (block.properties[:, _idx]
-                                      .component(member_list[s].local_name))
+                                  .component(member_list[s].local_name))
                 elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)
                 else:
@@ -424,11 +361,13 @@ Must be True if dynamic = True,
         # Get dict of Port members and names
         if isinstance(block, ControlVolumeBlockData):
             try:
-                member_list = (block.properties_out[block.time_ref.first()]
+                member_list = (block.properties_out[
+                                    block.flowsheet().config.time.first()]
                                .define_port_members())
             except AttributeError:
                 try:
-                    member_list = (block.properties[block.time_ref.first(), 0]
+                    member_list = (block.properties[
+                                    block.flowsheet().config.time.first(), 0]
                                    .define_port_members())
                 except AttributeError:
                     raise PropertyPackageError(
@@ -437,7 +376,8 @@ Must be True if dynamic = True,
                             "Please contact the developer of the property "
                             "package.".format(blk.name))
         elif isinstance(block, StateBlock):
-            member_list = block[blk.time_ref.first()].define_port_members()
+            member_list = block[
+                    blk.flowsheet().config.time.first()].define_port_members()
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "
@@ -465,7 +405,7 @@ Must be True if dynamic = True,
                                     "developers with this bug."
                                     .format(blk.name))
                         slicer = (block.properties[:, _idx]
-                                      .component(member_list[s].local_name))
+                                  .component(member_list[s].local_name))
                 elif isinstance(block, StateBlock):
                     slicer = block[:].component(member_list[s].local_name)
                 else:
@@ -562,11 +502,15 @@ Must be True if dynamic = True,
 
         # ---------------------------------------------------------------------
         # Solve unit
-        results = opt.solve(blk, tee=stee)
+        try:
+            results = opt.solve(blk, tee=stee)
+        except ValueError:
+            results = None
 
         if outlvl > 0:
-            if results.solver.termination_condition == \
-                    TerminationCondition.optimal:
+            if (results is not None and
+                    results.solver.termination_condition ==
+                    TerminationCondition.optimal):
                 _log.info('{} Initialisation Step 2 Complete.'
                           .format(blk.name))
             else:

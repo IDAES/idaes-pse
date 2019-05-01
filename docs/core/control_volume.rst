@@ -40,8 +40,6 @@ Setting up the time domain
 
 The first common task the Control Volume block performs is to determine if it should be dynamic or steady-state and to collect the time domain from the UnitModel. Control Volume blocks have an argument ``dynamic`` which can be provided during construction which specifies if the Control Volume should be dynamic (``dynamic=True``) or steady-state (``dynamic=False``). If the argument is not provided, the Control Volume block will inherit this argument from its parent ``UnitModel``.
 
-After setting the dynamic argument, the Control Volume block then creates a reference to the time domain (``time_ref``) from the ``UnitModel``. If the block containing the Control Volume block does not have an attribute named time a ``DynamicsError`` will be returned.
-
 Finally, the Control Volume checks that the ``has_holdup`` argument is consistent with the ``dynamic`` argument, and raises a ``ConfigurationError`` if it is not.
 
 Getting Property Package Information

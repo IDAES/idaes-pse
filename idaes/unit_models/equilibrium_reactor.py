@@ -232,18 +232,12 @@ see reaction package for documentation.}"""))
 
         # Add object references
         add_object_reference(self,
-                             "component_list_ref",
-                             self.control_volume.component_list_ref)
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.control_volume.phase_list_ref)
-        add_object_reference(self,
                              "rate_reaction_idx_ref",
                              self.control_volume.rate_reaction_idx_ref)
 
         if self.config.has_rate_reactions:
             # Add equilibrium reactor performance equation
-            @self.Constraint(self.time_ref,
+            @self.Constraint(self.flowsheet().config.time,
                              self.rate_reaction_idx_ref,
                              doc="Rate reaction equilibrium constraint")
             def rate_reaction_constraint(b, t, r):

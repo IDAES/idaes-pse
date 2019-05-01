@@ -85,7 +85,7 @@ see property package for documentation.}"""))
         # Add State Block
         self.properties = (
                     self.config.property_package.state_block_class(
-                            self.time_ref,
+                            self.flowsheet().config.time,
                             doc="Material properties in feed",
                             default={
                                 "defined_state": True,
@@ -94,7 +94,8 @@ see property package for documentation.}"""))
                                 **self.config.property_package_args}))
 
         # Add references to all state vars
-        s_vars = self.properties[self.time_ref.first()].define_state_vars()
+        s_vars = self.properties[
+                self.flowsheet().config.time.first()].define_state_vars()
         for s in s_vars:
             l_name = s_vars[s].local_name
             if s_vars[s].is_indexed():
