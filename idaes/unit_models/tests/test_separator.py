@@ -831,7 +831,7 @@ def test_initialize():
     # Change one outlet pressure to check initialization calculations
     m.fs.sep.outlet_1_state[0].pressure = 8e4
 
-    f = m.fs.sep.initialize()
+    f = m.fs.sep.initialize(hold_state=True)
 
     assert m.fs.sep.outlet_1_state[0].init_test is True
     assert m.fs.sep.outlet_2_state[0].init_test is True

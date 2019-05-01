@@ -30,9 +30,7 @@ from .property_base import StateBlock
 from .control_volume_base import ControlVolumeBlockData, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
-                                        DynamicError,
                                         PropertyPackageError)
-from idaes.core.util.misc import add_object_reference
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -504,11 +502,15 @@ Must be True if dynamic = True,
 
         # ---------------------------------------------------------------------
         # Solve unit
-        results = opt.solve(blk, tee=stee)
+        try:
+            results = opt.solve(blk, tee=stee)
+        except ValueError:
+            results = None
 
         if outlvl > 0:
-            if results.solver.termination_condition == \
-                    TerminationCondition.optimal:
+            if (results is not None and
+                    results.solver.termination_condition ==
+                    TerminationCondition.optimal):
                 _log.info('{} Initialisation Step 2 Complete.'
                           .format(blk.name))
             else:
