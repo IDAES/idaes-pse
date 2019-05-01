@@ -252,17 +252,11 @@ domain,
 
         # Add performance equations
         add_object_reference(self,
-                             "component_list_ref",
-                             self.control_volume.component_list_ref)
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.control_volume.phase_list_ref)
-        add_object_reference(self,
                              "rate_reaction_idx_ref",
                              self.config.reaction_package.rate_reaction_idx)
 
         # Add PFR performance equation
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.control_volume.length_domain,
                          self.rate_reaction_idx_ref,
                          doc="PFR performance equation")

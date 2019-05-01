@@ -400,12 +400,12 @@ thickness of the tube"""))
         # "tube_length" need to be fixed at the flowsheet level
 
         # Performance variables
-        self.shell_heat_transfer_coefficient = Var(self.time_ref,
-                                                   self.shell.length_domain,
-                                                   initialize=50,
-                                                   doc="Heat transfer "
-                                                   "coefficient")
-        self.tube_heat_transfer_coefficient = Var(self.time_ref,
+        self.shell_heat_transfer_coefficient = Var(
+                self.flowsheet().config.time,
+                self.shell.length_domain,
+                initialize=50,
+                doc="Heat transfer coefficient")
+        self.tube_heat_transfer_coefficient = Var(self.flowsheet().config.time,
                                                   self.tube.length_domain,
                                                   initialize=50,
                                                   doc="Heat transfer "
@@ -414,13 +414,15 @@ thickness of the tube"""))
         # Wall 0D model (Q_shell = Q_tube*N_tubes)
         if (self.config.has_wall_conduction ==
                 WallConductionType.zero_dimensional):
-            self.temperature_wall = Var(self.time_ref, self.tube.length_domain,
+            self.temperature_wall = Var(self.flowsheet().config.time,
+                                        self.tube.length_domain,
                                         initialize=298.15)
 
             # Performance equations
             # Energy transfer between shell and tube wall
 
-            @self.Constraint(self.time_ref, self.shell.length_domain,
+            @self.Constraint(self.flowsheet().config.time,
+                             self.shell.length_domain,
                              doc="Heat transfer between shell and tube")
             def shell_heat_transfer_eq(self, t, x):
                 return self.shell.heat[t, x] == - self.N_tubes *\
@@ -430,7 +432,8 @@ thickness of the tube"""))
                       self.temperature_wall[t, x]))
 
             # Energy transfer between tube wall and tube
-            @self.Constraint(self.time_ref, self.tube.length_domain,
+            @self.Constraint(self.flowsheet().config.time,
+                             self.tube.length_domain,
                              doc="Convective heat transfer")
             def tube_heat_transfer_eq(self, t, x):
                 return self.tube.heat[t, x] == \
@@ -440,7 +443,8 @@ thickness of the tube"""))
                      self.tube.properties[t, x].temperature)
 
             # Wall 0D model
-            @self.Constraint(self.time_ref, self.shell.length_domain,
+            @self.Constraint(self.flowsheet().config.time,
+                             self.shell.length_domain,
                              doc="wall 0D model")
             def wall_0D_model(self, t, x):
                 return self.tube.heat[t, x] == -(self.shell.heat[t, x] /
@@ -514,7 +518,7 @@ thickness of the tube"""))
         # Wall 0D
         if blk.config.has_wall_conduction == \
                 WallConductionType.zero_dimensional:
-            for t in blk.time_ref:
+            for t in blk.flowsheet().config.time:
                 for z in blk.shell.length_domain:
                     blk.temperature_wall[t, z].fix(value(
                         0.5 * (blk.shell.properties[t, 0].temperature +

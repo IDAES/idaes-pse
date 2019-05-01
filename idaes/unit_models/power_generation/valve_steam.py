@@ -77,7 +77,7 @@ class SteamValveData(PressureChangerData):
     def build(self):
         super().build()
 
-        self.valve_opening = Var(self.time_ref, initialize=1,
+        self.valve_opening = Var(self.flowsheet().config.time, initialize=1,
             doc="Fraction open for valve from 0 to 1")
         self.Cv = Var(initialize=0.1, doc="Valve flow coefficent, for vapor "
             "[mol/s/Pa] for liquid [mol/s/Pa^0.5]")
@@ -100,7 +100,8 @@ class SteamValveData(PressureChangerData):
         else:
             rule = self.config.valve_function_rule
 
-        self.valve_function = Expression(self.time_ref, rule=rule,
+        self.valve_function = Expression(self.flowsheet().config.time,
+                                         rule=rule,
                 doc="Valve function expression")
 
         if self.config.phase == "Liq":
@@ -108,7 +109,8 @@ class SteamValveData(PressureChangerData):
         else:
             rule = _vapor_pressure_flow_rule
 
-        self.pressure_flow_equation = Constraint(self.time_ref, rule=rule)
+        self.pressure_flow_equation = Constraint(self.flowsheet().config.time,
+                                                 rule=rule)
 
     def initialize(self, state_args={}, outlvl=0, solver='ipopt',
         optarg={'tol': 1e-6, 'max_iter':30}):
@@ -135,7 +137,7 @@ class SteamValveData(PressureChangerData):
         self.ratioP[:].unfix()
 
         # fix inlet and free outlet
-        for t in self.time_ref:
+        for t in self.flowsheet().config.time:
             for k, v in self.inlet.vars.items():
                 v[t].fix()
             for k, v in self.outlet.vars.items():

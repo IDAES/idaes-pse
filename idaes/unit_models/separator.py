@@ -21,6 +21,7 @@ from enum import Enum
 
 from pyomo.environ import (Constraint,
                            Expression,
+                           Param,
                            Reference,
                            Set,
                            SolverFactory,
@@ -301,7 +302,7 @@ linked the mixed state and all outlet states,
         # Create an instance of StateBlock for all outlets
         for o in outlet_list:
             o_obj = self.config.property_package.state_block_class(
-                        self.time_ref,
+                        self.flowsheet().config.time,
                         doc="Material properties at outlet",
                         default=tmp_dict)
 
@@ -325,7 +326,7 @@ linked the mixed state and all outlet states,
         tmp_dict["defined_state"] = True
 
         self.mixed_state = self.config.property_package.state_block_class(
-                                self.time_ref,
+                                self.flowsheet().config.time,
                                 doc="Material properties of mixed stream",
                                 default=tmp_dict)
 
@@ -346,7 +347,7 @@ linked the mixed state and all outlet states,
 
         # Check that the user-provided StateBlock uses the same prop pack
         if (self.config.mixed_state_block[
-                    self.time_ref.first()].config.parameters
+                    self.flowsheet().config.time.first()].config.parameters
                 != self.config.property_package):
             raise ConfigurationError(
                     "{} StateBlock provided in mixed_state_block argument "
@@ -401,22 +402,26 @@ linked the mixed state and all outlet states,
         self.outlet_idx = Set(initialize=outlet_list)
 
         if self.config.split_basis == SplittingType.totalFlow:
-            sf_idx = [self.time_ref, self.outlet_idx]
-            sf_sum_idx = [self.time_ref]
+            sf_idx = [self.flowsheet().config.time, self.outlet_idx]
+            sf_sum_idx = [self.flowsheet().config.time]
         elif self.config.split_basis == SplittingType.phaseFlow:
-            sf_idx = [self.time_ref, self.outlet_idx, self.phase_list_ref]
-            sf_sum_idx = [self.time_ref, self.phase_list_ref]
+            sf_idx = [self.flowsheet().config.time,
+                      self.outlet_idx, self.config.property_package.phase_list]
+            sf_sum_idx = [self.flowsheet().config.time,
+                          self.config.property_package.phase_list]
         elif self.config.split_basis == SplittingType.componentFlow:
-            sf_idx = [self.time_ref, self.outlet_idx, self.component_list_ref]
-            sf_sum_idx = [self.time_ref, self.component_list_ref]
+            sf_idx = [self.flowsheet().config.time, self.outlet_idx,
+                      self.config.property_package.component_list]
+            sf_sum_idx = [self.flowsheet().config.time,
+                          self.config.property_package.component_list]
         elif self.config.split_basis == SplittingType.phaseComponentFlow:
-            sf_idx = [self.time_ref,
+            sf_idx = [self.flowsheet().config.time,
                       self.outlet_idx,
-                      self.phase_list_ref,
-                      self.component_list_ref]
-            sf_sum_idx = [self.time_ref,
-                          self.phase_list_ref,
-                          self.component_list_ref]
+                      self.config.property_package.phase_list,
+                      self.config.property_package.component_list]
+            sf_sum_idx = [self.flowsheet().config.time,
+                          self.config.property_package.phase_list,
+                          self.config.property_package.component_list]
         else:
             raise BurntToast("{} split_basis has unexpected value. This "
                              "should not happen.".format(self.name))
@@ -430,7 +435,7 @@ linked the mixed state and all outlet states,
         def sum_sf_rule(b, t, *args):
             return 1 == sum(b.split_fraction[t, o, args]
                             for o in self.outlet_idx)
-        self.sum_split_frac = Constraint(*sf_sum_idx, rule = sum_sf_rule)
+        self.sum_split_frac = Constraint(*sf_sum_idx, rule=sum_sf_rule)
 
     def add_material_splitting_constraints(self, mixed_block):
         """
@@ -446,10 +451,10 @@ linked the mixed state and all outlet states,
             elif self.config.split_basis == SplittingType.phaseComponentFlow:
                 return self.split_fraction[t, o, p, j]
 
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.outlet_idx,
-                         self.phase_list_ref,
-                         self.component_list_ref,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
                          doc="Material splitting equations")
         def material_splitting_eqn(b, t, o, p, j):
             o_block = getattr(self, o+"_state")
@@ -463,16 +468,16 @@ linked the mixed state and all outlet states,
         temperatures in outlets.
         """
         if self.config.energy_split_basis == \
-            EnergySplittingType.equal_temperature:
-            @self.Constraint(self.time_ref,
+                EnergySplittingType.equal_temperature:
+            @self.Constraint(self.flowsheet().config.time,
                              self.outlet_idx,
                              doc="Temperature equality constraint")
             def temperature_equality_eqn(b, t, o):
                 o_block = getattr(self, o+"_state")
                 return mixed_block[t].temperature == o_block[t].temperature
         elif self.config.energy_split_basis == \
-            EnergySplittingType.equal_molar_enthalpy:
-            @self.Constraint(self.time_ref,
+                EnergySplittingType.equal_molar_enthalpy:
+            @self.Constraint(self.flowsheet().config.time,
                              self.outlet_idx,
                              doc="Molar enthalpy equality constraint")
             def molar_enthalpy_equality_eqn(b, t, o):
@@ -484,7 +489,7 @@ linked the mixed state and all outlet states,
         Creates constraints for splitting the momentum flows - done by equating
         pressures in outlets.
         """
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.outlet_idx,
                          doc="Pressure equality constraint")
         def pressure_equality_eqn(b, t, o):
@@ -522,7 +527,7 @@ linked the mixed state and all outlet states,
         split_map = self.config.ideal_split_map
         idx_list = []
         if self.config.split_basis == SplittingType.phaseFlow:
-            for p in self.phase_list_ref:
+            for p in self.config.property_package.phase_list:
                 idx_list.append((p))
 
             if len(idx_list) != len(split_map):
@@ -540,7 +545,7 @@ linked the mixed state and all outlet states,
                         .format(self.name))
 
         elif self.config.split_basis == SplittingType.componentFlow:
-            for j in self.component_list_ref:
+            for j in self.config.property_package.component_list:
                 idx_list.append((j))
 
             if len(idx_list) != len(split_map):
@@ -550,8 +555,8 @@ linked the mixed state and all outlet states,
                         " have a key for each component."
                         .format(self.name))
         elif self.config.split_basis == SplittingType.phaseComponentFlow:
-            for p in self.phase_list_ref:
-                for j in self.component_list_ref:
+            for p in self.config.property_package.phase_list:
+                for j in self.config.property_package.component_list:
                     idx_list.append((p, j))
 
             if len(idx_list) != len(split_map):
@@ -569,8 +574,11 @@ linked the mixed state and all outlet states,
                         "chosen split_basis."
                         .format(self.name))
 
+        # Create tolerance Parameter for 0 flow outlets
+        self.eps = Param(default=1e-8, mutable=True)
+
         # Get list of port members
-        s_vars = mb[self.time_ref.first()].define_port_members()
+        s_vars = mb[self.flowsheet().config.time.first()].define_port_members()
 
         # Add empty Port objects
         for o in outlet_list:
@@ -610,12 +618,13 @@ linked the mixed state and all outlet states,
                             if s_check == o:
                                 return mb[t].component(l_name)[p, j]
                             else:
-                                return 0
+                                return self.eps
 
-                        e_obj = Expression(self.time_ref,
-                                           self.phase_list_ref,
-                                           self.component_list_ref,
-                                           rule=e_rule)
+                        e_obj = Expression(
+                                self.flowsheet().config.time,
+                                self.config.property_package.phase_list,
+                                self.config.property_package.component_list,
+                                rule=e_rule)
 
                     else:
                         if self.config.split_basis == \
@@ -624,7 +633,7 @@ linked the mixed state and all outlet states,
                                 if split_map[j] == o:
                                     return mb[t].component(l_name)[j]
                                 # else:
-                                return 0
+                                return self.eps
 
                         else:
                             def e_rule(b, t, j):
@@ -640,7 +649,7 @@ linked the mixed state and all outlet states,
                                         "indexing sets is not available."
                                         .format(self.name, s))
 
-                                for p in self.phase_list_ref:
+                                for p in self.config.property_package.phase_list:
                                     if self.config.split_basis == \
                                             SplittingType.phaseFlow:
                                         s_check = split_map[p]
@@ -656,11 +665,12 @@ linked the mixed state and all outlet states,
                                     if s_check == o:
                                         return mfp[p, j]
                                 # else:
-                                return 0
+                                return self.eps
 
-                        e_obj = Expression(self.time_ref,
-                                           self.component_list_ref,
-                                           rule=e_rule)
+                        e_obj = Expression(
+                                self.flowsheet().config.time,
+                                self.config.property_package.component_list,
+                                rule=e_rule)
 
                 elif l_name.endswith("_phase_comp"):
                     def e_rule(b, t, p, j):
@@ -682,12 +692,13 @@ linked the mixed state and all outlet states,
                         if s_check == o:
                             return mb[t].component(l_name)[p, j]
                         else:
-                            return 0
+                            return self.eps
 
-                    e_obj = Expression(self.time_ref,
-                                       self.phase_list_ref,
-                                       self.component_list_ref,
-                                       rule=e_rule)
+                    e_obj = Expression(
+                                self.flowsheet().config.time,
+                                self.config.property_package.phase_list,
+                                self.config.property_package.component_list,
+                                rule=e_rule)
 
                 elif l_name.endswith("_phase"):
                     if self.config.split_basis == \
@@ -696,7 +707,7 @@ linked the mixed state and all outlet states,
                             if split_map[p] == o:
                                 return mb[t].component(l_name)[p]
                             else:
-                                return 0
+                                return self.eps
 
                     else:
                         def e_rule(b, t, p):
@@ -712,7 +723,7 @@ linked the mixed state and all outlet states,
                                     "not available."
                                     .format(self.name, s))
 
-                            for j in self.component_list_ref:
+                            for j in self.config.property_package.component_list:
                                 if self.config.split_basis == \
                                         SplittingType.componentFlow:
                                     s_check = split_map[j]
@@ -728,10 +739,10 @@ linked the mixed state and all outlet states,
                                 if s_check == o:
                                     return mfp[p, j]
                             # else:
-                            return 0
+                            return self.eps
 
-                    e_obj = Expression(self.time_ref,
-                                       self.phase_list_ref,
+                    e_obj = Expression(self.flowsheet().config.time,
+                                       self.config.property_package.phase_list,
                                        rule=e_rule)
 
                 elif l_name.endswith("_comp"):
@@ -741,7 +752,7 @@ linked the mixed state and all outlet states,
                             if split_map[j] == o:
                                 return mb[t].component(l_name)[j]
                             else:
-                                return 0
+                                return self.eps
 
                     elif self.config.split_basis == \
                             SplittingType.phaseFlow:
@@ -761,7 +772,7 @@ linked the mixed state and all outlet states,
                                     "not available."
                                     .format(self.name, s))
 
-                            for p in self.phase_list_ref:
+                            for p in self.config.property_package.phase_list:
                                 if self.config.split_basis == \
                                         SplittingType.phaseFlow:
                                     s_check = split_map[p]
@@ -777,15 +788,16 @@ linked the mixed state and all outlet states,
                                 if s_check == o:
                                     return mfp[p, j]
                             # else:
-                            return 0
+                            return self.eps
 
-                    e_obj = Expression(self.time_ref,
-                                       self.component_list_ref,
-                                       rule=e_rule)
+                    e_obj = Expression(
+                                self.flowsheet().config.time,
+                                self.config.property_package.component_list,
+                                rule=e_rule)
 
                 else:
                     # Not a recognised state, check for indexing sets
-                    if mb[self.time_ref.first()].component(
+                    if mb[self.flowsheet().config.time.first()].component(
                             l_name).is_indexed():
                         # Is indexed, assume indexes match and partition
 
@@ -801,14 +813,14 @@ linked the mixed state and all outlet states,
                                         " have suitable indexing set(s)."
                                         .format(self.name, s))
                             else:
-                                return 0
+                                return self.eps
 
                         # TODO : Reusing indexing set from first port member.
                         # TODO : Not sure how good of an idea this is.
                         e_obj = Expression(
-                                    self.time_ref,
-                                    mb[self.time_ref.first()]
-                                        .component(l_name).index_set(),
+                                    self.flowsheet().config.time,
+                                    mb[self.flowsheet().config.time.first()]
+                                    .component(l_name).index_set(),
                                     rule=e_rule)
 
                     else:
@@ -817,34 +829,34 @@ linked the mixed state and all outlet states,
                             if self.config.split_basis == \
                                     SplittingType.phaseFlow:
                                 def e_rule(b, t):
-                                    for p in self.phase_list_ref:
+                                    for p in self.config.property_package.phase_list:
                                         if split_map[p] == o:
                                             return mb[t].component(
                                                     l_name+"_phase")[p]
                                     # else
-                                    return 0
+                                    return self.eps
 
                             elif self.config.split_basis == \
                                     SplittingType.componentFlow:
                                 def e_rule(b, t):
-                                    for j in self.component_list_ref:
+                                    for j in self.config.property_package.component_list:
                                         if split_map[j] == o:
                                             return mb[t].component(
                                                     l_name+"_comp")[j]
                                     # else
-                                    return 0
+                                    return self.eps
 
                             elif self.config.split_basis == \
                                     SplittingType.phaseComponentFlow:
                                 def e_rule(b, t):
-                                    for p in self.phase_list_ref:
-                                        for j in self.component_list_ref:
+                                    for p in self.config.property_package.phase_list:
+                                        for j in self.config.property_package.component_list:
                                             if split_map[p, j] == o:
                                                 return (mb[t].component(
                                                         l_name+"_phase_comp")
                                                         [p, j])
                                     # else
-                                    return 0
+                                    return self.eps
 
                         except AttributeError:
                             raise AttributeError(
@@ -854,7 +866,7 @@ linked the mixed state and all outlet states,
                                 "equivalent indexed form."
                                 .format(self.name, s))
 
-                    e_obj = Expression(self.time_ref,
+                    e_obj = Expression(self.flowsheet().config.time,
                                        rule=e_rule)
 
                 # Add Reference/Expression object to Separator model object
@@ -876,7 +888,7 @@ linked the mixed state and all outlet states,
             None
         """
         # Try property block model check
-        for t in blk.time_ref:
+        for t in blk.flowsheet().config.time:
             try:
                 if blk.config.mixed_state_block is None:
                     blk.mixed_state[t].model_check()
@@ -899,8 +911,8 @@ linked the mixed state and all outlet states,
                              ' method to the associated StateBlock class.'
                              .format(blk.name))
 
-    def initialize(blk, outlvl=0, optarg=None,
-                   solver='ipopt', hold_state=True):
+    def initialize(blk, outlvl=0, optarg={},
+                   solver='ipopt', hold_state=False):
         '''
         Initialisation routine for separator (default solver ipopt)
 
@@ -942,7 +954,7 @@ linked the mixed state and all outlet states,
         flags = mblock.initialize(outlvl=outlvl-1,
                                   optarg=optarg,
                                   solver=solver,
-                                  hold_state=hold_state)
+                                  hold_state=True)
 
         if blk.config.ideal_separation:
             # If using ideal splitting, initialisation should be complete
@@ -955,7 +967,7 @@ linked the mixed state and all outlet states,
             # Get corresponding outlet StateBlock
             o_block = getattr(blk, o+"_state")
 
-            for t in blk.time_ref:
+            for t in blk.flowsheet().config.time:
 
                 # Calculate values for state variables
                 s_vars = o_block[t].define_state_vars()
@@ -970,7 +982,8 @@ linked the mixed state and all outlet states,
                             for k in s_vars[v]:
                                 if k is None:
                                     s_vars[v][k].value = value(
-                                    m_var[k]*blk.split_fraction[(t, o)])
+                                            m_var[k] *
+                                            blk.split_fraction[(t, o)])
                                 else:
                                     s_vars[v][k].value = value(
                                             m_var[k]*blk.split_fraction[
@@ -1009,7 +1022,10 @@ linked the mixed state and all outlet states,
         else:
             _log.info('{} Initialisation Complete.'.format(blk.name))
 
-        return flags
+        if hold_state is True:
+            return flags
+        else:
+            blk.release_state(flags, outlvl=outlvl-1)
 
     def release_state(blk, flags, outlvl=0):
         '''

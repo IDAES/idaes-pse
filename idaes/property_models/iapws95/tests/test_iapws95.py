@@ -59,12 +59,15 @@ def test_liquid_density_sat():
     model.prop_in = iapws95.Iapws95StateBlock(default={"parameters":model.prop_param})
     cond = read_data("sat_prop.txt", col=2)
     for c in cond:
-        if c[0] > 645: break
+        if c[0] > 645: # getting very close to ciritical point
+            tol = 0.05
+        else:
+            tol = 0.001
         model.prop_in.temperature.set_value(c[0])
         model.prop_in.pressure = c[1]
         rho = value(model.prop_in.dens_mass_phase["Liq"])
         #print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format(c[0], c[1], rho, c[2]))
-        assert(abs(rho-c[2])/c[2] < 0.001)
+        assert(abs(rho-c[2])/c[2] < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -74,12 +77,14 @@ def test_vapor_density_sat():
     model.prop_in = iapws95.Iapws95StateBlock(default={"parameters":model.prop_param})
     cond = read_data("sat_prop.txt", col=14)
     for c in cond:
-        if c[0] > 645: break
+        if c[0] > 645: # getting very close to ciritical point
+            tol = 0.01
+        else:
+            tol = 0.001
         model.prop_in.temperature.set_value(c[0])
         model.prop_in.pressure = c[1]
         rho = value(model.prop_in.dens_mass_phase["Vap"])
-        #print("{:.2f}, {:.2f}, {:.5f}, {:.5f}".format(c[0], c[1], rho, c[2]))
-        assert(abs(rho-c[2])/c[2] < 0.001)
+        assert(abs(rho-c[2])/c[2] < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -89,11 +94,13 @@ def test_liquid_enthalpy_sat():
     model.prop_in = iapws95.Iapws95StateBlock(default={"parameters":model.prop_param})
     cond = read_data("sat_prop.txt", col=5)
     for c in cond:
-        if c[0] > 645: break
+        if c[0] > 645: # getting very close to ciritical point
+            tol = 0.01
+        else:
+            tol = 0.001
         model.prop_in.pressure = c[1]
         enth = value(model.prop_in.enth_mol_sat_phase["Liq"]/model.prop_in.mw/1000.0)
-        #print("{}, {}, {}, {}, {}".format(c[0], psat, enth, c[1], c[2]))
-        assert(abs((enth-c[2])/c[2]) < 0.001)
+        assert(abs((enth-c[2])/c[2]) < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -103,11 +110,13 @@ def test_vapor_enthalpy_sat():
     model.prop_in = iapws95.Iapws95StateBlock(default={"parameters":model.prop_param})
     cond = read_data("sat_prop.txt", col=17)
     for c in cond:
-        if c[0] > 645: break
+        if c[0] > 645: # getting very close to ciritical point
+            tol = 0.01
+        else:
+            tol = 0.001
         model.prop_in.pressure = c[1]
         enth = value(model.prop_in.enth_mol_sat_phase["Vap"]/model.prop_in.mw/1000.0)
-        #print("{}, {}, {}, {}, {}".format(c[0], psat, enth, c[1], c[2]))
-        assert(abs((enth-c[2])/c[2]) < 0.001)
+        assert(abs((enth-c[2])/c[2]) < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -118,12 +127,17 @@ def test_enthalpy_of_vaporization():
     cond_liq = read_data("sat_prop.txt", col=5)
     cond_vap = read_data("sat_prop.txt", col=17)
     for i, c in enumerate(cond_liq):
-        if c[0] > 645: break
+        if c[0] > 645: # getting very close to ciritical point
+            tol = 0.05
+        else:
+            tol = 0.001
         model.prop_in.pressure.value = c[1]
         enth = value(model.prop_in.dh_vap_mol/model.prop_in.mw/1000.0)
         enth_dat = cond_vap[i][2] - c[2]
-        #print("{}, {}, {}, {}, {}".format(c[0], model.prop_in.pressure.value, enth, c[1], enth_dat))
-        assert(abs((enth-enth_dat)/enth_dat) < 0.001)
+        if abs(enth_dat) > 1e-8:
+            assert(abs((enth-enth_dat)/enth_dat) < tol)
+        else:
+            assert(abs(enth-enth_dat) < tol)
     #Over Critical Pressure
     model.prop_in.pressure = model.prop_in.config.parameters.pressure_crit*1.1
     enth = value(model.prop_in.dh_vap_mol/model.prop_in.mw/1000.0)
@@ -145,11 +159,13 @@ def test_density():
         model.prop_in.temperature.set_value(c[0])
         model.prop_in.pressure = c[1]
         rho = value(model.prop_in.dens_mass_phase[p])
-        print("{}, {}, {}, {}, {}".format(c[0], c[1], rho, c[2], p))
-        if c[0] - 646.86 < 0.01 and c[1] - 22000000 < 1:
-            assert(abs(rho-c[2])/c[2]*100 < 10.0) # have to look into this
+        if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 645:
+            tol = 0.03 # steep part in sc region
+        elif c[1] < 20:
+            tol = 0.005 #very low pressure < 20 Pa
         else:
-            assert(abs(rho-c[2])/c[2]*100 < 1.0)
+            tol = 0.001
+        assert(abs(rho-c[2])/c[2] < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -167,8 +183,14 @@ def test_enthalpy():
         model.prop_in.temperature.set_value(c[0])
         model.prop_in.pressure = c[1]
         h = value(model.prop_in.enth_mol_phase[p]/model.prop_in.mw/1000)
-        print("{}, {}, {}, {}, {}".format(c[0], c[1], h, c[2], p))
-        assert(abs(h-c[2])/c[2]*100 < 1)
+        rho = value(model.prop_in.dens_mass_phase[p])
+        if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+            tol = 0.03 # steep part in sc region
+        elif c[1] < 20:
+            tol = 0.005 #very low pressure < 20 Pa
+        else:
+            tol = 0.0015
+        assert(abs(h-c[2])/c[2] < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -183,8 +205,12 @@ def test_enthalpy_vapor_as_function_of_p_and_tau():
             continue
         model.prop_in.temperature.set_value(c[0])
         h = value(model.prop_in.func_hvpt(c[1]/1000, 647.096/c[0]))
-        print("{}, {}, {}, {}".format(c[0], c[1], h, c[2]))
-        assert(abs(h-c[2])/c[2]*100 < 1)
+        rho = value(model.prop_in.dens_mass_phase["Vap"])
+        if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+            tol = 0.03 # steep part in sc region
+        else:
+            tol = 0.003
+        assert(abs(h-c[2])/c[2] < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -201,9 +227,12 @@ def test_enthalpy_liquid_as_function_of_p_and_tau():
             continue
         model.prop_in.temperature.set_value(c[0])
         h = value(model.prop_in.func_hlpt(c[1]/1000, 647.096/c[0]))
-        rho = value(model.prop_in.func_delta_liq(c[1]/1000, 647.096/c[0]))*322
-        print("{}, {}, {}, {}, {}, {}, {}".format(c[0], c[1], h, c[2], rho_dat[i][2], rho, p))
-        assert(abs(h-c[2])/c[2]*100 < 1)
+        rho = value(model.prop_in.dens_mass_phase["Liq"])
+        if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+            tol = 0.03 # steep part in sc region
+        else:
+            tol = 0.006
+        assert(abs(h-c[2])/c[2] < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -220,9 +249,13 @@ def test_entropy():
             p = "Vap"
         model.prop_in.temperature.set_value(c[0])
         model.prop_in.pressure = c[1]
-        rho = value(model.prop_in.entr_mol_phase[p]/model.prop_in.mw/1000)
-        print("{}, {}, {}, {}, {}".format(c[0], c[1], rho, c[2], p))
-        assert(abs(rho-c[2])/c[2]*100 < 1)
+        s = value(model.prop_in.entr_mol_phase[p]/model.prop_in.mw/1000)
+        rho = value(model.prop_in.dens_mass_phase[p])
+        if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+            tol = 0.03 # steep part in sc region
+        else:
+            tol = 0.003
+        assert(abs(s-c[2])/c[2] < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -244,9 +277,13 @@ def test_speed_of_sound():
             p = "Vap"
         model.prop_in.temperature.set_value(c[0])
         model.prop_in.pressure = c[1]
-        rho = value(model.prop_in.speed_sound_phase[p])
-        print("{}, {}, {}, {}, {}".format(c[0], c[1], rho, c[2], p))
-        assert(abs(rho-c[2])/c[2]*100 < 1)
+        w = value(model.prop_in.speed_sound_phase[p])
+        rho = value(model.prop_in.dens_mass_phase[p])
+        if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+            tol = 0.03 # steep part in sc region
+        else:
+            tol = 0.005
+        assert(abs(w-c[2])/c[2] < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -268,9 +305,13 @@ def test_cp():
             p = "Vap"
         model.prop_in.temperature.set_value(c[0])
         model.prop_in.pressure = c[1]
-        rho = value(model.prop_in.cp_mol_phase[p]/model.prop_in.mw/1000)
-        print("{}, {}, {}, {}, {}".format(c[0], c[1], rho, c[2], p))
-        assert(abs(rho-c[2])/c[2]*100 < 1)
+        cp = value(model.prop_in.cp_mol_phase[p]/model.prop_in.mw/1000)
+        rho = value(model.prop_in.dens_mass_phase[p])
+        if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+            tol = 0.03 # steep part in sc region
+        else:
+            tol = 0.005
+        assert(abs(cp-c[2])/c[2] < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -292,6 +333,10 @@ def test_cv():
             p = "Vap"
         model.prop_in.temperature.set_value(c[0])
         model.prop_in.pressure = c[1]
-        rho = value(model.prop_in.cv_mol_phase[p]/model.prop_in.mw/1000)
-        print("{}, {}, {}, {}, {}".format(c[0], c[1], rho, c[2], p))
-        assert(abs(rho-c[2])/c[2]*100 < 1)
+        cv = value(model.prop_in.cv_mol_phase[p]/model.prop_in.mw/1000)
+        rho = value(model.prop_in.dens_mass_phase[p])
+        if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+            tol = 0.03 # steep part in sc region
+        else:
+            tol = 0.003
+        assert(abs(cv-c[2])/c[2] < tol)

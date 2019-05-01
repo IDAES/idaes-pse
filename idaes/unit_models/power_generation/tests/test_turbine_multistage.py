@@ -121,8 +121,9 @@ def test_initialize():
     m.fs.reheat.initialize(outlvl=4)
     def reheat_T_rule(b, t):
         return m.fs.reheat.control_volume.properties_out[t].temperature == 880
-    m.fs.reheat.temperature_out_equation = Constraint(m.fs.reheat.time_ref,
-        rule=reheat_T_rule)
+    m.fs.reheat.temperature_out_equation = Constraint(
+            m.fs.reheat.flowsheet().config.time,
+            rule=reheat_T_rule)
 
     TransformationFactory("network.expand_arcs").apply_to(m)
     m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()

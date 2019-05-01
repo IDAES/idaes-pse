@@ -55,7 +55,8 @@ class TurbineOutletStageData(PressureChangerData):
 
         self.flow_coeff = Var(initialize=0.0333,
             doc="Turbine flow coefficient [kg*C^0.5/s/Pa]")
-        self.delta_enth_isentropic = Var(self.time_ref, initialize=-100,
+        self.delta_enth_isentropic = Var(self.flowsheet().config.time,
+                                         initialize=-100,
             doc="Specific enthalpy change of isentropic process [J/mol]")
         self.eff_dry = Var(initialize=0.87,
             doc="Turbine dry isentropic efficiency")
@@ -73,13 +74,15 @@ class TurbineOutletStageData(PressureChangerData):
         self.ratioP[:] = 1 # make sure these have a number value
         self.deltaP[:] = 0 #   to avoid an error later in initialize
 
-        @self.Expression(self.time_ref, doc="Efficiency factor correlation")
+        @self.Expression(self.flowsheet().config.time,
+                         doc="Efficiency factor correlation")
         def tel(b, t):
             f = b.control_volume.properties_out[t].flow_vol/b.design_exhaust_flow_vol
             return 1e6*(-0.0035*f**5 + 0.022*f**4 - 0.0542*f**3 + 0.0638*f**2 -
                         0.0328*f + 0.0064)
 
-        @self.Constraint(self.time_ref, doc="Equation: Stodola, for choked flow")
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Equation: Stodola, for choked flow")
         def stodola_equation(b, t):
             flow = b.control_volume.properties_in[t].flow_mol
             mw = b.control_volume.properties_in[t].mw
@@ -90,7 +93,7 @@ class TurbineOutletStageData(PressureChangerData):
             return (1/b.flow_scale**2)*flow**2*mw**2*(Tin - 273.15) == \
                 (1/b.flow_scale**2)*cf**2*Pin**2*(1 - Pr**2)
 
-        @self.Constraint( self.time_ref,
+        @self.Constraint( self.flowsheet().config.time,
             doc="Equation: isentropic specific enthalpy change")
         def isentropic_enthalpy(b, t):
             flow = b.control_volume.properties_in[t].flow_mol
@@ -98,7 +101,8 @@ class TurbineOutletStageData(PressureChangerData):
             work_isen = b.work_isentropic[t]
             return work_isen == dh_isen*flow
 
-        @self.Constraint(self.time_ref, doc="Equation: Efficiency correlation")
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Equation: Efficiency correlation")
         def efficiency_correlation(b, t):
             x = b.control_volume.properties_out[t].vapor_frac
             eff = b.efficiency_isentropic[t]
@@ -106,11 +110,13 @@ class TurbineOutletStageData(PressureChangerData):
             tel = b.tel[t]
             return eff == b.eff_dry*x*(1 - 0.65*(1 - x))*(1 + tel/dh_isen)
 
-        @self.Expression(self.time_ref, doc="Thermodynamic power [J/s]")
+        @self.Expression(self.flowsheet().config.time,
+                         doc="Thermodynamic power [J/s]")
         def power_thermo(b, t):
             return b.control_volume.work[t]
 
-        @self.Expression(self.time_ref, doc="Shaft power [J/s]")
+        @self.Expression(self.flowsheet().config.time,
+                         doc="Shaft power [J/s]")
         def power_shaft(b, t):
             return b.power_thermo[t]*b.efficiency_mech
 
@@ -146,7 +152,7 @@ class TurbineOutletStageData(PressureChangerData):
         self.flow_coeff.fix()
 
         # fix inlet and free outlet
-        for t in self.time_ref:
+        for t in self.flowsheet().config.time:
             for k, v in self.inlet.vars.items():
                 v[t].fix()
             for k, v in self.outlet.vars.items():
@@ -173,7 +179,7 @@ class TurbineOutletStageData(PressureChangerData):
         self.deltaP[:] = value(Pout - Pin)
         self.ratioP[:] = value(Pout/Pin)
 
-        for t in self.time_ref:
+        for t in self.flowsheet().config.time:
             self.properties_isentropic[t].pressure.value = \
                 value(self.outlet.pressure[t])
             self.properties_isentropic[t].flow_mol.value = \
