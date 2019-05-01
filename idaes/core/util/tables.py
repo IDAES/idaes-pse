@@ -27,14 +27,14 @@ def stream_table(streams, attributes, heading=None):
             Arcs in the flowhseet. Any name can be associated with a state
             block. Use an OrderedDict to show the streams in a specific order,
             otherwise the dataframe can be sorted later.
-        attributes (list or tupple of strings): Attributes to report from a
+        attributes (list or tuple of strings): Attributes to report from a
             StateBlock, can be a Var, Param, or Expression. If an attribute
             doesn't exist or doesn't have a valid value, it will be treated as
             missing data.
-        heading (list or tupple of srings): A list of strings that will be used
+        heading (list or tuple of srings): A list of strings that will be used
             as column headings. If None the attribute names will be used.
     Returns:
-        (DataFrame): A Pandas dataframe containting a stream table
+        (DataFrame): A Pandas dataframe containing a stream table
     """
     if heading is None: heading = attributes
     st = pd.DataFrame(columns=heading)
@@ -56,11 +56,11 @@ def state_table(m, attributes, heading=None):
 
     Args:
         m (Block): Pyomo model or block from which to create a state block table
-        attributes (list or tupple of strings): Attributes to report from a
+        attributes (list or tuple of strings): Attributes to report from a
             StateBlock, can be a Var, Param, or Expression. If an attribute
             doesn't exist or doesn't have a valid value, it will be treated as
             missing data.
-        heading (list or tupple of srings): A list of strings that will be used
+        heading (list or tuple of srings): A list of strings that will be used
             as column headings. If None the attribute names will be used.
     Returns:
         (DataFrame): A Pandas DataFrame with a StateBlock table
