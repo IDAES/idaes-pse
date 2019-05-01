@@ -663,7 +663,7 @@ Disallow, even if terminal supports it, colored terminal output.
 
 Pick field to show in output table. This option can be repeated to show
 any known subset of fields. Also the option value can have commas
- in it to hold multiple fields. Default fields, if this option is not
+in it to hold multiple fields. Default fields, if this option is not
 specified at all, are "type", "desc", and "modified". The resource identifier
 field is always shown first.
 
