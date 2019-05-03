@@ -9,6 +9,26 @@ The IDAES Toolkit aims to provide multi-scale, simulation-based, open source
 computational tools and models to support the design, analysis, optimization,
 scale-up, operation and troubleshooting of innovative, advanced energy systems.
 
+## System requirements
+
+The code and examples have been tested with the following operating systems:
+
+|Operating system|Supported versions  |
+|----------------|--------------------|
+| Linux          | Any modern Linux   |
+| Windows        | Windows 10         |
+| Mac OSX        | Not supported      |
+
+Most of the functionality is implemented in Python. In accordance with
+the end-of-life for many Python 2 libraries, the IDAES Toolkit is written
+for Python 3. The following sub-versions are supported:
+
+* Python 3.6
+* Python 3.7
+* Python 3.7+ (should work, not explicitly tested)
+
+Note that Python 3.5 is *not* supported.
+
 ## Contributing
 
 **By contributing to this repository, you are agreeing to all the terms set out
@@ -56,7 +76,7 @@ There are example [Jupyter](https://jupyter.org) notebook(s) in the `examples/` 
 jupyter notebook examples/run-mea-model.ipynb
 ```
 
-This should start up a notebook server and then pop up a tab or window in your default web browser showing the Notebook. For more information on how to use Jupyter, see the "Help" menu in the Notebook window itself, and the extensive documentation on the [Jupyter website](https://jupyter.org). 
+This should start up a notebook server and then pop up a tab or window in your default web browser showing the Notebook. For more information on how to use Jupyter, see the "Help" menu in the Notebook window itself, and the extensive documentation on the [Jupyter website](https://jupyter.org).
 
 ## Contacts and more information
 
