@@ -226,6 +226,7 @@ class Iapws95ParameterBlockData(PhysicalParameterBlock):
             'mw': {'method': None, 'units': 'kg/mol'},
             'temperature_sat': {'method': 'None', 'units': 'K'},
             'flow_mol': {'method': None, 'units': 'mol/s'},
+            'flow_mass': {'method': None, 'units': 'kg/s'},
             'temperature': {'method': None, 'units': 'K'},
             'pressure': {'method': None, 'units': 'Pa'},
             'vapor_frac': {'method': None, 'units': None},
@@ -399,6 +400,10 @@ class Iapws95StateBlockData(StateBlockData):
             doc="molecular weight [kg/mol]")
         mw = self.mw
         mw.latex_symbol = "M"
+
+        self.flow_mass = Expression(expr=self.mw*self.flow_mol,
+            doc="mass flow rate [kg/s]")
+
         self.enth_mass = Expression(expr = self.enth_mol/mw,
             doc="Mass enthalpy (J/kg)")
 
