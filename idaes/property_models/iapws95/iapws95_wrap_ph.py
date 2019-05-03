@@ -399,6 +399,10 @@ class Iapws95StateBlockData(StateBlockData):
             doc="molecular weight [kg/mol]")
         mw = self.mw
         mw.latex_symbol = "M"
+
+        self.flow_mass = Expression(expr=self.MW*self.flow_mol,
+            doc="mass flow rate [kg/s]")
+
         self.enth_mass = Expression(expr = self.enth_mol/mw,
             doc="Mass enthalpy (J/kg)")
 
