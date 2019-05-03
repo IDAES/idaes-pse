@@ -202,7 +202,6 @@ class SphinxDoctestItem(pytest.Item):
             os.chdir(self.wd)
             args = self.cmd.split()
             try:
-                # print(f"@@ Running [{self.cmd}] from dir {self.wd}")
                 proc = subprocess.run(
                     args,
                     stdout=subprocess.PIPE,
