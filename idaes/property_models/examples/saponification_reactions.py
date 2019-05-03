@@ -32,6 +32,7 @@ from pyomo.environ import (Constraint,
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
+                        MaterialFlowBasis,
                         ReactionParameterBlock,
                         ReactionBlockDataBase,
                         ReactionBlockBase)
@@ -163,43 +164,11 @@ class ReactionBlockData(ReactionBlockDataBase):
                              "temperature_ref",
                              self.state_ref.temperature)
 
-        # Component list - a list of component identifiers
-        add_object_reference(self,
-                             "component_list_ref",
-                             self.config.parameters.component_list)
-
-        # Reaction list - a list of reaction identifiers
-        add_object_reference(self,
-                             "rate_reaction_idx_ref",
-                             self.config.parameters.rate_reaction_idx)
-
-        # Reaction stoichiometry - no _ref as this is a property
-        add_object_reference(
-                self,
-                "rate_reaction_stoichiometry",
-                self.config.parameters.rate_reaction_stoichiometry)
-
-        # Arrhenius constant
-        add_object_reference(
-                self,
-                "arrhenius_ref",
-                self.config.parameters.arrhenius)
-
-        # Activation energy
-        add_object_reference(
-                self,
-                "energy_activation_ref",
-                self.config.parameters.energy_activation)
-
         # Heat of reaction - no _ref as this is the actual property
         add_object_reference(
                 self,
                 "dh_rxn",
                 self.config.parameters.dh_rxn)
-
-        # Gas constant
-        add_object_reference(self, "gas_const_ref",
-                             self.config.parameters.gas_const)
 
     # Rate constant method
     def _rate_constant(self):
@@ -207,11 +176,10 @@ class ReactionBlockData(ReactionBlockDataBase):
                          doc="Rate constant [m^3/mol.s]")
 
         try:
-            self.arrhenius_eqn = Constraint(expr=self.k_rxn ==
-                                            self.arrhenius_ref *
-                                            exp(-self.energy_activation_ref /
-                                                (self.gas_const_ref *
-                                                 self.temperature_ref)))
+            self.arrhenius_eqn = Constraint(
+                    expr=self.k_rxn == self._params.arrhenius *
+                    exp(-self._params.energy_activation /
+                        (self._params.gas_const*self.temperature_ref)))
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.k_rxn)
@@ -220,7 +188,7 @@ class ReactionBlockData(ReactionBlockDataBase):
 
     # Rate of reaction method
     def _rxn_rate(self):
-        self.reaction_rate = Var(self.rate_reaction_idx_ref,
+        self.reaction_rate = Var(self._params.rate_reaction_idx,
                                  initialize=0,
                                  doc="Rate of reaction [mol/m^3.s]")
 
@@ -229,13 +197,16 @@ class ReactionBlockData(ReactionBlockDataBase):
                 return b.reaction_rate[r] == (
                             b.k_rxn*b.conc_mol_comp_ref["EthylAcetate"] *
                             b.conc_mol_comp_ref["NaOH"])
-            self.rate_expression = Constraint(self.rate_reaction_idx_ref,
+            self.rate_expression = Constraint(self._params.rate_reaction_idx,
                                               rule=rate_rule)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
             self.del_component(self.reaction_rate)
             self.del_component(self.rate_expression)
             raise
+
+    def get_reaction_rate_basis(b):
+        return MaterialFlowBasis.molar
 
     def model_check(blk):
         """

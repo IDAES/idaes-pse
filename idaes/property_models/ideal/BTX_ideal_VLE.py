@@ -11,8 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Example property package for the VLE calucations for a Benzene-Toluene-o-Xylene
-system.
+Example ideal parameter block for the VLE calucations for a
+Benzene-Toluene-o-Xylene system.
 """
 
 # Chages the divide behavior to not do integer division
@@ -23,13 +23,12 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Param, NonNegativeReals, Set
-from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, PhysicalParameterBlock
+from idaes.core import declare_process_block_class
 from idaes.core.util.misc import extract_data
 
-from idaes.property_models.ideal.ideal_prop_pack_VLE import IdealStateBlock
+from idaes.property_models.ideal.ideal_prop_pack_VLE import IdealParameterData
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -40,46 +39,14 @@ __version__ = "0.0.1"
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("IdealParameterBlock")
-class PhysicalParameterData(PhysicalParameterBlock):
-    """
-    Property Parameter Block Class
-    Contains parameters and indexing sets associated with properties for
-    BTX system.
-    """
-    # Config block for the _IdealStateBlock
-    CONFIG = PhysicalParameterBlock.CONFIG()
-
-    CONFIG.declare("valid_phase", ConfigValue(
-        default=('Vap', 'Liq'),
-        domain=In(['Liq', 'Vap', ('Vap', 'Liq'), ('Liq', 'Vap')]),
-        description="Flag indicating the valid phase",
-        doc="""Flag indicating the valid phase for a given set of
-conditions, and thus corresponding constraints  should be included,
-**default** - ('Vap', 'Liq').
-**Valid values:** {
-**'Liq'** - Liquid only,
-**'Vap'** - Vapor only,
-**('Vap', 'Liq')** - Vapor-liquid equilibrium,
-**('Liq', 'Vap')** - Vapor-liquid equilibrium,}"""))
+@declare_process_block_class("BTXParameterBlock")
+class BTXParameterData(IdealParameterData):
 
     def build(self):
         '''
         Callable method for Block construction.
         '''
-        super(PhysicalParameterData, self).build()
-
-        self.state_block_class = IdealStateBlock
-
-        # List of valid phases in property package
-        if self.config.valid_phase == ('Liq', 'Vap') or \
-                self.config.valid_phase == ('Vap', 'Liq'):
-            self.phase_list = Set(initialize=['Liq', 'Vap'],
-                                  ordered=True)
-        elif self.config.valid_phase == 'Liq':
-            self.phase_list = Set(initialize=['Liq'])
-        else:
-            self.phase_list = Set(initialize=['Vap'])
+        super(BTXParameterData, self).build()
 
         self.component_list_master = Set(initialize=['benzene',
                                                      'toluene',
@@ -109,39 +76,39 @@ conditions, and thus corresponding constraints  should be included,
              2: ["toluene", ("Vap", "Liq")]}
 
         # Thermodynamic reference state
-        self.pressure_reference = Param(mutable=True,
-                                        default=101325,
-                                        doc='Reference pressure [Pa]')
-        self.temperature_reference = Param(mutable=True,
-                                           default=298.15,
-                                           doc='Reference temperature [K]')
+        self.pressure_ref = Param(mutable=True,
+                                  default=101325,
+                                  doc='Reference pressure [Pa]')
+        self.temperature_ref = Param(mutable=True,
+                                     default=298.15,
+                                     doc='Reference temperature [K]')
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        pressure_critical_data = {'benzene': 48.9e5,
-                                  'toluene': 41e5,
-                                  'o-xylene': 37.3e5
-                                  }
+        pressure_crit_data = {'benzene': 48.9e5,
+                              'toluene': 41e5,
+                              'o-xylene': 37.3e5
+                              }
 
-        self.pressure_critical = Param(
+        self.pressure_crit = Param(
             self.component_list,
             within=NonNegativeReals,
             mutable=False,
-            initialize=extract_data(pressure_critical_data),
+            initialize=extract_data(pressure_crit_data),
             doc='Critical pressure [Pa]')
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        temperature_critical_data = {'benzene': 562.2,
-                                     'toluene': 591.8,
-                                     'o-xylene': 630.3
-                                     }
+        temperature_crit_data = {'benzene': 562.2,
+                                 'toluene': 591.8,
+                                 'o-xylene': 630.3
+                                 }
 
-        self.temperature_critical = Param(
+        self.temperature_crit = Param(
             self.component_list,
             within=NonNegativeReals,
             mutable=False,
-            initialize=extract_data(temperature_critical_data),
+            initialize=extract_data(temperature_crit_data),
             doc='Critical temperature [K]')
 
         # Gas Constant
@@ -161,47 +128,83 @@ conditions, and thus corresponding constraints  should be included,
                              initialize=extract_data(mw_comp_data),
                              doc="molecular weight Kg/mol")
 
+        # Constants for liquid densities
+        # Source: Perry's Chemical Engineers Handbook
+        #         - Robert H. Perry (Cp_liq)
+        dens_liq_data = {('benzene', '1'): 1.0162,
+                         ('benzene', '2'): 0.2655,
+                         ('benzene', '3'): 562.16,
+                         ('benzene', '4'): 0.28212,
+                         ('toluene', '1'): 0.8488,
+                         ('toluene', '2'): 0.26655,
+                         ('toluene', '3'): 591.8,
+                         ('toluene', '4'): 0.2878,
+                         ('o-xylene', '1'): 0.69883,
+                         ('o-xylene', '2'): 0.26113,
+                         ('o-xylene', '3'): 630.33,
+                         ('o-xylene', '4'): 0.27429}
+
+        self.dens_liq_params = Param(
+                self.component_list,
+                ['1', '2', '3', '4'],
+                mutable=False,
+                initialize=extract_data(dens_liq_data),
+                doc="Parameters to compute liquid densities")
+
+        # Boiling point at standard pressure
+        # Source: Perry's Chemical Engineers Handbook
+        #         - Robert H. Perry (Cp_liq)
+        bp_data = {('benzene'): 353.25,
+                   ('toluene'): 383.95,
+                   ('o-xylene'): 417.15}
+
+        self.temperature_boil = Param(
+                self.component_list,
+                mutable=False,
+                initialize=extract_data(bp_data),
+                doc="Pure component boiling points at standard pressure [K]")
+
         # Constants for specific heat capacity, enthalpy
         # Sources: The Properties of Gases and Liquids (1987)
         #         4th edition, Chemical Engineering Series - Robert C. Reid
         #         Perry's Chemical Engineers Handbook
         #         - Robert H. Perry (Cp_liq)
-        CpIG_data = {('Liq', 'benzene', '1'): 1.29E5,
-                     ('Liq', 'benzene', '2'): -1.7E2,
-                     ('Liq', 'benzene', '3'): 6.48E-1,
-                     ('Liq', 'benzene', '4'): 0,
-                     ('Liq', 'benzene', '5'): 0,
-                     ('Vap', 'benzene', '1'): -3.392E1,
-                     ('Vap', 'benzene', '2'): 4.739E-1,
-                     ('Vap', 'benzene', '3'): -3.017E-4,
-                     ('Vap', 'benzene', '4'): 7.130E-8,
-                     ('Vap', 'benzene', '5'): 0,
-                     ('Liq', 'toluene', '1'): 1.40E5,
-                     ('Liq', 'toluene', '2'): -1.52E2,
-                     ('Liq', 'toluene', '3'): 6.95E-1,
-                     ('Liq', 'toluene', '4'): 0,
-                     ('Liq', 'toluene', '5'): 0,
-                     ('Vap', 'toluene', '1'): -2.435E1,
-                     ('Vap', 'toluene', '2'): 5.125E-1,
-                     ('Vap', 'toluene', '3'): -2.765E-4,
-                     ('Vap', 'toluene', '4'): 4.911E-8,
-                     ('Vap', 'toluene', '5'): 0,
-                     ('Liq', 'o-xylene', '1'): 3.65e4,
-                     ('Liq', 'o-xylene', '2'): 1.0175e3,
-                     ('Liq', 'o-xylene', '3'): -2.63,
-                     ('Liq', 'o-xylene', '4'): 3.02e-3,
-                     ('Liq', 'o-xylene', '5'): 0,
-                     ('Vap', 'o-xylene', '1'): -1.585e-1,
-                     ('Vap', 'o-xylene', '2'): 5.962e-1,
-                     ('Vap', 'o-xylene', '3'): -3.443e-4,
-                     ('Vap', 'o-xylene', '4'): 7.528E-8,
-                     ('Vap', 'o-xylene', '5'): 0}
+        cp_ig_data = {('Liq', 'benzene', '1'): 1.29E5,
+                      ('Liq', 'benzene', '2'): -1.7E2,
+                      ('Liq', 'benzene', '3'): 6.48E-1,
+                      ('Liq', 'benzene', '4'): 0,
+                      ('Liq', 'benzene', '5'): 0,
+                      ('Vap', 'benzene', '1'): -3.392E1,
+                      ('Vap', 'benzene', '2'): 4.739E-1,
+                      ('Vap', 'benzene', '3'): -3.017E-4,
+                      ('Vap', 'benzene', '4'): 7.130E-8,
+                      ('Vap', 'benzene', '5'): 0,
+                      ('Liq', 'toluene', '1'): 1.40E5,
+                      ('Liq', 'toluene', '2'): -1.52E2,
+                      ('Liq', 'toluene', '3'): 6.95E-1,
+                      ('Liq', 'toluene', '4'): 0,
+                      ('Liq', 'toluene', '5'): 0,
+                      ('Vap', 'toluene', '1'): -2.435E1,
+                      ('Vap', 'toluene', '2'): 5.125E-1,
+                      ('Vap', 'toluene', '3'): -2.765E-4,
+                      ('Vap', 'toluene', '4'): 4.911E-8,
+                      ('Vap', 'toluene', '5'): 0,
+                      ('Liq', 'o-xylene', '1'): 3.65e4,
+                      ('Liq', 'o-xylene', '2'): 1.0175e3,
+                      ('Liq', 'o-xylene', '3'): -2.63,
+                      ('Liq', 'o-xylene', '4'): 3.02e-3,
+                      ('Liq', 'o-xylene', '5'): 0,
+                      ('Vap', 'o-xylene', '1'): -1.585e-1,
+                      ('Vap', 'o-xylene', '2'): 5.962e-1,
+                      ('Vap', 'o-xylene', '3'): -3.443e-4,
+                      ('Vap', 'o-xylene', '4'): 7.528E-8,
+                      ('Vap', 'o-xylene', '5'): 0}
 
-        self.CpIG = Param(self.phase_list, self.component_list,
-                          ['1', '2', '3', '4', '5'],
-                          mutable=False,
-                          initialize=extract_data(CpIG_data),
-                          doc="parameters to compute Cp_comp")
+        self.cp_ig = Param(self.phase_list, self.component_list,
+                           ['1', '2', '3', '4', '5'],
+                           mutable=False,
+                           initialize=extract_data(cp_ig_data),
+                           doc="parameters to compute Cp_comp")
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -228,40 +231,9 @@ conditions, and thus corresponding constraints  should be included,
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
         dh_vap = {'benzene': 3.377e4, 'toluene': 3.8262e4,
-                    'o-xylene': 4.34584e4}
+                  'o-xylene': 4.34584e4}
 
         self.dh_vap = Param(self.component_list,
-                              mutable=False,
-                              initialize=extract_data(dh_vap),
-                              doc="heat of vaporization")
-
-    @classmethod
-    def define_metadata(cls, obj):
-        """Define properties supported and units."""
-        obj.add_properties(
-            {'flow_mol': {'method': None, 'units': 'mol/s'},
-             'mole_frac': {'method': None, 'units': 'no unit'},
-             'temperature': {'method': None, 'units': 'K'},
-             'pressure': {'method': None, 'units': 'Pa'},
-             'flow_mol_phase': {'method': None, 'units': 'mol/s'},
-             'density_mol': {'method': '_density_mol',
-                             'units': 'mol/m^3'},
-             'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
-             'mole_frac_phase': {'method': '_mole_frac_phase',
-                                 'units': 'no unit'},
-             'enthalpy_comp_liq': {'method': '_enthalpy_comp_liq',
-                                   'units': 'J/mol'},
-             'enthalpy_comp_vap': {'method': '_enthalpy_comp_vap',
-                                   'units': 'J/mol'},
-             'enthalpy_liq': {'method': '_enthalpy_liq',
-                              'units': 'J/mol'},
-             'enthalpy_vap': {'method': '_enthalpy_vap',
-                              'units': 'J/mol'}})
-
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+                            mutable=False,
+                            initialize=extract_data(dh_vap),
+                            doc="heat of vaporization")

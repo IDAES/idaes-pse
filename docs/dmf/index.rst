@@ -6,6 +6,12 @@ Data Management Framework
 
 .. contents::
 
+DMF contents
+------------
+
+.. toctree::
+    
+    dmf-cli
 
 Overview
 --------
@@ -54,8 +60,8 @@ Jupyter notebook usage
 In the Jupyter Notebook, there are some "magics" defined that make
 initializing the DMF pretty easy. For example::
 
-  from idaes.dmf import magics
-  %dmf init path/to/workspace
+    from idaes.dmf import magics
+    %dmf init path/to/workspace
 
 The code above loads the "%dmf" *line magic* in the first line, then uses it
 to initialize the DMF with the workspace at "path/to/workspace".
@@ -145,5 +151,7 @@ So, some ways to share (with one or many people) include:
 
 Reference
 ---------
-See the :mod:`idaes.dmf` documentation that is generated
+See the :mod:`idaes.dmf` package documentation that is generated
 automatically from the source code.
+
+.. include:: ../global.rst

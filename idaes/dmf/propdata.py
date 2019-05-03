@@ -21,20 +21,23 @@ Import property database from textfile(s):
 * See :meth:`PropertyMetadata()` for the expected format for metadata.
 
 """
+# stdlib
 import csv
 import json
 import logging
+
 # third-party
 try:
     import pandas as pd
     import numpy as np
 except ImportError:
     np, pd = None, None
+
 # local
 from .util import get_file
 from . import tabular
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = 'Dan Gunter'
 
 _log = logging.getLogger(__name__)
 
@@ -42,20 +45,24 @@ _log = logging.getLogger(__name__)
 class AddedCSVColumnError(KeyError):
     """Error for :meth:PropertyData.add_csv()
     """
+
     def __init__(self, names, how_bad, column_type=''):
         ctype = column_type + ' ' if column_type else ''
         if len(names) == 1:
-            msg = 'Added CSV data {} {}column "{}"' \
-                .format(how_bad, ctype, list(names)[0])
+            msg = 'Added CSV data {} {}column "{}"'.format(
+                how_bad, ctype, list(names)[0]
+            )
         else:
-            msg = 'Added CSV data {} {}columns: {}' \
-                .format(how_bad, ctype, ', '.join(list(names)))
+            msg = 'Added CSV data {} {}columns: {}'.format(
+                how_bad, ctype, ', '.join(list(names))
+            )
         KeyError.__init__(self, msg)
 
 
 class Fields(tabular.Fields):
     """Constants for fields.
     """
+
     # Values for "type" field
     C_STATE, C_PROP = 'state', 'property'
 
@@ -63,6 +70,7 @@ class Fields(tabular.Fields):
 class PropertyTable(tabular.Table):
     """Property data and metadata together (at last!)
     """
+
     def __init__(self, data=None, **kwargs):
         """Constructor.
         """
@@ -128,6 +136,7 @@ class PropertyData(tabular.TabularData):
     details, or read the code in :meth:`add_csv` and the
     tests in :mod:`idaes_dmf.propdb.tests.test_mergecsv`.
     """
+
     embedded_units = r'(.*)\((.*)\)'
 
     def __init__(self, data):
@@ -226,9 +235,11 @@ class PropertyData(tabular.TabularData):
                 if n is None:
                     n = len(vals)
                 elif len(vals) != n:
-                    raise ValueError('State values "{}" length {} != {}'
-                                     .format(v[Fields.DATA_NAME],
-                                             len(vals), n))
+                    raise ValueError(
+                        'State values "{}" length {} != {}'.format(
+                            v[Fields.DATA_NAME], len(vals), n
+                        )
+                    )
                 values.append(vals)
                 errors.append([0] * len(vals))
         # extract property columns
@@ -237,8 +248,11 @@ class PropertyData(tabular.TabularData):
             if n is None:
                 n = len(vals)
             elif len(vals) != n:
-                raise ValueError('Property values "{}" length {} != {}'
-                                 .format(v[Fields.DATA_NAME], len(vals), n))
+                raise ValueError(
+                    'Property values "{}" length {} != {}'.format(
+                        v[Fields.DATA_NAME], len(vals), n
+                    )
+                )
             values.append(v[Fields.DATA_VALUES])
             errors.append(v[Fields.DATA_ERRORS])
         return values, errors
@@ -352,8 +366,7 @@ class PropertyData(tabular.TabularData):
 
         # Parse the header
         row = next(csv_file)
-        hdr_names, hdr_data = \
-            PropertyData._prop_parse_csv_headers(nstates, row)
+        hdr_names, hdr_data = PropertyData._prop_parse_csv_headers(nstates, row)
 
         # print('@@ add_csv, column names = {}, data columns = {}'
         #      .format(hdr_names, self.names()))
@@ -373,8 +386,11 @@ class PropertyData(tabular.TabularData):
             elif new_keys != cur_keys:
                 extra = new_keys - cur_keys
                 missing = cur_keys - new_keys
-                namelist = ('(' + ','.join(extra) + ')',
-                            'instead of', '(' + ','.join(missing) + ')')
+                namelist = (
+                    '(' + ','.join(extra) + ')',
+                    'instead of',
+                    '(' + ','.join(missing) + ')',
+                )
                 raise AddedCSVColumnError(namelist, 'has different')
         else:
             # check that all states are in common
@@ -386,16 +402,20 @@ class PropertyData(tabular.TabularData):
                 extra = new_states - cur_states
                 missing = cur_states - new_states
                 if extra and missing:
-                    namelist = ('(' + ','.join(extra) + ')',
-                                'instead of', '(' + ','.join(missing) + ')')
-                    raise AddedCSVColumnError(namelist, 'has different',
-                                              column_type='state')
+                    namelist = (
+                        '(' + ','.join(extra) + ')',
+                        'instead of',
+                        '(' + ','.join(missing) + ')',
+                    )
+                    raise AddedCSVColumnError(
+                        namelist, 'has different', column_type='state'
+                    )
                 elif extra:
-                    raise AddedCSVColumnError(extra, 'has extra',
-                                              column_type='state')
+                    raise AddedCSVColumnError(extra, 'has extra', column_type='state')
                 elif missing:
-                    raise AddedCSVColumnError(missing, 'is missing',
-                                              column_type='state')
+                    raise AddedCSVColumnError(
+                        missing, 'is missing', column_type='state'
+                    )
                 else:
                     raise RuntimeError('unexpected branch')
             # check that at least one property is in common
@@ -478,12 +498,14 @@ class PropertyData(tabular.TabularData):
 class PropertyMetadata(tabular.Metadata):
     """Class to import property metadata.
     """
+
     pass
 
 
 class PropertyColumn(tabular.Column):
     """Data column for a property.
     """
+
     type_name = 'Property'
 
     def __init__(self, name, data):
@@ -496,13 +518,14 @@ class PropertyColumn(tabular.Column):
             Fields.DATA_UNITS: self.units,
             Fields.DATA_VALUES: self.values,
             Fields.DATA_ERRORS: self.errors,
-            Fields.DATA_ERRTYPE: self.error_type
+            Fields.DATA_ERRTYPE: self.error_type,
         }
 
 
 class StateColumn(tabular.Column):
     """Data column for a state.
     """
+
     type_name = 'State'
 
     def __init__(self, name, data):
@@ -511,10 +534,7 @@ class StateColumn(tabular.Column):
         self.error_type = 'none'
 
     def data(self):
-        return {
-            Fields.DATA_UNITS: self.units,
-            Fields.DATA_VALUES: self.values
-        }
+        return {Fields.DATA_UNITS: self.units, Fields.DATA_VALUES: self.values}
 
 
 def convert_csv(meta_csv, datatype, data_csv, nstates, output):

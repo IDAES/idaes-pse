@@ -17,18 +17,17 @@ from __future__ import absolute_import  # disable implicit relative imports
 from __future__ import division, print_function
 
 import logging
+from enum import Enum
 
 from pyomo.environ import (Constraint,
                            Param,
                            PositiveReals,
                            Reals,
-                           Set,
                            RangeSet,
                            SolverFactory,
                            TerminationCondition,
                            Var)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyutilib.enum import Enum
 
 from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
@@ -50,15 +49,16 @@ _log = logging.getLogger(__name__)
 
 
 # Enumerate options for balances
-MixingType = Enum(
-    'none',
-    'extensive')
+class MixingType(Enum):
+    none = 0
+    extensive = 1
 
-MomentumMixingType = Enum(
-    'none',
-    'minimize',
-    'equality',
-    'minimize_and_equality')
+
+class MomentumMixingType(Enum):
+    none = 0
+    minimize = 1
+    equality = 2
+    minimize_and_equality = 3
 
 
 @declare_process_block_class("Mixer")
@@ -80,7 +80,19 @@ class MixerData(UnitModelBlockData):
     in these cases the unit model developer should write their own mixing
     equations.
     """
-    CONFIG = UnitModelBlockData.CONFIG()
+    CONFIG = ConfigBlock()
+    CONFIG.declare("dynamic", ConfigValue(
+        domain=In([False]),
+        default=False,
+        description="Dynamic model flag - must be False",
+        doc="""Indicates whether this model will be dynamic or not,
+**default** = False. Mixer blocks are always steady-state."""))
+    CONFIG.declare("has_holdup", ConfigValue(
+        default=False,
+        domain=In([False]),
+        description="Holdup construction flag - must be False",
+        doc="""Mixer blocks do not contain holdup, thus this must be
+False."""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -117,7 +129,7 @@ used if inlet_list arg is provided,
 provided,
 **int** - number of inlets to create (will be named with sequential integers
 from 1 to num_inlets).}"""))
-    CONFIG.declare("calculate_phase_equilibrium", ConfigValue(
+    CONFIG.declare("has_phase_equilibrium", ConfigValue(
         default=False,
         domain=In([True, False]),
         description="Calculate phase equilibrium in mixed stream",
@@ -250,7 +262,7 @@ linked to all inlet states and the mixed state,
             self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
                                                  mixed_block=mixed_block)
         elif self.config.momentum_mixing_type == \
-            MomentumMixingType.minimize_and_equality:
+                MomentumMixingType.minimize_and_equality:
             self.add_pressure_minimization_equations(inlet_blocks=inlet_blocks,
                                                      mixed_block=mixed_block)
             self.add_pressure_equality_equations(inlet_blocks=inlet_blocks,
@@ -309,7 +321,7 @@ linked to all inlet states and the mixed state,
             list of StateBlocks
         """
         # Setup StateBlock argument dict
-        tmp_dict = self.config.property_package_args
+        tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = False
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = True
@@ -320,7 +332,7 @@ linked to all inlet states and the mixed state,
         # Create an instance of StateBlock for all inlets
         for i in inlet_list:
             i_obj = self.config.property_package.state_block_class(
-                        self.time_ref,
+                        self.flowsheet().config.time,
                         doc="Material properties at inlet",
                         default=tmp_dict)
 
@@ -338,14 +350,14 @@ linked to all inlet states and the mixed state,
             New StateBlock object
         """
         # Setup StateBlock argument dict
-        tmp_dict = self.config.property_package_args
+        tmp_dict = dict(**self.config.property_package_args)
         tmp_dict["has_phase_equilibrium"] = \
-            self.config.calculate_phase_equilibrium
+            self.config.has_phase_equilibrium
         tmp_dict["parameters"] = self.config.property_package
         tmp_dict["defined_state"] = False
 
         self.mixed_state = self.config.property_package.state_block_class(
-                                self.time_ref,
+                                self.flowsheet().config.time,
                                 doc="Material properties of mixed stream",
                                 default=tmp_dict)
 
@@ -366,7 +378,7 @@ linked to all inlet states and the mixed state,
 
         # Check that the user-provided StateBlock uses the same prop pack
         if (self.config.mixed_state_block[
-                self.time_ref.first()].config.parameters
+                self.flowsheet().config.time.first()].config.parameters
                 != self.config.property_package):
             raise ConfigurationError(
                     "{} StateBlock provided in mixed_state_block argument "
@@ -382,7 +394,7 @@ linked to all inlet states and the mixed state,
         Add material mixing equations (phase-component balances).
         """
         # Create equilibrium generation term and constraints if required
-        if self.config.calculate_phase_equilibrium is True:
+        if self.config.has_phase_equilibrium is True:
             # Get units from property package
             units = {}
             for u in ['holdup', 'time']:
@@ -403,7 +415,7 @@ linked to all inlet states and the mixed state,
                     "equilibrium reactions (phase_equilibrium_idx), thus does "
                     "not support phase equilibrium.".format(self.name))
             self.phase_equilibrium_generation = Var(
-                        self.time_ref,
+                        self.flowsheet().config.time,
                         self.phase_equilibrium_idx_ref,
                         domain=Reals,
                         doc="Amount of generation in unit by phase "
@@ -412,7 +424,7 @@ linked to all inlet states and the mixed state,
 
         # Define terms to use in mixing equation
         def phase_equilibrium_term(b, t, p, j):
-            if self.config.calculate_phase_equilibrium:
+            if self.config.has_phase_equilibrium:
                 sd = {}
                 sblock = mixed_block[t]
                 for r in b.phase_equilibrium_idx_ref:
@@ -435,9 +447,9 @@ linked to all inlet states and the mixed state,
         phase_component_list = self._get_phase_comp_list()
 
         # Write phase-component balances
-        @self.Constraint(self.time_ref,
-                         self.phase_list_ref,
-                         self.component_list_ref,
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
                          doc="Material mixing equations")
         def material_mixing_equations(b, t, p, j):
             if j in phase_component_list[p]:
@@ -453,13 +465,19 @@ linked to all inlet states and the mixed state,
         """
         Add energy mixing equations (total enthalpy balance).
         """
-        @self.Constraint(self.time_ref, doc="Energy balances")
+        self.scaling_factor_energy = Param(
+                        default=1e-6,
+                        mutable=True,
+                        doc='Energy balance scaling parameter')
+
+        @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_mixing_equations(b, t):
-            return 0 == (sum(sum(inlet_blocks[i][t].get_enthalpy_flow_terms(p)
-                                 for p in b.phase_list_ref)
-                             for i in range(len(inlet_blocks))) -
-                         sum(mixed_block[t].get_enthalpy_flow_terms(p)
-                             for p in b.phase_list_ref))
+            return 0 == self.scaling_factor_energy*(
+                sum(sum(inlet_blocks[i][t].get_enthalpy_flow_terms(p)
+                    for p in b.config.property_package.phase_list)
+                    for i in range(len(inlet_blocks))) -
+                sum(mixed_block[t].get_enthalpy_flow_terms(p)
+                    for p in b.config.property_package.phase_list))
 
     def add_pressure_minimization_equations(self, inlet_blocks, mixed_block):
         """
@@ -470,7 +488,7 @@ linked to all inlet states and the mixed state,
         if not hasattr(self, "inlet_idx"):
             self.inlet_idx = RangeSet(len(inlet_blocks))
         # Add variables
-        self.minimum_pressure = Var(self.time_ref,
+        self.minimum_pressure = Var(self.flowsheet().config.time,
                                     self.inlet_idx,
                                     doc='Variable for calculating '
                                         'minimum inlet pressure')
@@ -482,7 +500,7 @@ linked to all inlet states and the mixed state,
                                       'minimum inlet pressure')
 
         # Calculate minimum inlet pressure
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.inlet_idx,
                          doc='Calculation for minimum inlet pressure')
         def minimum_pressure_constraint(b, t, i):
@@ -496,7 +514,8 @@ linked to all inlet states and the mixed state,
                                    self.eps_pressure))
 
         # Set inlet pressure to minimum pressure
-        @self.Constraint(self.time_ref, doc='Link pressure to control volume')
+        @self.Constraint(self.flowsheet().config.time,
+                         doc='Link pressure to control volume')
         def mixture_pressure(b, t):
             return mixed_block[t].pressure == (
                        self.minimum_pressure[t,
@@ -510,8 +529,9 @@ linked to all inlet states and the mixed state,
         """
         if not hasattr(self, "inlet_idx"):
             self.inlet_idx = RangeSet(len(inlet_blocks))
+
         # Create equality constraints
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
                          self.inlet_idx,
                          doc='Calculation for minimum inlet pressure')
         def pressure_equality_constraints(b, t, i):
@@ -548,7 +568,7 @@ linked to all inlet states and the mixed state,
             None
         """
         # Try property block model check
-        for t in blk.time_ref:
+        for t in blk.flowsheet().config.time:
             try:
                 inlet_list = blk.create_inlet_list()
                 for i in inlet_list:
@@ -577,31 +597,33 @@ linked to all inlet states and the mixed state,
         MomentumMixingType.minimize_and_equality.
         """
         if self.config.momentum_mixing_type != \
-            MomentumMixingType.minimize_and_equality:
+                MomentumMixingType.minimize_and_equality:
             _log.warning(
-"""use_minimum_inlet_pressure_constraint() can only be used when
-momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
+                """use_minimum_inlet_pressure_constraint() can only be used
+                when momentum_mixing_type ==
+                MomentumMixingType.minimize_and_equality""")
             return
         self.minimum_pressure_constraint.activate()
         self.pressure_equality_constraints.deactivate()
 
     def use_equal_pressure_constraint(self):
-        """Deactivate the mixer pressure = mimimum inlet pressure constraint and
-        activate the mixer pressure and all inlet pressures are equal
+        """Deactivate the mixer pressure = mimimum inlet pressure constraint
+        and activate the mixer pressure and all inlet pressures are equal
         constraints. This should only be used when momentum_mixing_type ==
         MomentumMixingType.minimize_and_equality.
         """
         if self.config.momentum_mixing_type != \
-            MomentumMixingType.minimize_and_equality:
+                MomentumMixingType.minimize_and_equality:
             _log.warning(
-"""use_equal_pressure_constraint() can only be used when
-momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
+                """use_equal_pressure_constraint() can only be used when
+                momentum_mixing_type ==
+                MomentumMixingType.minimize_and_equality""")
             return
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
     def initialize(blk, outlvl=0, optarg={},
-                   solver='ipopt', hold_state=True):
+                   solver='ipopt', hold_state=False):
         '''
         Initialisation routine for mixer (default solver ipopt)
 
@@ -615,7 +637,7 @@ momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
                      initialization (default = 'ipopt')
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
-                     initialization, **default** - True. **Valid values:**
+                     initialization, **default** - False. **Valid values:**
                      **True** - states variables are not unfixed, and a dict of
                      returned containing flags for which states were fixed
                      during initialization, **False** - state variables are
@@ -646,7 +668,7 @@ momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
             flags[i] = i_block.initialize(outlvl=outlvl-1,
                                           optarg=optarg,
                                           solver=solver,
-                                          hold_state=hold_state)
+                                          hold_state=True)
 
         # Initialize mixed state block
         if blk.config.mixed_state_block is None:
@@ -655,7 +677,7 @@ momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
             mblock = blk.config.mixed_state_block
 
         # Calculate initial guesses for mixed stream state
-        for t in blk.time_ref:
+        for t in blk.flowsheet().config.time:
             # Iterate over state vars as defined by property package
             s_vars = mblock[t].define_state_vars()
             for s in s_vars:
@@ -700,7 +722,10 @@ momentum_mixing_type == MomentumMixingType.minimize_and_equality""")
         else:
             _log.info('{} Initialisation Complete.'.format(blk.name))
 
-        return flags
+        if hold_state is True:
+            return flags
+        else:
+            blk.release_state(flags, outlvl=outlvl-1)
 
     def release_state(blk, flags, outlvl=0):
         '''
