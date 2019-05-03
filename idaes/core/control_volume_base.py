@@ -18,20 +18,22 @@ from __future__ import division
 
 # Import Python libraries
 import logging
+from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyutilib.enum import Enum
 
 # Import IDAES cores
 from idaes.core import (ProcessBlockData,
+                        MaterialFlowBasis,
                         useDefault,
                         declare_process_block_class)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
-from idaes.core.util.exceptions import (ConfigurationError,
-                                        DynamicError)
-from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
+                                        DynamicError,
+                                        PropertyNotSupportedError)
 
 __author__ = "Andrew Lee"
 
@@ -40,39 +42,37 @@ _log = logging.getLogger(__name__)
 
 
 # Enumerate options for material balances
-MaterialBalanceType = Enum(
-    'none',
-    'componentPhase',
-    'componentTotal',
-    'elementTotal',
-    'total')
+class MaterialBalanceType(Enum):
+    none = 0
+    componentPhase = 1
+    componentTotal = 2
+    elementTotal = 3
+    total = 4
+
 
 # Enumerate options for energy balances
-EnergyBalanceType = Enum(
-    'none',
-    'enthalpyPhase',
-    'enthalpyTotal',
-    'energyPhase',
-    'energyTotal')
+class EnergyBalanceType(Enum):
+    none = 0
+    enthalpyPhase = 1
+    enthalpyTotal = 2
+    energyPhase = 3
+    energyTotal = 4
+
 
 # Enumerate options for momentum balances
-MomentumBalanceType = Enum(
-    'none',
-    'pressureTotal',
-    'pressurePhase',
-    'momentumTotal',
-    'momentumPhase')
+class MomentumBalanceType(Enum):
+    none = 0
+    pressureTotal = 1
+    pressurePhase = 2
+    momentumTotal = 3
+    momentumPhase = 4
+
 
 # Enumerate options for flow direction
-FlowDirection = Enum(
-    'forward',
-    'backward')
+class FlowDirection(Enum):
+    forward = 1
+    backward = 2
 
-# Enumerate options for material flow basis
-MaterialFlowBasis = Enum(
-    'molar',
-    'mass',
-    'other')
 
 # Set up example ConfigBlock that will work with ControlVolume autobuild method
 CONFIG_Template = ProcessBlockData.CONFIG()
@@ -243,8 +243,11 @@ and used when constructing these,
 **Valid values:** {
 see reaction package for documentation.}"""))
 
-@declare_process_block_class("ControlVolume", doc="This class is not usually "
-    "used directly. Use ControlVolume0DBlock or ControlVolume1DBlock instead.")
+
+@declare_process_block_class("ControlVolume",
+                             doc="This class is not usually used directly. "
+                             "Use ControlVolume0DBlock or ControlVolume1DBlock"
+                             " instead.")
 class ControlVolumeBlockData(ProcessBlockData):
     """
     The ControlVolumeBlockData Class forms the base class for all IDAES
@@ -252,10 +255,10 @@ class ControlVolumeBlockData(ProcessBlockData):
     common to all control volume blockss and ensure that the necessary
     attributes of a control volume block are present.
 
-    The most signfiicant role of the ControlVolumeBlockData class is to set up the
-    bconstruction arguments for the control volume block, automatically link to
-    the time domain of the parent block, and to get the information about the
-    property and reaction packages.
+    The most signfiicant role of the ControlVolumeBlockData class is to set up
+    the construction arguments for the control volume block, automatically link
+    to the time domain of the parent block, and to get the information about
+    the property and reaction packages.
     """
 
     CONFIG = ProcessBlockData.CONFIG()
@@ -428,10 +431,10 @@ have a config block which derives from CONFIG_Base,
                 energy balance should be constructed.
             has_heat_of_reaction (bool): whether terms for heat of reaction
                 should be included in energy balance
-            has_heat_transfer (bool): whether generic heat transfer terms should
-                be included in energy balances
-            has_work_transfer (bool): whether generic mass transfer terms should
-                be included in energy balances
+            has_heat_transfer (bool): whether generic heat transfer terms
+                should be included in energy balances
+            has_work_transfer (bool): whether generic mass transfer terms
+                should be included in energy balances
             custom_term (Expression): a Pyomo Expression representing custom
                 terms to be included in energy balances
 
@@ -531,66 +534,6 @@ have a config block which derives from CONFIG_Base,
             self.apply_transformation()
         except AttributeError:
             pass
-
-    def _setup_dynamics(self):
-        """
-        This method automates the setting of the dynamic flag and time domain
-        for control volume blocks.
-
-        If dynamic flag is 'use_parent_value', method attempts to get the value
-        of the dynamic flag from the parent model, otherwise the local value is
-        used. The time domain is always collected from the parent model.
-
-        Finally, the method checks the has_holdup argument (if present), and
-        ensures that has_holdup is True if dynamic is True.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # Check the dynamic flag, and retrieve if necessary
-        if self.config.dynamic == useDefault:
-            # Get dynamic flag from parent
-            try:
-                self.config.dynamic = self.parent_block().config.dynamic
-            except AttributeError:
-                # If parent does not have dynamic flag, raise Exception
-                raise DynamicError('{} has a parent model '
-                                   'with no dynamic attribute.'
-                                   .format(self.name))
-
-        # Try to get reference to time object from parent
-        try:
-            # Guess that parent has a reference to time domain
-            add_object_reference(self,
-                                 "time_ref",
-                                 self.parent_block().time_ref)
-        except AttributeError:
-            try:
-                # Should not happen, but guess parent has actual time domain
-                add_object_reference(self,
-                                     "time_ref",
-                                     self.parent_block().time)
-            except AttributeError:
-                # Can't find time domain
-                raise DynamicError('{} has a parent model '
-                                   'with no time domain'.format(self.name))
-
-        # Set and validate has_holdup argument
-        if self.config.has_holdup == useDefault:
-            # Default to same value as dynamic flag
-            self.config.has_holdup = self.config.dynamic
-        elif self.config.has_holdup is False:
-            if self.config.dynamic is True:
-                # Dynamic model must have has_holdup = True
-                raise ConfigurationError(
-                            '{} inconsistent arguments for control volume. '
-                            'dynamic was set to True, which requires that '
-                            'has_holdup = True (was False). Please correct '
-                            'your arguments to be consistent.'
-                            .format(self.name))
 
     # Add placeholder methods for adding property and reaction packages
     def add_state_blocks(self, *args, **kwargs):
@@ -772,3 +715,61 @@ have a config block which derives from CONFIG_Base,
                 "add_total_momentum_balances. Please contact the "
                 "developer of the ControlVolume class you are using."
                 .format(self.name))
+
+    def _rxn_rate_conv(b, t, x, j, has_rate_reactions):
+        """
+        Method to determine conversion term for reaction rate terms in material
+        balance equations. This method gets the basis of the material flow
+        and reaction rate terms and determines the correct conversion factor.
+        """
+        # If rate reactions are not required, skip the rest and return 1
+        if not has_rate_reactions:
+            return 1
+
+        if x is None:
+            # 0D control volume
+            flow_basis = b.properties_out[t].get_material_flow_basis()
+            prop = b.properties_out[t]
+            rxn_basis = b.reactions[t].get_reaction_rate_basis()
+        else:
+            # 1D control volume
+            flow_basis = b.properties[t, x].get_material_flow_basis()
+            prop = b.properties[t, x]
+            rxn_basis = b.reactions[t, x].get_reaction_rate_basis()
+
+        # Check for undefined basis
+        if flow_basis == MaterialFlowBasis.other:
+            raise ConfigurationError(
+                    "{} contains reaction terms, but the property package "
+                    "used an undefined basis (MaterialFlowBasis.other). "
+                    "Rate based reaction terms require the property "
+                    "package to define the basis of the material flow "
+                    "terms.".format(b.name))
+        if rxn_basis == MaterialFlowBasis.other:
+            raise ConfigurationError(
+                    "{} contains reaction terms, but the reaction package "
+                    "used an undefined basis (MaterialFlowBasis.other). "
+                    "Rate based reaction terms require the reaction "
+                    "package to define the basis of the reaction rate "
+                    "terms.".format(b.name))
+
+        try:
+            if flow_basis == rxn_basis:
+                return 1
+            elif (flow_basis == MaterialFlowBasis.mass and
+                  rxn_basis == MaterialFlowBasis.molar):
+                return prop.mw[j]
+            elif (flow_basis == MaterialFlowBasis.molar and
+                  rxn_basis == MaterialFlowBasis.mass):
+                return 1/prop.mw[j]
+            else:
+                raise BurntToast(
+                        "{} encountered unrecognsied combination of bases "
+                        "for reaction rate terms. Please contact the IDAES"
+                        " developers with this bug.".format(b.name))
+        except AttributeError:
+            raise PropertyNotSupportedError(
+                            "{} property package does not support "
+                            "molecular weight (mw), which is required for "
+                            "using property and reaction packages with "
+                            "different bases.".format(b.name))

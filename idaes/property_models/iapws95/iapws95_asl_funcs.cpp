@@ -271,9 +271,6 @@ double tau_sat_asl(arglist *al){
 
 double delta_liq_asl(arglist *al){
   s_real f, grad[2], hes[3];
-  //Return NAN if T < X
-  if(al->ra[al->at[1]] > 647.096/240.0 || al->ra[al->at[1]] < 647.096/1.0e5){
-    return (double)NAN;}
   if(al->derivs==NULL && al->hes==NULL){
     return delta_liq(al->ra[al->at[0]], al->ra[al->at[1]], NULL, NULL);}
   else{
@@ -285,9 +282,6 @@ double delta_liq_asl(arglist *al){
 
 double delta_vap_asl(arglist *al){
   s_real f, grad[2], hes[3];
-  //Return NAN if T < X
-  if(al->ra[al->at[1]] > 647.096/240.0 || al->ra[al->at[1]] < 647.096/1.0e5){
-    return (double)NAN;}
   if(al->derivs==NULL && al->hes==NULL){
     return delta_vap(al->ra[al->at[0]], al->ra[al->at[1]], NULL, NULL);}
   else{

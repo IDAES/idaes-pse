@@ -59,6 +59,9 @@ def test_build_heat_exchanger(build_heat_exchanger):
     assert hasattr(m.fs.heat_exchanger, "outlet_1")
     assert hasattr(m.fs.heat_exchanger, "inlet_2")
     assert hasattr(m.fs.heat_exchanger, "outlet_2")
+    m.fs.heat_exchanger.set_scaling_factor_energy(1e-3)
+    assert(m.fs.heat_exchanger.side_1.scaling_factor_energy == 1e-3)
+    assert(m.fs.heat_exchanger.side_2.scaling_factor_energy == 1e-3)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
