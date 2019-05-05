@@ -294,7 +294,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_holdup:
             self.material_holdup = Var(self.flowsheet().config.time,
                                        self.config.property_package.phase_list,
-                                       self.config.property_package.component_list,
+                                       self.config.property_package.
+                                       component_list,
                                        domain=Reals,
                                        doc="Material holdup in unit [{}]"
                                            .format(units['holdup']))
@@ -332,25 +333,21 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Equilibrium reaction generation
         if has_equilibrium_reactions:
-            try:
-                add_object_reference(
-                    self,
-                    "equilibrium_reaction_idx_ref",
-                    self.config.reaction_package.equilibrium_reaction_idx)
-            except AttributeError:
+            if not hasattr(self.config.reaction_package,
+                           "equilibrium_reaction_idx"):
                 raise PropertyNotSupportedError(
                     "{} Reaction package does not contain a list of "
                     "equilibrium reactions (equilibrium_reaction_idx), thus "
                     "does not support equilibrium-based reactions."
                     .format(self.name))
             self.equilibrium_reaction_generation = Var(
-                        self.flowsheet().config.time,
-                        self.config.property_package.phase_list,
-                        self.config.property_package.component_list,
-                        domain=Reals,
-                        doc="Amount of component generated in unit "
-                            "by equilibrium reactions [{}/{}]"
-                            .format(units['holdup'], units['time']))
+                self.flowsheet().config.time,
+                self.config.property_package.phase_list,
+                self.config.property_package.component_list,
+                domain=Reals,
+                doc="Amount of component generated in unit "
+                    "by equilibrium reactions [{}/{}]"
+                    .format(units['holdup'], units['time']))
 
         # Phase equilibrium generation
         if has_phase_equilibrium:
@@ -409,7 +406,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         sd[r] = 0
 
                 return sum(b.phase_equilibrium_generation[t, r] * sd[r]
-                           for r in b.config.property_package.phase_equilibrium_idx)
+                           for r in b.config.property_package.
+                           phase_equilibrium_idx)
             else:
                 return 0
 
@@ -532,7 +530,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             # Add extents of reaction and stoichiometric constraints
             self.equilibrium_reaction_extent = Var(
                             self.flowsheet().config.time,
-                            self.equilibrium_reaction_idx_ref,
+                            self.config.reaction_package.equilibrium_reaction_idx,
                             domain=Reals,
                             doc="Extent of equilibrium reactions[{}/{}]"
                                 .format(units['holdup'], units['time']))
@@ -547,7 +545,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             sum(rblock[t]._params.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, r]
-                                for r in b.equilibrium_reaction_idx_ref))
+                                for r in b.config.reaction_package.
+                                equilibrium_reaction_idx))
                 else:
                     return Constraint.Skip
 
@@ -679,35 +678,31 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     "reactions (rate_reaction_idx), thus does not support "
                     "rate-based reactions.".format(self.name))
             self.rate_reaction_generation = Var(
-                        self.flowsheet().config.time,
-                        self.config.property_package.phase_list,
-                        self.config.property_package.component_list,
-                        domain=Reals,
-                        doc="Amount of component generated in "
-                            "unit by kinetic reactions [{}/{}]"
-                            .format(units['holdup'], units['time']))
+                self.flowsheet().config.time,
+                self.config.property_package.phase_list,
+                self.config.property_package.component_list,
+                domain=Reals,
+                doc="Amount of component generated in "
+                    "unit by kinetic reactions [{}/{}]"
+                    .format(units['holdup'], units['time']))
 
         # Equilibrium reaction generation
         if has_equilibrium_reactions:
-            try:
-                add_object_reference(
-                    self,
-                    "equilibrium_reaction_idx_ref",
-                    self.config.reaction_package.equilibrium_reaction_idx)
-            except AttributeError:
+            if not hasattr(self.config.reaction_package,
+                           "equilibrium_reaction_idx"):
                 raise PropertyNotSupportedError(
                     "{} Reaction package does not contain a list of "
                     "equilibrium reactions (equilibrium_reaction_idx), thus "
                     "does not support equilibrium-based reactions."
                     .format(self.name))
             self.equilibrium_reaction_generation = Var(
-                        self.flowsheet().config.time,
-                        self.config.property_package.phase_list,
-                        self.config.property_package.component_list,
-                        domain=Reals,
-                        doc="Amount of component generated in unit "
-                            "by equilibrium reactions [{}/{}]"
-                            .format(units['holdup'], units['time']))
+                self.flowsheet().config.time,
+                self.config.property_package.phase_list,
+                self.config.property_package.component_list,
+                domain=Reals,
+                doc="Amount of component generated in unit "
+                    "by equilibrium reactions [{}/{}]"
+                    .format(units['holdup'], units['time']))
 
         # Material transfer term
         if has_mass_transfer:
@@ -854,7 +849,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             # Add extents of reaction and stoichiometric constraints
             self.equilibrium_reaction_extent = Var(
                             self.flowsheet().config.time,
-                            self.equilibrium_reaction_idx_ref,
+                            self.config.reaction_package.equilibrium_reaction_idx,
                             domain=Reals,
                             doc="Extent of equilibrium reactions[{}/{}]"
                                 .format(units['holdup'], units['time']))
@@ -869,7 +864,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             sum(rblock[t]._params.
                                 equilibrium_reaction_stoichiometry[r, p, j] *
                                 b.equilibrium_reaction_extent[t, r]
-                                for r in b.equilibrium_reaction_idx_ref))
+                                for r in b.config.reaction_package.
+                                equilibrium_reaction_idx))
                 else:
                     return Constraint.Skip
 
@@ -1160,7 +1156,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 if hasattr(self, "rate_reaction_extent"):
                     rate_heat = -sum(b.rate_reaction_extent[t, r] *
                                      b.reactions[t].dh_rxn[r]
-                                     for r in self.config.reaction_package.rate_reaction_idx)
+                                     for r in self.config.reaction_package.
+                                     rate_reaction_idx)
                 else:
                     rate_heat = 0
 
@@ -1168,7 +1165,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     equil_heat = -sum(
                             b.equilibrium_reaction_extent[t, e] *
                             b.reactions[t].dh_rxn[e]
-                            for e in self.equilibrium_reaction_idx_ref)
+                            for e in self.config.reaction_package.
+                            equilibrium_reaction_idx)
                 else:
                     equil_heat = 0
 
@@ -1198,7 +1196,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Energy balance equation
         @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_balances(b, t):
-            return (sum(accumulation_term(b, t, p) for p in b.config.property_package.phase_list) *
+            return (sum(accumulation_term(b, t, p) for p in
+                    b.config.property_package.phase_list) *
                     b.scaling_factor_energy) == (
                         sum(b.properties_in[t].get_enthalpy_flow_terms(p)
                             for p in b.config.property_package.phase_list) *
@@ -1463,14 +1462,16 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             self.phase_fraction = Var(
                             self.flowsheet().config.time,
                             self.config.property_package.phase_list,
-                            initialize=1/len(self.config.property_package.phase_list),
+                            initialize=1 / len(self.config.
+                                               property_package.phase_list),
                             doc='Volume fraction of holdup by phase')
 
             @self.Constraint(self.flowsheet().config.time,
                              doc='Sum of phase fractions == 1')
             def sum_of_phase_fractions(self, t):
                 return 1 == sum(self.phase_fraction[t, p]
-                                for p in self.config.property_package.phase_list)
+                                for p in self.config.
+                                property_package.phase_list)
         else:
             @self.Expression(self.flowsheet().config.time,
                              self.config.property_package.phase_list,
