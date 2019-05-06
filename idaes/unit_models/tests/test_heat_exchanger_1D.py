@@ -27,6 +27,7 @@ from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
 from idaes.property_models.examples.BFW_properties import BFWParameterBlock
 from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.exceptions import ConfigurationError
 
 # -----------------------------------------------------------------------------
 # See if ipopt is available and set up solver
@@ -46,11 +47,12 @@ m.fs = FlowsheetBlock(default={"dynamic": False})
 
 m.fs.properties = BFWParameterBlock()
 
+# Default options
 m.fs.HX_co_current = HX1D(
     default={"shell_side": {"property_package": m.fs.properties},
              "tube_side": {"property_package": m.fs.properties},
              "flow_type": HeatExchangerFlowPattern.cocurrent})
-
+# Default options
 m.fs.HX_counter_current = HX1D(
     default={"shell_side": {"property_package": m.fs.properties},
              "tube_side": {"property_package": m.fs.properties},
@@ -211,6 +213,17 @@ def test_initialization():
     assert (pytest.approx(2.65E7, abs=1e-3) ==
             m.fs.HX_co_current.tube_outlet.pressure[0].value)
 
+    # Check for energy conservation
+    shell_side = 2300 * (m.fs.HX_co_current.shell.properties[0, 0].
+                         enth_mol_phase['Liq'].value - m.fs.HX_co_current.shell.
+                         properties[0, 1].
+                         enth_mol_phase['Liq'].value)
+    tube_side = 26.6 * 1176 * (m.fs.HX_co_current.tube.properties[0, 1].
+                               enth_mol_phase['Liq'].value -
+                               m.fs.HX_co_current.tube.properties[0, 0].
+                               enth_mol_phase['Liq'].value)
+    assert (shell_side - tube_side) <= 1e-6
+
     """Test initialize and solve for counter-current heat exchanger."""
     m.fs.HX_counter_current.initialize()
     results = solver.solve(m, tee=False)
@@ -221,14 +234,49 @@ def test_initialization():
 
     assert (pytest.approx(2300, abs=1e-3) ==
             m.fs.HX_counter_current.shell_outlet.flow_mol[0].value)
-    assert (pytest.approx(552.311, abs=1e-3) ==
+    assert (pytest.approx(552.055, abs=1e-3) ==
             m.fs.HX_counter_current.shell_outlet.temperature[0].value)
     assert (pytest.approx(7.38E6, abs=1e-3) ==
             m.fs.HX_counter_current.shell_outlet.pressure[0].value)
 
     assert (pytest.approx(26.6, abs=1e-3) ==
             m.fs.HX_counter_current.tube_outlet.flow_mol[0].value)
-    assert (pytest.approx(542.869, abs=1e-3) ==
+    assert (pytest.approx(541.847, abs=1e-3) ==
             m.fs.HX_counter_current.tube_outlet.temperature[0].value)
     assert (pytest.approx(2.65E7, abs=1e-3) ==
             m.fs.HX_counter_current.tube_outlet.pressure[0].value)
+
+    # Check for energy conservation
+    shell_side = 2300 * (m.fs.HX_counter_current.shell.properties[0, 0].
+                         enth_mol_phase['Liq'].value -
+                         m.fs.HX_counter_current.shell.properties[0, 1].
+                         enth_mol_phase['Liq'].value)
+    tube_side = 26.6 * 1176 * (m.fs.HX_counter_current.tube.properties[0, 0].
+                               enth_mol_phase['Liq'].value -
+                               m.fs.HX_counter_current.tube.properties[0, 1].
+                               enth_mol_phase['Liq'].value)
+    assert (shell_side - tube_side) <= 1e-6
+
+
+# Test the custom discretisation options
+m.fs1 = FlowsheetBlock(default={"dynamic": False})
+
+
+def test_custom_build():
+    with pytest.raises(ConfigurationError):
+        m.fs1.HX_co_current = HX1D(
+            default={"shell_side": {"property_package": m.fs.properties,
+                                    "transformation_scheme": "BACKWARD"},
+                     "tube_side": {"property_package": m.fs.properties,
+                                   "transformation_scheme": "FORWARD"},
+                     "flow_type": HeatExchangerFlowPattern.cocurrent})
+
+    with pytest.raises(ConfigurationError):
+        m.fs1.HX_counter_current = HX1D(
+            default={"shell_side": {"property_package": m.fs.properties,
+                                    "transformation_method":
+                                    "dae.finite_difference"},
+                     "tube_side": {"property_package": m.fs.properties,
+                                   "transformation_method":
+                                   "dae.collocation"},
+                     "flow_type": HeatExchangerFlowPattern.countercurrent})
