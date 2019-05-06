@@ -32,7 +32,6 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
-from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee"
 
