@@ -156,13 +156,9 @@ see property package for documentation.}"""))
         self.add_outlet_port()
 
         # Add performance equations
-        add_object_reference(self,
-                             "element_list_ref",
-                             self.control_volume.element_list_ref)
-
         # Add Lagrangian multiplier variables
         self.lagrange_mult = Var(self.flowsheet().config.time,
-                                 self.element_list_ref,
+                                 self.config.property_package.element_list,
                                  domain=Reals,
                                  initialize=100,
                                  doc="Lagrangian multipliers")
@@ -183,7 +179,7 @@ see property package for documentation.}"""))
                 sum(b.lagrange_mult[t, e] *
                     b.control_volume.properties_out[t].
                     config.parameters.element_comp[j][e]
-                    for e in b.element_list_ref))
+                    for e in b.config.property_package.element_list))
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and
