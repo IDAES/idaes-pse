@@ -280,7 +280,7 @@ thickness of the tube"""))
                              "counter-current heat exchanger. "
                              "Defaulting to forward finite "
                              "difference on the tube side.")
-                self.config.tube_side.transformation_scheme = "FORWARD"
+                self.config.tube_side.transformation_scheme = "BACKWARD"
         else:
             raise ConfigurationError(
                     "{} HeatExchanger1D only supports cocurrent and "
