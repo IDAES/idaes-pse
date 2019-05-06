@@ -27,6 +27,7 @@ from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
 from idaes.property_models.examples.BFW_properties import BFWParameterBlock
 from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.exceptions import ConfigurationError
 
 # -----------------------------------------------------------------------------
 # See if ipopt is available and set up solver
@@ -46,11 +47,12 @@ m.fs = FlowsheetBlock(default={"dynamic": False})
 
 m.fs.properties = BFWParameterBlock()
 
+# Default options
 m.fs.HX_co_current = HX1D(
     default={"shell_side": {"property_package": m.fs.properties},
              "tube_side": {"property_package": m.fs.properties},
              "flow_type": HeatExchangerFlowPattern.cocurrent})
-
+# Default options
 m.fs.HX_counter_current = HX1D(
     default={"shell_side": {"property_package": m.fs.properties},
              "tube_side": {"property_package": m.fs.properties},
@@ -254,3 +256,27 @@ def test_initialization():
                                m.fs.HX_counter_current.tube.properties[0, 1].
                                enth_mol_phase['Liq'].value)
     assert (shell_side - tube_side) <= 1e-6
+
+
+# Test the custom discretisation options
+m.fs1 = FlowsheetBlock(default={"dynamic": False})
+
+
+def test_custom_build():
+    with pytest.raises(ConfigurationError):
+        m.fs1.HX_co_current = HX1D(
+            default={"shell_side": {"property_package": m.fs.properties,
+                                    "transformation_scheme": "BACKWARD"},
+                     "tube_side": {"property_package": m.fs.properties,
+                                   "transformation_scheme": "FORWARD"},
+                     "flow_type": HeatExchangerFlowPattern.cocurrent})
+
+    with pytest.raises(ConfigurationError):
+        m.fs1.HX_counter_current = HX1D(
+            default={"shell_side": {"property_package": m.fs.properties,
+                                    "transformation_method":
+                                    "dae.finite_difference"},
+                     "tube_side": {"property_package": m.fs.properties,
+                                   "transformation_method":
+                                   "dae.collocation"},
+                     "flow_type": HeatExchangerFlowPattern.countercurrent})
