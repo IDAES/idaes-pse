@@ -1160,7 +1160,6 @@ def test_add_phase_component_balances_rate_rxns():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
     assert isinstance(m.fs.cv.rate_reaction_generation, Var)
-    assert isinstance(m.fs.cv.rate_reaction_idx_ref, Set)
     assert isinstance(m.fs.cv.rate_reaction_extent, Var)
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
@@ -1769,7 +1768,6 @@ def test_add_total_component_balances_rate_rxns():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
     assert isinstance(m.fs.cv.rate_reaction_generation, Var)
-    assert isinstance(m.fs.cv.rate_reaction_idx_ref, Set)
     assert isinstance(m.fs.cv.rate_reaction_extent, Var)
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)

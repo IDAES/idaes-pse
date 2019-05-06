@@ -439,12 +439,7 @@ argument)."""))
 
         # Kinetic reaction generation
         if has_rate_reactions:
-            try:
-                add_object_reference(
-                        self,
-                        "rate_reaction_idx_ref",
-                        self.config.reaction_package.rate_reaction_idx)
-            except AttributeError:
+            if not hasattr(self.config.reaction_package, "rate_reaction_idx"):
                 raise PropertyNotSupportedError(
                     "{} Reaction package does not contain a list of rate "
                     "reactions (rate_reaction_idx), thus does not support "
@@ -658,7 +653,7 @@ argument)."""))
             self.rate_reaction_extent = Var(
                     self.flowsheet().config.time,
                     self.length_domain,
-                    self.rate_reaction_idx_ref,
+                    self.config.reaction_package.rate_reaction_idx,
                     domain=Reals,
                     doc="Extent of kinetic reactions at point x [{}/{}.{}]"
                         .format(units['holdup'],
@@ -676,7 +671,7 @@ argument)."""))
                     return b.rate_reaction_generation[t, x, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, x, r]
-                            for r in b.rate_reaction_idx_ref))
+                            for r in b.config.reaction_package.rate_reaction_idx))
                 else:
                     return Constraint.Skip
 
@@ -847,12 +842,7 @@ argument)."""))
 
         # Kinetic reaction generation
         if has_rate_reactions:
-            try:
-                add_object_reference(
-                        self,
-                        "rate_reaction_idx_ref",
-                        self.config.reaction_package.rate_reaction_idx)
-            except AttributeError:
+            if not hasattr(self.config.reaction_package, "rate_reaction_idx"):
                 raise PropertyNotSupportedError(
                     "{} Reaction package does not contain a list of rate "
                     "reactions (rate_reaction_idx), thus does not support "
@@ -1027,7 +1017,7 @@ argument)."""))
             self.rate_reaction_extent = Var(
                     self.flowsheet().config.time,
                     self.length_domain,
-                    self.rate_reaction_idx_ref,
+                    self.config.reaction_package.rate_reaction_idx,
                     domain=Reals,
                     doc="Extent of kinetic reactions at point x [{}/{}.{}]"
                         .format(units['holdup'],
@@ -1045,7 +1035,7 @@ argument)."""))
                     return b.rate_reaction_generation[t, x, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, x, r]
-                            for r in b.rate_reaction_idx_ref))
+                            for r in b.config.reaction_package.rate_reaction_idx))
                 else:
                     return Constraint.Skip
 
@@ -1400,7 +1390,8 @@ argument)."""))
                 if hasattr(self, "rate_reaction_extent"):
                     rate_heat = -sum(b.rate_reaction_extent[t, x, r] *
                                      b.reactions[t, x].dh_rxn[r]
-                                     for r in self.rate_reaction_idx_ref)
+                                     for r in self.config.reaction_package.
+                                     rate_reaction_idx)
                 else:
                     rate_heat = 0
 

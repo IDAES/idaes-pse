@@ -312,12 +312,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         # Create material balance terms as required
         # Kinetic reaction generation
         if has_rate_reactions:
-            try:
-                add_object_reference(
-                        self,
-                        "rate_reaction_idx_ref",
-                        self.config.reaction_package.rate_reaction_idx)
-            except AttributeError:
+            if not hasattr(self.config.reaction_package, "rate_reaction_idx"):
                 raise PropertyNotSupportedError(
                     "{} Reaction package does not contain a list of rate "
                     "reactions (rate_reaction_idx), thus does not support "
@@ -522,7 +517,8 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     return b.rate_reaction_generation[t, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
                             b.rate_reaction_extent[t, r]
-                            for r in b.rate_reaction_idx_ref))
+                            for r in b.config.reaction_package.
+                            rate_reaction_idx))
                 else:
                     return Constraint.Skip
 
