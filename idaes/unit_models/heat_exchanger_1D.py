@@ -218,6 +218,14 @@ thickness of the tube"""))
         if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
             set_direction_shell = FlowDirection.forward
             set_direction_tube = FlowDirection.forward
+            if (self.config.shell_side.transformation_method !=
+                self.config.tube_side.transformation_method) or \
+                (self.config.shell_side.transformation_scheme !=
+                    self.config.tube_side.transformation_scheme):
+                raise ConfigurationError(
+                    "HeatExchanger1D only supports similar transformation "
+                    "schemes on the shell side and tube side domains for "
+                    "both cocurrent and countercurrent flow patterns.")
             if self.config.shell_side.transformation_method is useDefault:
                 _log.warning("Discretization method was "
                              "not specified for the shell side of the "
@@ -280,7 +288,7 @@ thickness of the tube"""))
                              "counter-current heat exchanger. "
                              "Defaulting to forward finite "
                              "difference on the tube side.")
-                self.config.tube_side.transformation_scheme = "FORWARD"
+                self.config.tube_side.transformation_scheme = "BACKWARD"
         else:
             raise ConfigurationError(
                     "{} HeatExchanger1D only supports cocurrent and "
