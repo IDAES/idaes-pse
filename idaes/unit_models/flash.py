@@ -20,6 +20,7 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.network import Port
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -187,15 +188,13 @@ see property package for documentation.}"""))
                                         "mixed_state_block":
                                         self.control_volume.properties_out})
 
-        add_object_reference(self, "vap_outlet", self.split.Vap)
-        add_object_reference(self, "liq_outlet", self.split.Liq)
+        self.vap_outlet = Port(extends=self.split.Vap)
+        self.liq_outlet = Port(extends=self.split.Liq)
 
         # Add references
         if (self.config.has_heat_transfer is True and
                 self.config.energy_balance_type != 'none'):
-                add_object_reference(self, "heat_duty",
-                                     self.control_volume.heat)
+            add_object_reference(self, "heat_duty", self.control_volume.heat)
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
-                add_object_reference(self, "deltaP",
-                                     self.control_volume.deltaP)
+            add_object_reference(self, "deltaP", self.control_volume.deltaP)
