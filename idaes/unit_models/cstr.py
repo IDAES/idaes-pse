@@ -211,13 +211,10 @@ see reaction package for documentation.}"""))
         add_object_reference(self,
                              "volume",
                              self.control_volume.volume)
-        add_object_reference(self,
-                             "rate_reaction_idx_ref",
-                             self.control_volume.rate_reaction_idx_ref)
 
         # Add CSTR performance equation
         @self.Constraint(self.flowsheet().config.time,
-                         self.rate_reaction_idx_ref,
+                         self.config.reaction_package.rate_reaction_idx,
                          doc="CSTR performance equation")
         def cstr_performance_eqn(b, t, r):
             return b.control_volume.rate_reaction_extent[t, r] == (
