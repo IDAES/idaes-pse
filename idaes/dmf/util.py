@@ -17,11 +17,7 @@ Utility functions.
 import importlib
 import json
 
-try:  # sigh.. I hate that we have to support Python 2
-    from json import JSONDecodeError
-except ImportError:
-    # Python 2
-    JSONDecodeError = Exception
+from json import JSONDecodeError
 import logging
 import os
 import re

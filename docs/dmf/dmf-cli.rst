@@ -82,7 +82,7 @@ In addition, there are some aliases for some of the sub-commands:
 - ``dmf register`` => `dmf add`
 - ``dmf related`` => `dmf graph`
 - ``dmf rm`` => `dmf delete`
-- ``dmf status`` => `describe`
+- ``dmf status`` => `dmf describe`
 
 usage overview
 ^^^^^^^^^^^^^^
@@ -278,7 +278,7 @@ resources. If used without options, it is basically an alias for
     8c55 data C         2019-04-29 17:28:58
     9cbe data D         2019-04-29 17:28:59
 
-The find-specific options add filters. In the example above, the find
+The find-specific options add filters. In the example below, the find
 filters for files that were modified after the given date and time.
 
 .. code-block:: console
@@ -616,7 +616,7 @@ If the workspace exists, you cannot create it:
         assert 'exists' in result.output
 
 And, of course, you can't create workspaces anywhere you don't
-have permissions to creat directories:
+have permissions to create directories:
 
 .. code-block:: console
 
