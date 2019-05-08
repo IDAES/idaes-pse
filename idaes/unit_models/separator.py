@@ -926,7 +926,7 @@ linked the mixed state and all outlet states,
                      initialization (default = 'ipopt')
             hold_state : flag indicating whether the initialization routine
                      should unfix any state variables fixed during
-                     initialization, **default** - True. **Valid values:**
+                     initialization, **default** - False. **Valid values:**
                      **True** - states variables are not unfixed, and a dict of
                      returned containing flags for which states were fixed
                      during initialization, **False** - state variables are
@@ -980,10 +980,10 @@ linked the mixed state and all outlet states,
                         # Apply split fraction
                         try:
                             for k in s_vars[v]:
-                                if k is None:
+                                if (k is None or blk.config.split_basis ==
+                                        SplittingType.totalFlow):
                                     s_vars[v][k].value = value(
-                                            m_var[k] *
-                                            blk.split_fraction[(t, o)])
+                                        m_var[k]*blk.split_fraction[(t, o)])
                                 else:
                                     s_vars[v][k].value = value(
                                             m_var[k]*blk.split_fraction[
