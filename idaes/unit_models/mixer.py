@@ -711,7 +711,23 @@ linked to all inlet states and the mixed state,
                           hold_state=False)
 
         if blk.config.mixed_state_block is None:
-            results = opt.solve(blk, tee=stee)
+            if (hasattr(blk, "pressure_equality_constraints") and
+                    blk.pressure_equality_constraints.active is True):
+                blk.pressure_equality_constraints.deactivate()
+                for t in blk.flowsheet().config.time:
+                    sys_press = getattr(
+                            blk,
+                            blk.create_inlet_list()[0]+"_state")[t].pressure
+                    blk.mixed_state[t].pressure.fix(sys_press.value)
+
+                results = opt.solve(blk, tee=stee)
+
+                blk.pressure_equality_constraints.activate()
+                for t in blk.flowsheet().config.time:
+                    blk.mixed_state[t].pressure.unfix()
+
+            else:
+                results = opt.solve(blk, tee=stee)
 
             if outlvl > 0:
                 if results.solver.termination_condition == \
