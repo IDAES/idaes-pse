@@ -16,12 +16,15 @@ Command Line Interface for IDAES DMF.
 Uses "Click" to handle command-line parsing and dispatch.
 """
 # stdlib
+from collections import namedtuple
+import datetime
 from enum import Enum
 import json
 import logging
 from operator import itemgetter
 import pathlib
 import sys
+from typing import List
 from urllib.parse import urlparse, ParseResult
 import yaml
 
@@ -35,6 +38,7 @@ import pendulum
 from idaes.dmf import DMF, DMFConfig, resource
 from idaes.dmf import errors
 from idaes.dmf.workspace import Fields
+from idaes.dmf import util
 
 __author__ = "Dan Gunter"
 
@@ -58,6 +62,11 @@ class Code(Enum):
     DMF = 5
     DMF_OPER = 6
     INPUT_VALUE = 7
+    CANCELED = 8
+
+
+# Some common fields we can show
+SHOW_FIELDS = "type, desc, creator, created, modified, fikes, codes, version"
 
 
 def level_from_verbosity(vb):
@@ -153,6 +162,8 @@ class URLType(click.ParamType):
         "resource": "info",
         "show": "info",
         "list": "ls",
+        "delete": "rm",
+        "graph": "related",
     },
     help="Data management framework command wrapper",
 )
@@ -240,7 +251,7 @@ def init(path, create, name, desc, html):
         _log.info("Use existing workspace")
     # In either case, switch to provided config
     try:
-        _ = DMF(path=path, create=False, save_path=True)
+        _ = DMF(path=path, create=False, save_path=True)  # noqa: F841
     except errors.WorkspaceConfNotFoundError:
         click.echo(f"Workspace configuration not found at path='{path}'")
         sys.exit(Code.WORKSPACE_NOT_FOUND.value)
@@ -354,8 +365,9 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
     "workspace, or referred to by location",
 )
 @click.option(
-    "--resource-type",
+    "--type",
     "-t",
+    "resource_type",
     type=click.Choice(tuple(resource.RESOURCE_TYPES)),
     help="Resource type (default=determined from file)",
 )
@@ -398,6 +410,11 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
     help="If given, this resource will be the subject rather than the object "
     "of any and all relations added.",
 )
+@click.option(
+    "--version",
+    help="Set semantic version for this resource (default=0.0.0)",
+    default=None,
+)
 def register(
     resource_type,
     url,
@@ -410,6 +427,7 @@ def register(
     used,
     prev,
     is_subject,
+    version,
 ):
     _log.debug(f"Register object type='{resource_type}' url/path='{url.path}'")
     # process url
@@ -481,6 +499,15 @@ def register(
     _log.debug("update resource relations")
     for rel_rsrc in target_resources.values():
         dmf.update(rel_rsrc)
+    # add metadata
+    if version:
+        try:
+            vlist = resource.version_list(version)
+        except ValueError:
+            click.echo(f"Invalid version `{version}`")
+            sys.exit(Code.INPUT_VALUE.value)
+        else:
+            rsrc.v["version_info"]["version"] = vlist
     # add the resource
     _log.debug("add resource begin")
     try:
@@ -503,11 +530,8 @@ def register(
 @click.option(
     "--show",
     "-s",
-    type=click.Choice(
-        ["type", "desc", "created", "modified", "version", "files", "codes"]
-    ),
     multiple=True,
-    help="Show given field in listing",
+    help=f"Show given field(s) in listing. Common fields: {SHOW_FIELDS}",
 )
 @click.option(
     "--sort",
@@ -529,31 +553,77 @@ def ls(color, show, sort_by, reverse, prefix):
     d = DMF()
     if not show:
         show = ["type", "desc", "modified"]  # note: 'id' is always first
+    else:
+        try:
+            show = _split_and_validate_fields(show)
+        except ValueError as err:
+            click.echo(f"Bad fields for --show option: {err}")
+            sys.exit(Code.INPUT_VALUE.value)
     reverse = bool(reverse == "yes")
     if not sort_by:
         sort_by = ["id"]
-    _ls_basic(d, show, sort_by, reverse, prefix, color)
+    resources = list(d.find())
+    _print_resource_table(resources, show, sort_by, reverse, prefix, color)
 
 
-def _ls_basic(d, show_fields, sort_by, reverse, prefix, color):
+def _split_and_validate_fields(fields: List[str]) -> List[str]:
+    """Split comma-separated 'show' fields, validate that they are
+    part of a resource, and return a list of tuples.
+
+    Raises:
+        ValueError: if the fields do not validate
+    Returns:
+
+    """
+    dummy = resource.DUMMY_RESOURCE
+    # Find every field in the resource
+    result = []
+    for grp in fields:
+        for f in grp.split(","):
+            f = f.strip()
+            if f in _show_fields:
+                result.append(f)
+                continue
+            if "." in f:
+                keys, v = f.split("."), dummy
+                try:
+                    for k in keys:
+                        try:
+                            v = v[k]
+                        except TypeError:
+                            raise ValueError(f"bad field {f}")
+                except KeyError:
+                    raise ValueError(f"bad field {f} (error at " f"sub-field {k})")
+                result.append(tuple(keys))
+            elif f not in dummy:
+                raise ValueError(f"bad field {f}")
+            else:
+                result.append(f)
+    return result
+
+
+def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, color):
     """Text-mode `ls`.
     """
     t = _cterm if color else _noterm
-    resources = list(d.find())
     if len(resources) == 0:
         print("no resources to display")
         return
-    uuid_len = _uuid_prefix_len([r.id for r in resources])
+    uuid_len = util.uuid_prefix_len([r.id for r in resources])
     full_len = max((len(r.id) for r in resources)) if not prefix else uuid_len
     fields = ["id"] + list(show_fields)
     nfields = len(fields)
     # calculate table body. do this first to get widths.
-    rows, maxwid, widths = [], 60, [0] * nfields
+    hdr_fields = [".".join(f) if isinstance(f, tuple) else f for f in fields]
+    rows, maxwid, widths = [], 60, [len(f) for f in hdr_fields]
     for r in resources:
         row = []
         for i, fld in enumerate(fields):
             # transform field for display
-            transformer = _show_fields[fld]
+            try:
+                transformer = _show_fields[fld]
+            except KeyError:
+                transformer = _IdentityField(fld)
             transformer.set_value(r)
             # if it's a UUID field, add info about unique prefix length
             is_id_field = isinstance(transformer, _IdField)
@@ -583,12 +653,172 @@ def _ls_basic(d, show_fields, sort_by, reverse, prefix, color):
         sort_key_idx = tuple(range(nfields, nfields + nsort))
         rows.sort(key=itemgetter(*sort_key_idx), reverse=reverse)
     # print table header
-    hdr_columns = [t.bold + f"{f:{w}}" for f, w in zip(fields, widths)]
+    hdr_columns = [t.bold + f"{f:{w}}" for f, w in zip(hdr_fields, widths)]
     print(" ".join(hdr_columns) + t.normal)
     # print table body
     for row in rows:
-        row_columns = [f"{f:{w}}" for f, w in zip(row[:nfields], widths)]
+        col = []
+        for i, fld in enumerate(fields):
+            if i == 0:
+                col.append(t.red)
+            elif fld == resource.Resource.TYPE_FIELD:
+                col.append(t.yellow)
+            elif fld != "desc":
+                col.append(t.green)
+            else:
+                col.append("")
+        row_columns = [
+            f"{col[i]}{f:{w}}{t.normal}"
+            for i, f, w in zip(range(len(widths)), row[:nfields], widths)
+        ]
         print(" ".join(row_columns))
+
+
+@click.command(help="Find resources in the workspace")
+@click.option("--color/--no-color", default=True, help="Use color for output")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["list", "info", "json"]),
+    default="list",
+    help="Output format",
+)
+@click.option(
+    "--show",
+    "-s",
+    multiple=True,
+    help=f"Show given field(s) in listing. Common fields: {SHOW_FIELDS}",
+)
+@click.option(
+    "--sort",
+    "-S",
+    "sort_by",
+    type=click.Choice(["id", "type", "desc", "created", "modified", "version"]),
+    multiple=True,
+    help="Sort by given field; if repeated, combine to make a compound sort key",
+)
+@click.option("--reverse", "-r", "reverse", flag_value="yes", help="Reverse sort order")
+@click.option(
+    "--prefix/--no-prefix",
+    "prefix",
+    help="By default, shown 'id' is the shortest unique prefix; "
+    "`--no-prefix` shows full id",
+    default=True,
+)
+@click.option("--by", default="", help="Creator name")
+@click.option("--created", default="", help="Creation date or date range")
+@click.option("--file", "filedesc", default="", help="File desc(ription)")
+@click.option("--modified", default="", help="Modification date or date range")
+@click.option("--name", default="", help="Matches any of the aliases")
+@click.option("--type", "datatype", default="", help="The resource type")
+def find(
+    output_format,
+    color,
+    show,
+    sort_by,
+    prefix,
+    reverse,
+    by,
+    created,
+    filedesc,
+    modified,
+    name,
+    datatype,
+):
+    d = DMF()
+    if output_format == "list":
+        if not show:
+            show = ["type", "desc", "modified"]  # note: 'id' is always first
+        else:
+            try:
+                show = _split_and_validate_fields(show)
+            except ValueError as err:
+                click.echo(f"Bad fields for --show option: {err}")
+                sys.exit(Code.INPUT_VALUE.value)
+    reverse = bool(reverse == "yes")
+    if not sort_by:
+        sort_by = ["id"]
+
+    # Build query
+    query = {}
+    if by:
+        query["creator.name"] = by
+    if created:
+        try:
+            query["created"] = _date_query(created)
+        except ValueError as err:
+            click.echo(f"bad date for 'created': {err}")
+            sys.exit(Code.INPUT_VALUE.value)
+    if filedesc:
+        query["datafiles"] = [{"desc": filedesc}]
+    if modified:
+        try:
+            query["modified"] = _date_query(modified)
+        except ValueError as err:
+            click.echo(f"bad date for 'modified': {err}")
+            sys.exit(Code.INPUT_VALUE.value)
+    if name:
+        query["aliases"] = [name]
+    if datatype:
+        query["type"] = datatype
+
+    # Execute query
+    _log.info(f"find: query = '{query}'")
+    _log.debug("find.begin")
+    resources = list(d.find(query))
+    _log.debug("find.end")
+
+    # Print result
+    if output_format == "list":
+        # print resources like `ls`
+        _print_resource_table(resources, show, sort_by, reverse, prefix, color)
+    elif output_format == "info":
+        # print resources one by one
+        si = _ShowInfo("term", 32, color=color)
+        for rsrc in resources:
+            si.show(rsrc)
+    elif output_format == "json":
+        # print resources as JSON
+        for r in resources:
+            print(json.dumps(r.v, indent=2))
+
+
+def _date_query(datestr):
+    """Transform date(s) into a query.
+    """
+
+    def _ts(x):  # get timestamp of date or time
+        try:
+            return x.timestamp()
+        except AttributeError:
+            return datetime.datetime(*x.timetuple()[:6]).timestamp()
+
+    dates = datestr.split("..", 1)
+    _log.debug(f"date '{datestr}', split: {dates}")
+    try:
+        parsed_dates = [
+            pendulum.parser.parse(d, exact=True, tz=pendulum.local_timezone())
+            if d
+            else None
+            for d in dates
+        ]
+    except pendulum.exceptions.ParserError as err:
+        raise ValueError(str(err))
+    if len(parsed_dates) == 2:
+        begin_date, end_date = parsed_dates
+        query = {}
+        if begin_date:
+            query['$ge'] = _ts(begin_date)
+        if end_date:
+            query['$le'] = _ts(end_date)
+    else:
+        pd = parsed_dates[0]
+        if isinstance(pd, pendulum.Pendulum):
+            _log.warning("datetime given, must match to the second")
+            query = _ts(pd)
+        else:
+            query = {'$ge': _ts(pd), '$le': _ts(pd) + 60 * 60 * 24}  # 1 day
+    return query
 
 
 @click.command(help="Show detailed information about a resource")  # aliases: resource
@@ -617,8 +847,7 @@ def info(identifier, multiple, output_format, color):
     except ValueError as err:
         click.echo(f"{err}")
         sys.exit(Code.INPUT_VALUE.value)
-    d = DMF()
-    rsrc_list = list(d.find_by_id(identifier))
+    rsrc_list = list(find_by_id(identifier))
     n = len(rsrc_list)
     if n > 1 and not multiple:
         click.echo(
@@ -635,17 +864,210 @@ def info(identifier, multiple, output_format, color):
         si.show(rsrc)
 
 
+@click.command(help="Show resources related (connected) to a given resource")
+@click.argument("identifier")
+@click.option(
+    "-d",
+    "--direction",
+    type=click.Choice(["out", "in"]),
+    default="out",
+    help="Direction of relationship to show (default=out[going])",
+)
+@click.option(
+    "--color/--no-color",
+    default=True,
+    help="In term mode, use (or do not use)" " color for output",
+)
+@click.option(
+    "--unicode/--no-unicode",
+    default=True,
+    help="With `--unicode`, allow unicode characters for connecting "
+    "output items with 'lines'. With --no-unicode, use plain ASCII "
+    "characters for this",
+)
+def related(identifier, direction, color, unicode):
+    _log.info(f"related to resource id='{identifier}'")
+    t = _cterm if color else _noterm
+    dmf = DMF()
+    try:
+        resource.identifier_str(identifier, allow_prefix=True)
+    except ValueError as err:
+        click.echo(f"{err}")
+        sys.exit(Code.INPUT_VALUE.value)
+    _log.debug(f"begin: finding root resource {identifier}")
+    rsrc_list = list(find_by_id(identifier, dmf=dmf))
+    n = len(rsrc_list)
+    if n > 1:
+        click.echo(f"Too many resources matching `{identifier}`")
+        sys.exit(Code.INPUT_VALUE)
+    rsrc = rsrc_list[0]
+    _log.debug(f"end: finding root resource {identifier}")
+    # get related resources
+    _log.debug(f"begin: finding related resources for {identifier}")
+    outgoing = direction == "out"
+    rr = list(dmf.find_related(rsrc, meta=["aliases", "type"], outgoing=outgoing))
+    _log.debug(f"end: finding related resources for {identifier}")
+    # stop if no relations
+    if not rr:
+        _log.warning(f"no resource related to {identifier}")
+        click.echo(f"No relations for resource `{identifier}`")
+        sys.exit(0)
+    _log.info(f"got {len(rr)} related resources")
+    # debugging
+    if _log.isEnabledFor(logging.DEBUG):
+        dbgtree = '\n'.join(['  ' + str(x) for x in rr])
+        _log.debug(f"related resources:\n{dbgtree}")
+    # extract uuids & determine common UUID prefix length
+    uuids = [item[2][resource.Resource.ID_FIELD] for item in rr]
+    pfx = util.uuid_prefix_len(uuids)
+    # initialize queue with depth=1 items
+    q = [item for item in rr if item[0] == 1]
+    # print root resource
+    print(_related_item(rsrc.id, rsrc.name, rsrc.type, pfx, t, unicode))
+    # set up printing style
+    if unicode:
+        # connector chars
+        vrt, vrd, relbow, relbow2, rarr = (
+            '\u2502',
+            '\u2506',
+            '\u2514',
+            '\u251C',
+            '\u2500\u2500',
+        )
+        # relation prefix and arrow
+        relpre, relarr = (
+            ['\u2500\u25C0\u2500\u2524', '\u2524'][outgoing],
+            ['\u2502', '\u251C\u2500\u25B6'][outgoing],
+        )
+    else:
+        # connector chars
+        vrt, vrd, relbow, relbow2, rarr = '|', '.', '+', '+', '--'
+        # relation prefix and arrow
+        relpre, relarr = ['<-[', '-['][outgoing], [']-', ']->'][outgoing]
+    # create map of #items at each level, so we can easily
+    # know when there are more at a given level, for drawing
+    n_at_level = {0: 0}
+    for item in rr:
+        depth = item[0]
+        if depth in n_at_level:
+            n_at_level[depth] += 1
+        else:
+            n_at_level[depth] = 1
+    # print tree
+    while q:
+        depth, rel, meta = q.pop()
+        n_at_level[depth] -= 1
+        indent = ''.join(
+            [
+                f" {t.blue}{vrd if n_at_level[i - 1] else ' '}{t.normal} "
+                for i in range(1, depth + 1)
+            ]
+        )
+        print(f"{indent} {t.blue}{vrt}{t.normal}")
+        rstr = f"{t.blue}{relpre}{t.yellow}{rel.predicate}{t.blue}{relarr}{t.normal}"
+        if meta["aliases"]:
+            item_name = meta["aliases"][0]
+        else:
+            item_name = meta.get("desc", "-")
+        istr = _related_item(
+            meta[resource.Resource.ID_FIELD], item_name, meta["type"], pfx, t, unicode
+        )
+        # determine correct connector (whether there is another one down the stack)
+        elbow = relbow if (not q or q[-1][0] != depth) else relbow2
+        print(f"{indent} {t.blue}{elbow}{rarr}{t.normal}{rstr} {istr}")
+        new_rr = []
+        for d2, rel2, _ in rr:
+            if outgoing:
+                is_same = rel2.subject == rel.object
+            else:
+                is_same = rel2.object == rel.subject
+            if d2 == depth + 1 and is_same:
+                q.append((d2, rel2, _))
+            else:
+                new_rr.append((d2, rel2, _))
+        rr = new_rr
+
+
+def _related_item(id_, name, type_, pfx, t, unicode):
+    return f"{t.red}{id_[:pfx]} {t.green}{type_} {t.normal}{name}"
+
+
+@click.command(help="Remove a resource")  # aliases: delete
+@click.argument("identifier")
+@click.option(
+    "-y",
+    "--yes",
+    flag_value="yes",
+    help="No interactive confirmations; assume 'yes' answer to all",
+)
+@click.option("--list/--no-list", "list_resources", default=True)
+@click.option("--multiple/--no-multiple", default=False)
+def rm(identifier, yes, multiple, list_resources):
+    _log.info(f"remove resource '{identifier}'")
+    try:
+        resource.identifier_str(identifier, allow_prefix=True)
+    except ValueError as errmsg:
+        click.echo(f"Invalid identifier. Details: {errmsg}")
+        sys.exit(Code.INPUT_VALUE.value)
+    rsrc_list = list(find_by_id(identifier))
+    found_multiple = len(rsrc_list) > 1
+    if found_multiple and not multiple:
+        click.echo(
+            f"Too many ({len(rsrc_list)}) resources match prefix '{identifier}'. "
+            "Add option --multiple to allow multiple matches."
+        )
+        sys.exit(Code.DMF_OPER.value)
+    fields = ["type", "desc", "modified"]  # "id" is prepended by _ls_basic()
+    if list_resources:
+        _print_resource_table(rsrc_list, fields, ["id"], False, False, True)
+    if yes != "yes":
+        if found_multiple:
+            s = f"these {len(rsrc_list)} resources"
+        else:
+            s = "this resource"
+        do_remove = click.confirm(f"Remove {s}", prompt_suffix="? ", default=False)
+        if not do_remove:
+            click.echo("aborted")
+            sys.exit(Code.CANCELED.value)
+    d = DMF()
+    for r in rsrc_list:
+        _log.debug(f"begin remove-resource id={r.id}")
+        d.remove(identifier=r.id)
+        _log.debug(f"end remove-resource id={r.id}")
+    if found_multiple:
+        s = f"{len(rsrc_list)} resources removed"
+    else:
+        s = "resource removed"
+    click.echo(s)
+
+
+######################################################################################
+
+
+def find_by_id(identifier, dmf=None):
+    if dmf is None:
+        dmf = DMF()
+    return dmf.find_by_id(identifier)
+
+
 class _ShowInfo:
     """Container for methods, etc. to show info about a resource.
     """
 
     contents_indent, json_indent = 4, 2  # for `term` output
 
-    def __init__(self, output_format, pfxlen, color=None):
+    def __init__(self, output_format, pfxlen, color=None, unicode=True):
         self._terminal = _cterm if color else _noterm
         self._pfxlen = pfxlen
         self._fmt = output_format
         self._resource = None
+        C = namedtuple('Corners', ['nw', 'ne', 'se', 'sw'])
+        if unicode:
+            self._corners = C._make('\u250C\u2510\u2518\u2514')
+            self._hz, self._vt = '\u2500', '\u2502'
+        else:
+            self._corners = C._make('++++')
+            self._hz, self._vt = '-', '|'
 
     def show(self, rsrc):
         self._resource = rsrc
@@ -677,11 +1099,14 @@ class _ShowInfo:
                 if contents_str.endswith('...\n'):
                     contents_str = contents_str[:-4]
                 print(
-                    f"{t.on_cyan} {t.normal} {t.bold}{t.cyan}{tk}{t.normal}"
-                    f"{' ' * (width - len(tk) - 3)}{t.on_cyan} {t.normal}"
+                    f"{t.cyan}{self._vt}{t.normal} {t.bold}{t.cyan}{tk}{t.normal}"
+                    f"{' ' * (width - len(tk) - 3)}{t.cyan}{self._vt}{t.normal}"
                 )
                 self._print_info_contents_term(contents_str, width)
-        print(f"{t.on_cyan}{' ' * width}{t.normal}")
+        print(
+            f"{t.cyan}{self._corners.sw}{self._hz * (width - 2)}"
+            f"{self._corners.se}{t.normal}"
+        )
 
     def _longest_line(self, formatted_resource):
         longest = 0
@@ -696,15 +1121,15 @@ class _ShowInfo:
         t, r = self._terminal, self._resource
         padding = width - len(r.id) - 10
         if padding % 2 == 1:
-            lpad = padding // 2
-            rpad = padding // 2 + 1
+            lpad = padding // 2 - 1
+            rpad = padding // 2 - 1
         else:
-            lpad = rpad = padding // 2
+            lpad, rpad = padding // 2 - 1, padding // 2 - 2
         print(
-            f"{t.bold_white_on_cyan}{lpad * ' '} Resource {t.normal}"
-            f"{t.black_on_cyan}{r.id[:self._pfxlen]}"
-            f"{t.white_on_cyan}{r.id[self._pfxlen:]}"
-            f"{rpad * ' '}{t.normal}"
+            f"{t.cyan}{self._corners.nw}{lpad * self._hz}{t.normal} Resource "
+            f"{t.red}{r.id[:self._pfxlen]}"
+            f"{t.green}{r.id[self._pfxlen:]} "
+            f"{t.cyan}{rpad * self._hz}{self._corners.ne}{t.normal}"
         )
 
     def _print_info_contents_term(self, s, width):
@@ -716,8 +1141,9 @@ class _ShowInfo:
             while p < len(line):
                 print_line = line[p : p + contents_width]
                 print(
-                    f"{t.on_cyan} {t.normal}{indent}{print_line}"
-                    f"{' ' * (contents_width - len(print_line))}{t.on_cyan} {t.normal}"
+                    f"{t.cyan}{self._vt}{t.normal}{indent}{print_line}"
+                    f"{' ' * (contents_width - len(print_line))}{t.cyan}{self._vt}"
+                    f"{t.normal}"
                 )
                 p += contents_width
 
@@ -725,7 +1151,7 @@ class _ShowInfo:
         val, result = self._resource.v, {}
 
         def dateize(v):
-            return pendulum.from_timestamp(v).to_datetime_string()
+            return pendulum.fromtimestamp(v).to_datetime_string()
 
         for k, v in val.items():
             if k in ("created", "modified"):
@@ -788,7 +1214,7 @@ class _IdentityField(_LsField):
 
 class _DateField(_LsField):
     def __str__(self):
-        return pendulum.from_timestamp(self.value).to_datetime_string()
+        return pendulum.fromtimestamp(self.value).to_datetime_string()
 
 
 class _FilesField(_LsField):
@@ -841,6 +1267,7 @@ _show_fields = {
     "id": _IdField(resource.Resource.ID_FIELD),
     "type": _IdentityField("type"),
     "desc": _IdentityField("desc"),
+    "creator": _IdentityField(("creator", "name")),
     "created": _DateField("created"),
     "modified": _DateField("modified"),
     "files": _FilesField("datafiles"),
@@ -849,28 +1276,17 @@ _show_fields = {
 }
 
 
-def _uuid_prefix_len(uuids, step=4, maxlen=32):
-    """Get smallest multiple of `step` len prefix that gives unique values.
-
-    The algorithm is not fancy, but good enough: build *sets* of
-    the ids at increasing prefix lengths until the set has all ids (no duplicates).
-    Experimentally this takes ~.1ms for 1000 duplicate ids (the worst case).
-    """
-    full = set(uuids)
-    all_of_them = len(full)
-    for n in range(step, maxlen, step):
-        prefixes = {u[:n] for u in uuids}
-        if len(prefixes) == all_of_them:
-            return n
-    return maxlen
-
+######################################################################################
 
 # Register base commands
 base_command.add_command(init)
 base_command.add_command(register)
 base_command.add_command(status)
 base_command.add_command(ls)
+base_command.add_command(find)
 base_command.add_command(info)
+base_command.add_command(related)
+base_command.add_command(rm)
 
 if __name__ == '__main__':
     base_command()
