@@ -62,49 +62,60 @@ Minimal install with IPOPT/MUMPS for Windows
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Install Anaconda
-    1. https://repo.anaconda.com/archive/Anaconda3-2019.03-MacOSX-x86_64.pkg (suggest downloading it the previous day)
+    1. Download: https://repo.anaconda.com/miniconda/Miniconda2-latest-Windows-x86_64.exe
     2. Install anaconda
-    3. Open anaconda powershell prompt
-    4. The following steps are optional if you want to isolate the IDAES installation
-        a. Create an environment with python = 3.7.2: conda create -n myenv
+    3. Open the anaconda powershell prompt
+    4. The following steps are optional if you want to isolate the IDAES installation (from other Python packages)
+        a. Create an environment with python = 3.7.2: ``conda create -n myenv``
         b. Check the list of environments now available: conda env list. This should list base and your new environment you created “myenv”. 
-        c. Activate the environment you created: conda activate myenv
+        c. Activate the environment you created: ``conda activate myenv``
 
 Install a git client 
-    5. Install the git client from the anaconda prompt: conda install -c anaconda git  
+    5. Install the git client from the anaconda prompt: ``conda install -c anaconda git``  
 
 Install IPOPT
-    6. Install IPOPT from the anaconda prompt: conda install -c conda-forge ipopt. Check if the installation worked by checking for the ipopt version from the anaconda prompt: ipopt -v
+    6. Install IPOPT from the anaconda prompt: ``conda install -c conda-forge ipopt``.
+       Check if the installation worked by checking for the ipopt version from the anaconda prompt: ``ipopt -v``
 
 Download IDAES source code and install required packages
     7. Download the idaes-pse (https://github.com/IDAES/idaes-pse) as a zip folder. Extract the contents in any location of your choice. 
     8. Navigate to that folder in anaconda prompt 
-    9. Install the packages required for IDAES using the following command: pip install -r requirements.txt
+    9. Install the packages required for IDAES using the following command: ``pip install -r requirements.txt``
 
 Install IDAES
-    10. In the folder where the idaes source code was downloaded, run the setup.py file: python setup.py develop
-    11. Navigate to idaes/unit_models/ and run: pytest. You should see the tests run and all should pass to ensure the installation worked. 
+    10. In the folder where the idaes source code was downloaded, run the setup.py file: ``python setup.py develop``
+    11. Navigate to idaes/unit_models/ and run: ``pytest``. You should see the tests run and all should pass to ensure the installation worked.
     12. Launching Jupyter Notebook
-        a. Navigate to examples/ and run jupyter notebook. 
+        a. Navigate to examples/ and run jupyter notebook: ``jupyter notebook``
 
 .. _min_install_linux:
 
-Minimal install with IPOPT/MUMPS in Linux 
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Minimal install with IPOPT/MUMPS for Linux
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Install Anaconda
+    1. Download: https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+    2. For the next steps, open a terminal window
+    3. Run the script you downloaded: ``sh Miniconda2-latest-Linux-x86_64.sh``
+    4. The following steps are optional if you want to isolate the IDAES installation (from other Python packages)
+        a. Create an environment with python = 3.7.2: ``conda create -n myenv``
+        b. Check the list of environments now available: conda env list. This should list base and your new environment you created “myenv”.
+        c. Activate the environment you created: ``conda activate myenv``
 
 Install IPOPT
-    1. Install IPOPT from the terminal: conda install -c conda-forge ipopt. Check if the installation worked by checking for the ipopt version from the anaconda prompt - ipopt -v
+    5. Install IPOPT from the terminal: ``conda install -c conda-forge ipopt``.
+       Check if the installation worked by checking for the ipopt version from the anaconda prompt: ``ipopt -v``
 
 Download IDAES source code and install required packages
-    2. Download the idaes-pse source code (https://github.com/IDAES/idaes-pse). Extract the contents in any location of your choice. 
-    3. Navigate to that folder in the terminal 
-    4. Install the packages required for IDAES using the following command: pip install -r requirements.txt
+    6. Download the idaes-pse source code (https://github.com/IDAES/idaes-pse). Extract the contents in any location of your choice.
+    7. Navigate to that folder in the terminal
+    8. Install the packages required for IDAES using the following command: ``pip install -r requirements.txt``
 
 Install IDAES
-    5. In the folder where the idaes source code was downloaded, run the setup.py file: python setup.py develop
-    6. Navigate to idaes/unit_models/ and run pytest. You should see the tests run and all should pass to ensure the installation worked. 
-    7. Launching Jupyter Notebook:
-        a. Navigate to examples/ and run jupyter notebook. 
+    9. In the folder where the idaes source code was downloaded, run the setup.py file: ``python setup.py develop``
+    10. Navigate to idaes/unit_models/ and run ``pytest``. You should see the tests run and all should pass to ensure the installation worked.
+    11. Launching Jupyter Notebook:
+         a. Navigate to examples/ and run Jupyter notebook.
 
 .. _full_install_linux:
 
@@ -115,9 +126,14 @@ examples and find these instructions difficult to follow, you may try the `Minim
 
 System Requirements
 ^^^^^^^^^^^^^^^^^^^
+The IDAES toolkit can be installed on Linux, Windows, or MacOSX. **The officially supported
+platform, and the one we use for our automated testing, is Linux.** Therefore it is recommended
+that for maximum stability you use this platform. However we realize many users have
+Windows or Mac OSX environments. We include best-effort instructions, that we have gotten
+to work for us, for those platforms as well.
 
     * Linux operating system
-    * Python 3.6+
+    * Python 3.6 or above (Python 2 is no longer supported)
     * Basic GNU/C compilation tools: make, gcc/g++
     * `wget` (for downloading software)
     * `git` (for getting the IDAES source code)
@@ -201,7 +217,6 @@ At this point, you should be able to launch the Jupyter Notebook server and succ
 
 Solvers
 ^^^^^^^
-
 Some of the model code depends on external solvers. The installation instructions
 above include the free IPOPT_ solver. Most of the examples can run with this solver,
 but a significant number of more advanced problems will not be handled well. Some
@@ -211,10 +226,8 @@ these models are:
     * CPLEX: a linear optimization package from `IBM <https://www.ibm.com/analytics/cplex-optimizer>`_.
     * Gurobi: LP/MILP/MIQP, etc., solvers from `Gurobi <http://www.gurobi.com>`_.
 
-
 ASL and AMPL
 """"""""""""
-
 In some cases, IDAES uses AMPL user-defined functions written in C for property
 models.  Compiling these functions is optional, but some models may not work
 without them.
@@ -226,28 +239,26 @@ https://ampl.com/resources/hooking-your-solver-to-ampl/.
 
 .. _full_install_windows:
 
-Installation on Windows
------------------------
+Windows Installation
+--------------------
+.. note:: Windows is not officially supported at this time.
 
-.. note::
-
-  Windows is not officially supported at this time.
-
-This is a complete guide to installing the IDAES framework on Windows.  The :ref:`Extras section<install:Extras>` includes additional information which may be useful. This guide includes compiling C++ components.  In the future precompiled versions of these libraries will be made available simplifying the installation process.
+This is a complete guide to installing the IDAES framework on Windows. 
+The :ref:`Extras section<install:Extras>` includes additional information which may be useful.
+This guide includes compiling C++ components.  In the future precompiled versions of these 
+libraries will be made available, simplifying the installation process.
 
 Tools
 ^^^^^
-
-Before installing the IDAES software there are a few development tools that need to be installed. There are alternatives, but an attempt was made to provide the easiest path here.
+Before installing the IDAES software there are a few development tools that need to be installed.
+There are alternatives, but an attempt was made to provide the easiest path here.
 
 Text Editor
 """""""""""
-
-1. Install a good text editor (Atom, notepadd++, spyder, ... whatever you prefer).
+1. Install a good text editor (Atom, notepad++, spyder, ... whatever you prefer).
 
 Git Client
 """"""""""
-
 A git client is not necessary for all users, but if you are a developer or advanced user, you will likely want it.
 
 1. Download a git client from https://git-scm.com/download/win
@@ -255,7 +266,6 @@ A git client is not necessary for all users, but if you are a developer or advan
 
 MSYS2
 """""
-
 MSYS2 provides a shell which will allow use of Linux style build tools.  It also provides a convenient package manager (pacman) which allows for easy installation of build tools.
 
 1. Go to https://www.msys2.org/
@@ -279,23 +289,19 @@ MSYS2 provides a shell which will allow use of Linux style build tools.  It also
 
 Python
 ^^^^^^
-
 1. Download Miniconda (https://docs.conda.io/en/latest/miniconda.html)
 2. Run the Miniconda installer (default options should be fine)
 
 Get IDAES
 ^^^^^^^^^
-
 The two main options for getting IDAES are to download the files or to clone the repository.  Cloning the repository requires a git client. For core IDAES developers or users who need to track the latest developments **and** have access to the idaes-dev repo, replace "idaes-pse" with "idaes-dev."
 
 Option 1: Download from Github
 """"""""""""""""""""""""""""""
-
 Most users can download the release files from https://github.com/IDAES/idaes-pse/releases.  The latest development version can be downloaded by  going to https://github.com/IDAES/idaes-pse and clicking the "Clone or Download" button then clicking on "Download Zip." Unzip the files to a convenient location.
 
 Option 2: Fork and Clone the Repository
 """""""""""""""""""""""""""""""""""""""
-
 For people who are not IDAES core developers but potentially would like to make contributions to the IDAES project or closely follow IDAES development, the best way to get the IDAES files is to fork the IDAES repo on Github, then clone the new fork. To fork the repository sign into your Github account, and go to https://github.com/IDAES/idaes-pse. Then, click the "Fork" button in the upper righthand corner of the page.
 
 To clone a repository:

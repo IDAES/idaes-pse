@@ -43,6 +43,7 @@ SPHINX_BUILD = "sphinx-build"
 
 g_sphinx_warn_file = None
 
+
 def pytest_collect_file(parent, path):
     global g_sphinx_warn_file
     if path.ext == "" and path.basename == "Makefile":
@@ -53,6 +54,7 @@ def pytest_collect_file(parent, path):
     elif g_sphinx_warn_file is not None and path.basename == g_sphinx_warn_file:
         return SphinxWarnings(path, parent)
 
+
 def file_contains(s, path):
     result = False
     with open(path) as f:
@@ -62,10 +64,12 @@ def file_contains(s, path):
                 break
     return result
 
+
 class SphinxWarnings(pytest.File):
     def collect(self):
         path = pathlib.Path(self.fspath)  # convert to std
         yield SphinxWarningsItem('Sphinx warnings', self, path)
+
 
 class SphinxWarningsItem(pytest.Item):
     def __init__(self, name, parent, path: pathlib.Path):
@@ -88,6 +92,7 @@ class SphinxWarningsItem(pytest.Item):
         summary = f"Sphinx doc warnings in {self._path}"
         return f"doc build warnings in {self._path}", 0, summary
 
+
 class SphinxMakefile(pytest.File):
 
     # simple way to find variables in a Makefile
@@ -109,7 +114,7 @@ class SphinxMakefile(pytest.File):
                 s = line.strip()
                 # look for definition of Sphinx options
                 if s.startswith("SPHINXOPTS"):
-                    opts = s[s.find('=') + 1:].strip()
+                    opts = s[s.find('=') + 1 :].strip()
                     # return value of '-w' option, if found
                     m = re.match("-w\s*['\"]?([^\"' \t]+)", opts)
                     return m.group(1) if m else None
@@ -197,8 +202,13 @@ class SphinxDoctestItem(pytest.Item):
             os.chdir(self.wd)
             args = self.cmd.split()
             try:
-                # print(f"@@ Running [{self.cmd}] from dir {self.wd}")
-                proc = subprocess.run(args, capture_output=True, timeout=300, encoding='utf-8')
+                proc = subprocess.run(
+                    args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=300,
+                    encoding='utf-8',
+                )
                 self._parse_output(proc.stdout)
             except Exception as exc:
                 print(f"Unexpected failure in Sphinx doctest command: {exc}")
@@ -278,12 +288,14 @@ class SphinxDoctestItem(pytest.Item):
         # print(f"@@ done doctest output")
 
     def tests_ok(self, context, num):
-        #print(f"Tests in {context}: {num} OK")
+        # print(f"Tests in {context}: {num} OK")
         test_name = "Sphinx doctest in: {context}"
         if num > 1:
             test_name += " ({i})"
         for i in range(num, 0, -1):
-            success_item = SphinxDoctestSuccess(test_name.format(**locals()), self.parent)
+            success_item = SphinxDoctestSuccess(
+                test_name.format(**locals()), self.parent
+            )
             self._sess.items.insert(self._insert_items_at, success_item)
         self._sess.testscollected += num
 
@@ -293,9 +305,11 @@ class SphinxDoctestItem(pytest.Item):
         self._sess.items.insert(self._insert_items_at, item)
         self._sess.testscollected += 1
 
+
 class SphinxDoctestSuccess(pytest.Item):
     def runtest(self):
         return
+
 
 class SphinxDoctestFailure(pytest.Item):
     def __init__(self, name, parent, details):
@@ -310,6 +324,7 @@ class SphinxDoctestFailure(pytest.Item):
 
     def reportinfo(self):
         return f"doctest in {self.name}", 0, f"FAILED {self.name}"
+
 
 class SphinxCommandFailed(Exception):
     def __init_(self, cmd, msg):
