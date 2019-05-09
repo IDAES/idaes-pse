@@ -110,9 +110,14 @@ set of instructions below that are appropriate for your operating system.
 
 System Requirements
 ^^^^^^^^^^^^^^^^^^^
+The IDAES toolkit can be installed on Linux, Windows, or MacOSX. **The officially supported
+platform, and the one we use for our automated testing, is Linux.** Therefore it is recommended
+that for maximum stability you use this platform. However we realize many users have
+Windows or Mac OSX environments. We include best-effort instructions, that we have gotten
+to work for us, for those platforms as well.
 
     * Linux operating system
-    * Python 3.6+
+    * Python 3.6 or above (Python 2 is no longer supported)
     * Basic GNU/C compilation tools: make, gcc/g++
     * `wget` (for downloading software)
     * `git` (for getting the IDAES source code)
@@ -196,7 +201,6 @@ At this point, you should be able to launch the Jupyter Notebook server and succ
 
 Solvers
 ^^^^^^^
-
 Some of the model code depends on external solvers. The installation instructions
 above include the free IPOPT_ solver. Most of the examples can run with this solver,
 but a significant number of more advanced problems will not be handled well. Some
@@ -208,10 +212,8 @@ these models are:
 
 .. _IPOPT: https://projects.coin-or.org/Ipopt
 
-
 ASL and AMPL
 """"""""""""
-
 In some cases, IDAES uses AMPL user-defined functions written in C for property
 models.  Compiling these functions is optional, but some models may not work
 without them.
@@ -223,26 +225,24 @@ https://ampl.com/resources/hooking-your-solver-to-ampl/.
 
 Installation on Windows
 -----------------------
+.. note:: Windows is not officially supported at this time.
 
-.. note::
-
-  Windows is not officially supported at this time.
-
-This is a complete guide to installing the IDAES framework on Windows.  The :ref:`Extras section<install:Extras>` includes additional information which may be useful. This guide includes compiling C++ components.  In the future precompiled versions of these libraries will be made available simplifying the installation process.
+This is a complete guide to installing the IDAES framework on Windows. 
+The :ref:`Extras section<install:Extras>` includes additional information which may be useful.
+This guide includes compiling C++ components.  In the future precompiled versions of these 
+libraries will be made available, simplifying the installation process.
 
 Tools
 ^^^^^
-
-Before installing the IDAES software there are a few development tools that need to be installed. There are alternatives, but an attempt was made to provide the easiest path here.
+Before installing the IDAES software there are a few development tools that need to be installed.
+There are alternatives, but an attempt was made to provide the easiest path here.
 
 Text Editor
 """""""""""
-
-1. Install a good text editor (Atom, notepadd++, spyder, ... whatever you prefer).
+1. Install a good text editor (Atom, notepad++, spyder, ... whatever you prefer).
 
 Git Client
 """"""""""
-
 A git client is not necessary for all users, but if you are a developer or advanced user, you will likely want it.
 
 1. Download a git client from https://git-scm.com/download/win
@@ -250,7 +250,6 @@ A git client is not necessary for all users, but if you are a developer or advan
 
 MSYS2
 """""
-
 MSYS2 provides a shell which will allow use of Linux style build tools.  It also provides a convenient package manager (pacman) which allows for easy installation of build tools.
 
 1. Go to https://www.msys2.org/
@@ -274,23 +273,19 @@ MSYS2 provides a shell which will allow use of Linux style build tools.  It also
 
 Python
 ^^^^^^
-
 1. Download Miniconda (https://docs.conda.io/en/latest/miniconda.html)
 2. Run the Miniconda installer (default options should be fine)
 
 Get IDAES
 ^^^^^^^^^
-
 The two main options for getting IDAES are to download the files or to clone the repository.  Cloning the repository requires a git client. For core IDAES developers or users who need to track the latest developments **and** have access to the idaes-dev repo, replace "idaes-pse" with "idaes-dev."
 
 Option 1: Download from Github
 """"""""""""""""""""""""""""""
-
 Most users can download the release files from https://github.com/IDAES/idaes-pse/releases.  The latest development version can be downloaded by  going to https://github.com/IDAES/idaes-pse and clicking the "Clone or Download" button then clicking on "Download Zip." Unzip the files to a convenient location.
 
 Option 2: Fork and Clone the Repository
 """""""""""""""""""""""""""""""""""""""
-
 For people who are not IDAES core developers but potentially would like to make contributions to the IDAES project or closely follow IDAES development, the best way to get the IDAES files is to fork the IDAES repo on Github, then clone the new fork. To fork the repository sign into your Github account, and go to https://github.com/IDAES/idaes-pse. Then, click the "Fork" button in the upper righthand corner of the page.
 
 To clone a repository:
