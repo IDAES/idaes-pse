@@ -1,1 +1,1 @@
-../LICENSE.md
+../COPYRIGHT.md
