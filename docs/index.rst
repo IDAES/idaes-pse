@@ -45,6 +45,7 @@ Contents
     developer/index
     Modules <apidoc/modules>
     glossary
+    copyright
 
 Indices and tables
 ==================
@@ -54,5 +55,3 @@ Indices and tables
 * :ref:`search`
 
 .. |CO2| replace:: CO\ :sub:`2`
-
-.. include:: global.rst

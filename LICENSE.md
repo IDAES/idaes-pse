@@ -1,5 +1,8 @@
+Copyright and License
+=====================
+
 Institute for the Design of Advanced Energy Systems Process Systems Engineering
-Framework (IDAES PSE Framework) Copyright (c) 2018, by the software owners: The
+Framework (IDAES PSE Framework) Copyright (c) 2019, by the software owners: The
 Regents of the University of California, through Lawrence Berkeley National
 Laboratory,  National Technology & Engineering Solutions of Sandia, LLC,
 Carnegie Mellon University, West Virginia University Research Corporation, et al.
@@ -8,14 +11,14 @@ All rights reserved.
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-(1) Redistributions of source code must retain the above copyright notice, this
+1. Redistributions of source code must retain the above copyright notice, this
 list of conditions and the following disclaimer.
 
-(2) Redistributions in binary form must reproduce the above copyright notice,
+2. Redistributions in binary form must reproduce the above copyright notice,
 this list of conditions and the following disclaimer in the documentation and/or
 other materials provided with the distribution.
 
-(3) Neither the name of the Institute for the Design of Advanced Energy Systems
+3. Neither the name of the Institute for the Design of Advanced Energy Systems
 (IDAES), University of California, Lawrence Berkeley National Laboratory,
 National Technology & Engineering Solutions of Sandia, LLC, Sandia National
 Laboratories, Carnegie Mellon University, West Virginia University Research
