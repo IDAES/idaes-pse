@@ -46,8 +46,7 @@ to operate.
 
 Minimal installation
 --------------------
-There are many steps, at present, for a full installation.
-To make it easier to use basic functionality and try the IDAES PSE Toolkit, 
+To make it easier to use basic functionality and try the IDAES PSE Toolkit,
 we have compiled these  "minimal" instructions, that only allow one to use the free 
 IPOPT_ solver with `MUMPS`_. This will not be appropriate for some models.
 We are working on an easy installer with better
@@ -63,61 +62,68 @@ the next sections if this is not sufficient for your needs.
 Minimal install with IPOPT/MUMPS for Windows
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Install Anaconda
-    1. Download: https://repo.anaconda.com/miniconda/Miniconda2-latest-Windows-x86_64.exe
-    2. Install anaconda
-    3. Open the anaconda powershell prompt
-    4. The following steps are optional if you want to isolate the IDAES installation (from other Python packages)
-        a. Create an environment with python = 3.7.2: ``conda create -n myenv``
-        b. Check the list of environments now available: conda env list. This should list base and your new environment you created “myenv”. 
-        c. Activate the environment you created: ``conda activate myenv``
+**Install Anaconda**
 
-Install a git client 
-    5. Install the git client from the anaconda prompt: ``conda install -c anaconda git``  
-
-Install IPOPT
-    6. Install IPOPT from the anaconda prompt: ``conda install -c conda-forge ipopt``.
-       Check if the installation worked by checking for the ipopt version from the anaconda prompt: ``ipopt -v``
-
-Download IDAES source code and install required packages
-    7. Download the idaes-pse (https://github.com/IDAES/idaes-pse) as a zip folder. Extract the contents in any location of your choice. 
-    8. Navigate to that folder in anaconda prompt 
-    9. Install the packages required for IDAES using the following command: ``pip install -r requirements.txt``
-
-Install IDAES
-    10. In the folder where the idaes source code was downloaded, run the setup.py file: ``python setup.py develop``
-    11. Navigate to idaes/unit_models/ and run: ``pytest``. You should see the tests run and all should pass to ensure the installation worked.
-    12. Launching Jupyter Notebook
-        a. Navigate to examples/ and run jupyter notebook: ``jupyter notebook``
+1. Download: https://repo.anaconda.com/miniconda/Miniconda2-latest-Windows-x86_64.exe
+2. Install anaconda from the downloaded file in (1).
+3. Open the Windows powershell.
+4. Follow the :ref:`min_install_generic` instructions.
 
 .. _min_install_linux:
 
 Minimal install with IPOPT/MUMPS for Linux
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Install Anaconda
-    1. Download: https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
-    2. For the next steps, open a terminal window
-    3. Run the script you downloaded: ``sh Miniconda2-latest-Linux-x86_64.sh``
-    4. The following steps are optional if you want to isolate the IDAES installation (from other Python packages)
-        a. Create an environment with python = 3.7.2: ``conda create -n myenv``
-        b. Check the list of environments now available: conda env list. This should list base and your new environment you created “myenv”.
-        c. Activate the environment you created: ``conda activate myenv``
+**Install Anaconda**
 
-Install IPOPT
-    5. Install IPOPT from the terminal: ``conda install -c conda-forge ipopt``.
-       Check if the installation worked by checking for the ipopt version from the anaconda prompt: ``ipopt -v``
+1. Download: https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+2. For the next steps, open a terminal window
+3. Run the script you downloaded: ``sh Miniconda2-latest-Linux-x86_64.sh``
+4. Follow the :ref:`min_install_generic` instructions.
 
-Download IDAES source code and install required packages
-    6. Download the idaes-pse source code (https://github.com/IDAES/idaes-pse). Extract the contents in any location of your choice.
-    7. Navigate to that folder in the terminal
-    8. Install the packages required for IDAES using the following command: ``pip install -r requirements.txt``
+.. _min_install_generic:
 
-Install IDAES
-    9. In the folder where the idaes source code was downloaded, run the setup.py file: ``python setup.py develop``
-    10. Navigate to idaes/unit_models/ and run ``pytest``. You should see the tests run and all should pass to ensure the installation worked.
-    11. Launching Jupyter Notebook:
-         a. Navigate to examples/ and run Jupyter notebook.
+Generic minimal install with IPOPT/MUMPS
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Once you have Conda installed, the remaining steps, performed in either a Windows
+powershell or Linux terminal, are the same.
+
+**Isolate the IDAES installation (from other Python packages)**
+
+1. Create an environment with Python = 3.6 or above: ``conda create -n myenv "python>=3.6"``
+2. Check the list of environments now available: ``conda env list``. This should list
+   base and your new environment you created "myenv".
+3. Activate the environment you created: ``conda activate myenv``.
+
+**Install a git client**
+
+4. Install the git client: ``conda install -c anaconda git``.
+
+**Install IPOPT**
+
+5. Run ``conda install -c conda-forge ipopt``.
+   Check if the installation worked by checking for the ipopt version: ``ipopt -v``.
+
+**Download IDAES source code and install required packages**
+
+6. Download the idaes-pse (https://github.com/IDAES/idaes-pse) as a zip folder.
+   Extract the contents in any location of your choice.
+7. Navigate to that folder.
+8. Install the packages required for IDAES using the following command:
+   ``pip install -r requirements.txt``.
+
+**Install IDAES**
+
+9. In the folder where the idaes source code was downloaded, run the *setup.py*
+    file: ``python setup.py develop``
+10. Navigate to idaes/unit_models/ and run: ``pytest``.
+    You should see the tests run and all should pass to ensure the installation worked.
+11. Launch the Jupyter Notebook
+
+    a. Navigate to examples/ and run Jupyter notebook: ``jupyter notebook``
+    b. Open a web browser to the URL that is printed from the previous command.
+
 
 .. _full_install_linux:
 
@@ -137,8 +143,8 @@ to work for us, for those platforms as well.
     * Linux operating system
     * Python 3.6 or above (Python 2 is no longer supported)
     * Basic GNU/C compilation tools: make, gcc/g++
-    * `wget` (for downloading software)
-    * `git` (for getting the IDAES source code)
+    * ``wget`` (for downloading software)
+    * ``git`` (for getting the IDAES source code)
     * Access to the Internet
 
 Things you must know how to do:
@@ -204,7 +210,9 @@ Install the required Python packages:
     pip install -r requirements.txt
     python setup.py develop  # or "install"
 
-Install ipopt.  If you have an HSL license, you may prefere to compile ipopt with HSL support.  Please see the ipopt `documentation <https://projects.coin-or.org/Ipopt>`_ in that case.  Otherwise ipopt can be installed with conda.
+Install ipopt.  If you have an HSL license, you may prefer to compile ipopt with
+HSL support.  Please see the ipopt `documentation <https://projects.coin-or.org/Ipopt>`_
+in that case.  Otherwise ipopt can be installed with conda.
 
 .. code-block:: sh
 
@@ -255,108 +263,118 @@ Tools
 Before installing the IDAES software there are a few development tools that need to be installed.
 There are alternatives, but an attempt was made to provide the easiest path here.
 
-Text Editor
-"""""""""""
 1. Install a good text editor (Atom, notepad++, spyder, ... whatever you prefer).
+2. Install a *git* client from https://git-scm.com/download/win.
+   A git client is not necessary for all users, but
+   if you are a developer or advanced user, you will likely want it.
+3. Install MSYS2. MSYS2 provides a shell which will allow use of Linux style build tools.
+   It also provides a convenient package manager (pacman) which allows for easy
+   installation of build tools.
 
-Git Client
-""""""""""
-A git client is not necessary for all users, but if you are a developer or advanced user, you will likely want it.
+    a. Go to https://www.msys2.org/
+    #. Download the x86_64 installer
+    #. Run the installer (the default options should be okay)
+    #. Open the MSYS2 MinGW 64-bit terminal (go to: start menu/MSYS2 64Bit/MSYS2 MinGW 64Bit).
+    #. Update the MSYS2 software::
 
-1. Download a git client from https://git-scm.com/download/win
-2. Run the installer (the default options should be okay).
+        pacman -Syu
 
-MSYS2
-"""""
-MSYS2 provides a shell which will allow use of Linux style build tools.  It also provides a convenient package manager (pacman) which allows for easy installation of build tools.
+    #. Repeat the previous step until there are no more updates.
+    #. Install the build tools and libraries::
 
-1. Go to https://www.msys2.org/
-2. Download the x86_64 installer
-3. Run the installer (the default options should be okay)
-4. Open the MSYS2 MinGW 64-bit terminal (go to: start menu/MSYS2 64Bit/MSYS2 MinGW 64Bit).
-5. Update the MSYS2 software.
+        pacman -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-boost unzip patch make
 
-  - ``pacman -Syu``
+    #. While MinGW does produce Windows native binaries, depending on linking options,
+       some DLLs may be required.  Add the MinWG/MSYS2 DLLs to your path.  For example if MSYS2
+       was installed in the default location you would probably want to add ``C:\msys64\mingw64\bin``.
+       See :ref:`modify_path_env`.
 
-6. Repeat step 5 until there are no more updates.
-7. Install the build tools and libraries.
+.. note:: In the MSYS2 terminal the directory structure looks different than the
+          regular Windows directory structure.
+          The Windows C: drive is located at ``/c``.
 
-  - ``pacman -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-boost unzip patch make``
-
-8. While MinGW does produce Windows native binaries, depending on linking options, some DLLs may be required.  Add the MinWG/MSYS2 DLLs to your path.  For example if MSYS2 was installed in the default location you would probably want to add ``C:\msys64\mingw64\bin``. See Section :ref:`Modifying the Path Environment Variable <install:Modifying the Path Environment Variable>`.
-
-.. note::
-
-  In the MSYS2 terminal the directory structure looks different than the regular Windows directory structure.  The Windows C: drive is located at ``/c``.
-
-Python
-^^^^^^
+Install Miniconda
+^^^^^^^^^^^^^^^^^^
 1. Download Miniconda (https://docs.conda.io/en/latest/miniconda.html)
 2. Run the Miniconda installer (default options should be fine)
 
 Get IDAES
 ^^^^^^^^^
-The two main options for getting IDAES are to download the files or to clone the repository.  Cloning the repository requires a git client. For core IDAES developers or users who need to track the latest developments **and** have access to the idaes-dev repo, replace "idaes-pse" with "idaes-dev."
+The two main options for getting IDAES are to download the files or to clone the repository.
+Cloning the repository requires a git client. For core IDAES developers or users who
+need to track the latest developments **and** have access to the idaes-dev repo,
+replace "idaes-pse" with "idaes-dev."
 
 Option 1: Download from Github
 """"""""""""""""""""""""""""""
-Most users can download the release files from https://github.com/IDAES/idaes-pse/releases.  The latest development version can be downloaded by  going to https://github.com/IDAES/idaes-pse and clicking the "Clone or Download" button then clicking on "Download Zip." Unzip the files to a convenient location.
+Most users can download the release files from https://github.com/IDAES/idaes-pse/releases.
+The latest development version can be downloaded by  going to https://github.com/IDAES/idaes-pse
+and clicking the "Clone or Download" button then clicking on "Download Zip." Unzip the files to a convenient location.
 
 Option 2: Fork and Clone the Repository
 """""""""""""""""""""""""""""""""""""""
-For people who are not IDAES core developers but potentially would like to make contributions to the IDAES project or closely follow IDAES development, the best way to get the IDAES files is to fork the IDAES repo on Github, then clone the new fork. To fork the repository sign into your Github account, and go to https://github.com/IDAES/idaes-pse. Then, click the "Fork" button in the upper righthand corner of the page.
+For people who are not IDAES core developers but potentially would like to make
+contributions to the IDAES project or closely follow IDAES development, the best way
+to get the IDAES files is to fork the IDAES repo on Github, then clone the new fork.
+To fork the repository sign into your Github account, and go to https://github.com/IDAES/idaes-pse.
+Then, click the "Fork" button in the upper righthand corner of the page.
 
 To clone a repository:
 
 1. Open a command window.
 2. Go to the directory where you want to create the local repo.
-3. Enter the command (replace Github_Account with the Github account of the fork you wish to clone)
+3. Enter the command (replace "Github_Account" with the Github account of the
+   fork you wish to clone)::
 
-  - ``git clone https://github.com/Githhub_Account/idaes-pse``
+    git clone https://github.com/Githhub_Account/idaes-pse
 
 4. The clone command should create a new idaes-pse subdirectory with a local repository.
 
 IDAES Location
 """"""""""""""
-
 In the instructions that follow ``idaes_dir`` will refer to the directory containing the IDAES files.
 
 Compiling ASL
 ^^^^^^^^^^^^^
-
-The AMPL Solver Library (ASL) is required to compile some user-defined functions used in parts of the IDAES framework (mainly some property packages).
+The AMPL Solver Library (ASL) is required to compile some user-defined functions used
+in parts of the IDAES framework (mainly some property packages).
 
 1. Open the MSYS2 MinGW 64-bit terminal (go to: start menu/MSYS2 64Bit/MSYS2 MinGW 64Bit).
-2. Create a directory for complied source code in a convenient location, which will be referred to as ``src`` in these instructions.  For example (obviously change the user name and ``/c`` is the location of the C: drive in Windows) ``mkdir /c/Users/jeslick/src``.
-3. Go to the source directory (again replace src with the actual directory)
+2. Create a directory for complied source code in a convenient location, which will be
+   referred to as ``src`` in these instructions.  For example (obviously change the
+   user name and ``/c`` is the location of the C: drive in Windows) ``mkdir /c/Users/jeslick/src``.
+3. Go to the source directory (again replace src with the actual directory)::
 
- - ``cd src``
+    cd src
 
-4. Download the ASL and compile the ASL
+4. Download the ASL and compile the ASL::
 
-  - ``wget https://ampl.com/netlib/ampl/solvers.tgz``
-  - ``tar -zxvf solvers.tgz``
-  - ``cd solvers``
-  - ``./configure``
-  - ``make``
+    wget https://ampl.com/netlib/ampl/solvers.tgz
+    tar -zxvf solvers.tgz
+    cd solvers
+    ./configure
+      make
 
 Compiling IDAES AMPL Function Extensions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-IDAES uses some additional user defined AMPL functions for various purposes, but mainly for physical properties.  Before installing IDAES these functions must be compiled.
+IDAES uses some additional user defined AMPL functions for various purposes, but
+mainly for physical properties.  Before installing IDAES these functions must be
+compiled.
 
 1. Open the MSYS2 MinGW 64-bit terminal.
-2. Set the ASL_BUILD environment variable (the directory may differ depending on the architecture and replace ``.../src`` with the actual location of your src directory)
 
-  - ``export ASL_BUILD=C:/.../src/solvers/sys.x86_64.MINGW64_NT-10.0``
+2. Set the ASL_BUILD environment variable (the directory may differ depending on the
+   architecture and replace ``.../src`` with the actual location of your src directory)::
 
-3. Go to the IDAES directory (replace ``/c/idaes_dir`` with the location of the IDAES files)
+    export ASL_BUILD=C:/.../src/solvers/sys.x86_64.MINGW64_NT-10.0
 
-  - ``cd /c/idaes_dir/idaes_pse/``
+3. Go to the IDAES directory (replace ``/c/idaes_dir`` with the location
+   of the IDAES files)::
 
-4. Run make
+    cd /c/idaes_dir/idaes_pse/
 
-  - ``make``
+4. Run: ``make``
 
 If the compile finishes without errors you can proceed to installing IDAES.
 
@@ -364,26 +382,26 @@ Install IDAES
 ^^^^^^^^^^^^^
 
 1. Open the Anaconda Command prompt
-2. Create an ``idaes`` environment and activate it (optional)
+2. Create an ``idaes`` environment and activate it (optional)::
 
-  - ``conda create -n idaes python=3 pip``
-  - ``conda activate idaes``
+    conda create -n idaes "python>=3.6" pip
+    conda activate idaes
 
 .. note::
   If you are using a version of conda older than 4.4 the command on Windows to
   activate a conda environment (for example idaes) is ``activate idaes``.
 
-3. Install requirements
+3. Install requirements::
 
-  - ``pip install -r requirements.txt``
+    pip install -r requirements.txt
 
-4. Install IDAES
+4. Install IDAES::
 
-  - ``python setup.py develop``
+    python setup.py develop
 
-5. (Optional) Install IPOPT
+5. (Optional) Install IPOPT::
 
-  - ``conda install -c conda-forge ipopt``
+    conda install -c conda-forge ipopt
 
 Extras
 ^^^^^^
@@ -396,79 +414,91 @@ Most users do not need to build this documentation, but if necessary you can.  T
   1. Open the Anaconda Command prompt, and activate the IDAES environment
   2. Go to the IDAES directory
   3. Go to the docs subdirectory
-  4. Add the MSYS2 bin directory to your path temporarily.  For example, if MSYS2 is installed in the default location:
+  4. Add the MSYS2 bin directory to your path temporarily.
+     For example, if MSYS2 is installed in the default location::
 
-    - ``set Path=%Path%;C:\msys64\usr\bin``
+        set Path=%Path%;C:\msys64\usr\bin
 
-  5. Run make (from MSYS2):
+  5. Run make (from MSYS2)::
 
-    - ``make html``
+        make html
 
 The HTML documentation will be in the "build" subdirectory.
 
 Compiling IPOPT
 """""""""""""""
 
-It's not required to compile IPOPT yourself, and these are pretty much the standard IPOPT compile instructions.  If you have set up MSYS2 as above, you should be able to follow these instructions to compile IPOPT for Windows.
+It's not required to compile IPOPT yourself, and these are pretty much the standard
+IPOPT compile instructions.  If you have set up MSYS2 as above, you should be able to
+follow these instructions to compile IPOPT for Windows.
 
 1. Download IPOPT from https://www.coin-or.org/download/source/Ipopt/, and put the zip file in the ``src`` directory created above.
 2. Open the MSYS2 MinGW 64-bit terminal (go to: start menu/MSYS2 64Bit/MSYS2 MinGW 64Bit).
-3. Unzip Ipopt (the ``*`` here represents the portion of the file names with the Ipopt version information)
+3. Unzip Ipopt (the ``*`` here represents the portion of the file names with the Ipopt
+   version information)::
 
-  - ``unzip Ipopt*.zip``
-  - ``cd Ipopt*``
+    unzip Ipopt*.zip
+    cd Ipopt*
 
-4. Get third party libraries
+4. Get third party libraries::
 
-  - ``cd ThirdParty/ASL``
-  - ``./get.ASL``
-  - ``cd ../Blas``
-  - ``./get.Blas``
-  - ... and so on for all but HSL, If you have an HSL license follow the instructions in the HSL directory
+    cd ThirdParty/ASL
+    ./get.ASL
+    cd ../Blas
+    ./get.Blas
+    # and so on for all the other subdirectories except HSL.
+    # If you have an HSL license follow the instructions in the HSL directory
 
-5. Go to the IPOPT directory (replace $IPOPT_DIR with the IPOPT directory)
+5. Go to the IPOPT directory (replace $IPOPT_DIR with the IPOPT directory)::
 
-  -  ``cd $IPOPT_DIR``
-  - ``./configure``
-  - ``make``
+    cd $IPOPT_DIR
+    ./configure
+    make
 
-6. The IPOPT AMPL executable will be in ./Ipopt/src/Apps/AmplSolver/ipopt.exe, you can move the executable to a location in the path (environment variable). See Section :ref:`Modifying the Path Environment Variable <install:Modifying the Path Environment Variable>`.
+6. The IPOPT AMPL executable will be in ./Ipopt/src/Apps/AmplSolver/ipopt.exe, you
+   can move the executable to a location in the path (environment variable).
+   See :ref:`modify_path_env`.
 
+.. _modify_path_env:
 
 Modifying the Path Environment Variable
 """""""""""""""""""""""""""""""""""""""
 
-The Windows ``Path`` environment variable provides a search path for executable code and dynamically linked libraries (DLLs).  You can temporarily modify the path in a command window session or permanently modify it for the whole system.
+The Windows ``Path`` environment variable provides a search path for executable code
+and dynamically linked libraries (DLLs).  You can temporarily modify the path in a
+command window session or permanently modify it for the whole system.
 
 **Changing Path Via the Control Panel**
 
-This method will modify the path for the whole system.  Running programs especially open command windows will need to be restarted for this change to take effect.
+This method will modify the path for the whole system.  Running programs especially
+open command windows will need to be restarted for this change to take effect.
 
-Any version of Windows
+A. Any version of Windows
 
-  1. Press the "Windows Key."
-  2. Start to type "Control Panel"
-  3. Click on "Control Panel" in the start menu.
-  4. Click "System and Security."
-  5. Click "System."
-  6. Click "Advanced system settings."
-  7. Click "Environment Variables."
+    1. Press the "Windows Key."
+    2. Start to type "Control Panel"
+    3. Click on "Control Panel" in the start menu.
+    4. Click "System and Security."
+    5. Click "System."
+    6. Click "Advanced system settings."
+    7. Click "Environment Variables."
 
-In Windows 10
+B. In Windows 10
 
-  1. Press the "Windows Key."
-  2. Start to type "Environment"
-  3. Click on "Edit the system environment" in the start menu.
-  4. Click "Environment Variables."
+    1. Press the "Windows Key."
+    2. Start to type "Environment"
+    3. Click on "Edit the system environment" in the start menu.
+    4. Click "Environment Variables."
 
 **Temporary Change in Command Window**
 
-This method temporarily changes the path in just the active command window.  Once the command window is closed the change will be lost.
+This method temporarily changes the path in just the active command window.
+Once the command window is closed the change will be lost.
 
-Just set the Path variable to include and additional directories you want to add to the path.  Replace ``added_directory`` with the directory you want to add.
+Just set the Path variable to include and additional directories you want to add to
+the path.  Replace "added_directory" with the directory you want to add::
 
-  1. ``set Path=%Path%;added_directory``
-
+    set Path=%Path%;added_directory
 
 .. _install_docker:
 
