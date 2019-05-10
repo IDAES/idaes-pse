@@ -173,5 +173,3 @@ Reference
 ---------
 See the :mod:`idaes.dmf` package documentation that is generated
 automatically from the source code.
-
-.. include:: ../global.rst
