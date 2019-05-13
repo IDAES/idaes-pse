@@ -97,19 +97,29 @@ Anaconda Powershell (Prompt) or a Linux terminal, are the same.
 
 **Isolate the IDAES installation (from other Python packages)**
 
-1. Create an environment with Python = 3.6 or above: ``conda create -n myenv "python>=3.6"``
-2. Check the list of environments now available: ``conda env list``. This should list
-   base and your new environment you created "myenv".
-3. Activate the environment you created: ``conda activate myenv``.
+1. Create an environment with Python = 3.6 or above::
+
+    conda create -n myenv "python>=3.6"
+
+2. Activate the environment you created::
+
+    conda activate myenv
 
 **Install a git client**
 
-4. Install the git client: ``conda install -c anaconda git``.
+3. Install the git client::
+
+    conda install -c anaconda git
 
 **Install IPOPT**
 
-5. Run ``conda install -c conda-forge ipopt``.
-   Check if the installation worked by checking for the ipopt version: ``ipopt -v``.
+4. Install IPOPT from "conda-forge"::
+
+    conda install -c conda-forge ipopt
+
+5. Check if the installation worked by checking for the ipopt version::
+
+    ipopt -v
 
 **Download IDAES source code and install required packages**
 
@@ -119,20 +129,30 @@ Anaconda Powershell (Prompt) or a Linux terminal, are the same.
    extract the contents in any location of your choice.
 7. In the Linux terminal or Anaconda Powershell, navigate to the folder you created
    in the previous step.
-8. Install the packages required for IDAES using the following command:
-   ``pip install -r requirements.txt``.
+8. Install the packages required for IDAES using the following command::
+
+    pip install -r requirements.txt
 
 **Install IDAES**
 
-9. In the folder where the idaes source code was downloaded, run the *setup.py*
-    file: ``python setup.py develop``
-10. Run tests on unit models: ``pytest idaes/unit_models``.
+9. In the folder where the idaes source code was downloaded, run the *setup.py* file::
+
+    python setup.py develop
+
+10. Run tests on unit models::
+
+    pytest idaes/unit_models
+
 11. You should see the tests run and all should pass to ensure the installation worked.
     You can report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
     (Please try to be specific about the command and the offending output.)
 12. Launch the Jupyter Notebook
 
-    a. Navigate to `examples` and run Jupyter notebook: ``jupyter notebook``
+    a. Navigate to `examples` and run Jupyter notebook::
+
+            cd examples
+            jupyter notebook
+
     b. Open a web browser to the URL that is printed from the previous command.
 
 
