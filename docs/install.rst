@@ -64,7 +64,7 @@ Minimal install with IPOPT/MUMPS for Windows
 
 **Install Anaconda**
 
-1. Download: https://repo.anaconda.com/miniconda/Miniconda2-latest-Windows-x86_64.exe
+1. Download: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
 2. Install anaconda from the downloaded file in (1).
 3. Open the Windows powershell.
 4. Follow the :ref:`min_install_generic` instructions.
@@ -76,7 +76,7 @@ Minimal install with IPOPT/MUMPS for Linux
 
 **Install Anaconda**
 
-1. Download: https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+1. Download: https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 2. For the next steps, open a terminal window
 3. Run the script you downloaded: ``sh Miniconda2-latest-Linux-x86_64.sh``
 4. Follow the :ref:`min_install_generic` instructions.
