@@ -65,22 +65,22 @@ if (results.solver.termination_condition == TerminationCondition.optimal
 else:
     print("Simple Model Check:         FAILED")
 
-# -----------------------------------------------------------------------------
-# Test module imports
-try:
-    import hda_ideal_VLE as thermo_props
-    import hda_kinetics as reaction_props
-    import idaes.property_models.ideal.BTX_ideal_VLE as ideal_props
-
-    print("Module Availability Check:  Passed")
-    check_count += 1
-except:
-    print("Module Availability Check:  FAILED")
+## -----------------------------------------------------------------------------
+## Test module imports
+#try:
+#    import hda_ideal_VLE as thermo_props
+#    import hda_kinetics as reaction_props
+#    import idaes.property_models.ideal.BTX_ideal_VLE as ideal_props
+#
+#    print("Module Availability Check:  Passed")
+#    check_count += 1
+#except:
+#    print("Module Availability Check:  FAILED")
 
 # -----------------------------------------------------------------------------
 # Summary
 print()
-if check_count == 5:
+if check_count == 4:
     print("All Good!")
 else:
     print("Something is not right. Please contact someone for assistance.")
