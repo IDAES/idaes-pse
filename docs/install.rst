@@ -9,7 +9,7 @@ set of instructions below that are appropriate for your needs and operating syst
 
 If you get stuck, please contact `idaes-support@idaes.org <idaes-support@idaes.org>`_.
 
-The minimal installation only installs the free IPOPT_ solver with MUMPS_.
+The minimal installation only installs IDAES and the free IPOPT_ solver with MUMPS_.
 The full installation is recommended for access to more advanced solvers.
 The Docker_ installation works on any platform that supports Docker, but
 of course requires installation of, and some understanding of, Docker itself
@@ -495,7 +495,7 @@ B. In Windows 10
 This method temporarily changes the path in just the active command window.
 Once the command window is closed the change will be lost.
 
-Just set the Path variable to include and additional directories you want to add to
+Just set the Path variable to include any additional directories you want to add to
 the path.  Replace "added_directory" with the directory you want to add::
 
     set Path=%Path%;added_directory
