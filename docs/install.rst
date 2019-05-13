@@ -141,7 +141,7 @@ Anaconda Powershell (Prompt) or a Linux terminal, are the same.
 
 10. Run tests on unit models::
 
-    pytest idaes/unit_models
+     pytest idaes/unit_models
 
 11. You should see the tests run and all should pass to ensure the installation worked.
     You can report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
