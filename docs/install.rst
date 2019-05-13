@@ -66,8 +66,8 @@ Minimal install with IPOPT/MUMPS for Windows
 
 1. Download: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
 2. Install anaconda from the downloaded file in (1).
-3. Open the Windows powershell.
-4. Follow the :ref:`min_install_generic` instructions.
+3. Open the Anaconda powershell (Start -> "Anaconda Powershell Prompt").
+4. In the Anaconda Powershell, follow the :ref:`min_install_generic` instructions.
 
 .. _min_install_linux:
 
@@ -107,9 +107,12 @@ powershell or Linux terminal, are the same.
 
 **Download IDAES source code and install required packages**
 
-6. Download the idaes-pse (https://github.com/IDAES/idaes-pse) as a zip folder.
-   Extract the contents in any location of your choice.
-7. Navigate to that folder.
+6. Go to the idaes-pse releases page, https://github.com/IDAES/idaes-pse/releases/, and
+   look at the most recent release. Under the
+   section labeled "Assets" there will be a zip file. Download that file and
+   extract the contents in any location of your choice.
+7. In the Linux terminal or Anaconda Powershell, navigate to the folder you created
+   in the previous step.
 8. Install the packages required for IDAES using the following command:
    ``pip install -r requirements.txt``.
 
