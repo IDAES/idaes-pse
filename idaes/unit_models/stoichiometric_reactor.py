@@ -172,7 +172,8 @@ see reaction package for documentation.}"""))
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
-            has_heat_transfer=self.config.has_heat_transfer)
+            has_heat_transfer=self.config.has_heat_transfer,
+            has_heat_of_reaction=self.config.has_heat_of_reaction)
 
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
