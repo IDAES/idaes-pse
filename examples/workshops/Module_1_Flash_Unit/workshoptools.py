@@ -1,3 +1,16 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
+
 from pyomo.environ import value, TerminationCondition, SolverStatus
 from pyomo.core.base.var import IndexedVar
 
@@ -18,7 +31,7 @@ def print_ports_summary(ports):
 
             varname_set.add(vname)
             var = prt.vars[vname]
-        
+
             for k in var.keys():
                 vars_idxs.append((vname, k, '{}[{}]'.format(vname, k)))
     vname_len = max([len(vidx[2]) for vidx in vars_idxs])
@@ -41,5 +54,3 @@ def print_ports_summary(ports):
         for prt in ports:
             print('{0:{1}f}'.format(value(prt.vars[vname][idx]), len(prt.name)), end='\t')
         print()
-
-    
