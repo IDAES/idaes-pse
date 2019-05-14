@@ -16,11 +16,8 @@ Utility functions.
 # stdlib
 import importlib
 import json
-try:  # sigh.. I hate that we have to support Python 2
-    from json import JSONDecodeError
-except ImportError:
-    # Python 2
-    JSONDecodeError = Exception
+
+from json import JSONDecodeError
 import logging
 import os
 import re
@@ -83,8 +80,10 @@ def get_module_version(mod):
         return None
     pat = r'\d+\.\d+\.\d+.*'
     if not re.match(pat, v):
-        raise ValueError('Version "{}" does not match regular expression '
-                         'pattern "{}"'.format(v, pat))
+        raise ValueError(
+            'Version "{}" does not match regular expression '
+            'pattern "{}"'.format(v, pat)
+        )
     return v
 
 
@@ -104,6 +103,7 @@ def get_module_author(mod):
 class TempDir(object):
     """Simple context manager for mkdtemp().
     """
+
     def __init__(self, *args):
         self._d = None
         self._a = args
@@ -212,18 +212,21 @@ class CPrint(object):
     You can use the same class as a no-op by just passing `color=False` to
     the constructor.
     """
-    COLORS = {'h': '\033[1m\033[95m',
-              'r': '\033[91m',
-              'g': '\033[92m',
-              'y': '\033[93m',
-              'b': '\033[94m',
-              'm': '\033[95m',
-              'c': '\033[96m',
-              'w': '\033[97m',
-              '.': '\033[0m',
-              '*': '\033[1m',
-              '-': '\033[2m',
-              '_': '\033[4m'}
+
+    COLORS = {
+        'h': '\033[1m\033[95m',
+        'r': '\033[91m',
+        'g': '\033[92m',
+        'y': '\033[93m',
+        'b': '\033[94m',
+        'm': '\033[95m',
+        'c': '\033[96m',
+        'w': '\033[97m',
+        '.': '\033[0m',
+        '*': '\033[1m',
+        '-': '\033[2m',
+        '_': '\033[4m',
+    }
 
     _styled = re.compile(r'@([*_-]?[hbgyrwcm*_-])\[([^]]*)\]')
 
@@ -257,7 +260,7 @@ class CPrint(object):
                 stop = self.COLORS['.']
             x, y = m.span()
             chunks.append(s[last:x])  # text since last found piece
-            chunks.append(c + s[x + 2 + clen:y - 1] + stop)  # colorized
+            chunks.append(c + s[x + 2 + clen : y - 1] + stop)  # colorized
             last = y
         chunks.append(s[last:])  # to end of string
         return ''.join(chunks)
@@ -285,3 +288,19 @@ def mkdir_p(path, *args):
         dir_name = os.path.join(dir_name, p)
         if not os.path.exists(dir_name):
             os.mkdir(dir_name, *args)
+
+
+def uuid_prefix_len(uuids, step=4, maxlen=32):
+    """Get smallest multiple of `step` len prefix that gives unique values.
+
+    The algorithm is not fancy, but good enough: build *sets* of
+    the ids at increasing prefix lengths until the set has all ids (no duplicates).
+    Experimentally this takes ~.1ms for 1000 duplicate ids (the worst case).
+    """
+    full = set(uuids)
+    all_of_them = len(full)
+    for n in range(step, maxlen, step):
+        prefixes = {u[:n] for u in uuids}
+        if len(prefixes) == all_of_them:
+            return n
+    return maxlen

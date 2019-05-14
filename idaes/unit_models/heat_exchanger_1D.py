@@ -218,6 +218,14 @@ thickness of the tube"""))
         if self.config.flow_type == HeatExchangerFlowPattern.cocurrent:
             set_direction_shell = FlowDirection.forward
             set_direction_tube = FlowDirection.forward
+            if (self.config.shell_side.transformation_method !=
+                self.config.tube_side.transformation_method) or \
+                (self.config.shell_side.transformation_scheme !=
+                    self.config.tube_side.transformation_scheme):
+                raise ConfigurationError(
+                    "HeatExchanger1D only supports similar transformation "
+                    "schemes on the shell side and tube side domains for "
+                    "both cocurrent and countercurrent flow patterns.")
             if self.config.shell_side.transformation_method is useDefault:
                 _log.warning("Discretization method was "
                              "not specified for the shell side of the "
@@ -280,7 +288,7 @@ thickness of the tube"""))
                              "counter-current heat exchanger. "
                              "Defaulting to forward finite "
                              "difference on the tube side.")
-                self.config.tube_side.transformation_scheme = "FORWARD"
+                self.config.tube_side.transformation_scheme = "BACKWARD"
         else:
             raise ConfigurationError(
                     "{} HeatExchanger1D only supports cocurrent and "
@@ -295,14 +303,22 @@ thickness of the tube"""))
             "has_holdup": self.config.shell_side.has_holdup,
             "property_package": self.config.shell_side.property_package,
             "property_package_args":
-                self.config.shell_side.property_package_args})
+                self.config.shell_side.property_package_args,
+            "transformation_method": self.config.shell_side.transformation_method,
+            "transformation_scheme": self.config.shell_side.transformation_scheme,
+            "finite_elements": self.config.finite_elements,
+            "collocation_points": self.config.collocation_points})
 
         self.tube = ControlVolume1DBlock(default={
             "dynamic": self.config.tube_side.dynamic,
             "has_holdup": self.config.tube_side.has_holdup,
             "property_package": self.config.tube_side.property_package,
             "property_package_args":
-                self.config.tube_side.property_package_args})
+                self.config.tube_side.property_package_args,
+            "transformation_method": self.config.tube_side.transformation_method,
+            "transformation_scheme": self.config.tube_side.transformation_scheme,
+            "finite_elements": self.config.finite_elements,
+            "collocation_points": self.config.collocation_points})
 
         self.shell.add_geometry(flow_direction=set_direction_shell)
         self.tube.add_geometry(flow_direction=set_direction_tube)
@@ -327,11 +343,7 @@ thickness of the tube"""))
             balance_type=self.config.shell_side.momentum_balance_type,
             has_pressure_change=self.config.shell_side.has_pressure_change)
 
-        self.shell.apply_transformation(
-            transformation_method=self.config.shell_side.transformation_method,
-            transformation_scheme=self.config.shell_side.transformation_scheme,
-            finite_elements=self.config.finite_elements,
-            collocation_points=self.config.collocation_points)
+        self.shell.apply_transformation()
 
         # Populate tube
         self.tube.add_material_balances(
@@ -346,11 +358,7 @@ thickness of the tube"""))
             balance_type=self.config.tube_side.momentum_balance_type,
             has_pressure_change=self.config.tube_side.has_pressure_change)
 
-        self.tube.apply_transformation(
-            transformation_method=self.config.tube_side.transformation_method,
-            transformation_scheme=self.config.tube_side.transformation_scheme,
-            finite_elements=self.config.finite_elements,
-            collocation_points=self.config.collocation_points)
+        self.tube.apply_transformation()
 
         # Add Ports for shell side
         self.add_inlet_port(name="shell_inlet", block=self.shell)
@@ -400,12 +408,12 @@ thickness of the tube"""))
         # "tube_length" need to be fixed at the flowsheet level
 
         # Performance variables
-        self.shell_heat_transfer_coefficient = Var(self.time_ref,
-                                                   self.shell.length_domain,
-                                                   initialize=50,
-                                                   doc="Heat transfer "
-                                                   "coefficient")
-        self.tube_heat_transfer_coefficient = Var(self.time_ref,
+        self.shell_heat_transfer_coefficient = Var(
+                self.flowsheet().config.time,
+                self.shell.length_domain,
+                initialize=50,
+                doc="Heat transfer coefficient")
+        self.tube_heat_transfer_coefficient = Var(self.flowsheet().config.time,
                                                   self.tube.length_domain,
                                                   initialize=50,
                                                   doc="Heat transfer "
@@ -414,13 +422,15 @@ thickness of the tube"""))
         # Wall 0D model (Q_shell = Q_tube*N_tubes)
         if (self.config.has_wall_conduction ==
                 WallConductionType.zero_dimensional):
-            self.temperature_wall = Var(self.time_ref, self.tube.length_domain,
+            self.temperature_wall = Var(self.flowsheet().config.time,
+                                        self.tube.length_domain,
                                         initialize=298.15)
 
             # Performance equations
             # Energy transfer between shell and tube wall
 
-            @self.Constraint(self.time_ref, self.shell.length_domain,
+            @self.Constraint(self.flowsheet().config.time,
+                             self.shell.length_domain,
                              doc="Heat transfer between shell and tube")
             def shell_heat_transfer_eq(self, t, x):
                 return self.shell.heat[t, x] == - self.N_tubes *\
@@ -430,7 +440,8 @@ thickness of the tube"""))
                       self.temperature_wall[t, x]))
 
             # Energy transfer between tube wall and tube
-            @self.Constraint(self.time_ref, self.tube.length_domain,
+            @self.Constraint(self.flowsheet().config.time,
+                             self.tube.length_domain,
                              doc="Convective heat transfer")
             def tube_heat_transfer_eq(self, t, x):
                 return self.tube.heat[t, x] == \
@@ -440,7 +451,8 @@ thickness of the tube"""))
                      self.tube.properties[t, x].temperature)
 
             # Wall 0D model
-            @self.Constraint(self.time_ref, self.shell.length_domain,
+            @self.Constraint(self.flowsheet().config.time,
+                             self.shell.length_domain,
                              doc="wall 0D model")
             def wall_0D_model(self, t, x):
                 return self.tube.heat[t, x] == -(self.shell.heat[t, x] /
@@ -514,7 +526,7 @@ thickness of the tube"""))
         # Wall 0D
         if blk.config.has_wall_conduction == \
                 WallConductionType.zero_dimensional:
-            for t in blk.time_ref:
+            for t in blk.flowsheet().config.time:
                 for z in blk.shell.length_domain:
                     blk.temperature_wall[t, z].fix(value(
                         0.5 * (blk.shell.properties[t, 0].temperature +

@@ -172,7 +172,8 @@ see reaction package for documentation.}"""))
 
         self.control_volume.add_energy_balances(
             balance_type=self.config.energy_balance_type,
-            has_heat_transfer=self.config.has_heat_transfer)
+            has_heat_transfer=self.config.has_heat_transfer,
+            has_heat_of_reaction=self.config.has_heat_of_reaction)
 
         self.control_volume.add_momentum_balances(
             balance_type=self.config.momentum_balance_type,
@@ -183,12 +184,6 @@ see reaction package for documentation.}"""))
         self.add_outlet_port()
 
         # Add performance equations
-        add_object_reference(self,
-                             "component_list_ref",
-                             self.control_volume.component_list_ref)
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.control_volume.phase_list_ref)
         add_object_reference(self,
                              "rate_reaction_idx_ref",
                              self.config.reaction_package.rate_reaction_idx)

@@ -81,8 +81,8 @@ see property package for documentation.}"""))
         super(StateJunctionData, self).build()
 
         self.properties = \
-                self.config.property_package.state_block_class(
-                        self.time_ref,
+            self.config.property_package.state_block_class(
+                        self.flowsheet().config.time,
                         doc="Material properties",
                         default={"has_phase_equilibrium": False,
                                  "parameters": self.config.property_package,
@@ -100,8 +100,8 @@ see property package for documentation.}"""))
     def initialize(blk, state_args={}, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
-        This method initializes the StateJunction block by calling the initialize method
-        on the property block.
+        This method initializes the StateJunction block by calling the
+        initialize method on the property block.
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property

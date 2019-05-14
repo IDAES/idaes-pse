@@ -228,10 +228,7 @@ def test_base_build():
     assert len(m.fs.cv.config.reaction_package_args) == 0
     assert m.fs.cv.config.auto_construct is False
 
-    assert hasattr(m.fs.cv, "time_ref")
-    assert hasattr(m.fs.cv, "phase_list_ref")
-    assert hasattr(m.fs.cv, "component_list_ref")
-
+    assert hasattr(m.fs.config, "time")
 
 # -----------------------------------------------------------------------------
 # Test add_geometry
@@ -713,7 +710,6 @@ def test_add_phase_component_balances_rate_rxns():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
     assert isinstance(m.fs.cv.rate_reaction_generation, Var)
-    assert isinstance(m.fs.cv.rate_reaction_idx_ref, Set)
     assert isinstance(m.fs.cv.rate_reaction_extent, Var)
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
@@ -769,7 +765,6 @@ def test_add_phase_component_balances_eq_rxns():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
     assert isinstance(m.fs.cv.equilibrium_reaction_generation, Var)
-    assert isinstance(m.fs.cv.equilibrium_reaction_idx_ref, Set)
     assert isinstance(m.fs.cv.equilibrium_reaction_extent, Var)
     assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
                       Constraint)
@@ -842,7 +837,8 @@ def test_add_phase_component_balances_phase_eq():
     assert isinstance(mb, Constraint)
     assert len(mb) == 4
     assert isinstance(m.fs.cv.phase_equilibrium_generation, Var)
-    assert isinstance(m.fs.cv.phase_equilibrium_idx_ref, Set)
+    assert isinstance(m.fs.cv.config.property_package.phase_equilibrium_idx,
+                      Set)
 
 
 def test_add_phase_component_balances_phase_eq_not_active():
@@ -913,9 +909,9 @@ def test_add_phase_component_balances_custom_molar_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-                           m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.phase_list,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -940,9 +936,9 @@ def test_add_phase_component_balances_custom_molar_term_no_mw():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-                           m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.phase_list,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -965,9 +961,9 @@ def test_add_phase_component_balances_custom_molar_term_mass_flow_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-                           m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.phase_list,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -996,9 +992,9 @@ def test_add_phase_component_balances_custom_molar_term_undefined_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-                           m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.phase_list,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1021,9 +1017,9 @@ def test_add_phase_component_balances_custom_mass_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-                           m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.phase_list,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1048,9 +1044,9 @@ def test_add_phase_component_balances_custom_mass_term_no_mw():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-                           m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.phase_list,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1073,9 +1069,9 @@ def test_add_phase_component_balances_custom_mass_term_mole_flow_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-                           m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.phase_list,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1104,9 +1100,9 @@ def test_add_phase_component_balances_custom_mass_term_undefined_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref,
-                           m.fs.cv.phase_list_ref,
-                           m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.phase_list,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, p, j):
         return m.fs.cv.test_var[t, p, j]
@@ -1194,7 +1190,6 @@ def test_add_total_component_balances_rate_rxns():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
     assert isinstance(m.fs.cv.rate_reaction_generation, Var)
-    assert isinstance(m.fs.cv.rate_reaction_idx_ref, Set)
     assert isinstance(m.fs.cv.rate_reaction_extent, Var)
     assert isinstance(m.fs.cv.rate_reaction_stoichiometry_constraint,
                       Constraint)
@@ -1250,7 +1245,6 @@ def test_add_total_component_balances_eq_rxns():
     assert isinstance(mb, Constraint)
     assert len(mb) == 2
     assert isinstance(m.fs.cv.equilibrium_reaction_generation, Var)
-    assert isinstance(m.fs.cv.equilibrium_reaction_idx_ref, Set)
     assert isinstance(m.fs.cv.equilibrium_reaction_extent, Var)
     assert isinstance(m.fs.cv.equilibrium_reaction_stoichiometry_constraint,
                       Constraint)
@@ -1355,7 +1349,8 @@ def test_add_total_component_balances_custom_molar_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1380,7 +1375,8 @@ def test_add_total_component_balances_custom_molar_term_no_mw():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1403,7 +1399,8 @@ def test_add_total_component_balances_custom_molar_term_mass_flow_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1432,7 +1429,8 @@ def test_add_total_component_balances_custom_molar_term_undefined_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1455,7 +1453,8 @@ def test_add_total_component_balances_custom_mass_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1480,7 +1479,8 @@ def test_add_total_component_balances_custom_mass_term_no_mw():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1503,7 +1503,8 @@ def test_add_total_component_balances_custom_mass_term_mole_flow_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1532,7 +1533,8 @@ def test_add_total_component_balances_custom_mass_term_undefined_basis():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.cv.component_list_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.cv.config.property_package.component_list)
 
     def custom_method(t, j):
         return m.fs.cv.test_var[t, j]
@@ -1649,60 +1651,8 @@ def test_add_total_element_balances_eq_rxns():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=True)
 
-    mb = m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
-
-    assert isinstance(mb, Constraint)
-    assert len(mb) == 3
-    assert isinstance(m.fs.cv.equilibrium_reaction_idx_ref, Set)
-
-
-def test_add_total_element_balances_eq_rxns_not_active():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
     with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
-
-
-def test_add_total_element_balances_eq_rxns_no_idx():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-    m.fs.rp.del_component(m.fs.rp.equilibrium_reaction_idx)
-
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
-
-    with pytest.raises(PropertyNotSupportedError):
-        m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
-
-
-def test_add_total_element_balances_eq_rxns_no_ReactionBlock():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
+        mb = m.fs.cv.add_total_element_balances(has_equilibrium_reactions=True)
 
 
 def test_add_total_element_balances_phase_eq():
@@ -1718,45 +1668,7 @@ def test_add_total_element_balances_phase_eq():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    mb = m.fs.cv.add_total_element_balances(has_phase_equilibrium=True)
-
-    assert isinstance(mb, Constraint)
-    assert len(mb) == 3
-    assert isinstance(m.fs.cv.phase_equilibrium_idx_ref, Set)
-
-
-def test_add_total_element_balances_phase_eq_not_active():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
     with pytest.raises(ConfigurationError):
-        m.fs.cv.add_total_element_balances(has_phase_equilibrium=True)
-
-
-def test_add_total_element_balances_phase_eq_no_idx():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
-
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
-    with pytest.raises(PropertyNotSupportedError):
         m.fs.cv.add_total_element_balances(has_phase_equilibrium=True)
 
 
@@ -1793,7 +1705,8 @@ def test_add_total_element_balances_custom_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref, m.fs.pp.element_list)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time,
+                           m.fs.pp.element_list)
 
     def custom_method(t, e):
         return m.fs.cv.test_var[t, e]
@@ -1939,7 +1852,7 @@ def test_add_total_enthalpy_balances_custom_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time)
 
     def custom_method(t):
         return m.fs.cv.test_var[t]
@@ -2112,7 +2025,7 @@ def test_add_total_pressure_balances_custom_term():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    m.fs.cv.test_var = Var(m.fs.cv.time_ref)
+    m.fs.cv.test_var = Var(m.fs.cv.flowsheet().config.time)
 
     def custom_method(t):
         return m.fs.cv.test_var[t]

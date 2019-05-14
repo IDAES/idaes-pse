@@ -49,7 +49,7 @@ kwargs = dict(
     data_files=[],
     keywords=[NAME, "energy systems"],
     classifiers=[
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
