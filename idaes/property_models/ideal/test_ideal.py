@@ -128,9 +128,9 @@ def test_solve():
 
     # Check for VLE results
     assert value(m.fs.state_block_vl.mole_frac_phase['Liq', 'benzene']) == \
-        pytest.approx(0.4121, abs=1e-3)
+        pytest.approx(0.4215, abs=1e-3)
     assert value(m.fs.state_block_vl.mole_frac_phase['Vap', 'benzene']) == \
-        pytest.approx(0.6339, abs=1e-3)
+        pytest.approx(0.643, abs=1e-3)
 
     # liquid only
     m.fs.state_block_l.initialize()
@@ -163,22 +163,22 @@ def test_solve():
 
 def test_bubbleT_inlet_state_blocks():
     assert m.fs.state_block_vl.calculate_bubble_point_temperature() == \
-        pytest.approx(365.347, abs=1e-2)
+        pytest.approx(365.64, abs=1e-2)
 
 
 def test_dewT_inlet_state_blocks():
     assert m.fs.state_block_vl.calculate_dew_point_temperature() == \
-        pytest.approx(372.02, abs=1e-2)
+        pytest.approx(372.31, abs=1e-2)
 
 
 def test_bubbleP_inlet_state_blocks():
     assert m.fs.state_block_vl.calculate_bubble_point_pressure() == \
-        pytest.approx(109479.22, abs=1e-2)
+        pytest.approx(108600, abs=1e3)
 
 
 def test_dewP_inlet_state_blocks():
     assert m.fs.state_block_vl.calculate_dew_point_pressure() == \
-        pytest.approx(89819.72, abs=1e-2)
+        pytest.approx(89000, abs=1e3)
 
 
 # Create a flowsheet object to test outlet state blocks
