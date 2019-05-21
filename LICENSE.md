@@ -1,3 +1,6 @@
+License
+=======
+
 Institute for the Design of Advanced Energy Systems Process Systems Engineering
 Framework (IDAES PSE Framework) Copyright (c) 2019, by the software owners: The
 Regents of the University of California, through Lawrence Berkeley National

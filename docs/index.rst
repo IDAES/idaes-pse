@@ -54,6 +54,7 @@ Contents
     developer/index
     Modules <apidoc/modules>
     glossary
+    license
     copyright
 
 Indices and tables
