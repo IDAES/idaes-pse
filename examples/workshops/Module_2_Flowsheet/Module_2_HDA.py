@@ -138,10 +138,10 @@ def main():
 
     m.fs.H101.outlet.temperature.fix(600)
 
-    m.fs.R101.conversion = Var(initialize=0.7, bounds=(0, 1))
+    m.fs.R101.conversion = Var(initialize=0.75, bounds=(0, 1))
 
     m.fs.R101.conv_constraint = Constraint(
-        expr=m.fs.R101.conversion*m.fs.R101.inlet.
+        expr=m.fs.R101.conversion * m.fs.R101.inlet.
         flow_mol_phase_comp[0, "Vap", "toluene"] ==
         (m.fs.R101.inlet.flow_mol_phase_comp[0, "Vap", "toluene"] -
          m.fs.R101.outlet.flow_mol_phase_comp[0, "Vap", "toluene"]))
@@ -149,7 +149,7 @@ def main():
     m.fs.R101.conversion.fix(0.75)
     m.fs.R101.heat_duty.fix(0)
 
-    m.fs.F101.vap_outlet.temperature.fix(300.0)
+    m.fs.F101.vap_outlet.temperature.fix(325.0)
     m.fs.F101.deltaP.fix(0)
 
     m.fs.S101.split_fraction[0, "purge"].fix(0.2)
@@ -261,17 +261,17 @@ def main():
     m.fs.H101.outlet.temperature[0].setub(600)
     m.fs.R101.outlet.temperature[0].setlb(600)
     m.fs.R101.outlet.temperature[0].setub(800)
-    m.fs.F101.vap_outlet.temperature[0].setlb(300.0)
+    m.fs.F101.vap_outlet.temperature[0].setlb(298.0)
     m.fs.F101.vap_outlet.temperature[0].setub(450.0)
-    m.fs.F102.vap_outlet.temperature[0].setlb(273.0)
+    m.fs.F102.vap_outlet.temperature[0].setlb(298.0)
     m.fs.F102.vap_outlet.temperature[0].setub(450.0)
     m.fs.F102.vap_outlet.pressure[0].setlb(105000)
     m.fs.F102.vap_outlet.pressure[0].setub(110000)
 
     # Additional Constraints
     m.fs.overhead_loss = Constraint(
-        expr=m.fs.S101.purge.flow_mol_phase_comp[0, "Vap", "benzene"] <=
-        0.05*m.fs.R101.outlet.flow_mol_phase_comp[0, "Vap", "benzene"])
+        expr=m.fs.F101.vap_outlet.flow_mol_phase_comp[0, "Vap", "benzene"] <=
+        0.20 * m.fs.R101.outlet.flow_mol_phase_comp[0, "Vap", "benzene"])
 
     m.fs.product_flow = Constraint(
         expr=m.fs.F102.vap_outlet.flow_mol_phase_comp[0, "Vap", "benzene"] >=
