@@ -34,6 +34,7 @@ from pyomo.opt import SolverFactory
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
+                        MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock)
@@ -186,7 +187,7 @@ class _StateBlock(StateBlock):
                     else:
                         blk[k].flow_vol.fix(flow_vol)
 
-                for j in blk[k].component_list_ref:
+                for j in blk[k]._params.component_list:
                     if blk[k].conc_mol_comp[j].fixed is True:
                         Cflag[k, j] = True
                     else:
@@ -265,7 +266,7 @@ class _StateBlock(StateBlock):
         for k in blk.keys():
             if flags['Fflag'][k] is False:
                 blk[k].flow_vol.unfix()
-            for j in blk[k].component_list_ref:
+            for j in blk[k]._params.component_list:
                 if flags['Cflag'][k, j] is False:
                     blk[k].conc_mol_comp[j].unfix()
             if flags['Pflag'][k] is False:
@@ -292,33 +293,6 @@ class SaponificationStateBlockData(StateBlockData):
         """
         super(SaponificationStateBlockData, self).build()
 
-        # Create references to package parameters
-        # List of valid phases in property package
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.config.parameters.phase_list)
-
-        # Component list - a list of component identifiers
-        add_object_reference(self,
-                             "component_list_ref",
-                             self.config.parameters.component_list)
-
-        # Heat capacity - no _ref ending as this is the actual property
-        add_object_reference(self,
-                             "cp_mol",
-                             self.config.parameters.cp_mol)
-
-        # Density - no _ref ending as this is the actual property
-        add_object_reference(self,
-                             "dens_mol",
-                             self.config.parameters.dens_mol)
-
-        # Thermodynamic reference state
-        add_object_reference(self, "pressure_ref_ref",
-                             self.config.parameters.pressure_ref)
-        add_object_reference(self, "temperature_ref_ref",
-                             self.config.parameters.temperature_ref)
-
         # Create state variables
         self.flow_vol = Var(initialize=1.0,
                             domain=NonNegativeReals,
@@ -331,7 +305,7 @@ class SaponificationStateBlockData(StateBlockData):
                                initialize=298.15,
                                bounds=(298.15, 323.15),
                                doc='State temperature [K]')
-        self.conc_mol_comp = Var(self.component_list_ref,
+        self.conc_mol_comp = Var(self._params.component_list,
                                  domain=NonNegativeReals,
                                  initialize=100.0,
                                  doc='Component molar concentrations '
@@ -339,26 +313,30 @@ class SaponificationStateBlockData(StateBlockData):
 
         if self.config.defined_state is False:
             self.conc_water_eqn = Constraint(expr=self.conc_mol_comp["H2O"] ==
-                                             self.dens_mol)
+                                             self._params.dens_mol)
 
     def get_material_flow_terms(b, p, j):
         return b.flow_vol*b.conc_mol_comp[j]
 
     def get_enthalpy_flow_terms(b, p):
-        return (b.flow_vol*b.dens_mol*b.cp_mol *
-                (b.temperature - b.temperature_ref_ref))
+        return (b.flow_vol*b._params.dens_mol*b._params.cp_mol *
+                (b.temperature - b._params.temperature_ref))
 
     def get_material_density_terms(b, p, j):
         return b.conc_mol_comp[j]
 
     def get_enthalpy_density_terms(b, p):
-        return b.dens_mol*b.cp_mol*(b.temperature - b.temperature_ref_ref)
+        return b._params.dens_mol*b._params.cp_mol*(
+                b.temperature - b._params.temperature_ref)
 
     def define_state_vars(b):
         return {"flow_vol": b.flow_vol,
                 "conc_mol_comp": b.conc_mol_comp,
                 "temperature": b.temperature,
                 "pressure": b.pressure}
+
+    def get_material_flow_basis(b):
+        return MaterialFlowBasis.molar
 
     def model_check(blk):
         """

@@ -1,3 +1,15 @@
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes-pse".
+##############################################################################
 """
 This module implements pytest plugin for Sphinx doc tests.
 
@@ -43,6 +55,7 @@ SPHINX_BUILD = "sphinx-build"
 
 g_sphinx_warn_file = None
 
+
 def pytest_collect_file(parent, path):
     global g_sphinx_warn_file
     if path.ext == "" and path.basename == "Makefile":
@@ -53,6 +66,7 @@ def pytest_collect_file(parent, path):
     elif g_sphinx_warn_file is not None and path.basename == g_sphinx_warn_file:
         return SphinxWarnings(path, parent)
 
+
 def file_contains(s, path):
     result = False
     with open(path) as f:
@@ -62,10 +76,12 @@ def file_contains(s, path):
                 break
     return result
 
+
 class SphinxWarnings(pytest.File):
     def collect(self):
         path = pathlib.Path(self.fspath)  # convert to std
         yield SphinxWarningsItem('Sphinx warnings', self, path)
+
 
 class SphinxWarningsItem(pytest.Item):
     def __init__(self, name, parent, path: pathlib.Path):
@@ -88,6 +104,7 @@ class SphinxWarningsItem(pytest.Item):
         summary = f"Sphinx doc warnings in {self._path}"
         return f"doc build warnings in {self._path}", 0, summary
 
+
 class SphinxMakefile(pytest.File):
 
     # simple way to find variables in a Makefile
@@ -109,7 +126,7 @@ class SphinxMakefile(pytest.File):
                 s = line.strip()
                 # look for definition of Sphinx options
                 if s.startswith("SPHINXOPTS"):
-                    opts = s[s.find('=') + 1:].strip()
+                    opts = s[s.find('=') + 1 :].strip()
                     # return value of '-w' option, if found
                     m = re.match("-w\s*['\"]?([^\"' \t]+)", opts)
                     return m.group(1) if m else None
@@ -185,6 +202,9 @@ class SphinxDoctestItem(pytest.Item):
     def runtest(self):
         """Run the Sphinx doctest.
         """
+        self._insert_items_at = self._sess.items.index(self) + 1
+        #  print(f"\n@@ SphinxDoctestItem.run(): session items: {self._sess.items}.\n"
+        #      f"Insert at: {self._insert_items_at}\n")
         if self.__executed:
             return
         self.__executed = True
@@ -194,12 +214,14 @@ class SphinxDoctestItem(pytest.Item):
             os.chdir(self.wd)
             args = self.cmd.split()
             try:
-                # print(f"Running [{self.cmd}] from dir {self.wd}")
-                proc = subprocess.Popen(
-                    args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                proc = subprocess.run(
+                    args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=300,
+                    encoding='utf-8',
                 )
                 self._parse_output(proc.stdout)
-                proc.wait()
             except Exception as exc:
                 print(f"Unexpected failure in Sphinx doctest command: {exc}")
                 raise SphinxCommandFailed(self.cmd, str(exc))
@@ -219,7 +241,7 @@ class SphinxDoctestItem(pytest.Item):
         summary = f"Sphinx doctests in {self.wd}"
         return f"doctests in {self.wd}", 0, summary
 
-    def _parse_output(self, input_stream):
+    def _parse_output(self, output):
         """Parse output of Sphinx doctest.
         """
 
@@ -239,9 +261,9 @@ class SphinxDoctestItem(pytest.Item):
 
         state, failed_msg = "ok", ""
         cur_doc, n_passed, n_failed = "", -1, -1
-        for line_bytes in input_stream:
-            line = line_bytes.decode('utf-8').rstrip()
-            #print(line)
+        for line in output.split('\n'):
+            line = line.rstrip()
+            # print(f"@@ doctest: {line}")
             try:
                 if state == "ok":
                     if line.startswith('****'):
@@ -275,26 +297,31 @@ class SphinxDoctestItem(pytest.Item):
             except Exception as exc:
                 print(f"Parse error on line '{line}' :: {exc}")
                 raise
+        # print(f"@@ done doctest output")
 
     def tests_ok(self, context, num):
-        #print(f"Tests in {context}: {num} OK")
+        # print(f"Tests in {context}: {num} OK")
         test_name = "Sphinx doctest in: {context}"
         if num > 1:
             test_name += " ({i})"
         for i in range(num, 0, -1):
-            success_item = SphinxDoctestSuccess(test_name.format(**locals()), self.parent)
-            self._sess.items.insert(0, success_item)
+            success_item = SphinxDoctestSuccess(
+                test_name.format(**locals()), self.parent
+            )
+            self._sess.items.insert(self._insert_items_at, success_item)
         self._sess.testscollected += num
 
     def test_failed(self, context, failure):
         test_name = "Sphinx doctest in: {context}.rst"
         item = SphinxDoctestFailure(test_name.format(**locals()), self.parent, failure)
-        self._sess.items.insert(0, item)
+        self._sess.items.insert(self._insert_items_at, item)
         self._sess.testscollected += 1
+
 
 class SphinxDoctestSuccess(pytest.Item):
     def runtest(self):
         return
+
 
 class SphinxDoctestFailure(pytest.Item):
     def __init__(self, name, parent, details):
@@ -309,6 +336,7 @@ class SphinxDoctestFailure(pytest.Item):
 
     def reportinfo(self):
         return f"doctest in {self.name}", 0, f"FAILED {self.name}"
+
 
 class SphinxCommandFailed(Exception):
     def __init_(self, cmd, msg):

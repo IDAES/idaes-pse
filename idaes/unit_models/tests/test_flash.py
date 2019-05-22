@@ -45,7 +45,7 @@ m.fs.flash = FL(default={"property_package": m.fs.properties})
 
 
 def test_build():
-    assert len(m.fs.flash.config) == 10
+    assert len(m.fs.flash.config) == 9
     assert not m.fs.flash.config.has_holdup
     assert m.fs.flash.config.material_balance_type == \
         MaterialBalanceType.componentPhase
@@ -53,7 +53,6 @@ def test_build():
         EnergyBalanceType.enthalpyTotal
     assert m.fs.flash.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
-    assert m.fs.flash.config.has_phase_equilibrium
     assert m.fs.flash.config.has_heat_transfer
     assert m.fs.flash.config.has_pressure_change
 
@@ -81,20 +80,20 @@ def test_initialization():
     assert results.solver.status == SolverStatus.ok
 
     m.fs.flash.liq_outlet.flow_mol.display()
-    assert (pytest.approx(0.6038, abs=1e-3) ==
+    assert (pytest.approx(0.645, abs=1e-3) ==
             value(m.fs.flash.liq_outlet.flow_mol[0]))
-    assert (pytest.approx(0.3961, abs=1e-3) ==
+    assert (pytest.approx(0.355, abs=1e-3) ==
             value(m.fs.flash.vap_outlet.flow_mol[0]))
     assert (pytest.approx(368, abs=1e-3) ==
             value(m.fs.flash.liq_outlet.temperature[0]))
     assert (pytest.approx(101325, abs=1e-3) ==
             value(m.fs.flash.liq_outlet.pressure[0]))
 
-    assert (pytest.approx(0.4121, abs=1e-3) ==
+    assert (pytest.approx(0.421, abs=1e-3) ==
             value(m.fs.flash.liq_outlet.mole_frac[0, "benzene"]))
-    assert (pytest.approx(0.5878, abs=1e-3) ==
+    assert (pytest.approx(0.579, abs=1e-3) ==
             value(m.fs.flash.liq_outlet.mole_frac[0, "toluene"]))
-    assert (pytest.approx(0.6339, abs=1e-3) ==
+    assert (pytest.approx(0.643, abs=1e-3) ==
             value(m.fs.flash.vap_outlet.mole_frac[0, "benzene"]))
-    assert (pytest.approx(0.3660, abs=1e-3) ==
+    assert (pytest.approx(0.357, abs=1e-3) ==
             value(m.fs.flash.vap_outlet.mole_frac[0, "toluene"]))

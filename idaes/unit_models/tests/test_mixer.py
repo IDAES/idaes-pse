@@ -135,7 +135,7 @@ def test_mixer_config():
     assert len(m.fs.mix.config.property_package_args) == 0
     assert m.fs.mix.config.inlet_list is None
     assert m.fs.mix.config.num_inlets is None
-    assert m.fs.mix.config.calculate_phase_equilibrium is False
+    assert m.fs.mix.config.has_phase_equilibrium is False
     assert m.fs.mix.config.material_mixing_type == MixingType.extensive
     assert m.fs.mix.config.energy_mixing_type == MixingType.extensive
     assert m.fs.mix.config.momentum_mixing_type == MomentumMixingType.minimize
@@ -153,8 +153,7 @@ def test_inherited_methods():
     m.fs.mix._get_property_package()
     m.fs.mix._get_indexing_sets()
 
-    assert hasattr(m.fs.mix, "phase_list_ref")
-    assert hasattr(m.fs.mix, "component_list_ref")
+    assert hasattr(m.fs.mix.config.property_package, "phase_list")
 
 
 def test_create_inlet_list_default():
@@ -417,7 +416,7 @@ def test_add_material_mixing_equations_equilibrium():
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb,
-                                   "calculate_phase_equilibrium": True})
+                                   "has_phase_equilibrium": True})
 
     m.fs.mix._get_property_package()
     m.fs.mix._get_indexing_sets()
@@ -443,7 +442,7 @@ def test_add_material_mixing_equations_equilibrium_not_supported():
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb,
-                                   "calculate_phase_equilibrium": True})
+                                   "has_phase_equilibrium": True})
 
     m.fs.mix._get_property_package()
     m.fs.mix._get_indexing_sets()
@@ -465,7 +464,7 @@ def test_add_energy_mixing_equations():
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb,
-                                   "calculate_phase_equilibrium": True})
+                                   "has_phase_equilibrium": True})
 
     m.fs.mix._get_property_package()
     m.fs.mix._get_indexing_sets()
@@ -489,7 +488,7 @@ def test_add_pressure_minimization_equations():
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb,
-                                   "calculate_phase_equilibrium": True})
+                                   "has_phase_equilibrium": True})
 
     m.fs.mix._get_property_package()
     m.fs.mix._get_indexing_sets()
@@ -518,7 +517,7 @@ def test_add_pressure_equality_equations():
 
     m.fs.mix = MixerFrame(default={"property_package": m.fs.pp,
                                    "mixed_state_block": m.fs.sb,
-                                   "calculate_phase_equilibrium": True})
+                                   "has_phase_equilibrium": True})
 
     m.fs.mix._get_property_package()
     m.fs.mix._get_indexing_sets()
@@ -611,7 +610,7 @@ def test_build_phase_equilibrium():
     m.fs.pp = PhysicalParameterTestBlock()
 
     m.fs.mix = Mixer(default={"property_package": m.fs.pp,
-                              "calculate_phase_equilibrium": True})
+                              "has_phase_equilibrium": True})
 
     assert isinstance(m.fs.mix.material_mixing_equations, Constraint)
     assert len(m.fs.mix.material_mixing_equations) == 4
@@ -688,7 +687,7 @@ def test_initialize():
     # Change one inlet pressure to check initialization calculations
     m.fs.mix.inlet_1_state[0].pressure = 8e4
 
-    f = m.fs.mix.initialize()
+    f = m.fs.mix.initialize(hold_state=True)
 
     assert m.fs.mix.inlet_1_state[0].init_test is True
     assert m.fs.mix.inlet_2_state[0].init_test is True

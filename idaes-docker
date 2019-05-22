@@ -61,7 +61,7 @@ function install_image() {
 function install_image_help() {
   printf "Command aborted.\n\nFor information on how to install and use\n"
   printf "Docker with the IDAES PSE framework, see the installation guide at:\n"
-  printf "    https://idaes.github.io/idaes-pse/install.html\n"
+  printf "    https://idaes-pse.readthedocs.io/en/latest/install.html\n"
 }
 
 function build_image() {

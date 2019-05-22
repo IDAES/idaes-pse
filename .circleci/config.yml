@@ -14,13 +14,13 @@ shared: &shared
     - run: coverage report
     - run: coveralls
 jobs:
-  "python-3.6":
+  "python-3.7":
     docker:
-      - image: circleci/python:3.6
+      - image: circleci/python:3.7
     <<: *shared
 
 workflows:
   version: 2
   build:
     jobs:
-      - "python-3.6"
+      - "python-3.7"

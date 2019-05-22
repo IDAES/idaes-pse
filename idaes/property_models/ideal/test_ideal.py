@@ -66,14 +66,14 @@ def test_build_inlet_state_blocks():
         m.fs.properties_vl.config.valid_phase == ('Liq', 'Vap')
     assert len(m.fs.properties_vl.phase_list) == 2
     assert m.fs.properties_vl.phase_list == ["Liq", "Vap"]
-    assert hasattr(m.fs.state_block_vl, "eq_Keq")
+    assert hasattr(m.fs.state_block_vl, "equilibrium_constraint")
     assert not hasattr(m.fs.state_block_vl, "eq_mol_frac_out")
 
     # liquid only
     assert m.fs.properties_l.config.valid_phase == "Liq"
     assert len(m.fs.properties_l.phase_list) == 1
     assert m.fs.properties_l.phase_list == ["Liq"]
-    assert not hasattr(m.fs.state_block_l, "eq_Keq")
+    assert not hasattr(m.fs.state_block_l, "equilibrium_constraint")
     assert not hasattr(m.fs.state_block_vl, "eq_h_vap")
     assert not hasattr(m.fs.state_block_l, "eq_mol_frac_out")
 
@@ -81,7 +81,7 @@ def test_build_inlet_state_blocks():
     assert m.fs.properties_v.config.valid_phase == "Vap"
     assert len(m.fs.properties_v.phase_list) == 1
     assert m.fs.properties_v.phase_list == ["Vap"]
-    assert not hasattr(m.fs.state_block_v, "eq_Keq")
+    assert not hasattr(m.fs.state_block_v, "equilibrium_constraint")
     assert not hasattr(m.fs.state_block_vl, "eq_h_liq")
     assert not hasattr(m.fs.state_block_v, "eq_mol_frac_out")
 
@@ -128,9 +128,9 @@ def test_solve():
 
     # Check for VLE results
     assert value(m.fs.state_block_vl.mole_frac_phase['Liq', 'benzene']) == \
-        pytest.approx(0.4121, abs=1e-3)
+        pytest.approx(0.4215, abs=1e-3)
     assert value(m.fs.state_block_vl.mole_frac_phase['Vap', 'benzene']) == \
-        pytest.approx(0.6339, abs=1e-3)
+        pytest.approx(0.643, abs=1e-3)
 
     # liquid only
     m.fs.state_block_l.initialize()
@@ -163,22 +163,22 @@ def test_solve():
 
 def test_bubbleT_inlet_state_blocks():
     assert m.fs.state_block_vl.calculate_bubble_point_temperature() == \
-        pytest.approx(365.347, abs=1e-2)
+        pytest.approx(365.64, abs=1e-2)
 
 
 def test_dewT_inlet_state_blocks():
     assert m.fs.state_block_vl.calculate_dew_point_temperature() == \
-        pytest.approx(372.02, abs=1e-2)
+        pytest.approx(372.31, abs=1e-2)
 
 
 def test_bubbleP_inlet_state_blocks():
     assert m.fs.state_block_vl.calculate_bubble_point_pressure() == \
-        pytest.approx(109479.22, abs=1e-2)
+        pytest.approx(108600, abs=1e3)
 
 
 def test_dewP_inlet_state_blocks():
     assert m.fs.state_block_vl.calculate_dew_point_pressure() == \
-        pytest.approx(89819.72, abs=1e-2)
+        pytest.approx(89000, abs=1e3)
 
 
 # Create a flowsheet object to test outlet state blocks
@@ -213,24 +213,24 @@ def test_build_outlet_state_blocks():
         m.fs1.properties_vl.config.valid_phase == ('Liq', 'Vap')
     assert len(m.fs1.properties_vl.phase_list) == 2
     assert m.fs1.properties_vl.phase_list == ["Liq", "Vap"]
-    assert hasattr(m.fs1.state_block_vl, "eq_Keq")
-    assert hasattr(m.fs1.state_block_vl, "eq_mol_frac_out")
+    assert hasattr(m.fs1.state_block_vl, "equilibrium_constraint")
+    assert hasattr(m.fs1.state_block_vl, "sum_mole_frac_out")
 
     # liquid only
     assert m.fs1.properties_l.config.valid_phase == "Liq"
     assert len(m.fs1.properties_l.phase_list) == 1
     assert m.fs1.properties_l.phase_list == ["Liq"]
-    assert not hasattr(m.fs1.state_block_l, "eq_Keq")
+    assert not hasattr(m.fs1.state_block_l, "equilibrium_constraint")
     assert not hasattr(m.fs1.state_block_vl, "eq_h_vap")
-    assert hasattr(m.fs1.state_block_l, "eq_mol_frac_out")
+    assert hasattr(m.fs1.state_block_l, "sum_mole_frac_out")
 
     # vapor only
     assert m.fs1.properties_v.config.valid_phase == "Vap"
     assert len(m.fs1.properties_v.phase_list) == 1
     assert m.fs1.properties_v.phase_list == ["Vap"]
-    assert not hasattr(m.fs1.state_block_v, "eq_Keq")
+    assert not hasattr(m.fs1.state_block_v, "equilibrium_constraint")
     assert not hasattr(m.fs1.state_block_vl, "eq_h_liq")
-    assert hasattr(m.fs1.state_block_v, "eq_mol_frac_out")
+    assert hasattr(m.fs1.state_block_v, "sum_mole_frac_out")
 
 
 def test_setInputs_outlet_state_blocks():

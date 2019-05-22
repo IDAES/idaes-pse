@@ -230,21 +230,10 @@ see reaction package for documentation.}"""))
         self.add_inlet_port()
         self.add_outlet_port()
 
-        # Add object references
-        add_object_reference(self,
-                             "component_list_ref",
-                             self.control_volume.component_list_ref)
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.control_volume.phase_list_ref)
-        add_object_reference(self,
-                             "rate_reaction_idx_ref",
-                             self.control_volume.rate_reaction_idx_ref)
-
         if self.config.has_rate_reactions:
             # Add equilibrium reactor performance equation
-            @self.Constraint(self.time_ref,
-                             self.rate_reaction_idx_ref,
+            @self.Constraint(self.flowsheet().config.time,
+                             self.config.reaction_package.rate_reaction_idx,
                              doc="Rate reaction equilibrium constraint")
             def rate_reaction_constraint(b, t, r):
                 # Set kinetic reaction rates to zero

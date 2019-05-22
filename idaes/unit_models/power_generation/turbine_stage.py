@@ -31,7 +31,8 @@ from pyomo.environ import Var, Expression, SolverFactory, value
 from pyomo.opt import TerminationCondition
 
 from idaes.core import declare_process_block_class
-from idaes.unit_models.pressure_changer import PressureChangerData
+from idaes.unit_models.pressure_changer import (PressureChangerData,
+                                                ThermodynamicAssumption)
 from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.ui.report import degrees_of_freedom
 
@@ -45,9 +46,12 @@ class TurbineStageData(PressureChangerData):
     CONFIG.compressor = False
     CONFIG.get('compressor')._default = False
     CONFIG.get('compressor')._domain = In([False])
-    CONFIG.thermodynamic_assumption = 'isentropic'
-    CONFIG.get('thermodynamic_assumption')._default = 'isentropic'
-    CONFIG.get('thermodynamic_assumption')._domain = In(['isentropic'])
+    CONFIG.thermodynamic_assumption = ThermodynamicAssumption.isentropic
+    CONFIG.get('thermodynamic_assumption')._default = \
+        ThermodynamicAssumption.isentropic
+    CONFIG.get('thermodynamic_assumption')._domain = \
+        In([ThermodynamicAssumption.isentropic])
+
     def build(self):
         super(TurbineStageData, self).build()
 
@@ -57,11 +61,12 @@ class TurbineStageData(PressureChangerData):
         self.ratioP[:] = 0.8 # make sure these have a number value
         self.deltaP[:] = 0 #   to avoid an error later in initialize
 
-        @self.Expression(self.time_ref, doc="Thermodynamic power [J/s]")
+        @self.Expression(self.flowsheet().config.time,
+                         doc="Thermodynamic power [J/s]")
         def power_thermo(b, t):
             return b.control_volume.work[t]
 
-        @self.Expression(self.time_ref, doc="Shaft power [J/s]")
+        @self.Expression(self.flowsheet().config.time, doc="Shaft power [J/s]")
         def power_shaft(b, t):
             return b.power_thermo[t]*b.efficiency_mech
 
@@ -87,7 +92,7 @@ class TurbineStageData(PressureChangerData):
         istate = to_json(self, return_dict=True, wts=sp)
 
         # fix inlet and free outlet
-        for t in self.time_ref:
+        for t in self.flowsheet().config.time:
             for k, v in self.inlet.vars.items():
                 v[t].fix()
             for k, v in self.outlet.vars.items():
@@ -121,7 +126,7 @@ class TurbineStageData(PressureChangerData):
         self.deltaP[:].unfix()
         self.ratioP[:].unfix()
 
-        for t in self.time_ref:
+        for t in self.flowsheet().config.time:
             self.properties_isentropic[t].pressure.value = \
                 value(self.outlet.pressure[t])
             self.properties_isentropic[t].flow_mol.value = \

@@ -9,13 +9,33 @@ The IDAES Toolkit aims to provide multi-scale, simulation-based, open source
 computational tools and models to support the design, analysis, optimization,
 scale-up, operation and troubleshooting of innovative, advanced energy systems.
 
+## System requirements
+
+The code and examples have been tested with the following operating systems:
+
+|Operating system|Supported versions  |
+|----------------|--------------------|
+| Linux          | Any modern Linux   |
+| Windows        | Windows 10         |
+| Mac OSX        | Not supported      |
+
+Most of the functionality is implemented in Python. In accordance with
+the end-of-life for many Python 2 libraries, the IDAES Toolkit is written
+for Python 3. The following sub-versions are supported:
+
+* Python 3.6
+* Python 3.7
+* Python 3.7+ (should work, not explicitly tested)
+
+Note that Python 3.5 is *not* supported.
+
 ## Contributing
 
 **By contributing to this repository, you are agreeing to all the terms set out
 in the LICENSE.txt and COPYRIGHT.txt files in this directory.**
 
 ## Getting Started
-For installation instructions, please refer to the [online documentation](https://idaes.github.io/idaes-pse/).
+For installation instructions, please refer to the [online documentation](https://idaes-pse.readthedocs.io/en/latest/).
 
 The documentation for IDAES is built using [Sphinx](http://www.sphinx-doc.org/). To generate the HTML version of the documentation, first make sure Sphinx is installed for your version of Python, then go to the "docs/" subdirectory and run the _Makefile_:
 
@@ -25,7 +45,7 @@ make html
 ```
 
 To view the documentation you just built, open the file
-`doc/build/html/index.html` in a web browser.
+`docs/build/index.html` in a web browser.
 
 
 ## Running tests
@@ -56,10 +76,10 @@ There are example [Jupyter](https://jupyter.org) notebook(s) in the `examples/` 
 jupyter notebook examples/run-mea-model.ipynb
 ```
 
-This should start up a notebook server and then pop up a tab or window in your default web browser showing the Notebook. For more information on how to use Jupyter, see the "Help" menu in the Notebook window itself, and the extensive documentation on the [Jupyter website](https://jupyter.org). 
+This should start up a notebook server and then pop up a tab or window in your default web browser showing the Notebook. For more information on how to use Jupyter, see the "Help" menu in the Notebook window itself, and the extensive documentation on the [Jupyter website](https://jupyter.org).
 
 ## Contacts and more information
 
-Please see the
-[IDAES main website](https://www.idaes.org) for general information
-and people to contact.
+General, background and overview information is available at the [IDAES main website](https://www.idaes.org).
+Framework development happens at our [GitHub repo](https://github.com/IDAES/idaes-pse) where you can [report issues/bugs](https://github.com/IDAES/idaes-pse/issues) or [make contributions](https://github.com/IDAES/idaes-pse/pulls).
+For further enquiries, send an email to: <idaes-support@idaes.org>
