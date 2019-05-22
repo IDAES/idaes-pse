@@ -16,11 +16,12 @@ Tests for flowsheet_model.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import AbstractModel, Block, ConcreteModel, Set
+from pyomo.environ import AbstractModel, Block, ConcreteModel, Set, Var
 from pyomo.dae import ContinuousSet
 from idaes.core import FlowsheetBlockData, declare_process_block_class, \
                         PhysicalParameterBlock, useDefault
 from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError, DynamicError
 
 
@@ -45,6 +46,16 @@ def test_config_block():
     assert fs.config.default_property_package is None
 
 
+def test_is_flowsheet():
+    # Test that flowsheet has is_flowsheet method and that it returns True
+    fs = Flowsheet(default={"dynamic": True,
+                            "time_set": [2.0]},
+                   concrete=True)
+
+    assert hasattr(fs, "is_flowsheet")
+    assert fs.is_flowsheet()
+
+
 def test_config_validation():
     # Test that ConfigBlock validation
     fs = Flowsheet(default={"dynamic": True,
@@ -53,7 +64,7 @@ def test_config_validation():
 
     fs.p = ParameterBlock()
 
-    assert len(fs.config) == 3
+    assert len(fs.config) == 4
 
     # Test dynamic attribute - valid values
     fs.config.dynamic = False
@@ -70,6 +81,9 @@ def test_config_validation():
         fs.config.dynamic = [2.0]  # invalid list
     with pytest.raises(ValueError):
         fs.config.dynamic = {'a': 2.0}  # invalid dict
+
+    # Test time attribute
+    assert fs.config.time is None
 
     # Test time_set attribute - valid values
     fs.config.time_set = [1, 2, 3]
@@ -96,144 +110,173 @@ def test_config_validation():
         fs.config.default_property_package = {'a': 2.0}  # invalid dict
 
 
-def test_setup_dynamics_top_level_concrete():
-    # Test that method runs when flowsheet attached to ConcreteModel
+def test_setup_dynamics_defaults():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet()
     m.fs._setup_dynamics()
 
+    assert m.fs.config.dynamic is False
+    assert isinstance(m.fs.time, Set)
     assert m.fs.time == [0]
+    assert m.fs.config.time is m.fs.time
 
 
-def test_setup_dynamics_top_level_concrete2():
-    # Test that method runs when flowsheet concrete flag set to True
-    fs = Flowsheet(default={"dynamic": False}, concrete=True)
-    fs._setup_dynamics()
-
-    assert fs.time == [0]
-
-
-def test_setup_dynamics_top_level_abstract():
-    # Test method returns ConfigurationError when flowsheet not constructed
-    fs = Flowsheet(default={"dynamic": False})
-    with pytest.raises(ConfigurationError):
-        fs._setup_dynamics()
-
-
-def test_dynamic_flowsheet_in_ss_flowsheet():
-    # Test that declaring a dynamic flowsheet within a steady-state flowsheet
-    # raises a DynamicError
+def test_setup_dynamics_ss_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs._setup_dynamics()
-    m.fs.blk = Flowsheet(default={"dynamic": True})
-    with pytest.raises(DynamicError):
-        m.fs.blk._setup_dynamics()
+
+    assert m.fs.config.dynamic is False
+    assert isinstance(m.fs.time, Set)
+    assert m.fs.time == [0]
+    assert m.fs.config.time is m.fs.time
 
 
-def test_setup_dynamics_top_level_abstract2():
-    # Test that method returns ConfigurationError when flowsheet attached to an
-    # unconstructed AbstractModel
-    m = AbstractModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    with pytest.raises(ConfigurationError):
-        m.fs._setup_dynamics()
-
-
-def test_setup_dynamics_default():
-    # Test that dynamic flag creates a ContinuousSet
-    fs = Flowsheet(concrete=True)
-    fs._setup_dynamics()
-
-    assert not fs.config.dynamic
-    assert isinstance(fs.time, Set)
-
-
-def test_setup_dynamics_dynamic():
-    # Test that dynamic flag creates a ContinuousSet
-    fs = Flowsheet(default={"dynamic": True}, concrete=True)
-    fs._setup_dynamics()
-
-    assert isinstance(fs.time, ContinuousSet)
-    assert fs.time == [0.0, 1.0]
-
-
-def test_setup_dynamics_dynamic_invalid_time_set():
-    # Test that dynamic flag creates a ContinuousSet
-    fs = Flowsheet(default={"dynamic": True, "time_set": [1]}, concrete=True)
-    with pytest.raises(DynamicError):
-        fs._setup_dynamics()
-
-
-def test_setup_dynamics_steady_state():
-    # Test that dynamic flag creates a Set
-    fs = Flowsheet(default={"dynamic": False}, concrete=True)
-    fs._setup_dynamics()
-
-    assert isinstance(fs.time, Set)
-
-
-def test_setup_dynamics_ConcreteModel_with_time():
+def test_setup_dynamics_ss_time_set():
     m = ConcreteModel()
-    m.time = Set(initialize=[0])
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(default={"dynamic": False, "time_set": [1, 2, 3]})
     m.fs._setup_dynamics()
 
-    assert m.fs.time_ref == m.time
+    assert m.fs.config.dynamic is False
+    assert isinstance(m.fs.time, Set)
+    for t in m.fs.time:
+        assert t in [1, 2, 3]
+    assert len(m.fs.time) == 3
+    assert m.fs.config.time is m.fs.time
 
 
-def test_setup_dynamics_ConcreteModel_with_invalid_time():
+def test_setup_dynamics_dynamic_default():
     m = ConcreteModel()
-    m.time = 1
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs._setup_dynamics()
+
+    assert m.fs.config.dynamic is True
+    assert isinstance(m.fs.time, ContinuousSet)
+    for t in m.fs.time:
+        assert t in [0, 1]
+    assert m.fs.config.time is m.fs.time
+
+
+def test_setup_dynamics_dynamic_time_set():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": True, "time_set": [1, 2]})
+    m.fs._setup_dynamics()
+
+    assert m.fs.config.dynamic is True
+    assert isinstance(m.fs.time, ContinuousSet)
+    for t in m.fs.time:
+        assert t in [1, 2]
+    assert m.fs.config.time is m.fs.time
+
+
+def test_setup_dynamics_ss_external():
+    m = ConcreteModel()
+    m.s = Set(initialize=[4, 5])
+    m.fs = Flowsheet(default={"dynamic": False, "time": m.s})
+    m.fs._setup_dynamics()
+
+    assert m.fs.config.dynamic is False
+    assert m.fs.config.time is m.s
+    assert not hasattr(m.fs, "time")
+
+
+def test_setup_dynamics_dynamic_external():
+    m = ConcreteModel()
+    m.s = ContinuousSet(initialize=[4, 5])
+    m.fs = Flowsheet(default={"dynamic": True, "time": m.s})
+    m.fs._setup_dynamics()
+
+    assert m.fs.config.dynamic is True
+    assert m.fs.config.time is m.s
+    assert not hasattr(m.fs, "time")
+
+
+def test_setup_dynamics_dynamic_invalid_external():
+    m = ConcreteModel()
+    m.s = Set(initialize=[4, 5])
+    m.fs = Flowsheet(default={"dynamic": True, "time": m.s})
     with pytest.raises(DynamicError):
         m.fs._setup_dynamics()
 
 
-def test_setup_dynamics_subflowsheet():
-    # Test that subflowsheets get parents time domain
-    fs = Flowsheet(default={"dynamic": True}, concrete=True)
-    fs._setup_dynamics()
+def test_setup_dynamics_sub_defaults():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs._setup_dynamics()
 
-    fs.sub = Flowsheet()
-    fs.sub._setup_dynamics()
+    m.fs.sub = Flowsheet()
+    m.fs.sub._setup_dynamics()
 
-    assert isinstance(fs.time, ContinuousSet)
-    assert fs.time == [0.0, 1.0]
-
-
-def test_setup_dynamics_timeset_dynamic():
-    # Test that timeset argument works for dynamic=True
-    fs = Flowsheet(default={"dynamic": True, "time_set": [0.0, 5.0, 100.0]},
-                   concrete=True)
-    fs._setup_dynamics()
-
-    assert isinstance(fs.time, ContinuousSet)
-    assert fs.time == [0.0, 5.0, 100.0]
+    assert m.fs.sub.config.dynamic is False
+    assert m.fs.sub.config.time is m.fs.config.time
 
 
-def test_setup_dynamics_timeset_steady_state():
-    # Test that timeset argument works for dynamic=False
-    fs = Flowsheet(default={"dynamic": False, "time_set": [0.0, 5.0, 100.0]},
-                   concrete=True)
-    fs._setup_dynamics()
+def test_setup_dynamics_sub_ss():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs._setup_dynamics()
 
-    assert isinstance(fs.time, Set)
-    assert fs.time == [0.0, 5.0, 100.0]
+    m.fs.sub = Flowsheet(default={"dynamic": False})
+    m.fs.sub._setup_dynamics()
+
+    assert m.fs.sub.config.dynamic is False
+    assert m.fs.sub.config.time is m.fs.config.time
 
 
-def test_setup_dynamics_subflowsheet_parent_with_no_time():
-    # Test that subflowsheets get parents time domain
-    fs = Flowsheet(default={"dynamic": True}, concrete=True)
+def test_setup_dynamics_sub_dynamic():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs._setup_dynamics()
 
-    fs.sub = Flowsheet()
+    m.fs.sub = Flowsheet(default={"dynamic": True})
+    m.fs.sub._setup_dynamics()
+
+    assert m.fs.sub.config.dynamic is True
+    assert m.fs.sub.config.time is m.fs.config.time
+
+
+def test_setup_dynamics_sub_dynamic_in_ss():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs._setup_dynamics()
+
+    m.fs.sub = Flowsheet(default={"dynamic": True})
     with pytest.raises(DynamicError):
-        fs.sub._setup_dynamics()
+        m.fs.sub._setup_dynamics()
 
 
-def test_build_method():
-    # Test that build method automatically calls _setup_dynamics
-    fs = Flowsheet(default={"dynamic": False}, concrete=True)
-    super(_Flowsheet, fs).build()
+def test_setup_dynamics_sub_ss_external():
+    m = ConcreteModel()
+    m.s = Set(initialize=[4, 5])
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs._setup_dynamics()
 
-    assert isinstance(fs.time, Set)
+    m.fs.sub = Flowsheet(default={"dynamic": False, "time": m.s})
+    m.fs.sub._setup_dynamics()
+
+    assert m.fs.sub.config.dynamic is False
+    assert m.fs.sub.config.time is m.s
+
+
+def test_setup_dynamics_sub_dynamic_external():
+    m = ConcreteModel()
+    m.s = ContinuousSet(initialize=[4, 5])
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs._setup_dynamics()
+
+    m.fs.sub = Flowsheet(default={"dynamic": True, "time": m.s})
+    m.fs.sub._setup_dynamics()
+
+    assert m.fs.sub.config.dynamic is True
+    assert m.fs.sub.config.time is m.s
+
+
+def test_setup_dynamics_sub_dynamic_external_invalid():
+    m = ConcreteModel()
+    m.s = Set(initialize=[4, 5])
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs._setup_dynamics()
+
+    m.fs.sub = Flowsheet(default={"dynamic": True, "time": m.s})
+    with pytest.raises(DynamicError):
+        m.fs.sub._setup_dynamics()

@@ -185,6 +185,7 @@ def get_stream_y_values(exchangers, hot_streams, cold_streams, y_stream_step=1):
                 * stream_y_values_dict : a dict of each stream name as key and value being a dict of the form
 
                 .. code-block:: python
+                
                     {'default_y_value': 2, 'split_y_values': [1,3]}.
                 ..
 

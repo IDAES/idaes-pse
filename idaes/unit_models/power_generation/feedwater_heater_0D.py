@@ -119,7 +119,7 @@ of side_1 is a saturated liquid.""")
 class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
-        @self.Constraint(self.time_ref,
+        @self.Constraint(self.flowsheet().config.time,
             doc="Calculate steam extraction rate such that all steam condenses")
         def extraction_rate_constraint(b, t):
             return b.side_1.properties_out[t].enth_mol_sat_phase["Liq"] == \
@@ -192,7 +192,7 @@ class FWH0DData(UnitModelBlockData):
                 "momentum_mixing_type":MomentumMixingType.none,
                 "inlet_list":["steam", "drain"]}
             self.drain_mix = Mixer(default=mix_cfg)
-            @self.drain_mix.Constraint(self.drain_mix.time_ref)
+            @self.drain_mix.Constraint(self.drain_mix.flowsheet().config.time)
             def mixer_pressure_constraint(b, t):
                 """
                 Constraint to set the drain mixer pressure to the pressure of
@@ -262,6 +262,10 @@ class FWH0DData(UnitModelBlockData):
                 _set_port(self.drain_mix.steam, self.desuperheat.outlet_1)
             else:
                 _set_port(self.condense.inlet_1, self.desuperheat.outlet_1)
+            # fix the steam and fwh inlet for init
+            self.desuperheat.inlet_1.fix()
+            self.desuperheat.inlet_1.flow_mol.unfix() #unfix for extract calc
+
         # initialize mixer if included
         if config.has_drain_mixer:
             self.drain_mix.steam.fix()
@@ -276,6 +280,9 @@ class FWH0DData(UnitModelBlockData):
         # Initialize condense section
         if config.has_drain_cooling:
             _set_port(self.condense.inlet_2, self.cooling.inlet_2)
+            self.cooling.inlet_2.fix()
+        else:
+            self.condense.inlet_2.fix()
         self.condense.initialize(*args, **kwargs)
         # Initialize drain cooling if included
         if config.has_drain_cooling:

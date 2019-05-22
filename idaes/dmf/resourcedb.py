@@ -16,10 +16,13 @@ Resource database.
 # system
 from datetime import datetime
 import logging
+import re
+
 # third party
 import pendulum
 import six
 from tinydb import TinyDB, Query
+
 # local
 from . import errors
 from .resource import Resource
@@ -33,6 +36,7 @@ _log = logging.getLogger(__name__)
 class ResourceDB(object):
     """A database interface to all the resources within a given DMF workspace.
     """
+
     def __init__(self, dbfile=None, connection=None):
         """Initialize from DMF and given configuration field.
 
@@ -55,14 +59,14 @@ class ResourceDB(object):
             try:
                 db = TinyDB(dbfile)
             except IOError:
-                raise errors.FileError('Cannot open resource DB "{}"'
-                                       .format(dbfile))
-            self._db = db
+                raise errors.FileError('Cannot open resource DB "{}"'.format(dbfile))
+            # turn off caching, otherwise update() does not work properly
+            self._db = db.table('resources', cache_size=0)
 
     def __len__(self):
         return len(self._db)
 
-    def find(self, filter_dict, id_only=False):
+    def find(self, filter_dict, id_only=False, flags=0):
         """Find and return records based on the provided filter.
 
         Args:
@@ -70,14 +74,18 @@ class ResourceDB(object):
                                 :meth:`.dmf.DMF.find`.
             id_only (bool): If true, return only the identifier of each
                 resource; otherwise a Resource object is returned.
+            flags (int): Flag values for, e.g., regex searches
 
         Returns:
-            (list of int|Resource) Depending on the value of `id_only`
+            generator of int|Resource, depending on the value of `id_only`
         """
+
         def as_resource(_r):
+            _log.debug(f"as_resource: id_={_r['id_']}")
             rsrc = Resource(value=_r)
             rsrc.v['doc_id'] = _r.doc_id
             return rsrc
+
         # with no filter, do a find-all
         if not filter_dict:
             for r in self._db.all():
@@ -86,7 +94,7 @@ class ResourceDB(object):
                 else:
                     yield as_resource(r)
             return
-        filter_expr = self._create_filter_expr(filter_dict)
+        filter_expr = self._create_filter_expr(filter_dict, flags)
 
         # return results for query
         _log.debug('Find resources matching: {}'.format(filter_expr))
@@ -95,10 +103,11 @@ class ResourceDB(object):
             if id_only:
                 yield r.eid
             else:
+                _log.debug(f"got resource: {r}")
                 yield as_resource(r)
 
     @classmethod
-    def _create_filter_expr(cls, filter_dict):
+    def _create_filter_expr(cls, filter_dict, flags=0):
         # convert filter to expression for TinyDB
         q = Query()
         filter_expr = None
@@ -123,48 +132,101 @@ class ResourceDB(object):
             # value is a match. If the key has a '!' appended, then
             # require all values for a match.
             if isinstance(v, list):
-                if qry_all:
-                    cond = qry.all(tuple(v))
-                else:
-                    cond = qry.any(tuple(v))
-                filter_expr = fadd(cond)
+                if len(v) > 0:
+                    # if values are dicts, nest a query
+                    # XXX: this only works one level deep
+                    # XXX: only one nested query is used/allowed
+                    if isinstance(v[0], dict):
+                        list_expr = None
+                        for list_k, list_v in v[0].items():
+                            list_qry = Query()
+                            for field in list_k.split('.'):
+                                list_qry = list_qry[field]
+                            list_cond = cls._expr_to_query(
+                                list_qry, list_v, flags=flags
+                            )
+                            if list_expr is None:
+                                list_expr = list_cond
+                            else:
+                                list_expr = list_expr & list_cond
+                    # otherwise, simply put the values in there
+                    else:
+                        list_expr = tuple(v)
+                    # add nested "query" (or value tuple)
+                    if qry_all:
+                        cond = qry.all(list_expr)
+                    else:
+                        cond = qry.any(list_expr)
             else:
-                # There are two types of non-list values:
-                # - equality is just {key: value}
-                # - inequalities are {key: {op: value, ...}}
-                #   operators are "$<shell test op>", such as "$lt",
-                #   just like in MongoDB; see _op_cond() method for details.
-                if isinstance(v, dict):
-                    for op_key, op_value in six.iteritems(v):
-                        tv = cls._value_transform(op_value)
-                        cond = cls._op_cond(qry, op_key, tv)
-                        filter_expr = fadd(cond)
-                elif v is True:
-                    cond = qry.exists()
-                    filter_expr = fadd(cond)
-                elif v is False:
-                    cond = ~ qry.exists()
-                    filter_expr = fadd(cond)
-                else:
-                    tv = cls._value_transform(v)
-                    cond = qry == tv
-                    filter_expr = fadd(cond)
+                cond = cls._expr_to_query(qry, v, flags=flags)
+            filter_expr = fadd(cond)
         return filter_expr
+
+    @classmethod
+    def _expr_to_query(cls, qry, v, flags=None):
+        """Get a query from a filter expr.
+
+        There are two types of non-list values:
+         1. equality is just {key: value}
+         2. inequalities are {key: {op: value, ...}}
+           operators are "$<shell test op>", such as "$lt",
+           just like in MongoDB; see _op_cond() method for details.
+        """
+        result = None
+        if isinstance(v, dict):
+            for op_key, op_value in v.items():
+                tv = cls._value_transform(op_value)
+                cond = cls._op_cond(qry, op_key, tv)
+                result = cond if result is None else result & cond
+        else:
+            tv = cls._value_transform(v)
+            if v is True:
+                result = qry.exists()
+            elif tv is False:
+                result = ~qry.exists()
+            elif hasattr(tv, "match"):  # regex
+                result = qry.matches(tv.pattern, flags=flags)
+            else:
+                result = qry == tv
+        return result
 
     @staticmethod
     def _value_transform(v):
+        # transform dates into timestamps
         if isinstance(v, datetime) or isinstance(v, pendulum.Pendulum):
             if isinstance(v, datetime):
-                pv = pendulum.create(v.year, v.month, v.day, v.hour, v.minute,
-                                     v.second, v.microsecond, v.tzname())
+                pv = pendulum.create(
+                    v.year,
+                    v.month,
+                    v.day,
+                    v.hour,
+                    v.minute,
+                    v.second,
+                    v.microsecond,
+                    v.tzname(),
+                )
             else:
                 pv = v
             return pv.timestamp()
+        # support for special string '@' values
+        elif isinstance(v, str) and len(v) > 0 and v[0] == '@':
+            if v == '@true':
+                return True
+            if v == '@false':
+                return False
+            return v
+        # for a regex, return a Python regex obj
+        elif isinstance(v, str) and len(v) > 0 and v[0] == '~':
+            return re.compile(v[1:])
+        # default is no transformation
         else:
             return v
 
     @staticmethod
     def _op_cond(query, op, value):
+        # sanity check that operator is truthy
+        if not op:
+            raise ValueError(f"empty operator for value `{value}`")
         # just a clumsy switch statement..
         if op == '$gt':
             cond = query > value
@@ -189,8 +251,7 @@ class ResourceDB(object):
             break
         return result
 
-    def find_related(self, id_, filter_dict=None, outgoing=True,
-                     maxdepth=0, meta=None):
+    def find_related(self, id_, filter_dict=None, outgoing=True, maxdepth=0, meta=None):
         """Find all resources connected to the identified one.
 
         Args:
@@ -220,8 +281,9 @@ class ResourceDB(object):
                 uuid = rsrc[Resource.ID_FIELD]
                 rel = triple_from_resource_relations(uuid, rrel)
                 # skip start of edge, get metadata, etc. at end of edge
-                if (outgoing and rel.subject == uuid) or \
-                        (not outgoing and rel.object == uuid):
+                if (outgoing and rel.subject == uuid) or (
+                    not outgoing and rel.object == uuid
+                ):
                     continue
                 # add entry in map
                 key = rel.subject if outgoing else rel.object
@@ -232,10 +294,10 @@ class ResourceDB(object):
                     relation_map[key] = [value]
                 else:
                     value_list.append(value)
-        # print('@@ built relation map: {}'.format(relation_map))
-        # make sure root node exists
+        _log.debug(f"built relation map: {relation_map}")
+        # stop if there are no connections
         if id_ not in relation_map:
-            raise KeyError('Resource not found: {}'.format(id_))
+            return
         # Do a depth-first search through the edges, yield-ing
         # the relations as we go
         q, depth, visited = [], 0, set()
@@ -243,7 +305,6 @@ class ResourceDB(object):
         visited.add(id_)
         while len(q) > 0 and depth < maxdepth:
             depth += 1
-            # print('@@ depth={:d}. Queue: {}'.format(depth, q))
             # visit all the nodes in the queue
             n = len(q)
             for i in range(n):
@@ -270,10 +331,12 @@ class ResourceDB(object):
         Returns:
             (Resource) A resource or None
         """
+
         def as_resource(_r):
             rsrc = Resource(value=_r)
             rsrc.v['doc_id'] = _r.doc_id
             return rsrc
+
         item = self._db.get(doc_id=identifier)
         if item is None:
             return None
@@ -292,6 +355,7 @@ class ResourceDB(object):
             errors.DuplicateResourceError: If there is already a resource
                 in the database with the same "id".
         """
+        _log.debug(f"put resource id={resource.id}")
         # check for same id
         qry = Query()
         if self._db.contains(qry.id_ == resource.id):
@@ -299,8 +363,7 @@ class ResourceDB(object):
         # add resource
         self._db.insert(resource.v)
 
-    def delete(self, id_=None, idlist=None, filter_dict=None,
-               internal_ids=False):
+    def delete(self, id_=None, idlist=None, filter_dict=None, internal_ids=False):
         """Delete one or more resources with given identifiers.
 
         Args:
@@ -341,17 +404,23 @@ class ResourceDB(object):
             ValueError: If new resource is of wrong type
             KeyError: If old resource is not found
         """
+        _log.debug("update.start")
         id_cond = {Resource.ID_FIELD: id_}
         old = self.find_one(id_cond)
         if old is None:
             raise KeyError('Cannot find resource id={}'.format(id_))
         T = Resource.TYPE_FIELD
         if old.v[T] != new_dict[T]:
-            raise ValueError('New resource type="{}" does not '
-                             'match current resource type "{}"'
-                             .format(new_dict[T], old.v[T]))
-
-        changed = {k: v for k, v in six.iteritems(new_dict)
-                   if old.v.get(k, None) != v}
-        # note: above does not check for missing/new keys
+            raise ValueError(
+                'New resource type="{}" does not '
+                'match current resource type "{}"'.format(new_dict[T], old.v[T])
+            )
+        _log.debug(f"update old resource: {old.v}")
+        changed = {}
+        for k, v in new_dict.items():
+            if k not in old.v:
+                changed[k] = v
+            elif old.v[k] != v:
+                changed[k] = v
+        _log.debug(f"update resource {id_} with new values: {changed}")
         self._db.update(changed, self._create_filter_expr(id_cond))

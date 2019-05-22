@@ -16,7 +16,7 @@ Standard IDAES Gibbs reactor model.
 from __future__ import division
 
 # Import Pyomo libraries
-from pyomo.environ import Reals,  Var
+from pyomo.environ import Reals, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 # Import IDAES cores
@@ -57,7 +57,7 @@ False."""))
         default=False,
         domain=In([False]),
         description="Holdup construction flag",
-        doc="""Gibbs reactors do not support dynamic models, thus this must be
+        doc="""Gibbs reactors do not have defined volume, thus this must be
 False."""))
     CONFIG.declare("energy_balance_type", ConfigValue(
         default=EnergyBalanceType.enthalpyTotal,
@@ -156,19 +156,9 @@ see property package for documentation.}"""))
         self.add_outlet_port()
 
         # Add performance equations
-        add_object_reference(self,
-                             "component_list_ref",
-                             self.control_volume.component_list_ref)
-        add_object_reference(self,
-                             "phase_list_ref",
-                             self.control_volume.phase_list_ref)
-        add_object_reference(self,
-                             "element_list_ref",
-                             self.control_volume.element_list_ref)
-
         # Add Lagrangian multiplier variables
-        self.lagrange_mult = Var(self.time_ref,
-                                 self.element_list_ref,
+        self.lagrange_mult = Var(self.flowsheet().config.time,
+                                 self.config.property_package.element_list,
                                  domain=Reals,
                                  initialize=100,
                                  doc="Lagrangian multipliers")
@@ -177,9 +167,9 @@ see property package for documentation.}"""))
         # Use RT*lagrange as the Lagrangian multiple such that lagrange is in
         # a similar order of magnitude as log(Yi)
 
-        @self.Constraint(self.time_ref,
-                         self.phase_list_ref,
-                         self.component_list_ref,
+        @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
+                         self.config.property_package.component_list,
                          doc="Gibbs energy minimisation constraint")
         def gibbs_minimization(b, t, p, j):
             # Use natural log of species mole flow to avoid Pyomo solver
@@ -189,7 +179,7 @@ see property package for documentation.}"""))
                 sum(b.lagrange_mult[t, e] *
                     b.control_volume.properties_out[t].
                     config.parameters.element_comp[j][e]
-                    for e in b.element_list_ref))
+                    for e in b.config.property_package.element_list))
 
         # Set references to balance terms at unit level
         if (self.config.has_heat_transfer is True and
@@ -202,4 +192,3 @@ see property package for documentation.}"""))
             add_object_reference(self,
                                  "deltaP",
                                  self.control_volume.deltaP)
-

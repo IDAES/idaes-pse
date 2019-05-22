@@ -69,8 +69,7 @@ These examples can be appended to the boilerplate code above.
 The first example creates a model, saves the state, changes a value, then reads
 back the initial state.
 
-.. .. testcode:: (Commenting out failing doctest)
-.. code-block:: python
+.. testcode::
 
   model = setup_model01()
   to_json(model, fname="ex.json.gz", gz=True, human_read=True)
@@ -78,10 +77,13 @@ back the initial state.
   from_json(model, fname="ex.json.gz", gz=True)
   print(value(model.b[1].a))
 
+.. testoutput::
+
+  2
+
 This next example show how to save only suffixes.
 
-.. .. testcode:: (Commenting out failing doctest)
-.. code-block:: python
+.. testcode::
 
   model = setup_model02()
   # Suffixes here are read back from solver, so to have suffix data,

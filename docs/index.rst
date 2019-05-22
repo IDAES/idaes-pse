@@ -27,11 +27,20 @@ The IDAES team is comprised of collaborators from the following institutions:
 * Carnegie-Mellon University (subcontract to LBNL)
 * West Virginia University (subcontract to LBNL)
 
+Contact, contributions and more information
+-------------------------------------------
+General, background and overview information is available at the `IDAES main
+website <https://www.idaes.org>`_.  Framework development happens at our `GitHub
+repo <https://github.com/IDAES/idaes-pse>`_ where you can `report issues/bugs
+<https://github.com/IDAES/idaes-pse/issues>`_ or `make contributions
+<https://github.com/IDAES/idaes-pse/pulls>`_.  For further enquiries, send an
+email to: <idaes-support@idaes.org>
+
 Contents
 --------
 
 .. toctree::
-    :maxdepth: 1
+    :maxdepth: 2
 
     install
     standards
@@ -43,6 +52,7 @@ Contents
     version
     examples/index
     developer/index
+    Modules <apidoc/modules>
     glossary
 
 Indices and tables
