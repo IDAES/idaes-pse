@@ -21,7 +21,3 @@ in the ``idaes/examples/tutorials`` folder.
 
 1. `Basic Flowsheets Tutorial <Tutorial_1_Basic_Flowsheets.html>`_
 2. `Basic Flowsheet Optimization Tutorial <Tutorial_2_Basic_Flowsheet_Optimization.html>`_
-
-
-
-.. include:: ../global.rst
