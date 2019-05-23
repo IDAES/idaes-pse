@@ -28,9 +28,9 @@ def test_ver_class():
     v = ver.Version(1, 2, 3)
     assert str(v) == '1.2.3'
     v = ver.Version(1, 2, 3, 'beta', 1)
-    assert str(v) == '1.2.3b1'
+    assert str(v) == '1.2.3.b1'
     v = ver.Version(1, 2, 3, 'development')
-    assert str(v) == '1.2.3dev'
+    assert str(v) == '1.2.3.dev'
     pytest.raises(ValueError, ver.Version, 1, 2, 3, 'howdy')
 
 
