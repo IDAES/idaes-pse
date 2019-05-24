@@ -110,6 +110,8 @@ these models are:
     * CPLEX: a linear optimization package from `IBM <https://www.ibm.com/analytics/cplex-optimizer>`_.
     * Gurobi: LP/MILP/MIQP, etc., solvers from `Gurobi <http://www.gurobi.com>`_.
 
+.. _IPOPT: https://www.coin-or.org/Ipopt/documentation/documentation.html
+
 ASL and AMPL
 ^^^^^^^^^^^^
 In some cases, IDAES uses AMPL user-defined functions written in C for property
