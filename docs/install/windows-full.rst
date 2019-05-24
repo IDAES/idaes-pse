@@ -5,7 +5,7 @@ Windows Installation
 .. note:: Windows is not officially supported at this time.
 
 This is a complete guide to installing the IDAES framework on Windows. 
-The :ref:`Extras section<install:Extras>` includes additional information which may be useful.
+The :ref:`windows_extras` includes additional information which may be useful.
 This guide includes compiling C++ components.  In the future precompiled versions of these 
 libraries will be made available, simplifying the installation process.
 
@@ -154,6 +154,8 @@ Install IDAES
 
     conda install -c conda-forge ipopt
 
+.. _windows_extras:
+
 Extras
 ------
 
@@ -213,7 +215,7 @@ follow these instructions to compile IPOPT for Windows.
 .. _modify_path_env:
 
 Modifying the Path Environment Variable
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The Windows ``Path`` environment variable provides a search path for executable code
 and dynamically linked libraries (DLLs).  You can temporarily modify the path in a
