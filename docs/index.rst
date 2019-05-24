@@ -50,7 +50,7 @@ Contents
     vis/index
     dmf/index
     version
-    examples/index
+    tutorials
     developer/index
     Modules <apidoc/modules>
     glossary

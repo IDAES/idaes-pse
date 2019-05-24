@@ -96,7 +96,7 @@ dep: apidoc
 	@echo "Done building all dependencies"
 
 .PHONY: html
-html: apidoc tutorials
+html: apidoc
 	mkdir -p $(BUILDDIR)/examples
 	SPHINX=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)
 	@/bin/cp examples/*.html $(BUILDDIR)/examples
@@ -104,27 +104,46 @@ html: apidoc tutorials
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)"
 
-tutorials:
-	@echo "** Building/copying tutorials **"
+### This section builds the workshop tutorials into the
+### documentation (html only). It is not executed by default, so the
+### process that builds for distribution should add, explicitly,
+### a "tutorials" target.
 
-.PHONY: examples
-examples: execute nbconvert nbimages
-	@echo "Examples copied as HTML. The pages are located in $(BUILDDIR)/examples"
+tutorials: tutorial_setup tutorial_solns tutorial_probs tutorial_imgs
 
-.PHONY: nbconvert
-nbconvert: 
-	mkdir -p $(BUILDDIR)/examples
-	$(SCRIPTDIR)/convert_notebooks.sh ../examples/executed $(BUILDDIR)/examples
+.PHONY: tutorial_setup
+tutorial_setup:
+	@mkdir -p $(BUILDDIR)/tutorials
+	@mkdir -p ./tutorials
 
-.PHONY: nbimages
-nbimages:
-	$(shell find ../examples -name "*.png" -exec cp {} $(BUILDDIR)/examples \;)
+.PHONY: tutorial_solns
+tutorial_solns: ../examples/workshops/Module_*/*Solution*.ipynb
+	@for f in $^ ; do \
+		echo "** Execute and convert: $$f"; \
+		jupyter nbconvert --to html -y --execute --output-dir=./tutorials $$f; \
+		n=`basename $$f .ipynb`; \
+		echo "Tutorial $$n\n==================================================\n" > ./tutorials/$$n.rst; \
+		echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
+	done
 
-.PHONY: execute
-execute: 
-	jupyter nbconvert --to notebook --execute \
-	$(shell find ../examples -name \*.ipynb | grep -v -e executed -e checkpoint) \
-	--output-dir ../examples/executed
+.PHONY: tutorial_probs
+tutorial_probs: ../examples/workshops/Module_*/Module_*.ipynb
+	@for f in $^ ; do \
+		is_soln=`echo $$f | grep -Fsc Solution`; \
+		if [ $$is_soln -eq 0 ]; then \
+			echo "** Convert static: $$f"; \
+			jupyter nbconvert --to html -y --output-dir=./tutorials $$f; \
+			n=`basename $$f .ipynb`; \
+			echo "Tutorial $$n\n==================================================\n" > ./tutorials/$$n.rst; \
+			echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
+		fi; \
+	done
+
+.PHONY: tutorial_imgs
+tutorial_imgs: ../examples/workshops/Module_*/*.png
+	cp $< $(BUILDDIR)/tutorials
+
+### End of tutorials section
 
 .PHONY: dirhtml
 dirhtml:
