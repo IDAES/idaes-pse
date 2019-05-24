@@ -97,7 +97,7 @@ html:
 # a "tutorials" target.
 ###
 
-tutorials: tutorial_setup tutorial_solns tutorial_imgs
+tutorials: tutorial_setup tutorial_solns tutorial_probs tutorial_imgs
 
 tutorial_setup:
 	@mkdir -p $(BUILDDIR)/tutorials
@@ -106,10 +106,13 @@ tutorial_setup:
 tutorial_solns: ../examples/workshops/Module_*/*Solution*.ipynb
 	@for f in $^ ; do \
 		echo "** Execute and convert: $$f"; \
-		jupyter nbconvert --to html -y --execute --output-dir=./tutorials $$f; \
 		n=`basename $$f .ipynb`; \
 		m=`echo $$n | cut -d_ -f2`; \
 		t=`basename $$n _Solution | cut -d_ -f3- | tr _ ' '`; \
+		case $$m in 2) exe="" ; echo "   not executing" ;; \
+		  *) exe="--execute" ;; \
+		esac; \
+		jupyter nbconvert --to html -y $$exe --output-dir=./tutorials $$f; \
 		echo "Tutorial Module $$m: $$t\n==================================================\n" > ./tutorials/$$n.rst; \
 		echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
 	done
