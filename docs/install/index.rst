@@ -4,10 +4,10 @@ Installation
 .. toctree::
     :hidden:
     
-    install/minimal
-    install/linux-full
-    install/windows-full
-    install/docker
+    minimal
+    linux-full
+    windows-full
+    docker
 
 To install the IDAES PSE framework, follow the
 set of instructions below that are appropriate for your needs and operating system.

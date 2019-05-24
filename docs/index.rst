@@ -42,7 +42,7 @@ Contents
 .. toctree::
     :maxdepth: 2
 
-    install
+    install/index
     standards
     core/index
     models/index
