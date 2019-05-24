@@ -25,7 +25,7 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, exp, Set, Param, sqrt
+    value, Var, exp, Set, Param, sqrt, log10
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.config import ConfigValue, In
@@ -799,21 +799,10 @@ class IdealStateBlockData(StateBlockData):
                                       doc="Bubble point temperature (K)")
 
         def rule_psat_bubble(b, j):
-            return b._params.pressure_crit[j] * \
-                exp((b._params.pressure_sat_coeff[j, 'A'] *
-                     (1 - b.temperature_bubble /
-                      b._params.temperature_crit[j]) +
-                     b._params.pressure_sat_coeff[j, 'B'] *
-                     (1 - b.temperature_bubble /
-                      b._params.temperature_crit[j])**1.5 +
-                     b._params.pressure_sat_coeff[j, 'C'] *
-                     (1 - b.temperature_bubble /
-                      b._params.temperature_crit[j])**3 +
-                     b._params.pressure_sat_coeff[j, 'D'] *
-                     (1 - b.temperature_bubble /
-                      b._params.temperature_crit[j])**6) /
-                    (1 - (1 - b.temperature_bubble /
-                          b._params.temperature_crit[j])))
+            return 1e5*10**(b._params.pressure_sat_coeff[j, 'A'] -
+                            b._params.pressure_sat_coeff[j, 'B'] /
+                            (b.temperature_bubble +
+                             b._params.pressure_sat_coeff[j, 'C']))
         try:
             # Try to build expression
             self._p_sat_bubbleT = Expression(self._params.component_list,
@@ -838,21 +827,10 @@ class IdealStateBlockData(StateBlockData):
                                    doc="Dew point temperature (K)")
 
         def rule_psat_dew(b, j):
-            return b._params.pressure_crit[j] * \
-                exp((b._params.pressure_sat_coeff[j, 'A'] *
-                     (1 - b.temperature_dew /
-                      b._params.temperature_crit[j]) +
-                     b._params.pressure_sat_coeff[j, 'B'] *
-                     (1 - b.temperature_dew /
-                      b._params.temperature_crit[j])**1.5 +
-                     b._params.pressure_sat_coeff[j, 'C'] *
-                     (1 - b.temperature_dew /
-                      b._params.temperature_crit[j])**3 +
-                     b._params.pressure_sat_coeff[j, 'D'] *
-                     (1 - b.temperature_dew /
-                      b._params.temperature_crit[j])**6) /
-                    (1 - (1 - b.temperature_dew /
-                          b._params.temperature_crit[j])))
+            return 1e5*10**(b._params.pressure_sat_coeff[j, 'A'] -
+                            b._params.pressure_sat_coeff[j, 'B'] /
+                            (b.temperature_dew +
+                             b._params.pressure_sat_coeff[j, 'C']))
 
         try:
             # Try to build expression
@@ -877,21 +855,10 @@ class IdealStateBlockData(StateBlockData):
                                    doc="Bubble point pressure (Pa)")
 
         def rule_psat_bubble(b, j):
-            return b._params.pressure_crit[j] * \
-                exp((b._params.pressure_sat_coeff[j, 'A'] *
-                     (1 - b.temperature /
-                      b._params.temperature_crit[j]) +
-                     b._params.pressure_sat_coeff[j, 'B'] *
-                     (1 - b.temperature /
-                      b._params.temperature_crit[j])**1.5 +
-                     b._params.pressure_sat_coeff[j, 'C'] *
-                     (1 - b.temperature /
-                      b._params.temperature_crit[j])**3 +
-                     b._params.pressure_sat_coeff[j, 'D'] *
-                     (1 - b.temperature /
-                      b._params.temperature_crit[j])**6) /
-                    (1 - (1 - b.temperature /
-                          b._params.temperature_crit[j])))
+            return 1e5*10**(b._params.pressure_sat_coeff[j, 'A'] -
+                            b._params.pressure_sat_coeff[j, 'B'] /
+                            (b.temperature +
+                             b._params.pressure_sat_coeff[j, 'C']))
 
         try:
             # Try to build expression
@@ -915,21 +882,10 @@ class IdealStateBlockData(StateBlockData):
                                 doc="Dew point pressure (Pa)")
 
         def rule_psat_dew(b, j):
-            return b._params.pressure_crit[j] * \
-                exp((b._params.pressure_sat_coeff[j, 'A'] *
-                     (1 - b.temperature /
-                      b._params.temperature_crit[j]) +
-                     b._params.pressure_sat_coeff[j, 'B'] *
-                     (1 - b.temperature /
-                      b._params.temperature_crit[j])**1.5 +
-                     b._params.pressure_sat_coeff[j, 'C'] *
-                     (1 - b.temperature /
-                      b._params.temperature_crit[j])**3 +
-                     b._params.pressure_sat_coeff[j, 'D'] *
-                     (1 - b.temperature /
-                      b._params.temperature_crit[j])**6) /
-                    (1 - (1 - b.temperature /
-                          b._params.temperature_crit[j])))
+            return 1e5*10**(b._params.pressure_sat_coeff[j, 'A'] -
+                            b._params.pressure_sat_coeff[j, 'B'] /
+                            (b.temperature +
+                             b._params.pressure_sat_coeff[j, 'C']))
 
         try:
             # Try to build expression
@@ -973,12 +929,10 @@ class IdealStateBlockData(StateBlockData):
                                 doc="Vapor pressure [Pa]")
 
         def rule_P_sat(b, j):
-            return (b._tr_eq[j]) * \
-                log(b.pressure_sat[j] / b._params.pressure_crit[j]) == \
-                (b._params.pressure_sat_coeff[j, 'A'] * (1 - b._tr_eq[j]) +
-                 b._params.pressure_sat_coeff[j, 'B'] * (1 - b._tr_eq[j])**1.5 +
-                 b._params.pressure_sat_coeff[j, 'C'] * (1 - b._tr_eq[j])**3 +
-                 b._params.pressure_sat_coeff[j, 'D'] * (1 - b._tr_eq[j])**6)
+            return ((log10(b.pressure_sat[j]*1e-5) -
+                     b._params.pressure_sat_coeff[j, 'A']) *
+                    (b._teq + b._params.pressure_sat_coeff[j, 'C'])) == \
+                   -b._params.pressure_sat_coeff[j, 'B']
         self.eq_pressure_sat = Constraint(self._params.component_list,
                                           rule=rule_P_sat)
 

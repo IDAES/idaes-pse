@@ -208,22 +208,19 @@ class BTXParameterData(IdealParameterData):
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        pressure_sat_coeff_data = {('benzene', 'A'): -6.98273,
-                                   ('benzene', 'B'): 1.33213,
-                                   ('benzene', 'C'): -2.62863,
-                                   ('benzene', 'D'): -3.33399,
-                                   ('toluene', 'A'): -7.28607,
-                                   ('toluene', 'B'): 1.38091,
-                                   ('toluene', 'C'): -2.83433,
-                                   ('toluene', 'D'): -2.79168,
-                                   ('o-xylene', 'A'): -7.53357,
-                                   ('o-xylene', 'B'): 1.40968,
-                                   ('o-xylene', 'C'): -3.10985,
-                                   ('o-xylene', 'D'): -2.85992}
+        pressure_sat_coeff_data = {('benzene', 'A'): 4.202,
+                                   ('benzene', 'B'): 1322,
+                                   ('benzene', 'C'): -38.56,
+                                   ('toluene', 'A'): 4.216,
+                                   ('toluene', 'B'): 1435,
+                                   ('toluene', 'C'): -43.33,
+                                   ('o-xylene', 'A'): 4.233,
+                                   ('o-xylene', 'B'): 1548,
+                                   ('o-xylene', 'C'): -51.65}
 
         self.pressure_sat_coeff = Param(
             self.component_list,
-            ['A', 'B', 'C', 'D'],
+            ['A', 'B', 'C'],
             mutable=False,
             initialize=extract_data(pressure_sat_coeff_data),
             doc="parameters to compute Cp_comp")
