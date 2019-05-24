@@ -62,7 +62,6 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  coverage   to run coverage check of the documentation (if enabled)"
 	@echo "  dummy      to check syntax errors of document sources"
-	@echo "  examples   to run and copy the example notebooks into html format"
 
 .PHONY: clean
 clean:
@@ -72,9 +71,10 @@ clean:
 .PHONY: allclean
 allclean: clean
 	rm -rf $(BUILDDIR)/*
+	rm -f tutorials/Module_*.rst tutorials/*.html
 
 # Use this target to rebuild IDAES docs
-idaes: dep examples html
+idaes: dep html
 	@echo "Rebuilding IDAES documentation"
 
 .PHONY: apidoc
@@ -99,8 +99,6 @@ dep: apidoc
 html: apidoc
 	mkdir -p $(BUILDDIR)/examples
 	SPHINX=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)
-	@/bin/cp examples/*.html $(BUILDDIR)/examples
-	@/bin/cp examples/*.png $(BUILDDIR)/examples
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)"
 
@@ -109,7 +107,7 @@ html: apidoc
 ### process that builds for distribution should add, explicitly,
 ### a "tutorials" target.
 
-tutorials: tutorial_setup tutorial_solns tutorial_probs tutorial_imgs
+tutorials: tutorial_setup tutorial_solns tutorial_imgs
 
 .PHONY: tutorial_setup
 tutorial_setup:
@@ -122,7 +120,9 @@ tutorial_solns: ../examples/workshops/Module_*/*Solution*.ipynb
 		echo "** Execute and convert: $$f"; \
 		jupyter nbconvert --to html -y --execute --output-dir=./tutorials $$f; \
 		n=`basename $$f .ipynb`; \
-		echo "Tutorial $$n\n==================================================\n" > ./tutorials/$$n.rst; \
+		m=`echo $$n | cut -d_ -f2`; \
+		t=`basename $$n _Solution | cut -d_ -f3- | tr _ ' '`; \
+		echo "Tutorial Module $$m: $$t\n==================================================\n" > ./tutorials/$$n.rst; \
 		echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
 	done
 
@@ -134,14 +134,16 @@ tutorial_probs: ../examples/workshops/Module_*/Module_*.ipynb
 			echo "** Convert static: $$f"; \
 			jupyter nbconvert --to html -y --output-dir=./tutorials $$f; \
 			n=`basename $$f .ipynb`; \
-			echo "Tutorial $$n\n==================================================\n" > ./tutorials/$$n.rst; \
+			m=`echo $$n | cut -d_ -f2`; \
+			t=`echo $$n | cut -d_ -f3- | tr _ ' '`; \
+			echo "Tutorial Module $$m: $$t\n==================================================\n" > ./tutorials/$$n.rst; \
 			echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
 		fi; \
 	done
 
 .PHONY: tutorial_imgs
 tutorial_imgs: ../examples/workshops/Module_*/*.png
-	cp $< $(BUILDDIR)/tutorials
+	for f in $^; do cp $$f $(BUILDDIR)/tutorials; done
 
 ### End of tutorials section
 
