@@ -37,7 +37,6 @@ help:
 	@echo "  html       to make standalone HTML files"
 	@echo "  dirhtml    to make HTML files named index.html in directories"
 	@echo "  singlehtml to make a single large HTML file"
-	@echo "  dep        to make all generated dependencies"
 	@echo "  apidoc     to make HTML API docs"
 	@echo "  pickle     to make pickle files"
 	@echo "  json       to make JSON files"
@@ -63,58 +62,47 @@ help:
 	@echo "  coverage   to run coverage check of the documentation (if enabled)"
 	@echo "  dummy      to check syntax errors of document sources"
 
-.PHONY: clean
 clean:
 	rm -f apidoc/*
 	rm -f sphinx-build.log
 
-.PHONY: allclean
 allclean: clean
 	rm -rf $(BUILDDIR)/*
 	rm -f tutorials/Module_*.rst tutorials/*.html
 
-# Use this target to rebuild IDAES docs
-idaes: dep html
-	@echo "Rebuilding IDAES documentation"
-
-.PHONY: apidoc
 apidoc:
-	@ echo "Build apidocs (twice)"
+	@ echo "** Build apidocs (twice)"
 	$(SPHINX_I) >/dev/null
 	$(SPHINX_X) >/dev/null
-	@ echo "Combine indexed and non-indexed docs"
+	@ echo "  combine indexed and non-indexed docs"
 	@ mkdir -p apidoc
 	@ /bin/cp $(SPHINXAPIDOCOUT_X)/* apidoc
 	@for ix in idaes idaes.dmf idaes.vis ; do 	\
 		/bin/cp $(SPHINXAPIDOCOUT_I)/$${ix}.rst apidoc;		\
 	done
 	@ /bin/rm -rf $(SPHINXAPIDOCOUT_I) $(SPHINXAPIDOCOUT_X)
-	@ echo "Done: output in directory 'apidoc'"
+	@ echo "** API docs are in ./apidoc"
 
-.PHONY: dep
-dep: apidoc
-	@echo "Done building all dependencies"
+all: apidoc tutorials html
+	@echo "** Build finished"
 
-.PHONY: html
-html: apidoc
-	mkdir -p $(BUILDDIR)/examples
+html:
 	SPHINX=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)
-	@echo
-	@echo "Build finished. The HTML pages are in $(BUILDDIR)"
+	@echo "** HTML docs are in $(BUILDDIR)"
 
-### This section builds the workshop tutorials into the
-### documentation (html only). It is not executed by default, so the
-### process that builds for distribution should add, explicitly,
-### a "tutorials" target.
+### 
+# This section builds the workshop tutorials into the
+# documentation (html only). It is not executed by default, so the
+# process that builds for distribution should add, explicitly,
+# a "tutorials" target.
+###
 
 tutorials: tutorial_setup tutorial_solns tutorial_imgs
 
-.PHONY: tutorial_setup
 tutorial_setup:
 	@mkdir -p $(BUILDDIR)/tutorials
 	@mkdir -p ./tutorials
 
-.PHONY: tutorial_solns
 tutorial_solns: ../examples/workshops/Module_*/*Solution*.ipynb
 	@for f in $^ ; do \
 		echo "** Execute and convert: $$f"; \
@@ -126,7 +114,6 @@ tutorial_solns: ../examples/workshops/Module_*/*Solution*.ipynb
 		echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
 	done
 
-.PHONY: tutorial_probs
 tutorial_probs: ../examples/workshops/Module_*/Module_*.ipynb
 	@for f in $^ ; do \
 		is_soln=`echo $$f | grep -Fsc Solution`; \
@@ -141,11 +128,12 @@ tutorial_probs: ../examples/workshops/Module_*/Module_*.ipynb
 		fi; \
 	done
 
-.PHONY: tutorial_imgs
 tutorial_imgs: ../examples/workshops/Module_*/*.png
 	for f in $^; do cp $$f $(BUILDDIR)/tutorials; done
 
-### End of tutorials section
+###
+# End of tutorials section
+###
 
 .PHONY: dirhtml
 dirhtml:
@@ -321,23 +309,23 @@ coverage:
 	@echo "Testing of coverage in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/coverage/python.txt."
 
-.PHONY: xml
 xml:
 	mkdir -p $(BUILDDIR)/xml
 	$(SPHINXBUILD) -b xml $(ALLSPHINXOPTS) $(BUILDDIR)/xml
 	@echo
 	@echo "Build finished. The XML files are in $(BUILDDIR)/xml."
 
-.PHONY: pseudoxml
 pseudoxml:
 	mkdir -p $(BUILDDIR)/pseudoxml
 	$(SPHINXBUILD) -b pseudoxml $(ALLSPHINXOPTS) $(BUILDDIR)/pseudoxml
 	@echo
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
 
-.PHONY: dummy
 dummy:
 	mkdir -p $(BUILDDIR)/dummy
 	$(SPHINXBUILD) -b dummy $(ALLSPHINXOPTS) $(BUILDDIR)/dummy
 	@echo
 	@echo "Build finished. Dummy builder generates no files."
+
+.PHONY: dummy pseudoxml xml clean allclean apidoc htmlnote \
+		tutorial_setup tutorial_solns tutoral_probs tutorial_imgs
