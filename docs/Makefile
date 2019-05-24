@@ -96,13 +96,16 @@ dep: apidoc
 	@echo "Done building all dependencies"
 
 .PHONY: html
-html: apidoc
+html: apidoc tutorials
 	mkdir -p $(BUILDDIR)/examples
 	SPHINX=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)
 	@/bin/cp examples/*.html $(BUILDDIR)/examples
 	@/bin/cp examples/*.png $(BUILDDIR)/examples
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)"
+
+tutorials:
+	@echo "** Building/copying tutorials **"
 
 .PHONY: examples
 examples: execute nbconvert nbimages
