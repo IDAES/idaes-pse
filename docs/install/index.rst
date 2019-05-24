@@ -1,3 +1,5 @@
+.. _idaes_installation:
+
 Installation
 ============
 
