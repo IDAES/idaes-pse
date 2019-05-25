@@ -41,7 +41,7 @@ The documentation for IDAES is built using [Sphinx](http://www.sphinx-doc.org/).
 
 ```
 cd docs
-make html
+make all
 ```
 
 To view the documentation you just built, open the file

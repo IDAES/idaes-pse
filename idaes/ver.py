@@ -26,12 +26,12 @@ Example of using the class directly:
     (1, 2, 3)
     >>> my_version = Version(1, 2, 3, 'alpha')
     >>> print(my_version)
-    1.2.3a
+    1.2.3.a
     >>> tuple(my_version)
     (1, 2, 3, 'alpha')
     >>> my_version = Version(1, 2, 3, 'candidate', 1)
     >>> print(my_version)
-    1.2.3rc1
+    1.2.3.rc1
     >>> tuple(my_version)
     (1, 2, 3, 'candidate', 1)
 
@@ -48,7 +48,7 @@ same arguments you would give the :class:`Version` constructor:
     ...
     >>> obj = MyClass()
     >>> print(obj.version)
-    1.2.3a
+    1.2.3.a
 
 """
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
@@ -110,7 +110,7 @@ class Version(object):
             self.minor,
             self.micro,
             ('' if self.releaselevel == 'final'
-             else self._specifiers[self.releaselevel] +
+             else '.' + self._specifiers[self.releaselevel] +
                   ('' if self.serial is None else str(self.serial))))
 
 
@@ -128,7 +128,7 @@ class HasVersion(object):
 
 
 #: Package's version as an object
-package_version = Version(1, 0, 1)
+package_version = Version(1, 2, 0, "development", 0)
 
 #: Package's version as a simple string
 __version__ = str(package_version)
