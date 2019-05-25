@@ -42,7 +42,7 @@ Contents
 .. toctree::
     :maxdepth: 2
 
-    install
+    install/index
     standards
     core/index
     models/index
@@ -50,7 +50,7 @@ Contents
     vis/index
     dmf/index
     version
-    examples/index
+    tutorials
     developer/index
     Modules <apidoc/modules>
     glossary
