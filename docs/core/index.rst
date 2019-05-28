@@ -42,5 +42,3 @@ energy, mass, and momentum balances, as well as state and reaction
 blocks associated with the material within the control volume.
 
 More detail on the different types of modeling objects is available in the Modeling Concepts section.
-
-.. include:: ../global.rst
