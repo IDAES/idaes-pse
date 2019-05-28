@@ -26,40 +26,41 @@ from pyomo.core.kernel.component_set import ComponentSet
 from idaes.core.util.exceptions import ConfigurationError
 
 
-# TODO : Need to deal with variables in inactive constraints
-
-def enumerate_component(block, ctype,
-                        deactivated_blocks=True, descend_into=True):
-
+def _create_component_set(block, ctype, active_blocks=True, descend_into=True):
     set_components = ComponentSet()
 
-    if deactivated_blocks is False and block.active is False:
+    if active_blocks is True and block.active is False:
         return set_components
 
-    # Enumerate local components
-    for o in block.component_data_objects(ctype=ctype, descend_into=False):
-        set_components.add(o)
+    set_components.update(block.component_data_objects(ctype=ctype,
+                                                       active=None,
+                                                       descend_into=False))
 
     if descend_into:
-        for b in block.component_data_objects(ctype=Block, descend_into=False):
-            sc = enumerate_component(b,
-                                     ctype,
-                                     deactivated_blocks=deactivated_blocks,
-                                     descend_into=True)
+        set_blocks = block_component_set(block,
+                                         active=active_blocks,
+                                         descend_into=True)
 
-            set_components.update(sc)
+        for b in set_blocks:
+            set_components.update(b.component_data_objects(ctype=ctype,
+                                                           active=None,
+                                                           descend_into=False))
 
     return set_components
 
 
-def enumerate_blocks(block, deactivated_blocks=False, descend_into=True):
+def block_component_set(block, active=True, descend_into=True):
     """
-    Method to enumerate the Block components appearing within a Pyomo Block.
+    Method to return a set of the Block components appearing within a Pyomo
+    Block.
 
     Args:
         block - the Block to be enumerated
-        deactivated_blocks - indicates whether deactivated Blocks (and
-                sub-Blocks) should be included (deafult = False)
+        active - indicates whether components should be included based on their
+                `active` status. Can have the follwoing values:
+                * None - inlcude all components
+                * True - include only components with active = True (default)
+                * False - include only components with active = False
         descend_into - indicates whether only local Blocks should be enumerated
                 (False), or if child Blocks should be included (True, default)
 
@@ -69,33 +70,24 @@ def enumerate_blocks(block, deactivated_blocks=False, descend_into=True):
     """
     set_blocks = ComponentSet()
 
-    if deactivated_blocks is False and block.active is False:
-        return set_blocks
-
-    # Enumerate local components
-    for o in block.component_data_objects(ctype=Block, descend_into=False):
-        if deactivated_blocks is True or o.active is True:
-            set_blocks.add(o)
-
-    if descend_into:
-        for b in block.component_data_objects(ctype=Block, descend_into=False):
-            sb = enumerate_blocks(b,
-                                  deactivated_blocks=deactivated_blocks,
-                                  descend_into=True)
-
-            set_blocks.update(sb)
+    set_blocks.update(block.component_data_objects(ctype=Block,
+                                                   active=active,
+                                                   descend_into=descend_into))
 
     return set_blocks
 
 
-def enumerate_variables(block, deactivated_blocks=False, descend_into=True):
+def variable_component_set(block, active=True, descend_into=True):
     """
-    Method to enumerate the Variables appearing within a model.
+    Method to return a set of the Variables appearing within a model.
 
     Args:
         block - the Block object to be enumerated
-        deactivated_blocks - indicates whether Vars in deactivated Blocks (and
-                sub-Blocks) should be included (deafult = False)
+        active - indicates whether Vars in deactivated Blocks (and
+                sub-Blocks) should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
         descend_into - indicates whether only local Vars within Blocks should
                 be enumerated (False), or if Vars in child Blocks should be
                 included (True, default)
@@ -103,25 +95,29 @@ def enumerate_variables(block, deactivated_blocks=False, descend_into=True):
     Returns:
         set_vars - a ComponentSet containing all Vars that appear within block
     """
-    return enumerate_component(block,
-                               ctype=Var,
-                               deactivated_blocks=deactivated_blocks,
-                               descend_into=descend_into)
+    set_vars = ComponentSet()
+    set_vars.update(block.component_data_objects(ctype=Var,
+                                                 active=active,
+                                                 descend_into=descend_into))
+    return set_vars
 
 
-def enumerate_derivative_variables(block,
-                                   deactivated_blocks=False,
-                                   descend_into=True):
+def derivative_variables_component_set(block,
+                                       active_blocks=True,
+                                       descend_into=True):
     """
-    Method to enumerate the DerivativeVars appearing within a model. Users
-    should note that applying a DAE transformation converts DerivativeVars into
-    ordinary Vars. Thus, this method is useful for identifying any
-    DerivativeVars that have not been trasnformed.
+    Method to return a set of the DerivativeVars appearing within a model.
+    Users should note that applying a DAE transformation converts
+    DerivativeVars into ordinary Vars. Thus, this method is useful for
+    identifying any DerivativeVars that have not been transformed.
 
     Args:
         block - the Block object to be enumerated
-        deactivated_blocks - indicates whether DerivativeVars in deactivated
-                Blocks (and sub-Blocks) should be included (deafult = False)
+        active_blocks - indicates whether DerivativeVars in deactivated Blocks
+                (and sub-Blocks) should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
         descend_into - indicates whether only local DerivativeVars within
                 Blocks should be enumerated (False), or if DerivativeVars in
                 child Blocks should be included (True, default)
@@ -130,20 +126,24 @@ def enumerate_derivative_variables(block,
         set_vars - a ComponentSet containing all DerivativeVars that appear
                 within block
     """
-    return enumerate_component(block,
-                               ctype=DerivativeVar,
-                               deactivated_blocks=deactivated_blocks,
-                               descend_into=descend_into)
+    return _create_component_set(block,
+                                 ctype=DerivativeVar,
+                                 active_blocks=active_blocks,
+                                 descend_into=descend_into)
 
 
-def enumerate_expressions(block, deactivated_blocks=False, descend_into=True):
+def expression_component_set(block, active_blocks=True, descend_into=True):
     """
-    Method to enumerate the Expression components appearing within a model.
+    Method to return a set of the Expression components appearing within a
+    model.
 
     Args:
         block - the Block object to be enumerated
-        deactivated_blocks - indicates whether Expressions in deactivated
-                Blocks (and sub-Blocks) should be included (deafult = False)
+        active_blocks - indicates whether Expressions in deactivated Blocks
+                (and sub-Blocks) should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
         descend_into - indicates whether only local Expressions within
                 Blocks should be enumerated (False), or if Expressions in
                 child Blocks should be included (True, default)
@@ -152,20 +152,24 @@ def enumerate_expressions(block, deactivated_blocks=False, descend_into=True):
         set_expressions - a ComponentSet containing all Expressions that appear
             within block
     """
-    return enumerate_component(block,
-                               ctype=Expression,
-                               deactivated_blocks=deactivated_blocks,
-                               descend_into=descend_into)
+    return _create_component_set(block,
+                                 ctype=Expression,
+                                 active_blocks=active_blocks,
+                                 descend_into=descend_into)
 
 
-def enumerate_objectives(block, deactivated_blocks=False, descend_into=True):
+def objective_component_set(block, active_blocks=True, descend_into=True):
     """
-    Method to enumerate the Objective components appearing within a model.
+    Method to return a set of the Objective components appearing within a
+    model.
 
     Args:
         block - the Block object to be enumerated
-        deactivated_blocks - indicates whether Objective in deactivated
-                Blocks (and sub-Blocks) should be included (deafult = False)
+        active_blocks - indicates whether Objectives in deactivated Blocks
+                (and sub-Blocks) should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
         descend_into - indicates whether only local Objectives within
                 Blocks should be enumerated (False), or if Objectives in
                 child Blocks should be included (True, default)
@@ -174,20 +178,24 @@ def enumerate_objectives(block, deactivated_blocks=False, descend_into=True):
         set_expressions - a ComponentSet containing all Objectives that appear
             within block
     """
-    return enumerate_component(block,
-                               ctype=Objective,
-                               deactivated_blocks=deactivated_blocks,
-                               descend_into=descend_into)
+    return _create_component_set(block,
+                                 ctype=Objective,
+                                 active_blocks=active_blocks,
+                                 descend_into=descend_into)
 
 
-def enumerate_constraints(block, deactivated_blocks=False, descend_into=True):
+def constraint_component_set(block, active_blocks=True, descend_into=True):
     """
-    Method to enumerate the Constraint components appearing within a model.
+    Method to return a set of the Constraint components appearing within a
+    model.
 
     Args:
         block - the Block object to be enumerated
-        deactivated_blocks - indicates whether Constraints in deactivated
-                Blocks (and sub-Blocks) should be included (deafult = False)
+        active_blocks - indicates whether Constraints in deactivated Blocks
+                (and sub-Blocks) should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
         descend_into - indicates whether only local Constraints within
                 Blocks should be enumerated (False), or if Constraints in
                 child Blocks should be included (True, default)
@@ -196,25 +204,28 @@ def enumerate_constraints(block, deactivated_blocks=False, descend_into=True):
         set_expressions - a ComponentSet containing all Constraints that appear
             within block
     """
-    return enumerate_component(block,
-                               ctype=Constraint,
-                               deactivated_blocks=deactivated_blocks,
-                               descend_into=descend_into)
+    return _create_component_set(block,
+                                 ctype=Constraint,
+                                 active_blocks=active_blocks,
+                                 descend_into=descend_into)
 
 
-def enumerate_equality_constraints(block_or_set,
-                                   deactivated_blocks=False,
-                                   descend_into=True):
+def equality_constraint_component_set(block_or_set,
+                                      active_blocks=True,
+                                      descend_into=True):
     """
-    Method to enumerate the equality Constraint components appearing within a
-    model.
+    Method to return a set of the equality Constraint components appearing
+    within a model.
 
     Args:
         block_or_set - the Block object to be enumerated or an existing
                 ComponentSet of Constraints to be enumerated
-        deactivated_blocks - used when block_or_set is a Block object and
-                indicates whether Constraints in deactivated Blocks (and
-                sub-Blocks) should be included (deafult = False)
+        active_blocks - used when block_or_set is a Block object and indicates
+                whether Constraints in deactivated Blocks (and sub-Blocks)
+                should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
         descend_into - used when block_or_set is a Block object and indicates
                 whether only local Constraints within Blocks should be
                 enumerated (False), or if Constraints in child Blocks should be
@@ -225,9 +236,9 @@ def enumerate_equality_constraints(block_or_set,
             appear within block_or_set
     """
     if not isinstance(block_or_set, ComponentSet):
-        block_or_set = enumerate_constraints(
+        block_or_set = constraint_component_set(
                             block_or_set,
-                            deactivated_blocks=deactivated_blocks,
+                            active_blocks=active_blocks,
                             descend_into=descend_into)
 
     set_equalities = ComponentSet()
@@ -240,19 +251,22 @@ def enumerate_equality_constraints(block_or_set,
     return set_equalities
 
 
-def enumerate_inequality_constraints(block_or_set,
-                                     deactivated_blocks=False,
-                                     descend_into=True):
+def inequality_constraints_component_set(block_or_set,
+                                         active_blocks=True,
+                                         descend_into=True):
     """
-    Method to enumerate the inequality Constraint components appearing within a
-    model.
+    Method to return a set of the inequality Constraint components appearing
+    within a model.
 
     Args:
         block_or_set - the Block object to be enumerated or an existing
                 ComponentSet of Constraints to be enumerated
-        deactivated_blocks - used when block_or_set is a Block object and
-                indicates whether Constraints in deactivated Blocks (and
-                sub-Blocks) should be included (deafult = False)
+        active_blocks - used when block_or_set is a Block object and indicates
+                whether Constraints in deactivated Blocks (and sub-Blocks)
+                should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
         descend_into - used when block_or_set is a Block object and indicates
                 whether only local Constraints within Blocks should be
                 enumerated (False), or if Constraints in child Blocks should be
@@ -263,9 +277,9 @@ def enumerate_inequality_constraints(block_or_set,
             that appear within block_or_set
     """
     if not isinstance(block_or_set, ComponentSet):
-        block_or_set = enumerate_constraints(
+        block_or_set = constraint_component_set(
                             block_or_set,
-                            deactivated_blocks=deactivated_blocks,
+                            active_blocks=active_blocks,
                             descend_into=descend_into)
 
     set_inequalities = ComponentSet()
@@ -278,9 +292,9 @@ def enumerate_inequality_constraints(block_or_set,
     return set_inequalities
 
 
-def enumerate_activated_components(component_set):
+def activated_component_set(component_set):
     """
-    Method to enumerate the activated components appearing within a
+    Method to return a set of the activated components appearing within a
     set of components.
 
     Args:
@@ -299,19 +313,22 @@ def enumerate_activated_components(component_set):
     return set_activated
 
 
-def enumerate_variables_in_constraints(block_or_set,
-                                       deactivated_blocks=False,
-                                       descend_into=True):
+def variables_in_constraints_component_set(block_or_set,
+                                           active_blocks=True,
+                                           descend_into=True):
     """
-    Method to enumerate the Variables which occur within Constraints within a
+    Method to return a set of the Vars which occur within Constraints within a
     model.
 
     Args:
         block_or_set - the Block object containing the Constraints to be
                 enumerated or an existing ComponentSet of Constraints
-        deactivated_blocks - used when block_or_set is a Block object and
-                indicates whether Constraints in deactivated Blocks (and
-                sub-Blocks) should be included (deafult = False)
+        active_blocks - used when block_or_set is a Block object and indicates
+                whether Constraints in deactivated Blocks (and sub-Blocks)
+                should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
         descend_into - used when block_or_set is a Block object and indicates
                 whether only local Constraints within Blocks should be
                 enumerated (False), or if Constraints in child Blocks should be
@@ -322,9 +339,9 @@ def enumerate_variables_in_constraints(block_or_set,
             which appear in the Constraints in block_or_set
     """
     if not isinstance(block_or_set, ComponentSet):
-        block_or_set = enumerate_constraints(
+        block_or_set = constraint_component_set(
                             block_or_set,
-                            deactivated_blocks=deactivated_blocks,
+                            active_blocks=active_blocks,
                             descend_into=descend_into)
 
     set_vars_in_constraints = ComponentSet()
@@ -336,18 +353,20 @@ def enumerate_variables_in_constraints(block_or_set,
     return set_vars_in_constraints
 
 
-def enumerate_fixed_variables(block_or_set,
-                              deactivated_blocks=False,
-                              descend_into=True):
+def fixed_variable_component_set(block_or_set,
+                                 active=True,
+                                 descend_into=True):
     """
     Method to enumerate the fixed Variables which within a model.
 
     Args:
         block_or_set - the Block object containing the Vars to be
                 enumerated or an existing ComponentSet of Vars
-        deactivated_blocks - used when block_or_set is a Block object and
-                indicates whether Vars in deactivated Blocks (and
-                sub-Blocks) should be included (deafult = False)
+        active - indicates whether Vars in deactivated Blocks (and
+                sub-Blocks) should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
         descend_into - used when block_or_set is a Block object and indicates
                 whether only local Vars within Blocks should be
                 enumerated (False), or if Vars in child Blocks should be
@@ -358,9 +377,9 @@ def enumerate_fixed_variables(block_or_set,
             which appear in block_or_set
     """
     if not isinstance(block_or_set, ComponentSet):
-        block_or_set = enumerate_variables(
+        block_or_set = variable_component_set(
                             block_or_set,
-                            deactivated_blocks=deactivated_blocks,
+                            active=active,
                             descend_into=descend_into)
 
     set_fixed_vars = ComponentSet()
@@ -372,12 +391,12 @@ def enumerate_fixed_variables(block_or_set,
     return set_fixed_vars
 
 
-def enumerate_active_varaibles_in_deactived_blocks(block):
+def active_variables_in_deactived_blocks_component_set(block):
     """
-    This method enumerates any Vars which belong to a deactivated Block (or
-    a child of a deactiveted Block) but appear in an active Constraint within
-    a model. This can cause problems with the Pyomo solver writers, and is
-    often an indication of a mistake when setting up the model.
+    This method returns a set of any Vars which belong to a deactivated Block
+    (or a child of a deactivated Block) but appear in an active Constraint
+    within a model. This can cause problems with the Pyomo solver writers, and
+    is often an indication of a mistake when setting up the model.
 
     Args:
         block - the Block object to be enumerated
@@ -394,21 +413,21 @@ def enumerate_active_varaibles_in_deactived_blocks(block):
                 )
 
     # Get all Constraints in active Blocks
-    all_constraints = enumerate_constraints(block,
-                                            deactivated_blocks=False,
-                                            descend_into=True)
+    all_constraints = constraint_component_set(block,
+                                               active_blocks=True,
+                                               descend_into=True)
 
     # Get activated Constraints from all_constraints
-    act_constraints = enumerate_activated_components(all_constraints)
+    act_constraints = activated_component_set(all_constraints)
 
     # Get all Vars that appear in activated Constraints
-    vars_in_act_constraints = enumerate_variables_in_constraints(
+    vars_in_act_constraints = variables_in_constraints_component_set(
             act_constraints)
 
     # Get all active Blocks
-    act_blocks = enumerate_blocks(block,
-                                  deactivated_blocks=False,
-                                  descend_into=True)
+    act_blocks = block_component_set(block,
+                                     active=True,
+                                     descend_into=True)
 
     act_vars_in_deact_blocks = ComponentSet()
 
@@ -421,14 +440,14 @@ def enumerate_active_varaibles_in_deactived_blocks(block):
 
 
 def calculate_degrees_of_freedom(block):
-    equalities = enumerate_equality_constraints(block,
-                                                deactivated_blocks=False,
-                                                descend_into=True)
-    act_equalities = enumerate_activated_components(equalities)
+    equalities = equality_constraint_component_set(block,
+                                                   active_blocks=True,
+                                                   descend_into=True)
+    act_equalities = activated_component_set(equalities)
 
-    vars_in_act_equals = enumerate_variables_in_constraints(act_equalities)
+    vars_in_act_equals = variables_in_constraints_component_set(act_equalities)
 
-    fixed_vars_in_act_equals = enumerate_fixed_variables(vars_in_act_equals)
+    fixed_vars_in_act_equals = fixed_variable_component_set(vars_in_act_equals)
 
     dof = len(vars_in_act_equals-fixed_vars_in_act_equals)-len(act_equalities)
 
@@ -452,46 +471,51 @@ def report_model_statistics(block,
     Returns:
         Printed output of the model statistics
     """
-    total_vars = enumerate_variables(block,
-                                     deactivated_blocks=deactivated_blocks,
-                                     descend_into=descend_into)
-    fixed_vars = enumerate_fixed_variables(total_vars)
+    if deactivated_blocks:
+        active = None
+    else:
+        active = True
 
-    total_cons = enumerate_constraints(block,
-                                       deactivated_blocks=deactivated_blocks,
-                                       descend_into=descend_into)
-    eq_cons = enumerate_equality_constraints(total_cons)
-    act_eq_cons = enumerate_activated_components(eq_cons)
-    ineq_cons = enumerate_inequality_constraints(total_cons)
-    act_ineq_cons = enumerate_activated_components(ineq_cons)
-
-    total_objs = enumerate_objectives(block,
-                                      deactivated_blocks=deactivated_blocks,
-                                      descend_into=descend_into)
-    act_objs = enumerate_activated_components(total_objs)
-
-    total_exprs = enumerate_expressions(block,
-                                        deactivated_blocks=deactivated_blocks,
+    total_vars = variable_component_set(block,
+                                        active=active,
                                         descend_into=descend_into)
+    fixed_vars = fixed_variable_component_set(total_vars)
 
-    total_blocks = enumerate_blocks(block,
-                                    deactivated_blocks=deactivated_blocks,
-                                    descend_into=descend_into)
-    act_blocks = enumerate_activated_components(total_blocks)
+    total_cons = constraint_component_set(block,
+                                          active_blocks=active,
+                                          descend_into=descend_into)
+    eq_cons = equality_constraint_component_set(total_cons)
+    act_eq_cons = activated_component_set(eq_cons)
+    ineq_cons = inequality_constraints_component_set(total_cons)
+    act_ineq_cons = activated_component_set(ineq_cons)
 
-    vars_in_act_equals = enumerate_variables_in_constraints(act_eq_cons)
-    fixed_vars_in_act_equals = enumerate_fixed_variables(vars_in_act_equals)
+    total_objs = objective_component_set(block,
+                                         active_blocks=active,
+                                         descend_into=descend_into)
+    act_objs = activated_component_set(total_objs)
 
-    vars_in_inequals = enumerate_variables_in_constraints(act_ineq_cons)
+    total_exprs = expression_component_set(block,
+                                           active_blocks=active,
+                                           descend_into=descend_into)
+
+    total_blocks = block_component_set(block,
+                                       active=active,
+                                       descend_into=descend_into)
+    act_blocks = activated_component_set(total_blocks)
+
+    vars_in_act_equals = variables_in_constraints_component_set(act_eq_cons)
+    fixed_vars_in_act_equals = fixed_variable_component_set(vars_in_act_equals)
+
+    vars_in_inequals = variables_in_constraints_component_set(act_ineq_cons)
     vars_only_in_inequals = ComponentSet()
     for v in vars_in_inequals:
         if v not in vars_in_act_equals:
             vars_only_in_inequals.add(v)
     fixed_vars_only_in_inequals = \
-        enumerate_fixed_variables(vars_only_in_inequals)
+        fixed_variable_component_set(vars_only_in_inequals)
 
     unused_vars = total_vars-vars_in_act_equals
-    fixed_unused_vars = enumerate_fixed_variables(unused_vars)
+    fixed_unused_vars = fixed_variable_component_set(unused_vars)
 
     dof = len(vars_in_act_equals-fixed_vars_in_act_equals)-len(act_eq_cons)
 
