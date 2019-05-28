@@ -217,14 +217,17 @@ def test_initialization():
             m.fs.HX_co_current.tube_outlet.pressure[0].value)
 
     # Check for energy conservation
-    shell_side = 5 * (m.fs.HX_co_current.shell.properties[0, 0].
-                      enth_mol_phase['Liq'].value - m.fs.HX_co_current.shell.
-                      properties[0, 1].
-                      enth_mol_phase['Liq'].value)
-    tube_side = 1 * 10 * (m.fs.HX_co_current.tube.properties[0, 1].
-                          enth_mol_phase['Liq'].value -
-                          m.fs.HX_co_current.tube.properties[0, 0].
-                          enth_mol_phase['Liq'].value)
+    shell_side = m.fs.HX_co_current.shell_outlet.flow_mol[0].value * \
+        (m.fs.HX_co_current.shell.properties[0, 0].
+         enth_mol_phase['Liq'].value - m.fs.HX_co_current.shell.
+         properties[0, 1].
+         enth_mol_phase['Liq'].value)
+    tube_side = m.fs.HX_co_current.tube_outlet.flow_mol[0].value * \
+        m.fs.HX_co_current.N_tubes.value * \
+        (m.fs.HX_co_current.tube.properties[0, 1].
+         enth_mol_phase['Liq'].value -
+         m.fs.HX_co_current.tube.properties[0, 0].
+         enth_mol_phase['Liq'].value)
     assert (shell_side - tube_side) <= 1e-6
 
     """Test initialize and solve for counter-current heat exchanger."""
@@ -250,14 +253,17 @@ def test_initialization():
             m.fs.HX_counter_current.tube_outlet.pressure[0].value)
 
     # Check for energy conservation
-    shell_side = 5 * (m.fs.HX_counter_current.shell.properties[0, 0].
-                      enth_mol_phase['Liq'].value -
-                      m.fs.HX_counter_current.shell.properties[0, 1].
-                      enth_mol_phase['Liq'].value)
-    tube_side = 1 * 10 * (m.fs.HX_counter_current.tube.properties[0, 0].
-                          enth_mol_phase['Liq'].value -
-                          m.fs.HX_counter_current.tube.properties[0, 1].
-                          enth_mol_phase['Liq'].value)
+    shell_side = m.fs.HX_counter_current.shell_outlet.flow_mol[0].value *\
+        (m.fs.HX_counter_current.shell.properties[0, 0].
+         enth_mol_phase['Liq'].value -
+         m.fs.HX_counter_current.shell.properties[0, 1].
+         enth_mol_phase['Liq'].value)
+    tube_side = m.fs.HX_counter_current.tube_outlet.flow_mol[0].value *\
+        m.fs.HX_counter_current.N_tubes.value * \
+        (m.fs.HX_counter_current.tube.properties[0, 0].
+         enth_mol_phase['Liq'].value -
+         m.fs.HX_counter_current.tube.properties[0, 1].
+         enth_mol_phase['Liq'].value)
     assert (shell_side - tube_side) <= 1e-6
 
 
