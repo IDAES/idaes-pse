@@ -25,7 +25,7 @@ from idaes.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
 from idaes.unit_models.heat_exchanger_1D import WallConductionType
 from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
-from idaes.property_models.examples.BFW_properties import BFWParameterBlock
+from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
 from idaes.ui.report import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -45,7 +45,8 @@ else:
 m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
-m.fs.properties = BFWParameterBlock()
+m.fs.properties = BTXParameterBlock(default={"valid_phase":
+                                             'Liq'})
 
 # Default options
 m.fs.HX_co_current = HX1D(
@@ -137,7 +138,7 @@ def test_setInputs():
     m.fs.HX_co_current.d_shell.fix(1.04)
     m.fs.HX_co_current.d_tube_outer.fix(0.01167)
     m.fs.HX_co_current.d_tube_inner.fix(0.01067)
-    m.fs.HX_co_current.N_tubes.fix(1176)
+    m.fs.HX_co_current.N_tubes.fix(10)
     m.fs.HX_co_current.shell_length.fix(4.85)
     m.fs.HX_co_current.tube_length.fix(4.85)
     m.fs.HX_co_current.shell_heat_transfer_coefficient.fix(2000)
@@ -146,16 +147,17 @@ def test_setInputs():
     # Boundary conditions
     for t in m.fs.time:
         # Unit HX01
-        # NETL baseline study
-        m.fs.HX_co_current.shell_inlet.flow_mol[0].fix(2300)  # mol/s
-        m.fs.HX_co_current.shell_inlet.temperature[0].fix(676)  # K
-        m.fs.HX_co_current.shell_inlet.pressure[0].fix(7.38E6)  # Pa
-        m.fs.HX_co_current.shell_inlet.vapor_frac[0].fix(1)
+        m.fs.HX_co_current.shell_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.HX_co_current.shell_inlet.temperature[0].fix(365)  # K
+        m.fs.HX_co_current.shell_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.HX_co_current.shell_inlet.mole_frac[0, "benzene"].fix(0.5)
+        m.fs.HX_co_current.shell_inlet.mole_frac[0, "toluene"].fix(0.5)
 
-        m.fs.HX_co_current.tube_inlet.flow_mol[0].fix(26.6)  # mol/s
-        m.fs.HX_co_current.tube_inlet.temperature[0].fix(529)  # K
-        m.fs.HX_co_current.tube_inlet.pressure[0].fix(2.65E7)  # Pa
-        m.fs.HX_co_current.tube_inlet.vapor_frac[0].fix(0)
+        m.fs.HX_co_current.tube_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.HX_co_current.tube_inlet.temperature[0].fix(300)  # K
+        m.fs.HX_co_current.tube_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.HX_co_current.tube_inlet.mole_frac[0, "benzene"].fix(0.5)
+        m.fs.HX_co_current.tube_inlet.mole_frac[0, "toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.HX_co_current) == 0
 
@@ -166,7 +168,7 @@ def test_setInputs():
     m.fs.HX_counter_current.d_shell.fix(1.04)
     m.fs.HX_counter_current.d_tube_outer.fix(0.01167)
     m.fs.HX_counter_current.d_tube_inner.fix(0.01067)
-    m.fs.HX_counter_current.N_tubes.fix(1176)
+    m.fs.HX_counter_current.N_tubes.fix(10)
     m.fs.HX_counter_current.shell_length.fix(4.85)
     m.fs.HX_counter_current.tube_length.fix(4.85)
     m.fs.HX_counter_current.shell_heat_transfer_coefficient.fix(2000)
@@ -175,16 +177,17 @@ def test_setInputs():
     # Boundary conditions
     for t in m.fs.time:
         # Unit HX01
-        # NETL baseline study
-        m.fs.HX_counter_current.shell_inlet.flow_mol[0].fix(2300)  # mol/s
-        m.fs.HX_counter_current.shell_inlet.temperature[0].fix(676)  # K
-        m.fs.HX_counter_current.shell_inlet.pressure[0].fix(7.38E6)  # Pa
-        m.fs.HX_counter_current.shell_inlet.vapor_frac[0].fix(1)
+        m.fs.HX_counter_current.shell_inlet.flow_mol[0].fix(5)  # mol/s
+        m.fs.HX_counter_current.shell_inlet.temperature[0].fix(365)  # K
+        m.fs.HX_counter_current.shell_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.HX_counter_current.shell_inlet.mole_frac[0, "benzene"].fix(0.5)
+        m.fs.HX_counter_current.shell_inlet.mole_frac[0, "toluene"].fix(0.5)
 
-        m.fs.HX_counter_current.tube_inlet.flow_mol[0].fix(26.6)  # mol/s
-        m.fs.HX_counter_current.tube_inlet.temperature[0].fix(529)  # K
-        m.fs.HX_counter_current.tube_inlet.pressure[0].fix(2.65E7)  # Pa
-        m.fs.HX_counter_current.tube_inlet.vapor_frac[0].fix(0)
+        m.fs.HX_counter_current.tube_inlet.flow_mol[0].fix(1)  # mol/s
+        m.fs.HX_counter_current.tube_inlet.temperature[0].fix(300)  # K
+        m.fs.HX_counter_current.tube_inlet.pressure[0].fix(101325)  # Pa
+        m.fs.HX_counter_current.tube_inlet.mole_frac[0, "benzene"].fix(0.5)
+        m.fs.HX_counter_current.tube_inlet.mole_frac[0, "toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.HX_counter_current) == 0
 
@@ -199,29 +202,29 @@ def test_initialization():
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
 
-    assert (pytest.approx(2300, abs=1e-3) ==
+    assert (pytest.approx(5, abs=1e-3) ==
             m.fs.HX_co_current.shell_outlet.flow_mol[0].value)
-    assert (pytest.approx(559.220, abs=1e-3) ==
+    assert (pytest.approx(322.669, abs=1e-3) ==
             m.fs.HX_co_current.shell_outlet.temperature[0].value)
-    assert (pytest.approx(7.38E6, abs=1e-3) ==
+    assert (pytest.approx(101325, abs=1e-3) ==
             m.fs.HX_co_current.shell_outlet.pressure[0].value)
 
-    assert (pytest.approx(26.6, abs=1e-3) ==
+    assert (pytest.approx(1, abs=1e-3) ==
             m.fs.HX_co_current.tube_outlet.flow_mol[0].value)
-    assert (pytest.approx(541.301, abs=1e-3) ==
+    assert (pytest.approx(322.463, abs=1e-3) ==
             m.fs.HX_co_current.tube_outlet.temperature[0].value)
-    assert (pytest.approx(2.65E7, abs=1e-3) ==
+    assert (pytest.approx(101325, abs=1e-3) ==
             m.fs.HX_co_current.tube_outlet.pressure[0].value)
 
     # Check for energy conservation
-    shell_side = 2300 * (m.fs.HX_co_current.shell.properties[0, 0].
-                         enth_mol_phase['Liq'].value - m.fs.HX_co_current.shell.
-                         properties[0, 1].
-                         enth_mol_phase['Liq'].value)
-    tube_side = 26.6 * 1176 * (m.fs.HX_co_current.tube.properties[0, 1].
-                               enth_mol_phase['Liq'].value -
-                               m.fs.HX_co_current.tube.properties[0, 0].
-                               enth_mol_phase['Liq'].value)
+    shell_side = 5 * (m.fs.HX_co_current.shell.properties[0, 0].
+                      enth_mol_phase['Liq'].value - m.fs.HX_co_current.shell.
+                      properties[0, 1].
+                      enth_mol_phase['Liq'].value)
+    tube_side = 1 * 10 * (m.fs.HX_co_current.tube.properties[0, 1].
+                          enth_mol_phase['Liq'].value -
+                          m.fs.HX_co_current.tube.properties[0, 0].
+                          enth_mol_phase['Liq'].value)
     assert (shell_side - tube_side) <= 1e-6
 
     """Test initialize and solve for counter-current heat exchanger."""
@@ -232,29 +235,29 @@ def test_initialization():
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
 
-    assert (pytest.approx(2300, abs=1e-3) ==
+    assert (pytest.approx(5, abs=1e-3) ==
             m.fs.HX_counter_current.shell_outlet.flow_mol[0].value)
-    assert (pytest.approx(552.055, abs=1e-3) ==
+    assert (pytest.approx(304.292, abs=1e-3) ==
             m.fs.HX_counter_current.shell_outlet.temperature[0].value)
-    assert (pytest.approx(7.38E6, abs=1e-3) ==
+    assert (pytest.approx(101325, abs=1e-3) ==
             m.fs.HX_counter_current.shell_outlet.pressure[0].value)
 
-    assert (pytest.approx(26.6, abs=1e-3) ==
+    assert (pytest.approx(1, abs=1e-3) ==
             m.fs.HX_counter_current.tube_outlet.flow_mol[0].value)
-    assert (pytest.approx(541.847, abs=1e-3) ==
+    assert (pytest.approx(331.435, abs=1e-3) ==
             m.fs.HX_counter_current.tube_outlet.temperature[0].value)
-    assert (pytest.approx(2.65E7, abs=1e-3) ==
+    assert (pytest.approx(101325, abs=1e-3) ==
             m.fs.HX_counter_current.tube_outlet.pressure[0].value)
 
     # Check for energy conservation
-    shell_side = 2300 * (m.fs.HX_counter_current.shell.properties[0, 0].
-                         enth_mol_phase['Liq'].value -
-                         m.fs.HX_counter_current.shell.properties[0, 1].
-                         enth_mol_phase['Liq'].value)
-    tube_side = 26.6 * 1176 * (m.fs.HX_counter_current.tube.properties[0, 0].
-                               enth_mol_phase['Liq'].value -
-                               m.fs.HX_counter_current.tube.properties[0, 1].
-                               enth_mol_phase['Liq'].value)
+    shell_side = 5 * (m.fs.HX_counter_current.shell.properties[0, 0].
+                      enth_mol_phase['Liq'].value -
+                      m.fs.HX_counter_current.shell.properties[0, 1].
+                      enth_mol_phase['Liq'].value)
+    tube_side = 1 * 10 * (m.fs.HX_counter_current.tube.properties[0, 0].
+                          enth_mol_phase['Liq'].value -
+                          m.fs.HX_counter_current.tube.properties[0, 1].
+                          enth_mol_phase['Liq'].value)
     assert (shell_side - tube_side) <= 1e-6
 
 
