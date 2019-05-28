@@ -4,9 +4,9 @@ Windows Installation
 ====================
 .. note:: Windows is not officially supported at this time.
 
-This is a complete guide to installing the IDAES framework on Windows. 
-The :ref:`windows_extras` includes additional information which may be useful.
-This guide includes compiling C++ components.  In the future precompiled versions of these 
+This is a complete guide to installing the IDAES framework on Windows.
+The :ref:`windows_extras` section includes additional information which may be useful.
+This guide includes compiling C++ components.  In the future precompiled versions of these
 libraries will be made available, simplifying the installation process.
 
 Tools
@@ -14,11 +14,10 @@ Tools
 Before installing the IDAES software there are a few development tools that need to be installed.
 There are alternatives, but an attempt was made to provide the easiest path here.
 
-1. Install a good text editor (Atom, notepad++, spyder, ... whatever you prefer).
-2. Install a *git* client from https://git-scm.com/download/win.
+1. Install a *git* client from https://git-scm.com/download/win.
    A git client is not necessary for all users, but
    if you are a developer or advanced user, you will likely want it.
-3. Install MSYS2. MSYS2 provides a shell which will allow use of Linux style build tools.
+2. Install MSYS2. MSYS2 provides a shell which will allow use of Linux style build tools.
    It also provides a convenient package manager (pacman) which allows for easy
    installation of build tools.
 
@@ -31,7 +30,9 @@ There are alternatives, but an attempt was made to provide the easiest path here
         pacman -Syu
 
     #. Repeat the previous step until there are no more updates.
-    #. Install the build tools and libraries::
+    #. Install the build tools and libraries.  Some packages installed are group packages, and
+       pacman will prompt to select which packages you would like to install.  Press "enter"
+       for the default, which is all.::
 
         pacman -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-boost unzip patch make
 
@@ -63,7 +64,7 @@ The latest development version can be downloaded by  going to https://github.com
 and clicking the "Clone or Download" button then clicking on "Download Zip." Unzip the files to a convenient location.
 
 Option 2: Fork and Clone the Repository
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 For people who are not IDAES core developers but potentially would like to make
 contributions to the IDAES project or closely follow IDAES development, the best way
 to get the IDAES files is to fork the IDAES repo on Github, then clone the new fork.
@@ -104,7 +105,7 @@ in parts of the IDAES framework (mainly some property packages).
     tar -zxvf solvers.tgz
     cd solvers
     ./configure
-      make
+    make
 
 Compiling IDAES AMPL Function Extensions
 ----------------------------------------
@@ -118,7 +119,7 @@ compiled.
 2. Set the ASL_BUILD environment variable (the directory may differ depending on the
    architecture and replace ``.../src`` with the actual location of your src directory)::
 
-    export ASL_BUILD=C:/.../src/solvers/sys.x86_64.MINGW64_NT-10.0
+    export ASL_BUILD=/c/.../src/solvers/sys.x86_64.MINGW64_NT-10.0
 
 3. Go to the IDAES directory (replace ``/c/idaes_dir`` with the location
    of the IDAES files)::
@@ -162,7 +163,7 @@ Extras
 Building Documentation
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Most users do not need to build this documentation, but if necessary you can.  The instructions here use the ``make`` from the MSYS2 installed above.
+Most users do not need to build this documentation, but if necessary you can.  The instructions here use ``make`` from the MSYS2 installed above.
 
   1. Open the Anaconda Command prompt, and activate the IDAES environment
   2. Go to the IDAES directory
@@ -185,9 +186,9 @@ It's not required to compile IPOPT yourself, and these are pretty much the stand
 IPOPT compile instructions.  If you have set up MSYS2 as above, you should be able to
 follow these instructions to compile IPOPT for Windows.
 
-1. Download IPOPT from https://www.coin-or.org/download/source/Ipopt/, and put the zip file in the ``src`` directory created above.
+1. Download IPOPT from https://www.coin-or.org/download/source/Ipopt/, and put the zip file in the ``src`` directory created above. The Ipopt source is also available from other locations, but source code from other locations may not include the scripts to download third-party libraries.
 2. Open the MSYS2 MinGW 64-bit terminal (go to: start menu/MSYS2 64Bit/MSYS2 MinGW 64Bit).
-3. Unzip Ipopt (the ``*`` here represents the portion of the file names with the Ipopt
+3. Unzip Ipopt (the ``*`` here represents the portion of the file name with the Ipopt
    version information)::
 
     unzip Ipopt*.zip
@@ -200,15 +201,22 @@ follow these instructions to compile IPOPT for Windows.
     cd ../Blas
     ./get.Blas
     # and so on for all the other subdirectories except HSL.
-    # If you have an HSL license follow the instructions in the HSL directory
 
-5. Go to the IPOPT directory (replace $IPOPT_DIR with the IPOPT directory)::
+5. (Optional) Get the HSL source code from https://www.hsl.ac.uk/ipopt.
+   You will need to fill out a request from and be emailed a download link.
+   Extract the files.  Depending on how you extract the files there may be an
+   extra directory level.  Find the directory containing the HSL files and rename
+   it "coinhsl." Copy the renamed directory to the HSL subdirectory of the Ipop
+   ThirdParty directory.  The results of the configure script below should show
+   that the HSL was found.  Refer to the Ipopt documentation if necessary.
+
+6. Go to the IPOPT directory (replace $IPOPT_DIR with the IPOPT directory)::
 
     cd $IPOPT_DIR
     ./configure
     make
 
-6. The IPOPT AMPL executable will be in ./Ipopt/src/Apps/AmplSolver/ipopt.exe, you
+7. The IPOPT AMPL executable will be in ./Ipopt/src/Apps/AmplSolver/ipopt.exe, you
    can move the executable to a location in the path (environment variable).
    See :ref:`modify_path_env`.
 
@@ -248,8 +256,7 @@ B. In Windows 10
 This method temporarily changes the path in just the active command window.
 Once the command window is closed the change will be lost.
 
-Just set the Path variable to include any additional directories you want to add to
+Set the Path variable to include any additional directories you want to add to
 the path.  Replace "added_directory" with the directory you want to add::
 
     set Path=%Path%;added_directory
-
