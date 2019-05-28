@@ -27,20 +27,20 @@ from pyomo.environ import (Block,
 from pyomo.dae import ContinuousSet, DerivativeVar
 
 from idaes.core.util.model_statistics import (
-        enumerate_blocks,
-        enumerate_constraints,
-        enumerate_derivative_variables,
-        enumerate_expressions,
-        enumerate_objectives,
-        enumerate_variables,
-        enumerate_equality_constraints,
-        enumerate_inequality_constraints,
-        enumerate_activated_components,
-        enumerate_variables_in_constraints,
-        enumerate_fixed_variables,
+        block_component_set,
+        constraint_component_set,
+        derivative_variables_component_set,
+        expression_component_set,
+        objective_component_set,
+        variable_component_set,
+        equality_constraint_component_set,
+        inequality_constraints_component_set,
+        activated_component_set,
+        variables_in_constraints_component_set,
+        fixed_variable_component_set,
         calculate_degrees_of_freedom,
         report_model_statistics,
-        enumerate_active_varaibles_in_deactived_blocks)
+        active_variables_in_deactived_blocks_component_set)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -100,193 +100,193 @@ def m():
     return m
 
 
-def test_enumerate_blocks(m):
-    assert len(enumerate_blocks(m, deactivated_blocks=True)) == 4
+def test_block_component_set(m):
+    assert len(block_component_set(m, active=None)) == 4
 
-    assert len(enumerate_blocks(m,
-                                deactivated_blocks=True,
-                                descend_into=False)) == 3
+    assert len(block_component_set(m,
+                                   active=None,
+                                   descend_into=False)) == 3
 
-    assert len(enumerate_blocks(m, deactivated_blocks=False)) == 2
+    assert len(block_component_set(m, active=True)) == 2
 
-    assert len(enumerate_blocks(m,
-                                deactivated_blocks=False,
-                                descend_into=False)) == 2
+    assert len(block_component_set(m,
+                                   active=True,
+                                   descend_into=False)) == 2
 
     m.b1.sb.activate()
-    assert len(enumerate_blocks(m, deactivated_blocks=False)) == 2
+    assert len(block_component_set(m, active=True)) == 2
 
-    assert len(enumerate_blocks(m,
-                                deactivated_blocks=False,
-                                descend_into=False)) == 2
+    assert len(block_component_set(m,
+                                   active=True,
+                                   descend_into=False)) == 2
 
     m.b1.activate()
     m.b1.sb.deactivate()
-    assert len(enumerate_blocks(m, deactivated_blocks=False)) == 3
+    assert len(block_component_set(m, active=True)) == 3
 
-    assert len(enumerate_blocks(m,
-                                deactivated_blocks=False,
-                                descend_into=False)) == 3
-
-
-def test_enumerate_variables(m):
-    assert len(enumerate_variables(m,
-                                   deactivated_blocks=False,
-                                   descend_into=True)) == 28
-
-    assert len(enumerate_variables(m,
-                                   deactivated_blocks=True,
-                                   descend_into=True)) == 34
-
-    assert len(enumerate_variables(m,
-                                   deactivated_blocks=False,
-                                   descend_into=False)) == 22
-
-    assert len(enumerate_variables(m,
-                                   deactivated_blocks=True,
-                                   descend_into=False)) == 22
+    assert len(block_component_set(m,
+                                   active=True,
+                                   descend_into=False)) == 3
 
 
-def test_enumerate_derivative_variables(m):
-    assert len(enumerate_derivative_variables(m)) == 0
+def test_variable_component_set(m):
+    assert len(variable_component_set(m,
+                                      active=True,
+                                      descend_into=True)) == 28
+
+    assert len(variable_component_set(m,
+                                      active=None,
+                                      descend_into=True)) == 34
+
+    assert len(variable_component_set(m,
+                                      active=True,
+                                      descend_into=False)) == 22
+
+    assert len(variable_component_set(m,
+                                      active=None,
+                                      descend_into=False)) == 22
+
+
+def test_derivative_variables_component_set(m):
+    assert len(derivative_variables_component_set(m)) == 0
 
     m.v2 = Var(m.cs)
     m.dv2 = DerivativeVar(m.v2)
-    assert len(enumerate_derivative_variables(m)) == 11
+    assert len(derivative_variables_component_set(m)) == 11
 
 
-def test_enumerate_expressions(m):
-    assert len(enumerate_expressions(m,
-                                     deactivated_blocks=False,
-                                     descend_into=True)) == 3
+def test_expression_component_set(m):
+    assert len(expression_component_set(m,
+                                        active_blocks=True,
+                                        descend_into=True)) == 3
 
-    assert len(enumerate_expressions(m,
-                                     deactivated_blocks=True,
-                                     descend_into=True)) == 4
+    assert len(expression_component_set(m,
+                                        active_blocks=None,
+                                        descend_into=True)) == 4
 
-    assert len(enumerate_expressions(m,
-                                     deactivated_blocks=False,
-                                     descend_into=False)) == 1
+    assert len(expression_component_set(m,
+                                        active_blocks=True,
+                                        descend_into=False)) == 1
 
-    assert len(enumerate_expressions(m,
-                                     deactivated_blocks=True,
-                                     descend_into=False)) == 1
-
-
-def test_enumerate_objectives(m):
-    assert len(enumerate_objectives(m,
-                                    deactivated_blocks=False,
-                                    descend_into=True)) == 2
-
-    assert len(enumerate_objectives(m,
-                                    deactivated_blocks=True,
-                                    descend_into=True)) == 4
+    assert len(expression_component_set(m,
+                                        active_blocks=None,
+                                        descend_into=False)) == 1
 
 
-def test_enumerate_constraints(m):
-    assert len(enumerate_constraints(m,
-                                     deactivated_blocks=False,
-                                     descend_into=True)) == 14
+def test_objective_component_set(m):
+    assert len(objective_component_set(m,
+                                       active_blocks=True,
+                                       descend_into=True)) == 2
 
-    assert len(enumerate_constraints(m,
-                                     deactivated_blocks=True,
-                                     descend_into=True)) == 18
-
-    assert len(enumerate_constraints(m,
-                                     deactivated_blocks=False,
-                                     descend_into=False)) == 10
+    assert len(objective_component_set(m,
+                                       active_blocks=None,
+                                       descend_into=True)) == 4
 
 
-def test_enumerate_equality_constraints(m):
-    assert len(enumerate_equality_constraints(m,
-                                              deactivated_blocks=False,
-                                              descend_into=True)) == 12
+def test_constraint_component_set(m):
+    assert len(constraint_component_set(m,
+                                        active_blocks=True,
+                                        descend_into=True)) == 14
 
-    assert len(enumerate_equality_constraints(m,
-                                              deactivated_blocks=True,
-                                              descend_into=True)) == 14
+    assert len(constraint_component_set(m,
+                                        active_blocks=None,
+                                        descend_into=True)) == 18
 
-    assert len(enumerate_equality_constraints(m,
-                                              deactivated_blocks=False,
-                                              descend_into=False)) == 10
-
-    c = enumerate_constraints(m, deactivated_blocks=False, descend_into=True)
-    assert len(enumerate_equality_constraints(c,
-                                              deactivated_blocks=False,
-                                              descend_into=False)) == 12
-    assert len(enumerate_equality_constraints(c,
-                                              deactivated_blocks=True,
-                                              descend_into=False)) == 12
-    assert len(enumerate_equality_constraints(c,
-                                              deactivated_blocks=False,
-                                              descend_into=True)) == 12
-
-    c = enumerate_constraints(m, deactivated_blocks=True, descend_into=True)
-    assert len(enumerate_equality_constraints(c)) == 14
-
-    c = enumerate_constraints(m, deactivated_blocks=False, descend_into=False)
-    assert len(enumerate_equality_constraints(c)) == 10
+    assert len(constraint_component_set(m,
+                                        active_blocks=True,
+                                        descend_into=False)) == 10
 
 
-def test_enumerate_inequality_constraints(m):
-    assert len(enumerate_inequality_constraints(m,
-                                                deactivated_blocks=False,
-                                                descend_into=True)) == 2
+def test_equality_constraint_component_set(m):
+    assert len(equality_constraint_component_set(m,
+                                                 active_blocks=True,
+                                                 descend_into=True)) == 12
 
-    assert len(enumerate_inequality_constraints(m,
-                                                deactivated_blocks=True,
-                                                descend_into=True)) == 4
+    assert len(equality_constraint_component_set(m,
+                                                 active_blocks=None,
+                                                 descend_into=True)) == 14
 
-    assert len(enumerate_inequality_constraints(m,
-                                                deactivated_blocks=False,
-                                                descend_into=False)) == 0
+    assert len(equality_constraint_component_set(m,
+                                                 active_blocks=True,
+                                                 descend_into=False)) == 10
 
-    c = enumerate_constraints(m, deactivated_blocks=False, descend_into=True)
-    assert len(enumerate_inequality_constraints(c,
-                                                deactivated_blocks=False,
-                                                descend_into=False)) == 2
-    assert len(enumerate_inequality_constraints(c,
-                                                deactivated_blocks=True,
-                                                descend_into=False)) == 2
-    assert len(enumerate_inequality_constraints(c,
-                                                deactivated_blocks=False,
-                                                descend_into=True)) == 2
+    c = constraint_component_set(m, active_blocks=True, descend_into=True)
+    assert len(equality_constraint_component_set(c,
+                                                 active_blocks=True,
+                                                 descend_into=False)) == 12
+    assert len(equality_constraint_component_set(c,
+                                                 active_blocks=None,
+                                                 descend_into=False)) == 12
+    assert len(equality_constraint_component_set(c,
+                                                 active_blocks=True,
+                                                 descend_into=True)) == 12
 
-    c = enumerate_constraints(m, deactivated_blocks=True, descend_into=True)
-    assert len(enumerate_inequality_constraints(c)) == 4
+    c = constraint_component_set(m, active_blocks=None, descend_into=True)
+    assert len(equality_constraint_component_set(c)) == 14
 
-    c = enumerate_constraints(m, deactivated_blocks=False, descend_into=False)
-    assert len(enumerate_inequality_constraints(c)) == 0
+    c = constraint_component_set(m, active_blocks=True, descend_into=False)
+    assert len(equality_constraint_component_set(c)) == 10
 
 
-def test_enumerate_activated_components(m):
-    c = enumerate_constraints(m, deactivated_blocks=False, descend_into=True)
-    assert len(enumerate_activated_components(c)) == 14
+def test_inequality_constraints_component_set(m):
+    assert len(inequality_constraints_component_set(m,
+                                                    active_blocks=True,
+                                                    descend_into=True)) == 2
+
+    assert len(inequality_constraints_component_set(m,
+                                                    active_blocks=None,
+                                                    descend_into=True)) == 4
+
+    assert len(inequality_constraints_component_set(m,
+                                                    active_blocks=True,
+                                                    descend_into=False)) == 0
+
+    c = constraint_component_set(m, active_blocks=True, descend_into=True)
+    assert len(inequality_constraints_component_set(c,
+                                                    active_blocks=True,
+                                                    descend_into=False)) == 2
+    assert len(inequality_constraints_component_set(c,
+                                                    active_blocks=None,
+                                                    descend_into=False)) == 2
+    assert len(inequality_constraints_component_set(c,
+                                                    active_blocks=True,
+                                                    descend_into=True)) == 2
+
+    c = constraint_component_set(m, active_blocks=None, descend_into=True)
+    assert len(inequality_constraints_component_set(c)) == 4
+
+    c = constraint_component_set(m, active_blocks=True, descend_into=False)
+    assert len(inequality_constraints_component_set(c)) == 0
+
+
+def test_activated_component_set(m):
+    c = constraint_component_set(m, active_blocks=True, descend_into=True)
+    assert len(activated_component_set(c)) == 14
 
     m.b2["a"].c1.deactivate()
-    assert len(enumerate_activated_components(c)) == 13
+    assert len(activated_component_set(c)) == 13
 
 
-def test_enumerate_variables_in_constraints(m):
-    c = enumerate_constraints(m, deactivated_blocks=False, descend_into=True)
-    assert len(enumerate_variables_in_constraints(c)) == 23
+def test_variables_in_constraints_component_set(m):
+    c = constraint_component_set(m, active_blocks=True, descend_into=True)
+    assert len(variables_in_constraints_component_set(c)) == 23
 
-    assert len(enumerate_variables_in_constraints(m,
-                                                  deactivated_blocks=False,
-                                                  descend_into=True)) == 23
+    assert len(variables_in_constraints_component_set(m,
+                                                      active_blocks=True,
+                                                      descend_into=True)) == 23
 
-    c = enumerate_constraints(m, deactivated_blocks=True, descend_into=True)
-    assert len(enumerate_variables_in_constraints(c)) == 25
+    c = constraint_component_set(m, active_blocks=None, descend_into=True)
+    assert len(variables_in_constraints_component_set(c)) == 25
 
-    c = enumerate_constraints(m, deactivated_blocks=False, descend_into=False)
-    assert len(enumerate_variables_in_constraints(c)) == 21
+    c = constraint_component_set(m, active_blocks=True, descend_into=False)
+    assert len(variables_in_constraints_component_set(c)) == 21
 
 
-def test_enumerate_fixed_variables(m):
-    assert len(enumerate_fixed_variables(m)) == 2
+def test_fixed_variable_component_set(m):
+    assert len(fixed_variable_component_set(m)) == 2
 
-    v = enumerate_variables(m, deactivated_blocks=True)
-    assert len(enumerate_fixed_variables(v)) == 4
+    v = variable_component_set(m, active=None)
+    assert len(fixed_variable_component_set(v)) == 4
 
 
 def test_calculate_degrees_of_freedom(m):
@@ -299,11 +299,11 @@ def test_report_model_statistics(m):
 
 
 def test_act_vars_deact_blocks(m):
-    assert len(enumerate_active_varaibles_in_deactived_blocks(m)) == 0
+    assert len(active_variables_in_deactived_blocks_component_set(m)) == 0
 
     m.c1 = Constraint(expr=10 == m.b1.v1)
 
-    assert len(enumerate_active_varaibles_in_deactived_blocks(m)) == 1
+    assert len(active_variables_in_deactived_blocks_component_set(m)) == 1
 
     with pytest.raises(ConfigurationError):
-        enumerate_active_varaibles_in_deactived_blocks(m.b1)
+        active_variables_in_deactived_blocks_component_set(m.b1)
