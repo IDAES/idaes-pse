@@ -42,7 +42,7 @@ Contents
 .. toctree::
     :maxdepth: 2
 
-    install
+    install/index
     standards
     core/index
     models/index
@@ -50,10 +50,12 @@ Contents
     vis/index
     dmf/index
     version
-    examples/index
+    tutorials
     developer/index
     Modules <apidoc/modules>
     glossary
+    license
+    copyright
 
 Indices and tables
 ==================
@@ -63,5 +65,3 @@ Indices and tables
 * :ref:`search`
 
 .. |CO2| replace:: CO\ :sub:`2`
-
-.. include:: global.rst

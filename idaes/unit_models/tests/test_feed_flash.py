@@ -79,7 +79,7 @@ def test_initialize():
     assert degrees_of_freedom(m) == 0
 
     m.fs.ff.initialize(outlvl=5,
-                         optarg={'tol': 1e-6})
+                       optarg={'tol': 1e-6})
 
     assert (pytest.approx(101325.0, abs=1e3) ==
             m.fs.ff.outlet.pressure[0].value)
@@ -87,6 +87,6 @@ def test_initialize():
             m.fs.ff.outlet.temperature[0].value)
     assert (pytest.approx(1.0, abs=1e-2) ==
             m.fs.ff.outlet.flow_mol[0].value)
-    assert (pytest.approx(0.3961, abs=1e-3) ==
+    assert (pytest.approx(0.355, abs=1e-3) ==
             m.fs.ff.control_volume.
-                properties_out[0].flow_mol_phase["Vap"].value)
+            properties_out[0].flow_mol_phase["Vap"].value)
