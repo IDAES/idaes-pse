@@ -28,7 +28,7 @@ def display_stream_table_dataframe(stream_table, **kwargs):
     """
     # Set some default values for keyword arguments
     na_rep = kwargs.pop("na_rep", "-")
-    justify = kwargs.pop("justify", "right")
+    justify = kwargs.pop("justify", "center")
     float_format = kwargs.pop(
             "float_format",
             lambda x: "{:#.2f}".format(x) if x >= 1 else "{:#.2g}".format(x))
