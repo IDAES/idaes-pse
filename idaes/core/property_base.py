@@ -38,7 +38,7 @@ __all__ = ['StateBlockData',
 
 
 class PhysicalParameterBlock(ProcessBlockData,
-                            property_meta.HasPropertyClassMetadata):
+                             property_meta.HasPropertyClassMetadata):
     """
         This is the base class for thermophysical parameter blocks. These are
         blocks that contain a set of parameters associated with a specific
@@ -161,7 +161,6 @@ should be constructed in this state block,
         overload as required.
         """
         return self.define_state_vars()
-
 
     def get_material_flow_terms(self, *args, **kwargs):
         """

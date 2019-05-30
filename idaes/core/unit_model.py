@@ -31,6 +31,8 @@ from .control_volume_base import ControlVolumeBlockData, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError)
+from idaes.core.util.tables import (create_stream_table_dataframe,
+                                    stream_table_dataframe_to_string)
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -468,6 +470,16 @@ Must be True if dynamic = True,
             p.add(r, s)
 
         return p
+
+    def _get_stream_table_contents(self):
+        try:
+            s = create_stream_table_dataframe({"Inlet": self.inlet,
+                                               "Outlet": self.outlet})
+            return stream_table_dataframe_to_string(s)
+        except AttributeError:
+            return (f"Unit model {self.name} does not have the standard Port "
+                    f"names (inet and outlet). Please constact the unit model "
+                    f"developer to develop a unit specific stream table.")
 
     def initialize(blk, state_args=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}):

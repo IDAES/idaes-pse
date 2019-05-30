@@ -21,7 +21,7 @@ from idaes.core.util.exceptions import ConfigurationError
 __author__ = "John Eslick, Andrew Lee"
 
 
-def display_stream_table_dataframe(stream_table, **kwargs):
+def stream_table_dataframe_to_string(stream_table, **kwargs):
     """
     Method to print a stream table from a dataframe. Method takes any argument
     understood by DataFrame.to_string
@@ -34,11 +34,10 @@ def display_stream_table_dataframe(stream_table, **kwargs):
             lambda x: "{:#.2f}".format(x) if x >= 1 else "{:#.2g}".format(x))
 
     # Print stream table
-    print()
-    print(stream_table.to_string(na_rep=na_rep,
-                                 justify=justify,
-                                 float_format=float_format,
-                                 **kwargs))
+    return stream_table.to_string(na_rep=na_rep,
+                                  justify=justify,
+                                  float_format=float_format,
+                                  **kwargs)
 
 
 def create_stream_table_dataframe(streams,

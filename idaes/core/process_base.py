@@ -17,20 +17,21 @@ from __future__ import absolute_import  # disable implicit relative imports
 from __future__ import division  # No integer division
 from __future__ import print_function  # Python 3 style print
 
+import sys
 import logging
+import textwrap
 
 from pyomo.core.base.block import _BlockData
-from pyomo.environ import Block
+from pyomo.core.base.misc import tabular_writer
+from pyomo.environ import Block, value
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
 from pyutilib.enum import Enum
 
 from idaes.core.process_block import declare_process_block_class
-from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError,
+from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError,
                                         PropertyPackageError)
-from idaes.core.util.misc import add_object_reference
 
 
 # Some more inforation about this module
@@ -217,6 +218,68 @@ class ProcessBlockData(_BlockData):
                         obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
+
+    def report(self, time_point=0, ostream=None, prefix=""):
+
+        if ostream is None:
+            ostream = sys.stdout
+
+        # Get DoF and model stats
+        # Get components to report in performance section
+        performance = self._get_performance_contents()
+
+        # Get stream table
+        stream_table = self._get_stream_table_contents()
+
+        # Write output
+        tab = " "*4
+        ostream.write("\n"+"="*72+"\n")
+        ostream.write(f"{prefix}Unit : {self.name}")  # TODO: Add a way to change the name based on type of model (i.e. Unit, Flowsheet, etc).
+        ostream.write("\n"+"="*72+"\n")
+        ostream.write(f"{prefix}{tab}Local Degrees of Freedom: []"
+                      f"{tab}(Inlets: [])")
+        ostream.write('\n')
+        ostream.write(f"{prefix}{tab}Variables: []{tab}"
+                      f"Constraints: []{tab}Blocks: []")
+
+        if performance is not None:
+            ostream.write("\n"+"-"*72+"\n")
+            ostream.write(f"{prefix}{tab}Unit Performance")
+            ostream.write("\n"*2)
+            if "vars" in performance.keys():
+                ostream.write(f"{prefix}{tab}Variables: \n\n")
+
+                tabular_writer(
+                        ostream,
+                        prefix+tab,
+                        ((k, v) for k, v in performance["vars"].items()),
+                        ("Value", "Fixed", "Bounds"),
+                        lambda k, v: [value(v[time_point]),
+                                      v[time_point].fixed,
+                                      v[time_point].bounds])
+
+            if "exprs" in performance.keys():
+                ostream.write(f"{prefix}{tab}Expressions: \n\n")
+
+                tabular_writer(
+                        ostream,
+                        prefix+tab,
+                        ((k, v) for k, v in performance["exprs"].items()),
+                        ("Value"),
+                        lambda k, v: [value(v[time_point])])
+
+        if stream_table is not None:
+            ostream.write("\n"+"-"*72+"\n")
+            ostream.write(f"{prefix}{tab}Stream Table")
+            ostream.write('\n')
+            ostream.write(textwrap.indent(stream_table, prefix+tab))
+        ostream.write("\n"+"="*72+"\n")
+
+    def _get_performance_contents(self):
+        return None
+
+    def _get_stream_table_contents(self):
+        return None
 
     def _setup_dynamics(self):
         """
