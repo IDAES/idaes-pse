@@ -11,11 +11,90 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
-import pandas as pd
-import pyomo.environ as pyo
-from idaes.core.property_base import StateBlock, StateBlockData
+from pandas import DataFrame
+from pyomo.environ import value
+from pyomo.network import Arc, Port
 
-__author__ = "John Eslick"
+from idaes.core.property_base import StateBlock
+from idaes.core.util.exceptions import ConfigurationError
+
+__author__ = "John Eslick, Andrew Lee"
+
+
+def display_stream_table_dataframe(stream_table, **kwargs):
+    """
+    Method to print a stream table from a dataframe. Method takes any argument
+    understood by DataFrame.to_string
+    """
+    # Set some default values for keyword arguments
+    na_rep = kwargs.pop("na_rep", "-")
+    justify = kwargs.pop("justify", "right")
+    float_format = kwargs.pop(
+            "float_format",
+            lambda x: "{:#.2f}".format(x) if x >= 1 else "{:#.2g}".format(x))
+
+    # Print stream table
+    print()
+    print(stream_table.to_string(na_rep=na_rep,
+                                 justify=justify,
+                                 float_format=float_format,
+                                 **kwargs))
+
+
+def create_stream_table_dataframe(streams,
+                                  true_state=False,
+                                  time_point=0,
+                                  orient='columns'):
+
+    stream_attributes = {}
+
+    for n in streams.keys():
+        if isinstance(streams[n], StateBlock):
+            sb = streams[n]
+        elif isinstance(streams[n], Arc):
+            # Use destination of Arc, as inlets are more likely (?) to be
+            # fully-defined StateBlocks
+            sb = _get_state_from_port(streams[n].destination)
+        elif isinstance(streams[n], Port):
+            sb = _get_state_from_port(streams[n])
+        else:
+            raise TypeError(
+                    f"Unrecognised component provided in stream argument "
+                    f"{streams[n]}. get_stream_table_attributes only supports "
+                    f"Arcs, Ports or StateBlocks.")
+
+        if true_state:
+            disp_dict = sb[time_point].define_state_vars()
+        else:
+            disp_dict = sb[time_point].define_display_vars()
+
+        stream_attributes[n] = {}
+
+        for k in disp_dict:
+            for i in disp_dict[k]:
+                if i is None:
+                    stream_attributes[n][k] = value(disp_dict[k][i])
+                else:
+                    stream_attributes[n][k+" "+i] = value(disp_dict[k][i])
+
+    stream_table = DataFrame.from_dict(stream_attributes, orient=orient)
+
+    return stream_table
+
+
+def _get_state_from_port(port):
+    # Check port for _state_block attribute
+    try:
+        return port._state_block
+    except AttributeError:
+        # Port was not created by IDAES add_port methods. Return exception for
+        # the user to fix.
+        raise ConfigurationError(
+                f"Port {port.name} does not have a _state_block attribute, "
+                f"thus cannot determine StateBlock to use for collecting data."
+                f" Please provide the associated StateBLock instead, or use "
+                f"the IDAES add_port methods to create the Port.")
+
 
 def stream_table(streams, attributes, heading=None):
     """
@@ -36,26 +115,30 @@ def stream_table(streams, attributes, heading=None):
     Returns:
         (DataFrame): A Pandas dataframe containing a stream table
     """
-    if heading is None: heading = attributes
-    st = pd.DataFrame(columns=heading)
-    row = [None]*len(attributes) # not a big deal but save time on realloc
+    if heading is None:
+        heading = attributes
+    st = DataFrame(columns=heading)
+    row = [None]*len(attributes)  # not a big deal but save time on realloc
     for key, s in streams.items():
         for i, a in enumerate(attributes):
             try:
                 v = getattr(s, a, None)
-                v = pyo.value(v, exception=False)
+                v = value(v, exception=False)
             except ZeroDivisionError:
                 v = None
             row[i] = v
         st.loc[key] = row
     return st
 
+
 def state_table(m, attributes, heading=None):
     """
-    Create a Pandas dataframe that shows the material state in every state block.
+    Create a Pandas dataframe that shows the material state in every state
+    block.
 
     Args:
-        m (Block): Pyomo model or block from which to create a state block table
+        m (Block): Pyomo model or block from which to create a state block
+            table
         attributes (list or tuple of strings): Attributes to report from a
             StateBlock, can be a Var, Param, or Expression. If an attribute
             doesn't exist or doesn't have a valid value, it will be treated as
@@ -65,7 +148,7 @@ def state_table(m, attributes, heading=None):
     Returns:
         (DataFrame): A Pandas DataFrame with a StateBlock table
     """
-    streams = {} #make a dict for a stream table containing all the state blocks
+    streams = {}  # make a dict for a stream table containing all state blocks
     for c in m.component_objects():
         if isinstance(c, StateBlock):
             for i in c:

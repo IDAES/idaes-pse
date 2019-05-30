@@ -149,10 +149,19 @@ should be constructed in this state block,
 
     def define_port_members(self):
         """
-        Method used to specific components to populate Ports with. Defaults to
+        Method used to specify components to populate Ports with. Defaults to
         define_state_vars, and developers should overload as required.
         """
         return self.define_state_vars()
+
+    def define_display_vars(self):
+        """
+        Method used to specify components to use to generate stream tables and
+        other outputs. Defaults to define_state_vars, and developers should
+        overload as required.
+        """
+        return self.define_state_vars()
+
 
     def get_material_flow_terms(self, *args, **kwargs):
         """
