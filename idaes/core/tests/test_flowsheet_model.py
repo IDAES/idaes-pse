@@ -16,13 +16,11 @@ Tests for flowsheet_model.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import AbstractModel, Block, ConcreteModel, Set, Var
+from pyomo.environ import ConcreteModel, Set
 from pyomo.dae import ContinuousSet
 from idaes.core import FlowsheetBlockData, declare_process_block_class, \
                         PhysicalParameterBlock, useDefault
-from idaes.ui.report import degrees_of_freedom
-from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import ConfigurationError, DynamicError
+from idaes.core.util.exceptions import DynamicError
 
 
 @declare_process_block_class("Flowsheet")
@@ -34,6 +32,7 @@ class _Flowsheet(FlowsheetBlockData):
 @declare_process_block_class("ParameterBlock")
 class _ParameterBlock(PhysicalParameterBlock):
     pass
+
 
 def test_config_block():
     # Test that ConfigBlock has correct attributes

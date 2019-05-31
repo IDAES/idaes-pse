@@ -33,7 +33,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import calculate_degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Andrew Lee, Jinliang Ma"
@@ -322,7 +322,7 @@ class _StateBlock(StateBlock):
         else:
             # Check when the state vars are fixed already result in dof 0
             for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
+                if calculate_degrees_of_freedom(blk[k]) != 0:
                     raise Exception("State vars fixed but degrees of freedom "
                                     "for state block is not zero during "
                                     "initialization.")

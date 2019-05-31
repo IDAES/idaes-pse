@@ -37,7 +37,7 @@ from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.unit_models.heat_exchanger import HeatExchangerData
 from idaes.unit_models import Mixer, MomentumMixingType, HeatExchanger
 from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import calculate_degrees_of_freedom
 from idaes.core import useDefault
 from idaes.core.util.config import is_physical_parameter_block
 
@@ -294,7 +294,7 @@ class FWH0DData(UnitModelBlockData):
         opt = SolverFactory(kwargs.get("solver", "ipopt"))
         opt.options = kwargs.get("oparg", {})
         tee = True if outlvl >= 3 else False
-        assert(degrees_of_freedom(self)==0)
+        assert(calculate_degrees_of_freedom(self)==0)
         results = opt.solve(self, tee=tee)
         if results.solver.termination_condition == TerminationCondition.optimal:
             if outlvl >= 2:

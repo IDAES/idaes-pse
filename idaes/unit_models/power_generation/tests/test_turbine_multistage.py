@@ -27,7 +27,10 @@ from idaes.unit_models.power_generation import (
     TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
 from idaes.property_models import iapws95_ph
 from idaes.property_models.iapws95 import iapws95_available
-from idaes.ui.report import degrees_of_freedom, active_equalities
+from idaes.core.util.model_statistics import (
+        calculate_degrees_of_freedom,
+        equality_constraint_component_set,
+        activated_component_set)
 
 prop_available = iapws95_available()
 
@@ -128,9 +131,11 @@ def test_initialize():
     TransformationFactory("network.expand_arcs").apply_to(m)
     m.fs.turb.outlet_stage.control_volume.properties_out[0].pressure.fix()
 
-    assert(degrees_of_freedom(m)==0)
+    assert(calculate_degrees_of_freedom(m)==0)
     solver.solve(m, tee=True)
-    for c in active_equalities(m):
+
+    eq_cons = activated_component_set(equality_constraint_component_set(m))
+    for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
 
     return m

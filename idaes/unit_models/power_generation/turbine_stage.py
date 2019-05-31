@@ -34,7 +34,7 @@ from idaes.core import declare_process_block_class
 from idaes.unit_models.pressure_changer import (PressureChangerData,
                                                 ThermodynamicAssumption)
 from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import calculate_degrees_of_freedom
 
 
 @declare_process_block_class("TurbineStage",
@@ -140,11 +140,11 @@ class TurbineStageData(PressureChangerData):
 
         # Make sure the initialization problem has no degrees of freedom
         # This shouldn't happen here unless there is a bug in this
-        dof = degrees_of_freedom(self)
+        dof = calculate_degrees_of_freedom(self)
         try:
             assert(dof == 0)
         except:
-            _log.exception("degrees_of_freedom = {}".format(dof))
+            _log.exception("calculate_degrees_of_freedom = {}".format(dof))
             raise
 
         # one bad thing about reusing this is that the log messages aren't

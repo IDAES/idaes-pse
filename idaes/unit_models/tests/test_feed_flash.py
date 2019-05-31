@@ -21,7 +21,7 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models.feed_flash import FeedFlash
 from idaes.property_models.ideal.BTX_ideal_VLE import (
                         BTXParameterBlock)
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import calculate_degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
@@ -76,7 +76,7 @@ def test_initialize():
     m.fs.ff.mole_frac[0, "benzene"].fix(0.5)
     m.fs.ff.mole_frac[0, "toluene"].fix(0.5)
 
-    assert degrees_of_freedom(m) == 0
+    assert calculate_degrees_of_freedom(m) == 0
 
     m.fs.ff.initialize(outlvl=5,
                        optarg={'tol': 1e-6})

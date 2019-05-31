@@ -23,7 +23,10 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models.power_generation import TurbineInletStage
 from idaes.property_models import iapws95_ph
 from idaes.property_models.iapws95 import iapws95_available
-from idaes.ui.report import degrees_of_freedom, active_equalities
+from idaes.core.util.model_statistics import (
+        calculate_degrees_of_freedom,
+        equality_constraint_component_set,
+        activated_component_set)
 
 prop_available = iapws95_available()
 
@@ -68,9 +71,11 @@ def test_initialize(build_turbine):
     m.fs.turb.inlet.pressure[0].value = 2.4233e7
 
     m.fs.turb.initialize(outlvl=1)
-    for c in active_equalities(m):
+
+    eq_cons = activated_component_set(equality_constraint_component_set(m))
+    for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
-    assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
+    assert(calculate_degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")

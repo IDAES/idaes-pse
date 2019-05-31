@@ -18,7 +18,7 @@ IDAES models.
 
 __author__ = "Andrew Lee"
 
-from pyomo.environ import Block, Constraint, Expression, Objective, Var
+from pyomo.environ import Block, Constraint, Expression, Objective, Var, value
 from pyomo.dae import DerivativeVar
 from pyomo.core.expr.current import identify_variables
 from pyomo.core.kernel.component_set import ComponentSet
@@ -292,6 +292,50 @@ def inequality_constraints_component_set(block_or_set,
     return set_inequalities
 
 
+def large_residual_component_set(block_or_set,
+                                 tol=1e-5,
+                                 active_blocks=True,
+                                 descend_into=True):
+    """
+    Method to return a set of the equality Constraint components appearing
+    within a model.
+
+    Args:
+        block_or_set - the Block object to be enumerated or an existing
+                ComponentSet of Constraints to be enumerated
+        tol - show constraints with residuals greated than tol
+        active_blocks - used when block_or_set is a Block object and indicates
+                whether Constraints in deactivated Blocks (and sub-Blocks)
+                should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
+        descend_into - used when block_or_set is a Block object and indicates
+                whether only local Constraints within Blocks should be
+                enumerated (False), or if Constraints in child Blocks should be
+                included (True, default)
+
+    Returns:
+        set_equalites - a ComponentSet containing all equality Constraints that
+            appear within block_or_set
+    """
+    if not isinstance(block_or_set, ComponentSet):
+        block_or_set = constraint_component_set(
+                            block_or_set,
+                            active_blocks=active_blocks,
+                            descend_into=descend_into)
+
+    large_residuals = ComponentSet()
+
+    for c in block_or_set:
+        if c.active and value(c.lower - c.body()) > tol:
+            large_residuals.add(c)
+        elif c.active and value(c.body() - c.upper) > tol:
+            large_residuals.add(c)
+
+    return large_residuals
+
+
 def activated_component_set(component_set):
     """
     Method to return a set of the activated components appearing within a
@@ -386,6 +430,44 @@ def fixed_variable_component_set(block_or_set,
 
     for v in block_or_set:
         if v.fixed:
+            set_fixed_vars.add(v)
+
+    return set_fixed_vars
+
+
+def unfixed_variable_component_set(block_or_set,
+                                   active=True,
+                                   descend_into=True):
+    """
+    Method to enumerate the unfixed Variables which within a model.
+
+    Args:
+        block_or_set - the Block object containing the Vars to be
+                enumerated or an existing ComponentSet of Vars
+        active - indicates whether Vars in deactivated Blocks (and
+                sub-Blocks) should be included. Valid option are:
+                * None - include Vars in all Blocks
+                * True - only include Vars in Blocks with active=True (default)
+                * False - only include Vars in Blocks with active=False
+        descend_into - used when block_or_set is a Block object and indicates
+                whether only local Vars within Blocks should be
+                enumerated (False), or if Vars in child Blocks should be
+                included (True, default)
+
+    Returns:
+        set_fixed_vars - a ComponentSet containing all unfixed Var components
+            which appear in block_or_set
+    """
+    if not isinstance(block_or_set, ComponentSet):
+        block_or_set = variable_component_set(
+                            block_or_set,
+                            active=active,
+                            descend_into=descend_into)
+
+    set_fixed_vars = ComponentSet()
+
+    for v in block_or_set:
+        if not v.fixed:
             set_fixed_vars.add(v)
 
     return set_fixed_vars

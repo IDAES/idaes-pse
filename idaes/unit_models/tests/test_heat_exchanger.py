@@ -23,7 +23,7 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models import Heater, HeatExchanger
 from idaes.property_models import iapws95_ph
 from idaes.property_models.iapws95 import iapws95_available
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import calculate_degrees_of_freedom
 
 prop_available = iapws95_available()
 
@@ -94,7 +94,7 @@ def test_initialize_heat_exchanger(build_heat_exchanger):
                                    state_args_2=init_state2,
                                    outlvl=5)
     solver.solve(m)
-    assert degrees_of_freedom(m) == 0
+    assert calculate_degrees_of_freedom(m) == 0
     print(value(m.fs.heat_exchanger.delta_temperature[0]))
     print(value(m.fs.heat_exchanger.side_1.heat[0]))
     print(value(m.fs.heat_exchanger.side_2.heat[0]))
@@ -147,7 +147,7 @@ def test_heater_q1(build_heater):
     m.fs.heater.inlet.pressure.fix(101325)
     m.fs.heater.heat_duty[0].fix(100*20000)
     m.fs.heater.initialize()
-    assert degrees_of_freedom(m) == 0
+    assert calculate_degrees_of_freedom(m) == 0
     solver.solve(m)
     prop_in = m.fs.heater.control_volume.properties_in[0]
     prop_out = m.fs.heater.control_volume.properties_out[0]

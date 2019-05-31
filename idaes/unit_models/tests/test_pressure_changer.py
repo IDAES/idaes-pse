@@ -20,7 +20,7 @@ from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.pressure_changer import (PressureChanger,
                                                 ThermodynamicAssumption)
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import calculate_degrees_of_freedom
 
 # Import property package for testing
 from idaes.property_models import iapws95_ph as pp
@@ -134,7 +134,7 @@ def test_initialization_isothermal():
     m.fs.pc.inlet.enth_mol.fix(4000)
     m.fs.pc.inlet.pressure.fix(2e6)
 
-    assert degrees_of_freedom(m) == 0
+    assert calculate_degrees_of_freedom(m) == 0
 
     init_state = {
         "flow_mol": 27.5e3,
@@ -170,7 +170,7 @@ def test_initialization_pump():
     m.fs.pc.deltaP.fix(-1e3)
     m.fs.pc.efficiency_pump.fix(0.9)
 
-    assert degrees_of_freedom(m) == 0
+    assert calculate_degrees_of_freedom(m) == 0
 
     init_state = {
         "flow_mol": 27.5e3,
@@ -212,7 +212,7 @@ def test_initialization_adiabatic():
     m.fs.pc.inlet.pressure.fix(2e6)
     m.fs.pc.deltaP.fix(-1e3)
 
-    assert degrees_of_freedom(m) == 0
+    assert calculate_degrees_of_freedom(m) == 0
 
     m.fs.pc.initialize(state_args=init_state, outlvl=5,
                        optarg={'tol': 1e-6})
@@ -249,7 +249,7 @@ def test_initialization_isentropic():
     m.fs.pc.deltaP.fix(-1e3)
     m.fs.pc.efficiency_isentropic.fix(0.83)
 
-    assert degrees_of_freedom(m) == 0
+    assert calculate_degrees_of_freedom(m) == 0
 
     m.fs.pc.initialize(state_args=init_state, outlvl=5,
                        optarg={'tol': 1e-6})
