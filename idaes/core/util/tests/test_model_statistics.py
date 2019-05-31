@@ -27,22 +27,22 @@ from pyomo.environ import (Block,
 from pyomo.dae import ContinuousSet, DerivativeVar
 
 from idaes.core.util.model_statistics import (
-        block_component_set,
-        constraint_component_set,
-        derivative_variables_component_set,
-        expression_component_set,
-        objective_component_set,
-        variable_component_set,
-        equality_constraint_component_set,
-        inequality_constraints_component_set,
+        block_set,
+        constraint_set,
+        derivative_variables_set,
+        expression_set,
+        objective_set,
+        variable_set,
+        equality_constraint_set,
+        inequality_constraints_set,
         activated_component_set,
-        variables_in_constraints_component_set,
-        fixed_variable_component_set,
-        unfixed_variable_component_set,
+        variables_in_constraints_set,
+        fixed_variable_set,
+        unfixed_variable_set,
         calculate_degrees_of_freedom,
         report_model_statistics,
-        active_variables_in_deactived_blocks_component_set,
-        large_residual_component_set)
+        active_variables_in_deactived_blocks_set,
+        large_residual_set)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -102,214 +102,180 @@ def m():
     return m
 
 
-def test_block_component_set(m):
-    assert len(block_component_set(m, active=None)) == 4
+def test_block_set(m):
+    assert len(block_set(m, active=None)) == 4
 
-    assert len(block_component_set(m,
-                                   active=None,
-                                   descend_into=False)) == 3
+    assert len(block_set(m, active=None, descend_into=False)) == 3
 
-    assert len(block_component_set(m, active=True)) == 2
+    assert len(block_set(m, active=True)) == 2
 
-    assert len(block_component_set(m,
-                                   active=True,
-                                   descend_into=False)) == 2
+    assert len(block_set(m, active=True, descend_into=False)) == 2
 
     m.b1.sb.activate()
-    assert len(block_component_set(m, active=True)) == 2
+    assert len(block_set(m, active=True)) == 2
 
-    assert len(block_component_set(m,
-                                   active=True,
-                                   descend_into=False)) == 2
+    assert len(block_set(m, active=True, descend_into=False)) == 2
 
     m.b1.activate()
     m.b1.sb.deactivate()
-    assert len(block_component_set(m, active=True)) == 3
+    assert len(block_set(m, active=True)) == 3
 
-    assert len(block_component_set(m,
-                                   active=True,
-                                   descend_into=False)) == 3
+    assert len(block_set(m, active=True, descend_into=False)) == 3
 
 
-def test_variable_component_set(m):
-    assert len(variable_component_set(m,
-                                      active=True,
-                                      descend_into=True)) == 28
+def test_variable_set(m):
+    assert len(variable_set(m, active=True, descend_into=True)) == 28
 
-    assert len(variable_component_set(m,
-                                      active=None,
-                                      descend_into=True)) == 34
+    assert len(variable_set(m, active=None, descend_into=True)) == 34
 
-    assert len(variable_component_set(m,
-                                      active=True,
-                                      descend_into=False)) == 22
+    assert len(variable_set(m, active=True, descend_into=False)) == 22
 
-    assert len(variable_component_set(m,
-                                      active=None,
-                                      descend_into=False)) == 22
+    assert len(variable_set(m, active=None, descend_into=False)) == 22
 
 
-def test_derivative_variables_component_set(m):
-    assert len(derivative_variables_component_set(m)) == 0
+def test_derivative_variables_set(m):
+    assert len(derivative_variables_set(m)) == 0
 
     m.v2 = Var(m.cs)
     m.dv2 = DerivativeVar(m.v2)
-    assert len(derivative_variables_component_set(m)) == 11
+    assert len(derivative_variables_set(m)) == 11
 
 
-def test_expression_component_set(m):
-    assert len(expression_component_set(m,
-                                        active_blocks=True,
-                                        descend_into=True)) == 3
+def test_expression_set(m):
+    assert len(expression_set(m, active_blocks=True, descend_into=True)) == 3
 
-    assert len(expression_component_set(m,
-                                        active_blocks=None,
-                                        descend_into=True)) == 4
+    assert len(expression_set(m, active_blocks=None, descend_into=True)) == 4
 
-    assert len(expression_component_set(m,
-                                        active_blocks=True,
-                                        descend_into=False)) == 1
+    assert len(expression_set(m, active_blocks=True, descend_into=False)) == 1
 
-    assert len(expression_component_set(m,
-                                        active_blocks=None,
-                                        descend_into=False)) == 1
+    assert len(expression_set(m, active_blocks=None, descend_into=False)) == 1
 
 
-def test_objective_component_set(m):
-    assert len(objective_component_set(m,
+def test_objective_set(m):
+    assert len(objective_set(m, active_blocks=True, descend_into=True)) == 2
+
+    assert len(objective_set(m, active_blocks=None, descend_into=True)) == 4
+
+
+def test_constraint_set(m):
+    assert len(constraint_set(m, active_blocks=True, descend_into=True)) == 14
+
+    assert len(constraint_set(m, active_blocks=None, descend_into=True)) == 18
+
+    assert len(constraint_set(m, active_blocks=True, descend_into=False)) == 10
+
+
+def test_equality_constraint_set(m):
+    assert len(equality_constraint_set(m,
                                        active_blocks=True,
-                                       descend_into=True)) == 2
+                                       descend_into=True)) == 12
 
-    assert len(objective_component_set(m,
+    assert len(equality_constraint_set(m,
                                        active_blocks=None,
-                                       descend_into=True)) == 4
+                                       descend_into=True)) == 14
+
+    assert len(equality_constraint_set(m,
+                                       active_blocks=True,
+                                       descend_into=False)) == 10
+
+    c = constraint_set(m, active_blocks=True, descend_into=True)
+    assert len(equality_constraint_set(c,
+                                       active_blocks=True,
+                                       descend_into=False)) == 12
+    assert len(equality_constraint_set(c,
+                                       active_blocks=None,
+                                       descend_into=False)) == 12
+    assert len(equality_constraint_set(c,
+                                       active_blocks=True,
+                                       descend_into=True)) == 12
+
+    c = constraint_set(m, active_blocks=None, descend_into=True)
+    assert len(equality_constraint_set(c)) == 14
+
+    c = constraint_set(m, active_blocks=True, descend_into=False)
+    assert len(equality_constraint_set(c)) == 10
 
 
-def test_constraint_component_set(m):
-    assert len(constraint_component_set(m,
-                                        active_blocks=True,
-                                        descend_into=True)) == 14
+def test_inequality_constraints_set(m):
+    assert len(inequality_constraints_set(m,
+                                          active_blocks=True,
+                                          descend_into=True)) == 2
 
-    assert len(constraint_component_set(m,
-                                        active_blocks=None,
-                                        descend_into=True)) == 18
+    assert len(inequality_constraints_set(m,
+                                          active_blocks=None,
+                                          descend_into=True)) == 4
 
-    assert len(constraint_component_set(m,
-                                        active_blocks=True,
-                                        descend_into=False)) == 10
+    assert len(inequality_constraints_set(m,
+                                          active_blocks=True,
+                                          descend_into=False)) == 0
 
+    c = constraint_set(m, active_blocks=True, descend_into=True)
+    assert len(inequality_constraints_set(c,
+                                          active_blocks=True,
+                                          descend_into=False)) == 2
+    assert len(inequality_constraints_set(c,
+                                          active_blocks=None,
+                                          descend_into=False)) == 2
+    assert len(inequality_constraints_set(c,
+                                          active_blocks=True,
+                                          descend_into=True)) == 2
 
-def test_equality_constraint_component_set(m):
-    assert len(equality_constraint_component_set(m,
-                                                 active_blocks=True,
-                                                 descend_into=True)) == 12
+    c = constraint_set(m, active_blocks=None, descend_into=True)
+    assert len(inequality_constraints_set(c)) == 4
 
-    assert len(equality_constraint_component_set(m,
-                                                 active_blocks=None,
-                                                 descend_into=True)) == 14
-
-    assert len(equality_constraint_component_set(m,
-                                                 active_blocks=True,
-                                                 descend_into=False)) == 10
-
-    c = constraint_component_set(m, active_blocks=True, descend_into=True)
-    assert len(equality_constraint_component_set(c,
-                                                 active_blocks=True,
-                                                 descend_into=False)) == 12
-    assert len(equality_constraint_component_set(c,
-                                                 active_blocks=None,
-                                                 descend_into=False)) == 12
-    assert len(equality_constraint_component_set(c,
-                                                 active_blocks=True,
-                                                 descend_into=True)) == 12
-
-    c = constraint_component_set(m, active_blocks=None, descend_into=True)
-    assert len(equality_constraint_component_set(c)) == 14
-
-    c = constraint_component_set(m, active_blocks=True, descend_into=False)
-    assert len(equality_constraint_component_set(c)) == 10
-
-
-def test_inequality_constraints_component_set(m):
-    assert len(inequality_constraints_component_set(m,
-                                                    active_blocks=True,
-                                                    descend_into=True)) == 2
-
-    assert len(inequality_constraints_component_set(m,
-                                                    active_blocks=None,
-                                                    descend_into=True)) == 4
-
-    assert len(inequality_constraints_component_set(m,
-                                                    active_blocks=True,
-                                                    descend_into=False)) == 0
-
-    c = constraint_component_set(m, active_blocks=True, descend_into=True)
-    assert len(inequality_constraints_component_set(c,
-                                                    active_blocks=True,
-                                                    descend_into=False)) == 2
-    assert len(inequality_constraints_component_set(c,
-                                                    active_blocks=None,
-                                                    descend_into=False)) == 2
-    assert len(inequality_constraints_component_set(c,
-                                                    active_blocks=True,
-                                                    descend_into=True)) == 2
-
-    c = constraint_component_set(m, active_blocks=None, descend_into=True)
-    assert len(inequality_constraints_component_set(c)) == 4
-
-    c = constraint_component_set(m, active_blocks=True, descend_into=False)
-    assert len(inequality_constraints_component_set(c)) == 0
+    c = constraint_set(m, active_blocks=True, descend_into=False)
+    assert len(inequality_constraints_set(c)) == 0
 
 
 def test_activated_component_set(m):
-    c = constraint_component_set(m, active_blocks=True, descend_into=True)
+    c = constraint_set(m, active_blocks=True, descend_into=True)
     assert len(activated_component_set(c)) == 14
 
     m.b2["a"].c1.deactivate()
     assert len(activated_component_set(c)) == 13
 
 
-def test_variables_in_constraints_component_set(m):
-    c = constraint_component_set(m, active_blocks=True, descend_into=True)
-    assert len(variables_in_constraints_component_set(c)) == 23
+def test_variables_in_constraints_set(m):
+    c = constraint_set(m, active_blocks=True, descend_into=True)
+    assert len(variables_in_constraints_set(c)) == 23
 
-    assert len(variables_in_constraints_component_set(m,
-                                                      active_blocks=True,
-                                                      descend_into=True)) == 23
+    assert len(variables_in_constraints_set(m,
+                                            active_blocks=True,
+                                            descend_into=True)) == 23
 
-    c = constraint_component_set(m, active_blocks=None, descend_into=True)
-    assert len(variables_in_constraints_component_set(c)) == 25
+    c = constraint_set(m, active_blocks=None, descend_into=True)
+    assert len(variables_in_constraints_set(c)) == 25
 
-    c = constraint_component_set(m, active_blocks=True, descend_into=False)
-    assert len(variables_in_constraints_component_set(c)) == 21
-
-
-def test_fixed_variable_component_set(m):
-    assert len(fixed_variable_component_set(m)) == 2
-
-    v = variable_component_set(m, active=None)
-    assert len(fixed_variable_component_set(v)) == 4
+    c = constraint_set(m, active_blocks=True, descend_into=False)
+    assert len(variables_in_constraints_set(c)) == 21
 
 
-def test_unfixed_variable_component_set(m):
-    assert len(unfixed_variable_component_set(m)) == 26
+def test_fixed_variable_set(m):
+    assert len(fixed_variable_set(m)) == 2
 
-    v = variable_component_set(m, active=None)
-    assert len(unfixed_variable_component_set(v)) == 30
+    v = variable_set(m, active=None)
+    assert len(fixed_variable_set(v)) == 4
+
+
+def test_unfixed_variable_set(m):
+    assert len(unfixed_variable_set(m)) == 26
+
+    v = variable_set(m, active=None)
+    assert len(unfixed_variable_set(v)) == 30
 
 
 def test_calculate_degrees_of_freedom(m):
     assert calculate_degrees_of_freedom(m) == 9
 
 
-def test_large_residual_component_set(m):
+def test_large_residual_set(m):
     # Initialize derivative var values so no errors occur
     for v in m.dv.keys():
         m.dv[v] = 0
-    assert len(large_residual_component_set(m)) == 4
+    assert len(large_residual_set(m)) == 4
 
     m.b2["a"].deactivate()
-    assert len(large_residual_component_set(m)) == 2
+    assert len(large_residual_set(m)) == 2
 
 
 def test_report_model_statistics(m):
@@ -318,11 +284,11 @@ def test_report_model_statistics(m):
 
 
 def test_act_vars_deact_blocks(m):
-    assert len(active_variables_in_deactived_blocks_component_set(m)) == 0
+    assert len(active_variables_in_deactived_blocks_set(m)) == 0
 
     m.c1 = Constraint(expr=10 == m.b1.v1)
 
-    assert len(active_variables_in_deactived_blocks_component_set(m)) == 1
+    assert len(active_variables_in_deactived_blocks_set(m)) == 1
 
     with pytest.raises(ConfigurationError):
-        active_variables_in_deactived_blocks_component_set(m.b1)
+        active_variables_in_deactived_blocks_set(m.b1)

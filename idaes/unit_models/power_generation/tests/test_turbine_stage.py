@@ -25,7 +25,7 @@ from idaes.property_models import iapws95_ph
 from idaes.property_models.iapws95 import iapws95_available
 from idaes.core.util.model_statistics import (
         calculate_degrees_of_freedom,
-        equality_constraint_component_set,
+        equality_constraint_set,
         activated_component_set)
 prop_available = iapws95_available()
 
@@ -71,7 +71,7 @@ def test_initialize(build_turbine):
     m.fs.turb.ratioP.fix(0.7)
     m.fs.turb.initialize(outlvl=4)
 
-    eq_cons = activated_component_set(equality_constraint_component_set(m))
+    eq_cons = activated_component_set(equality_constraint_set(m))
     for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
     assert(calculate_degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be

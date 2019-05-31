@@ -37,9 +37,7 @@ def _create_component_set(block, ctype, active_blocks=True, descend_into=True):
                                                        descend_into=False))
 
     if descend_into:
-        set_blocks = block_component_set(block,
-                                         active=active_blocks,
-                                         descend_into=True)
+        set_blocks = block_set(block, active=active_blocks, descend_into=True)
 
         for b in set_blocks:
             set_components.update(b.component_data_objects(ctype=ctype,
@@ -49,7 +47,7 @@ def _create_component_set(block, ctype, active_blocks=True, descend_into=True):
     return set_components
 
 
-def block_component_set(block, active=True, descend_into=True):
+def block_set(block, active=True, descend_into=True):
     """
     Method to return a set of the Block components appearing within a Pyomo
     Block.
@@ -77,7 +75,7 @@ def block_component_set(block, active=True, descend_into=True):
     return set_blocks
 
 
-def variable_component_set(block, active=True, descend_into=True):
+def variable_set(block, active=True, descend_into=True):
     """
     Method to return a set of the Variables appearing within a model.
 
@@ -102,9 +100,7 @@ def variable_component_set(block, active=True, descend_into=True):
     return set_vars
 
 
-def derivative_variables_component_set(block,
-                                       active_blocks=True,
-                                       descend_into=True):
+def derivative_variables_set(block, active_blocks=True, descend_into=True):
     """
     Method to return a set of the DerivativeVars appearing within a model.
     Users should note that applying a DAE transformation converts
@@ -132,7 +128,7 @@ def derivative_variables_component_set(block,
                                  descend_into=descend_into)
 
 
-def expression_component_set(block, active_blocks=True, descend_into=True):
+def expression_set(block, active_blocks=True, descend_into=True):
     """
     Method to return a set of the Expression components appearing within a
     model.
@@ -158,7 +154,7 @@ def expression_component_set(block, active_blocks=True, descend_into=True):
                                  descend_into=descend_into)
 
 
-def objective_component_set(block, active_blocks=True, descend_into=True):
+def objective_set(block, active_blocks=True, descend_into=True):
     """
     Method to return a set of the Objective components appearing within a
     model.
@@ -184,7 +180,7 @@ def objective_component_set(block, active_blocks=True, descend_into=True):
                                  descend_into=descend_into)
 
 
-def constraint_component_set(block, active_blocks=True, descend_into=True):
+def constraint_set(block, active_blocks=True, descend_into=True):
     """
     Method to return a set of the Constraint components appearing within a
     model.
@@ -210,9 +206,9 @@ def constraint_component_set(block, active_blocks=True, descend_into=True):
                                  descend_into=descend_into)
 
 
-def equality_constraint_component_set(block_or_set,
-                                      active_blocks=True,
-                                      descend_into=True):
+def equality_constraint_set(block_or_set,
+                            active_blocks=True,
+                            descend_into=True):
     """
     Method to return a set of the equality Constraint components appearing
     within a model.
@@ -236,7 +232,7 @@ def equality_constraint_component_set(block_or_set,
             appear within block_or_set
     """
     if not isinstance(block_or_set, ComponentSet):
-        block_or_set = constraint_component_set(
+        block_or_set = constraint_set(
                             block_or_set,
                             active_blocks=active_blocks,
                             descend_into=descend_into)
@@ -251,9 +247,9 @@ def equality_constraint_component_set(block_or_set,
     return set_equalities
 
 
-def inequality_constraints_component_set(block_or_set,
-                                         active_blocks=True,
-                                         descend_into=True):
+def inequality_constraints_set(block_or_set,
+                               active_blocks=True,
+                               descend_into=True):
     """
     Method to return a set of the inequality Constraint components appearing
     within a model.
@@ -277,7 +273,7 @@ def inequality_constraints_component_set(block_or_set,
             that appear within block_or_set
     """
     if not isinstance(block_or_set, ComponentSet):
-        block_or_set = constraint_component_set(
+        block_or_set = constraint_set(
                             block_or_set,
                             active_blocks=active_blocks,
                             descend_into=descend_into)
@@ -292,18 +288,18 @@ def inequality_constraints_component_set(block_or_set,
     return set_inequalities
 
 
-def large_residual_component_set(block_or_set,
-                                 tol=1e-5,
-                                 active_blocks=True,
-                                 descend_into=True):
+def large_residual_set(block_or_set,
+                       tol=1e-5,
+                       active_blocks=True,
+                       descend_into=True):
     """
-    Method to return a set of the equality Constraint components appearing
-    within a model.
+    Method to return a set of the Constraint components with large residuals
+    appearing within a model.
 
     Args:
         block_or_set - the Block object to be enumerated or an existing
                 ComponentSet of Constraints to be enumerated
-        tol - show constraints with residuals greated than tol
+        tol - show Constraints with residuals greated than tol
         active_blocks - used when block_or_set is a Block object and indicates
                 whether Constraints in deactivated Blocks (and sub-Blocks)
                 should be included. Valid option are:
@@ -320,7 +316,7 @@ def large_residual_component_set(block_or_set,
             appear within block_or_set
     """
     if not isinstance(block_or_set, ComponentSet):
-        block_or_set = constraint_component_set(
+        block_or_set = constraint_set(
                             block_or_set,
                             active_blocks=active_blocks,
                             descend_into=descend_into)
@@ -357,9 +353,9 @@ def activated_component_set(component_set):
     return set_activated
 
 
-def variables_in_constraints_component_set(block_or_set,
-                                           active_blocks=True,
-                                           descend_into=True):
+def variables_in_constraints_set(block_or_set,
+                                 active_blocks=True,
+                                 descend_into=True):
     """
     Method to return a set of the Vars which occur within Constraints within a
     model.
@@ -383,7 +379,7 @@ def variables_in_constraints_component_set(block_or_set,
             which appear in the Constraints in block_or_set
     """
     if not isinstance(block_or_set, ComponentSet):
-        block_or_set = constraint_component_set(
+        block_or_set = constraint_set(
                             block_or_set,
                             active_blocks=active_blocks,
                             descend_into=descend_into)
@@ -397,9 +393,9 @@ def variables_in_constraints_component_set(block_or_set,
     return set_vars_in_constraints
 
 
-def fixed_variable_component_set(block_or_set,
-                                 active=True,
-                                 descend_into=True):
+def fixed_variable_set(block_or_set,
+                       active=True,
+                       descend_into=True):
     """
     Method to enumerate the fixed Variables which within a model.
 
@@ -421,7 +417,7 @@ def fixed_variable_component_set(block_or_set,
             which appear in block_or_set
     """
     if not isinstance(block_or_set, ComponentSet):
-        block_or_set = variable_component_set(
+        block_or_set = variable_set(
                             block_or_set,
                             active=active,
                             descend_into=descend_into)
@@ -435,9 +431,9 @@ def fixed_variable_component_set(block_or_set,
     return set_fixed_vars
 
 
-def unfixed_variable_component_set(block_or_set,
-                                   active=True,
-                                   descend_into=True):
+def unfixed_variable_set(block_or_set,
+                         active=True,
+                         descend_into=True):
     """
     Method to enumerate the unfixed Variables which within a model.
 
@@ -459,7 +455,7 @@ def unfixed_variable_component_set(block_or_set,
             which appear in block_or_set
     """
     if not isinstance(block_or_set, ComponentSet):
-        block_or_set = variable_component_set(
+        block_or_set = variable_set(
                             block_or_set,
                             active=active,
                             descend_into=descend_into)
@@ -473,7 +469,7 @@ def unfixed_variable_component_set(block_or_set,
     return set_fixed_vars
 
 
-def active_variables_in_deactived_blocks_component_set(block):
+def active_variables_in_deactived_blocks_set(block):
     """
     This method returns a set of any Vars which belong to a deactivated Block
     (or a child of a deactivated Block) but appear in an active Constraint
@@ -495,21 +491,19 @@ def active_variables_in_deactived_blocks_component_set(block):
                 )
 
     # Get all Constraints in active Blocks
-    all_constraints = constraint_component_set(block,
-                                               active_blocks=True,
-                                               descend_into=True)
+    all_constraints = constraint_set(block,
+                                     active_blocks=True,
+                                     descend_into=True)
 
     # Get activated Constraints from all_constraints
     act_constraints = activated_component_set(all_constraints)
 
     # Get all Vars that appear in activated Constraints
-    vars_in_act_constraints = variables_in_constraints_component_set(
+    vars_in_act_constraints = variables_in_constraints_set(
             act_constraints)
 
     # Get all active Blocks
-    act_blocks = block_component_set(block,
-                                     active=True,
-                                     descend_into=True)
+    act_blocks = block_set(block, active=True, descend_into=True)
 
     act_vars_in_deact_blocks = ComponentSet()
 
@@ -522,14 +516,14 @@ def active_variables_in_deactived_blocks_component_set(block):
 
 
 def calculate_degrees_of_freedom(block):
-    equalities = equality_constraint_component_set(block,
-                                                   active_blocks=True,
-                                                   descend_into=True)
+    equalities = equality_constraint_set(block,
+                                         active_blocks=True,
+                                         descend_into=True)
     act_equalities = activated_component_set(equalities)
 
-    vars_in_act_equals = variables_in_constraints_component_set(act_equalities)
+    vars_in_act_equals = variables_in_constraints_set(act_equalities)
 
-    fixed_vars_in_act_equals = fixed_variable_component_set(vars_in_act_equals)
+    fixed_vars_in_act_equals = fixed_variable_set(vars_in_act_equals)
 
     dof = len(vars_in_act_equals-fixed_vars_in_act_equals)-len(act_equalities)
 
@@ -558,46 +552,42 @@ def report_model_statistics(block,
     else:
         active = True
 
-    total_vars = variable_component_set(block,
-                                        active=active,
-                                        descend_into=descend_into)
-    fixed_vars = fixed_variable_component_set(total_vars)
+    total_vars = variable_set(block, active=active, descend_into=descend_into)
+    fixed_vars = fixed_variable_set(total_vars)
 
-    total_cons = constraint_component_set(block,
-                                          active_blocks=active,
-                                          descend_into=descend_into)
-    eq_cons = equality_constraint_component_set(total_cons)
+    total_cons = constraint_set(block,
+                                active_blocks=active,
+                                descend_into=descend_into)
+    eq_cons = equality_constraint_set(total_cons)
     act_eq_cons = activated_component_set(eq_cons)
-    ineq_cons = inequality_constraints_component_set(total_cons)
+    ineq_cons = inequality_constraints_set(total_cons)
     act_ineq_cons = activated_component_set(ineq_cons)
 
-    total_objs = objective_component_set(block,
-                                         active_blocks=active,
-                                         descend_into=descend_into)
+    total_objs = objective_set(block,
+                               active_blocks=active,
+                               descend_into=descend_into)
     act_objs = activated_component_set(total_objs)
 
-    total_exprs = expression_component_set(block,
-                                           active_blocks=active,
-                                           descend_into=descend_into)
+    total_exprs = expression_set(block,
+                                 active_blocks=active,
+                                 descend_into=descend_into)
 
-    total_blocks = block_component_set(block,
-                                       active=active,
-                                       descend_into=descend_into)
+    total_blocks = block_set(block, active=active, descend_into=descend_into)
     act_blocks = activated_component_set(total_blocks)
 
-    vars_in_act_equals = variables_in_constraints_component_set(act_eq_cons)
-    fixed_vars_in_act_equals = fixed_variable_component_set(vars_in_act_equals)
+    vars_in_act_equals = variables_in_constraints_set(act_eq_cons)
+    fixed_vars_in_act_equals = fixed_variable_set(vars_in_act_equals)
 
-    vars_in_inequals = variables_in_constraints_component_set(act_ineq_cons)
+    vars_in_inequals = variables_in_constraints_set(act_ineq_cons)
     vars_only_in_inequals = ComponentSet()
     for v in vars_in_inequals:
         if v not in vars_in_act_equals:
             vars_only_in_inequals.add(v)
     fixed_vars_only_in_inequals = \
-        fixed_variable_component_set(vars_only_in_inequals)
+        fixed_variable_set(vars_only_in_inequals)
 
     unused_vars = total_vars-vars_in_act_equals
-    fixed_unused_vars = fixed_variable_component_set(unused_vars)
+    fixed_unused_vars = fixed_variable_set(unused_vars)
 
     dof = len(vars_in_act_equals-fixed_vars_in_act_equals)-len(act_eq_cons)
 
