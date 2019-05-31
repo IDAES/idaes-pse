@@ -27,6 +27,11 @@ import sphinx_rtd_theme
 
 # -- General configuration ------------------------------------------------
 
+read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
+
+if read_the_docs_build:
+subprocess.call('cat Makefile; make all', shell=True)
+
 # If your documentation needs a minimal Sphinx version, state it here.
 #
 # needs_sphinx = '1.0'
