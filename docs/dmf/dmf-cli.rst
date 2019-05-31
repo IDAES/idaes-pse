@@ -1726,6 +1726,3 @@ However, showing everything is less typing, and not overwhelming:
     assert "name: foo" in result.output
     assert "html" in result.output
     assert "logging:" in result.output
-
-.. include:: ../global.rst
-

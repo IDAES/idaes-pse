@@ -96,8 +96,7 @@ solve the equations required to change state variables and guarantee the correct
 roots.
 
 The external property functions are written in C++ and complied such that they
-can be called by AMPL solvers.  See the :ref:`installation instructions
-<install:Installation>` for information about compiling these
+can be called by AMPL solvers.  See the :ref:`idaes_installation` page for information about compiling these
 functions. The external functions provide both first and second derivatives for
 all property function calls, however at phase transitions some of these functions
 may be non-smooth.

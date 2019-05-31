@@ -37,7 +37,6 @@ help:
 	@echo "  html       to make standalone HTML files"
 	@echo "  dirhtml    to make HTML files named index.html in directories"
 	@echo "  singlehtml to make a single large HTML file"
-	@echo "  dep        to make all generated dependencies"
 	@echo "  apidoc     to make HTML API docs"
 	@echo "  pickle     to make pickle files"
 	@echo "  json       to make JSON files"
@@ -62,66 +61,67 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  coverage   to run coverage check of the documentation (if enabled)"
 	@echo "  dummy      to check syntax errors of document sources"
-	@echo "  examples   to run and copy the example notebooks into html format"
 
-.PHONY: clean
 clean:
 	rm -f apidoc/*
 	rm -f sphinx-build.log
 
-.PHONY: allclean
 allclean: clean
 	rm -rf $(BUILDDIR)/*
+	rm -f tutorials/Module_*.rst tutorials/*.html
 
-# Use this target to rebuild IDAES docs
-idaes: dep examples html
-	@echo "Rebuilding IDAES documentation"
-
-.PHONY: apidoc
 apidoc:
-	@ echo "Build apidocs (twice)"
+	@ echo "** Build apidocs (twice)"
 	$(SPHINX_I) >/dev/null
 	$(SPHINX_X) >/dev/null
-	@ echo "Combine indexed and non-indexed docs"
+	@ echo "  combine indexed and non-indexed docs"
 	@ mkdir -p apidoc
 	@ /bin/cp $(SPHINXAPIDOCOUT_X)/* apidoc
 	@for ix in idaes idaes.dmf idaes.vis ; do 	\
 		/bin/cp $(SPHINXAPIDOCOUT_I)/$${ix}.rst apidoc;		\
 	done
 	@ /bin/rm -rf $(SPHINXAPIDOCOUT_I) $(SPHINXAPIDOCOUT_X)
-	@ echo "Done: output in directory 'apidoc'"
+	@ echo "** API docs are in ./apidoc"
 
-.PHONY: dep
-dep: apidoc
-	@echo "Done building all dependencies"
+all: apidoc tutorials html
+	@echo "** Build finished"
 
-.PHONY: html
-html: apidoc
-	mkdir -p $(BUILDDIR)/examples
+html:
 	SPHINX=1 $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)
-	@/bin/cp examples/*.html $(BUILDDIR)/examples
-	@/bin/cp examples/*.png $(BUILDDIR)/examples
-	@echo
-	@echo "Build finished. The HTML pages are in $(BUILDDIR)"
+	@echo "** HTML docs are in $(BUILDDIR)"
 
-.PHONY: examples
-examples: execute nbconvert nbimages
-	@echo "Examples copied as HTML. The pages are located in $(BUILDDIR)/examples"
+### 
+# This section builds the workshop tutorials into the
+# documentation (html only). It is not executed by default, so the
+# process that builds for distribution should add, explicitly,
+# a "tutorials" target.
+###
 
-.PHONY: nbconvert
-nbconvert: 
-	mkdir -p $(BUILDDIR)/examples
-	$(SCRIPTDIR)/convert_notebooks.sh ../examples/executed $(BUILDDIR)/examples
+tutorials: tutorial_setup tutorial_nb tutorial_imgs
 
-.PHONY: nbimages
-nbimages:
-	$(shell find ../examples -name "*.png" -exec cp {} $(BUILDDIR)/examples \;)
+tutorial_setup:
+	@mkdir -p $(BUILDDIR)/tutorials
+	@mkdir -p ./tutorials
 
-.PHONY: execute
-execute: 
-	jupyter nbconvert --to notebook --execute \
-	$(shell find ../examples -name \*.ipynb | grep -v -e executed -e checkpoint) \
-	--output-dir ../examples/executed
+tutorial_nb: ../examples/workshops/Module_*/*.ipynb
+	@for f in $^ ; do \
+		echo "** Execute and convert: $$f"; \
+		n=`basename $$f .ipynb`; \
+		m=`echo $$n | cut -d_ -f2`; \
+		cmd="jupyter nbconvert --to html -y --output-dir=./tutorials $$f"; \
+		$$cmd --execute 2>/dev/null; \
+		[ $$? -ne 0 ] && echo "** Execute notebook failed: creating static" && $$cmd; \
+		echo "Tutorial Module $$m: $$t\n==================================================\n" > ./tutorials/$$n.rst; \
+		echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
+	done
+
+tutorial_imgs: ../examples/workshops/Module_*/*.png
+	@echo "** Copy images from ../examples/workshops/* to $(BUILDDIR)/tutorials"
+	@for f in $^; do cp $$f $(BUILDDIR)/tutorials; done
+
+###
+# End of tutorials section
+###
 
 .PHONY: dirhtml
 dirhtml:
@@ -297,23 +297,23 @@ coverage:
 	@echo "Testing of coverage in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/coverage/python.txt."
 
-.PHONY: xml
 xml:
 	mkdir -p $(BUILDDIR)/xml
 	$(SPHINXBUILD) -b xml $(ALLSPHINXOPTS) $(BUILDDIR)/xml
 	@echo
 	@echo "Build finished. The XML files are in $(BUILDDIR)/xml."
 
-.PHONY: pseudoxml
 pseudoxml:
 	mkdir -p $(BUILDDIR)/pseudoxml
 	$(SPHINXBUILD) -b pseudoxml $(ALLSPHINXOPTS) $(BUILDDIR)/pseudoxml
 	@echo
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
 
-.PHONY: dummy
 dummy:
 	mkdir -p $(BUILDDIR)/dummy
 	$(SPHINXBUILD) -b dummy $(ALLSPHINXOPTS) $(BUILDDIR)/dummy
 	@echo
 	@echo "Build finished. Dummy builder generates no files."
+
+.PHONY: dummy pseudoxml xml clean allclean apidoc htmlnote \
+		tutorial_setup tutorial_solns tutoral_probs tutorial_imgs
