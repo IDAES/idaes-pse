@@ -38,9 +38,11 @@ from idaes.core.util.model_statistics import (
         activated_component_set,
         variables_in_constraints_component_set,
         fixed_variable_component_set,
+        unfixed_variable_component_set,
         calculate_degrees_of_freedom,
         report_model_statistics,
-        active_variables_in_deactived_blocks_component_set)
+        active_variables_in_deactived_blocks_component_set,
+        large_residual_component_set)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -52,7 +54,7 @@ def m():
     m.s = Set(initialize=["a", "b"])
     m.cs = ContinuousSet(bounds=(0, 1))
 
-    m.v = Var(m.cs)
+    m.v = Var(m.cs, initialize=1)
     m.dv = DerivativeVar(m.v)
 
     m.discretizer = TransformationFactory("dae.finite_difference")
@@ -289,8 +291,25 @@ def test_fixed_variable_component_set(m):
     assert len(fixed_variable_component_set(v)) == 4
 
 
+def test_unfixed_variable_component_set(m):
+    assert len(unfixed_variable_component_set(m)) == 26
+
+    v = variable_component_set(m, active=None)
+    assert len(unfixed_variable_component_set(v)) == 30
+
+
 def test_calculate_degrees_of_freedom(m):
     assert calculate_degrees_of_freedom(m) == 9
+
+
+def test_large_residual_component_set(m):
+    # Initialize derivative var values so no errors occur
+    for v in m.dv.keys():
+        m.dv[v] = 0
+    assert len(large_residual_component_set(m)) == 4
+
+    m.b2["a"].deactivate()
+    assert len(large_residual_component_set(m)) == 2
 
 
 def test_report_model_statistics(m):

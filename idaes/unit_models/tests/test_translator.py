@@ -23,7 +23,7 @@ from idaes.property_models.ideal.BTX_ideal_VLE import (
                         BTXParameterBlock)
 from idaes.property_models.examples.saponification_thermo import (
                         SaponificationParameterBlock)
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import calculate_degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------

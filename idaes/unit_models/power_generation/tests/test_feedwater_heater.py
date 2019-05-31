@@ -18,7 +18,7 @@ from idaes.unit_models.heat_exchanger import (delta_temperature_underwood2_rule,
     delta_temperature_underwood_rule, delta_temperature_lmtd_rule)
 from idaes.property_models import Iapws95ParameterBlock
 from idaes.unit_models.power_generation import FWH0D
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import calculate_degrees_of_freedom
 from idaes.property_models.iapws95 import iapws95_available
 
 prop_available = iapws95_available()
@@ -61,5 +61,5 @@ def test_fwh_model():
     model.fs.fwh.cooling.overall_heat_transfer_coefficient.fix(10)
     model.fs.fwh.initialize(optarg={"max_iter":50})
 
-    assert(degrees_of_freedom(model) == 0)
+    assert(calculate_degrees_of_freedom(model) == 0)
     assert(abs(pyo.value(model.fs.fwh.desuperheat.inlet_1.flow_mol[0]) - 98.335) < 0.01)

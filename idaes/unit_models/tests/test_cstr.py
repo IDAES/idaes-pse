@@ -23,7 +23,7 @@ from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)
 from idaes.property_models.examples.saponification_reactions import (
     SaponificationReactionParameterBlock)
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import calculate_degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
@@ -98,7 +98,7 @@ def test_initialize():
 
     m.fs.cstr.control_volume.volume.fix(1.5e-03)
 
-    assert degrees_of_freedom(m) == 0
+    assert calculate_degrees_of_freedom(m) == 0
 
     m.fs.cstr.initialize(outlvl=5,
                          optarg={'tol': 1e-6})

@@ -26,7 +26,7 @@ from idaes.unit_models.heat_exchanger_1D import WallConductionType
 from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
 from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import calculate_degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 
 # -----------------------------------------------------------------------------
@@ -159,7 +159,7 @@ def test_setInputs():
         m.fs.HX_co_current.tube_inlet.mole_frac[0, "benzene"].fix(0.5)
         m.fs.HX_co_current.tube_inlet.mole_frac[0, "toluene"].fix(0.5)
 
-    assert degrees_of_freedom(m.fs.HX_co_current) == 0
+    assert calculate_degrees_of_freedom(m.fs.HX_co_current) == 0
 
     """Set inlet and operating conditions for counter-current
        heat exchanger."""
@@ -189,7 +189,7 @@ def test_setInputs():
         m.fs.HX_counter_current.tube_inlet.mole_frac[0, "benzene"].fix(0.5)
         m.fs.HX_counter_current.tube_inlet.mole_frac[0, "toluene"].fix(0.5)
 
-    assert degrees_of_freedom(m.fs.HX_counter_current) == 0
+    assert calculate_degrees_of_freedom(m.fs.HX_counter_current) == 0
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
