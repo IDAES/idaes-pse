@@ -18,6 +18,8 @@ IDAES models.
 
 __author__ = "Andrew Lee"
 
+import sys
+
 from pyomo.environ import Block, Constraint, Expression, Objective, Var, value
 from pyomo.dae import DerivativeVar
 from pyomo.core.expr.current import identify_variables
@@ -27,6 +29,15 @@ from idaes.core.util.exceptions import ConfigurationError
 
 
 def _create_component_set(block, ctype, active_blocks=True, descend_into=True):
+    """
+    General method for iterating over model to find component with specific
+    ctype. This method differs from the Pyomo component_data_objects method in
+    how it handles deactivated components and Blocks.
+
+    This method consideres only the status of the containing Blocks (activated
+    and/or deactivated) when collecting components, and collects **all**
+    components of the relevant ctype(s) in the applicable Blocks.
+    """
     set_components = ComponentSet()
 
     if active_blocks is True and block.active is False:
@@ -529,6 +540,7 @@ def calculate_degrees_of_freedom(block):
 
 
 def report_model_statistics(block,
+                            ostream=None,
                             deactivated_blocks=False,
                             descend_into=True):
     """
@@ -545,6 +557,9 @@ def report_model_statistics(block,
     Returns:
         Printed output of the model statistics
     """
+    if ostream is None:
+        ostream = sys.stdout
+
     if deactivated_blocks:
         active = None
     else:
@@ -589,39 +604,39 @@ def report_model_statistics(block,
 
     dof = len(vars_in_act_equals-fixed_vars_in_act_equals)-len(act_eq_cons)
 
-    pad = " "*4
-    header = '='*64
+    tab = " "*4
+    header = '='*72
 
     if block.name == "unknown":
         name_str = ""
     else:
         name_str = f"-  ({block.name})"
 
-    print()
-    print(header)
-    print(f"Model Statistics  {name_str}")
-    print()
-    print(f"Degrees of Freedom: {dof}")
-    print()
-    print(f"Total No. Variables: {len(total_vars)}")
-    print(f"{pad}No. Fixed Variables: {len(fixed_vars)}")
-    print(f"{pad}No. Unused Variables: {len(unused_vars)}"
-          f" (Fixed: {len(fixed_unused_vars)})")
-    print(f"{pad}No. Variables only in Inequalities:"
-          f" {len(vars_only_in_inequals)}"
-          f" (Fixed: {len(fixed_vars_only_in_inequals)})")
-    print()
-    print(f"Total No. Constraints: {len(total_cons)}")
-    print(f"{pad}No. Equality Constraints: {len(eq_cons)}"
-          f" (Deactivated: {len(eq_cons-act_eq_cons)})")
-    print(f"{pad}No. Inequality Constraints: {len(ineq_cons)}"
-          f" (Deactivated: {len(ineq_cons-act_ineq_cons)})")
-    print()
-    print(f"No. Objectives: {len(total_objs)}"
-          f" (Deactivated: {len(total_objs-act_objs)})")
-    print()
-    print(f"No. Blocks: {len(total_blocks)}"
-          f" (Deactivated: {len(total_blocks-act_blocks)})")
-    print(f"No. Expressions: {len(total_exprs)}")
-    print(header)
-    print()
+    ostream.write("\n")
+    ostream.write(header+"\n")
+    ostream.write(f"Model Statistics  {name_str} \n")
+    ostream.write("\n")
+    ostream.write(f"Degrees of Freedom: {dof} \n")
+    ostream.write("\n")
+    ostream.write(f"Total No. Variables: {len(total_vars)} \n")
+    ostream.write(f"{tab}No. Fixed Variables: {len(fixed_vars)} \n")
+    ostream.write(f"{tab}No. Unused Variables: {len(unused_vars)}"
+                  f" (Fixed: {len(fixed_unused_vars)}) \n")
+    ostream.write(f"{tab}No. Variables only in Inequalities:"
+                  f" {len(vars_only_in_inequals)}"
+                  f" (Fixed: {len(fixed_vars_only_in_inequals)}) \n")
+    ostream.write("\n")
+    ostream.write(f"Total No. Constraints: {len(total_cons)} \n")
+    ostream.write(f"{tab}No. Equality Constraints: {len(eq_cons)}"
+                  f" (Deactivated: {len(eq_cons-act_eq_cons)}) \n")
+    ostream.write(f"{tab}No. Inequality Constraints: {len(ineq_cons)}"
+                  f" (Deactivated: {len(ineq_cons-act_ineq_cons)}) \n")
+    ostream.write("\n")
+    ostream.write(f"No. Objectives: {len(total_objs)}"
+                  f" (Deactivated: {len(total_objs-act_objs)}) \n")
+    ostream.write("\n")
+    ostream.write(f"No. Blocks: {len(total_blocks)}"
+                  f" (Deactivated: {len(total_blocks-act_blocks)}) \n")
+    ostream.write(f"No. Expressions: {len(total_exprs)} \n")
+    ostream.write(header+"\n")
+    ostream.write("\n")
