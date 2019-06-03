@@ -525,9 +525,7 @@ def calculate_degrees_of_freedom(block):
 
     fixed_vars_in_act_equals = fixed_variable_set(vars_in_act_equals)
 
-    dof = len(vars_in_act_equals-fixed_vars_in_act_equals)-len(act_equalities)
-
-    return dof
+    return len(vars_in_act_equals-fixed_vars_in_act_equals)-len(act_equalities)
 
 
 def report_model_statistics(block,
