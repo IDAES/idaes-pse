@@ -47,8 +47,87 @@ The code style is not entirely consistent. But some general guidelines are:
 
 Tests
 -----
-Coming soon.
+For general information about writing tests in Python, see :ref:`tst-top`.
 
+There are three types of tests:
+
+Python source code
+    The Python tests are integrated into the Python source code directories.
+    Every package (directory with `.py` modules and an `__init__.py` file)
+    should also have a `tests/` sub-package, in which are test files. These,
+    by convention are named `test_<something>.py`.
+
+Doctests
+    With some special reStructuredText "directives" (see "Writing tests"), the documentation
+    can contain tests. This is particularly useful for making sure examples in the
+    documentation still run without errors.
+
+Jupyter notebook tests
+    (coming soon)
+
+
+Writing tests
+^^^^^^^^^^^^^
+We use `pytest`_ to run our tests. The main advantage of this framework over
+the built-in `unittest` that comes with Python is that almost no boilerplate
+code is required. You write a function named `test_<something>()` and,
+inside it, use the (pytest-modified) `assert` keyword to check that things
+are correct.
+
+Writing the Python unit tests in the `tests/` directory is,
+hopefully, quite straightforward.
+Here is an example (out of context) that tests a couple of 
+things related to configuration in the core unit model library::
+
+    def test_config_block():
+        m = ConcreteModel()
+
+        m.u = Unit()
+
+        assert len(m.u. config) == 2
+        assert m.u.config.dynamic == useDefault
+
+See the existing tests for many more examples.
+
+For tests in the documentation, you need to wrap the test itself
+in a directive called `testcode`. Here is an example::
+
+    .. testcode::
+
+        from pyomo.environ import *
+        from pyomo.common.config import ConfigValue
+        from idaes.core import ProcessBlockData, declare_process_block_class
+
+        @declare_process_block_class("MyBlock")
+        class MyBlockData(ProcessBlockData):
+            CONFIG = ProcessBlockData.CONFIG()
+            CONFIG.declare("xinit", ConfigValue(default=1001, domain=float))
+            CONFIG.declare("yinit", ConfigValue(default=1002, domain=float))
+            def build(self):
+                super(MyBlockData, self).build()
+                self.x = Var(initialize=self.config.xinit)
+                self.y = Var(initialize=self.config.yinit)
+
+First, note that reStructuredText directive and indented Python code. The indentation of the
+Python code is important. You have to write an entire program here, so all the
+imports are necessary (unless you use the `testsetup` and `testcleanup` directives,
+but honestly this isn't worth it unless you are doing a lot of tests in one file).
+Then you write your Python code as usual.
+
+Running tests
+^^^^^^^^^^^^^
+Running all tests is done by, at the top directory, running the command: ``pytest``.
+
+The documentation test code will actually be run by a special hook in the pytest configuration that
+treats the Makefile like a special kind of test.
+As a result, *when you run pytest in any way
+that includes the "docs/" directory (including the all tests mode), then all the documentation tests will run,
+and errors/etc. will be reported through pytest*. A useful corollary is that, to run
+documentation tests, do: ``pytest docs/Makefile``
+
+You can run specific tests using the pytest syntax, see its documentation or ``pytest -h`` for details.
+
+.. _pytest: https://docs.pytest.org/en/latest/
 
 Documentation
 --------------
