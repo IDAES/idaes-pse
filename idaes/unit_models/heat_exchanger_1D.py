@@ -100,8 +100,8 @@ Must be True if dynamic = True,
 **default** - EnergyBalanceType.enthalpyTotal.
 **Valid values:** {
 **EnergyBalanceType.none** - exclude energy balances,
-**EnergyBalanceType.enthalpyTotal** - single ethalpy balance for material,
-**EnergyBalanceType.enthalpyPhase** - ethalpy balances for each phase,
+**EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+**EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
     _SideTemplate.declare("momentum_balance_type", ConfigValue(
