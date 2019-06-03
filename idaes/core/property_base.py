@@ -15,8 +15,14 @@ This module contains classes for property blocks and property parameter blocks.
 """
 from __future__ import division
 
+import sys
+
 # Import Pyomo libraries
+from pyomo.environ import value
+from pyomo.core.base.var import _VarData
+from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.core.base.misc import tabular_writer
 
 # Import IDAES cores
 from idaes.core.process_block import ProcessBlock
@@ -88,6 +94,82 @@ class StateBlock(ProcessBlock):
                                   ' initialize method. Please contact '
                                   'the property package developer'
                                   .format(self.name))
+
+    def report(self, index=(0), true_state=False,
+               dof=False, ostream=None, prefix=""):
+
+        if ostream is None:
+            ostream = sys.stdout
+
+        # Get DoF and model stats
+#        if dof:
+        # Get components to report in performance section
+#        performance = self._get_performance_contents()
+#
+        # Create stream table
+        if true_state:
+            disp_dict = self[index].define_state_vars()
+        else:
+            disp_dict = self[index].define_display_vars()
+
+        stream_attributes = {}
+
+        for k in disp_dict:
+            for i in disp_dict[k]:
+                if i is None:
+                    stream_attributes[k] = disp_dict[k][i]
+                else:
+                    stream_attributes[k+" "+i] = disp_dict[k][i]
+
+        # Write output
+        max_str_length = 72
+        tab = " "*4
+        ostream.write("\n"+"="*max_str_length+"\n")
+
+        lead_str = f"{prefix}State : {self.name}"
+        trail_str = f"Index: {index}"
+        mid_str = " "*(max_str_length-len(lead_str)-len(trail_str))
+        ostream.write(lead_str+mid_str+trail_str)
+
+        if dof:
+            ostream.write("\n"+"="*max_str_length+"\n")
+            ostream.write(f"{prefix}{tab}Local Degrees of Freedom: []"
+                          f"{tab}(Inlets: [])")
+            ostream.write('\n')
+            ostream.write(f"{prefix}{tab}Variables: []{tab}"
+                          f"Constraints: []{tab}Blocks: []")
+
+        ostream.write("\n"+"-"*max_str_length+"\n")
+        ostream.write(f"{prefix}{tab}State Report")
+
+        if any(isinstance(v, _VarData) for k, v in stream_attributes.items()):
+            ostream.write("\n"*2)
+            ostream.write(f"{prefix}{tab}Variables: \n\n")
+            tabular_writer(
+                    ostream,
+                    prefix+tab,
+                    ((k, v) for k, v in stream_attributes.items()
+                        if isinstance(v, _VarData)),
+                    ("Value", "Fixed", "Bounds"),
+                    lambda k, v: ["{:#.2f}".format(value(v)) if value(v) >= 1
+                                  else "{:#.2g}".format(value(v)),
+                                  v.fixed,
+                                  v.bounds])
+
+        if any(isinstance(v, _ExpressionData) for
+               k, v in stream_attributes.items()):
+            ostream.write("\n"*2)
+            ostream.write(f"{prefix}{tab}Expressions: \n\n")
+            tabular_writer(
+                    ostream,
+                    prefix+tab,
+                    ((k, v) for k, v in stream_attributes.items()
+                        if isinstance(v, _ExpressionData)),
+                    ("Value",),
+                    lambda k, v: ["{:#.2f}".format(value(v)) if value(v) >= 1
+                                  else "{:#.2g}".format(value(v))])
+
+        ostream.write("\n"+"="*max_str_length+"\n")
 
 
 class StateBlockData(ProcessBlockData):

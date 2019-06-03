@@ -221,6 +221,8 @@ class ProcessBlockData(_BlockData):
 
     def report(self, time_point=0, dof=False, ostream=None, prefix=""):
 
+        time_point=float(time_point)
+
         if ostream is None:
             ostream = sys.stdout
 
@@ -232,13 +234,24 @@ class ProcessBlockData(_BlockData):
         # Get stream table
         stream_table = self._get_stream_table_contents(time_point=time_point)
 
+        # Set model type output
+        if hasattr(self, "is_flowsheet") and self.is_flowsheet:
+            model_type = "Flowsheet"
+        else:
+            model_type = "Unit"
+
         # Write output
+        max_str_length = 72
         tab = " "*4
-        ostream.write("\n"+"="*72+"\n")
-        ostream.write(f"{prefix}Unit : {self.name}")  # TODO: Add a way to change the name based on type of model (i.e. Unit, Flowsheet, etc).
+        ostream.write("\n"+"="*max_str_length+"\n")
+
+        lead_str = f"{prefix}{model_type} : {self.name}"
+        trail_str = f"Time: {time_point}"
+        mid_str = " "*(max_str_length-len(lead_str)-len(trail_str))
+        ostream.write(lead_str+mid_str+trail_str)
 
         if dof:
-            ostream.write("\n"+"="*72+"\n")
+            ostream.write("\n"+"="*max_str_length+"\n")
             ostream.write(f"{prefix}{tab}Local Degrees of Freedom: []"
                           f"{tab}(Inlets: [])")
             ostream.write('\n')
@@ -246,7 +259,7 @@ class ProcessBlockData(_BlockData):
                           f"Constraints: []{tab}Blocks: []")
 
         if performance is not None:
-            ostream.write("\n"+"-"*72+"\n")
+            ostream.write("\n"+"-"*max_str_length+"\n")
             ostream.write(f"{prefix}{tab}Unit Performance")
             ostream.write("\n"*2)
             if "vars" in performance.keys():
@@ -272,11 +285,11 @@ class ProcessBlockData(_BlockData):
                         lambda k, v: [value(v[time_point])])
 
         if stream_table is not None:
-            ostream.write("\n"+"-"*72+"\n")
+            ostream.write("\n"+"-"*max_str_length+"\n")
             ostream.write(f"{prefix}{tab}Stream Table")
             ostream.write('\n')
             ostream.write(textwrap.indent(stream_table, prefix+tab))
-        ostream.write("\n"+"="*72+"\n")
+        ostream.write("\n"+"="*max_str_length+"\n")
 
     def _get_performance_contents(self):
         return None

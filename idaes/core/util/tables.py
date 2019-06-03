@@ -15,7 +15,6 @@ from pandas import DataFrame
 from pyomo.environ import value
 from pyomo.network import Arc, Port
 
-from idaes.core.property_base import StateBlock
 from idaes.core.util.exceptions import ConfigurationError
 
 __author__ = "John Eslick, Andrew Lee"
@@ -48,33 +47,34 @@ def create_stream_table_dataframe(streams,
     stream_attributes = {}
 
     for n in streams.keys():
-        if isinstance(streams[n], StateBlock):
-            sb = streams[n]
-        elif isinstance(streams[n], Arc):
-            # Use destination of Arc, as inlets are more likely (?) to be
-            # fully-defined StateBlocks
-            sb = _get_state_from_port(streams[n].destination)
-        elif isinstance(streams[n], Port):
-            sb = _get_state_from_port(streams[n])
-        else:
+        try:
+            if isinstance(streams[n], Arc):
+                # Use destination of Arc, as inlets are more likely (?) to be
+                # fully-defined StateBlocks
+                sb = _get_state_from_port(streams[n].destination)
+            elif isinstance(streams[n], Port):
+                sb = _get_state_from_port(streams[n])
+            else:
+                sb = streams[n]
+
+            if true_state:
+                disp_dict = sb[time_point].define_state_vars()
+            else:
+                disp_dict = sb[time_point].define_display_vars()
+
+            stream_attributes[n] = {}
+
+            for k in disp_dict:
+                for i in disp_dict[k]:
+                    if i is None:
+                        stream_attributes[n][k] = value(disp_dict[k][i])
+                    else:
+                        stream_attributes[n][k+" "+i] = value(disp_dict[k][i])
+        except AttributeError:
             raise TypeError(
                     f"Unrecognised component provided in stream argument "
-                    f"{streams[n]}. get_stream_table_attributes only supports "
-                    f"Arcs, Ports or StateBlocks.")
-
-        if true_state:
-            disp_dict = sb[time_point].define_state_vars()
-        else:
-            disp_dict = sb[time_point].define_display_vars()
-
-        stream_attributes[n] = {}
-
-        for k in disp_dict:
-            for i in disp_dict[k]:
-                if i is None:
-                    stream_attributes[n][k] = value(disp_dict[k][i])
-                else:
-                    stream_attributes[n][k+" "+i] = value(disp_dict[k][i])
+                    f"{streams[n]}. get_stream_table_attributes only "
+                    f"supports Arcs, Ports or StateBlocks.")
 
     stream_table = DataFrame.from_dict(stream_attributes, orient=orient)
 

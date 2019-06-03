@@ -123,7 +123,7 @@ def main():
     
     m.fs.Tank1.report()
     m.fs.report()
-#    m.fs.Tank1.control_volume.properties_out.report()
+    m.fs.Tank1.control_volume.properties_out.report()
 
     # For testing purposes
     return(m, results)
