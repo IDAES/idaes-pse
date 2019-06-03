@@ -21,6 +21,7 @@ import logging
 
 import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
+from pyomo.network import Arc
 from pyomo.common.config import ConfigValue, In
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
@@ -28,7 +29,9 @@ from idaes.core import (ProcessBlockData, declare_process_block_class,
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_time_domain,
                                     list_of_floats)
-from idaes.core.util.exceptions import ConfigurationError, DynamicError
+from idaes.core.util.exceptions import DynamicError
+from idaes.core.util.tables import (create_stream_table_dataframe,
+                                    stream_table_dataframe_to_string)
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -148,6 +151,18 @@ within this flowsheet if not otherwise specified,
                                  'correct this, add a model_check method to '
                                  'the associated unit model class'
                                  .format(o.name))
+
+    def _get_stream_table_contents(self, time_point):
+        """
+        Generate stream table by iterating over all Arcs
+        """
+        dict_arcs = {}
+
+        for a in self.component_objects(ctype=Arc, descend_into=False):
+            dict_arcs[a.name] = a
+
+        s = create_stream_table_dataframe(dict_arcs, time_point=time_point)
+        return stream_table_dataframe_to_string(s)
 
     def _setup_dynamics(self):
         # Look for parent flowsheet

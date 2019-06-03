@@ -471,10 +471,16 @@ Must be True if dynamic = True,
 
         return p
 
-    def _get_stream_table_contents(self):
+    def _get_stream_table_contents(self, time_point=0):
+        """
+        Assume unit has standard configuration of 1 inlet and 1 outlet.
+
+        Developers should overload this as appropriate.
+        """
         try:
             s = create_stream_table_dataframe({"Inlet": self.inlet,
-                                               "Outlet": self.outlet})
+                                               "Outlet": self.outlet},
+                                              time_point=time_point)
             return stream_table_dataframe_to_string(s)
         except AttributeError:
             return (f"Unit model {self.name} does not have the standard Port "

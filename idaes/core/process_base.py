@@ -219,28 +219,31 @@ class ProcessBlockData(_BlockData):
             except AttributeError:
                 pass
 
-    def report(self, time_point=0, ostream=None, prefix=""):
+    def report(self, time_point=0, dof=False, ostream=None, prefix=""):
 
         if ostream is None:
             ostream = sys.stdout
 
         # Get DoF and model stats
+#        if dof:
         # Get components to report in performance section
         performance = self._get_performance_contents()
 
         # Get stream table
-        stream_table = self._get_stream_table_contents()
+        stream_table = self._get_stream_table_contents(time_point=time_point)
 
         # Write output
         tab = " "*4
         ostream.write("\n"+"="*72+"\n")
         ostream.write(f"{prefix}Unit : {self.name}")  # TODO: Add a way to change the name based on type of model (i.e. Unit, Flowsheet, etc).
-        ostream.write("\n"+"="*72+"\n")
-        ostream.write(f"{prefix}{tab}Local Degrees of Freedom: []"
-                      f"{tab}(Inlets: [])")
-        ostream.write('\n')
-        ostream.write(f"{prefix}{tab}Variables: []{tab}"
-                      f"Constraints: []{tab}Blocks: []")
+
+        if dof:
+            ostream.write("\n"+"="*72+"\n")
+            ostream.write(f"{prefix}{tab}Local Degrees of Freedom: []"
+                          f"{tab}(Inlets: [])")
+            ostream.write('\n')
+            ostream.write(f"{prefix}{tab}Variables: []{tab}"
+                          f"Constraints: []{tab}Blocks: []")
 
         if performance is not None:
             ostream.write("\n"+"-"*72+"\n")
@@ -278,7 +281,7 @@ class ProcessBlockData(_BlockData):
     def _get_performance_contents(self):
         return None
 
-    def _get_stream_table_contents(self):
+    def _get_stream_table_contents(self, time_point):
         return None
 
     def _setup_dynamics(self):
