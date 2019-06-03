@@ -14,7 +14,7 @@ sympy
 toml
 # Need Sphinx >=1.74 due to bug #4897
 # See: https://github.com/sphinx-doc/sphinx/issues/4897
-Sphinx>=1.7.4
+Sphinx==1.8.5
 sphinx-rtd-theme>=0.1.9
 sphinxcontrib-napoleon>=0.5.0
 sphinx-argparse
