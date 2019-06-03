@@ -78,7 +78,7 @@ def test_build_inlet_state_block():
     assert len(m.fs.properties_ideal_vl.phase_list) == 2
     assert m.fs.properties_ideal_vl.phase_list == ["Liq", "Vap"]
     assert m.fs.state_block_ideal_vl.config.defined_state
-    assert hasattr(m.fs.state_block_ideal_vl, "eq_Keq")
+    assert hasattr(m.fs.state_block_ideal_vl, "eq_phase_equilibrium")
     assert not hasattr(m.fs.state_block_ideal_vl, "eq_activity_coeff")
     assert not hasattr(m.fs.state_block_ideal_vl, "eq_mol_frac_out")
 
@@ -89,7 +89,7 @@ def test_build_inlet_state_block():
     assert len(m.fs.properties_ideal_l.phase_list) == 1
     assert m.fs.properties_ideal_l.phase_list == ["Liq"]
     assert m.fs.state_block_ideal_l.config.defined_state
-    assert not hasattr(m.fs.state_block_ideal_l, "eq_Keq")
+    assert not hasattr(m.fs.state_block_ideal_l, "eq_phase_equilibrium")
     assert not hasattr(m.fs.state_block_ideal_l, "eq_activity_coeff")
     assert not hasattr(m.fs.state_block_ideal_l, "eq_mol_frac_out")
 
@@ -100,7 +100,7 @@ def test_build_inlet_state_block():
     assert len(m.fs.properties_ideal_v.phase_list) == 1
     assert m.fs.properties_ideal_v.phase_list == ["Vap"]
     assert m.fs.state_block_ideal_v.config.defined_state
-    assert not hasattr(m.fs.state_block_ideal_v, "eq_Keq")
+    assert not hasattr(m.fs.state_block_ideal_v, "eq_phase_equilibrium")
     assert not hasattr(m.fs.state_block_ideal_v, "eq_activity_coeff")
     assert not hasattr(m.fs.state_block_ideal_v, "eq_mol_frac_out")
 
@@ -228,7 +228,7 @@ def test_build_outlet_state_block():
     assert len(m.fs1.properties_ideal_vl.phase_list) == 2
     assert m.fs1.properties_ideal_vl.phase_list == ["Liq", "Vap"]
     assert not m.fs1.state_block_ideal_vl.config.defined_state
-    assert hasattr(m.fs1.state_block_ideal_vl, "eq_Keq")
+    assert hasattr(m.fs1.state_block_ideal_vl, "eq_phase_equilibrium")
     assert not hasattr(m.fs1.state_block_ideal_vl, "eq_activity_coeff")
     assert hasattr(m.fs1.state_block_ideal_vl, "eq_mol_frac_out")
 
@@ -239,7 +239,7 @@ def test_build_outlet_state_block():
     assert len(m.fs1.properties_ideal_l.phase_list) == 1
     assert m.fs1.properties_ideal_l.phase_list == ["Liq"]
     assert not m.fs1.state_block_ideal_l.config.defined_state
-    assert not hasattr(m.fs1.state_block_ideal_l, "eq_Keq")
+    assert not hasattr(m.fs1.state_block_ideal_l, "eq_phase_equilibrium")
     assert not hasattr(m.fs1.state_block_ideal_l, "eq_activity_coeff")
     assert hasattr(m.fs1.state_block_ideal_l, "eq_mol_frac_out")
 
@@ -250,7 +250,7 @@ def test_build_outlet_state_block():
     assert len(m.fs1.properties_ideal_v.phase_list) == 1
     assert m.fs1.properties_ideal_v.phase_list == ["Vap"]
     assert not m.fs1.state_block_ideal_v.config.defined_state
-    assert not hasattr(m.fs1.state_block_ideal_v, "eq_Keq")
+    assert not hasattr(m.fs1.state_block_ideal_v, "eq_phase_equilibrium")
     assert not hasattr(m.fs1.state_block_ideal_v, "eq_activity_coeff")
     assert hasattr(m.fs1.state_block_ideal_v, "eq_mol_frac_out")
 
