@@ -42,20 +42,21 @@ def _create_component_set(block, ctype, active_blocks=True, descend_into=True):
 
     if active_blocks is True and block.active is False:
         return set_components
-
-    set_components.update(block.component_data_objects(ctype=ctype,
-                                                       active=None,
-                                                       descend_into=False))
-
-    if descend_into:
-        set_blocks = block_set(block, active=active_blocks, descend_into=True)
-
-        for b in set_blocks:
-            set_components.update(b.component_data_objects(ctype=ctype,
+    else:
+        set_components.update(block.component_data_objects(ctype=ctype,
                                                            active=None,
                                                            descend_into=False))
 
-    return set_components
+        if descend_into:
+            for b in block.component_data_objects(ctype=Block,
+                                                  active=active_blocks,
+                                                  descend_into=descend_into):
+                set_components.update(b.component_data_objects(
+                        ctype=ctype,
+                        active=None,
+                        descend_into=False))
+
+        return set_components
 
 
 def block_set(block, active=True, descend_into=True):
