@@ -16,20 +16,27 @@ Tests for DMF 'workspace' module.
 # stdlib
 import logging
 import os
+import sys
+
 # third-party
 import pytest
+
 # local
 from idaes.dmf import workspace, errors
 from idaes.dmf.util import TempDir
+
 # for testing
 from .util import init_logging
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>"
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 init_logging()
 _log = logging.getLogger(__name__)
 
-BADPATH = os.path.join('should', 'never', 'exist', 'seriously', 'no')
+BADPATH = os.path.join("should", "never", "exist", "seriously", "no")
 
 
 @pytest.fixture
@@ -42,6 +49,7 @@ def wsdir():
 # Tests
 # -----
 
+
 def test_ws_init_notfound():
     with pytest.raises(errors.WorkspaceNotFoundError):
         workspace.Workspace(BADPATH)
@@ -53,8 +61,8 @@ def test_ws_init_noconf(wsdir):
 
 
 def test_ws_init_badconf(wsdir):
-    conf = open(os.path.join(wsdir, workspace.Workspace.WORKSPACE_CONFIG), 'w')
-    conf.write('note: this config is wack\n')
+    conf = open(os.path.join(wsdir, workspace.Workspace.WORKSPACE_CONFIG), "w")
+    conf.write("note: this config is wack\n")
     conf.close()
     with pytest.raises(errors.WorkspaceConfMissingField):
         workspace.Workspace(wsdir)
@@ -76,7 +84,7 @@ def test_ws_init_create_defaults(wsdir):
 
 def test_ws_accessors(wsdir):
     ws = workspace.Workspace(wsdir, create=True, add_defaults=True)
-    assert ws.wsid != ''
+    assert ws.wsid != ""
     assert os.path.normpath(ws.root) == os.path.normpath(wsdir)
     _ = ws.name
     _ = ws.description
