@@ -104,15 +104,15 @@ tutorial_setup:
 	@mkdir -p ./tutorials
 
 tutorial_nb: ../examples/workshops/Module_*/*.ipynb
-	@for f in $^ ; do \
-		echo "** Execute and convert: $$f"; \
-		n=`basename $$f .ipynb`; \
-		m=`echo $$n | cut -d_ -f2`; \
-		cmd="jupyter nbconvert --to html -y --output-dir=./tutorials $$f"; \
-		$$cmd --execute 2>/dev/null; \
-		[ $$? -ne 0 ] && echo "** Execute notebook failed: creating static" && $$cmd; \
-		echo "Tutorial Module $$m: $$t\n==================================================\n" > ./tutorials/$$n.rst; \
-		echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
+	@for nbfile in $^ ; do \
+		echo "** Execute and convert: $${nbfile}"; \
+		name=$$(basename $${nbfile} .ipynb); \
+		title=$$(echo $${name} | sed "s/_/ /g"); \
+		cmd="jupyter nbconvert --to html -y --output-dir=./tutorials $${nbfile}"; \
+		$${cmd} --execute 2>/dev/null; \
+		[ $$? -ne 0 ] && echo "** Execute notebook failed: creating static" && $${cmd}; \
+		  echo "$${title}:\n==================================================\n" > ./tutorials/$${name}.rst; \
+		  echo ".. raw:: html\n    :file: $${name}.html\n" >> ./tutorials/$${name}.rst; \
 	done
 
 tutorial_imgs: ../examples/workshops/Module_*/*.png
