@@ -105,10 +105,10 @@ tutorial_setup:
 
 tutorial_nb: ../examples/workshops/Module_*/*.ipynb
 	@for nbfile in $^ ; do \
-		echo "** Execute and convert: $${nbfile}"; \
-		name=$$(basename $${nbfile} .ipynb); \
-		title=$$(echo $${name} | sed "s/_/ /g"); \
-		cmd="jupyter nbconvert --to html -y --output-dir=./tutorials $${nbfile}"; \
+		echo "** Execute and convert: $$nbfile"; \
+		name=$$(basename $$nbfile .ipynb); \
+		title=$$(echo $$name | sed "s/_/ /g"); \
+		cmd="jupyter nbconvert --to html -y --output-dir=./tutorials $$nbfile"; \
 		$${cmd} --execute 2>/dev/null; \
 		[ $$? -ne 0 ] && echo "** Execute notebook failed: creating static" && $${cmd}; \
 		  echo "$${title}:\n==================================================\n" > ./tutorials/$${name}.rst; \
