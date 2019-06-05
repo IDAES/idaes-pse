@@ -23,15 +23,19 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 import idaes.ver
 
-# If running on readthedocs, then run `make all` to prep all the notebooks and tutorials, etc.
+# If running on readthedocs, then run `make apidoc tutorials` to at least
+# generate static versions of the tutorial notebooks.
 if os.environ.get('READTHEDOCS', None):
-    sys.stderr.write('About to call make...\n')
-    sys.stderr.flush()
+    sys.stdout.write('Running `make apidoc tutorials`\n')
+    sys.stdout.flush()
     try:
         ret = subprocess.call('make apidoc tutorials', shell=True)
         if ret < 0:
             sys.stderr.write(f'make failed: {ret}\n')
             sys.stderr.flush()
+        else:
+            sys.stdout.write('Done with `make apidoc tutorials`\n')
+            sys.stdout.flush()
     except OSError as ose:
         sys.stderr.write(f'make execution failed: {ose}\n')
         sys.stderr.flush()
