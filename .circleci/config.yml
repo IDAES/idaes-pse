@@ -6,7 +6,7 @@ shared: &shared
     - checkout
     - run: ./install-solvers.sh
     - run: sudo pip install pip==18.0.0
-    - run: sudo pip install -qr requirements.txt
+    - run: sudo pip install -qr requirements-dev.txt
     - run: pyomo --version
     - run: sudo python setup.py -q install
     - run: cd docs && make all
