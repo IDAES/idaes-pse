@@ -1,8 +1,9 @@
+# Make it slightly easier to compile exterenal functions and build docs
+#   the external functions all require the ASL, so set the ASL_BUILD
+#   environment variable to point the the ASL build and this should
+#   be good to go
+
 ALL: iapws95 cubic_eos functions
-
-# can add contrib and core ... if needed
-
-# for now iapws95 is the only one, but soon cubicEOS will be here too
 
 iapws95:
 	$(MAKE) -C ./idaes/property_models/iapws95
@@ -24,12 +25,10 @@ functions_clean:
 
 clean: iapws95_clean cubic_eos_clean functions_clean
 
-
-# Couldn't help throwing this in
 docs: docs_html
 
 docs_html:
-	$(MAKE) -C ./docs_rst html
+	$(MAKE) -C ./docs html
 
 docs_clean:
-	$(MAKE) -C ./docs_rst clean
+	$(MAKE) -C ./docs clean
