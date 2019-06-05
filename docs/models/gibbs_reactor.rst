@@ -38,7 +38,7 @@ Gibbs reactor models write the following additional constraints to calculate the
 
 `gibbs_minimization(time, phase, component)`:
 
-.. math :: 0 = g_{partial,t,j} + \sum_e{L_{t,e} \times \alpha_{j,e}})
+.. math :: 0 = g_{partial,t,j} + \sum_e{(L_{t,e} \times \alpha_{j,e})}
 
 where :math:`g_{partial,t,j}` is the partial molar Gibbs energy of component :math:`j` at time :math:`t`, :math:`L_{t,e}` is the Lagrange multiplier for element :math:`e` at time :math:`t` and :math:`\alpha_{j,e}` is the number of moles of element :math:`e` in one mole of component :math:`j`. :math:`g_{partial,t,j}` and :math:`\alpha_{j,e}` come from the outlet StateBlock.
 
