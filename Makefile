@@ -1,6 +1,6 @@
 # Make it slightly easier to compile external functions and build docs
-#   The external functions all require the ASL, so set the ASL_BUILD
-#   environment variable to point the ASL build and this should be good to go.
+#   The external functions all require the ASL, so set the ASL_BUILD environment
+#   variable to point to the ASL build and this should be good to go.
 
 ALL: iapws95 cubic_eos functions
 
