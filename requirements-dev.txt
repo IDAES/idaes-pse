@@ -1,0 +1,47 @@
+# general/core
+alabaster>=0.7.7
+bokeh==0.12.9
+bunch
+jupyter
+networkx
+#pyomo
+pytest
+pytest-cov==2.5.0
+python-coveralls
+six
+snowballstemmer==1.2.1
+sympy
+toml
+# Need Sphinx >=1.74 due to bug #4897
+# See: https://github.com/sphinx-doc/sphinx/issues/4897
+Sphinx==1.8.5
+sphinx-rtd-theme>=0.1.9
+sphinxcontrib-napoleon>=0.5.0
+sphinx-argparse
+# DMF
+backports.tempfile
+backports.shutil_get_terminal_size
+blessings
+flake8
+flask>=1.0
+flask-bower
+flask-restful
+humanize
+jsonschema
+lxml
+matplotlib
+mock
+pandas
+pendulum==1.4.4
+psutil
+pyyaml
+# For ALAMO examples
+numpy
+scipy
+tinydb
+traitlets
+statistics
+# dev version of pyomo
+# https://software.sandia.gov/svn/public/pyomo/pyomo/trunk
+git+https://github.com/PyUtilib/pyutilib
+git+https://github.com/pyomo/pyomo.git@IDAES
