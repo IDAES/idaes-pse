@@ -119,7 +119,7 @@ compiled.
 2. Set the ASL_BUILD environment variable (the directory may differ depending on the
    architecture and replace ``.../src`` with the actual location of your src directory)::
 
-    export ASL_BUILD=/c/.../src/solvers/sys.x86_64.MINGW64_NT-10.0
+    export ASL_BUILD=/c/.../src/solvers/sys.`uname -m`.`uname -s`
 
 3. Go to the IDAES directory (replace ``/c/idaes_dir`` with the location
    of the IDAES files)::
