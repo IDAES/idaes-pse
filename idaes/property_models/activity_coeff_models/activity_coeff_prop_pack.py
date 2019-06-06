@@ -66,7 +66,7 @@ from idaes.ui.report import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
 # Set up logger
@@ -651,30 +651,6 @@ class ActivityCoeffStateBlockData(StateBlockData):
                       b.eps_2**2))
         self._teq_constraint = Constraint(rule=rule_teq)
 
-        self.pressure_sat = Var(self._params.component_list,
-                                initialize=101325,
-                                doc="vapor pressure ")
-
-        self.x = Var(self._params.component_list, initialize=1,
-                     doc="temporary variable to compute vapor pressure")
-
-        def rule_temp_var_x(self, i):
-            return self.x[i] * self._params.temperature_critical[i] == \
-                self._params.temperature_critical[i] - \
-                self._temperature_equilibrium
-        self.eq_X = Constraint(self._params.component_list,
-                               rule=rule_temp_var_x)
-
-        def rule_P_vap(self, j):
-            return (1 - self.x[j]) * \
-                log(self.pressure_sat[j] /
-                    self._params.pressure_critical[j]) == \
-                (self._params.pressure_sat_coeff[j, 'A'] * self.x[j] +
-                 self._params.pressure_sat_coeff[j, 'B'] * self.x[j]**1.5 +
-                 self._params.pressure_sat_coeff[j, 'C'] * self.x[j]**3 +
-                 self._params.pressure_sat_coeff[j, 'D'] * self.x[j]**6)
-        self.eq_P_vap = Constraint(self._params.component_list, rule=rule_P_vap)
-
         def rule_phase_eq(self, i):
             return self.fug_vap[i] == self.fug_liq[i]
         self.eq_phase_equilibrium = Constraint(self._params.component_list,
@@ -825,6 +801,32 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 1 - self.A[i] - self.B[i]
         self.eq_activity_coeff = Constraint(self._params.component_list,
                                             rule=rule_activity_coeff)
+
+    def _pressure_sat(self):
+        self.pressure_sat = Var(self._params.component_list,
+                                initialize=101325,
+                                doc="vapor pressure ")
+
+        def rule_reduced_temp(self, i):
+            return (self._params.temperature_critical[i] -
+                    self._temperature_equilibrium) / \
+                self._params.temperature_critical[i]
+        self._reduced_temp = Expression(self._params.component_list,
+                                        rule=rule_reduced_temp)
+
+        def rule_P_vap(self, j):
+            return (1 - self._reduced_temp[j]) * \
+                log(self.pressure_sat[j] /
+                    self._params.pressure_critical[j]) == \
+                (self._params.pressure_sat_coeff[j, 'A'] *
+                 self._reduced_temp[j] +
+                 self._params.pressure_sat_coeff[j, 'B'] *
+                 self._reduced_temp[j]**1.5 +
+                 self._params.pressure_sat_coeff[j, 'C'] *
+                 self._reduced_temp[j]**3 +
+                 self._params.pressure_sat_coeff[j, 'D'] *
+                 self._reduced_temp[j]**6)
+        self.eq_P_vap = Constraint(self._params.component_list, rule=rule_P_vap)
 
     def _fug_vap(self):
         def rule_fug_vap(self, i):
@@ -1089,6 +1091,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                     self._params.temperature_critical[j])**6) /
                     (1 - (1 - self.temperature_bubble /
                           self._params.temperature_critical[j])))
+
         try:
             # Try to build expression
             self._p_sat_bubbleT = Expression(self._params.component_list,
@@ -1096,13 +1099,104 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
             def rule_temp_bubble(self):
                 if self.config.parameters.config.activity_coeff_model is None:
-                    return sum(self.mole_frac_phase['Liq', i] *
+
+                    return sum(self.mole_frac[i] *
+                               self._p_sat_bubbleT[i]
+                               for i in self._params.component_list) - \
+                        self.pressure == 0
+                elif self.config.parameters.config.\
+                        activity_coeff_model == 'NRTL':
+                    # NRTL model variables
+                    def rule_Gij_coeff_bubble(self, i, j):
+                        if i != j:
+                            return exp(-self.alpha[i, j] * self.tau[i, j])
+                        else:
+                            return 1
+
+                    self.Gij_coeff_bubble = Expression(self._params.component_list,
+                                                       self._params.component_list,
+                                                       rule=rule_Gij_coeff_bubble)
+
+                    def rule_A_bubble(self, i):
+                        value_1 = sum(self.mole_frac[j] *
+                                      self.tau[j, i] * self.Gij_coeff_bubble[j, i]
+                                      for j in self._params.component_list)
+                        value_2 = sum(self.mole_frac[k] *
+                                      self.Gij_coeff_bubble[k, i]
+                                      for k in self._params.component_list)
+                        return value_1 / value_2
+                    self.A_bubble = Expression(self._params.component_list,
+                                               rule=rule_A_bubble)
+
+                    def rule_B_bubble(self, i):
+                        value = sum((self.mole_frac[j] *
+                                     self.Gij_coeff_bubble[i, j] /
+                                     sum(self.mole_frac[k] *
+                                         self.Gij_coeff_bubble[k, j]
+                                         for k in self._params.component_list)) *
+                                    (self.tau[i, j] - sum(self.mole_frac[m] *
+                                                          self.tau[m, j] *
+                                     self.Gij_coeff_bubble[m, j]
+                                     for m in self._params.component_list) /
+                                     sum(self.mole_frac[k] *
+                                     self.Gij_coeff_bubble[k, j]
+                                     for k in self._params.component_list))
+                                    for j in self._params.component_list)
+                        return value
+                    self.B_bubble = Expression(self._params.component_list,
+                                               rule=rule_B_bubble)
+
+                    def rule_activity_coeff_bubble(self, i):
+                        return exp(self.A_bubble[i] + self.B_bubble[i])
+                    self.activity_coeff_comp_bubble = \
+                        Expression(self._params.component_list,
+                                   rule=rule_activity_coeff_bubble)
+
+                    return sum(self.mole_frac[i] *
+                               self.activity_coeff_comp_bubble[i] *
                                self._p_sat_bubbleT[i]
                                for i in self._params.component_list) - \
                         self.pressure == 0
                 else:
-                    return sum(self.mole_frac_phase['Liq', i] *
-                               self.activity_coeff_comp[i] *
+                    def rule_Gij_coeff_bubble(self, i, j):
+                        if i != j:
+                            return (self.vol_mol_comp[i] /
+                                    self.vol_mol_comp[j]) * exp(-self.tau[i, j])
+                        else:
+                            return 1
+
+                    self.Gij_coeff_bubble = \
+                        Expression(self._params.component_list,
+                                   self._params.component_list,
+                                   rule=rule_Gij_coeff_bubble)
+
+                    def rule_A_bubble(self, i):
+                        value_1 = log(sum(self.mole_frac[j] *
+                                          self.Gij_coeff_bubble[j, i]
+                                          for j in self._params.component_list))
+                        return value_1
+                    self.A_bubble = Expression(self._params.component_list,
+                                               rule=rule_A_bubble)
+
+                    def rule_B_bubble(self, i):
+                        value = sum((self.mole_frac[j] *
+                                     self.Gij_coeff_bubble[i, j] /
+                                     sum(self.mole_frac[k] *
+                                         self.Gij_coeff_bubble[k, j]
+                                         for k in self._params.component_list))
+                                    for j in self._params.component_list)
+                        return value
+                    self.B_bubble = Expression(self._params.component_list,
+                                               rule=rule_B_bubble)
+
+                    def rule_activity_coeff_bubble(self, i):
+                        return exp(1 - self.A_bubble[i] - self.B_bubble[i])
+                    self.activity_coeff_comp_bubble = \
+                        Expression(self._params.component_list,
+                                   rule=rule_activity_coeff_bubble)
+
+                    return sum(self.mole_frac[i] *
+                               self.activity_coeff_comp_bubble[i] *
                                self._p_sat_bubbleT[i]
                                for i in self._params.component_list) - \
                         self.pressure == 0
@@ -1145,12 +1239,104 @@ class ActivityCoeffStateBlockData(StateBlockData):
             def rule_temp_dew(self):
                 if self.config.parameters.config.activity_coeff_model is None:
                     return self.pressure * \
-                        sum(self.mole_frac_phase['Vap', i] /
+                        sum(self.mole_frac[i] /
                             self._p_sat_dewT[i]
                             for i in self._params.component_list) - 1 == 0
+                elif self.config.parameters.config.\
+                        activity_coeff_model == 'NRTL':
+                    # NRTL model variables
+                    def rule_Gij_coeff_dew(self, i, j):
+                        if i != j:
+                            return exp(-self.alpha[i, j] * self.tau[i, j])
+                        else:
+                            return 1
+
+                    self.Gij_coeff_dew = Expression(self._params.component_list,
+                                                    self._params.component_list,
+                                                    rule=rule_Gij_coeff_dew)
+
+                    def rule_A_dew(self, i):
+                        value_1 = sum(self.mole_frac[j] *
+                                      self.tau[j, i] * self.Gij_coeff_dew[j, i]
+                                      for j in self._params.component_list)
+                        value_2 = sum(self.mole_frac[k] *
+                                      self.Gij_coeff_dew[k, i]
+                                      for k in self._params.component_list)
+                        return value_1 / value_2
+                    self.A_dew = Expression(self._params.component_list,
+                                            rule=rule_A_dew)
+
+                    def rule_B_dew(self, i):
+                        value = sum((self.mole_frac[j] *
+                                     self.Gij_coeff_dew[i, j] /
+                                     sum(self.mole_frac[k] *
+                                         self.Gij_coeff_dew[k, j]
+                                         for k in self._params.component_list)) *
+                                    (self.tau[i, j] - sum(self.mole_frac[m] *
+                                                          self.tau[m, j] *
+                                     self.Gij_coeff_dew[m, j]
+                                     for m in self._params.component_list) /
+                                     sum(self.mole_frac[k] *
+                                     self.Gij_coeff_dew[k, j]
+                                     for k in self._params.component_list))
+                                    for j in self._params.component_list)
+                        return value
+                    self.B_dew = Expression(self._params.component_list,
+                                            rule=rule_B_dew)
+
+                    def rule_activity_coeff_dew(self, i):
+                        return exp(self.A_dew[i] + self.B_dew[i])
+                    self.activity_coeff_comp_dew = \
+                        Expression(self._params.component_list,
+                                   rule=rule_activity_coeff_dew)
+
+                    return sum(self.mole_frac[i] *
+                               self.pressure /
+                               (self.activity_coeff_comp[i] *
+                                self._p_sat_dewT[i])
+                               for i in self._params.component_list) - 1 == 0
                 else:
-                    return sum(self.fug_vap[i] / (self.activity_coeff_comp[i] *
-                                                  self._p_sat_dewT[i])
+                    def rule_Gij_coeff_dew(self, i, j):
+                        if i != j:
+                            return (self.vol_mol_comp[i] /
+                                    self.vol_mol_comp[j]) * exp(-self.tau[i, j])
+                        else:
+                            return 1
+
+                    self.Gij_coeff_dew = \
+                        Expression(self._params.component_list,
+                                   self._params.component_list,
+                                   rule=rule_Gij_coeff_dew)
+
+                    def rule_A_dew(self, i):
+                        value_1 = log(sum(self.mole_frac[j] *
+                                          self.Gij_coeff_dew[j, i]
+                                          for j in self._params.component_list))
+                        return value_1
+                    self.A_dew = Expression(self._params.component_list,
+                                            rule=rule_A_dew)
+
+                    def rule_B_dew(self, i):
+                        value = sum((self.mole_frac[j] *
+                                     self.Gij_coeff_dew[i, j] /
+                                     sum(self.mole_frac[k] *
+                                         self.Gij_coeff_dew[k, j]
+                                         for k in self._params.component_list))
+                                    for j in self._params.component_list)
+                        return value
+                    self.B_dew = Expression(self._params.component_list,
+                                            rule=rule_B_dew)
+
+                    def rule_activity_coeff_dew(self, i):
+                        return exp(1 - self.A_dew[i] - self.B_dew[i])
+                    self.activity_coeff_comp_dew = \
+                        Expression(self._params.component_list,
+                                   rule=rule_activity_coeff_dew)
+
+                    return sum(self.mole_frac[i] *
+                               self.pressure /
+                               (self.activity_coeff_comp[i] *
+                                self._p_sat_dewT[i])
                                for i in self._params.component_list) - 1 == 0
             self.eq_temperature_dew = Constraint(rule=rule_temp_dew)
         except AttributeError:
@@ -1159,80 +1345,3 @@ class ActivityCoeffStateBlockData(StateBlockData):
             # first; if it passes then constraint construction will not fail.
             self.del_component(self.temperature_dew)
             self.del_component(self._p_sat_dewT)
-
-    # def _pressure_bubble(self):
-    #     self.pressure_bubble = Var(initialize=298.15,
-    #                                doc="Bubble point pressure (Pa)")
-    #
-    #     def rule_psat_bubble(m, j):
-    #         return self.pressure_critical_ref[j] * \
-    #             exp((self.pressure_sat_coeff_ref[j, 'A'] *
-    #                 (1 - self.temperature /
-    #                 self.temperature_critical_ref[j]) +
-    #                 self.pressure_sat_coeff_ref[j, 'B'] *
-    #                 (1 - self.temperature /
-    #                 self.temperature_critical_ref[j])**1.5 +
-    #                 self.pressure_sat_coeff_ref[j, 'C'] *
-    #                 (1 - self.temperature /
-    #                 self.temperature_critical_ref[j])**3 +
-    #                 self.pressure_sat_coeff_ref[j, 'D'] *
-    #                 (1 - self.temperature /
-    #                 self.temperature_critical_ref[j])**6) /
-    #                 (1 - (1 - self.temperature /
-    #                       self.temperature_critical_ref[j])))
-    #
-    #     try:
-    #         # Try to build expression
-    #         self._p_sat_bubbleP = Expression(self._params.component_list,
-    #                                          rule=rule_psat_bubble)
-    #
-    #         def rule_pressure_bubble(b):
-    #             return sum(b._p_sat_bubbleP[i] * b.mole_frac[i]
-    #                        for i in b._params.component_list) \
-    #                 - b.pressure_bubble == 0
-    #         self.eq_pressure_bubble = Constraint(rule=rule_pressure_bubble)
-    #     except AttributeError:
-    #         # If expression fails, clean up so that DAE can try again later
-    #         # Deleting only var/expression as expression construction will fail
-    #         # first; if it passes then constraint construction will not fail.
-    #         self.del_component(self.pressure_bubble)
-    #         self.del_component(self._p_sat_bubbleP)
-    #
-    # def _pressure_dew(self):
-    #     self.pressure_dew = Var(initialize=298.15,
-    #                             doc="Dew point pressure (Pa)")
-    #
-    #     def rule_psat_dew(m, j):
-    #         return self.pressure_critical_ref[j] * \
-    #             exp((self.pressure_sat_coeff_ref[j, 'A'] *
-    #                 (1 - self.temperature /
-    #                 self.temperature_critical_ref[j]) +
-    #                 self.pressure_sat_coeff_ref[j, 'B'] *
-    #                 (1 - self.temperature /
-    #                 self.temperature_critical_ref[j])**1.5 +
-    #                 self.pressure_sat_coeff_ref[j, 'C'] *
-    #                 (1 - self.temperature /
-    #                 self.temperature_critical_ref[j])**3 +
-    #                 self.pressure_sat_coeff_ref[j, 'D'] *
-    #                 (1 - self.temperature /
-    #                 self.temperature_critical_ref[j])**6) /
-    #                 (1 - (1 - self.temperature /
-    #                       self.temperature_critical_ref[j])))
-    #
-    #     try:
-    #         # Try to build expression
-    #         self._p_sat_dewP = Expression(self._params.component_list,
-    #                                       rule=rule_psat_dew)
-    #
-    #         def rule_pressure_dew(b):
-    #             return b.pressure_dew * \
-    #                 sum(b.mole_frac[i] / b._p_sat_dewP[i]
-    #                     for i in b._params.component_list) \
-    #                 - 1 == 0
-    #         self.eq_pressure_dew = Constraint(rule=rule_pressure_dew)
-    #     except AttributeError:
-    #         # If expression fails, clean up so that DAE can try again later
-    #         # Deleting only var/expression as expression construction will fail
-    #         # first; if it passes then constraint construction will not fail.
-    #         self.del_component(self.pressure_dew)
-    #         self.del_component(self._p_sat_dewP)
