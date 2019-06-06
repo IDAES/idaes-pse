@@ -32,6 +32,7 @@ lxml
 matplotlib
 mock
 pandas
+pandoc
 pendulum==1.4.4
 psutil
 pyyaml
