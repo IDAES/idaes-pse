@@ -3,6 +3,7 @@ alabaster>=0.7.7
 bokeh==0.12.9
 bunch
 jupyter
+jupyter_contrib_nbextensions  # For nbconvert --to html_embed
 networkx
 #pyomo
 pytest
@@ -32,7 +33,6 @@ lxml
 matplotlib
 mock
 pandas
-pandoc
 pendulum==1.4.4
 psutil
 pyyaml
