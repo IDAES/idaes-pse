@@ -109,10 +109,15 @@ tutorial_nb: ../examples/workshops/Module_*/*.ipynb
 		name=$$(basename $$nbfile .ipynb); \
 		title=$$(echo $$name | sed "s/_/ /g"); \
 		cmd="jupyter nbconvert --to html -y --output-dir=./tutorials $$nbfile"; \
-		$${cmd} --execute 2>/dev/null; \
+		if test -n "$$READTHEDOCS"; then \
+			echo "Generating static tutorials for ReadTheDocs..."; \
+			$$cmd; \
+		else \
+			$$cmd --execute 2>/dev/null; \
+		fi; \
 		[ $$? -ne 0 ] && echo "** Execute notebook failed: creating static" && $${cmd}; \
-		  echo "$${title}:\n==================================================\n" > ./tutorials/$${name}.rst; \
-		  echo ".. raw:: html\n    :file: $${name}.html\n" >> ./tutorials/$${name}.rst; \
+		echo "$${title}:\n==================================================\n" > ./tutorials/$${name}.rst; \
+		echo ".. raw:: html\n    :file: $${name}.html\n" >> ./tutorials/$${name}.rst; \
 	done
 
 tutorial_imgs: ../examples/workshops/Module_*/*.png
