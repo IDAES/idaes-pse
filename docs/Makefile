@@ -103,26 +103,30 @@ tutorial_setup:
 	@mkdir -p $(BUILDDIR)/tutorials
 	@mkdir -p ./tutorials
 
-tutorial_nb: ../examples/workshops/Module_*/*.ipynb
+tutorial_nb: ../examples/workshops/Module_*/*_Solution.ipynb
 	@for nbfile in $^ ; do \
 		echo "** Execute and convert: $$nbfile"; \
 		name=$$(basename $$nbfile .ipynb); \
 		title=$$(echo $$name | sed "s/_/ /g"); \
-		cmd="jupyter nbconvert --to html -y --output-dir=./tutorials $$nbfile"; \
+		cmd="jupyter nbconvert --to rst -y --output-dir=./tutorials $$nbfile"; \
 		if test -n "$$READTHEDOCS"; then \
 			echo "Generating static tutorials for ReadTheDocs..."; \
+			echo "  $$cmd"; \
 			$$cmd; \
 		else \
 			$$cmd --execute 2>/dev/null; \
 		fi; \
-		[ $$? -ne 0 ] && echo "** Execute notebook failed: creating static" && $${cmd}; \
-		echo "$${title}:\n==================================================\n" > ./tutorials/$${name}.rst; \
-		echo ".. raw:: html\n    :file: $${name}.html\n" >> ./tutorials/$${name}.rst; \
+		if [ $$? -ne 0 ]; then \
+			echo "** Execute notebook failed: creating static"; \
+			$${cmd}; \
+		fi; \
 	done
 
 tutorial_imgs: ../examples/workshops/Module_*/*.png
 	@echo "** Copy images from ../examples/workshops/* to $(BUILDDIR)/tutorials"
-	@for f in $^; do cp $$f $(BUILDDIR)/tutorials; done
+	@for f in $^; do \
+		cp $$f $(BUILDDIR)/tutorials; \
+	done
 
 ###
 # End of tutorials section
