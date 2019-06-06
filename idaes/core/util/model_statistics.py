@@ -28,616 +28,896 @@ from pyomo.core.kernel.component_set import ComponentSet
 from idaes.core.util.exceptions import ConfigurationError
 
 
-def _create_component_set(block, ctype, active_blocks=True, descend_into=True):
+class ModelStatistics():
     """
-    General method for iterating over model to find component with specific
-    ctype. This method differs from the Pyomo component_data_objects method in
-    how it handles deactivated components and Blocks.
-
-    This method consideres only the status of the containing Blocks (activated
-    and/or deactivated) when collecting components, and collects **all**
-    components of the relevant ctype(s) in the applicable Blocks.
+    Creates a model statistics object for quantifying and reporting model
+    statistics.
     """
-    set_components = ComponentSet()
-
-    if active_blocks is True and block.active is False:
-        return set_components
-    else:
-        set_components.update(block.component_data_objects(ctype=ctype,
-                                                           active=None,
-                                                           descend_into=False))
-
-        if descend_into:
-            for b in block.component_data_objects(ctype=Block,
-                                                  active=active_blocks,
-                                                  descend_into=descend_into):
-                set_components.update(b.component_data_objects(
-                        ctype=ctype,
-                        active=None,
-                        descend_into=False))
-
-        return set_components
-
-
-def block_set(block, active=True, descend_into=True):
-    """
-    Method to return a set of the Block components appearing within a Pyomo
-    Block.
-
-    Args:
-        block - the Block to be enumerated
-        active - indicates whether components should be included based on their
-                `active` status. Can have the follwoing values:
-                * None - inlcude all components
-                * True - include only components with active = True (default)
-                * False - include only components with active = False
-        descend_into - indicates whether only local Blocks should be enumerated
-                (False), or if child Blocks should be included (True, default)
-
-    Returns:
-        set_blocks - a ComponentSet containing all the Blocks that
-            appear within block
-    """
-    set_blocks = ComponentSet()
-
-    set_blocks.update(block.component_data_objects(ctype=Block,
-                                                   active=active,
-                                                   descend_into=descend_into))
-
-    return set_blocks
-
-
-def variable_set(block, active=True, descend_into=True):
-    """
-    Method to return a set of the Variables appearing within a model.
-
-    Args:
-        block - the Block object to be enumerated
-        active - indicates whether Vars in deactivated Blocks (and
-                sub-Blocks) should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - indicates whether only local Vars within Blocks should
-                be enumerated (False), or if Vars in child Blocks should be
-                included (True, default)
-
-    Returns:
-        set_vars - a ComponentSet containing all Vars that appear within block
-    """
-    set_vars = ComponentSet()
-    set_vars.update(block.component_data_objects(ctype=Var,
-                                                 active=active,
-                                                 descend_into=descend_into))
-    return set_vars
-
-
-def derivative_variables_set(block, active_blocks=True, descend_into=True):
-    """
-    Method to return a set of the DerivativeVars appearing within a model.
-    Users should note that applying a DAE transformation converts
-    DerivativeVars into ordinary Vars. Thus, this method is useful for
-    identifying any DerivativeVars that have not been transformed.
-
-    Args:
-        block - the Block object to be enumerated
-        active_blocks - indicates whether DerivativeVars in deactivated Blocks
-                (and sub-Blocks) should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - indicates whether only local DerivativeVars within
-                Blocks should be enumerated (False), or if DerivativeVars in
-                child Blocks should be included (True, default)
-
-    Returns:
-        set_vars - a ComponentSet containing all DerivativeVars that appear
-                within block
-    """
-    return _create_component_set(block,
-                                 ctype=DerivativeVar,
-                                 active_blocks=active_blocks,
-                                 descend_into=descend_into)
-
-
-def expression_set(block, active_blocks=True, descend_into=True):
-    """
-    Method to return a set of the Expression components appearing within a
-    model.
-
-    Args:
-        block - the Block object to be enumerated
-        active_blocks - indicates whether Expressions in deactivated Blocks
-                (and sub-Blocks) should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - indicates whether only local Expressions within
-                Blocks should be enumerated (False), or if Expressions in
-                child Blocks should be included (True, default)
-
-    Returns:
-        set_expressions - a ComponentSet containing all Expressions that appear
-            within block
-    """
-    return _create_component_set(block,
-                                 ctype=Expression,
-                                 active_blocks=active_blocks,
-                                 descend_into=descend_into)
-
-
-def objective_set(block, active_blocks=True, descend_into=True):
-    """
-    Method to return a set of the Objective components appearing within a
-    model.
-
-    Args:
-        block - the Block object to be enumerated
-        active_blocks - indicates whether Objectives in deactivated Blocks
-                (and sub-Blocks) should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - indicates whether only local Objectives within
-                Blocks should be enumerated (False), or if Objectives in
-                child Blocks should be included (True, default)
-
-    Returns:
-        set_expressions - a ComponentSet containing all Objectives that appear
-            within block
-    """
-    return _create_component_set(block,
-                                 ctype=Objective,
-                                 active_blocks=active_blocks,
-                                 descend_into=descend_into)
-
-
-def constraint_set(block, active_blocks=True, descend_into=True):
-    """
-    Method to return a set of the Constraint components appearing within a
-    model.
-
-    Args:
-        block - the Block object to be enumerated
-        active_blocks - indicates whether Constraints in deactivated Blocks
-                (and sub-Blocks) should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - indicates whether only local Constraints within
-                Blocks should be enumerated (False), or if Constraints in
-                child Blocks should be included (True, default)
-
-    Returns:
-        set_expressions - a ComponentSet containing all Constraints that appear
-            within block
-    """
-    return _create_component_set(block,
-                                 ctype=Constraint,
-                                 active_blocks=active_blocks,
-                                 descend_into=descend_into)
-
-
-def equality_constraint_set(block_or_set,
-                            active_blocks=True,
-                            descend_into=True):
-    """
-    Method to return a set of the equality Constraint components appearing
-    within a model.
-
-    Args:
-        block_or_set - the Block object to be enumerated or an existing
-                ComponentSet of Constraints to be enumerated
-        active_blocks - used when block_or_set is a Block object and indicates
-                whether Constraints in deactivated Blocks (and sub-Blocks)
-                should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - used when block_or_set is a Block object and indicates
-                whether only local Constraints within Blocks should be
-                enumerated (False), or if Constraints in child Blocks should be
-                included (True, default)
-
-    Returns:
-        set_equalites - a ComponentSet containing all equality Constraints that
-            appear within block_or_set
-    """
-    if not isinstance(block_or_set, ComponentSet):
-        block_or_set = constraint_set(
-                            block_or_set,
-                            active_blocks=active_blocks,
-                            descend_into=descend_into)
-
-    set_equalities = ComponentSet()
-
-    for c in block_or_set:
-        if c.upper is not None and c.lower is not None and c.upper == c.lower:
-            # Constraint is an equality constraint
-            set_equalities.add(c)
-
-    return set_equalities
-
-
-def inequality_constraints_set(block_or_set,
-                               active_blocks=True,
-                               descend_into=True):
-    """
-    Method to return a set of the inequality Constraint components appearing
-    within a model.
-
-    Args:
-        block_or_set - the Block object to be enumerated or an existing
-                ComponentSet of Constraints to be enumerated
-        active_blocks - used when block_or_set is a Block object and indicates
-                whether Constraints in deactivated Blocks (and sub-Blocks)
-                should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - used when block_or_set is a Block object and indicates
-                whether only local Constraints within Blocks should be
-                enumerated (False), or if Constraints in child Blocks should be
-                included (True, default)
-
-    Returns:
-        set_inequalites - a ComponentSet containing all inequality Constraints
-            that appear within block_or_set
-    """
-    if not isinstance(block_or_set, ComponentSet):
-        block_or_set = constraint_set(
-                            block_or_set,
-                            active_blocks=active_blocks,
-                            descend_into=descend_into)
-
-    set_inequalities = ComponentSet()
-
-    for c in block_or_set:
-        if c.upper is None or c.lower is None:
-            # Constraint is an inequality constraint
-            set_inequalities.add(c)
-
-    return set_inequalities
-
-
-def large_residual_set(block_or_set,
-                       tol=1e-5,
-                       active_blocks=True,
-                       descend_into=True):
-    """
-    Method to return a set of the Constraint components with large residuals
-    appearing within a model.
-
-    Args:
-        block_or_set - the Block object to be enumerated or an existing
-                ComponentSet of Constraints to be enumerated
-        tol - show Constraints with residuals greated than tol
-        active_blocks - used when block_or_set is a Block object and indicates
-                whether Constraints in deactivated Blocks (and sub-Blocks)
-                should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - used when block_or_set is a Block object and indicates
-                whether only local Constraints within Blocks should be
-                enumerated (False), or if Constraints in child Blocks should be
-                included (True, default)
-
-    Returns:
-        set_equalites - a ComponentSet containing all equality Constraints that
-            appear within block_or_set
-    """
-    if not isinstance(block_or_set, ComponentSet):
-        block_or_set = constraint_set(
-                            block_or_set,
-                            active_blocks=active_blocks,
-                            descend_into=descend_into)
-
-    large_residuals = ComponentSet()
-
-    for c in block_or_set:
-        if c.active and value(c.lower - c.body()) > tol:
-            large_residuals.add(c)
-        elif c.active and value(c.body() - c.upper) > tol:
-            large_residuals.add(c)
-
-    return large_residuals
-
-
-def activated_component_set(component_set):
-    """
-    Method to return a set of the activated components appearing within a
-    set of components.
-
-    Args:
-        block_or_set - a ComponentSet of components to be enumerated
-
-    Returns:
-        set_activated - a ComponentSet containing all activated components
-            that appear within component_set
-    """
-    set_activated = ComponentSet()
-
-    for c in component_set:
-        if c.active:
-            set_activated.add(c)
-
-    return set_activated
-
-
-def variables_in_constraints_set(block_or_set,
-                                 active_blocks=True,
-                                 descend_into=True):
-    """
-    Method to return a set of the Vars which occur within Constraints within a
-    model.
-
-    Args:
-        block_or_set - the Block object containing the Constraints to be
-                enumerated or an existing ComponentSet of Constraints
-        active_blocks - used when block_or_set is a Block object and indicates
-                whether Constraints in deactivated Blocks (and sub-Blocks)
-                should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - used when block_or_set is a Block object and indicates
-                whether only local Constraints within Blocks should be
-                enumerated (False), or if Constraints in child Blocks should be
-                included (True, default)
-
-    Returns:
-        set_vars_in_constraints - a ComponentSet containing all Var components
-            which appear in the Constraints in block_or_set
-    """
-    if not isinstance(block_or_set, ComponentSet):
-        block_or_set = constraint_set(
-                            block_or_set,
-                            active_blocks=active_blocks,
-                            descend_into=descend_into)
-
-    set_vars_in_constraints = ComponentSet()
-
-    for c in block_or_set:
-        for v in identify_variables(c.body):
-            set_vars_in_constraints.add(v)
-
-    return set_vars_in_constraints
-
-
-def fixed_variable_set(block_or_set,
-                       active=True,
-                       descend_into=True):
-    """
-    Method to enumerate the fixed Variables which within a model.
-
-    Args:
-        block_or_set - the Block object containing the Vars to be
-                enumerated or an existing ComponentSet of Vars
-        active - indicates whether Vars in deactivated Blocks (and
-                sub-Blocks) should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - used when block_or_set is a Block object and indicates
-                whether only local Vars within Blocks should be
-                enumerated (False), or if Vars in child Blocks should be
-                included (True, default)
-
-    Returns:
-        set_fixed_vars - a ComponentSet containing all fixed Var components
-            which appear in block_or_set
-    """
-    if not isinstance(block_or_set, ComponentSet):
-        block_or_set = variable_set(
-                            block_or_set,
-                            active=active,
-                            descend_into=descend_into)
-
-    set_fixed_vars = ComponentSet()
-
-    for v in block_or_set:
-        if v.fixed:
-            set_fixed_vars.add(v)
-
-    return set_fixed_vars
-
-
-def unfixed_variable_set(block_or_set,
-                         active=True,
-                         descend_into=True):
-    """
-    Method to enumerate the unfixed Variables which within a model.
-
-    Args:
-        block_or_set - the Block object containing the Vars to be
-                enumerated or an existing ComponentSet of Vars
-        active - indicates whether Vars in deactivated Blocks (and
-                sub-Blocks) should be included. Valid option are:
-                * None - include Vars in all Blocks
-                * True - only include Vars in Blocks with active=True (default)
-                * False - only include Vars in Blocks with active=False
-        descend_into - used when block_or_set is a Block object and indicates
-                whether only local Vars within Blocks should be
-                enumerated (False), or if Vars in child Blocks should be
-                included (True, default)
-
-    Returns:
-        set_fixed_vars - a ComponentSet containing all unfixed Var components
-            which appear in block_or_set
-    """
-    if not isinstance(block_or_set, ComponentSet):
-        block_or_set = variable_set(
-                            block_or_set,
-                            active=active,
-                            descend_into=descend_into)
-
-    set_fixed_vars = ComponentSet()
-
-    for v in block_or_set:
-        if not v.fixed:
-            set_fixed_vars.add(v)
-
-    return set_fixed_vars
-
-
-def active_variables_in_deactived_blocks_set(block):
-    """
-    This method returns a set of any Vars which belong to a deactivated Block
-    (or a child of a deactivated Block) but appear in an active Constraint
-    within a model. This can cause problems with the Pyomo solver writers, and
-    is often an indication of a mistake when setting up the model.
-
-    Args:
-        block - the Block object to be enumerated
-
-    Returns:
-        act_vars_in_deact_blocks - a ComponentSet containing all Vars from
-            deactived Blocks which appear in active Constraints within block.
-    """
-    # Check that block is activated
-    if block.active is False:
-        raise ConfigurationError(
-                f"Cannot enumerate active variables in deactivated "
-                "constraints. The Block provided ({block.name}) is deactivated"
-                )
-
-    # Get all Constraints in active Blocks
-    all_constraints = constraint_set(block,
-                                     active_blocks=True,
-                                     descend_into=True)
-
-    # Get activated Constraints from all_constraints
-    act_constraints = activated_component_set(all_constraints)
-
-    # Get all Vars that appear in activated Constraints
-    vars_in_act_constraints = variables_in_constraints_set(
-            act_constraints)
-
-    # Get all active Blocks
-    act_blocks = block_set(block, active=True, descend_into=True)
-
-    act_vars_in_deact_blocks = ComponentSet()
-
-    for v in vars_in_act_constraints:
-        if (v.parent_block() not in act_blocks and
-                v.parent_block() is not block):
-            act_vars_in_deact_blocks.add(v)
-
-    return act_vars_in_deact_blocks
-
-
-def calculate_degrees_of_freedom(block):
-    equalities = equality_constraint_set(block,
-                                         active_blocks=True,
-                                         descend_into=True)
-    act_equalities = activated_component_set(equalities)
-
-    vars_in_act_equals = variables_in_constraints_set(act_equalities)
-
-    fixed_vars_in_act_equals = fixed_variable_set(vars_in_act_equals)
-
-    return len(vars_in_act_equals-fixed_vars_in_act_equals)-len(act_equalities)
-
-
-def report_model_statistics(block,
-                            ostream=None,
-                            deactivated_blocks=False,
-                            descend_into=True):
-    """
-    Method to print a report of the model statistics for a Pyomo Block
-
-    Args:
-        block - the Block object to report statistics from
-        deactivated_blocks - indicates whether to include deactivated Blocks
-                (and sub-Blocks) in report (deafult = False)
-        descend_into - indicates whether only components within block should be
-                included (False), or if components in child Blocks should be
-                included (True, default)
-
-    Returns:
-        Printed output of the model statistics
-    """
-    if ostream is None:
-        ostream = sys.stdout
-
-    if deactivated_blocks:
-        active = None
-    else:
-        active = True
-
-    total_vars = variable_set(block, active=active, descend_into=descend_into)
-    fixed_vars = fixed_variable_set(total_vars)
-
-    total_cons = constraint_set(block,
-                                active_blocks=active,
-                                descend_into=descend_into)
-    eq_cons = equality_constraint_set(total_cons)
-    act_eq_cons = activated_component_set(eq_cons)
-    ineq_cons = inequality_constraints_set(total_cons)
-    act_ineq_cons = activated_component_set(ineq_cons)
-
-    total_objs = objective_set(block,
-                               active_blocks=active,
-                               descend_into=descend_into)
-    act_objs = activated_component_set(total_objs)
-
-    total_exprs = expression_set(block,
-                                 active_blocks=active,
-                                 descend_into=descend_into)
-
-    total_blocks = block_set(block, active=active, descend_into=descend_into)
-    act_blocks = activated_component_set(total_blocks)
-
-    vars_in_act_equals = variables_in_constraints_set(act_eq_cons)
-    fixed_vars_in_act_equals = fixed_variable_set(vars_in_act_equals)
-
-    vars_in_inequals = variables_in_constraints_set(act_ineq_cons)
-    vars_only_in_inequals = ComponentSet()
-    for v in vars_in_inequals:
-        if v not in vars_in_act_equals:
-            vars_only_in_inequals.add(v)
-    fixed_vars_only_in_inequals = \
-        fixed_variable_set(vars_only_in_inequals)
-
-    unused_vars = total_vars-vars_in_act_equals
-    fixed_unused_vars = fixed_variable_set(unused_vars)
-
-    dof = len(vars_in_act_equals-fixed_vars_in_act_equals)-len(act_eq_cons)
-
-    tab = " "*4
-    header = '='*72
-
-    if block.name == "unknown":
-        name_str = ""
-    else:
-        name_str = f"-  ({block.name})"
-
-    ostream.write("\n")
-    ostream.write(header+"\n")
-    ostream.write(f"Model Statistics  {name_str} \n")
-    ostream.write("\n")
-    ostream.write(f"Degrees of Freedom: {dof} \n")
-    ostream.write("\n")
-    ostream.write(f"Total No. Variables: {len(total_vars)} \n")
-    ostream.write(f"{tab}No. Fixed Variables: {len(fixed_vars)} \n")
-    ostream.write(f"{tab}No. Unused Variables: {len(unused_vars)}"
-                  f" (Fixed: {len(fixed_unused_vars)}) \n")
-    ostream.write(f"{tab}No. Variables only in Inequalities:"
-                  f" {len(vars_only_in_inequals)}"
-                  f" (Fixed: {len(fixed_vars_only_in_inequals)}) \n")
-    ostream.write("\n")
-    ostream.write(f"Total No. Constraints: {len(total_cons)} \n")
-    ostream.write(f"{tab}No. Equality Constraints: {len(eq_cons)}"
-                  f" (Deactivated: {len(eq_cons-act_eq_cons)}) \n")
-    ostream.write(f"{tab}No. Inequality Constraints: {len(ineq_cons)}"
-                  f" (Deactivated: {len(ineq_cons-act_ineq_cons)}) \n")
-    ostream.write("\n")
-    ostream.write(f"No. Objectives: {len(total_objs)}"
-                  f" (Deactivated: {len(total_objs-act_objs)}) \n")
-    ostream.write("\n")
-    ostream.write(f"No. Blocks: {len(total_blocks)}"
-                  f" (Deactivated: {len(total_blocks-act_blocks)}) \n")
-    ostream.write(f"No. Expressions: {len(total_exprs)} \n")
-    ostream.write(header+"\n")
-    ostream.write("\n")
+    def __init__(self, block, always_recalculate=False):
+        self.model_object = block
+        self.always_recalculate = always_recalculate
+
+    def _activated_block_component_generator(self, ctype):
+        for b in self.model_object.component_data_objects(
+                    ctype=Block, active=True, descend_into=True):
+            for c in b.component_data_objects(ctype=ctype,
+                                              active=None,
+                                              descend_into=False):
+                yield c
+
+    # -------------------------------------------------------------------------
+    # Block methods
+    def total_block_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self._total_block_set):
+            if not recalculate:
+                return self._total_block_set
+            else:
+                self.del_component(self._total_block_set)
+
+        self._total_block_set = ComponentSet(
+                self.model_object.component_data_objects(
+                        ctype=Block, active=None, descend_into=True))
+        self._total_block_set.add(self)
+
+        return self._total_block_set
+
+    def number_total_blocks(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_total_block_set"):
+            return len(self.total_block_set(recalculate=recalculate))
+        else:
+            b = 1  # Start at 1 to include self
+            for o in self.model_object.component_data_objects(
+                        ctype=Block, active=None, descend_into=True):
+                b += 1
+            return b
+
+    def deactivated_block_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self._deactivated_block_set):
+            if not recalculate:
+                return self._deactivated_block_set
+            else:
+                self.del_component(self._deactivated_block_set)
+
+        self._deactivated_block_set = ComponentSet(
+                self.model_object.component_data_objects(
+                        ctype=Block, active=False, descend_into=True))
+
+        return self._deactivated_block_set
+
+    def number_deactivated_blocks(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_deactivated_block_set"):
+            return len(self.deactivated_block_set(recalculate=recalculate))
+        else:
+            b = 0
+            for o in self.model_object.component_data_objects(
+                        ctype=Block, active=False, descend_into=True):
+                b += 1
+            return b
+
+    # -------------------------------------------------------------------------
+    # Basic Constraint methods
+    def total_constraint_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_total_constraint_set"):
+            if not recalculate:
+                return self._total_constraint_set
+            else:
+                self.del_component(self._total_constraint_set)
+
+        self._total_constraint_set = ComponentSet()
+
+        self._total_constraint_set.update(
+                self._activated_block_component_generator(ctype=Constraint))
+
+        return self._total_constraint_set
+
+    def number_total_constraints(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_total_constraint_set"):
+            return len(self.total_constraint_set(recalculate=recalculate))
+        else:
+            tc = 0
+            for c in self._activated_block_component_generator(
+                    ctype=Constraint):
+                tc += 1
+            return tc
+
+    # -------------------------------------------------------------------------
+    # Equality Constraints
+    def total_equality_generator(self):
+        for c in self._activated_block_component_generator(ctype=Constraint):
+            if (c.upper is not None and
+                    c.lower is not None and
+                    c.upper == c.lower):
+                yield c
+
+    def total_equality_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_total_equality_set"):
+            if not recalculate:
+                return self._total_equality_set
+            else:
+                self.del_component(self._total_equality_set)
+
+        self._total_equality_set = ComponentSet()
+        self._total_equality_set.update(self.total_equality_generator())
+
+        return self._total_equality_set
+
+    def number_total_equalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_total_equality_set"):
+            return len(self.total_equality_set(recalculate=recalculate))
+        else:
+            tc = 0
+            for c in self.total_equality_generator():
+                tc += 1
+            return tc
+
+    def activated_equalities_generator(self):
+        for c in self.model_object.component_data_objects(
+                    Constraint, active=True, descend_into=True):
+            if (c.upper is not None and c.lower is not None and
+                    c.upper == c.lower):
+                yield c
+
+    def activated_equalities_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self._activated_equalities_set):
+            if not recalculate:
+                return self._activated_equalities_set
+            else:
+                self.del_component(self._activated_equalities_set)
+
+        self._activated_equalities_set = ComponentSet()
+
+        if hasattr(self, "_equalities_set"):
+            # Make set of activated equalities from this
+            self._activated_equalities_set.update(
+                    ec for ec in self._equalities_set if ec.active)
+        elif hasattr(self, "_total_constraint_set"):
+            # Make set of activated equalities from this
+            for c in self._total_constraint_set:
+                if (c.upper is not None and c.lower is not None and
+                        c.upper == c.lower and c.active):
+                    self._activated_equalities_set.add(c)
+        else:
+            # Build set from generator
+            for c in self.activated_equalities_generator():
+                self._activated_equalities_set.add(c)
+
+        return self._activated_equalities_set
+
+    def number_activated_equalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_activated_equalities_set"):
+            return len(self.activated_equalities_set(recalculate=recalculate))
+        else:
+            c = 0
+            for o in self.activated_equalities_generator():
+                c += 1
+            return c
+
+    def deactivated_equality_generator(self):
+        for c in self.total_equality_generator():
+            if not c.active:
+                yield c
+
+    def deactivated_equality_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_deactivated_equality_set"):
+            if not recalculate:
+                return self._deactivated_equality_set
+            else:
+                self.del_component(self._deactivated_equality_set)
+
+        self._deactivated_equality_set = ComponentSet()
+        self._deactivated_equality_set.update(
+                self.deactivated_equality_generator())
+
+        return self._deactivated_equality_set
+
+    def number_deactivated_equalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_deactivated_equality_set"):
+            return len(self.deactivated_equality_set(recalculate=recalculate))
+        else:
+            tc = 0
+            for c in self.deactivated_equality_generator():
+                tc += 1
+            return tc
+
+    # -------------------------------------------------------------------------
+    # Inequality Constraints
+    def total_inequality_generator(self):
+        for c in self._activated_block_component_generator(ctype=Constraint):
+            if c.upper is None or c.lower is None:
+                yield c
+
+    def total_inequality_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_total_inequality_set"):
+            if not recalculate:
+                return self._total_inequality_set
+            else:
+                self.del_component(self._total_inequality_set)
+
+        self._total_inequality_set = ComponentSet()
+        self._total_inequality_set.update(self.total_inequality_generator())
+
+        return self._total_inequality_set
+
+    def number_total_inequalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_total_inequality_set"):
+            return len(self.total_inequality_set(recalculate=recalculate))
+        else:
+            tc = 0
+            for c in self.total_inequality_generator():
+                tc += 1
+            return tc
+
+    def activated_inequalities_generator(self):
+        for c in self.model_object.component_data_objects(
+                    Constraint, active=True, descend_into=True):
+            if c.upper is None or c.lower is None:
+                yield c
+
+    def activated_inequalities_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self._activated_inequalities_set):
+            if not recalculate:
+                return self._activated_inequalities_set
+            else:
+                self.del_component(self._activated_inequalities_set)
+
+        self._activated_inequalities_set = ComponentSet()
+
+        if hasattr(self, "_inequalities_set"):
+            # Make set of activated inequalities from this
+            self._activated_inequalities_set.update(
+                    ec for ec in self._inequalities_set if ec.active)
+        elif hasattr(self, "_total_constraint_set"):
+            # Make set of activated inequalities from this
+            for c in self._constraint_set:
+                if (c.upper is None or c.lower) is None and c.active:
+                    self._activated_inequalities_set.add(c)
+        else:
+            # Build set from generator
+            for c in self.activated_inequalities_generator():
+                self._activated_inequalities_set.add(c)
+
+        return self._activated_inequalities_set
+
+    def number_activated_inequalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_activated_inequality_set"):
+            return len(self.activated_inequalities_set(
+                    recalculate=recalculate))
+        else:
+            c = 0
+            for o in self.activated_inequalities_generator():
+                c += 1
+            return c
+
+    def deactivated_inequality_generator(self):
+        for c in self.total_inequality_generator():
+            if not c.active:
+                yield c
+
+    def deactivated_inequality_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_deactivated_inequality_set"):
+            if not recalculate:
+                return self._deactivated_inequality_set
+            else:
+                self.del_component(self._deactivated_inequality_set)
+
+        self._deactivated_inequality_set = ComponentSet()
+        self._deactivated_inequality_set.update(
+                self.deactivated_inequality_generator())
+
+        return self._deactivated_inequality_set
+
+    def number_deactivated_inequalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_deactivated_inequality_set"):
+            return len(self.deactivated_inequality_set(
+                    recalculate=recalculate))
+        else:
+            tc = 0
+            for c in self.deactivated_inequality_generator():
+                tc += 1
+            return tc
+
+    # -------------------------------------------------------------------------
+    # Basic Variable Methods
+    # Always use ComponentSets for Vars to avoid duplication of References
+    # i.e. number methods should alwys use the ComponentSet, not a generator
+    def variables_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_variables_set"):
+            if not recalculate:
+                return self._variables_set
+            else:
+                self.del_component(self._variables_set)
+
+        self._variables_set = ComponentSet()
+
+        self._variables_set.update(
+                self.model_object.component_data_objects(
+                        ctype=Var,
+                        active=True,
+                        descend_into=True))
+
+        return self._variables_set
+
+    def number_variables(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.variables_set(recalculate=recalculate))
+
+    def fixed_variables_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_fixed_variables_set"):
+            if not recalculate:
+                return self._fixed_variables_set
+            else:
+                self.del_component(self._fixed_variables_set)
+
+        self._fixed_variables_set = ComponentSet()
+
+        if hasattr(self, "_variables_set"):
+            for v in self.variables_set(recalculate=recalculate):
+                if v.fixed:
+                    self._fixed_variables_set.add(v)
+        else:
+            for v in self.model_object.component_data_objects(
+                        ctype=Var,
+                        active=True,
+                        descend_into=True):
+                if v.fixed:
+                    self._fixed_variables_set.add(v)
+
+        return self._fixed_variables_set
+
+    def number_fixed_variables(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.fixed_variables_set(recalculate=recalculate))
+
+    # -------------------------------------------------------------------------
+    # Variables in Constraints
+    def variables_in_activated_constraints_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_variables_in_activated_constraints_set"):
+            if not recalculate:
+                return self._variables_in_activated_constraints_set
+            else:
+                self.del_component(
+                        self._variables_in_activated_constraints_set)
+
+        self._variables_in_activated_constraints_set = ComponentSet()
+
+        if hasattr(self, "_total_constraint_set"):
+            cs = self.total_constraint_set(recalculate=recalculate)
+        else:
+            cs = self.model_object.component_data_objects(ctype=Constraint,
+                                                          active=True,
+                                                          descend_into=True)
+
+        for c in cs:
+            for v in identify_variables(c.body):
+                self._variables_in_activated_constraints_set.add(v)
+
+        return self._variables_in_activated_constraints_set
+
+    def number_variables_in_activated_constraints(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.variables_in_activated_constraints_set(
+                recalculate=recalculate))
+
+    def variables_in_activated_equalities_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_variables_in_activated_equalities_set"):
+            if not recalculate:
+                return self._variables_in_activated_equalities_set
+            else:
+                self.del_component(self._variables_in_activated_equalities_set)
+
+        self._variables_in_activated_equalities_set = ComponentSet()
+
+        if hasattr(self, "_activated_equalities_set"):
+            ec = self.activated_equalities_set(recalculate=recalculate)
+        else:
+            ec = self.activated_equalities_generator()
+
+        for c in ec:
+            for v in identify_variables(c.body):
+                self._variables_in_activated_equalities_set.add(v)
+
+        return self._variables_in_activated_equalities_set
+
+    def number_variables_in_activated_equalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.variables_in_activated_equalities_set(
+                        recalculate=recalculate))
+
+    def variables_in_activated_inequalities_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_variables_in_activated_inequalities_set"):
+            if not recalculate:
+                return self._variables_in_activated_inequalities_set
+            else:
+                self.del_component(
+                        self._variables_in_activated_inequalities_set)
+
+        self._variables_in_activated_inequalities_set = ComponentSet()
+
+        if hasattr(self, "_activated_inequalities_set"):
+            ec = self.activated_inequalities_set(recalculate=recalculate)
+        else:
+            ec = self.activated_inequalities_generator()
+
+        for c in ec:
+            for v in identify_variables(c.body):
+                self._variables_in_activated_inequalities_set.add(v)
+
+        return self._variables_in_activated_inequalities_set
+
+    def number_variables_in_activated_inequalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.variables_in_activated_inequalities_set(
+                        recalculate=recalculate))
+
+    def variables_only_in_inequalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_variables_only_in_inequalities_set"):
+            if not recalculate:
+                return self._variables_only_in_inequalities_set
+            else:
+                self.del_component(self._variables_only_in_inequalities_set)
+
+        self._variables_only_in_inequalities_set = (
+                self.variables_in_activated_inequalities_set(
+                        recalculate=recalculate) -
+                self.variables_in_activated_equalities_set(
+                        recalculate=recalculate))
+
+        return self._variables_only_in_inequalities_set
+
+    def number_variables_only_in_inequalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.variables_only_in_inequalities(
+                    recalculate=recalculate))
+
+    def fixed_variables_only_in_inequalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_fixed_variables_only_in_inequalities_set"):
+            if not recalculate:
+                return self._fixed_variables_only_in_inequalities_set
+            else:
+                self.del_component(
+                        self._fixed_variables_only_in_inequalities_set)
+
+        self._fixed_variables_only_in_inequalities_set = ComponentSet()
+
+        for v in self.variables_only_in_inequalities(recalculate=recalculate):
+            if v.fixed:
+                self._fixed_variables_only_in_inequalities_set.add(v)
+
+        return self._fixed_variables_only_in_inequalities_set
+
+    def number_fixed_variables_only_in_inequalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.fixed_variables_only_in_inequalities(
+                    recalculate=recalculate))
+
+    # -------------------------------------------------------------------------
+    # Fixed Variables in Constraints
+    def fixed_variables_in_activated_equalities_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_fixed_variables_in_activated_equalities_set"):
+            if not recalculate:
+                return self._fixed_variables_in_activated_equalities_set
+            else:
+                self.del_component(
+                        self._fixed_variables_in_activated_equalities_set)
+
+        self._fixed_variables_in_activated_equalities_set = ComponentSet()
+
+        for v in self.variables_in_activated_equalities_set(
+                recalculate=recalculate):
+            if v.fixed:
+                self._fixed_variables_in_activated_equalities_set.add(v)
+
+        return self._fixed_variables_in_activated_equalities_set
+
+    def number_fixed_variables_in_activated_equalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.fixed_variables_in_activated_equalities_set(
+                recalculate=recalculate))
+
+    # -------------------------------------------------------------------------
+    # Unused and un-Transformed Variables
+    def unused_variables_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_unused_variables_set"):
+            if not recalculate:
+                return self._unused_variables_set
+            else:
+                self.del_component(self._unused_variables_set)
+
+        self._unused_variables_set = (
+            self.variables_set(recalculate=recalculate) -
+            self.variables_in_activated_constraints_set(
+                    recalculate=recalculate))
+
+        return self._unused_variables_set
+
+    def number_unused_variables(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.unused_variables_set(recalculate=recalculate))
+
+    def fixed_unused_variables_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_fixed_unused_variables_set"):
+            if not recalculate:
+                return self._fixed_unused_variables_set
+            else:
+                self.del_component(self._fixed_unused_variables_set)
+
+        self._fixed_unused_variables_set = ComponentSet()
+
+        for v in self.unused_variables_set(recalculate=recalculate):
+            if v.fixed:
+                self._fixed_unused_variables_set.add(v)
+
+        return self._fixed_unused_variables_set
+
+    def number_fixed_unused_variables(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.fixed_unused_variables_set(recalculate=recalculate))
+
+    def derivative_variables_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_derivative_variables_set"):
+            if not recalculate:
+                return self._derivative_variables_set
+            else:
+                self.del_component(self._derivative_variables_set)
+
+        self._derivative_variables_set = ComponentSet()
+
+        self._derivative_variables_set.update(
+                self.model_object.component_data_objects(
+                        ctype=Var,
+                        active=True,
+                        descend_into=True))
+
+        return self._derivative_variables_set
+
+    def number_derivative_variables(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.derivative_variables_set(recalculate=recalculate))
+
+    # -------------------------------------------------------------------------
+    # Objective methods
+    def total_objective_generator(self):
+        for o in self._activated_block_component_generator(ctype=Objective):
+            yield o
+
+    def total_objective_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_total_objective_set"):
+            if not recalculate:
+                return self._total_objective_set
+            else:
+                self.del_component(self._total_objective_set)
+
+        self._total_objective_set = ComponentSet()
+        self._total_objective_set.update(
+                self.total_objective_generator())
+
+        return self._total_objective_set
+
+    def number_total_objectives(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_total_objective_set"):
+            return len(self.total_objective_set(
+                    recalculate=recalculate))
+        else:
+            to = 0
+            for o in self.total_objective_generator():
+                to += 1
+            return to
+
+    def deactivated_objective_generator(self):
+        for o in self._activated_block_component_generator(ctype=Objective):
+            if not o.active:
+                yield o
+
+    def deactivated_objective_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_deactivated_objective_set"):
+            if not recalculate:
+                return self._deactivated_objective_set
+            else:
+                self.del_component(self._deactivated_objective_set)
+
+        self._deactivated_objective_set = ComponentSet()
+        self._deactivated_objective_set.update(
+                self.deactivated_objective_generator())
+
+        return self._deactivated_objective_set
+
+    def number_deactivated_objectives(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_deactivated_objective_set"):
+            return len(self.deactivated_objective_set(
+                    recalculate=recalculate))
+        else:
+            to = 0
+            for o in self.deactivated_objective_generator():
+                to += 1
+            return to
+
+    # -------------------------------------------------------------------------
+    # Expression methods
+    # Always use ComponentsSets here to avoid duplication of References
+    def expressions_set(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_expressions_set"):
+            if not recalculate:
+                return self._expressions_set
+            else:
+                self.del_component(self._expressions_set)
+
+        self._expressions_set = ComponentSet(
+                self.model_object.component_data_objects(
+                        ctype=Expression,
+                        active=True,
+                        descend_into=True))
+
+        return self._expressions_set
+
+    def number_expressions(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.expressions_set(recalculate=recalculate))
+
+    # -------------------------------------------------------------------------
+    # Other model statistics
+    def degrees_of_freedom(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return (self.number_variables_in_activated_equalities(
+                        recalculate=recalculate) -
+                self.number_fixed_variables_in_activated_equalities(
+                        recalculate=recalculate) -
+                self.number_activated_equalities(
+                        recalculate=recalculate))
+
+    def large_residual_set(self, tol=1e-5, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_large_residual_set"):
+            if not recalculate:
+                return self._large_residual_set
+            else:
+                self.del_component(self._large_residual_set)
+
+        self._large_residual_set = ComponentSet()
+
+        for c in self.model_object.component_data_objects(ctype=Constraint,
+                                                          active=True,
+                                                          descend_into=True):
+            if c.active and value(c.lower - c.body()) > tol:
+                self._large_residual_set.add(c)
+            elif c.active and value(c.body() - c.upper) > tol:
+                self._large_residual_set.add(c)
+
+        return self._large_residual_set
+
+    def number_large_residuals(self, tol=1e-5, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_large_residual_set"):
+            return len(self.large_residual_set(
+                    recalculate=recalculate))
+        else:
+            lr = 0
+            for c in self.model_object.component_data_objects(
+                    ctype=Constraint, active=True, descend_into=True):
+                if c.active and value(c.lower - c.body()) > tol:
+                    lr += 1
+                elif c.active and value(c.body() - c.upper) > tol:
+                    lr += 1
+            return lr
+
+    # -------------------------------------------------------------------------
+    # Reporting methods
+    def report(self,
+               ostream=None,
+               recalculate=None):
+        """
+        Method to print a report of the model statistics for a Pyomo Block
+
+        Args:
+            block - the Block object to report statistics from
+            recalculate - whether model statistics should be recalculated or
+                    not. Options are True, False and None (default). Setting
+                    this to False will save time, but will not capture any
+                    changes made to the model state since the statistics were
+                    generated. If None, will use the global
+                    'always_recalcualte` setting from the ModelStatistics
+                    object.
+
+        Returns:
+            Printed output of the model statistics
+        """
+        if ostream is None:
+            ostream = sys.stdout
+
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        tab = " "*4
+        header = '='*72
+
+        if self.model_object.name == "unknown":
+            name_str = ""
+        else:
+            name_str = f"-  {self.model_object.name}"
+
+        ostream.write("\n")
+        ostream.write(header+"\n")
+        ostream.write(f"Model Statistics  {name_str} \n")
+        ostream.write("\n")
+        ostream.write(f"Degrees of Freedom: "
+                      f"{self.degrees_of_freedom(recalculate=recalculate)} \n")
+        ostream.write("\n")
+        ostream.write(f"Total No. Variables: "
+                      f"{self.number_variables(recalculate=recalculate)} \n")
+        ostream.write(f"{tab}No. Fixed Variables: "
+                      f"{self.number_fixed_variables(recalculate=recalculate)}"
+                      f"\n")
+        ostream.write(
+            f"{tab}No. Unused Variables: "
+            f"{self.number_unused_variables(recalculate=recalculate)} (Fixed):"
+            f"{self.number_fixed_unused_variables(recalculate=recalculate)})"
+            f"\n")
+        nv_alias = self.number_variables_only_in_inequalities
+        nfv_alias = self.number_fixed_variables_only_in_inequalities
+        ostream.write(
+            f"{tab}No. Variables only in Inequalities:"
+            f" {nv_alias(recalculate=recalculate)}"
+            f" (Fixed: {nfv_alias(recalculate=recalculate)}) \n")
+        ostream.write("\n")
+        ostream.write(
+                f"Total No. Constraints: "
+                f"{self.number_total_constraints(recalculate=recalculate)} \n")
+        ostream.write(
+            f"{tab}No. Equality Constraints: "
+            f"{self.number_total_equalities(recalculate=recalculate)}"
+            f" (Deactivated: "
+            f"{self.number_deactivated_equalities(recalculate=recalculate)})"
+            f"\n")
+        ostream.write(
+            f"{tab}No. Inequality Constraints: "
+            f"{self.number_total_inequalities(recalculate=recalculate)}"
+            f" (Deactivated: "
+            f"{self.number_deactivated_inequalities(recalculate=recalculate)})"
+            f"\n")
+        ostream.write("\n")
+        ostream.write(
+            f"No. Objectives: "
+            f"{self.number_total_objectives(recalculate=recalculate)}"
+            f" (Deactivated: "
+            f"{self.number_deactivated_objectives(recalculate=recalculate)})"
+            f"\n")
+        ostream.write("\n")
+        ostream.write(
+            f"No. Blocks: {self.number_total_blocks(recalculate=recalculate)}"
+            f" (Deactivated: "
+            f"{self.number_deactivated_blocks(recalculate=recalculate)}) \n")
+        ostream.write(f"No. Expressions: "
+                      f"{self.number_expressions(recalculate=recalculate)} \n")
+        ostream.write(header+"\n")
+        ostream.write("\n")
