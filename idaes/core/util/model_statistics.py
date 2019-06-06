@@ -25,8 +25,6 @@ from pyomo.dae import DerivativeVar
 from pyomo.core.expr.current import identify_variables
 from pyomo.core.kernel.component_set import ComponentSet
 
-from idaes.core.util.exceptions import ConfigurationError
-
 
 class ModelStatistics():
     """
@@ -118,10 +116,9 @@ class ModelStatistics():
             else:
                 self.del_component(self._total_constraint_set)
 
-        self._total_constraint_set = ComponentSet()
-
-        self._total_constraint_set.update(
-                self._activated_block_component_generator(ctype=Constraint))
+        self._total_constraint_set = ComponentSet(
+                self._activated_block_component_generator(
+                        ctype=Constraint))
 
         return self._total_constraint_set
 
@@ -157,8 +154,8 @@ class ModelStatistics():
             else:
                 self.del_component(self._total_equality_set)
 
-        self._total_equality_set = ComponentSet()
-        self._total_equality_set.update(self.total_equality_generator())
+        self._total_equality_set = ComponentSet(
+                self.total_equality_generator())
 
         return self._total_equality_set
 
@@ -237,8 +234,7 @@ class ModelStatistics():
             else:
                 self.del_component(self._deactivated_equality_set)
 
-        self._deactivated_equality_set = ComponentSet()
-        self._deactivated_equality_set.update(
+        self._deactivated_equality_set = ComponentSet(
                 self.deactivated_equality_generator())
 
         return self._deactivated_equality_set
@@ -272,8 +268,8 @@ class ModelStatistics():
             else:
                 self.del_component(self._total_inequality_set)
 
-        self._total_inequality_set = ComponentSet()
-        self._total_inequality_set.update(self.total_inequality_generator())
+        self._total_inequality_set = ComponentSet(
+                self.total_inequality_generator())
 
         return self._total_inequality_set
 
@@ -351,8 +347,7 @@ class ModelStatistics():
             else:
                 self.del_component(self._deactivated_inequality_set)
 
-        self._deactivated_inequality_set = ComponentSet()
-        self._deactivated_inequality_set.update(
+        self._deactivated_inequality_set = ComponentSet(
                 self.deactivated_inequality_generator())
 
         return self._deactivated_inequality_set
@@ -384,9 +379,7 @@ class ModelStatistics():
             else:
                 self.del_component(self._variables_set)
 
-        self._variables_set = ComponentSet()
-
-        self._variables_set.update(
+        self._variables_set = ComponentSet(
                 self.model_object.component_data_objects(
                         ctype=Var,
                         active=True,
@@ -667,11 +660,9 @@ class ModelStatistics():
             else:
                 self.del_component(self._derivative_variables_set)
 
-        self._derivative_variables_set = ComponentSet()
-
-        self._derivative_variables_set.update(
+        self._derivative_variables_set = ComponentSet(
                 self.model_object.component_data_objects(
-                        ctype=Var,
+                        ctype=DerivativeVar,
                         active=True,
                         descend_into=True))
 
@@ -699,8 +690,7 @@ class ModelStatistics():
             else:
                 self.del_component(self._total_objective_set)
 
-        self._total_objective_set = ComponentSet()
-        self._total_objective_set.update(
+        self._total_objective_set = ComponentSet(
                 self.total_objective_generator())
 
         return self._total_objective_set
@@ -733,8 +723,7 @@ class ModelStatistics():
             else:
                 self.del_component(self._deactivated_objective_set)
 
-        self._deactivated_objective_set = ComponentSet()
-        self._deactivated_objective_set.update(
+        self._deactivated_objective_set = ComponentSet(
                 self.deactivated_objective_generator())
 
         return self._deactivated_objective_set
