@@ -61,9 +61,9 @@ Obtain the source code for IDAES from GitHub:
 
     git clone https://github.com/IDAES/idaes-pse.git
 
-Download and compile the AMPL Solver Library (ASL) and external property functions;
-this is required for steam properties and cubic equations of state. This step is
-optional, but highly recommended.
+Download and compile the AMPL Solver Library (ASL) and compile external property
+functions; this is required for steam properties and cubic equations of state.
+This step is optional, but highly recommended.
 
 .. code-block:: sh
 
@@ -73,9 +73,11 @@ optional, but highly recommended.
     cd solvers
     ./configure
     make
-    export ASL_BUILD=`pwd`/solvers/sys.x86_64.Linux
+    export ASL_BUILD=`pwd`/sys.`uname -m`.`uname -s`
     cd <IDAES source main directory>
     make
+
+.. note:: If you get an error about ``funcadd.h`` not being found, either ``ASL_BUILD`` is not set correctly or the ASL did not compile properly.
 
 Install the required Python packages:
 
@@ -121,4 +123,3 @@ without them.
 The AMPL solver library (ASL) is required, and can be downloaded from
 from https://ampl.com/netlib/ampl/solvers.tgz.  Documentation is available at
 https://ampl.com/resources/hooking-your-solver-to-ampl/.
-
