@@ -51,7 +51,8 @@ RUN ./configure && make
 ENV ASL_BUILD=/home/idaes/solvers/sys.x86_64.Linux
 
 # Install ipopt:
-RUN conda install -c conda-forge ipopt 
+RUN conda install -c conda-forge ipopt=3.12.12=hc6e8484_1002
+# RUN conda install -c conda-forge ipopt
 
 # Install idaes requirements.txt
 USER $NB_UID
