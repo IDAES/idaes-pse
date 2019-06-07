@@ -5,21 +5,18 @@
     </head>
     <body>
         <button onclick="saveFile(this)" id="save_file_button">Save Graph to File</button><br>
-        Load Graph From File: <input type="file" id="load_file_button" name="load file"/>
+        Load Graph From File: <input type="file" id="load_file_button" name="load file"/><br>
+        A sample saved graph is available at idaes/ui/html/demo_graph.json
         <!-- content -->
         <div id="myholder"></div>
 
         <!-- dependencies -->
-        <script src="sources/jquery.js"></script>
+        <script src="jquery.js"></script>
         <script src="lodash.js"></script>
         <script src="backbone.js"></script>
-        <!--<script src="joint.min.js"></script>-->
+        <script src="joint.min.js"></script>
         <!-- code -->
         <script type="module">
-        import joint from './sources/joint.min.js';
-        window.$ = $;
-        window.joint = joint;
-
         var graph = new joint.dia.Graph;
 
         var paper = new joint.dia.Paper({
