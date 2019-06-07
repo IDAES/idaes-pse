@@ -114,6 +114,7 @@ def main():
 
     m.stats = ModelStatistics(m.fs)
     m.stats.report()
+    print(m.stats.number_active_variables_in_deactivated_blocks())
 
     # For testing purposes
     return(m, results)
