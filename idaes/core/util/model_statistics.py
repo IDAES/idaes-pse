@@ -43,13 +43,43 @@ class ModelStatistics():
                                               descend_into=False):
                 yield c
 
+    def recalculate(self):
+        for c in ["_total_block_set",
+                  "_deactivated_block_set",
+                  "_total_constraint_set",
+                  "_total_equality_set",
+                  "_activated_equalities_set",
+                  "_deactivated_equality_set",
+                  "_total_inequality_set",
+                  "_activated_inequalities_set",
+                  "_deactivated_inequalities_set",
+                  "_variables_set",
+                  "_fixed_variables_set",
+                  "_variables_in_activated_constraints_set",
+                  "_variables_in_activated_equalities_set",
+                  "_variables_in_activated_inequalities_set",
+                  "_variables_only_in_inequalities_set",
+                  "_fixed_variables_in_activated_equalities_set",
+                  "_fixed_variables_only_in_inequalities_set",
+                  "_unused_variables_set",
+                  "_fixed_unused_variables_set",
+                  "_derivative_variables_set",
+                  "_total_objective_set",
+                  "_deactivated_objective_set",
+                  "_expressions_set",
+                  "_large_residual_set"]:
+            try:
+                self.del_component(getattr(self, c))
+            except AttributeError:
+                pass
+
     # -------------------------------------------------------------------------
     # Block methods
     def total_block_set(self, recalculate=None):
         if recalculate is None:
             recalculate = self.always_recalculate
 
-        if hasattr(self._total_block_set):
+        if hasattr(self, "_total_block_set"):
             if not recalculate:
                 return self._total_block_set
             else:
@@ -182,7 +212,7 @@ class ModelStatistics():
         if recalculate is None:
             recalculate = self.always_recalculate
 
-        if hasattr(self._activated_equalities_set):
+        if hasattr(self, "_activated_equalities_set"):
             if not recalculate:
                 return self._activated_equalities_set
             else:
@@ -190,7 +220,7 @@ class ModelStatistics():
 
         self._activated_equalities_set = ComponentSet()
 
-        if hasattr(self, "_equalities_set"):
+        if hasattr(self, "_total_equality_set"):
             # Make set of activated equalities from this
             self._activated_equalities_set.update(
                     ec for ec in self._equalities_set if ec.active)
@@ -295,7 +325,7 @@ class ModelStatistics():
         if recalculate is None:
             recalculate = self.always_recalculate
 
-        if hasattr(self._activated_inequalities_set):
+        if hasattr(self, "_activated_inequalities_set"):
             if not recalculate:
                 return self._activated_inequalities_set
             else:
@@ -546,32 +576,6 @@ class ModelStatistics():
         return len(self.variables_only_in_inequalities(
                     recalculate=recalculate))
 
-    def fixed_variables_only_in_inequalities(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-
-        if hasattr(self, "_fixed_variables_only_in_inequalities_set"):
-            if not recalculate:
-                return self._fixed_variables_only_in_inequalities_set
-            else:
-                self.del_component(
-                        self._fixed_variables_only_in_inequalities_set)
-
-        self._fixed_variables_only_in_inequalities_set = ComponentSet()
-
-        for v in self.variables_only_in_inequalities(recalculate=recalculate):
-            if v.fixed:
-                self._fixed_variables_only_in_inequalities_set.add(v)
-
-        return self._fixed_variables_only_in_inequalities_set
-
-    def number_fixed_variables_only_in_inequalities(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-
-        return len(self.fixed_variables_only_in_inequalities(
-                    recalculate=recalculate))
-
     # -------------------------------------------------------------------------
     # Fixed Variables in Constraints
     def fixed_variables_in_activated_equalities_set(self, recalculate=None):
@@ -600,6 +604,32 @@ class ModelStatistics():
 
         return len(self.fixed_variables_in_activated_equalities_set(
                 recalculate=recalculate))
+
+    def fixed_variables_only_in_inequalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        if hasattr(self, "_fixed_variables_only_in_inequalities_set"):
+            if not recalculate:
+                return self._fixed_variables_only_in_inequalities_set
+            else:
+                self.del_component(
+                        self._fixed_variables_only_in_inequalities_set)
+
+        self._fixed_variables_only_in_inequalities_set = ComponentSet()
+
+        for v in self.variables_only_in_inequalities(recalculate=recalculate):
+            if v.fixed:
+                self._fixed_variables_only_in_inequalities_set.add(v)
+
+        return self._fixed_variables_only_in_inequalities_set
+
+    def number_fixed_variables_only_in_inequalities(self, recalculate=None):
+        if recalculate is None:
+            recalculate = self.always_recalculate
+
+        return len(self.fixed_variables_only_in_inequalities(
+                    recalculate=recalculate))
 
     # -------------------------------------------------------------------------
     # Unused and un-Transformed Variables
