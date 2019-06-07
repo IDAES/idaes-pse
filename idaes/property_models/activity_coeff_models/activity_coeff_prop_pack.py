@@ -60,7 +60,6 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
-from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.ui.report import degrees_of_freedom
 
@@ -83,7 +82,7 @@ class ActivityCoeffParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare("activity_coeff_model", ConfigValue(
-        default=None,
+        default="Ideal",
         domain=In(['Ideal', 'NRTL', 'Wilson']),
         description="Flag indicating the activity coefficient model",
         doc="""Flag indicating the activity coefficient model to be used
