@@ -84,12 +84,12 @@ class ActivityCoeffParameterData(PhysicalParameterBlock):
 
     CONFIG.declare("activity_coeff_model", ConfigValue(
         default=None,
-        domain=In([None, 'NRTL', 'Wilson']),
+        domain=In(['Ideal', 'NRTL', 'Wilson']),
         description="Flag indicating the activity coefficient model",
         doc="""Flag indicating the activity coefficient model to be used
 for the non-ideal liquid, and thus corresponding constraints  should be
 included,
-**default** - None (i.e. ideal).
+**default** - Ideal liquid.
 **Valid values:** {
 **'NRTL'** - Non Random Two Liquid Model,
 **'Wilson'** - Wilson Liquid Model,}"""))
@@ -307,7 +307,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                     pass
                 # Deactivate activity coefficient constraints
                 if blk[k].config.parameters.config.activity_coeff_model \
-                        is not None:
+                        != "Ideal":
                     blk[k].eq_Gij_coeff.deactivate()
                     blk[k].eq_A.deactivate()
                     blk[k].eq_B.deactivate()
@@ -357,7 +357,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                         ('Vap', 'Liq')):
                 blk[k].eq_phase_equilibrium.activate()
                 if blk[k].config.parameters.config.activity_coeff_model \
-                        is not None:
+                        != "Ideal":
                     # assume ideal and solve
                     blk[k].activity_coeff_comp.fix(1)
                 blk[k].eq_sum_mol_frac.activate()
@@ -374,7 +374,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                              "{} failed".format(blk.name))
 
         if blk[k].config.parameters.config.activity_coeff_model \
-                is not None:
+                != "Ideal":
             for k in blk.keys():
                 blk[k].eq_Gij_coeff.activate()
                 blk[k].eq_A.activate()
@@ -837,7 +837,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def _fug_liq(self):
         def rule_fug_liq(self, i):
             if self.config.parameters.config.\
-                    activity_coeff_model is None:
+                    activity_coeff_model == "Ideal":
                 return self.mole_frac_phase['Liq', i] * \
                     self.pressure_sat[i]
             else:
@@ -1098,7 +1098,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                              rule=rule_psat_bubble)
 
             def rule_temp_bubble(self):
-                if self.config.parameters.config.activity_coeff_model is None:
+                if self.config.parameters.config.activity_coeff_model == "Ideal":
 
                     return sum(self.mole_frac[i] *
                                self._p_sat_bubbleT[i]
@@ -1237,7 +1237,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                           rule=rule_psat_dew)
 
             def rule_temp_dew(self):
-                if self.config.parameters.config.activity_coeff_model is None:
+                if self.config.parameters.config.activity_coeff_model == "Ideal":
                     return self.pressure * \
                         sum(self.mole_frac[i] /
                             self._p_sat_dewT[i]
