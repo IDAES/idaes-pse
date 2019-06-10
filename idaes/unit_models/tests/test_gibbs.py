@@ -23,7 +23,7 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models.gibbs_reactor import GibbsReactor
 from idaes.property_models.examples.methane_combustion_ideal import (
     MethaneCombustionParameterBlock)
-from idaes.core.util.model_statistics import calculate_degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
@@ -87,7 +87,7 @@ def test_initialize_temperature():
 
     m.fs.gibbs.outlet.temperature[0].fix(2844.38)
 
-    assert calculate_degrees_of_freedom(m) == 0
+    assert degrees_of_freedom(m) == 0
 
     m.fs.gibbs.initialize(outlvl=5,
                           optarg={'tol': 1e-6},
@@ -147,7 +147,7 @@ def test_initialize_heat_duty():
 
     m.fs.gibbs.heat_duty.fix(161882.303661)
 
-    assert calculate_degrees_of_freedom(m) == 0
+    assert degrees_of_freedom(m) == 0
 
     m.fs.gibbs.initialize(outlvl=5,
                           optarg={'tol': 1e-6},

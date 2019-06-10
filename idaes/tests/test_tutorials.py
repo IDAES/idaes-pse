@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import SolverFactory
 from pyomo.opt import SolverStatus, TerminationCondition
-from idaes.core.util.model_statistics import calculate_degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import file to be tested
 from os.path import abspath, dirname, join
@@ -42,7 +42,7 @@ def test_tutorial_1():
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
 
-    assert calculate_degrees_of_freedom(m) == 0
+    assert degrees_of_freedom(m) == 0
 
     assert (m.fs.Tank2.outlet.flow_vol[0].value ==
             pytest.approx(1.0, abs=1e-2))
@@ -71,7 +71,7 @@ def test_tutorial_2():
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
 
-    assert calculate_degrees_of_freedom(m) == 1
+    assert degrees_of_freedom(m) == 1
 
     assert (m.fs.Tank2.outlet.flow_vol[0].value ==
             pytest.approx(1.0, abs=1e-2))
@@ -103,7 +103,7 @@ def test_tutorial_3():
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
 
-    assert calculate_degrees_of_freedom(m) == 0
+    assert degrees_of_freedom(m) == 0
 
     assert m.fs.time.last() == 20.0
     assert len(m.fs.time) == 51

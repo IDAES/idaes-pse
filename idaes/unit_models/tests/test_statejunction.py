@@ -21,7 +21,7 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models.statejunction import StateJunction
 from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)
-from idaes.core.util.model_statistics import calculate_degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
@@ -58,7 +58,7 @@ def test_build():
     assert hasattr(m.fs.sj.outlet, "temperature")
     assert hasattr(m.fs.sj.outlet, "pressure")
 
-    assert calculate_degrees_of_freedom(m) == 0
+    assert degrees_of_freedom(m) == 0
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")

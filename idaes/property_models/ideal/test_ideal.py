@@ -20,7 +20,7 @@ from pyomo.environ import ConcreteModel, SolverFactory, TerminationCondition, \
 
 from idaes.core import FlowsheetBlock
 from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
-from idaes.core.util.model_statistics import calculate_degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
@@ -95,7 +95,7 @@ def test_setInputs_inlet_state_blocks():
     m.fs.state_block_vl.mole_frac["benzene"].fix(0.5)
     m.fs.state_block_vl.mole_frac["toluene"].fix(0.5)
 
-    assert calculate_degrees_of_freedom(m.fs.state_block_vl) == 0
+    assert degrees_of_freedom(m.fs.state_block_vl) == 0
 
     # liquid only
     m.fs.state_block_l.flow_mol.fix(1)
@@ -104,7 +104,7 @@ def test_setInputs_inlet_state_blocks():
     m.fs.state_block_l.mole_frac["benzene"].fix(0.5)
     m.fs.state_block_l.mole_frac["toluene"].fix(0.5)
 
-    assert calculate_degrees_of_freedom(m.fs.state_block_l) == 0
+    assert degrees_of_freedom(m.fs.state_block_l) == 0
 
     # vapor only
     m.fs.state_block_v.flow_mol.fix(1)
@@ -113,7 +113,7 @@ def test_setInputs_inlet_state_blocks():
     m.fs.state_block_v.mole_frac["benzene"].fix(0.5)
     m.fs.state_block_v.mole_frac["toluene"].fix(0.5)
 
-    assert calculate_degrees_of_freedom(m.fs.state_block_v) == 0
+    assert degrees_of_freedom(m.fs.state_block_v) == 0
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
@@ -241,7 +241,7 @@ def test_setInputs_outlet_state_blocks():
     m.fs1.state_block_vl.pressure.fix(101325)
     m.fs1.state_block_vl.mole_frac["benzene"].fix(0.5)
 
-    assert calculate_degrees_of_freedom(m.fs.state_block_vl) == 0
+    assert degrees_of_freedom(m.fs.state_block_vl) == 0
 
     # liquid only
     m.fs1.state_block_l.flow_mol.fix(1)
@@ -249,7 +249,7 @@ def test_setInputs_outlet_state_blocks():
     m.fs1.state_block_l.pressure.fix(101325)
     m.fs1.state_block_l.mole_frac["benzene"].fix(0.5)
 
-    assert calculate_degrees_of_freedom(m.fs.state_block_l) == 0
+    assert degrees_of_freedom(m.fs.state_block_l) == 0
 
     # vapor only
     m.fs1.state_block_v.flow_mol.fix(1)
@@ -257,4 +257,4 @@ def test_setInputs_outlet_state_blocks():
     m.fs1.state_block_v.pressure.fix(101325)
     m.fs1.state_block_v.mole_frac["benzene"].fix(0.5)
 
-    assert calculate_degrees_of_freedom(m.fs.state_block_v) == 0
+    assert degrees_of_freedom(m.fs.state_block_v) == 0

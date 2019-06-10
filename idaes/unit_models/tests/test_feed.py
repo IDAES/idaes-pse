@@ -21,7 +21,7 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models.feed import Feed
 from idaes.property_models.examples.saponification_thermo import (
                         SaponificationParameterBlock)
-from idaes.core.util.model_statistics import calculate_degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
@@ -76,7 +76,7 @@ def test_initialize():
     m.fs.feed.temperature.fix(303.15)
     m.fs.feed.pressure.fix(101325.0)
 
-    assert calculate_degrees_of_freedom(m) == 0
+    assert degrees_of_freedom(m) == 0
 
     m.fs.feed.initialize(outlvl=5,
                          optarg={'tol': 1e-6})

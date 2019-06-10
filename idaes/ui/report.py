@@ -15,7 +15,7 @@ from pyomo.core.expr.current import identify_variables
 from pyomo.core.kernel.component_set import ComponentSet
 from pyomo.common.deprecation import deprecated
 
-from idaes.core.util.model_statistics import calculate_degrees_of_freedom
+import idaes.core.util.model_statistics as ms
 
 
 @deprecated(
@@ -129,13 +129,13 @@ def count_equality_constraints(blk):
 
 
 @deprecated(
-        msg="This function has been replaced by calculate_degrees_of_freedom "
+        msg="This function has been replaced by degrees_of_freedom "
         "in idaes.core.util.model_statistics", version='1.1')
 def degrees_of_freedom(blk):
     """
     Return the degrees of freedom.
     """
-    return calculate_degrees_of_freedom(blk)
+    return ms.degrees_of_freedom(blk)
 
 
 @deprecated(

@@ -22,7 +22,7 @@ from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType)
 from idaes.unit_models.flash import Flash as FL
 from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
-from idaes.core.util.model_statistics import calculate_degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
@@ -67,7 +67,7 @@ def test_setInputs():
     m.fs.flash.heat_duty.fix(0)
     m.fs.flash.deltaP.fix(0)
 
-    assert calculate_degrees_of_freedom(m) == 0
+    assert degrees_of_freedom(m) == 0
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")

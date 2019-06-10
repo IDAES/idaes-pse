@@ -34,7 +34,7 @@ from idaes.unit_models.separator import (Separator,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 
-from idaes.core.util.model_statistics import calculate_degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)
 
@@ -906,7 +906,7 @@ def test_initialize_total_flow():
 
     m.fs.sb.split_fraction[0, "outlet_1"].fix(0.2)
 
-    assert calculate_degrees_of_freedom(m) == 0
+    assert degrees_of_freedom(m) == 0
 
     m.fs.sb.initialize(outlvl=5, optarg={'tol': 1e-6})
 
