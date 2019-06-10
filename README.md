@@ -55,7 +55,7 @@ After you install, you can run tests to make sure everything is working. We use 
 To run tests against the core modules, unit models and DMF, and generate a coverage report, run tests in `idaes/` with the following command:
 
 ```
-$ pytest  # These are not guarenteed to all succeed...
+$ pytest  # Please note some tests may be skipped based on solver availability. 
 ```
 
 If there are errors, or you are having trouble, you can use our [issue tracker on Github](https://github.com/IDAES/idaes/issues) to look for other users experiencing similar problems, or to report a new bug.
