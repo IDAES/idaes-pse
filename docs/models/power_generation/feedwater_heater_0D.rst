@@ -1,8 +1,8 @@
 Feedwater Heater (0D)
 =====================
 
-.. index::
-  pair: idaes.unit_models.power_generation.feedwater_heater_0D;FWH0D
+.. .. index::
+..    pair: idaes.unit_models.power_generation.feedwater_heater_0D;FWH0D
 
 .. module:: idaes.unit_models.power_generation.feedwater_heater_0D
 

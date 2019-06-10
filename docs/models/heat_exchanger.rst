@@ -1,8 +1,8 @@
 HeatExchanger (0D)
 ==================
 
-.. index::
-  pair: idaes.unit_models.heat_exchanger;HeatExchanger
+.. .. index::
+..   pair: idaes.unit_models.heat_exchanger;HeatExchanger
 
 .. module:: idaes.unit_models.heat_exchanger
 
