@@ -86,14 +86,3 @@ The ``area`` and ``overall_heat_transfer_coefficient`` should be fixed or constr
 
 See :class:`FWH0D` and :class:`FWH0DData` for full Python class details.
 
-.. FWH0D Class
-.. -----------
-..
-.. .. autoclass:: FWH0D
-.. :members:
-
-.. FWH0DData Class
-.. ---------------
-..
-.. .. autoclass:: FWH0DData
-...  :members:
