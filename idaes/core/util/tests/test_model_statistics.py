@@ -382,47 +382,40 @@ def test_number_expressions(m):
     assert number_expressions(m) == 3
 
 
-## -------------------------------------------------------------------------
-## Other model statistics
-#def degrees_of_freedom(block):
-#    return (number_variables_in_activated_equalities(block) -
-#            number_fixed_variables_in_activated_equalities(block) -
-#            number_activated_equalities(block))
-#
-#
-#def large_residuals_set(block, tol=1e-5):
-#    large_residuals_set = ComponentSet()
-#    for c in block.component_data_objects(
-#            ctype=Constraint, active=True, descend_into=True):
-#        if c.active and value(c.lower - c.body()) > tol:
-#            large_residuals_set.add(c)
-#        elif c.active and value(c.body() - c.upper) > tol:
-#            large_residuals_set.add(c)
-#    return large_residuals_set
-#
-#
-#def number_large_residuals(block, tol=1e-5):
-#    lr = 0
-#    for c in block.component_data_objects(
-#            ctype=Constraint, active=True, descend_into=True):
-#        if c.active and value(c.lower - c.body()) > tol:
-#            lr += 1
-#        elif c.active and value(c.body() - c.upper) > tol:
-#            lr += 1
-#    return lr
-#
-#
-#def active_variables_in_deactivated_blocks_set(block):
-#    var_set = ComponentSet()
-#    block_set = activated_blocks_set(block)
-#    for v in variables_in_activated_constraints_set(block):
-#        if v.parent_block() not in block_set:
-#            var_set.add(v)
-#    return var_set
-#
-#
-#def number_active_variables_in_deactivated_blocks(block):
-#    return len(active_variables_in_deactivated_blocks_set(block))
+# -------------------------------------------------------------------------
+# Other model statistics
+def test_degrees_of_freedom(m):
+    assert degrees_of_freedom(m) == 10
+
+
+def test_large_residuals_set(m):
+    # Initialize derivative var values so no errors occur
+    for v in m.dv.keys():
+        m.dv[v] = 0
+    assert len(large_residuals_set(m)) == 2
+
+
+def test_number_large_residuals(m):
+    # Initialize derivative var values so no errors occur
+    for v in m.dv.keys():
+        m.dv[v] = 0
+    assert number_large_residuals(m) == 2
+
+
+def test_active_variables_in_deactivated_blocks_set(m):
+    assert len(active_variables_in_deactivated_blocks_set(m)) == 0
+
+    m.c = Constraint(expr=m.b1.v1 >= 2)
+
+    assert len(active_variables_in_deactivated_blocks_set(m)) == 1
+
+
+def test_number_active_variables_in_deactivated_blocks(m):
+    assert number_active_variables_in_deactivated_blocks(m) == 0
+
+    m.c = Constraint(expr=m.b1.v1 >= 2)
+
+    assert number_active_variables_in_deactivated_blocks(m) == 1
 
 
 # -------------------------------------------------------------------------
