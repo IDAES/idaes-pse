@@ -25,718 +25,537 @@ from pyomo.dae import DerivativeVar
 from pyomo.core.expr.current import identify_variables
 from pyomo.core.kernel.component_set import ComponentSet
 
-from idaes.core.util.exceptions import ConfigurationError
+
+# -------------------------------------------------------------------------
+# Block methods
+def total_blocks_set(block):
+    total_blocks_set = ComponentSet(
+            block.component_data_objects(
+                    ctype=Block, active=None, descend_into=True))
+    total_blocks_set.add(block)
+    return total_blocks_set
 
 
-class ModelStatistics():
-    """
-    Creates a model statistics object for quantifying and reporting model
-    statistics.
-    """
-    def __init__(self, block, always_recalculate=False):
-        self.model_object = block
-        self.always_recalculate = always_recalculate
+def number_total_blocks(block):
+    b = 1  # Start at 1 to include main model
+    for o in block.component_data_objects(
+                ctype=Block, active=None, descend_into=True):
+        b += 1
+    return b
 
-        if self.always_recalculate not in [True, False]:
-            raise ConfigurationError(
-                    "always_recalculate argument must be True or False.")
 
-    def _activated_block_component_generator(self, ctype):
-        for b in self.model_object.component_data_objects(
+def activated_blocks_set(block):
+    return ComponentSet(block.component_data_objects(
+            ctype=Block, active=True, descend_into=True))
+
+
+def number_activated_blocks(block):
+    b = 0
+    for o in block.component_data_objects(
                     ctype=Block, active=True, descend_into=True):
-            for c in b.component_data_objects(ctype=ctype,
-                                              active=None,
-                                              descend_into=False):
-                yield c
+        b += 1
+    return b
 
-    def recalculate(self):
-        for c in ["_total_blocks_set",
-                  "_activated_blocks_set",
-                  "_deactivated_blocks_set",
-                  "_total_constraints_set",
-                  "_total_equalities_set",
-                  "_activated_equalities_set",
-                  "_deactivated_equalities_set",
-                  "_total_inequalities_set",
-                  "_activated_inequalities_set",
-                  "_deactivated_inequalities_set",
-                  "_variables_set",
-                  "_fixed_variables_set",
-                  "_variables_in_activated_constraints_set",
-                  "_variables_in_activated_equalities_set",
-                  "_variables_in_activated_inequalities_set",
-                  "_variables_only_in_inequalities_set",
-                  "_fixed_variables_in_activated_equalities_set",
-                  "_fixed_variables_only_in_inequalities_set",
-                  "_unused_variables_set",
-                  "_fixed_unused_variables_set",
-                  "_derivative_variables_set",
-                  "_total_objectives_set",
-                  "_deactivated_objectives_set",
-                  "_expressions_set",
-                  "_large_residuals_set",
-                  "_active_variables_in_deactivated_blocks_set"]:
-            try:
-                self.del_component(getattr(self, c))
-            except AttributeError:
-                pass
 
-    # -------------------------------------------------------------------------
-    # Block methods
-    def total_blocks_set(self, recalculate=None):
-        if self._recalc_item("_total_blocks_set",
-                             recalculate=recalculate):
-            self._total_blocks_set = ComponentSet(
-                    self.model_object.component_data_objects(
-                            ctype=Block, active=None, descend_into=True))
-            self._total_blocks_set.add(self.model_object)
-        return self._total_blocks_set
+def deactivated_blocks_set(block):
+    return ComponentSet(block.component_data_objects(
+            ctype=Block, active=False, descend_into=True))
 
-    def number_total_blocks(self, recalculate=None):
-        b = self._recalc_num("total_blocks_set", recalculate=recalculate)
-        if b is None:
-            b = 1  # Start at 1 to include main model
-            for o in self.model_object.component_data_objects(
-                        ctype=Block, active=None, descend_into=True):
-                b += 1
-        return b
 
-    def activated_blocks_set(self, recalculate=None):
-        if self._recalc_item("_activated_blocks_set",
-                             recalculate=recalculate):
-            self._activated_blocks_set = ComponentSet(
-                    self.model_object.component_data_objects(
-                            ctype=Block, active=True, descend_into=True))
-        return self._activated_blocks_set
+def number_deactivated_blocks(block):
+    b = 0
+    for o in block.component_data_objects(
+                    ctype=Block, active=False, descend_into=True):
+        b += 1
+    return b
 
-    def number_activated_blocks(self, recalculate=None):
-        b = self._recalc_num("activated_blocks_set", recalculate=recalculate)
-        if b is None:
-            b = 0
-            for o in self.model_object.component_data_objects(
-                        ctype=Block, active=True, descend_into=True):
-                b += 1
-        return b
 
-    def deactivated_blocks_set(self, recalculate=None):
-        if self._recalc_item("_deactivated_blocks_set",
-                             recalculate=recalculate):
-            self._deactivated_blocks_set = ComponentSet(
-                    self.model_object.component_data_objects(
-                            ctype=Block, active=False, descend_into=True))
-        return self._deactivated_blocks_set
+# -------------------------------------------------------------------------
+# Basic Constraint methods
+def total_constraints_set(block):
+    return ComponentSet(activated_block_component_generator(
+            block, ctype=Constraint))
 
-    def number_deactivated_blocks(self, recalculate=None):
-        b = self._recalc_num("deactivated_blocks_set", recalculate=recalculate)
-        if b is None:
-            b = 0
-            for o in self.model_object.component_data_objects(
-                        ctype=Block, active=False, descend_into=True):
-                b += 1
-        return b
 
-    # -------------------------------------------------------------------------
-    # Basic Constraint methods
-    def total_constraints_set(self, recalculate=None):
-        if self._recalc_item("_total_constraints_set",
-                             recalculate=recalculate):
-            self._total_constraints_set = ComponentSet(
-                    self._activated_block_component_generator(
-                            ctype=Constraint))
-        return self._total_constraints_set
+def number_total_constraints(block):
+    tc = 0
+    for c in activated_block_component_generator(block, ctype=Constraint):
+        tc += 1
+    return tc
 
-    def number_total_constraints(self, recalculate=None):
-        tc = self._recalc_num("total_constraints_set",
-                              recalculate=recalculate)
-        if tc is None:
-            tc = 0
-            for c in self._activated_block_component_generator(
-                    ctype=Constraint):
-                tc += 1
-        return tc
 
-    # -------------------------------------------------------------------------
-    # Equality Constraints
-    def total_equalities_generator(self):
-        for c in self._activated_block_component_generator(ctype=Constraint):
-            if (c.upper is not None and
-                    c.lower is not None and
-                    c.upper == c.lower):
-                yield c
+def activated_constraints_generator(block):
+    for c in activated_block_component_generator(block, ctype=Constraint):
+        if c.active:
+            yield c
 
-    def total_equalities_set(self, recalculate=None):
-        if self._recalc_item("_total_equalities_set",
-                             recalculate=recalculate):
-            self._total_equalities_set = ComponentSet(
-                    self.total_equalities_generator())
-        return self._total_equalities_set
 
-    def number_total_equalities(self, recalculate=None):
-        tc = self._recalc_num("total_equalities_set",
-                              recalculate=recalculate)
-        if tc is None:
-            tc = 0
-            for c in self.total_equalities_generator():
-                tc += 1
-        return tc
+def activated_constraints_set(block):
+    return ComponentSet(activated_constraints_generator(block))
 
-    def activated_equalities_generator(self):
-        for c in self.model_object.component_data_objects(
-                    Constraint, active=True, descend_into=True):
-            if (c.upper is not None and c.lower is not None and
-                    c.upper == c.lower):
-                yield c
 
-    def activated_equalities_set(self, recalculate=None):
-        if self._recalc_item("_activated_equalities_set",
-                             recalculate=recalculate):
-            self._activated_equalities_set = ComponentSet()
-            if hasattr(self, "_total_equalities_set"):
-                # Make set of activated equalities from this
-                self._activated_equalities_set.update(
-                        ec for ec in self._equalities_set if ec.active)
-            elif hasattr(self, "_total_constraints_set"):
-                # Make set of activated equalities from this
-                for c in self._total_constraints_set:
-                    if (c.upper is not None and c.lower is not None and
-                            c.upper == c.lower and c.active):
-                        self._activated_equalities_set.add(c)
-            else:
-                # Build set from generator
-                for c in self.activated_equalities_generator():
-                    self._activated_equalities_set.add(c)
-        return self._activated_equalities_set
+def number_activated_constraints(block):
+    tc = 0
+    for c in activated_constraints_generator(block):
+        tc += 1
+    return tc
 
-    def number_activated_equalities(self, recalculate=None):
-        tc = self._recalc_num("activated_equalities_set",
-                              recalculate=recalculate)
-        if tc is None:
-            tc = 0
-            for o in self.activated_equalities_generator():
-                tc += 1
-        return tc
 
-    def deactivated_equalities_generator(self):
-        for c in self.total_equalities_generator():
-            if not c.active:
-                yield c
+def deactivated_constraints_generator(block):
+    for c in activated_block_component_generator(block, ctype=Constraint):
+        if not c.active:
+            yield c
 
-    def deactivated_equalities_set(self, recalculate=None):
-        if self._recalc_item("_deactivated_equalities_set",
-                             recalculate=recalculate):
-            self._deactivated_equalities_set = ComponentSet(
-                    self.deactivated_equalities_generator())
-        return self._deactivated_equalities_set
 
-    def number_deactivated_equalities(self, recalculate=None):
-        tc = self._recalc_num("deactivated_equalities_set",
-                              recalculate=recalculate)
-        if tc is None:
-            tc = 0
-            for c in self.deactivated_equalities_generator():
-                tc += 1
-        return tc
+def deactivated_constraints_set(block):
+    return ComponentSet(deactivated_constraints_generator(block))
 
-    # -------------------------------------------------------------------------
-    # Inequality Constraints
-    def total_inequalities_generator(self):
-        for c in self._activated_block_component_generator(ctype=Constraint):
-            if c.upper is None or c.lower is None:
-                yield c
 
-    def total_inequalities_set(self, recalculate=None):
-        if self._recalc_item("_total_inequalitiy_set",
-                             recalculate=recalculate):
-            self._total_inequalities_set = ComponentSet(
-                    self.total_inequalities_generator())
-        return self._total_inequalities_set
+def number_deactivated_constraints(block):
+    tc = 0
+    for c in deactivated_constraints_generator(block):
+        tc += 1
+    return tc
 
-    def number_total_inequalities(self, recalculate=None):
-        c = self._recalc_num("total_inequalities_set",
-                             recalculate=recalculate)
-        if c is None:
-            c = 0
-            for o in self.total_inequalities_generator():
-                c += 1
-        return c
 
-    def activated_inequalities_generator(self):
-        for c in self.model_object.component_data_objects(
-                    Constraint, active=True, descend_into=True):
-            if c.upper is None or c.lower is None:
-                yield c
+# -------------------------------------------------------------------------
+# Equality Constraints
+def total_equalities_generator(block):
+    for c in activated_block_component_generator(block, ctype=Constraint):
+        if (c.upper is not None and
+                c.lower is not None and
+                c.upper == c.lower):
+            yield c
 
-    def activated_inequalities_set(self, recalculate=None):
-        if self._recalc_item("_activated_inequalities_set",
-                             recalculate=recalculate):
-            self._activated_inequalities_set = ComponentSet()
-            if hasattr(self, "_inequalities_set"):
-                # Make set of activated inequalities from this
-                self._activated_inequalities_set.update(
-                        ec for ec in self.activated_inequalities_set(
-                                recalculate=recalculate) if ec.active)
-            elif hasattr(self, "_total_constraints_set"):
-                # Make set of activated inequalities from this
-                for c in self.total_constraints_set(recalculate=recalculate):
-                    if (c.upper is None or c.lower) is None and c.active:
-                        self._activated_inequalities_set.add(c)
-            else:
-                # Build set from generator
-                for c in self.activated_inequalities_generator():
-                    self._activated_inequalities_set.add(c)
-        return self._activated_inequalities_set
 
-    def number_activated_inequalities(self, recalculate=None):
-        c = self._recalc_num("activated_inequalities_set",
-                             recalculate=recalculate)
-        if c is None:
-            c = 0
-            for o in self.activated_inequalities_generator():
-                c += 1
-        return c
+def total_equalities_set(block):
+    return ComponentSet(total_equalities_generator(block))
 
-    def deactivated_inequalities_generator(self):
-        for c in self.total_inequalities_generator():
-            if not c.active:
-                yield c
 
-    def deactivated_inequalities_set(self, recalculate=None):
-        if self._recalc_item("_deactivated_inequalities_set",
-                             recalculate=recalculate):
-            self._deactivated_inequalities_set = ComponentSet(
-                    self.deactivated_inequalities_generator())
-        return self._deactivated_inequalities_set
+def number_total_equalities(block):
+    tc = 0
+    for c in total_equalities_generator(block):
+        tc += 1
+    return tc
 
-    def number_deactivated_inequalities(self, recalculate=None):
-        c = self._recalc_num("deactivated_inequalities_set",
-                             recalculate=recalculate)
-        if c is None:
-            c = 0
-            for o in self.deactivated_inequalities_generator():
-                c += 1
-        return c
 
-    # -------------------------------------------------------------------------
-    # Basic Variable Methods
-    # Always use ComponentSets for Vars to avoid duplication of References
-    # i.e. number methods should alwys use the ComponentSet, not a generator
-    def variables_set(self, recalculate=None):
-        if self._recalc_item("_variables_set", recalculate=recalculate):
-            self._variables_set = ComponentSet(
-                    self.model_object.component_data_objects(
-                            ctype=Var,
-                            active=True,
-                            descend_into=True))
-        return self._variables_set
+def activated_equalities_generator(block):
+    for c in block.component_data_objects(
+                Constraint, active=True, descend_into=True):
+        if (c.upper is not None and c.lower is not None and
+                c.upper == c.lower):
+            yield c
 
-    def number_variables(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.variables_set(recalculate=recalculate))
 
-    def fixed_variables_set(self, recalculate=None):
-        if self._recalc_item("_fixed_variables_set", recalculate=recalculate):
-            self._fixed_variables_set = ComponentSet()
-            if hasattr(self, "_variables_set"):
-                for v in self.variables_set(recalculate=recalculate):
-                    if v.fixed:
-                        self._fixed_variables_set.add(v)
-            else:
-                for v in self.model_object.component_data_objects(
-                            ctype=Var,
-                            active=True,
-                            descend_into=True):
-                    if v.fixed:
-                        self._fixed_variables_set.add(v)
-        return self._fixed_variables_set
+def activated_equalities_set(block):
+    return ComponentSet(activated_equalities_generator(block))
 
-    def number_fixed_variables(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.fixed_variables_set(recalculate=recalculate))
 
-    # -------------------------------------------------------------------------
-    # Variables in Constraints
-    def variables_in_activated_constraints_set(self, recalculate=None):
-        if self._recalc_item("_variables_in_activated_constraints_set",
-                             recalculate=recalculate):
-            self._variables_in_activated_constraints_set = ComponentSet()
-            if hasattr(self, "_total_constraints_set"):
-                cs = self.total_constraints_set(recalculate=recalculate)
-            else:
-                cs = self.model_object.component_data_objects(
-                        ctype=Constraint,
-                        active=True,
-                        descend_into=True)
-            for c in cs:
-                for v in identify_variables(c.body):
-                    self._variables_in_activated_constraints_set.add(v)
-        return self._variables_in_activated_constraints_set
+def number_activated_equalities(block):
+    tc = 0
+    for o in activated_equalities_generator(block):
+        tc += 1
+    return tc
 
-    def number_variables_in_activated_constraints(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.variables_in_activated_constraints_set(
-                recalculate=recalculate))
 
-    def variables_in_activated_equalities_set(self, recalculate=None):
-        if self._recalc_item("_variables_in_activated_equalities_set",
-                             recalculate=recalculate):
-            self._variables_in_activated_equalities_set = ComponentSet()
-            if hasattr(self, "_activated_equalities_set"):
-                ec = self.activated_equalities_set(recalculate=recalculate)
-            else:
-                ec = self.activated_equalities_generator()
-            for c in ec:
-                for v in identify_variables(c.body):
-                    self._variables_in_activated_equalities_set.add(v)
-        return self._variables_in_activated_equalities_set
+def deactivated_equalities_generator(block):
+    for c in total_equalities_generator(block):
+        if not c.active:
+            yield c
 
-    def number_variables_in_activated_equalities(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.variables_in_activated_equalities_set(
-                        recalculate=recalculate))
 
-    def variables_in_activated_inequalities_set(self, recalculate=None):
-        if self._recalc_item("_variables_in_activated_inequalities_set",
-                             recalculate=recalculate):
-            self._variables_in_activated_inequalities_set = ComponentSet()
-            if hasattr(self, "_activated_inequalities_set"):
-                ec = self.activated_inequalities_set(recalculate=recalculate)
-            else:
-                ec = self.activated_inequalities_generator()
-            for c in ec:
-                for v in identify_variables(c.body):
-                    self._variables_in_activated_inequalities_set.add(v)
-        return self._variables_in_activated_inequalities_set
+def deactivated_equalities_set(block):
+    return ComponentSet(deactivated_equalities_generator(block))
 
-    def number_variables_in_activated_inequalities(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.variables_in_activated_inequalities_set(
-                        recalculate=recalculate))
 
-    def variables_only_in_inequalities(self, recalculate=None):
-        if self._recalc_item("_variables_only_in_inequalities_set",
-                             recalculate=recalculate):
-            self._variables_only_in_inequalities_set = (
-                    self.variables_in_activated_inequalities_set(
-                            recalculate=recalculate) -
-                    self.variables_in_activated_equalities_set(
-                            recalculate=recalculate))
-        return self._variables_only_in_inequalities_set
+def number_deactivated_equalities(block):
+    tc = 0
+    for c in deactivated_equalities_generator(block):
+        tc += 1
+    return tc
 
-    def number_variables_only_in_inequalities(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.variables_only_in_inequalities(
-                    recalculate=recalculate))
 
-    # -------------------------------------------------------------------------
-    # Fixed Variables in Constraints
-    def fixed_variables_in_activated_equalities_set(self, recalculate=None):
-        if self._recalc_item("_fixed_variables_in_activated_equalities_set",
-                             recalculate=recalculate):
-            self._fixed_variables_in_activated_equalities_set = ComponentSet()
-            for v in self.variables_in_activated_equalities_set(
-                    recalculate=recalculate):
-                if v.fixed:
-                    self._fixed_variables_in_activated_equalities_set.add(v)
-        return self._fixed_variables_in_activated_equalities_set
+# -------------------------------------------------------------------------
+# Inequality Constraints
+def total_inequalities_generator(block):
+    for c in activated_block_component_generator(block, ctype=Constraint):
+        if c.upper is None or c.lower is None:
+            yield c
 
-    def number_fixed_variables_in_activated_equalities(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.fixed_variables_in_activated_equalities_set(
-                recalculate=recalculate))
 
-    def fixed_variables_only_in_inequalities(self, recalculate=None):
-        if self._recalc_item("_fixed_variables_only_in_inequalities_set",
-                             recalculate=recalculate):
-            self._fixed_variables_only_in_inequalities_set = ComponentSet()
-            for v in self.variables_only_in_inequalities(
-                    recalculate=recalculate):
-                if v.fixed:
-                    self._fixed_variables_only_in_inequalities_set.add(v)
-        return self._fixed_variables_only_in_inequalities_set
+def total_inequalities_set(block):
+    return ComponentSet(total_inequalities_generator(block))
 
-    def number_fixed_variables_only_in_inequalities(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.fixed_variables_only_in_inequalities(
-                    recalculate=recalculate))
 
-    # -------------------------------------------------------------------------
-    # Unused and un-Transformed Variables
-    def unused_variables_set(self, recalculate=None):
-        if self._recalc_item("_unused_variables_set",
-                             recalculate=recalculate):
-            self._unused_variables_set = (
-                self.variables_set(recalculate=recalculate) -
-                self.variables_in_activated_constraints_set(
-                        recalculate=recalculate))
-        return self._unused_variables_set
+def number_total_inequalities(block):
+    c = 0
+    for o in total_inequalities_generator(block):
+        c += 1
+    return c
 
-    def number_unused_variables(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.unused_variables_set(recalculate=recalculate))
 
-    def fixed_unused_variables_set(self, recalculate=None):
-        if self._recalc_item("_fixed_unused_variables_set",
-                             recalculate=recalculate):
-            self._fixed_unused_variables_set = ComponentSet()
-            for v in self.unused_variables_set(recalculate=recalculate):
-                if v.fixed:
-                    self._fixed_unused_variables_set.add(v)
-        return self._fixed_unused_variables_set
+def activated_inequalities_generator(block):
+    for c in block.component_data_objects(
+                Constraint, active=True, descend_into=True):
+        if c.upper is None or c.lower is None:
+            yield c
 
-    def number_fixed_unused_variables(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.fixed_unused_variables_set(recalculate=recalculate))
 
-    def derivative_variables_set(self, recalculate=None):
-        if self._recalc_item("_derivative_variables_set",
-                             recalculate=recalculate):
-            self._derivative_variables_set = ComponentSet(
-                    self.model_object.component_data_objects(
-                            ctype=DerivativeVar,
-                            active=True,
-                            descend_into=True))
-        return self._derivative_variables_set
+def activated_inequalities_set(block):
+    return ComponentSet(activated_inequalities_generator(block))
 
-    def number_derivative_variables(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.derivative_variables_set(recalculate=recalculate))
 
-    # -------------------------------------------------------------------------
-    # Objective methods
-    def total_objectives_generator(self):
-        for o in self._activated_block_component_generator(ctype=Objective):
+def number_activated_inequalities(block):
+    c = 0
+    for o in activated_inequalities_generator(block):
+        c += 1
+    return c
+
+
+def deactivated_inequalities_generator(block):
+    for c in total_inequalities_generator(block):
+        if not c.active:
+            yield c
+
+
+def deactivated_inequalities_set(block):
+    return ComponentSet(deactivated_inequalities_generator(block))
+
+
+def number_deactivated_inequalities(block):
+    c = 0
+    for o in deactivated_inequalities_generator(block):
+        c += 1
+    return c
+
+
+# -------------------------------------------------------------------------
+# Basic Variable Methods
+# Always use ComponentSets for Vars to avoid duplication of References
+# i.e. number methods should alwys use the ComponentSet, not a generator
+def variables_set(block):
+    return ComponentSet(block.component_data_objects(
+            ctype=Var, active=True, descend_into=True))
+
+
+def number_variables(block):
+    return len(variables_set(block))
+
+
+def fixed_variables_generator(block):
+    for v in block.component_data_objects(
+            ctype=Var, active=True, descend_into=True):
+        if v.fixed:
+            yield v
+
+
+def fixed_variables_set(block):
+    return ComponentSet(fixed_variables_generator(block))
+
+
+def number_fixed_variables(block):
+    return len(fixed_variables_set(block))
+
+
+# -------------------------------------------------------------------------
+# Variables in Constraints
+
+def variables_in_activated_constraints_set(block):
+    var_set = ComponentSet()
+    for c in block.component_data_objects(
+            ctype=Constraint, active=True, descend_into=True):
+        for v in identify_variables(c.body):
+            var_set.add(v)
+    return var_set
+
+
+def number_variables_in_activated_constraints(block):
+    return len(variables_in_activated_constraints_set(block))
+
+
+def variables_in_activated_equalities_set(block):
+    var_set = ComponentSet()
+    for c in activated_equalities_generator(block):
+        for v in identify_variables(c.body):
+            var_set.add(v)
+    return var_set
+
+
+def number_variables_in_activated_equalities(block):
+    return len(variables_in_activated_equalities_set(block))
+
+
+def variables_in_activated_inequalities_set(block):
+    var_set = ComponentSet()
+    for c in activated_inequalities_generator(block):
+        for v in identify_variables(c.body):
+            var_set.add(v)
+    return var_set
+
+
+def number_variables_in_activated_inequalities(block):
+    return len(variables_in_activated_inequalities_set(block))
+
+
+def variables_only_in_inequalities(block):
+    return (variables_in_activated_inequalities_set(block) -
+            variables_in_activated_equalities_set(block))
+
+
+def number_variables_only_in_inequalities(block):
+    return len(variables_only_in_inequalities(block))
+
+
+# -------------------------------------------------------------------------
+# Fixed Variables in Constraints
+def fixed_variables_in_activated_equalities_set(block):
+    var_set = ComponentSet()
+    for v in variables_in_activated_equalities_set(block):
+        if v.fixed:
+            var_set.add(v)
+    return var_set
+
+
+def number_fixed_variables_in_activated_equalities(block):
+    return len(fixed_variables_in_activated_equalities_set(block))
+
+
+def fixed_variables_only_in_inequalities(block):
+    var_set = ComponentSet()
+    for v in variables_only_in_inequalities(block):
+        if v.fixed:
+            var_set.add(v)
+    return var_set
+
+
+def number_fixed_variables_only_in_inequalities(block):
+    return len(fixed_variables_only_in_inequalities(block))
+
+
+# -------------------------------------------------------------------------
+# Unused and un-Transformed Variables
+def unused_variables_set(block):
+    return variables_set(block) - variables_in_activated_constraints_set(block)
+
+
+def number_unused_variables(block):
+    return len(unused_variables_set(block))
+
+
+def fixed_unused_variables_set(block):
+    var_set = ComponentSet()
+    for v in unused_variables_set(block):
+        if v.fixed:
+            var_set.add(v)
+    return var_set
+
+
+def number_fixed_unused_variables(block):
+    return len(fixed_unused_variables_set(block))
+
+
+def derivative_variables_set(block):
+    return ComponentSet(block.component_data_objects(
+            ctype=DerivativeVar, active=True, descend_into=True))
+
+
+def number_derivative_variables(block):
+    return len(derivative_variables_set(block))
+
+
+# -------------------------------------------------------------------------
+# Objective methods
+def total_objectives_generator(block):
+    for o in activated_block_component_generator(block, ctype=Objective):
+        yield o
+
+
+def total_objectives_set(block):
+    return ComponentSet(total_objectives_generator(block))
+
+
+def number_total_objectives(block):
+    c = 0
+    for o in total_objectives_generator(block):
+        c += 1
+    return c
+
+
+def activated_objectives_generator(block):
+    for o in activated_block_component_generator(block, ctype=Objective):
+        if o.active:
             yield o
 
-    def total_objectives_set(self, recalculate=None):
-        if self._recalc_item("_total_objectives_set",
-                             recalculate=recalculate):
-            self._total_objectives_set = ComponentSet(
-                    self.total_objectives_generator())
-        return self._total_objectives_set
 
-    def number_total_objectives(self, recalculate=None):
-        c = self._recalc_num("total_objectives_set",
-                             recalculate=recalculate)
-        if c is None:
-            c = 0
-            for o in self.total_objectives_generator():
-                c += 1
-        return c
+def activated_objectives_set(block):
+    return ComponentSet(activated_objectives_generator(block))
 
-    def deactivated_objectives_generator(self):
-        for o in self._activated_block_component_generator(ctype=Objective):
-            if not o.active:
-                yield o
 
-    def deactivated_objectives_set(self, recalculate=None):
-        if self._recalc_item("_deactivated_objectives_set",
-                             recalculate=recalculate):
-            self._deactivated_objectives_set = ComponentSet(
-                    self.deactivated_objectives_generator())
-        return self._deactivated_objectives_set
+def number_activated_objectives(block):
+    c = 0
+    for o in activated_objectives_generator(block):
+        c += 1
+    return c
 
-    def number_deactivated_objectives(self, recalculate=None):
-        c = self._recalc_num("deactivated_objectives_set",
-                             recalculate=recalculate)
-        if c is None:
-            c = 0
-            for o in self.deactivated_objectives_generator():
-                c += 1
-        return c
 
-    # -------------------------------------------------------------------------
-    # Expression methods
-    # Always use ComponentsSets here to avoid duplication of References
-    def expressions_set(self, recalculate=None):
-        if self._recalc_item("_expressions_set",
-                             recalculate=recalculate):
-            self._expressions_set = ComponentSet(
-                    self.model_object.component_data_objects(
-                            ctype=Expression,
-                            active=True,
-                            descend_into=True))
-        return self._expressions_set
+def deactivated_objectives_generator(block):
+    for o in activated_block_component_generator(block, ctype=Objective):
+        if not o.active:
+            yield o
 
-    def number_expressions(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.expressions_set(recalculate=recalculate))
 
-    # -------------------------------------------------------------------------
-    # Other model statistics
-    def degrees_of_freedom(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return (self.number_variables_in_activated_equalities(
-                        recalculate=recalculate) -
-                self.number_fixed_variables_in_activated_equalities(
-                        recalculate=recalculate) -
-                self.number_activated_equalities(
-                        recalculate=recalculate))
+def deactivated_objectives_set(block):
+    return ComponentSet(deactivated_objectives_generator(block))
 
-    def large_residuals_set(self, tol=1e-5, recalculate=None):
-        if self._recalc_item("_large_residuals_set",
-                             recalculate=recalculate):
-            self._large_residuals_set = ComponentSet()
-            for c in self.model_object.component_data_objects(
-                    ctype=Constraint,
-                    active=True,
-                    descend_into=True):
-                if c.active and value(c.lower - c.body()) > tol:
-                    self._large_residuals_set.add(c)
-                elif c.active and value(c.body() - c.upper) > tol:
-                    self._large_residuals_set.add(c)
-        return self._large_residuals_set
 
-    def number_large_residuals(self, tol=1e-5, recalculate=None):
-        lr = self._recalc_num("large_residuals_set",
-                              recalculate=recalculate)
-        if lr is None:
-            lr = 0
-            for c in self.model_object.component_data_objects(
-                    ctype=Constraint, active=True, descend_into=True):
-                if c.active and value(c.lower - c.body()) > tol:
-                    lr += 1
-                elif c.active and value(c.body() - c.upper) > tol:
-                    lr += 1
-        return lr
+def number_deactivated_objectives(block):
+    c = 0
+    for o in deactivated_objectives_generator(block):
+        c += 1
+    return c
 
-    def active_variables_in_deactivated_blocks_set(self, recalculate=None):
-        if self._recalc_item("_active_variables_in_deactivated_blocks_set",
-                             recalculate=recalculate):
-            self._active_variables_in_deactivated_blocks_set = ComponentSet()
-            for v in self.variables_in_activated_constraints_set(
-                    recalculate=recalculate):
-                if v.parent_block() not in self.activated_blocks_set(
-                        recalculate=recalculate):
-                    self._active_variables_in_deactivated_blocks_set.add(v)
-        return self._active_variables_in_deactivated_blocks_set
 
-    def number_active_variables_in_deactivated_blocks(self, recalculate=None):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        return len(self.active_variables_in_deactivated_blocks_set(
-                recalculate=recalculate))
+# -------------------------------------------------------------------------
+# Expression methods
+# Always use ComponentsSets here to avoid duplication of References
+def expressions_set(block):
+    return ComponentSet(block.component_data_objects(
+            ctype=Expression, active=True, descend_into=True))
 
-    # -------------------------------------------------------------------------
-    # Reporting methods
-    def report(self,
-               ostream=None,
-               recalculate=None):
-        """
-        Method to print a report of the model statistics for a Pyomo Block
 
-        Args:
-            block - the Block object to report statistics from
-            recalculate - whether model statistics should be recalculated or
-                    not. Options are True, False and None (default). Setting
-                    this to False will save time, but will not capture any
-                    changes made to the model state since the statistics were
-                    generated. If None, will use the global
-                    'always_recalcualte` setting from the ModelStatistics
-                    object.
+def number_expressions(block):
+    return len(expressions_set(block))
 
-        Returns:
-            Printed output of the model statistics
-        """
-        if ostream is None:
-            ostream = sys.stdout
 
-        if recalculate is None:
-            recalculate = self.always_recalculate
+# -------------------------------------------------------------------------
+# Other model statistics
+def degrees_of_freedom(block):
+    return (number_variables_in_activated_equalities(block) -
+            number_fixed_variables_in_activated_equalities(block) -
+            number_activated_equalities(block))
 
-        tab = " "*4
-        header = '='*72
 
-        if self.model_object.name == "unknown":
-            name_str = ""
-        else:
-            name_str = f"-  {self.model_object.name}"
+def large_residuals_set(block, tol=1e-5):
+    large_residuals_set = ComponentSet()
+    for c in block.component_data_objects(
+            ctype=Constraint, active=True, descend_into=True):
+        if c.active and value(c.lower - c.body()) > tol:
+            large_residuals_set.add(c)
+        elif c.active and value(c.body() - c.upper) > tol:
+            large_residuals_set.add(c)
+    return large_residuals_set
 
-        ostream.write("\n")
-        ostream.write(header+"\n")
-        ostream.write(f"Model Statistics  {name_str} \n")
-        ostream.write("\n")
-        ostream.write(f"Degrees of Freedom: "
-                      f"{self.degrees_of_freedom(recalculate=recalculate)} \n")
-        ostream.write("\n")
-        ostream.write(f"Total No. Variables: "
-                      f"{self.number_variables(recalculate=recalculate)} \n")
-        ostream.write(f"{tab}No. Fixed Variables: "
-                      f"{self.number_fixed_variables(recalculate=recalculate)}"
-                      f"\n")
-        ostream.write(
-            f"{tab}No. Unused Variables: "
-            f"{self.number_unused_variables(recalculate=recalculate)} (Fixed):"
-            f"{self.number_fixed_unused_variables(recalculate=recalculate)})"
-            f"\n")
-        nv_alias = self.number_variables_only_in_inequalities
-        nfv_alias = self.number_fixed_variables_only_in_inequalities
-        ostream.write(
-            f"{tab}No. Variables only in Inequalities:"
-            f" {nv_alias(recalculate=recalculate)}"
-            f" (Fixed: {nfv_alias(recalculate=recalculate)}) \n")
-        ostream.write("\n")
-        ostream.write(
-                f"Total No. Constraints: "
-                f"{self.number_total_constraints(recalculate=recalculate)} \n")
-        ostream.write(
-            f"{tab}No. Equality Constraints: "
-            f"{self.number_total_equalities(recalculate=recalculate)}"
-            f" (Deactivated: "
-            f"{self.number_deactivated_equalities(recalculate=recalculate)})"
-            f"\n")
-        ostream.write(
-            f"{tab}No. Inequality Constraints: "
-            f"{self.number_total_inequalities(recalculate=recalculate)}"
-            f" (Deactivated: "
-            f"{self.number_deactivated_inequalities(recalculate=recalculate)})"
-            f"\n")
-        ostream.write("\n")
-        ostream.write(
-            f"No. Objectives: "
-            f"{self.number_total_objectives(recalculate=recalculate)}"
-            f" (Deactivated: "
-            f"{self.number_deactivated_objectives(recalculate=recalculate)})"
-            f"\n")
-        ostream.write("\n")
-        ostream.write(
-            f"No. Blocks: {self.number_total_blocks(recalculate=recalculate)}"
-            f" (Deactivated: "
-            f"{self.number_deactivated_blocks(recalculate=recalculate)}) \n")
-        ostream.write(f"No. Expressions: "
-                      f"{self.number_expressions(recalculate=recalculate)} \n")
-        ostream.write(header+"\n")
-        ostream.write("\n")
 
-    # -------------------------------------------------------------------------
-    # Common sub-methods
-    def _recalc_item(self, name, recalculate):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        try:
-            c = getattr(self, name)
-            if recalculate:
-                self.del_component(c)
-        except AttributeError:
-            recalculate = True
-        return recalculate
+def number_large_residuals(block, tol=1e-5):
+    lr = 0
+    for c in block.component_data_objects(
+            ctype=Constraint, active=True, descend_into=True):
+        if c.active and value(c.lower - c.body()) > tol:
+            lr += 1
+        elif c.active and value(c.body() - c.upper) > tol:
+            lr += 1
+    return lr
 
-    def _recalc_num(self, name, recalculate):
-        if recalculate is None:
-            recalculate = self.always_recalculate
-        if hasattr(self, "_"+name):
-            return len(getattr(self, name)(recalculate=recalculate))
-        else:
-            return None
+
+def active_variables_in_deactivated_blocks_set(block):
+    var_set = ComponentSet()
+    block_set = activated_blocks_set(block)
+    for v in variables_in_activated_constraints_set(block):
+        if v.parent_block() not in block_set:
+            var_set.add(v)
+    return var_set
+
+
+def number_active_variables_in_deactivated_blocks(block):
+    return len(active_variables_in_deactivated_blocks_set(block))
+
+
+# -------------------------------------------------------------------------
+# Reporting methods
+def report_statistics(block, ostream=None):
+    """
+    Method to print a report of the model statistics for a Pyomo Block
+
+    Args:
+        block - the Block object to report statistics from
+
+    Returns:
+        Printed output of the model statistics
+    """
+    if ostream is None:
+        ostream = sys.stdout
+
+    tab = " "*4
+    header = '='*72
+
+    if block.name == "unknown":
+        name_str = ""
+    else:
+        name_str = f"-  {block.name}"
+
+    ostream.write("\n")
+    ostream.write(header+"\n")
+    ostream.write(f"Model Statistics  {name_str} \n")
+    ostream.write("\n")
+    ostream.write(f"Degrees of Freedom: "
+                  f"{degrees_of_freedom(block)} \n")
+    ostream.write("\n")
+    ostream.write(f"Total No. Variables: "
+                  f"{number_variables(block)} \n")
+    ostream.write(f"{tab}No. Fixed Variables: "
+                  f"{number_fixed_variables(block)}"
+                  f"\n")
+    ostream.write(
+        f"{tab}No. Unused Variables: "
+        f"{number_unused_variables(block)} (Fixed):"
+        f"{number_fixed_unused_variables(block)})"
+        f"\n")
+    nv_alias = number_variables_only_in_inequalities
+    nfv_alias = number_fixed_variables_only_in_inequalities
+    ostream.write(
+        f"{tab}No. Variables only in Inequalities:"
+        f" {nv_alias(block)}"
+        f" (Fixed: {nfv_alias(block)}) \n")
+    ostream.write("\n")
+    ostream.write(
+            f"Total No. Constraints: "
+            f"{number_total_constraints(block)} \n")
+    ostream.write(
+        f"{tab}No. Equality Constraints: "
+        f"{number_total_equalities(block)}"
+        f" (Deactivated: "
+        f"{number_deactivated_equalities(block)})"
+        f"\n")
+    ostream.write(
+        f"{tab}No. Inequality Constraints: "
+        f"{number_total_inequalities(block)}"
+        f" (Deactivated: "
+        f"{number_deactivated_inequalities(block)})"
+        f"\n")
+    ostream.write("\n")
+    ostream.write(
+        f"No. Objectives: "
+        f"{number_total_objectives(block)}"
+        f" (Deactivated: "
+        f"{number_deactivated_objectives(block)})"
+        f"\n")
+    ostream.write("\n")
+    ostream.write(
+        f"No. Blocks: {number_total_blocks(block)}"
+        f" (Deactivated: "
+        f"{number_deactivated_blocks(block)}) \n")
+    ostream.write(f"No. Expressions: "
+                  f"{number_expressions(block)} \n")
+    ostream.write(header+"\n")
+    ostream.write("\n")
+
+
+# -------------------------------------------------------------------------
+# Common sub-methods
+def activated_block_component_generator(block, ctype):
+    for b in block.component_data_objects(
+                ctype=Block, active=True, descend_into=True):
+        for c in b.component_data_objects(ctype=ctype,
+                                          active=None,
+                                          descend_into=False):
+            yield c
