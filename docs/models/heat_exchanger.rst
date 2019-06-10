@@ -1,10 +1,11 @@
 HeatExchanger (0D)
 ==================
 
-.. .. index::
-..   pair: idaes.unit_models.heat_exchanger;HeatExchanger
+.. index::
+   pair: idaes.unit_models.heat_exchanger;HeatExchanger
 
 .. module:: idaes.unit_models.heat_exchanger
+  :noindex:
 
 The HeatExchanger model can be imported from :code:`idaes.unit_models`,
 while additional rules and utility functions can be imported from
