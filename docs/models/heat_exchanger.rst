@@ -107,11 +107,13 @@ Temperature difference is an expression:
 The heat transfer coefficient is a variable with no associated constraints by default.
 
 
-.. autoclass:: HeatExchanger
-   :members:
+See :class:`HeatExchanger` and :class:`HeatExchangerData` for full class details.
 
-.. autoclass:: HeatExchangerData
-  :members:
+.. .. autoclass:: HeatExchanger
+..   :members:
+..
+.. .. autoclass:: HeatExchangerData
+..   :members:
 
 Rules
 -----
