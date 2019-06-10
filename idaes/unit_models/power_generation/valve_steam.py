@@ -31,7 +31,7 @@ from pyomo.opt import TerminationCondition
 from idaes.core import declare_process_block_class
 from idaes.unit_models.pressure_changer import PressureChangerData
 from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.core.util.model_statistics import calculate_degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 from .valve_steam_config import _define_config, ValveFunctionType
 
 def _linear_rule(b, t):
@@ -161,11 +161,11 @@ class SteamValveData(PressureChangerData):
 
         # Make sure the initialization problem has no degrees of freedom
         # This shouldn't happen here unless there is a bug in this
-        dof = calculate_degrees_of_freedom(self)
+        dof = degrees_of_freedom(self)
         try:
             assert(dof == 0)
         except:
-            _log.exception("calculate_degrees_of_freedom = {}".format(dof))
+            _log.exception("degrees_of_freedom = {}".format(dof))
             raise
 
         # one bad thing about reusing this is that the log messages aren't
