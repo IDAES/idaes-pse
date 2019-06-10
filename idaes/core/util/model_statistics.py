@@ -265,7 +265,6 @@ def number_fixed_variables(block):
 
 # -------------------------------------------------------------------------
 # Variables in Constraints
-
 def variables_in_activated_constraints_set(block):
     var_set = ComponentSet()
     for c in block.component_data_objects(
@@ -324,6 +323,18 @@ def fixed_variables_in_activated_equalities_set(block):
 
 def number_fixed_variables_in_activated_equalities(block):
     return len(fixed_variables_in_activated_equalities_set(block))
+
+
+def unfixed_variables_in_activated_equalities_set(block):
+    var_set = ComponentSet()
+    for v in variables_in_activated_equalities_set(block):
+        if not v.fixed:
+            var_set.add(v)
+    return var_set
+
+
+def number_unfixed_variables_in_activated_equalities(block):
+    return len(unfixed_variables_in_activated_equalities_set(block))
 
 
 def fixed_variables_only_in_inequalities(block):
@@ -436,8 +447,7 @@ def number_expressions(block):
 # -------------------------------------------------------------------------
 # Other model statistics
 def degrees_of_freedom(block):
-    return (number_variables_in_activated_equalities(block) -
-            number_fixed_variables_in_activated_equalities(block) -
+    return (number_unfixed_variables_in_activated_equalities(block) -
             number_activated_equalities(block))
 
 

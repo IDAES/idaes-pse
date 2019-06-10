@@ -211,103 +211,86 @@ def test_number_fixed_variables(m):
     assert number_fixed_variables(m) == 2
 
 
-## -------------------------------------------------------------------------
-## Variables in Constraints
-#
-#def variables_in_activated_constraints_set(block):
-#    var_set = ComponentSet()
-#    for c in block.component_data_objects(
-#            ctype=Constraint, active=True, descend_into=True):
-#        for v in identify_variables(c.body):
-#            var_set.add(v)
-#    return var_set
-#
-#
-#def number_variables_in_activated_constraints(block):
-#    return len(variables_in_activated_constraints_set(block))
-#
-#
-#def variables_in_activated_equalities_set(block):
-#    var_set = ComponentSet()
-#    for c in activated_equalities_generator(block):
-#        for v in identify_variables(c.body):
-#            var_set.add(v)
-#    return var_set
-#
-#
-#def number_variables_in_activated_equalities(block):
-#    return len(variables_in_activated_equalities_set(block))
-#
-#
-#def variables_in_activated_inequalities_set(block):
-#    var_set = ComponentSet()
-#    for c in activated_inequalities_generator(block):
-#        for v in identify_variables(c.body):
-#            var_set.add(v)
-#    return var_set
-#
-#
-#def number_variables_in_activated_inequalities(block):
-#    return len(variables_in_activated_inequalities_set(block))
-#
-#
-#def variables_only_in_inequalities(block):
-#    return (variables_in_activated_inequalities_set(block) -
-#            variables_in_activated_equalities_set(block))
-#
-#
-#def number_variables_only_in_inequalities(block):
-#    return len(variables_only_in_inequalities(block))
-#
-#
-## -------------------------------------------------------------------------
-## Fixed Variables in Constraints
-#def fixed_variables_in_activated_equalities_set(block):
-#    var_set = ComponentSet()
-#    for v in variables_in_activated_equalities_set(block):
-#        if v.fixed:
-#            var_set.add(v)
-#    return var_set
-#
-#
-#def number_fixed_variables_in_activated_equalities(block):
-#    return len(fixed_variables_in_activated_equalities_set(block))
-#
-#
-#def fixed_variables_only_in_inequalities(block):
-#    var_set = ComponentSet()
-#    for v in variables_only_in_inequalities(block):
-#        if v.fixed:
-#            var_set.add(v)
-#    return var_set
-#
-#
-#def number_fixed_variables_only_in_inequalities(block):
-#    return len(fixed_variables_only_in_inequalities(block))
-#
-#
-## -------------------------------------------------------------------------
-## Unused and un-Transformed Variables
-#def unused_variables_set(block):
-#    return variables_set(block) - variables_in_activated_constraints_set(block)
-#
-#
-#def number_unused_variables(block):
-#    return len(unused_variables_set(block))
-#
-#
-#def fixed_unused_variables_set(block):
-#    var_set = ComponentSet()
-#    for v in unused_variables_set(block):
-#        if v.fixed:
-#            var_set.add(v)
-#    return var_set
-#
-#
-#def number_fixed_unused_variables(block):
-#    return len(fixed_unused_variables_set(block))
-#
-#
+# -------------------------------------------------------------------------
+# Variables in Constraints
+def test_variables_in_activated_constraints_set(m):
+    assert len(variables_in_activated_constraints_set(m)) == 22
+
+
+def test_number_variables_in_activated_constraints(m):
+    assert number_variables_in_activated_constraints(m) == 22
+
+
+def test_variables_in_activated_equalities_set(m):
+    assert len(variables_in_activated_equalities_set(m)) == 22
+
+
+def test_number_variables_in_activated_equalities(m):
+    assert number_variables_in_activated_equalities(m) == 22
+
+
+def test_variables_in_activated_inequalities_set(m):
+    assert len(variables_in_activated_inequalities_set(m)) == 1
+
+
+def test_number_variables_in_activated_inequalities(m):
+    assert number_variables_in_activated_inequalities(m) == 1
+
+
+def test_variables_only_in_inequalities(m):
+    m.v3 = Var(initialize=1)
+    m.c3 = Constraint(expr=m.v3 >= 1)
+    assert len(variables_only_in_inequalities(m)) == 1
+
+
+def test_number_variables_only_in_inequalities(m):
+    m.v3 = Var(initialize=1)
+    m.c3 = Constraint(expr=m.v3 >= 1)
+    assert number_variables_only_in_inequalities(m) == 1
+
+
+# -------------------------------------------------------------------------
+# Fixed Variables in Constraints
+def test_fixed_variables_in_activated_equalities_set(m):
+    assert len(fixed_variables_in_activated_equalities_set(m)) == 1
+
+
+def test_number_fixed_variables_in_activated_equalities(m):
+    assert number_fixed_variables_in_activated_equalities(m) == 1
+
+
+def test_fixed_variables_only_in_inequalities(m):
+    m.v3 = Var(initialize=1)
+    m.v3.fix(1)
+    m.c3 = Constraint(expr=m.v3 >= 1)
+    assert len(fixed_variables_only_in_inequalities(m)) == 1
+
+
+def test_number_fixed_variables_only_in_inequalities(m):
+    m.v3 = Var(initialize=1)
+    m.v3.fix(1)
+    m.c3 = Constraint(expr=m.v3 >= 1)
+    assert number_fixed_variables_only_in_inequalities(m) == 1
+
+
+# -------------------------------------------------------------------------
+# Unused and un-Transformed Variables
+def test_unused_variables_set(m):
+    assert len(unused_variables_set(m)) == 6
+
+
+def test_number_unused_variables(m):
+    assert number_unused_variables(m) == 6
+
+
+def test_fixed_unused_variables_set(m):
+    assert len(fixed_unused_variables_set(m)) == 1
+
+
+def test_number_fixed_unused_variables(m):
+    assert number_fixed_unused_variables(m) == 1
+
+
 def test_derivative_variables_set():
     m = ConcreteModel()
 
