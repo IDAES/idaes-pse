@@ -26,24 +26,7 @@ from pyomo.environ import (Block,
                            TransformationFactory)
 from pyomo.dae import ContinuousSet, DerivativeVar
 
-#from idaes.core.util.model_statistics import (
-#        block_set,
-#        constraint_set,
-#        derivative_variables_set,
-#        expression_set,
-#        objective_set,
-#        variable_set,
-#        equality_constraint_set,
-#        inequality_constraints_set,
-#        activated_component_set,
-#        variables_in_constraints_set,
-#        fixed_variable_set,
-#        unfixed_variable_set,
-#        calculate_degrees_of_freedom,
-#        report_model_statistics,
-#        active_variables_in_deactived_blocks_set,
-#        large_residual_set)
-#from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.model_statistics import *
 
 
 # Author: Andrew Lee
@@ -98,197 +81,351 @@ def m():
             m.b2[i].o1 = Objective(expr=1 <= m.b2[i].v1)
             m.b2[i].o2 = Objective(expr=1 <= m.b2[i].v1)
             m.b2[i].o2.deactivate()
+            m.b2[i].c1.deactivate()
+            m.b2[i].c2.deactivate()
 
     return m
 
 
-#def test_block_set(m):
-#    assert len(block_set(m, active=None)) == 4
+# -------------------------------------------------------------------------
+# Block methods
+def test_total_blocks_set(m):
+    assert len(total_blocks_set(m)) == 5
+
+
+def test_number_total_blocks(m):
+    assert number_total_blocks(m) == 5
+
+
+def test_activated_blocks_set(m):
+    assert len(activated_blocks_set(m)) == 3
+
+
+def test_number_activated_blocks(m):
+    assert number_activated_blocks(m) == 3
+
+
+def test_deactivated_blocks_set(m):
+    assert len(deactivated_blocks_set(m)) == 2
+
+
+def test_number_deactivated_blocks(m):
+    assert number_deactivated_blocks(m) == 2
+
+
+# -------------------------------------------------------------------------
+# Basic Constraint methods
+def test_total_constraints_set(m):
+    assert len(total_constraints_set(m)) == 14
+
+
+def test_number_total_constraints(m):
+    assert number_total_constraints(m) == 14
+
+
+def test_activated_constraints_set(m):
+    assert len(activated_constraints_set(m)) == 12
+
+
+def test_number_activated_constraints(m):
+    assert number_activated_constraints(m) == 12
+
+
+def test_deactivated_constraints_set(m):
+    assert len(deactivated_constraints_set(m)) == 2
+
+
+def test_number_deactivated_constraints(m):
+    assert number_deactivated_constraints(m) == 2
+
+
+# -------------------------------------------------------------------------
+# Equality Constraints
+def test_total_equalities_set(m):
+    assert len(total_equalities_set(m)) == 12
+
+
+def test_number_total_equalities(m):
+    assert number_total_equalities(m) == 12
+
+
+def test_activated_equalities_set(m):
+    assert len(activated_equalities_set(m)) == 11
+
+
+def test_number_activated_equalities(m):
+    assert number_activated_equalities(m) == 11
+
+
+def test_deactivated_equalities_set(m):
+    assert len(deactivated_equalities_set(m)) == 1
+
+
+def test_number_deactivated_equalities(m):
+    assert number_deactivated_equalities(m) == 1
+
+
+# -------------------------------------------------------------------------
+# Inequality Constraints
+def test_total_inequalities_set(m):
+    assert len(total_inequalities_set(m)) == 2
+
+
+def test_number_total_inequalities(m):
+    assert number_total_inequalities(m) == 2
+
+
+def test_activated_inequalities_set(m):
+    assert len(activated_inequalities_set(m)) == 1
+
+
+def test_number_activated_inequalities(m):
+    assert number_activated_inequalities(m) == 1
+
+
+def test_deactivated_inequalities_set(m):
+    assert len(deactivated_inequalities_set(m)) == 1
+
+
+def test_number_deactivated_inequalities(m):
+    assert number_deactivated_inequalities(m) == 1
+
+
+# -------------------------------------------------------------------------
+# Basic Variable Methods
+# Always use ComponentSets for Vars to avoid duplication of References
+# i.e. number methods should alwys use the ComponentSet, not a generator
+def test_variables_set(m):
+    assert len(variables_set(m)) == 28
+
+
+def test_number_variables(m):
+    assert number_variables(m) == 28
+
+
+def test_fixed_variables_set(m):
+    assert len(fixed_variables_set(m)) == 2
+
+
+def test_number_fixed_variables(m):
+    assert number_fixed_variables(m) == 2
+
+
+## -------------------------------------------------------------------------
+## Variables in Constraints
 #
-#    assert len(block_set(m, active=None, descend_into=False)) == 3
-#
-#    assert len(block_set(m, active=True)) == 2
-#
-#    assert len(block_set(m, active=True, descend_into=False)) == 2
-#
-#    m.b1.sb.activate()
-#    assert len(block_set(m, active=True)) == 2
-#
-#    assert len(block_set(m, active=True, descend_into=False)) == 2
-#
-#    m.b1.activate()
-#    m.b1.sb.deactivate()
-#    assert len(block_set(m, active=True)) == 3
-#
-#    assert len(block_set(m, active=True, descend_into=False)) == 3
-#
-#
-#def test_variable_set(m):
-#    assert len(variable_set(m, active=True, descend_into=True)) == 28
-#
-#    assert len(variable_set(m, active=None, descend_into=True)) == 34
-#
-#    assert len(variable_set(m, active=True, descend_into=False)) == 22
-#
-#    assert len(variable_set(m, active=None, descend_into=False)) == 22
-#
-#
-#def test_derivative_variables_set(m):
-#    assert len(derivative_variables_set(m)) == 0
-#
-#    m.v2 = Var(m.cs)
-#    m.dv2 = DerivativeVar(m.v2)
-#    assert len(derivative_variables_set(m)) == 11
-#
-#
-#def test_expression_set(m):
-#    assert len(expression_set(m, active_blocks=True, descend_into=True)) == 3
-#
-#    assert len(expression_set(m, active_blocks=None, descend_into=True)) == 4
-#
-#    assert len(expression_set(m, active_blocks=True, descend_into=False)) == 1
-#
-#    assert len(expression_set(m, active_blocks=None, descend_into=False)) == 1
-#
-#
-#def test_objective_set(m):
-#    assert len(objective_set(m, active_blocks=True, descend_into=True)) == 2
-#
-#    assert len(objective_set(m, active_blocks=None, descend_into=True)) == 4
-#
-#
-#def test_constraint_set(m):
-#    assert len(constraint_set(m, active_blocks=True, descend_into=True)) == 14
-#
-#    assert len(constraint_set(m, active_blocks=None, descend_into=True)) == 18
-#
-#    assert len(constraint_set(m, active_blocks=True, descend_into=False)) == 10
-#
-#
-#def test_equality_constraint_set(m):
-#    assert len(equality_constraint_set(m,
-#                                       active_blocks=True,
-#                                       descend_into=True)) == 12
-#
-#    assert len(equality_constraint_set(m,
-#                                       active_blocks=None,
-#                                       descend_into=True)) == 14
-#
-#    assert len(equality_constraint_set(m,
-#                                       active_blocks=True,
-#                                       descend_into=False)) == 10
-#
-#    c = constraint_set(m, active_blocks=True, descend_into=True)
-#    assert len(equality_constraint_set(c,
-#                                       active_blocks=True,
-#                                       descend_into=False)) == 12
-#    assert len(equality_constraint_set(c,
-#                                       active_blocks=None,
-#                                       descend_into=False)) == 12
-#    assert len(equality_constraint_set(c,
-#                                       active_blocks=True,
-#                                       descend_into=True)) == 12
-#
-#    c = constraint_set(m, active_blocks=None, descend_into=True)
-#    assert len(equality_constraint_set(c)) == 14
-#
-#    c = constraint_set(m, active_blocks=True, descend_into=False)
-#    assert len(equality_constraint_set(c)) == 10
-#
-#
-#def test_inequality_constraints_set(m):
-#    assert len(inequality_constraints_set(m,
-#                                          active_blocks=True,
-#                                          descend_into=True)) == 2
-#
-#    assert len(inequality_constraints_set(m,
-#                                          active_blocks=None,
-#                                          descend_into=True)) == 4
-#
-#    assert len(inequality_constraints_set(m,
-#                                          active_blocks=True,
-#                                          descend_into=False)) == 0
-#
-#    c = constraint_set(m, active_blocks=True, descend_into=True)
-#    assert len(inequality_constraints_set(c,
-#                                          active_blocks=True,
-#                                          descend_into=False)) == 2
-#    assert len(inequality_constraints_set(c,
-#                                          active_blocks=None,
-#                                          descend_into=False)) == 2
-#    assert len(inequality_constraints_set(c,
-#                                          active_blocks=True,
-#                                          descend_into=True)) == 2
-#
-#    c = constraint_set(m, active_blocks=None, descend_into=True)
-#    assert len(inequality_constraints_set(c)) == 4
-#
-#    c = constraint_set(m, active_blocks=True, descend_into=False)
-#    assert len(inequality_constraints_set(c)) == 0
-#
-#
-#def test_activated_component_set(m):
-#    c = constraint_set(m, active_blocks=True, descend_into=True)
-#    assert len(activated_component_set(c)) == 14
-#
-#    m.b2["a"].c1.deactivate()
-#    assert len(activated_component_set(c)) == 13
-#
-#
-#def test_variables_in_constraints_set(m):
-#    c = constraint_set(m, active_blocks=True, descend_into=True)
-#    assert len(variables_in_constraints_set(c)) == 23
-#
-#    assert len(variables_in_constraints_set(m,
-#                                            active_blocks=True,
-#                                            descend_into=True)) == 23
-#
-#    c = constraint_set(m, active_blocks=None, descend_into=True)
-#    assert len(variables_in_constraints_set(c)) == 25
-#
-#    c = constraint_set(m, active_blocks=True, descend_into=False)
-#    assert len(variables_in_constraints_set(c)) == 21
-#
-#
-#def test_fixed_variable_set(m):
-#    assert len(fixed_variable_set(m)) == 2
-#
-#    v = variable_set(m, active=None)
-#    assert len(fixed_variable_set(v)) == 4
-#
-#
-#def test_unfixed_variable_set(m):
-#    assert len(unfixed_variable_set(m)) == 26
-#
-#    v = variable_set(m, active=None)
-#    assert len(unfixed_variable_set(v)) == 30
-#
-#
-#def test_calculate_degrees_of_freedom(m):
-#    assert calculate_degrees_of_freedom(m) == 9
-#
-#
-#def test_large_residual_set(m):
-#    # Initialize derivative var values so no errors occur
-#    for v in m.dv.keys():
-#        m.dv[v] = 0
-#    assert len(large_residual_set(m)) == 4
-#
-#    m.b2["a"].deactivate()
-#    assert len(large_residual_set(m)) == 2
-#
-#
-#def test_report_model_statistics(m):
-#    # Run method to ensure no exceptions occur
-#    report_model_statistics(m)
-#
-#
-#def test_act_vars_deact_blocks(m):
-#    assert len(active_variables_in_deactived_blocks_set(m)) == 0
-#
-#    m.c1 = Constraint(expr=10 == m.b1.v1)
-#
-#    assert len(active_variables_in_deactived_blocks_set(m)) == 1
-#
-#    with pytest.raises(ConfigurationError):
-#        active_variables_in_deactived_blocks_set(m.b1)
+#def variables_in_activated_constraints_set(block):
+#    var_set = ComponentSet()
+#    for c in block.component_data_objects(
+#            ctype=Constraint, active=True, descend_into=True):
+#        for v in identify_variables(c.body):
+#            var_set.add(v)
+#    return var_set
+#
+#
+#def number_variables_in_activated_constraints(block):
+#    return len(variables_in_activated_constraints_set(block))
+#
+#
+#def variables_in_activated_equalities_set(block):
+#    var_set = ComponentSet()
+#    for c in activated_equalities_generator(block):
+#        for v in identify_variables(c.body):
+#            var_set.add(v)
+#    return var_set
+#
+#
+#def number_variables_in_activated_equalities(block):
+#    return len(variables_in_activated_equalities_set(block))
+#
+#
+#def variables_in_activated_inequalities_set(block):
+#    var_set = ComponentSet()
+#    for c in activated_inequalities_generator(block):
+#        for v in identify_variables(c.body):
+#            var_set.add(v)
+#    return var_set
+#
+#
+#def number_variables_in_activated_inequalities(block):
+#    return len(variables_in_activated_inequalities_set(block))
+#
+#
+#def variables_only_in_inequalities(block):
+#    return (variables_in_activated_inequalities_set(block) -
+#            variables_in_activated_equalities_set(block))
+#
+#
+#def number_variables_only_in_inequalities(block):
+#    return len(variables_only_in_inequalities(block))
+#
+#
+## -------------------------------------------------------------------------
+## Fixed Variables in Constraints
+#def fixed_variables_in_activated_equalities_set(block):
+#    var_set = ComponentSet()
+#    for v in variables_in_activated_equalities_set(block):
+#        if v.fixed:
+#            var_set.add(v)
+#    return var_set
+#
+#
+#def number_fixed_variables_in_activated_equalities(block):
+#    return len(fixed_variables_in_activated_equalities_set(block))
+#
+#
+#def fixed_variables_only_in_inequalities(block):
+#    var_set = ComponentSet()
+#    for v in variables_only_in_inequalities(block):
+#        if v.fixed:
+#            var_set.add(v)
+#    return var_set
+#
+#
+#def number_fixed_variables_only_in_inequalities(block):
+#    return len(fixed_variables_only_in_inequalities(block))
+#
+#
+## -------------------------------------------------------------------------
+## Unused and un-Transformed Variables
+#def unused_variables_set(block):
+#    return variables_set(block) - variables_in_activated_constraints_set(block)
+#
+#
+#def number_unused_variables(block):
+#    return len(unused_variables_set(block))
+#
+#
+#def fixed_unused_variables_set(block):
+#    var_set = ComponentSet()
+#    for v in unused_variables_set(block):
+#        if v.fixed:
+#            var_set.add(v)
+#    return var_set
+#
+#
+#def number_fixed_unused_variables(block):
+#    return len(fixed_unused_variables_set(block))
+#
+#
+def test_derivative_variables_set():
+    m = ConcreteModel()
+
+    m.cs = ContinuousSet(bounds=(0, 1))
+
+    m.v = Var(m.cs, initialize=1)
+    m.dv = DerivativeVar(m.v)
+
+    assert len(derivative_variables_set(m)) == 2
+
+    m.discretizer = TransformationFactory("dae.finite_difference")
+    m.discretizer.apply_to(m,
+                           nfe=10,
+                           wrt=m.cs,
+                           scheme="BACKWARD")
+
+    assert len(derivative_variables_set(m)) == 0
+
+
+def test_number_derivative_variables():
+    m = ConcreteModel()
+
+    m.cs = ContinuousSet(bounds=(0, 1))
+
+    m.v = Var(m.cs, initialize=1)
+    m.dv = DerivativeVar(m.v)
+
+    assert number_derivative_variables(m) == 2
+
+    m.discretizer = TransformationFactory("dae.finite_difference")
+    m.discretizer.apply_to(m,
+                           nfe=10,
+                           wrt=m.cs,
+                           scheme="BACKWARD")
+
+    assert number_derivative_variables(m) == 0
+
+
+# -------------------------------------------------------------------------
+# Objective methods
+def test_total_objectives_set(m):
+    assert len(total_objectives_set(m)) == 2
+
+
+def test_number_total_objectives(m):
+    assert number_total_objectives(m) == 2
+
+
+def test_activated_objectives_set(m):
+    assert len(activated_objectives_set(m)) == 1
+
+
+def test_number_activated_objectives(m):
+    assert number_activated_objectives(m) == 1
+
+
+def test_deactivated_objectives_set(m):
+    assert len(deactivated_objectives_set(m)) == 1
+
+
+def test_number_deactivated_objectives(m):
+    assert number_deactivated_objectives(m) == 1
+
+
+# -------------------------------------------------------------------------
+# Expression methods
+def test_expressions_set(m):
+    assert len(expressions_set(m)) == 3
+
+
+def test_number_expressions(m):
+    assert number_expressions(m) == 3
+
+
+## -------------------------------------------------------------------------
+## Other model statistics
+#def degrees_of_freedom(block):
+#    return (number_variables_in_activated_equalities(block) -
+#            number_fixed_variables_in_activated_equalities(block) -
+#            number_activated_equalities(block))
+#
+#
+#def large_residuals_set(block, tol=1e-5):
+#    large_residuals_set = ComponentSet()
+#    for c in block.component_data_objects(
+#            ctype=Constraint, active=True, descend_into=True):
+#        if c.active and value(c.lower - c.body()) > tol:
+#            large_residuals_set.add(c)
+#        elif c.active and value(c.body() - c.upper) > tol:
+#            large_residuals_set.add(c)
+#    return large_residuals_set
+#
+#
+#def number_large_residuals(block, tol=1e-5):
+#    lr = 0
+#    for c in block.component_data_objects(
+#            ctype=Constraint, active=True, descend_into=True):
+#        if c.active and value(c.lower - c.body()) > tol:
+#            lr += 1
+#        elif c.active and value(c.body() - c.upper) > tol:
+#            lr += 1
+#    return lr
+#
+#
+#def active_variables_in_deactivated_blocks_set(block):
+#    var_set = ComponentSet()
+#    block_set = activated_blocks_set(block)
+#    for v in variables_in_activated_constraints_set(block):
+#        if v.parent_block() not in block_set:
+#            var_set.add(v)
+#    return var_set
+#
+#
+#def number_active_variables_in_deactivated_blocks(block):
+#    return len(active_variables_in_deactivated_blocks_set(block))
+
+
+# -------------------------------------------------------------------------
+# Reporting methods
+def test_report_statistics(m):
+    report_statistics(m)
