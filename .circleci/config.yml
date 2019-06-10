@@ -9,7 +9,7 @@ shared: &shared
     - run: sudo pip install -qr requirements-dev.txt
     - run: pyomo --version
     - run: cd docs && make all
-    - run: pytest docs idaes -m "not nocircleci"
+    - run: pytest -c pytest-dev.ini docs idaes -m "not nocircleci"
     - run: coverage report
     - run: coveralls
 jobs:

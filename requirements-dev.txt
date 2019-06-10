@@ -3,6 +3,7 @@
 # Put versions of dependencies, required for deployment, here.
 # They will override abstract dependencies in `setup.py`
 bokeh==0.12.9
+coverage==4.0.3
 pendulum==1.4.4
 
 # Pyomo
