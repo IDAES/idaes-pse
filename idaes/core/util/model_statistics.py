@@ -45,29 +45,35 @@ def number_total_blocks(block):
 
 
 def activated_blocks_set(block):
-    return ComponentSet(block.component_data_objects(
-            ctype=Block, active=True, descend_into=True))
+    block_set = ComponentSet()
+    if block.active:
+        block_set.add(block)
+        for b in block.component_data_objects(
+                ctype=Block, active=True, descend_into=True):
+            block_set.add(b)
+    return block_set
 
 
 def number_activated_blocks(block):
     b = 0
-    for o in block.component_data_objects(
-                    ctype=Block, active=True, descend_into=True):
-        b += 1
+    if block.active:
+        b = 1
+        for o in block.component_data_objects(
+                        ctype=Block, active=True, descend_into=True):
+            b += 1
     return b
 
 
 def deactivated_blocks_set(block):
-    return ComponentSet(block.component_data_objects(
-            ctype=Block, active=False, descend_into=True))
+    # component_data_objects active=False does not seem to work as expected
+    # Use difference of total and active block sets
+    return total_blocks_set(block) - activated_blocks_set(block)
 
 
 def number_deactivated_blocks(block):
-    b = 0
-    for o in block.component_data_objects(
-                    ctype=Block, active=False, descend_into=True):
-        b += 1
-    return b
+    # component_data_objects active=False does not seem to work as expected
+    # Use difference of total and active block sets
+    return number_total_blocks(block) - number_activated_blocks(block)
 
 
 # -------------------------------------------------------------------------
@@ -553,6 +559,13 @@ def report_statistics(block, ostream=None):
 # -------------------------------------------------------------------------
 # Common sub-methods
 def activated_block_component_generator(block, ctype):
+    # Yield local components first
+    for c in block.component_data_objects(ctype=ctype,
+                                          active=None,
+                                          descend_into=False):
+        yield c
+
+    # Then yield components in active sub-blocks
     for b in block.component_data_objects(
                 ctype=Block, active=True, descend_into=True):
         for c in b.component_data_objects(ctype=ctype,
