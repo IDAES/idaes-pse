@@ -1,33 +1,13 @@
-# General
-# -------
-bunch
-jupyter
-pytest
-sympy
-toml
-# Visualization
-# -------------
+--index-url https://pypi.python.org/simple/
+
+# Put versions of dependencies, required for deployment, here.
+# They will override abstract dependencies in `setup.py`
 bokeh==0.12.9
-matplotlib
-pandas
-Sphinx==1.8.5
-sphinx-argparse
-# DMF
-# ---
-backports.tempfile
-backports.shutil_get_terminal_size
-blessings
-humanize
-lxml
 pendulum==1.4.4
-psutil
-pyyaml
-tinydb
-# Testing
-# -------
-mock
-# Dev version of pyomo
-# --------------------
-# https://software.sandia.gov/svn/public/pyomo/pyomo/trunk
+
+# Pyomo
 git+https://github.com/PyUtilib/pyutilib
 git+https://github.com/pyomo/pyomo.git@IDAES
+
+# Install abstract dependencies from `setup.py`
+-e .
