@@ -23,7 +23,7 @@ from pyomo.network import Arc
 
 # Import IDAES core
 from idaes.core import FlowsheetBlock
-from idaes.core.util.model_statistics import ModelStatistics
+from idaes.core.util.model_statistics import report_statistics
 
 # Import Unit Model Modules
 import idaes.property_models.examples.saponification_thermo as thermo_props
@@ -112,9 +112,7 @@ def main():
 #    print("Tank 2 Outlet")
 #    m.fs.Tank2.outlet.display()
 
-    m.stats = ModelStatistics(m.fs)
-    m.stats.report()
-    print(m.stats.number_active_variables_in_deactivated_blocks())
+    report_statistics(m)
 
     # For testing purposes
     return(m, results)
