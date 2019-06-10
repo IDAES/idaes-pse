@@ -62,6 +62,7 @@ kwargs = dict(
             "flask-bower",
             "flask-restful",
             "jsonschema",
+            "jupyter_contrib_nbextensions",
             "mock",
             "networkx",
             "pytest-cov==2.5.0",
