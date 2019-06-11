@@ -6,7 +6,7 @@ shared: &shared
     - checkout
     - run: ./install-solvers.sh
     - run: sudo pip install pip==18.0.0
-    - run: sudo pip install -qr requirements-dev.txt
+    - run: sudo pip install -r requirements-dev.txt
     - run: pyomo --version
     - run: cd docs && make all
     - run: pytest -c pytest-dev.ini docs idaes -m "not nocircleci"

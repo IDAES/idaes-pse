@@ -66,7 +66,7 @@ kwargs = dict(
             "jupyter_contrib_nbextensions",
             "mock",
             "networkx",
-            "pytest-cov==2.5.0",
+            "pytest-cov",
             "python-coveralls",
             "six",
             "snowballstemmer==1.2.1",
