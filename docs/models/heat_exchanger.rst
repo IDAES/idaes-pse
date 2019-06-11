@@ -4,8 +4,7 @@ HeatExchanger (0D)
 .. index::
    pair: idaes.unit_models.heat_exchanger;HeatExchanger
 
-.. module:: idaes.unit_models.heat_exchanger
-  :noindex:
+.. currentmodule:: idaes.unit_models.heat_exchanger
 
 The HeatExchanger model can be imported from :code:`idaes.unit_models`,
 while additional rules and utility functions can be imported from
@@ -108,13 +107,11 @@ Temperature difference is an expression:
 The heat transfer coefficient is a variable with no associated constraints by default.
 
 
-See :class:`HeatExchanger` and :class:`HeatExchangerData` for full class details.
+.. autoclass:: HeatExchanger
+   :members:
 
-.. .. autoclass:: HeatExchanger
-..   :members:
-..
-.. .. autoclass:: HeatExchangerData
-..   :members:
+.. autoclass:: HeatExchangerData
+   :members:
 
 Rules
 -----
