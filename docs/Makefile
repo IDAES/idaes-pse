@@ -1,6 +1,9 @@
 # Makefile for Sphinx documentation
 #
 
+# Make sure readthedocs uses bash
+SHELL := /bin/bash
+
 # You can set these variables from the command line.
 # DATE          = $(shell date +%Y-%m-%d_%H%M%S)
 SPHINXOPTS    = -w sphinx-errors.txt -T
@@ -103,21 +106,32 @@ tutorial_setup:
 	@mkdir -p $(BUILDDIR)/tutorials
 	@mkdir -p ./tutorials
 
-tutorial_nb: ../examples/workshops/Module_*/*.ipynb
-	@for f in $^ ; do \
-		echo "** Execute and convert: $$f"; \
-		n=`basename $$f .ipynb`; \
-		m=`echo $$n | cut -d_ -f2`; \
-		cmd="jupyter nbconvert --to html -y --output-dir=./tutorials $$f"; \
-		$$cmd --execute 2>/dev/null; \
-		[ $$? -ne 0 ] && echo "** Execute notebook failed: creating static" && $$cmd; \
-		echo "Tutorial Module $$m: $$t\n==================================================\n" > ./tutorials/$$n.rst; \
-		echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
-	done
+tutorial_nb: ../examples/workshops/Module_*/*_Solution.ipynb
+	@for nbfile in $^ ; do \
+		echo "** Execute and convert: $$nbfile"; \
+		name=$$(basename $$nbfile .ipynb); \
+		title=$$(echo $$name | sed "s/_/ /g"); \
+		cmd="jupyter nbconvert --to html_embed -y --output-dir=./tutorials $$nbfile"; \
+		if [[ -n "$${READTHEDOCS+x}" ]]; then \
+			echo "Generating static tutorials for ReadTheDocs..."; \
+			echo "  $$cmd"; \
+			$$cmd; \
+		else \
+			$$cmd --execute 2>/dev/null; \
+			if [[ "$$?" -ne 0 ]]; then \
+				echo "** Execute notebook failed: creating static"; \
+				$${cmd}; \
+			fi; \
+		fi; \
+		echo -e "$${title}:\n==================================================\n" > ./tutorials/$${name}.rst; \
+		echo -e ".. raw:: html\n    :file: $${name}.html\n" >> ./tutorials/$${name}.rst; \
+	done \
 
 tutorial_imgs: ../examples/workshops/Module_*/*.png
 	@echo "** Copy images from ../examples/workshops/* to $(BUILDDIR)/tutorials"
-	@for f in $^; do cp $$f $(BUILDDIR)/tutorials; done
+	@for f in $^; do \
+		cp $$f $(BUILDDIR)/tutorials; \
+	done
 
 ###
 # End of tutorials section
