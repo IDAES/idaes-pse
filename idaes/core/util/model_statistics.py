@@ -85,6 +85,15 @@ def activated_blocks_set(block):
 
 
 def number_activated_blocks(block):
+    """
+    Method to return the number of activated Block components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of activated Block components in block (including block itself)
+    """
     b = 0
     if block.active:
         b = 1
@@ -112,6 +121,16 @@ def deactivated_blocks_set(block):
 
 
 def number_deactivated_blocks(block):
+    """
+    Method to return the number of deactivated Block components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of deactivated Block components in block (including block
+        itself)
+    """
     # component_data_objects active=False does not seem to work as expected
     # Use difference of total and active block sets
     return number_total_blocks(block) - number_activated_blocks(block)
@@ -134,6 +153,15 @@ def total_constraints_set(block):
 
 
 def number_total_constraints(block):
+    """
+    Method to return the total number of Constraint components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of Constraint components in block
+    """
     tc = 0
     for c in activated_block_component_generator(block, ctype=Constraint):
         tc += 1
@@ -141,6 +169,15 @@ def number_total_constraints(block):
 
 
 def activated_constraints_generator(block):
+    """
+    Generator which returns all activated Constraint components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all activated Constraint components block
+    """
     for c in activated_block_component_generator(block, ctype=Constraint):
         if c.active:
             yield c
@@ -161,6 +198,15 @@ def activated_constraints_set(block):
 
 
 def number_activated_constraints(block):
+    """
+    Method to return the number of activated Constraint components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of activated Constraint components in block
+    """
     tc = 0
     for c in activated_constraints_generator(block):
         tc += 1
@@ -168,6 +214,15 @@ def number_activated_constraints(block):
 
 
 def deactivated_constraints_generator(block):
+    """
+    Generator which returns all deactivated Constraint components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all deactivated Constraint components block
+    """
     for c in activated_block_component_generator(block, ctype=Constraint):
         if not c.active:
             yield c
@@ -188,6 +243,16 @@ def deactivated_constraints_set(block):
 
 
 def number_deactivated_constraints(block):
+    """
+    Method to return the number of deactivated Constraint components in a
+    model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of deactivated Constraint components in block
+    """
     tc = 0
     for c in deactivated_constraints_generator(block):
         tc += 1
@@ -197,6 +262,15 @@ def number_deactivated_constraints(block):
 # -------------------------------------------------------------------------
 # Equality Constraints
 def total_equalities_generator(block):
+    """
+    Generator which returns all equality Constraint components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all equality Constraint components block
+    """
     for c in activated_block_component_generator(block, ctype=Constraint):
         if (c.upper is not None and
                 c.lower is not None and
@@ -219,6 +293,16 @@ def total_equalities_set(block):
 
 
 def number_total_equalities(block):
+    """
+    Method to return the total number of equality Constraint components in a
+    model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of equality Constraint components in block
+    """
     tc = 0
     for c in total_equalities_generator(block):
         tc += 1
@@ -226,6 +310,17 @@ def number_total_equalities(block):
 
 
 def activated_equalities_generator(block):
+    """
+    Generator which returns all activated equality Constraint components in a
+    model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all activated equality Constraint components
+        block
+    """
     for c in block.component_data_objects(
                 Constraint, active=True, descend_into=True):
         if (c.upper is not None and c.lower is not None and
@@ -249,6 +344,16 @@ def activated_equalities_set(block):
 
 
 def number_activated_equalities(block):
+    """
+    Method to return the number of activated equality Constraint components in
+    a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of activated equality Constraint components in block
+    """
     tc = 0
     for o in activated_equalities_generator(block):
         tc += 1
@@ -256,6 +361,17 @@ def number_activated_equalities(block):
 
 
 def deactivated_equalities_generator(block):
+    """
+    Generator which returns all deactivated equality Constraint components in a
+    model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all deactivated equality Constraint
+        components block
+    """
     for c in total_equalities_generator(block):
         if not c.active:
             yield c
@@ -277,6 +393,16 @@ def deactivated_equalities_set(block):
 
 
 def number_deactivated_equalities(block):
+    """
+    Method to return the number of deactivated equality Constraint components
+    in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of deactivated equality Constraint components in block
+    """
     tc = 0
     for c in deactivated_equalities_generator(block):
         tc += 1
@@ -286,6 +412,16 @@ def number_deactivated_equalities(block):
 # -------------------------------------------------------------------------
 # Inequality Constraints
 def total_inequalities_generator(block):
+    """
+    Generator which returns all inequality Constraint components in a
+    model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all inequality Constraint components block
+    """
     for c in activated_block_component_generator(block, ctype=Constraint):
         if c.upper is None or c.lower is None:
             yield c
@@ -306,6 +442,16 @@ def total_inequalities_set(block):
 
 
 def number_total_inequalities(block):
+    """
+    Method to return the total number of inequality Constraint components in a
+    model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of inequality Constraint components in block
+    """
     c = 0
     for o in total_inequalities_generator(block):
         c += 1
@@ -313,6 +459,17 @@ def number_total_inequalities(block):
 
 
 def activated_inequalities_generator(block):
+    """
+    Generator which returns all activated inequality Constraint components in a
+    model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all activated inequality Constraint
+        components block
+    """
     for c in block.component_data_objects(
                 Constraint, active=True, descend_into=True):
         if c.upper is None or c.lower is None:
@@ -335,6 +492,16 @@ def activated_inequalities_set(block):
 
 
 def number_activated_inequalities(block):
+    """
+    Method to return the number of activated inequality Constraint components
+    in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of activated inequality Constraint components in block
+    """
     c = 0
     for o in activated_inequalities_generator(block):
         c += 1
@@ -342,6 +509,17 @@ def number_activated_inequalities(block):
 
 
 def deactivated_inequalities_generator(block):
+    """
+    Generator which returns all deactivated inequality Constraint components in
+    a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all indeactivated equality Constraint
+        components block
+    """
     for c in total_inequalities_generator(block):
         if not c.active:
             yield c
@@ -363,6 +541,16 @@ def deactivated_inequalities_set(block):
 
 
 def number_deactivated_inequalities(block):
+    """
+    Method to return the number of deactivated inequality Constraint components
+    in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of deactivated inequality Constraint components in block
+    """
     c = 0
     for o in deactivated_inequalities_generator(block):
         c += 1
@@ -388,10 +576,28 @@ def variables_set(block):
 
 
 def number_variables(block):
+    """
+    Method to return the number of Var components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of Var components in block
+    """
     return len(variables_set(block))
 
 
 def fixed_variables_generator(block):
+    """
+    Generator which returns all fixed Var components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all fixed Var components block
+    """
     for v in block.component_data_objects(
             ctype=Var, active=True, descend_into=True):
         if v.fixed:
@@ -412,6 +618,15 @@ def fixed_variables_set(block):
 
 
 def number_fixed_variables(block):
+    """
+    Method to return the number of fixed Var components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of fixed Var components in block
+    """
     return len(fixed_variables_set(block))
 
 
@@ -438,6 +653,17 @@ def variables_in_activated_constraints_set(block):
 
 
 def number_variables_in_activated_constraints(block):
+    """
+    Method to return the number of Var components that appear within active
+    Constraints in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of Var components which appear within active Constraints in
+        block
+    """
     return len(variables_in_activated_constraints_set(block))
 
 
@@ -461,6 +687,17 @@ def variables_in_activated_equalities_set(block):
 
 
 def number_variables_in_activated_equalities(block):
+    """
+    Method to return the number of Var components which appear within activated
+    equality Constraints in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of Var components which appear within activated equality
+        Constraints in block
+    """
     return len(variables_in_activated_equalities_set(block))
 
 
@@ -484,6 +721,17 @@ def variables_in_activated_inequalities_set(block):
 
 
 def number_variables_in_activated_inequalities(block):
+    """
+    Method to return the number of Var components which appear within activated
+    inequality Constraints in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of Var components which appear within activated inequality
+        Constraints in block
+    """
     return len(variables_in_activated_inequalities_set(block))
 
 
@@ -504,6 +752,17 @@ def variables_only_in_inequalities(block):
 
 
 def number_variables_only_in_inequalities(block):
+    """
+    Method to return the number of Var components which appear only within
+    activated inequality Constraints in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of Var components which appear only within activated inequality
+        Constraints in block
+    """
     return len(variables_only_in_inequalities(block))
 
 
@@ -529,6 +788,17 @@ def fixed_variables_in_activated_equalities_set(block):
 
 
 def number_fixed_variables_in_activated_equalities(block):
+    """
+    Method to return the number of fixed Var components which appear within
+    activated equality Constraints in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of fixed Var components which appear within activated equality
+        Constraints in block
+    """
     return len(fixed_variables_in_activated_equalities_set(block))
 
 
@@ -552,6 +822,17 @@ def unfixed_variables_in_activated_equalities_set(block):
 
 
 def number_unfixed_variables_in_activated_equalities(block):
+    """
+    Method to return the number of unfixed Var components which appear within
+    activated equality Constraints in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of unfixed Var components which appear within activated equality
+        Constraints in block
+    """
     return len(unfixed_variables_in_activated_equalities_set(block))
 
 
@@ -575,6 +856,17 @@ def fixed_variables_only_in_inequalities(block):
 
 
 def number_fixed_variables_only_in_inequalities(block):
+    """
+    Method to return the number of fixed Var components which only appear
+    within activated inequality Constraints in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of fixed Var components which only appear within activated
+        inequality Constraints in block
+    """
     return len(fixed_variables_only_in_inequalities(block))
 
 
@@ -596,6 +888,17 @@ def unused_variables_set(block):
 
 
 def number_unused_variables(block):
+    """
+    Method to return the number of Var components which do not appear within
+    any activated Constraint in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of Var components which do not appear within any activagted
+        Constraints in block
+    """
     return len(unused_variables_set(block))
 
 
@@ -619,6 +922,17 @@ def fixed_unused_variables_set(block):
 
 
 def number_fixed_unused_variables(block):
+    """
+    Method to return the number of fixed Var components which do not appear
+    within any activated Constraint in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of fixed Var components which do not appear within any activated
+        Constraints in block
+    """
     return len(fixed_unused_variables_set(block))
 
 
@@ -641,12 +955,33 @@ def derivative_variables_set(block):
 
 
 def number_derivative_variables(block):
+    """
+    Method to return the number of DerivativeVar components which
+    appear in a model. Users should note that DerivativeVars are converted to
+    ordinary Vars when a DAE transformation is applied. Thus, this method is
+    useful for detecting any DerivativeVars which were do transformed.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of DerivativeVar components which appear in block
+    """
     return len(derivative_variables_set(block))
 
 
 # -------------------------------------------------------------------------
 # Objective methods
 def total_objectives_generator(block):
+    """
+    Generator which returns all Objective components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all Objective components block
+    """
     for o in activated_block_component_generator(block, ctype=Objective):
         yield o
 
@@ -666,6 +1001,15 @@ def total_objectives_set(block):
 
 
 def number_total_objectives(block):
+    """
+    Method to return the number of Objective components which appear in a model
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of Objective components which appear in block
+    """
     c = 0
     for o in total_objectives_generator(block):
         c += 1
@@ -673,6 +1017,15 @@ def number_total_objectives(block):
 
 
 def activated_objectives_generator(block):
+    """
+    Generator which returns all activated Objective components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all activated Objective components block
+    """
     for o in activated_block_component_generator(block, ctype=Objective):
         if o.active:
             yield o
@@ -694,6 +1047,16 @@ def activated_objectives_set(block):
 
 
 def number_activated_objectives(block):
+    """
+    Method to return the number of activated Objective components which appear
+    in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of activated Objective components which appear in block
+    """
     c = 0
     for o in activated_objectives_generator(block):
         c += 1
@@ -701,6 +1064,15 @@ def number_activated_objectives(block):
 
 
 def deactivated_objectives_generator(block):
+    """
+    Generator which returns all deactivated Objective components in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        A generator which returns all deactivated Objective components block
+    """
     for o in activated_block_component_generator(block, ctype=Objective):
         if not o.active:
             yield o
@@ -722,6 +1094,16 @@ def deactivated_objectives_set(block):
 
 
 def number_deactivated_objectives(block):
+    """
+    Method to return the number of deactivated Objective components which
+    appear in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of deactivated Objective components which appear in block
+    """
     c = 0
     for o in deactivated_objectives_generator(block):
         c += 1
@@ -748,12 +1130,31 @@ def expressions_set(block):
 
 
 def number_expressions(block):
+    """
+    Method to return the number of Expression components which appear in a
+    model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of Expression components which  appear in block
+    """
     return len(expressions_set(block))
 
 
 # -------------------------------------------------------------------------
 # Other model statistics
 def degrees_of_freedom(block):
+    """
+    Method to return the degrees of freedom of a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of degrees of freedom in block.
+    """
     return (number_unfixed_variables_in_activated_equalities(block) -
             number_activated_equalities(block))
 
@@ -782,6 +1183,18 @@ def large_residuals_set(block, tol=1e-5):
 
 
 def number_large_residuals(block, tol=1e-5):
+    """
+    Method to return the number Constraint components with a residual greater
+    than a given threshold which appear in a model.
+
+    Args:
+        block - model to be studied
+        tol - residual threshold for inclusion in ComponentSet
+
+    Returns:
+        Number of Constraint components with a residual greater than tol which
+        appear in block
+    """
     lr = 0
     for c in block.component_data_objects(
             ctype=Constraint, active=True, descend_into=True):
@@ -813,6 +1226,17 @@ def active_variables_in_deactivated_blocks_set(block):
 
 
 def number_active_variables_in_deactivated_blocks(block):
+    """
+    Method to return the number of Var components which appear within an active
+    Constraint but belong to a deacitvated Block in a model.
+
+    Args:
+        block - model to be studied
+
+    Returns:
+        Number of Var components which belong to a deacitvated Block but appear
+        in an activate Constraint in block
+    """
     return len(active_variables_in_deactivated_blocks_set(block))
 
 
@@ -900,6 +1324,18 @@ def report_statistics(block, ostream=None):
 # -------------------------------------------------------------------------
 # Common sub-methods
 def activated_block_component_generator(block, ctype):
+    """
+    Generator which returns all the components of a given ctype which exist in
+    activated Blocks within a model.
+
+    Args:
+        block - model to be studied
+        ctype - type of Pyomo component to be returned by generator.
+
+    Returns:
+        A generator which returns all components of ctype which appear in
+        activated Blocks in block
+    """
     # Yield local components first
     for c in block.component_data_objects(ctype=ctype,
                                           active=None,
