@@ -1,6 +1,9 @@
 # Makefile for Sphinx documentation
 #
 
+# Make sure readthedocs uses bash
+SHELL := /bin/bash
+
 # You can set these variables from the command line.
 # DATE          = $(shell date +%Y-%m-%d_%H%M%S)
 SPHINXOPTS    = -w sphinx-errors.txt -T
@@ -97,42 +100,38 @@ html:
 # a "tutorials" target.
 ###
 
-tutorials: tutorial_setup tutorial_solns tutorial_probs tutorial_imgs
+tutorials: tutorial_setup tutorial_nb tutorial_imgs
 
 tutorial_setup:
 	@mkdir -p $(BUILDDIR)/tutorials
 	@mkdir -p ./tutorials
 
-tutorial_solns: ../examples/workshops/Module_*/*Solution*.ipynb
-	@for f in $^ ; do \
-		echo "** Execute and convert: $$f"; \
-		n=`basename $$f .ipynb`; \
-		m=`echo $$n | cut -d_ -f2`; \
-		t=`basename $$n _Solution | cut -d_ -f3- | tr _ ' '`; \
-		case $$m in 2) exe="" ; echo "   not executing" ;; \
-		  *) exe="--execute" ;; \
-		esac; \
-		jupyter nbconvert --to html -y $$exe --output-dir=./tutorials $$f; \
-		echo "Tutorial Module $$m: $$t\n==================================================\n" > ./tutorials/$$n.rst; \
-		echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
-	done
-
-tutorial_probs: ../examples/workshops/Module_*/Module_*.ipynb
-	@for f in $^ ; do \
-		is_soln=`echo $$f | grep -Fsc Solution`; \
-		if [ $$is_soln -eq 0 ]; then \
-			echo "** Convert static: $$f"; \
-			jupyter nbconvert --to html -y --output-dir=./tutorials $$f; \
-			n=`basename $$f .ipynb`; \
-			m=`echo $$n | cut -d_ -f2`; \
-			t=`echo $$n | cut -d_ -f3- | tr _ ' '`; \
-			echo "Tutorial Module $$m: $$t\n==================================================\n" > ./tutorials/$$n.rst; \
-			echo ".. raw:: html\n    :file: $$n.html\n" >> ./tutorials/$$n.rst; \
+tutorial_nb: ../examples/workshops/Module_*/*_Solution.ipynb
+	@for nbfile in $^ ; do \
+		echo "** Execute and convert: $$nbfile"; \
+		name=$$(basename $$nbfile .ipynb); \
+		title=$$(echo $$name | sed "s/_/ /g"); \
+		cmd="jupyter nbconvert --to html_embed -y --output-dir=./tutorials $$nbfile"; \
+		if [[ -n "$${READTHEDOCS+x}" ]]; then \
+			echo "Generating static tutorials for ReadTheDocs..."; \
+			echo "  $$cmd"; \
+			$$cmd; \
+		else \
+			$$cmd --execute 2>/dev/null; \
+			if [[ "$$?" -ne 0 ]]; then \
+				echo "** Execute notebook failed: creating static"; \
+				$${cmd}; \
+			fi; \
 		fi; \
-	done
+		echo -e "$${title}:\n==================================================\n" > ./tutorials/$${name}.rst; \
+		echo -e ".. raw:: html\n    :file: $${name}.html\n" >> ./tutorials/$${name}.rst; \
+	done \
 
 tutorial_imgs: ../examples/workshops/Module_*/*.png
-	for f in $^; do cp $$f $(BUILDDIR)/tutorials; done
+	@echo "** Copy images from ../examples/workshops/* to $(BUILDDIR)/tutorials"
+	@for f in $^; do \
+		cp $$f $(BUILDDIR)/tutorials; \
+	done
 
 ###
 # End of tutorials section
