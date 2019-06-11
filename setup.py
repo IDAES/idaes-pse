@@ -40,6 +40,7 @@ kwargs = dict(
         "jupyter",
         "lxml",
         "matplotlib",
+        "mock",
         "pandas",
         "pendulum",
         "psutil",
