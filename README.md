@@ -76,3 +76,4 @@ This should start up a notebook server and then pop up a tab or window in your d
 General, background and overview information is available at the [IDAES main website](https://www.idaes.org).
 Framework development happens at our [GitHub repo](https://github.com/IDAES/idaes-pse) where you can [report issues/bugs](https://github.com/IDAES/idaes-pse/issues) or [make contributions](https://github.com/IDAES/idaes-pse/pulls).
 For further enquiries, send an email to: <idaes-support@idaes.org>
+
