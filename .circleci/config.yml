@@ -1,6 +1,6 @@
 version: 2.0
 
-shared: &shared
+shared-dev: &shared-dev
   working_directory: ~/repo
   steps:
     - checkout
@@ -12,11 +12,25 @@ shared: &shared
     - run: pytest -c pytest-dev.ini docs idaes -m "not nocircleci"
     - run: coverage report
     - run: coveralls
+
+shared: &shared
+  working_directory: ~/repo
+  steps:
+    - checkout
+    - run: ./install-solvers.sh
+    - run: sudo pip install pip==18.0.0
+    - run: sudo pip install -r requirements.txt
+    - run: pytest -c pytest.ini idaes -m "not nocircleci"
+
 jobs:
   "python-3.7":
     docker:
       - image: circleci/python:3.7
     <<: *shared
+  "python-3.7-dev":
+    docker:
+      - image: circleci/python:3.7
+    <<: *shared-dev
 
 workflows:
   version: 2
