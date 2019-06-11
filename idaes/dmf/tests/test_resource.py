@@ -20,47 +20,60 @@ import logging
 import math
 import os
 import shutil
+import sys
 import tempfile
+
 # third-party
 import pendulum
 import pytest
+
 # local
 from idaes.dmf import resource, propdata
+
 # for testing
 from .util import init_logging
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>"
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 init_logging()
 _log = logging.getLogger(__name__)
 
-test_version = '1.2.3'
+test_version = "1.2.3"
 
 
 @pytest.fixture
 def example_resource():
     r = resource.Resource()
-    r.v['version_info']['version'] = test_version
-    r.v['collaborators'] = [
-        {'name': 'Clark Kent', 'email': 'ckent@dailyplanet.com'},
-        {'name': 'Superman', 'email': 'sman@fortress.solitude.org'}]
-    r.v['sources'].append(
-        {'isbn': '978-0201616224',
-         'source':  'Hunt, A. and Thomas, D., "The Pragmatic Programmer", '
-                    'Addison-Wesley, 1999',
-         'date': '1999-01-01'})
-    r.v['codes'].append({'type': 'function', 'name': 'test_resource_full',
-                         'desc': 'The test function', 'location': __file__,
-                         'version': test_version})
-    r.v['datafiles'].append({'path': '/etc/passwd'})
-    r.v['aliases'] = ['test_resource_full']
-    r.v['tags'] = ['test', 'resource']
+    r.v["version_info"]["version"] = test_version
+    r.v["collaborators"] = [
+        {"name": "Clark Kent", "email": "ckent@dailyplanet.com"},
+        {"name": "Superman", "email": "sman@fortress.solitude.org"},
+    ]
+    r.v["sources"].append(
+        {
+            "isbn": "978-0201616224",
+            "source": 'Hunt, A. and Thomas, D., "The Pragmatic Programmer", '
+            "Addison-Wesley, 1999",
+            "date": "1999-01-01",
+        }
+    )
+    r.v["codes"].append(
+        {
+            "type": "function",
+            "name": "test_resource_full",
+            "desc": "The test function",
+            "location": __file__,
+            "version": test_version,
+        }
+    )
+    r.v["datafiles"].append({"path": "/etc/passwd"})
+    r.v["aliases"] = ["test_resource_full"]
+    r.v["tags"] = ["test", "resource"]
     # r.relations  -- deal with this separately
-    r.data = {
-        'arbitrary': {
-            'values': [1, 2, 3]
-        },
-    }
+    r.data = {"arbitrary": {"values": [1, 2, 3]}}
     return r
 
 
@@ -81,27 +94,22 @@ def test_resource_roundtrip(example_resource):
     # reconstruct from the deserialized JSON
     r2 = resource.Resource(value=r2_value)
     # compare them
-    assert r2.v['version_info'] == r.v['version_info']
-    assert r2.v['sources'][0]['date'] == r.v['sources'][0]['date']
-    assert r2.data['arbitrary']['values'][0] == 1
+    assert r2.v["version_info"] == r.v["version_info"]
+    assert r2.v["sources"][0]["date"] == r.v["sources"][0]["date"]
+    assert r2.data["arbitrary"]["values"][0] == 1
 
 
 _propd = [
-        {
-            "name": "Viscosity Value",
-            "units": "mPa-s",
-            "values": [2.6, 6.2],
-            "error_type": "absolute",
-            "errors": [0.06, 0.004],
-            "type": "property"
-        },
-        {
-            "name": "r",
-            "units": "",
-            "values": [0.2, 1000],
-            "type": "state"
-        }
-    ]
+    {
+        "name": "Viscosity Value",
+        "units": "mPa-s",
+        "values": [2.6, 6.2],
+        "error_type": "absolute",
+        "errors": [0.06, 0.004],
+        "type": "property",
+    },
+    {"name": "r", "units": "", "values": [0.2, 1000], "type": "state"},
+]
 
 _propm = {
     "datatype": "MEA",
@@ -109,18 +117,18 @@ _propm = {
     "notes": "r is MEA weight fraction in aqueous soln.",
     "authors": "Amundsen, T.G., Lars, E.O., Eimer, D.A.",
     "title": "Density and Viscosity of Monoethanolamine + .etc.",
-    "date": "1970-01-01"
+    "date": "1970-01-01",
 }
 
 
 def test_property_data_resource():
     r = resource.Resource()
-    r.data = {'data': _propd, 'meta': _propm}
-    tbl = propdata.PropertyTable(data=r.data['data'], metadata=r.data['meta'])
+    r.data = {"data": _propd, "meta": _propm}
+    tbl = propdata.PropertyTable(data=r.data["data"], metadata=r.data["meta"])
     assert tbl.data.properties[0]
-    assert tbl.data.properties[0]['values'] == _propd[0]['values']
-    assert tbl.data.properties[0]['errors'] == _propd[0]['errors']
-    assert tbl.metadata[0].title == _propm['title']
+    assert tbl.data.properties[0]["values"] == _propd[0]["values"]
+    assert tbl.data.properties[0]["errors"] == _propd[0]["errors"]
+    assert tbl.metadata[0].title == _propm["title"]
 
 
 def test_validate_default(default_resource):
@@ -134,31 +142,31 @@ def test_validate_example(example_resource):
 def test_validate_preprocess(default_resource):
     r = default_resource
     r.validate()
-    r.v['created'] = '2012-01-01'
-    r.v['modified'] = '2012-01-01'
-    r.v['version_info']['created'] = '2011-01-01'
+    r.v["created"] = "2012-01-01"
+    r.v["modified"] = "2012-01-01"
+    r.v["version_info"]["created"] = "2011-01-01"
     r.validate()
     with pytest.raises(ValueError):
-        r.v['created'] = 'None of your business'
+        r.v["created"] = "None of your business"
         r.validate()
 
 
 @pytest.fixture
 def tmpd():
-    d = tempfile.mkdtemp(prefix='test_resource_', suffix='.idaes')
+    d = tempfile.mkdtemp(prefix="test_resource_", suffix=".idaes")
     yield d
     shutil.rmtree(d)
 
 
 def test_get_datafiles_relative(default_resource, tmpd):
     r = default_resource
-    r.v['datafiles_dir'] = tmpd  # paths are now relative to this
+    r.v["datafiles_dir"] = tmpd  # paths are now relative to this
     paths = set()
     for i in range(3):
-        name = 'file{:d}'.format(i)
+        name = "file{:d}".format(i)
         path = os.path.join(tmpd, name)
-        open(path, 'w').write('hello {:d}\n'.format(i))
-        r.v['datafiles'].append({'path': name})
+        open(path, "w").write("hello {:d}\n".format(i))
+        r.v["datafiles"].append({"path": name})
         paths.add(path)
     # check that these, and only these, files are returned
     for f in r.get_datafiles():
@@ -171,11 +179,11 @@ def test_get_datafiles_absolute(default_resource, tmpd):
     r = default_resource
     paths = set()
     for i in range(3):
-        name = 'file{:d}'.format(i)
+        name = "file{:d}".format(i)
         path = os.path.join(tmpd, name)
-        open(path, 'w').write('hello {:d}\n'.format(i))
+        open(path, "w").write("hello {:d}\n".format(i))
         # note: unlike "..._relative()", add the full path
-        r.v['datafiles'].append({'path': path})
+        r.v["datafiles"].append({"path": path})
         paths.add(path)
     # check that these, and only these, files are returned
     for f in r.get_datafiles():
@@ -186,23 +194,21 @@ def test_get_datafiles_absolute(default_resource, tmpd):
 
 def test_create_relation(default_resource, example_resource):
     r1, r2 = default_resource, example_resource
-    relation = resource.Triple(r1,
-                                resource.PR_USES,
-                                r2)
+    relation = resource.Triple(r1, resource.PR_USES, r2)
     resource.create_relation(relation)
     with pytest.raises(ValueError):  # duplicate will raise ValueError
         resource.create_relation(relation)
-    assert len(r1.v['relations']) == 1
-    assert len(r2.v['relations']) == 1
-    assert r1.v['relations'][0]['role'] == 'subject'
-    assert r2.v['relations'][0]['role'] == 'object'
-    assert r1.v['relations'][0]['identifier'] == r2.v[r2.ID_FIELD]
-    assert r2.v['relations'][0]['identifier'] == r1.v[r2.ID_FIELD]
+    assert len(r1.v["relations"]) == 1
+    assert len(r2.v["relations"]) == 1
+    assert r1.v["relations"][0]["role"] == "subject"
+    assert r2.v["relations"][0]["role"] == "object"
+    assert r1.v["relations"][0]["identifier"] == r2.v[r2.ID_FIELD]
+    assert r2.v["relations"][0]["identifier"] == r1.v[r2.ID_FIELD]
     # some errors
     with pytest.raises(ValueError):
-        resource.create_relation_args('foo', 'bad predicate', 'bar')
+        resource.create_relation_args("foo", "bad predicate", "bar")
     # delete relation from subject to test duplicate check for object
-    r1.v['relations'] = []
+    r1.v["relations"] = []
     with pytest.raises(ValueError):  # dup raises ValueError
         resource.create_relation(relation)
 
@@ -217,24 +223,23 @@ def test_date_float():
     now_float = now.timestamp()
     assert resource.date_float(now) == now_float
     # tuples
-    now_tuple = tuple(list(now.timetuple()[:6]) +
-                      [now.microsecond, now.tzinfo])
+    now_tuple = tuple(list(now.timetuple()[:6]) + [now.microsecond, now.tzinfo])
     assert resource.date_float(now_tuple) == now_float
     with pytest.raises(ValueError):
-        resource.date_float(tuple('garbage'))
+        resource.date_float(tuple("garbage"))
     # datetime
     assert resource.date_float(datetime.datetime(*now_tuple)) == now_float
     # strings
     with pytest.raises(ValueError):
-        resource.date_float('garbage')
+        resource.date_float("garbage")
     assert resource.date_float(now.isoformat()) == now_float
     # int/float
     assert resource.date_float(now_float) == now_float
     assert resource.date_float(int(now_float)) == math.floor(now_float)
-#    with pytest.raises(ValueError):
-#        resource.date_float(1e12)
-#    with pytest.raises(ValueError):
-#        resource.date_float(1000000000000)
+    #    with pytest.raises(ValueError):
+    #        resource.date_float(1e12)
+    #    with pytest.raises(ValueError):
+    #        resource.date_float(1000000000000)
     # none
     with pytest.raises(ValueError):
         resource.date_float(None)
@@ -243,47 +248,47 @@ def test_date_float():
 def test_version_list():
     f = resource.version_list
     # any tuple prefix is fine
-    assert f(1) == f((1,)) == f((1, 0)) == f((1, 0, 0)) == f((1, 0, 0, ''))
+    assert f(1) == f((1,)) == f((1, 0)) == f((1, 0, 0)) == f((1, 0, 0, ""))
     # same thing with a string is fine
-    assert f('1') == f('1.0') == f('1.0.0')
+    assert f("1") == f("1.0") == f("1.0.0")
     # check all bad possibilities
     with pytest.raises(ValueError):
         f(())
     with pytest.raises(ValueError):
         f(1.0)
     with pytest.raises(ValueError):
-        f(('a',))
+        f(("a",))
     with pytest.raises(ValueError):
-        f(('a', 'b'))
+        f(("a", "b"))
     with pytest.raises(ValueError):
         f((1, 2, 3, None))
     with pytest.raises(ValueError):
         f((1, 2, 3, datetime.datetime))
     with pytest.raises(ValueError):
-        f('1.2.3.4')  # last bit can't start with '.'
-    assert f('1.2.3RC3') == [1, 2, 3, 'RC3']   # extra
-    assert f('1.2.3-RC3') == [1, 2, 3, 'RC3']  # stripped "-"
+        f("1.2.3.4")  # last bit can't start with '.'
+    assert f("1.2.3RC3") == [1, 2, 3, "RC3"]  # extra
+    assert f("1.2.3-RC3") == [1, 2, 3, "RC3"]  # stripped "-"
 
 
 def test_format_version():
-    assert resource.format_version([1, 2, 3, 'RC3']) == '1.2.3-RC3'
+    assert resource.format_version([1, 2, 3, "RC3"]) == "1.2.3-RC3"
 
 
 def test_identifier_str():
     assert len(resource.identifier_str()) > 1
-    assert resource.identifier_str('0' * 32) == '0' * 32
+    assert resource.identifier_str("0" * 32) == "0" * 32
     with pytest.raises(ValueError):
-        resource.identifier_str('foobar')
+        resource.identifier_str("foobar")
     with pytest.raises(ValueError):
-        resource.identifier_str('0' * 31 + 'X')
+        resource.identifier_str("0" * 31 + "X")
 
 
 def test_dirty_bit():
-    dd = resource.Dict({'value': 1})
+    dd = resource.Dict({"value": 1})
     assert dd.is_dirty()
     dd.set_clean()
     assert not dd.is_dirty()
-    dd['value'] = 2
+    dd["value"] = 2
     assert dd.is_dirty()
     dd.set_clean()
     assert not dd.is_dirty()
@@ -296,7 +301,7 @@ def test_validate_onlywhendirty(default_resource):
     assert r._validations == 1
     r.validate()
     assert r._validations == 1
-    r.v['tags'] = ['one tag']
+    r.v["tags"] = ["one tag"]
     r.validate()
     assert r._validations == 2
     r.validate()
@@ -304,24 +309,27 @@ def test_validate_onlywhendirty(default_resource):
 
 
 def test_triple_from_resource_relations():
-    i = 'cookie monster'
-    j = 'cookies'
+    i = "cookie monster"
+    j = "cookies"
     # cookie monster likes cookies
-    d = {resource.RR_ROLE: resource.RR_SUBJ,
-         resource.RR_ID: j,
-         resource.RR_PRED: 'likes'}
+    d = {
+        resource.RR_ROLE: resource.RR_SUBJ,
+        resource.RR_ID: j,
+        resource.RR_PRED: "likes",
+    }
     t = resource.triple_from_resource_relations(i, d)
     assert t.subject == i
-    assert t.predicate == 'likes'
+    assert t.predicate == "likes"
     assert t.object == j
     # cookies are liked by cookie monster
     # result is same relation triple as above
-    d = {resource.RR_ROLE: resource.RR_OBJ,
-         resource.RR_ID: i,
-         resource.RR_PRED: 'likes'}
+    d = {
+        resource.RR_ROLE: resource.RR_OBJ,
+        resource.RR_ID: i,
+        resource.RR_PRED: "likes",
+    }
     t = resource.triple_from_resource_relations(j, d)
     assert t.subject == i
-    assert t.predicate == 'likes'
+    assert t.predicate == "likes"
     assert t.object == j
-
 
