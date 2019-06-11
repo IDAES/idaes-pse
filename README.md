@@ -35,7 +35,7 @@ Note that Python 3.5 is *not* supported.
 in the LICENSE.txt and COPYRIGHT.txt files in this directory.**
 
 ## Getting Started
-For installation instructions, please refer to the [online documentation](https://idaes-pse.readthedocs.io/en/latest/).
+For installation instructions, please refer to the [online documentation](https://idaes-pse.readthedocs.io/en/stable/).
 
 The documentation for IDAES is built using [Sphinx](http://www.sphinx-doc.org/). To generate the HTML version of the documentation, first make sure Sphinx is installed for your version of Python, then go to the "docs/" subdirectory and run the _Makefile_:
 
@@ -76,3 +76,4 @@ This should start up a notebook server and then pop up a tab or window in your d
 General, background and overview information is available at the [IDAES main website](https://www.idaes.org).
 Framework development happens at our [GitHub repo](https://github.com/IDAES/idaes-pse) where you can [report issues/bugs](https://github.com/IDAES/idaes-pse/issues) or [make contributions](https://github.com/IDAES/idaes-pse/pulls).
 For further enquiries, send an email to: <idaes-support@idaes.org>
+
