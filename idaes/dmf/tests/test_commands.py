@@ -16,19 +16,26 @@ Tests for idaes.dmf.commands
 import logging
 import os
 import shutil
+import sys
 import tempfile
+
 #
 import pytest
+
 #
 from idaes.dmf import dmfbase, commands, errors, workspace, util
 from .util import init_logging
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>"
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 init_logging()
 _log = logging.getLogger(__name__)
 
-@pytest.fixture(scope='function')
+
+@pytest.fixture(scope="function")
 def wspath():
     dirname = tempfile.mkdtemp()
     yield dirname
@@ -37,26 +44,26 @@ def wspath():
 
 
 def test_workspace_init(wspath):
-    commands.workspace_init(wspath, {'some': 'metadata'})
+    commands.workspace_init(wspath, {"some": "metadata"})
     try:
-        commands.workspace_init(wspath, {'some': 'metadata'})
-        assert False,'Duplicate workspace init succeeded'
+        commands.workspace_init(wspath, {"some": "metadata"})
+        assert False, "Duplicate workspace init succeeded"
     except errors.CommandError:
         pass
 
 
 def test_workspace_info(wspath):
-    commands.workspace_init(wspath, {'some': 'metadata'})
+    commands.workspace_init(wspath, {"some": "metadata"})
     commands.workspace_info(wspath)
 
-#    subdir = os.path.join(wspath, 'stuff')
-#    os.mkdir(subdir)
-#    commands.workspace_info(subdir)
+    #    subdir = os.path.join(wspath, 'stuff')
+    #    os.mkdir(subdir)
+    #    commands.workspace_info(subdir)
 
-    notasubdir = os.path.join(wspath, 'nope')
+    notasubdir = os.path.join(wspath, "nope")
     try:
         commands.workspace_info(notasubdir)
-        assert False, 'Nonexistent subdir workspace info success'
+        assert False, "Nonexistent subdir workspace info success"
     except errors.CommandError:
         pass
 
@@ -64,7 +71,7 @@ def test_workspace_info(wspath):
 @pytest.mark.skip
 def test_find_html_docs(wspath):
     filedir = os.path.dirname(__file__)
-    docpath = os.path.join(filedir, '..', 'docs', 'build', 'html')
+    docpath = os.path.join(filedir, "..", "docs", "build", "html")
     commands.workspace_init(wspath, {}, html_paths=[docpath])
     dmfobj = dmfbase.DMF(wspath)
     filenames = commands.find_html_docs(dmfobj, dmfobj)
