@@ -20,15 +20,20 @@ import random
 import shutil
 import sys
 import tempfile
+
 # third-party
 import pytest
+
 # package
 import idaes
 from idaes.dmf import codesearch
 from idaes.core import property_meta
 from .util import init_logging
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>"
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 init_logging()
 _log = logging.getLogger(__name__)
@@ -71,16 +76,23 @@ def test_walker():
 
 # Common setup
 
-walker_args = dict(class_expr='_TestClass\d?',
-                   parent_class=codesearch._TestClass,
-                   suppress_warnings=False)
+walker_args = dict(
+    class_expr="_TestClass\d?",
+    parent_class=codesearch._TestClass,
+    suppress_warnings=False,
+)
 
-walker_args_noex = dict(parent_class=codesearch._TestClass,
-                        suppress_warnings=False)
+walker_args_noex = dict(parent_class=codesearch._TestClass, suppress_warnings=False)
 
 walker_args_noexclude = walker_args.copy()
-walker_args_noexclude.update(dict(exclude_testdirs=False, exclude_tests=False,
-                                  exclude_init=False, exclude_setup=False))
+walker_args_noexclude.update(
+    dict(
+        exclude_testdirs=False,
+        exclude_tests=False,
+        exclude_init=False,
+        exclude_setup=False,
+    )
+)
 
 
 @pytest.fixture
@@ -92,6 +104,7 @@ def package_walker():
 
 
 # Test different kinds of walkers
+
 
 def test_from_pkg_withexpr():
     walker = codesearch.ModuleClassWalker(from_pkg=idaes, **walker_args)
@@ -111,14 +124,15 @@ def test_from_path_only():
 
 def test_from_path_and_from_pkg():
     idpath = idaes.__path__[0]
-    walker = codesearch.ModuleClassWalker(from_path=idpath,
-                                          from_pkg=idaes,
-                                          **walker_args)
+    walker = codesearch.ModuleClassWalker(
+        from_path=idpath, from_pkg=idaes, **walker_args
+    )
     _visit(walker)
 
 
 def test_from_pkg_no_path():
     import os
+
     try:
         codesearch.ModuleClassWalker(from_pkg=os, **walker_args)
     except IOError:
@@ -128,14 +142,14 @@ def test_from_pkg_no_path():
 
 
 def test_missing_args():
-    pytest.raises(ValueError, codesearch.ModuleClassWalker,
-                  class_expr='_TestClass')
+    pytest.raises(ValueError, codesearch.ModuleClassWalker, class_expr="_TestClass")
 
 
 def test_bad_path():
     try:
-        codesearch.ModuleClassWalker(from_path='/a/b/c', from_pkg=idaes,
-                                     class_expr='_TestClass')
+        codesearch.ModuleClassWalker(
+            from_path="/a/b/c", from_pkg=idaes, class_expr="_TestClass"
+        )
     except IOError:
         pass
     else:
@@ -143,11 +157,13 @@ def test_bad_path():
 
 
 def test_warnings():
-    walker = codesearch.ModuleClassWalker(from_pkg=idaes,
-                                          class_expr='_TestClass',
-                                          parent_class=codesearch._TestClass,
-                                          suppress_warnings=False,
-                                          exclude_dirs=['contrib'])
+    walker = codesearch.ModuleClassWalker(
+        from_pkg=idaes,
+        class_expr="_TestClass",
+        parent_class=codesearch._TestClass,
+        suppress_warnings=False,
+        exclude_dirs=["contrib"],
+    )
     _visit(walker)
 
 
@@ -158,15 +174,15 @@ def dummy_package():
     # build a bad module in a temporary package
     d = tempfile.mkdtemp()
     sys.path.append(d)
-    foo = os.path.join(d, 'foo{}'.format(random.randint(1e6, 1e7-1)))
+    foo = os.path.join(d, "foo{}".format(random.randint(1e6, 1e7 - 1)))
     os.mkdir(foo)
-    open(os.path.join(foo, '__init__.py'), 'w')
+    open(os.path.join(foo, "__init__.py"), "w")
     # create some modules
-    m = open(os.path.join(foo, 'goodmodule.py'), 'w')
-    m.write('class IndexMe(object):\n    pass\n')
+    m = open(os.path.join(foo, "goodmodule.py"), "w")
+    m.write("class IndexMe(object):\n    pass\n")
     m.close()
-    m = open(os.path.join(foo, 'badmodule.py'), 'w')
-    m.write('This is a bad module.\n')
+    m = open(os.path.join(foo, "badmodule.py"), "w")
+    m.write("This is a bad module.\n")
     m.close()
     yield foo
     # clean up
@@ -175,29 +191,28 @@ def dummy_package():
 
 
 def test_cannot_import(dummy_package):
-    w = codesearch.ModuleClassWalker(from_path=dummy_package,
-                                     suppress_warnings=False)
+    w = codesearch.ModuleClassWalker(from_path=dummy_package, suppress_warnings=False)
     w.walk(DummyVisitor())
     assert len(w.get_indexed_classes()) == 1
 
 
 def test_cannot_import_nowarn(dummy_package):
-    w = codesearch.ModuleClassWalker(from_path=dummy_package,
-                                     suppress_warnings=True)
+    w = codesearch.ModuleClassWalker(from_path=dummy_package, suppress_warnings=True)
     w.walk(DummyVisitor())
     assert len(w.get_indexed_classes()) == 1
 
 
 def test_get_metadata_unimplemented(dummy_package):
-    print('@@ GMU sys.path={}'.format(sys.path))
-    f = open(os.path.join(dummy_package, 'unimpl.py'), 'w')
-    f.write('class U(object):\n'
-            '    @classmethod\n'
-            '    def get_metadata(cls):\n'
-            '        raise NotImplementedError\n')
+    print("@@ GMU sys.path={}".format(sys.path))
+    f = open(os.path.join(dummy_package, "unimpl.py"), "w")
+    f.write(
+        "class U(object):\n"
+        "    @classmethod\n"
+        "    def get_metadata(cls):\n"
+        "        raise NotImplementedError\n"
+    )
     f.close()
-    w = codesearch.ModuleClassWalker(from_path=dummy_package,
-                                     suppress_warnings=True)
+    w = codesearch.ModuleClassWalker(from_path=dummy_package, suppress_warnings=True)
     visitor = codesearch.PropertyMetadataVisitor()
     w.walk(visitor)
 
@@ -217,9 +232,10 @@ def test_get_indexed_classes(package_walker):
 
 # Visitor-related tests
 
+
 def test_visitor():
     v = codesearch.Visitor()
-    v.visit('foo')
+    v.visit("foo")
 
 
 class MetadataHaver(property_meta.HasPropertyClassMetadata):
@@ -236,7 +252,7 @@ def test_metadata_visitor():
 def test_print_metadata_visitor():
     pmv = codesearch.PrintPropertyMetadataVisitor()
     pcm = property_meta.PropertyClassMetadata()
-    pcm.add_properties({'foo': {'method': 'bogus'}})
+    pcm.add_properties({"foo": {"method": "bogus"}})
     pmv.visit_metadata(MetadataHaver, pcm)
 
 
@@ -245,35 +261,41 @@ def test_print_metadata_visitor():
 
 @pytest.fixture()
 def tmpd():
-    d = tempfile.mkdtemp(suffix='codesearch_get_modules')
+    d = tempfile.mkdtemp(suffix="codesearch_get_modules")
     yield d
     shutil.rmtree(d)
 
 
 def test__get_modules(tmpd):
     # make a temporary directory with some files and subdirs
-    dirs = [('a',), ('b',), ('c',), ('a', '1'), ('a', '2'), ('a', '2', 'i')]
+    dirs = [("a",), ("b",), ("c",), ("a", "1"), ("a", "2"), ("a", "2", "i")]
     for d in dirs:
         os.mkdir(os.path.join(tmpd, *d))
-    files_skip = [('__init__.py',), ('foo.sh',),
-                  ('a', 'bar.py'),
-                  ('a', '1', '__init__.py'),
-                  ('a', '2', 'i', '__init__.py'),
-                  ('c', '__init__.py'), ('c', 'data.dat')]
+    files_skip = [
+        ("__init__.py",),
+        ("foo.sh",),
+        ("a", "bar.py"),
+        ("a", "1", "__init__.py"),
+        ("a", "2", "i", "__init__.py"),
+        ("c", "__init__.py"),
+        ("c", "data.dat"),
+    ]
     for f in files_skip:
         path = os.path.join(tmpd, *f)
-        open(path, 'w').write('SKIP\n')
-    files_find = [('foo.py',),
-                  ('a', 'bar.py'),
-                  ('a', '1', 'file.py'),
-                  ('a', '2', 'i', 'file.py'),
-                  ('b', 'foo.py')]
+        open(path, "w").write("SKIP\n")
+    files_find = [
+        ("foo.py",),
+        ("a", "bar.py"),
+        ("a", "1", "file.py"),
+        ("a", "2", "i", "file.py"),
+        ("b", "foo.py"),
+    ]
     wlk = codesearch.ModuleClassWalker(from_path=tmpd)
     expect_modules = set()
     for f in files_find:
         path = os.path.join(tmpd, *f)
-        open(path, 'w').write('FIND\n')
-        modname = '.'.join([wlk._pkg] + list(f))[:-3]  # strip '.py'
+        open(path, "w").write("FIND\n")
+        modname = ".".join([wlk._pkg] + list(f))[:-3]  # strip '.py'
         expect_modules.add(modname)
     for mod in wlk._get_modules():
         assert mod in expect_modules

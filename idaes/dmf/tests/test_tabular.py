@@ -20,15 +20,22 @@ import json
 import logging
 import os
 from six import StringIO
+import sys
+
 # third-party
 import pytest
+
 # package-local
 from idaes.dmf import tabular
 from idaes.dmf import util, errors
+
 # for testing
 from .util import init_logging
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>"
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 init_logging()
 _log = logging.getLogger(__name__)
@@ -38,14 +45,14 @@ F = tabular.Fields
 # class: Column
 
 data_column = {
-    F.DATA_UNITS: 'ms',
+    F.DATA_UNITS: "ms",
     F.DATA_VALUES: [1.0, 2.0, 3.0],
-    F.DATA_ERRORS: [0., -1., -2.],
-    F.DATA_ERRTYPE: 'whatever',
-    'extra': 'ignored'
+    F.DATA_ERRORS: [0.0, -1.0, -2.0],
+    F.DATA_ERRTYPE: "whatever",
+    "extra": "ignored",
 }
 
-column_name = 'hello'
+column_name = "hello"
 
 
 @pytest.fixture
@@ -71,22 +78,24 @@ def test_column_len(col):
 
 
 ex_metadata = {
-    F.DTYPE: 'foobar',
-    F.AUTH: 'Philip Roth',
-    F.DATE: '1969-01-12',
+    F.DTYPE: "foobar",
+    F.AUTH: "Philip Roth",
+    F.DATE: "1969-01-12",
     F.TITLE: "Portnoy's Complaint",
-    F.INFO: 'Random House'
+    F.INFO: "Random House",
 }
 
-ex_csv = '\n'.join([
-    '# This is some metadata',
-    '#',
-    'Source,Philip Roth,"Portnoy\'s Complaint",Random House,1969-01-12',
-    'Notes,Confessions of a lust-ridden, mother-addicted Jewish bachelor',
-    'Datatype,foobar',
-    '',
-    '# All done'
-])
+ex_csv = "\n".join(
+    [
+        "# This is some metadata",
+        "#",
+        'Source,Philip Roth,"Portnoy\'s Complaint",Random House,1969-01-12',
+        "Notes,Confessions of a lust-ridden, mother-addicted Jewish bachelor",
+        "Datatype,foobar",
+        "",
+        "# All done",
+    ]
+)
 
 
 @pytest.fixture
@@ -106,20 +115,19 @@ def test_metadata(metadata):
 
 
 def test_metadata_bad():
-    inputs = map(StringIO, ['', 'Who cares,Some junk', 'source,'])
+    inputs = map(StringIO, ["", "Who cares,Some junk", "source,"])
     for inpfile in inputs:
         with pytest.raises(ValueError):
             print('Bad metadata input: "{}"'.format(inpfile.getvalue()))
             tabular.Metadata.from_csv(inpfile)
 
 
-
 def test_metadata_good():
     inpfile = StringIO(ex_csv)
     obj = tabular.Metadata.from_csv(inpfile)
-    assert obj.author != ''
-    assert obj.title != ''
-    assert obj.info != ''
+    assert obj.author != ""
+    assert obj.title != ""
+    assert obj.info != ""
     whole_len = len(obj.source)
     parts_len = map(len, [obj.author, obj.title, obj.info])
     assert whole_len > sum(parts_len)
@@ -137,57 +145,67 @@ def test_md_properties(metadata):
     assert metadata.title is not None
     assert metadata.info is not None
     # setter and getter
-    metadata.datatype = 'foo'
-    assert metadata.datatype == 'foo'
+    metadata.datatype = "foo"
+    assert metadata.datatype == "foo"
+
 
 # class: TabularData
 
 
-ex_data = [{
-    "name": "Density Data",
-    "units": "g/cm^3",
-    "values": [1.0053, 1.0188, 1.0023 ],
-    "errors": [.00005, 0.0001, .00005],
-    "error_type": "absolute"}
+ex_data = [
+    {
+        "name": "Density Data",
+        "units": "g/cm^3",
+        "values": [1.0053, 1.0188, 1.0023],
+        "errors": [0.00005, 0.0001, 0.00005],
+        "error_type": "absolute",
+    }
 ]
 
-ex_data2 = [{
-    "name": "Density Data",
-    "units": "g/cm^3",
-    "values": [1.0053, 1.0188, 1.0023 ],
-    "errors": [.00005, 0.0001, .00005],
-    "error_type": "absolute"},
-    {"name": "Density Data2",
-     "units": "g/cm^3",
-     "values": [1.0053, 1.0188, 1.0023],
-     "errors": [.00005, 0.0001, .00005],
-     "error_type": "absolute"}
+ex_data2 = [
+    {
+        "name": "Density Data",
+        "units": "g/cm^3",
+        "values": [1.0053, 1.0188, 1.0023],
+        "errors": [0.00005, 0.0001, 0.00005],
+        "error_type": "absolute",
+    },
+    {
+        "name": "Density Data2",
+        "units": "g/cm^3",
+        "values": [1.0053, 1.0188, 1.0023],
+        "errors": [0.00005, 0.0001, 0.00005],
+        "error_type": "absolute",
+    },
 ]
 
 
-ex_data2_badlen = [{
-    "name": "Density Data",
-    "units": "g/cm^3",
-    "values": [1.0053, 1.0188, 1.0023 ],
-    "errors": [.00005, 0.0001],
-    "error_type": "absolute"},
-    {"name": "Density Data2",
-     "units": "g/cm^3",
-     "values": [1.0053, 1.0188],
-     "errors": [.00005, 0.0001, .00005],
-     "error_type": "absolute"}
+ex_data2_badlen = [
+    {
+        "name": "Density Data",
+        "units": "g/cm^3",
+        "values": [1.0053, 1.0188, 1.0023],
+        "errors": [0.00005, 0.0001],
+        "error_type": "absolute",
+    },
+    {
+        "name": "Density Data2",
+        "units": "g/cm^3",
+        "values": [1.0053, 1.0188],
+        "errors": [0.00005, 0.0001, 0.00005],
+        "error_type": "absolute",
+    },
 ]
 
 ex_data2_csv = [
-    'ID,V1 (g/cm^3),Absolute Error,V2 (m/s),Relative Error',
-    '1,1.0053, 0, 1.0035, 0.001',
-    '2,1.0188, 0, 1.0037, 0.001',
-    '3,1.0023, 0, 1.0039, 0.001'
+    "ID,V1 (g/cm^3),Absolute Error,V2 (m/s),Relative Error",
+    "1,1.0053, 0, 1.0035, 0.001",
+    "2,1.0188, 0, 1.0037, 0.001",
+    "3,1.0023, 0, 1.0039, 0.001",
 ]
 
 
-ex_data2_csv_short = [
-    'ID','1']
+ex_data2_csv_short = ["ID", "1"]
 
 
 @pytest.fixture
@@ -208,9 +226,9 @@ def test_init(tabdata, tabdata2):
 
 def test_init_badtype():
     with pytest.raises(TypeError):
-        tabular.TabularData('foo')
+        tabular.TabularData("foo")
     with pytest.raises(TypeError):
-        tabular.TabularData({'foo': 'bar'})
+        tabular.TabularData({"foo": "bar"})
 
 
 def test_init_emptyvalue():
@@ -220,12 +238,12 @@ def test_init_emptyvalue():
 
 def test_init_badvalue():
     with pytest.raises(ValueError):
-        tabular.TabularData([{'foo': 'bar'}])
+        tabular.TabularData([{"foo": "bar"}])
 
 
 def test_columns(tabdata):
     c = tabdata.columns
-    assert c[0]['units'] == ex_data[0]['units']
+    assert c[0]["units"] == ex_data[0]["units"]
 
 
 def test_len(tabdata, tabdata2):
@@ -236,7 +254,7 @@ def test_len(tabdata, tabdata2):
 
 
 def test_names(tabdata):
-    assert tabdata.names()[0] == ex_data[0]['name']
+    assert tabdata.names()[0] == ex_data[0]["name"]
 
 
 def test_num_columns(tabdata, tabdata2):
@@ -245,23 +263,23 @@ def test_num_columns(tabdata, tabdata2):
 
 
 def test_get_column(tabdata):
-    name = ex_data[0]['name']
-    assert tabdata.get_column(name).values == ex_data[0]['values']
+    name = ex_data[0]["name"]
+    assert tabdata.get_column(name).values == ex_data[0]["values"]
 
 
 def test_get_column_bad(tabdata):
-    name = 'NOPE!'
+    name = "NOPE!"
     with pytest.raises(KeyError):
         tabdata.get_column(name)
 
 
 def test_get_column_index(tabdata):
-    name = ex_data[0]['name']
+    name = ex_data[0]["name"]
     assert tabdata.get_column_index(name) == 0
 
 
 def test_get_column_index_err(tabdata):
-    name = '-no-such-name-'
+    name = "-no-such-name-"
     with pytest.raises(KeyError):
         tabdata.get_column_index(name)
 
@@ -310,28 +328,28 @@ def test_td_dataframe_nopandas(tabdata):
 
 
 def test_td_from_csv():
-    strfile = StringIO('\n'.join(ex_data2_csv))
+    strfile = StringIO("\n".join(ex_data2_csv))
     tabular.TabularData.from_csv(strfile)
 
 
 def test_td_from_csv_badheader():
     csv = ex_data2_csv[:]
-    csv[0] += ',Extra'
-    strfile = StringIO('\n'.join(csv))
+    csv[0] += ",Extra"
+    strfile = StringIO("\n".join(csv))
     with pytest.raises(ValueError):
         tabular.TabularData.from_csv(strfile)
 
 
 def test_td_from_csv_badrow():
     csv = ex_data2_csv[:]
-    csv[1] += ',1'
-    strfile = StringIO('\n'.join(csv))
+    csv[1] += ",1"
+    strfile = StringIO("\n".join(csv))
     with pytest.raises(ValueError):
         tabular.TabularData.from_csv(strfile)
 
 
 def test_td_csv_short():
-    infile = StringIO('\n'.join(ex_data2_csv_short))
+    infile = StringIO("\n".join(ex_data2_csv_short))
     with pytest.raises(ValueError):
         tabular.TabularData.from_csv(infile)
 
@@ -360,12 +378,12 @@ def test_table_init_bad(tabdata, metadata):
     with pytest.raises(ValueError):
         tbl = tabular.Table(data=[], metadata=metadata)
     with pytest.raises(TypeError):
-        tbl = tabular.Table(data=tabdata, metadata='hello')
+        tbl = tabular.Table(data=tabdata, metadata="hello")
 
 
 def test_iter_table(table):
     for key, value in table:
-        assert key in ['meta', 'data']
+        assert key in ["meta", "data"]
         assert isinstance(value, list)
 
 
