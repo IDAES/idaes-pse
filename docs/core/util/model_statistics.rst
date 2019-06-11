@@ -1,8 +1,6 @@
 Model Statistics Methods
 ========================
 
-.. module:: idaes.core.util.model_statistics
-
 The IDAES toolset contains a number of utility functions which are useful for quantifying model statistics such as the number of variable and constraints, and calculating the available degrees of freedom in a model. These methods can be found in ``idaes.core.util.model_statistics``.
 
 The most commonly used methods are ``degrees_of_freedom`` and ``report_statistics``, which are described below.
@@ -12,7 +10,7 @@ Degrees of Freedom Method
 
 The ``degrees_of_freedom`` method calculates the number of degrees of freedom available in a given model. The calcuation is based on the number of unfixed variables which appear in active constraints, minus the number of active equality constraints in the model. Users should note that this method does not consider inequality or deactived constraints, or variables which do not appear in active equality constraints.
 
-.. autofunction:: degrees_of_freedom
+.. autofunction:: idaes.core.util.model_statistics.degrees_of_freedom
 
 Report Statistics Method
 ------------------------
@@ -49,7 +47,7 @@ The ``report_statistics`` method provides the user with a summary of the content
 
     No. Expressions: 2
 
-.. autofunction:: report_statistics
+.. autofunction:: idaes.core.util.model_statistics.report_statistics
 
 Other Statistics Methods
 ------------------------
