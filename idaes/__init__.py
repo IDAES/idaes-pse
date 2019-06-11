@@ -118,7 +118,7 @@ _read_config(
   [logging.handlers.console]
     class = "logging.StreamHandler"
     formatter = "f1"
-    stream = "ext://sys.stderr"
+    stream = "ext://sys.stdout"
   [logging.loggers.idaes]
     level = "INFO"
     handlers = ["console"]
