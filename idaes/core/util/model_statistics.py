@@ -33,7 +33,7 @@ def total_blocks_set(block):
     Method to return a ComponentSet of all Block components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all Block components in block (including block
@@ -51,7 +51,7 @@ def number_total_blocks(block):
     Method to return the number of Block components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Block components in block (including block itself)
@@ -69,7 +69,7 @@ def activated_blocks_set(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all activated Block components in block
@@ -89,7 +89,7 @@ def number_activated_blocks(block):
     Method to return the number of activated Block components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of activated Block components in block (including block itself)
@@ -109,7 +109,7 @@ def deactivated_blocks_set(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all deactivated Block components in block
@@ -125,7 +125,7 @@ def number_deactivated_blocks(block):
     Method to return the number of deactivated Block components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of deactivated Block components in block (including block
@@ -143,7 +143,7 @@ def total_constraints_set(block):
     Method to return a ComponentSet of all Constraint components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all Constraint components in block
@@ -157,7 +157,7 @@ def number_total_constraints(block):
     Method to return the total number of Constraint components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Constraint components in block
@@ -173,7 +173,7 @@ def activated_constraints_generator(block):
     Generator which returns all activated Constraint components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all activated Constraint components block
@@ -189,7 +189,7 @@ def activated_constraints_set(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all activated Constraint components in block
@@ -202,7 +202,7 @@ def number_activated_constraints(block):
     Method to return the number of activated Constraint components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of activated Constraint components in block
@@ -218,7 +218,7 @@ def deactivated_constraints_generator(block):
     Generator which returns all deactivated Constraint components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all deactivated Constraint components block
@@ -234,7 +234,7 @@ def deactivated_constraints_set(block):
     a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all deactivated Constraint components in block
@@ -248,7 +248,7 @@ def number_deactivated_constraints(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of deactivated Constraint components in block
@@ -266,7 +266,7 @@ def total_equalities_generator(block):
     Generator which returns all equality Constraint components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all equality Constraint components block
@@ -284,7 +284,7 @@ def total_equalities_set(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all equality Constraint components in block
@@ -298,7 +298,7 @@ def number_total_equalities(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of equality Constraint components in block
@@ -315,7 +315,7 @@ def activated_equalities_generator(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all activated equality Constraint components
@@ -334,7 +334,7 @@ def activated_equalities_set(block):
     components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all activated equality Constraint components
@@ -349,7 +349,7 @@ def number_activated_equalities(block):
     a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of activated equality Constraint components in block
@@ -366,7 +366,7 @@ def deactivated_equalities_generator(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all deactivated equality Constraint
@@ -383,7 +383,7 @@ def deactivated_equalities_set(block):
     components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all deactivated equality Constraint components
@@ -398,7 +398,7 @@ def number_deactivated_equalities(block):
     in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of deactivated equality Constraint components in block
@@ -417,7 +417,7 @@ def total_inequalities_generator(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all inequality Constraint components block
@@ -433,7 +433,7 @@ def total_inequalities_set(block):
     a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all inequality Constraint components in block
@@ -447,7 +447,7 @@ def number_total_inequalities(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of inequality Constraint components in block
@@ -464,7 +464,7 @@ def activated_inequalities_generator(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all activated inequality Constraint
@@ -482,7 +482,7 @@ def activated_inequalities_set(block):
     components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all activated inequality Constraint components
@@ -497,7 +497,7 @@ def number_activated_inequalities(block):
     in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of activated inequality Constraint components in block
@@ -514,7 +514,7 @@ def deactivated_inequalities_generator(block):
     a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all indeactivated equality Constraint
@@ -531,7 +531,7 @@ def deactivated_inequalities_set(block):
     components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all deactivated inequality Constraint
@@ -546,7 +546,7 @@ def number_deactivated_inequalities(block):
     in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of deactivated inequality Constraint components in block
@@ -566,7 +566,7 @@ def variables_set(block):
     Method to return a ComponentSet of all Var components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all Var components in block
@@ -580,7 +580,7 @@ def number_variables(block):
     Method to return the number of Var components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Var components in block
@@ -593,7 +593,7 @@ def fixed_variables_generator(block):
     Generator which returns all fixed Var components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all fixed Var components block
@@ -609,7 +609,7 @@ def fixed_variables_set(block):
     Method to return a ComponentSet of all fixed Var components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all fixed Var components in block
@@ -622,7 +622,7 @@ def number_fixed_variables(block):
     Method to return the number of fixed Var components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of fixed Var components in block
@@ -638,7 +638,7 @@ def variables_in_activated_constraints_set(block):
     Constraint in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all Var components which appear within
@@ -658,7 +658,7 @@ def number_variables_in_activated_constraints(block):
     Constraints in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Var components which appear within active Constraints in
@@ -673,7 +673,7 @@ def variables_in_activated_equalities_set(block):
     an equality Constraint in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all Var components which appear within
@@ -692,7 +692,7 @@ def number_variables_in_activated_equalities(block):
     equality Constraints in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Var components which appear within activated equality
@@ -707,7 +707,7 @@ def variables_in_activated_inequalities_set(block):
     an inequality Constraint in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all Var components which appear within
@@ -726,7 +726,7 @@ def number_variables_in_activated_inequalities(block):
     inequality Constraints in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Var components which appear within activated inequality
@@ -741,7 +741,7 @@ def variables_only_in_inequalities(block):
     within inequality Constraints in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all Var components which appear only within
@@ -757,7 +757,7 @@ def number_variables_only_in_inequalities(block):
     activated inequality Constraints in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Var components which appear only within activated inequality
@@ -774,7 +774,7 @@ def fixed_variables_in_activated_equalities_set(block):
     within an equality Constraint in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all fixed Var components which appear within
@@ -793,7 +793,7 @@ def number_fixed_variables_in_activated_equalities(block):
     activated equality Constraints in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of fixed Var components which appear within activated equality
@@ -808,7 +808,7 @@ def unfixed_variables_in_activated_equalities_set(block):
     within an activated equality Constraint in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all unfixed Var components which appear within
@@ -827,7 +827,7 @@ def number_unfixed_variables_in_activated_equalities(block):
     activated equality Constraints in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of unfixed Var components which appear within activated equality
@@ -842,7 +842,7 @@ def fixed_variables_only_in_inequalities(block):
     only within activated inequality Constraints in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all fixed Var components which appear only
@@ -861,7 +861,7 @@ def number_fixed_variables_only_in_inequalities(block):
     within activated inequality Constraints in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of fixed Var components which only appear within activated
@@ -878,7 +878,7 @@ def unused_variables_set(block):
     within any activated Constraint in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all Var components which do not appear within
@@ -893,7 +893,7 @@ def number_unused_variables(block):
     any activated Constraint in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Var components which do not appear within any activagted
@@ -908,7 +908,7 @@ def fixed_unused_variables_set(block):
     appear within any activated Constraint in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all fixed Var components which do not appear
@@ -927,7 +927,7 @@ def number_fixed_unused_variables(block):
     within any activated Constraint in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of fixed Var components which do not appear within any activated
@@ -944,7 +944,7 @@ def derivative_variables_set(block):
     useful for detecting any DerivativeVars which were do transformed.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all DerivativeVar components which appear in
@@ -962,7 +962,7 @@ def number_derivative_variables(block):
     useful for detecting any DerivativeVars which were do transformed.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of DerivativeVar components which appear in block
@@ -977,7 +977,7 @@ def total_objectives_generator(block):
     Generator which returns all Objective components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all Objective components block
@@ -992,7 +992,7 @@ def total_objectives_set(block):
     in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all Objective components which appear in block
@@ -1005,7 +1005,7 @@ def number_total_objectives(block):
     Method to return the number of Objective components which appear in a model
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Objective components which appear in block
@@ -1021,7 +1021,7 @@ def activated_objectives_generator(block):
     Generator which returns all activated Objective components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all activated Objective components block
@@ -1037,7 +1037,7 @@ def activated_objectives_set(block):
     appear in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all activated Objective components which
@@ -1052,7 +1052,7 @@ def number_activated_objectives(block):
     in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of activated Objective components which appear in block
@@ -1068,7 +1068,7 @@ def deactivated_objectives_generator(block):
     Generator which returns all deactivated Objective components in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A generator which returns all deactivated Objective components block
@@ -1084,7 +1084,7 @@ def deactivated_objectives_set(block):
     which appear in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all deactivated Objective components which
@@ -1099,7 +1099,7 @@ def number_deactivated_objectives(block):
     appear in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of deactivated Objective components which appear in block
@@ -1119,7 +1119,7 @@ def expressions_set(block):
     in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including all Expression components which  appear in
@@ -1135,7 +1135,7 @@ def number_expressions(block):
     model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Expression components which  appear in block
@@ -1150,7 +1150,7 @@ def degrees_of_freedom(block):
     Method to return the degrees of freedom of a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of degrees of freedom in block.
@@ -1165,8 +1165,8 @@ def large_residuals_set(block, tol=1e-5):
     residual greater than a given threshold which appear in a model.
 
     Args:
-        block - model to be studied
-        tol - residual threshold for inclusion in ComponentSet
+        block : model to be studied
+        tol : residual threshold for inclusion in ComponentSet
 
     Returns:
         A ComponentSet including all Constraint components with a residual
@@ -1188,8 +1188,8 @@ def number_large_residuals(block, tol=1e-5):
     than a given threshold which appear in a model.
 
     Args:
-        block - model to be studied
-        tol - residual threshold for inclusion in ComponentSet
+        block : model to be studied
+        tol : residual threshold for inclusion in ComponentSet
 
     Returns:
         Number of Constraint components with a residual greater than tol which
@@ -1211,7 +1211,7 @@ def active_variables_in_deactivated_blocks_set(block):
     an active Constraint but belong to a deacitvated Block in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         A ComponentSet including any Var components which belong to a
@@ -1231,7 +1231,7 @@ def number_active_variables_in_deactivated_blocks(block):
     Constraint but belong to a deacitvated Block in a model.
 
     Args:
-        block - model to be studied
+        block : model to be studied
 
     Returns:
         Number of Var components which belong to a deacitvated Block but appear
@@ -1247,8 +1247,8 @@ def report_statistics(block, ostream=None):
     Method to print a report of the model statistics for a Pyomo Block
 
     Args:
-        block - the Block object to report statistics from
-        ostream - output stream for printing (defaults to sys.stdout)
+        block : the Block object to report statistics from
+        ostream : output stream for printing (defaults to sys.stdout)
 
     Returns:
         Printed output of the model statistics
@@ -1329,8 +1329,8 @@ def activated_block_component_generator(block, ctype):
     activated Blocks within a model.
 
     Args:
-        block - model to be studied
-        ctype - type of Pyomo component to be returned by generator.
+        block : model to be studied
+        ctype : type of Pyomo component to be returned by generator.
 
     Returns:
         A generator which returns all components of ctype which appear in
