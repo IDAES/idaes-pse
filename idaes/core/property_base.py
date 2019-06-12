@@ -122,7 +122,7 @@ class StateBlock(ProcessBlock):
                     stream_attributes[k+" "+i] = disp_dict[k][i]
 
         # Write output
-        max_str_length = 72
+        max_str_length = 84
         tab = " "*4
         ostream.write("\n"+"="*max_str_length+"\n")
 
@@ -151,8 +151,7 @@ class StateBlock(ProcessBlock):
                     ((k, v) for k, v in stream_attributes.items()
                         if isinstance(v, _VarData)),
                     ("Value", "Fixed", "Bounds"),
-                    lambda k, v: ["{:#.2f}".format(value(v)) if value(v) >= 1
-                                  else "{:#.2g}".format(value(v)),
+                    lambda k, v: ["{:#.5g}".format(value(v)),
                                   v.fixed,
                                   v.bounds])
 
@@ -166,8 +165,7 @@ class StateBlock(ProcessBlock):
                     ((k, v) for k, v in stream_attributes.items()
                         if isinstance(v, _ExpressionData)),
                     ("Value",),
-                    lambda k, v: ["{:#.2f}".format(value(v)) if value(v) >= 1
-                                  else "{:#.2g}".format(value(v))])
+                    lambda k, v: ["{:#.5g}".format(value(v))])
 
         ostream.write("\n"+"="*max_str_length+"\n")
 

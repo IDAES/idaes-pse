@@ -230,11 +230,11 @@ see reaction package for documentation.}"""))
                 self.config.momentum_balance_type != 'none'):
             add_object_reference(self, "deltaP", self.control_volume.deltaP)
 
-    def _get_performance_contents(self):
-        var_dict = {"Volume": self.volume}
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {"Volume": self.volume[time_point]}
         if hasattr(self, "heat_duty"):
-            var_dict["Heat Duty"] = self.heat_duty
+            var_dict["Heat Duty"] = self.heat_duty[time_point]
         if hasattr(self, "deltaP"):
-            var_dict["Pressure Change"] = self.deltaP
+            var_dict["Pressure Change"] = self.deltaP[time_point]
 
         return {"vars": var_dict}

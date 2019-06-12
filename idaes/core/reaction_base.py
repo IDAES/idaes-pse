@@ -40,7 +40,7 @@ __all__ = ['ReactionBlockData',
 
 
 class ReactionParameterBlock(ProcessBlockData,
-                            property_meta.HasPropertyClassMetadata):
+                             property_meta.HasPropertyClassMetadata):
     """
         This is the base class for reaction parameter blocks. These are blocks
         that contain a set of parameters associated with a specific reaction

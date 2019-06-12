@@ -484,7 +484,7 @@ Must be True if dynamic = True,
             return stream_table_dataframe_to_string(s)
         except AttributeError:
             return (f"Unit model {self.name} does not have the standard Port "
-                    f"names (inet and outlet). Please constact the unit model "
+                    f"names (inet and outlet). Please contact the unit model "
                     f"developer to develop a unit specific stream table.")
 
     def initialize(blk, state_args=None, outlvl=0,

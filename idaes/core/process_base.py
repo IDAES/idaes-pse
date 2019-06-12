@@ -221,7 +221,7 @@ class ProcessBlockData(_BlockData):
 
     def report(self, time_point=0, dof=False, ostream=None, prefix=""):
 
-        time_point=float(time_point)
+        time_point = float(time_point)
 
         if ostream is None:
             ostream = sys.stdout
@@ -229,7 +229,7 @@ class ProcessBlockData(_BlockData):
         # Get DoF and model stats
 #        if dof:
         # Get components to report in performance section
-        performance = self._get_performance_contents()
+        performance = self._get_performance_contents(time_point=time_point)
 
         # Get stream table
         stream_table = self._get_stream_table_contents(time_point=time_point)
@@ -241,7 +241,7 @@ class ProcessBlockData(_BlockData):
             model_type = "Unit"
 
         # Write output
-        max_str_length = 72
+        max_str_length = 84
         tab = " "*4
         ostream.write("\n"+"="*max_str_length+"\n")
 
@@ -262,7 +262,7 @@ class ProcessBlockData(_BlockData):
             ostream.write("\n"+"-"*max_str_length+"\n")
             ostream.write(f"{prefix}{tab}Unit Performance")
             ostream.write("\n"*2)
-            if "vars" in performance.keys():
+            if "vars" in performance.keys() and len(performance["vars"]) > 0:
                 ostream.write(f"{prefix}{tab}Variables: \n\n")
 
                 tabular_writer(
@@ -270,19 +270,35 @@ class ProcessBlockData(_BlockData):
                         prefix+tab,
                         ((k, v) for k, v in performance["vars"].items()),
                         ("Value", "Fixed", "Bounds"),
-                        lambda k, v: [value(v[time_point]),
-                                      v[time_point].fixed,
-                                      v[time_point].bounds])
+                        lambda k, v: [
+                                "{:#.5g}".format(value(v)),
+                                v.fixed,
+                                v.bounds])
 
-            if "exprs" in performance.keys():
+            if "exprs" in performance.keys() and len(performance["exprs"]) > 0:
+                ostream.write("\n")
                 ostream.write(f"{prefix}{tab}Expressions: \n\n")
 
                 tabular_writer(
                         ostream,
                         prefix+tab,
                         ((k, v) for k, v in performance["exprs"].items()),
-                        ("Value"),
-                        lambda k, v: [value(v[time_point])])
+                        ("Value",),
+                        lambda k, v: [
+                                "{:#.5g}".format(value(v))])
+
+            if ("params" in performance.keys() and
+                    len(performance["params"]) > 0):
+                ostream.write("\n")
+                ostream.write(f"{prefix}{tab}Parameters: \n\n")
+
+                tabular_writer(
+                        ostream,
+                        prefix+tab,
+                        ((k, v) for k, v in performance["params"].items()),
+                        ("Value", "Mutable"),
+                        lambda k, v: [value(v),
+                                      not v.is_constant()])
 
         if stream_table is not None:
             ostream.write("\n"+"-"*max_str_length+"\n")
@@ -291,7 +307,7 @@ class ProcessBlockData(_BlockData):
             ostream.write(textwrap.indent(stream_table, prefix+tab))
         ostream.write("\n"+"="*max_str_length+"\n")
 
-    def _get_performance_contents(self):
+    def _get_performance_contents(self, time_point):
         return None
 
     def _get_stream_table_contents(self, time_point):

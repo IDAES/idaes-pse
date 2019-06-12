@@ -152,16 +152,38 @@ within this flowsheet if not otherwise specified,
                                  'the associated unit model class'
                                  .format(o.name))
 
-    def _get_stream_table_contents(self, time_point):
+    def stream_table(self, true_state=False, time_point=0, orient='columns'):
         """
-        Generate stream table by iterating over all Arcs
+        Method to generate a stream table by iterating over all Arcs in the
+        flowsheet.
+
+        Args:
+            true_state : whether the state variables (True) or display
+                         variables (False, default) from the StateBlocks should
+                         be used in the stream table.
+            time_point : point in the time domain at which to create stream
+                         table (default = 0)
+            orient : whether stream should be shown by columns ("columns") or
+                     rows ("index")
+
+        Returns:
+            A pandas dataframe containing stream table information
         """
         dict_arcs = {}
 
         for a in self.component_objects(ctype=Arc, descend_into=False):
-            dict_arcs[a.name] = a
+            dict_arcs[a.local_name] = a
 
-        s = create_stream_table_dataframe(dict_arcs, time_point=time_point)
+        return create_stream_table_dataframe(dict_arcs,
+                                             time_point=time_point,
+                                             orient=orient,
+                                             true_state=true_state)
+
+    def _get_stream_table_contents(self, time_point=0):
+        """
+        Generate stream table by iterating over all Arcs
+        """
+        s = self.stream_table(time_point)
         return stream_table_dataframe_to_string(s)
 
     def _setup_dynamics(self):
