@@ -1,8 +1,13 @@
 Developer introductory material
 ===============================
-This section gives terms and information targeted at people who are new to collaborative
-software development. It serves as background for understanding the collaborative
-development procedures. However, this is a quick start and there are many more useful
+This section gives a high-level introduction for collaborative
+software development on the IDAES project. It serves as background for understanding the collaborative
+development procedures. 
+
+*Please refer to the* :ref:`idaes-contrib-guide` *for specifics on writing,
+testing, and documenting code for the IDAES project.*
+
+There are many more useful
 things to learn about git and Github. For more information, please refer to the
 excellent `Atlassian Github tutorials <https://www.atlassian.com/git/tutorials>`_ and
 the online `Git documentation <https://git-scm.com/doc>`_  and

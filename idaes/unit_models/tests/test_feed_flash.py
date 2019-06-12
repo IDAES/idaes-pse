@@ -21,7 +21,7 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models.feed_flash import FeedFlash
 from idaes.property_models.ideal.BTX_ideal_VLE import (
                         BTXParameterBlock)
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------

@@ -16,3 +16,4 @@ Developer Contents
     testing
     codereview
     docker
+    howto

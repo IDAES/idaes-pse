@@ -18,7 +18,7 @@ from idaes.unit_models.heat_exchanger import (delta_temperature_underwood2_rule,
     delta_temperature_underwood_rule, delta_temperature_lmtd_rule)
 from idaes.property_models import Iapws95ParameterBlock
 from idaes.unit_models.power_generation import FWH0D
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.property_models.iapws95 import iapws95_available
 
 prop_available = iapws95_available()
