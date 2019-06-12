@@ -6,6 +6,9 @@ Testing
 Testing is essential to the process of creating software.
 "If it isn't tested, it doesn't work" is a good rule of thumb.
 
+*For some specific advice for adding new tests in the IDAES code,
+see* :ref:`idaes-contrib-guide`.
+
 There are different kinds of tests: functional, acceptance, performance, usability.
 We will primarily concern ourselves with *functional* testing here, i.e. whether the
 thing being tested produces correct outputs for expected inputs, and gracefully handles
