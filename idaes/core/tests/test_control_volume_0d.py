@@ -95,8 +95,8 @@ class StateTestBlockData(StateBlockData):
     def build(self):
         super(StateTestBlockData, self).build()
 
-        self.test_var = Var()
-        self.pressure = Var()
+        self.test_var = Var(initialize=1)
+        self.pressure = Var(initialize=10)
 
     def get_material_flow_terms(b, p, j):
         return b.test_var
@@ -120,6 +120,10 @@ class StateTestBlockData(StateBlockData):
             return MaterialFlowBasis.mass
         else:
             return MaterialFlowBasis.other
+
+    def define_state_vars(self):
+        return {"test_var": self.test_var,
+                "pressure": self.pressure}
 
 
 @declare_process_block_class("ReactionParameterTestBlock")
@@ -2144,3 +2148,78 @@ def test_initialize():
     for t in m.fs.time:
         assert m.fs.cv.properties_in[t].hold_state is False
         assert m.fs.cv.properties_out[t].hold_state is False
+
+
+def test_get_stream_table_contents():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
+                                            "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+
+    df = m.fs.cv._get_stream_table_contents()
+
+    assert df.loc["test_var"]["In"] == 1
+    assert df.loc["pressure"]["In"] == 10
+
+    assert df.loc["test_var"]["Out"] == 1
+    assert df.loc["pressure"]["Out"] == 10
+
+
+def test_get_performance_contents():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
+                                            "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+    m.fs.cv.add_material_balances(
+            has_rate_reactions=True,
+            has_equilibrium_reactions=True,
+            has_phase_equilibrium=True)
+    m.fs.cv.add_energy_balances(
+            has_heat_of_reaction=True,
+            has_heat_transfer=True)
+    m.fs.cv.add_momentum_balances(
+            has_pressure_change=True)
+
+    dd = m.fs.cv._get_performance_contents()
+
+    assert len(dd) == 3
+    for k in dd.keys():
+        assert k in ("vars", "exprs", "params")
+
+
+def test_reports():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
+                                            "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+    m.fs.cv.add_material_balances(
+            has_rate_reactions=True,
+            has_equilibrium_reactions=True,
+            has_phase_equilibrium=True)
+    m.fs.cv.add_energy_balances(
+            has_heat_of_reaction=True,
+            has_heat_transfer=True)
+    m.fs.cv.add_momentum_balances(
+            has_pressure_change=True)
+
+    m.fs.cv.report()

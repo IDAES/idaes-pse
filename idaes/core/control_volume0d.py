@@ -32,8 +32,7 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
-from idaes.core.util.tables import (create_stream_table_dataframe,
-                                    stream_table_dataframe_to_string)
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Andrew Lee"
 
@@ -1519,7 +1518,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             "rate_reaction_generation": "Rate Reaction Generation",
             "equilibrium_reaction_generation":
                 "Equilibrium Reaction Generation",
-            "phase_equilibrium_generation": "Phase Equilibrium Generation",
             "mass_transfer_term": "Mass Transfer Term"}
 
         for v, n in pc_vars.items():
@@ -1540,6 +1538,10 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             for r in self.config.reaction_package.equilibrium_reaction_idx:
                 var_dict[f"Equilibrium Reaction Extent [{r}]"] = \
                     self.equilibrium_reaction_extent[time_point, r]
+        if hasattr(self, "phase_equilibrium_generation"):
+            for r in self.config.property_package.phase_equilibrium_idx:
+                var_dict[f"Phase Equilibrium Generation [{r}]"] = \
+                    self.phase_equilibrium_generation[time_point, r]
 
         e_vars = {
             "element_holdup": "Elemental Holdup",
@@ -1595,10 +1597,9 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         Developers should overload this as appropriate.
         """
         try:
-            s = create_stream_table_dataframe({"In": self.properties_in,
-                                               "Out": self.properties_out},
-                                              time_point=time_point)
-            return stream_table_dataframe_to_string(s)
+            return create_stream_table_dataframe({"In": self.properties_in,
+                                                  "Out": self.properties_out},
+                                                 time_point=time_point)
         except AttributeError:
             return (f"Unit model {self.name} does not have the standard Port "
                     f"names (inet and outlet). Please contact the unit model "

@@ -450,6 +450,22 @@ def test_get_stream_table_contents_CV0D():
     assert df.loc["c"]["Outlet"] == 3
 
 
+def test_get_stream_table_contents_CV0D_missing_default_port():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume0DBlock(
+            default={"property_package": m.fs.pp})
+
+    m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
+
+    with pytest.raises(ConfigurationError):
+        m.fs.u._get_stream_table_contents()
+
+
 def test_report_CV0D():
     m = ConcreteModel()
     m.fs = Flowsheet()

@@ -3026,3 +3026,21 @@ def test_initialize():
         for x in m.fs.cv.length_domain:
             assert m.fs.cv.properties[t, x].init_test is True
             assert m.fs.cv.reactions[t, x].init_test is True
+
+
+def test_report():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    with pytest.raises(NotImplementedError):
+        m.fs.cv.report()

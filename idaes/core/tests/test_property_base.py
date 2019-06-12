@@ -72,6 +72,14 @@ def test_StateBlockBase_initialize():
         m.p.initialize()
 
 
+def test_StateBlockBase_report():
+    # Test that StateBlock initialize method raises NotImplementedError
+    m = ConcreteModel()
+    m.p = TestStateBlock()
+
+    m.p.report()
+
+
 # -----------------------------------------------------------------------------
 # Test StateBlockData
 def test_StateBlock_config():

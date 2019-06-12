@@ -154,6 +154,12 @@ class ReactionBlockBase(ProcessBlock):
                                   'the reaction package developer'
                                   .format(self.name))
 
+    def report(self, index=(0), true_state=False,
+               dof=False, ostream=None, prefix=""):
+        raise NotImplementedError(
+                """The current Reaction Package has not implemented a report
+                method. Please contact the package developer with this bug.""")
+
 
 class ReactionBlockDataBase(ProcessBlockData):
     """

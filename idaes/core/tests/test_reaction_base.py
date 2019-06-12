@@ -230,6 +230,15 @@ def test_ReactionBlockBase_initialize():
         m.r.initialize()
 
 
+def test_ReactionBlockBase_report():
+    # Test that ReactionBlockBase initialize method raises NotImplementedError
+    m = ConcreteModel()
+    m.r = ReactionBlock()
+
+    with pytest.raises(NotImplementedError):
+        m.r.report()
+
+
 # -----------------------------------------------------------------------------
 # Test ReactionBlockDataBase
 def test_StateBlock_config():
