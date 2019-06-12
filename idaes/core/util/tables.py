@@ -20,25 +20,6 @@ from idaes.core.util.exceptions import ConfigurationError
 __author__ = "John Eslick, Andrew Lee"
 
 
-def stream_table_dataframe_to_string(stream_table, **kwargs):
-    """
-    Method to print a stream table from a dataframe. Method takes any argument
-    understood by DataFrame.to_string
-    """
-    # Set some default values for keyword arguments
-    na_rep = kwargs.pop("na_rep", "-")
-    justify = kwargs.pop("justify", "center")
-    float_format = kwargs.pop(
-            "float_format",
-            lambda x: "{:#.2f}".format(x) if x >= 1 else "{:#.2g}".format(x))
-
-    # Print stream table
-    return stream_table.to_string(na_rep=na_rep,
-                                  justify=justify,
-                                  float_format=float_format,
-                                  **kwargs)
-
-
 def create_stream_table_dataframe(streams,
                                   true_state=False,
                                   time_point=0,
@@ -70,7 +51,7 @@ def create_stream_table_dataframe(streams,
                         stream_attributes[n][k] = value(disp_dict[k][i])
                     else:
                         stream_attributes[n][k+" "+i] = value(disp_dict[k][i])
-        except AttributeError:
+        except (AttributeError, KeyError):
             raise TypeError(
                     f"Unrecognised component provided in stream argument "
                     f"{streams[n]}. get_stream_table_attributes only "
@@ -79,6 +60,25 @@ def create_stream_table_dataframe(streams,
     stream_table = DataFrame.from_dict(stream_attributes, orient=orient)
 
     return stream_table
+
+
+def stream_table_dataframe_to_string(stream_table, **kwargs):
+    """
+    Method to print a stream table from a dataframe. Method takes any argument
+    understood by DataFrame.to_string
+    """
+    # Set some default values for keyword arguments
+    na_rep = kwargs.pop("na_rep", "-")
+    justify = kwargs.pop("justify", "center")
+    float_format = kwargs.pop(
+            "float_format",
+            lambda x: "{:#.5g}".format(x))
+
+    # Print stream table
+    return stream_table.to_string(na_rep=na_rep,
+                                  justify=justify,
+                                  float_format=float_format,
+                                  **kwargs)
 
 
 def _get_state_from_port(port):
@@ -95,30 +95,30 @@ def _get_state_from_port(port):
                 f"the IDAES add_port methods to create the Port.")
 
 
-def stream_table(streams, attributes, heading=None):
+def generate_table(blocks, attributes, heading=None):
     """
-    Create a Pandas DataFrame that shows the material state in streams.
+    Create a Pandas DataFrame that contains a list of user-defined attributes
+    from a set of Blocks.
 
     Args:
-        streams (dict): A dictionary with stream name keys and StateBlockData
-            objects for values.  The stream names do not need to correspond to
-            Arcs in the flowhseet. Any name can be associated with a state
-            block. Use an OrderedDict to show the streams in a specific order,
-            otherwise the dataframe can be sorted later.
+        blocks (dict): A dictionary with name keys and BlockData objects for
+            values. Any name can be associated with a block. Use an OrderedDict
+            to show the blocks in a specific order, otherwise the dataframe can
+            be sorted later.
         attributes (list or tuple of strings): Attributes to report from a
-            StateBlock, can be a Var, Param, or Expression. If an attribute
-            doesn't exist or doesn't have a valid value, it will be treated as
-            missing data.
+            Block, can be a Var, Param, or Expression. If an attribute doesn't
+            exist or doesn't have a valid value, it will be treated as missing
+            data.
         heading (list or tuple of srings): A list of strings that will be used
             as column headings. If None the attribute names will be used.
     Returns:
-        (DataFrame): A Pandas dataframe containing a stream table
+        (DataFrame): A Pandas dataframe containing a data table
     """
     if heading is None:
         heading = attributes
     st = DataFrame(columns=heading)
     row = [None]*len(attributes)  # not a big deal but save time on realloc
-    for key, s in streams.items():
+    for key, s in blocks.items():
         for i, a in enumerate(attributes):
             try:
                 v = getattr(s, a, None)
@@ -128,28 +128,3 @@ def stream_table(streams, attributes, heading=None):
             row[i] = v
         st.loc[key] = row
     return st
-
-
-def state_table(m, attributes, heading=None):
-    """
-    Create a Pandas dataframe that shows the material state in every state
-    block.
-
-    Args:
-        m (Block): Pyomo model or block from which to create a state block
-            table
-        attributes (list or tuple of strings): Attributes to report from a
-            StateBlock, can be a Var, Param, or Expression. If an attribute
-            doesn't exist or doesn't have a valid value, it will be treated as
-            missing data.
-        heading (list or tuple of srings): A list of strings that will be used
-            as column headings. If None the attribute names will be used.
-    Returns:
-        (DataFrame): A Pandas DataFrame with a StateBlock table
-    """
-    streams = {}  # make a dict for a stream table containing all state blocks
-    for c in m.component_objects():
-        if isinstance(c, StateBlock):
-            for i in c:
-                streams[c[i].name] = c[i]
-    return stream_table(streams, attributes=attributes, heading=heading)
