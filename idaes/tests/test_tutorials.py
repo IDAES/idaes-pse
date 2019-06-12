@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from pyomo.environ import SolverFactory
 from pyomo.opt import SolverStatus, TerminationCondition
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import file to be tested
 from os.path import abspath, dirname, join

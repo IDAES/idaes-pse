@@ -22,7 +22,7 @@ from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType)
 from idaes.unit_models.flash import Flash as FL
 from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
