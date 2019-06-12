@@ -32,6 +32,7 @@ from idaes.core.process_block import declare_process_block_class
 from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError,
                                         PropertyPackageError)
+from idaes.core.util.tables import stream_table_dataframe_to_string
 
 
 # Some more inforation about this module
@@ -304,7 +305,10 @@ class ProcessBlockData(_BlockData):
             ostream.write("\n"+"-"*max_str_length+"\n")
             ostream.write(f"{prefix}{tab}Stream Table")
             ostream.write('\n')
-            ostream.write(textwrap.indent(stream_table, prefix+tab))
+            ostream.write(
+                    textwrap.indent(
+                            stream_table_dataframe_to_string(stream_table),
+                            prefix+tab))
         ostream.write("\n"+"="*max_str_length+"\n")
 
     def _get_performance_contents(self, time_point):

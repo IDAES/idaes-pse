@@ -30,8 +30,7 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_time_domain,
                                     list_of_floats)
 from idaes.core.util.exceptions import DynamicError
-from idaes.core.util.tables import (create_stream_table_dataframe,
-                                    stream_table_dataframe_to_string)
+from idaes.core.util.tables import create_stream_table_dataframe
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -183,8 +182,7 @@ within this flowsheet if not otherwise specified,
         """
         Generate stream table by iterating over all Arcs
         """
-        s = self.stream_table(time_point)
-        return stream_table_dataframe_to_string(s)
+        return self.stream_table(time_point)
 
     def _setup_dynamics(self):
         # Look for parent flowsheet

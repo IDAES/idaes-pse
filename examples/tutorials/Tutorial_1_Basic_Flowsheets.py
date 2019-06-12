@@ -17,8 +17,6 @@ Demonstration and test flowsheet for a dynamic flowsheet.
 from __future__ import division
 from __future__ import print_function
 
-from pandas import DataFrame
-
 # Import Pyomo libraries
 from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 from pyomo.network import Arc
@@ -32,8 +30,6 @@ import idaes.property_models.examples.saponification_reactions as reaction_props
 
 # Import Unit Model Modules
 from idaes.unit_models import CSTR
-
-from idaes.core.util.tables import create_stream_table_dataframe
 
 
 def main():
@@ -114,17 +110,6 @@ def main():
     print()
     print("Tank 2 Outlet")
     m.fs.Tank2.outlet.display()
-
-#    m.fs.Tank1.inlet.conc_mol_comp[0, "Ethanol"].fix(0.026)
-#    print()
-#    s = create_stream_table_dataframe({"Tank 1 Inlet": m.fs.Tank1.inlet, "Tank1 Outlet": m.fs.Tank1.outlet, "Stream 1": m.fs.stream})
-##    print(s)
-#    display_stream_table_dataframe(s)
-    
-#    m.fs.report()
-#    m.fs.Tank1.report()
-#    m.fs.Tank1.control_volume.report()
-    m.fs.Tank1.control_volume.properties_out.report()
 
     # For testing purposes
     return(m, results)

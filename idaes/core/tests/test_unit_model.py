@@ -51,7 +51,7 @@ class StateTestBlockData(StateBlockData):
         self.b = Var(initialize=2)
         self.c = Var(initialize=3)
 
-    def define_port_members(self):
+    def define_state_vars(self):
         return {"a": self.a,
                 "b": self.b,
                 "c": self.c}
@@ -422,3 +422,47 @@ def test_fix_unfix_initial_conditions():
             assert fs.b.material_accumulation[t, j].fixed is False
             assert fs.b.element_accumulation[t, j].fixed is False
             assert fs.b.enthalpy_accumulation[t].fixed is False
+
+
+def test_get_stream_table_contents_CV0D():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume0DBlock(
+            default={"property_package": m.fs.pp})
+
+    m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
+
+    m.fs.u.add_inlet_port()
+    m.fs.u.add_outlet_port()
+
+    df = m.fs.u._get_stream_table_contents()
+
+    assert df.loc["a"]["Inlet"] == 1
+    assert df.loc["b"]["Inlet"] == 2
+    assert df.loc["c"]["Inlet"] == 3
+
+    assert df.loc["a"]["Outlet"] == 1
+    assert df.loc["b"]["Outlet"] == 2
+    assert df.loc["c"]["Outlet"] == 3
+
+
+def test_report_CV0D():
+    m = ConcreteModel()
+    m.fs = Flowsheet()
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.u = Unit()
+    m.fs.u._setup_dynamics()
+
+    m.fs.u.control_volume = ControlVolume0DBlock(
+            default={"property_package": m.fs.pp})
+
+    m.fs.u.control_volume.add_state_blocks(has_phase_equilibrium=False)
+
+    m.fs.u.add_inlet_port()
+    m.fs.u.add_outlet_port()
+
+    m.fs.u.report()
