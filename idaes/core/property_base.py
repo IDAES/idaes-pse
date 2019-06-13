@@ -97,6 +97,24 @@ class StateBlock(ProcessBlock):
 
     def report(self, index=(0), true_state=False,
                dof=False, ostream=None, prefix=""):
+        """
+        Default report method for StateBlocks. Returns a Block report populated
+        with either the display or state variables defined in the
+        StateBlockData class.
+        
+        Args:
+            index : tuple of Block indices indicating which point in time (and
+                    space if applicable) to reprot state at.
+            true_state : whether to report the display variables (False
+                    default) or the actual state variables (True)
+            dof : whether to show local degrees of freedom in the report
+                    (default=False)
+            ostream : output stream to write report to
+            prefix : string to append ot the beginning of all output lines
+
+        Returns:
+            Printed output to ostream
+        """
 
         if ostream is None:
             ostream = sys.stdout

@@ -17,7 +17,7 @@ Author: Andrew Lee
 """
 import pytest
 import inspect
-from pyomo.environ import ConcreteModel, Constraint, Var
+from pyomo.environ import ConcreteModel, Constraint, Set, Var
 from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, ReactionParameterBlock,
                         ReactionBlockBase, ReactionBlockDataBase,
@@ -224,16 +224,20 @@ class ReactionBlockData(ReactionBlockDataBase):
 def test_ReactionBlockBase_initialize():
     # Test that ReactionBlockBase initialize method raises NotImplementedError
     m = ConcreteModel()
-    m.r = ReactionBlock()
+    # Need to index block so that it does not do multiple inheritance
+    m.s = Set(initialize=[1, 2])
+    m.r = ReactionBlock(m.s)
 
     with pytest.raises(NotImplementedError):
         m.r.initialize()
 
 
 def test_ReactionBlockBase_report():
-    # Test that ReactionBlockBase initialize method raises NotImplementedError
+    # Test that ReactionBlockBase report method raises NotImplementedError
     m = ConcreteModel()
-    m.r = ReactionBlock()
+    # Need to index block so that it does not do multiple inheritance
+    m.s = Set(initialize=[1, 2])
+    m.r = ReactionBlock(m.s)
 
     with pytest.raises(NotImplementedError):
         m.r.report()

@@ -180,7 +180,7 @@ within this flowsheet if not otherwise specified,
 
     def _get_stream_table_contents(self, time_point=0):
         """
-        Generate stream table by iterating over all Arcs
+        Calls stream_table method and returns result
         """
         return self.stream_table(time_point)
 

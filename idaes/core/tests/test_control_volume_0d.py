@@ -2173,7 +2173,7 @@ def test_get_stream_table_contents():
 
 def test_get_performance_contents():
     m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs = Flowsheet(default={"dynamic": True})
     m.fs.pp = PhysicalParameterTestBlock()
     m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
 
@@ -2186,9 +2186,11 @@ def test_get_performance_contents():
     m.fs.cv.add_material_balances(
             has_rate_reactions=True,
             has_equilibrium_reactions=True,
-            has_phase_equilibrium=True)
+            has_phase_equilibrium=True,
+            has_mass_transfer=True)
     m.fs.cv.add_energy_balances(
             has_heat_of_reaction=True,
+            has_work_transfer=True,
             has_heat_transfer=True)
     m.fs.cv.add_momentum_balances(
             has_pressure_change=True)
@@ -2198,6 +2200,104 @@ def test_get_performance_contents():
     assert len(dd) == 3
     for k in dd.keys():
         assert k in ("vars", "exprs", "params")
+    assert len(dd["vars"]) == 36
+    for k in dd["vars"].keys():
+        assert k in [
+            'Volume', 'Heat Transfer', 'Work Transfer', 'Pressure Change',
+            'Phase Fraction [p1]', 'Phase Fraction [p2]',
+            'Enthalpy Holdup [p1]', 'Enthalpy Holdup [p2]',
+            'Enthalpy Accumulation [p1]', 'Enthalpy Accumulation [p2]',
+            'Material Holdup [p1, c1]', 'Material Holdup [p1, c2]',
+            'Material Holdup [p2, c1]', 'Material Holdup [p2, c2]',
+            'Material Accumulation [p1, c1]', 'Material Accumulation [p1, c2]',
+            'Material Accumulation [p2, c1]', 'Material Accumulation [p2, c2]',
+            'Rate Reaction Generation [p1, c1]',
+            'Rate Reaction Generation [p1, c2]',
+            'Rate Reaction Generation [p2, c1]',
+            'Rate Reaction Generation [p2, c2]',
+            'Equilibrium Reaction Generation [p1, c1]',
+            'Equilibrium Reaction Generation [p1, c2]',
+            'Equilibrium Reaction Generation [p2, c1]',
+            'Equilibrium Reaction Generation [p2, c2]',
+            'Mass Transfer Term [p1, c1]', 'Mass Transfer Term [p1, c2]',
+            'Mass Transfer Term [p2, c1]', 'Mass Transfer Term [p2, c2]',
+            'Rate Reaction Extent [r1]',
+            'Rate Reaction Extent [r2]',
+            'Equilibrium Reaction Extent [e1]',
+            'Equilibrium Reaction Extent [e2]',
+            'Phase Equilibrium Generation [e1]',
+            'Phase Equilibrium Generation [e2]']
+
+    assert len(dd["exprs"]) == 1
+    for k in dd["exprs"].keys():
+        assert k in ["Heat of Reaction Term"]
+
+    assert len(dd["params"]) == 2
+    for k in dd["params"].keys():
+        assert k in ["Pressure Scaling", "Energy Scaling"]
+
+
+def test_get_performance_contents_elemental():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": True})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
+                                            "reaction_package": m.fs.rp})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=True)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=True)
+    m.fs.cv.add_total_element_balances(
+            has_mass_transfer=True)
+    m.fs.cv.add_energy_balances(
+            has_heat_of_reaction=False,
+            has_work_transfer=True,
+            has_heat_transfer=True)
+    m.fs.cv.add_momentum_balances(
+            has_pressure_change=True)
+
+    dd = m.fs.cv._get_performance_contents()
+
+    assert len(dd) == 3
+    for k in dd.keys():
+        assert k in ("vars", "exprs", "params")
+    assert len(dd["vars"]) == 19
+    for k in dd["vars"].keys():
+        assert k in [
+            'Volume', 'Heat Transfer', 'Work Transfer', 'Pressure Change',
+            'Phase Fraction [p1]', 'Phase Fraction [p2]',
+            'Enthalpy Holdup [p1]', 'Enthalpy Holdup [p2]',
+            'Enthalpy Accumulation [p1]', 'Enthalpy Accumulation [p2]',
+            'Elemental Holdup [H]', 
+            'Elemental Holdup [He]',
+            'Elemental Holdup [Li]',
+            'Elemental Accumulation [H]',
+            'Elemental Accumulation [He]',
+            'Elemental Accumulation [Li]',
+            'Elemental Transfer Term [H]',
+            'Elemental Transfer Term [He]',
+            'Elemental Transfer Term [Li]']
+
+    assert len(dd["exprs"]) == 12
+    for k in dd["exprs"].keys():
+        assert k in ["Element Flow In [p1, H]",
+                     "Element Flow In [p1, He]",
+                     "Element Flow In [p1, Li]",
+                     "Element Flow In [p2, H]",
+                     "Element Flow In [p2, He]",
+                     "Element Flow In [p2, Li]",
+                     "Element Flow Out [p1, H]",
+                     "Element Flow Out [p1, He]",
+                     "Element Flow Out [p1, Li]",
+                     "Element Flow Out [p2, H]",
+                     "Element Flow Out [p2, He]",
+                     "Element Flow Out [p2, Li]"]
+
+    assert len(dd["params"]) == 2
+    for k in dd["params"].keys():
+        assert k in ["Pressure Scaling", "Energy Scaling"]
 
 
 def test_reports():

@@ -1484,12 +1484,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         return super()._rxn_rate_conv(t, None, j, has_rate_reactions)
 
     def _get_performance_contents(self, time_point=0):
+        """
+        Collect all CV variables which are present to report.
+        """
         var_dict = {}
         expr_dict = {}
         param_dict = {}
 
         time_only_vars = {"volume": "Volume",
-                          "phase_fraction": "Phase Fraction",
                           "heat": "Heat Transfer",
                           "work": "Work Transfer",
                           "deltaP": "Pressure Change"}
@@ -1501,6 +1503,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 pass
 
         p_vars = {
+            "phase_fraction": "Phase Fraction",
             "enthalpy_holdup": "Enthalpy Holdup",
             "enthalpy_accumulation": "Enthalpy Accumulation"}
 
@@ -1572,7 +1575,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 expr_obj = getattr(self, o)
                 for p in self.config.property_package.phase_list:
                     for e in self.config.property_package.element_list:
-                        expr_dict[f"{n} [{p} {e}]"] = \
+                        expr_dict[f"{n} [{p}, {e}]"] = \
                             expr_obj[time_point, p, e]
             except AttributeError:
                 pass

@@ -1902,6 +1902,11 @@ argument)."""))
         return b.area[t, x]
 
     def report(self, time_point=0, dof=False, ostream=None, prefix=""):
+        """
+        No report method defined for ControlVolume1D class. This is due to the
+        difficulty of presenting spatially discretized data in a readable form
+        without plotting.
+        """
         raise NotImplementedError("""
                 Due ot the difficultly in presenting spatially distributed data
                 in a clean format, ControlVolume1D does not currently supprot
