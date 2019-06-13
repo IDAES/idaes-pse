@@ -13,8 +13,14 @@
 from pyomo.environ import *
 from pyomo.core.expr.current import identify_variables
 from pyomo.core.kernel.component_set import ComponentSet
-from pyomo.network.port import _PortData, SimplePort
+from pyomo.common.deprecation import deprecated
 
+import idaes.core.util.model_statistics as ms
+
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def large_residuals(blk, tol=1e-5):
     """
     Generator return active Pyomo constraints with residuals greater than tol.
@@ -30,6 +36,10 @@ def large_residuals(blk, tol=1e-5):
             elif c.active and value(c.body() - c.upper) > tol:
                 yield c
 
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def fixed_variables(blk):
     """
     Generator returning fixed variables in a model.
@@ -40,6 +50,10 @@ def fixed_variables(blk):
     for o in blk.component_data_objects(Var):
         if o.fixed: yield o
 
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def unfixed_variables(blk):
     """
     Generator returning free variables in a model.
@@ -50,6 +64,10 @@ def unfixed_variables(blk):
     for o in blk.component_data_objects(Var):
         if not o.fixed: yield item
 
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def free_variables(blk):
     """
     Generator returning free variables in a model. same as unfixed
@@ -60,6 +78,10 @@ def free_variables(blk):
     for o in blk.component_data_objects(Var):
         if not o.fixed: yield o
 
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def stale_variables(blk):
     """
     Generator returning stale variables in a model.
@@ -70,6 +92,10 @@ def stale_variables(blk):
     for o in blk.component_data_objects(Var):
         if not o.fixed and o.stale: yield o
 
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def active_equalities(blk):
     """
     Generator returning active equality constraints in a model.
@@ -80,6 +106,10 @@ def active_equalities(blk):
     for o in blk.component_data_objects(Constraint, active=True):
         if o.upper == o.lower: yield o
 
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def count_free_variables(blk):
     """
     Count free variables that are in active equality constraints.  Ignore
@@ -87,18 +117,30 @@ def count_free_variables(blk):
     """
     return len(free_variables_in_active_equalities_set(blk))
 
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def count_equality_constraints(blk):
     """
     Count active equality constraints.
     """
     return len(active_equality_set(blk))
 
+
+@deprecated(
+        msg="This function has been replaced by degrees_of_freedom "
+        "in idaes.core.util.model_statistics", version='1.1')
 def degrees_of_freedom(blk):
     """
     Return the degrees of freedom.
     """
-    return count_free_variables(blk) - count_equality_constraints(blk)
+    return ms.degrees_of_freedom(blk)
 
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def active_equality_set(blk):
     """
     Generator returning active equality constraints in a model.
@@ -111,6 +153,10 @@ def active_equality_set(blk):
         ac.add(c)
     return ac
 
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def variables_in_active_equalities_set(blk):
     """
     Return a set of variables that are contined in active equalities.
@@ -121,6 +167,10 @@ def variables_in_active_equalities_set(blk):
             vin.add(v)
     return vin
 
+
+@deprecated(
+        msg="This function has been replaced by "
+        "idaes.core.util.model_statistics", version='1.1')
 def free_variables_in_active_equalities_set(blk):
     """
     Return a set of variables that are contined in active equalities.

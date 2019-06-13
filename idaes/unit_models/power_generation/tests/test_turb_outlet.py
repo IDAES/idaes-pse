@@ -23,7 +23,9 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models.power_generation import TurbineOutletStage
 from idaes.property_models import iapws95_ph
 from idaes.property_models.iapws95 import iapws95_available
-from idaes.ui.report import degrees_of_freedom, active_equalities
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom,
+        activated_equalities_generator)
 
 prop_available = iapws95_available()
 
@@ -67,6 +69,8 @@ def test_initialize(build_turbine):
     m.fs.turb.inlet.pressure[0].value = 8e4
 
     m.fs.turb.initialize(outlvl=1)
-    for c in active_equalities(m):
+
+    eq_cons = activated_equalities_generator(m)
+    for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
     assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
