@@ -87,7 +87,7 @@ def test_StateBlockBase_report():
     m.s = Set(initialize=[0, 1])
     m.p = TestStateBlock2(m.s)
 
-    m.p.report()
+    m.p.report(dof=True)
 
 
 # -----------------------------------------------------------------------------

@@ -76,4 +76,4 @@ def test_report():
     # Test that no exceptions occur
     m = ConcreteModel()
     m.b = ProcessBaseBlock()
-    m.b.report()
+    m.b.report(dof=True)
