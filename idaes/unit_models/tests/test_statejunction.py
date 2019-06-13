@@ -21,7 +21,7 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models.statejunction import StateJunction
 from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------

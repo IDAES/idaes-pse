@@ -23,7 +23,7 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models import Heater, HeatExchanger
 from idaes.property_models import iapws95_ph
 from idaes.property_models.iapws95 import iapws95_available
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 prop_available = iapws95_available()
 

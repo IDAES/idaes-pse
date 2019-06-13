@@ -20,7 +20,6 @@ Example
     from idaes.core import FlowsheetBlock
     from idaes.unit_models.power_generation import TurbineOutletStage
     from idaes.property_models import iapws95_ph
-    from idaes.ui.report import degrees_of_freedom
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})

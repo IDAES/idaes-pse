@@ -25,7 +25,7 @@ from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)
 from idaes.property_models.examples.saponification_reactions import (
     SaponificationReactionParameterBlock)
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
