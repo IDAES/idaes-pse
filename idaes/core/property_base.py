@@ -34,6 +34,10 @@ from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              number_variables,
+                                              number_activated_constraints,
+                                              number_activated_blocks)
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -120,10 +124,12 @@ class StateBlock(ProcessBlock):
             ostream = sys.stdout
 
         # Get DoF and model stats
-#        if dof:
-        # Get components to report in performance section
-#        performance = self._get_performance_contents()
-#
+        if dof:
+            dof_stat = degrees_of_freedom(self[index])
+            nv = number_variables(self[index])
+            nc = number_activated_constraints(self[index])
+            nb = number_activated_blocks(self[index])
+
         # Create stream table
         if true_state:
             disp_dict = self[index].define_state_vars()
@@ -151,11 +157,11 @@ class StateBlock(ProcessBlock):
 
         if dof:
             ostream.write("\n"+"="*max_str_length+"\n")
-            ostream.write(f"{prefix}{tab}Local Degrees of Freedom: []"
-                          f"{tab}(Inlets: [])")
+            ostream.write(f"{prefix}{tab}Local Degrees of Freedom: {dof_stat}")
             ostream.write('\n')
-            ostream.write(f"{prefix}{tab}Variables: []{tab}"
-                          f"Constraints: []{tab}Blocks: []")
+            ostream.write(f"{prefix}{tab}Total Variables: {nv}{tab}"
+                          f"Activated Constraints: {nc}{tab}"
+                          f"Activated Blocks: {nb}")
 
         ostream.write("\n"+"-"*max_str_length+"\n")
         ostream.write(f"{prefix}{tab}State Report")

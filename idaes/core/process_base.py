@@ -33,6 +33,10 @@ from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError,
                                         PropertyPackageError)
 from idaes.core.util.tables import stream_table_dataframe_to_string
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              number_variables,
+                                              number_activated_constraints,
+                                              number_activated_blocks)
 
 
 # Some more inforation about this module
@@ -228,7 +232,12 @@ class ProcessBlockData(_BlockData):
             ostream = sys.stdout
 
         # Get DoF and model stats
-#        if dof:
+        if dof:
+            dof_stat = degrees_of_freedom(self)
+            nv = number_variables(self)
+            nc = number_activated_constraints(self)
+            nb = number_activated_blocks(self)
+
         # Get components to report in performance section
         performance = self._get_performance_contents(time_point=time_point)
 
@@ -253,11 +262,11 @@ class ProcessBlockData(_BlockData):
 
         if dof:
             ostream.write("\n"+"="*max_str_length+"\n")
-            ostream.write(f"{prefix}{tab}Local Degrees of Freedom: []"
-                          f"{tab}(Inlets: [])")
+            ostream.write(f"{prefix}{tab}Local Degrees of Freedom: {dof_stat}")
             ostream.write('\n')
-            ostream.write(f"{prefix}{tab}Variables: []{tab}"
-                          f"Constraints: []{tab}Blocks: []")
+            ostream.write(f"{prefix}{tab}Total Variables: {nv}{tab}"
+                          f"Activated Constraints: {nc}{tab}"
+                          f"Activated Blocks: {nb}")
 
         if performance is not None:
             ostream.write("\n"+"-"*max_str_length+"\n")

@@ -102,17 +102,15 @@ def main():
     results = solver.solve(m, tee=False)
 
     # Print results
-#    print(results)
-#    print()
-#    print("Results")
-#    print()
-#    print("Tank 1 Outlet")
-#    m.fs.Tank1.outlet.display()
-#    print()
-#    print("Tank 2 Outlet")
-#    m.fs.Tank2.outlet.display()
-
-    report_statistics(m)
+    print(results)
+    print()
+    print("Results")
+    print()
+    print("Tank 1 Outlet")
+    m.fs.Tank1.outlet.display()
+    print()
+    print("Tank 2 Outlet")
+    m.fs.Tank2.outlet.display()
 
     # For testing purposes
     return(m, results)
