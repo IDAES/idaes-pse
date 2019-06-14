@@ -1909,5 +1909,5 @@ argument)."""))
         """
         raise NotImplementedError("""
                 Due ot the difficultly in presenting spatially distributed data
-                in a clean format, ControlVolume1D does not currently supprot
+                in a clean format, ControlVolume1D does not currently support
                 the report method.""")

@@ -158,7 +158,7 @@ class ReactionBlockBase(ProcessBlock):
                dof=False, ostream=None, prefix=""):
         raise NotImplementedError(
                 """The current Reaction Package has not implemented a report
-                method. Please contact the package developer with this bug.""")
+                method. Please contact the package developer about this.""")
 
 
 class ReactionBlockDataBase(ProcessBlockData):

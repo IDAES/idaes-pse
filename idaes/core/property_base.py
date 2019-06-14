@@ -105,16 +105,16 @@ class StateBlock(ProcessBlock):
         Default report method for StateBlocks. Returns a Block report populated
         with either the display or state variables defined in the
         StateBlockData class.
-        
+
         Args:
             index : tuple of Block indices indicating which point in time (and
-                    space if applicable) to reprot state at.
+                    space if applicable) to report state at.
             true_state : whether to report the display variables (False
                     default) or the actual state variables (True)
             dof : whether to show local degrees of freedom in the report
                     (default=False)
             ostream : output stream to write report to
-            prefix : string to append ot the beginning of all output lines
+            prefix : string to append to the beginning of all output lines
 
         Returns:
             Printed output to ostream
