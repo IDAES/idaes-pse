@@ -21,7 +21,7 @@ from pyomo.environ import ConcreteModel, SolverFactory, value
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models import Heater, HeatExchanger
-from idaes.property_models import iapws95_ph
+from idaes.property_models import iapws95
 from idaes.property_models.iapws95 import iapws95_available
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -39,7 +39,7 @@ else:
 def build_heater():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.heater = Heater(default={"property_package": m.fs.properties})
     return m
 
@@ -47,7 +47,7 @@ def build_heater():
 def build_heat_exchanger():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.heat_exchanger = HeatExchanger(default={
         "side_1":{"property_package": m.fs.properties},
         "side_2":{"property_package": m.fs.properties}})

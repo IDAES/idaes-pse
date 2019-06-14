@@ -21,7 +21,7 @@ from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.power_generation import SteamValve
-from idaes.property_models import iapws95_ph
+from idaes.property_models import iapws95
 from idaes.core.util.model_statistics import (
         degrees_of_freedom,
         activated_equalities_generator)
@@ -40,7 +40,7 @@ else:
 def build_valve_vapor():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.valve = SteamValve(default={"property_package": m.fs.properties})
     return m
 
@@ -48,7 +48,7 @@ def build_valve_vapor():
 def build_valve_liquid():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.valve = SteamValve(default={"property_package": m.fs.properties,
                                      "phase": "Liq"})
     return m
@@ -67,7 +67,7 @@ def test_vapor_steady_state_initialize(build_valve_vapor):
     """Initialize a turbine model"""
     m = build_valve_vapor
     # set inlet
-    hin = iapws95_ph.htpx(T=880, P=2.4233e7)
+    hin = iapws95.htpx(T=880, P=2.4233e7)
     # set inlet
     m.fs.valve.inlet.enth_mol[0].value = hin
     m.fs.valve.inlet.flow_mol[0].value = 26000/4.0

@@ -21,7 +21,7 @@ from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.power_generation import TurbineOutletStage
-from idaes.property_models import iapws95_ph
+from idaes.property_models import iapws95
 from idaes.property_models.iapws95 import iapws95_available
 from idaes.core.util.model_statistics import (
         degrees_of_freedom,
@@ -40,7 +40,7 @@ else:
 def build_turbine():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.turb = TurbineOutletStage(default={"property_package": m.fs.properties})
     return m
 
@@ -48,7 +48,7 @@ def build_turbine():
 def build_turbine_dyn():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": True})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.turb = TurbineOutletStage(default={
         "dynamic": False,
         "property_package": m.fs.properties})

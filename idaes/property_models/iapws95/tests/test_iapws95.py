@@ -15,7 +15,7 @@ from __future__ import division, print_function, absolute_import
 import pytest
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
-from idaes.property_models import iapws95_ph as iapws95
+from idaes.property_models import iapws95
 from idaes.property_models.iapws95 import iapws95_available
 import csv
 import math
@@ -256,6 +256,29 @@ def test_entropy():
         else:
             tol = 0.003
         assert(abs(s-c[2])/c[2] < tol)
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.nocircleci()
+def test_internal_energy():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock()
+    model.prop_in = iapws95.Iapws95StateBlock(default={"parameters":model.prop_param})
+    cond = read_data("prop.txt", col=4)
+    phase = read_data("prop.txt", col=13)
+    for i, c in enumerate(cond):
+        if phase[i][2] in ["liquid", "supercritical"]:
+            p = "Liq"
+        else:
+            p = "Vap"
+        model.prop_in.temperature.set_value(c[0])
+        model.prop_in.pressure = c[1]
+        u = value(model.prop_in.energy_internal_mol_phase[p]/model.prop_in.mw/1000)
+        rho = value(model.prop_in.dens_mass_phase[p])
+        if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+            tol = 0.02 # steep part in sc region
+        else:
+            tol = 0.002
+        assert(abs(u-c[2])/c[2] < tol)
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
