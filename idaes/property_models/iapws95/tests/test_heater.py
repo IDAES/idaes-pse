@@ -25,7 +25,7 @@ from idaes.unit_models import Heater, HeatExchanger
 from idaes.property_models import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-iapws95.prop_available = iapws95_available()
+prop_available = iapws95.iapws95_available()
 
 # -----------------------------------------------------------------------------
 # See if ipopt is available and set up solver
@@ -41,7 +41,7 @@ def test_heater_q1():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
     m.fs.properties = iapws95.Iapws95ParameterBlock(
-        default={""})
+        default={})
     m.fs.heater = Heater(default={"property_package": m.fs.properties})
     m.fs.heater.inlet.enth_mol.fix(4000)
     m.fs.heater.inlet.flow_mol.fix(100)
