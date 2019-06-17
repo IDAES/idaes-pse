@@ -74,3 +74,9 @@ def test_initialize(build_turbine):
     for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
     assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report(build_turbine):
+    m = build_turbine
+    m.fs.turb.report()
