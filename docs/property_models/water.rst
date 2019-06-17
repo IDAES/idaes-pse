@@ -15,7 +15,7 @@ Theses modules can be imported as:
 
 .. testcode::
 
-  from idaes.property_models import iapws95
+  from idaes.property_models.iapws95 import iapws95
 
 Example
 -------
@@ -33,7 +33,7 @@ of the water at the heater outlet, for example the line below could be added.
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
   from idaes.unit_models import Heater
-  from idaes.property_models import iapws95
+  from idaes.property_models.iapws95 import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()

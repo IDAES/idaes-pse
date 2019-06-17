@@ -15,7 +15,7 @@ from __future__ import division, print_function, absolute_import
 from pyomo.environ import *
 from pyomo.core.base.external import AMPLExternalFunction
 from pyomo.opt import SolverFactory
-from idaes.property_models import iapws95
+from idaes.property_models.iapws95 import iapws95
 
 import unittest
 import pytest

@@ -22,7 +22,7 @@ from pyomo.environ import ConcreteModel, SolverFactory, value
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models import Heater, HeatExchanger
-from idaes.property_models import iapws95
+from idaes.property_models.iapws95 import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import MaterialBalanceType
 prop_available = iapws95.iapws95_available()
