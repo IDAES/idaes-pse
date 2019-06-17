@@ -16,12 +16,11 @@ import pytest
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 from idaes.property_models import iapws95
-from idaes.property_models.iapws95 import iapws95_available
 import csv
 import math
 import os
 
-prop_available = iapws95_available()
+prop_available = iapws95.iapws95_available()
 
 def read_data(fname, col):
     dfile = os.path.dirname(__file__)

@@ -25,9 +25,8 @@ from idaes.property_models import iapws95
 from idaes.core.util.model_statistics import (
         degrees_of_freedom,
         activated_equalities_generator)
-from idaes.property_models.iapws95 import iapws95_available
 
-prop_available = iapws95_available()
+prop_available = iapws95.iapws95_available()
 
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():

@@ -26,12 +26,11 @@ from idaes.unit_models import Heater
 from idaes.unit_models.power_generation import (
     TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
 from idaes.property_models import iapws95
-from idaes.property_models.iapws95 import iapws95_available
 from idaes.core.util.model_statistics import (
         degrees_of_freedom,
         activated_equalities_generator)
 
-prop_available = iapws95_available()
+prop_available = iapws95.iapws95_available()
 
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():

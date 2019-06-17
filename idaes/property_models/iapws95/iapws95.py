@@ -42,6 +42,12 @@ point.
 """
 __author__ = "John Eslick"
 
+import os
+
+def iapws95_available():
+    plib = os.path.join(os.path.dirname(__file__), "iapws95.so")
+    return os.path.isfile(plib)
+
 # Import Python libraries
 import logging
 import os
