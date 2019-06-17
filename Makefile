@@ -26,8 +26,11 @@ clean: iapws95_clean cubic_eos_clean functions_clean
 
 docs: docs_html
 
+alldocs:
+	$(MAKE) -C ./docs all
+
 docs_html:
-	$(MAKE) -C ./docs html
+	$(MAKE) -C ./docs apidoc html
 
 docs_clean:
-	$(MAKE) -C ./docs clean
+	$(MAKE) -C ./docs allclean
