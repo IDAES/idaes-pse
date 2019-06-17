@@ -1,1 +1,1 @@
-from idaes.property_models.iapws95 import iapws95
+import idaes.property_models.iapws95.iapws95 as iapws95
