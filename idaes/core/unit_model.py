@@ -138,7 +138,7 @@ Must be True if dynamic = True,
         p = Port(noruleinit=True, doc=doc)
         setattr(blk, name, p)
 
-        p._state_block = block
+        p._state_block = (block, )
 
         # Get dict of Port members and names
         member_list = block[
@@ -220,18 +220,18 @@ Must be True if dynamic = True,
                 member_list = (block.properties_in[
                                     block.flowsheet().config.time.first()]
                                .define_port_members())
-                p._state_block = block.properties_in
+                p._state_block = (block.properties_in, )
             except AttributeError:
                 try:
                     member_list = (block.properties[
                                     block.flowsheet().config.time.first(), 0]
                                    .define_port_members())
                     if block._flow_direction == FlowDirection.forward:
-                        p._state_block = block.properties[
-                                :, block.length_domain.first()]
+                        p._state_block = (block.properties,
+                                          block.length_domain.first())
                     elif block._flow_direction == FlowDirection.backward:
-                        p._state_block = block.properties[
-                                :, block.length_domain.last()]
+                        p._state_block = (block.properties,
+                                          block.length_domain.last())
                 except AttributeError:
                     raise PropertyPackageError(
                             "{} property package does not appear to have "
@@ -241,7 +241,7 @@ Must be True if dynamic = True,
         elif isinstance(block, StateBlock):
             member_list = block[
                     blk.flowsheet().config.time.first()].define_port_members()
-            p._state_block = block
+            p._state_block = (block, )
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "
@@ -375,28 +375,28 @@ Must be True if dynamic = True,
                 member_list = (block.properties_out[
                                     block.flowsheet().config.time.first()]
                                .define_port_members())
-                p._state_block = block.properties_out
+                p._state_block = (block.properties_out, )
             except AttributeError:
                 try:
                     member_list = (block.properties[
                                     block.flowsheet().config.time.first(), 0]
                                    .define_port_members())
                     if block._flow_direction == FlowDirection.forward:
-                        p._state_block = block.properties[
-                                :, block.length_domain.last()]
+                        p._state_block = (block.properties,
+                                          block.length_domain.last())
                     elif block._flow_direction == FlowDirection.backward:
-                        p._state_block = block.properties[
-                                :, block.length_domain.first()]
+                        p._state_block = (block.properties,
+                                          block.length_domain.first())
                 except AttributeError:
                     raise PropertyPackageError(
                             "{} property package does not appear to have "
-                            "implemented a define_port_memebers method. "
+                            "implemented a define_port_members method. "
                             "Please contact the developer of the property "
                             "package.".format(blk.name))
         elif isinstance(block, StateBlock):
             member_list = block[
                     blk.flowsheet().config.time.first()].define_port_members()
-            p._state_block = block
+            p._state_block = (block, )
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "

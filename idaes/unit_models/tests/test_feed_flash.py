@@ -90,3 +90,15 @@ def test_initialize():
     assert (pytest.approx(0.355, abs=1e-3) ==
             m.fs.ff.control_volume.
             properties_out[0].flow_mol_phase["Vap"].value)
+
+
+def test_report():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = BTXParameterBlock()
+
+    m.fs.ff = FeedFlash(
+            default={"property_package": m.fs.properties})
+
+    m.fs.ff.report()

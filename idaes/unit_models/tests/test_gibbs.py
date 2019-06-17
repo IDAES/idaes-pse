@@ -182,3 +182,15 @@ def test_initialize_heat_duty():
             m.fs.gibbs.outlet.temperature[0].value)
     assert (pytest.approx(101325.0, abs=1e-2) ==
             m.fs.gibbs.outlet.pressure[0].value)
+
+
+def test_report():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = MethaneCombustionParameterBlock()
+
+    m.fs.gibbs = GibbsReactor(default={"property_package": m.fs.properties,
+                                       "has_heat_transfer": True})
+
+    m.fs.gibbs.report()

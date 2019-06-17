@@ -286,3 +286,10 @@ domain,
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
             add_object_reference(self, "deltaP", self.control_volume.deltaP)
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {"Volume": self.volume}
+        var_dict = {"Length": self.length}
+        var_dict = {"Area": self.area}
+
+        return {"vars": var_dict}

@@ -17,8 +17,10 @@ from __future__ import division
 
 # Import Python libraries
 import logging
+from pandas import DataFrame
 
 # Import Pyomo libraries
+from pyomo.environ import value
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 
@@ -198,3 +200,32 @@ see property package for documentation.}"""))
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
             add_object_reference(self, "deltaP", self.control_volume.deltaP)
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        if hasattr(self, "heat_duty"):
+            var_dict["Heat Duty"] = self.heat_duty[time_point]
+        if hasattr(self, "deltaP"):
+            var_dict["Pressure Change"] = self.deltaP[time_point]
+
+        return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        stream_attributes = {}
+
+        for n, v in {"Inlet": "inlet",
+                     "Vapor Outlet": "vap_outlet",
+                     "Liquid Outlet": "liq_outlet"}.items():
+            port_obj = getattr(self, v)[time_point]
+
+            stream_attributes[n] = {}
+
+            for k in port_obj:
+                for i in port_obj[k]:
+                    if i is None:
+                        stream_attributes[n][k] = value(port_obj[k][i])
+                    else:
+                        stream_attributes[n][k+" "+str(i)] = \
+                            value(port_obj[k][i])
+
+        return DataFrame.from_dict(stream_attributes, orient="column")
