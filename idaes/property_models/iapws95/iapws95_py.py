@@ -143,7 +143,7 @@ that only one phase is present.
         default=StateVars.PH,
         domain=In(StateVars),
         description="State variable set",
-        doc="""The set of state varaibles to use. Depending on the use, one state
+        doc="""The set of state variables to use. Depending on the use, one state
 variable set or another may be better computationally. Usually pressure and
 enthalpy are the best choice because they are well behaved during a phase change.
 **default** - StateVars.PH
@@ -521,7 +521,7 @@ class Iapws95StateBlockData(StateBlockData):
         if not self.available:
             _log.error("IAPWS library file not found. Was it compiled?")
 
-        self._state_vars() # create the appropriate state varaibles
+        self._state_vars() # create the appropriate state variables
 
         # External Functions (some of these are included only for testing)
         plib = self.config.parameters.plib
