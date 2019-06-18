@@ -38,8 +38,7 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock)
-from idaes.core.util.misc import add_object_reference
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Andrew Lee"
@@ -334,6 +333,12 @@ class SaponificationStateBlockData(StateBlockData):
                 "conc_mol_comp": b.conc_mol_comp,
                 "temperature": b.temperature,
                 "pressure": b.pressure}
+
+    def define_display_vars(b):
+        return {"Volumetric Flowrate": b.flow_vol,
+                "Molar Concentration": b.conc_mol_comp,
+                "Temperature": b.temperature,
+                "Pressure": b.pressure}
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar

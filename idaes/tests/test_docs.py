@@ -20,6 +20,7 @@ for the log of the build and looks for errors in it.
 import logging
 import os
 import re
+
 # third-party
 import pytest
 
@@ -41,20 +42,20 @@ def docs_path():
     """
     cwd = os.path.realpath(os.getcwd())
     # look for "./docs"
-    path = os.path.join(cwd, 'docs')
+    path = os.path.join(cwd, "docs")
     if os.path.exists(path):
         return path
     # look for (last) "docs/" in full current working dir
     cwd_comp = cwd.split(os.path.sep)
     n = len(cwd_comp)
     try:
-        idx = list(reversed(cwd_comp)).index('docs')
-        return os.path.sep.join(cwd_comp[:n - idx])
+        idx = list(reversed(cwd_comp)).index("docs")
+        return os.path.sep.join(cwd_comp[: n - idx])
     except ValueError:
         pass
     # look for docs relative to this file
     try:
-        path = os.path.join(os.path.dirname(__file__), '..', '..', 'docs')
+        path = os.path.join(os.path.dirname(__file__), "..", "..", "docs")
         # look for {this file}/../../docs
         if os.path.exists(path):
             return path
@@ -62,12 +63,15 @@ def docs_path():
         file_comp = path.split(os.path.sep)
         n = len(file_comp)
         try:
-            idx = list(reversed(file_comp)).index('docs')
-            return os.path.sep.join(file_comp[:n - idx])
+            idx = list(reversed(file_comp)).index("docs")
+            return os.path.sep.join(file_comp[: n - idx])
         except ValueError:
             pass
     except NameError:
         pass  # __file__ not defined(?)
+
+
+ERRLOG = "sphinx-errors.txt"
 
 
 def test_sphinx_build_log(docs_path):
@@ -75,16 +79,17 @@ def test_sphinx_build_log(docs_path):
     if docs_path is None:
         _log.warning('Could not find "docs" directory')
         return
-    log_path = os.path.join(docs_path, 'sphinx-build.log')
+    log_path = os.path.join(docs_path, ERRLOG)
     if not os.path.exists(log_path):
-        _log.warning('Could not find "sphinx-build.log" in docs directory: {}'
-                     .format(log_path))
+        _log.warning(
+            'Could not find "{}" in docs directory: {}'.format(ERRLOG, log_path)
+        )
         return
     log = open(log_path)
     for line in log:
-        if 'WARNING: ' in line:
+        if "WARNING: " in line:
             pass
-            #assert re.search(r'duplicate label sub(module|package)s', line), \
+            # assert re.search(r'duplicate label sub(module|package)s', line), \
             #    'Non-trivial warning: {}'.format(line.strip())
-        elif 'ERROR: ' in line:
-            assert False, 'Error: {}'.format(line.strip())
+        elif "ERROR: " in line:
+            assert False, "Error: {}".format(line.strip())

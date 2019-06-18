@@ -26,7 +26,7 @@ from idaes.unit_models.heat_exchanger_1D import WallConductionType
 from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
 from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 
 # -----------------------------------------------------------------------------

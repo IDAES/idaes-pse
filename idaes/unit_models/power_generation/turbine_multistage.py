@@ -32,7 +32,6 @@ from idaes.unit_models.power_generation import (
     TurbineInletStage, TurbineStage, TurbineOutletStage, SteamValve)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.ui.report import degrees_of_freedom
 from idaes.core.util.misc import copy_port_values as _set_port
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
 from idaes.core.util.config import is_physical_parameter_block
