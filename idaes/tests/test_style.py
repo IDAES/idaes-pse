@@ -22,8 +22,8 @@ _log = logging.getLogger(__name__)
 # we want to look at everything:
 # DIRS = ['idaes']
 # but for now we only do this:
-DIRS = ['idaes/dmf']
-FLAKE8 = 'flake8'
+DIRS = ["idaes/dmf"]
+STYLE_CHECK_CMD = "flake8"
 
 
 def test_flake8():
@@ -31,17 +31,25 @@ def test_flake8():
     for d in DIRS:
         path = os.path.join(cwd, d)
         if not os.path.exists(path):
-            _log.warning('Target path "{}" not found in '
-                         'current dir, "{}". Skipping test.'.format(d, cwd))
+            _log.warning(
+                f"Target path '{d}' not found in current dir, '{cwd}'. " "Skipping test"
+            )
             continue
         if not os.path.isdir(path):
-            _log.warning('Target path "{}" in '
-                         'current dir, "{}", '
-                         'is not a directory. Skipping test.'.format(d, cwd))
+            _log.warning(
+                f"Target path '{d}' in current dir, '{cwd}', is not a directory. "
+                "Skipping test"
+            )
             continue
-        cmd = [FLAKE8, d]
-        _log.info('Test code style with command "{}"'.format(' '.join(cmd)))
-        proc = subprocess.Popen(cmd)
+        cmd = [STYLE_CHECK_CMD, d]
+        _log.info(f"Test code style with command '{' '.join(cmd)}'")
+        try:
+            proc = subprocess.Popen(cmd)
+        except FileNotFoundError:
+            _log.warning(
+                f"Style checker {STYLE_CHECK_CMD} not found. Skipping style tests"
+            )
+            break
         proc.wait()
         status = proc.returncode
-        assert status == 0, 'flake8 had errors for {}'.format(path)
+        assert status == 0, f"Style checker '{STYLE_CHECK_CMD}' had errors for {path}"

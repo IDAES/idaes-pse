@@ -334,6 +334,12 @@ class SaponificationStateBlockData(StateBlockData):
                 "temperature": b.temperature,
                 "pressure": b.pressure}
 
+    def define_display_vars(b):
+        return {"Volumetric Flowrate": b.flow_vol,
+                "Molar Concentration": b.conc_mol_comp,
+                "Temperature": b.temperature,
+                "Pressure": b.pressure}
+
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
 
