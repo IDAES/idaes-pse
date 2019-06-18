@@ -16,8 +16,12 @@ Tests for process_base.
 Author: Andrew Lee
 """
 import pytest
+
 from pyomo.environ import Block, ConcreteModel
-from idaes.core import FlowsheetBlockData, declare_process_block_class
+
+from idaes.core.process_base import ProcessBaseBlock
+from idaes.core import (FlowsheetBlockData,
+                        declare_process_block_class)
 from idaes.core.util.exceptions import ConfigurationError
 
 
@@ -54,3 +58,22 @@ def test_flowsheet():
     m.a.i = Block([1, 2])
     m.a.i[1].j = Flowsheet()
     assert m.a.i[1].j.flowsheet() is m.a
+
+
+def test_get_performance_contents():
+    m = ConcreteModel()
+    m.b = ProcessBaseBlock()
+    assert m.b._get_performance_contents(time_point=0) is None
+
+
+def test_get_stream_table_contents():
+    m = ConcreteModel()
+    m.b = ProcessBaseBlock()
+    assert m.b._get_stream_table_contents(time_point=0) is None
+
+
+def test_report():
+    # Test that no exceptions occur
+    m = ConcreteModel()
+    m.b = ProcessBaseBlock()
+    m.b.report(dof=True)
