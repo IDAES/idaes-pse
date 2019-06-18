@@ -42,12 +42,6 @@ point.
 """
 __author__ = "John Eslick"
 
-import os
-
-def iapws95_available():
-    plib = os.path.join(os.path.dirname(__file__), "iapws95.so")
-    return os.path.isfile(plib)
-
 # Import Python libraries
 import logging
 import os
@@ -70,6 +64,13 @@ from idaes.core.util.math import smooth_max
 # Logger
 _log = logging.getLogger(__name__)
 
+def iapws95_available():
+    """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
+    the .so extention is still used.
+    """
+    plib = os.path.join(os.path.dirname(__file__), "iapws95.so")
+    return os.path.isfile(plib)
+
 class StateVars(enum.Enum):
     """
     State variable set options
@@ -79,7 +80,7 @@ class StateVars(enum.Enum):
 
 class PhaseType(enum.Enum):
     """
-    Ways to present phases
+    Ways to present phases to the framework
     """
     MIX = 1 # Looks like a single phase called mixed with a vapor fraction
     LG = 2 # Looks like two phases vapor and liquid
@@ -89,16 +90,16 @@ class PhaseType(enum.Enum):
 
 def htpx(T, P=None, x=None):
     """
-    Conveneince function to calculate steam enthalpy from temperature and
+    Convenience function to calculate steam enthalpy from temperature and
     either pressure or vapor fraction. This function can be used for inlet
-    streams and initialization where temperature is known instread of enthalpy.
+    streams and initialization where temperature is known instead of enthalpy.
     Args:
         T: Temperature [K]
         P: Pressure [Pa], None if saturated steam
         x: Vapor fraction [mol vapor/mol total], None if superheated or subcooled
 
     Returns:
-        Molar enthalpy [J/mol].
+        Total molar enthalpy [J/mol].
     """
     model = ConcreteModel()
     model.prop_param = Iapws95ParameterBlock()
@@ -115,9 +116,9 @@ def htpx(T, P=None, x=None):
         return value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*(x-1) +\
             value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*x
 
+
 @declare_process_block_class("Iapws95ParameterBlock")
 class Iapws95ParameterBlockData(PhysicalParameterBlock):
-
     CONFIG=PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare("phase_presentation", ConfigValue(
@@ -129,23 +130,26 @@ appears to the framework to be a mixed phase containing liquid and/or vapor.
 The mixed option can simplify calculations at the unit model level since it can
 be treated as a single phase, but unit models such as flash vessels will not be
 able to treate the phases indepedently. The LG option presents as two sperate
-phases to the framework.
+phases to the framework. The L or G options can be used if it is known for sure
+that only one phase is present.
 **default** - PhaseType.MIX
 **Valid values:** {
 **PhaseType.MIX** - Present a mixed phase with liquid and/or vapor,
-**PhaseType.LG** - Present a liquid and vapor phase"""))
+**PhaseType.LG** - Present a liquid and vapor phase,
+**PhaseType.L - Assume only liquid can be present,
+**PhaseType.G - Assume only vapor can be present}"""))
 
     CONFIG.declare("state_vars", ConfigValue(
         default=StateVars.PH,
         domain=In(StateVars),
         description="State variable set",
-        doc="""The set of state varaibles to use. Depending on the use one state
-variable set or another may be better computationally.  Usually pressure and
+        doc="""The set of state varaibles to use. Depending on the use, one state
+variable set or another may be better computationally. Usually pressure and
 enthalpy are the best choice because they are well behaved during a phase change.
 **default** - StateVars.PH
 **Valid values:** {
 **StateVars.PH** - Pressure-Enthalpy,
-**StateVars.TPX** - Temperature-Pressure-Quality"""))
+**StateVars.TPX** - Temperature-Pressure-Quality}"""))
 
     def build(self):
         super(Iapws95ParameterBlockData, self).build()
@@ -393,15 +397,15 @@ class _StateBlock(StateBlock):
     """)
 class Iapws95StateBlockData(StateBlockData):
     """
-    This is a property package for calcuating thermophysical properties of water
+    This is a property package for calculating thermophysical properties of water
     """
     def initialize(self, *args, **kwargs):
-        # Whith this particualr property pacakage there is not need for
+        # With this particualr property pacakage there is not need for
         # initialization
         pass
 
     def _state_vars(self):
-        """ Create the state varables
+        """ Create the state variables
         """
         self.flow_mol = Var(initialize=1, domain=NonNegativeReals,
             doc="Total flow [mol/s]")
@@ -487,8 +491,8 @@ class Iapws95StateBlockData(StateBlockData):
             self.eq_complimentarity = Constraint(
                 expr=0 == (vf*self.P_over_sat  - (1 - vf)*self.P_under_sat))
 
-        # Eq sat can deactivated to force the pressure to be the saturation
-        # pressure
+        # eq_sat can activated to force the pressure to be the saturation
+        # pressure, if you use this constraint deactivate eq_complimentarity
         self.eq_sat = Constraint(expr=P/1000.0 == Psat/1000.0)
         self.eq_sat.deactivate()
 
@@ -552,7 +556,7 @@ class Iapws95StateBlockData(StateBlockData):
         self.func_phir_tau2 = EF(library=plib, function="phir_tau2")
         self.func_phir_delta_tau = EF(library=plib, function="phir_delta_tau")
 
-        # Calcuations
+        # Calculations
 
         # molecular weight
         self.mw = Expression(expr=self.config.parameters.mw,
@@ -585,7 +589,7 @@ class Iapws95StateBlockData(StateBlockData):
             # Need to get enthalpy expressions in here
             pass
 
-        # Conveneint shorter names and expressions
+        # Convenient shorter names and expressions
         T = self.temperature
         vf = self.vapor_frac
 
