@@ -15,7 +15,7 @@ from __future__ import division, print_function, absolute_import
 import pytest
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
-from idaes.property_models.iapws95 import iapws95
+from idaes.property_models import iapws95
 import csv
 import math
 import os

@@ -22,7 +22,7 @@ from pyomo.environ import ConcreteModel, SolverFactory, value
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models import Heater, HeatExchanger
-from idaes.property_models.iapws95 import iapws95
+from idaes.property_models import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import MaterialBalanceType
 prop_available = iapws95.iapws95_available()
@@ -249,11 +249,12 @@ def test_heater_tpx_g_phase():
     m.fs.heater.inlet.vapor_frac.fix(1)
     m.fs.heater.inlet.pressure.fix(101325)
     m.fs.heater.heat_duty[0].fix(100*10000)
+    prop_in = m.fs.heater.control_volume.properties_in[0]
+    prop_out = m.fs.heater.control_volume.properties_out[0]
+    prop_out.temperature = 500
     m.fs.heater.initialize(outlvl=5)
     assert degrees_of_freedom(m) == 0
     res = solver.solve(m)
-    prop_in = m.fs.heater.control_volume.properties_in[0]
-    prop_out = m.fs.heater.control_volume.properties_out[0]
     assert abs(value(prop_out.temperature) - 698.1604861702295) <= 1e-4
     assert abs(value(prop_in.phase_frac["Liq"]) - 0) <= 1e-6
     assert abs(value(prop_out.phase_frac["Liq"]) - 0) <= 1e-6

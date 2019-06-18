@@ -478,9 +478,11 @@ class Iapws95StateBlockData(StateBlockData):
             if "Vap" in plist:
                 self.vapor_fraction_constarint = Constraint(
                     expr=self.vapor_frac==1.0)
+                self.vapor_frac=1.0
             else:
                 self.vapor_fraction_constarint = Constraint(
                     expr=self.vapor_frac==0.0)
+                self.vapor_frac=0.0
         elif not self.config.defined_state:
             self.eq_complimentarity = Constraint(
                 expr=0 == (vf*self.P_over_sat  - (1 - vf)*self.P_under_sat))

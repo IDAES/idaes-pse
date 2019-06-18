@@ -23,7 +23,7 @@ from idaes.unit_models.pressure_changer import (PressureChanger,
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import property package for testing
-from idaes.property_models.iapws95 import iapws95 as pp
+from idaes.property_models import iapws95 as pp
 
 prop_available = pp.iapws95_available()
 
