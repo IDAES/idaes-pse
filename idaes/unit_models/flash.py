@@ -216,16 +216,21 @@ see property package for documentation.}"""))
         for n, v in {"Inlet": "inlet",
                      "Vapor Outlet": "vap_outlet",
                      "Liquid Outlet": "liq_outlet"}.items():
-            port_obj = getattr(self, v)[time_point]
+            port_obj = getattr(self, v)
 
             stream_attributes[n] = {}
 
-            for k in port_obj:
-                for i in port_obj[k]:
-                    if i is None:
-                        stream_attributes[n][k] = value(port_obj[k][i])
+            for k in port_obj.vars:
+                for i in port_obj.vars[k].keys():
+                    if isinstance(i, float):
+                        stream_attributes[n][k] = value(
+                                port_obj.vars[k][time_point])
                     else:
-                        stream_attributes[n][k+" "+str(i)] = \
-                            value(port_obj[k][i])
+                        if len(i) == 2:
+                            kname = str(i[1])
+                        else:
+                            kname = str(i[1:])
+                        stream_attributes[n][k+" "+kname] = \
+                            value(port_obj.vars[k][time_point, i[1:]])
 
-        return DataFrame.from_dict(stream_attributes, orient="column")
+        return DataFrame.from_dict(stream_attributes, orient="columns")

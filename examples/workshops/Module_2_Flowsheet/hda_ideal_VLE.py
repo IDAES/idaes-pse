@@ -34,7 +34,8 @@ from idaes.core import (declare_process_block_class,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
-from idaes.ui.report import degrees_of_freedom, count_free_variables
+from idaes.core.util.model_statistics import degrees_of_freedom, \
+                                             number_unfixed_variables
 from idaes.core.util.misc import extract_data
 
 # Set up logger
@@ -480,7 +481,7 @@ class _IdealStateBlock(StateBlock):
 
         free_vars = 0
         for k in blk.keys():
-            free_vars += count_free_variables(blk[k])
+            free_vars += number_unfixed_variables(blk[k])
         if free_vars > 0:
             try:
                 results = solve_indexed_blocks(opt, [blk], tee=stee)
