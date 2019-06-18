@@ -17,4 +17,4 @@ Backward compatablity wrapper
 
 __author__ = "John Eslick"
 
-from idaes.property_models.iapws95.iapws95 import *
+from idaes.property_models.iapws95.iapws95_py import *
