@@ -251,7 +251,10 @@ def test_heater_tpx_g_phase():
     m.fs.heater.heat_duty[0].fix(100*10000)
     prop_in = m.fs.heater.control_volume.properties_in[0]
     prop_out = m.fs.heater.control_volume.properties_out[0]
-    prop_out.temperature = 500
+    prop_out.temperature = 550
+    prop_out.vapor_frac = 1.0
+    prop_out.pressure = 101325
+    prop_out.flow_mol = 100
     m.fs.heater.initialize(outlvl=5)
     assert degrees_of_freedom(m) == 0
     res = solver.solve(m)
