@@ -3029,6 +3029,10 @@ def test_initialize():
 
 
 def test_report():
+    # Test that calling report method on a 1D control volume returns a
+    # NotImplementedError to inform the user that we don't support reports
+    # on 1D models yet. This is because it is difficult to concisely report
+    # distributed data.
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
