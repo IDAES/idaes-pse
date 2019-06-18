@@ -28,6 +28,7 @@ import sys
 
 # Third-party
 from backports.shutil_get_terminal_size import get_terminal_size
+import colorama
 import jsonschema
 import pendulum
 
@@ -35,7 +36,6 @@ import pendulum
 from .dmfbase import DMF, DMFConfig
 from .util import strlist
 from .util import is_jupyter_notebook, is_python, is_resource_json
-from .util import CPrint
 from .errors import (
     ParseError,
     CommandError,
@@ -47,7 +47,7 @@ from .errors import (
 from . import resource
 from .workspace import Workspace, find_workspaces
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
 
@@ -60,84 +60,86 @@ def workspace_init(dirname, metadata):
     try:
         ws = Workspace(dirname, create=True, add_defaults=True)
     except OSError as err:
-        raise CommandError('init', 'initialize workspace', str(err))
+        raise CommandError("init", "initialize workspace", str(err))
     except ParseError as err:
-        raise CommandError('init', 'parse config', str(err))
+        raise CommandError("init", "parse config", str(err))
     except WorkspaceError as err:
-        raise CommandError('init', 'initialize workspace', str(err))
-    _log.info('Created new workspace in: {}'.format(dirname))
+        raise CommandError("init", "initialize workspace", str(err))
+    _log.info("Created new workspace in: {}".format(dirname))
     if metadata:
         ws.set_meta(metadata)
-        _log.info('Set metadata for: {}'.format(strlist(list(metadata))))
+        _log.info("Set metadata for: {}".format(strlist(list(metadata))))
 
 
 def workspace_info(dirname):
     # type: (str) -> None
-    cp = CPrint()
+    colorama.init(autoreset=True)
+    fg, sty = colorama.Fore, colorama.Style
     try:
         ws = Workspace(dirname, create=False)
     except WorkspaceNotFoundError:
-        print('Workspace not found at path: {}'.format(dirname))
-        raise CommandError('info', 'find workspace', 'not found at: {}'.format(dirname))
+        print("Workspace not found at path: {}".format(dirname))
+        raise CommandError("info", "find workspace", "not found at: {}".format(dirname))
     except WorkspaceConfNotFoundError:
-        print('No configuration found for workspace for path: {}'.format(dirname))
+        print("No configuration found for workspace for path: {}".format(dirname))
         raise CommandError(
-            'info', 'find workspace configuration', 'not found at: {}'.format(dirname)
+            "info", "find workspace configuration", "not found at: {}".format(dirname)
         )
     num_obj = DMF(path=ws.root).count()
-    bullet = ' - '
-    cp('\n@h[Workspace]')
-    if ws.name and (ws.name != 'none'):
-        if ws.description and (ws.description != 'none'):
-            cp('  @b[{}] - {}'.format(ws.name, ws.description))
+    bullet = " - "
+    print(f"\n{fg.BLUE}Workspace")
+    if ws.name and (ws.name != "none"):
+        if ws.description and (ws.description != "none"):
+            print(f"  {fg.BLUE}[{ws.name}] - {ws.description}")
         else:
-            cp('  @b[{}] - (no description)'.format(ws.name))
-    elif ws.description and (ws.description != 'none'):
-        cp('  @b[(no name)] - {}'.format(ws.description))
+            print("  {fg.BLUE}{ws.name} - (no description)")
+    elif ws.description and (ws.description != "none"):
+        print(f"  {fg.BLUE}(no name) - {ws.description}")
     else:
-        cp('  @b[(no name or description)]')
-    cp('\n@h[General information]')
-    cp('{}@b[Location] = {}'.format(bullet, ws.root))
+        print(f"  {fg.BLUE}(no name or description)")
+    print("\nGeneral information")
+    print(f"{bullet}{fg.BLUE}Location = {ws.root}")
     info = ws.meta.copy()
-    if '_id' in info:
-        cp('{}@b[Workspace identifier (_id)] = {}'.format(bullet, info['_id']))
-        del info['_id']
+    if "_id" in info:
+        print(f"{bullet}{fg.BLUE}Workspace identifier (_id) = {info['_id']}")
+        del info["_id"]
     else:
-        cp('{}@b[Workspace identifier (_id)] = unknown'.format(bullet))
-    if 'created' in info:
-        cp('{}@b[Created] = {}'.format(bullet, info[ws.CONF_CREATED]))
+        print(f"{bullet}{fg.BLUE}Workspace identifier (_id) = unknown")
+    if "created" in info:
+        print(f"{bullet}{fg.BLUE}Created = {info[ws.CONF_CREATED]}")
     else:
-        cp('{}@b[Created] = unknown'.format(bullet))
-    if 'modified' in info:
-        cp('{}@b[Modified] = {}'.format(bullet, info[ws.CONF_MODIFIED]))
+        print(f"{bullet}{fg.BLUE}Created = unknown")
+    if "modified" in info:
+        print(f"{bullet}{fg.BLUE}Modified = {info[ws.CONF_MODIFIED]}")
     else:
-        cp('{}@b[Modified] = unknown'.format(bullet))
-    cp('{}@b[Num. resources] = {:d}'.format(bullet, num_obj))
-    cp('\n@h[Configuration]')
+        print(f"{bullet}{fg.BLUE}Modified = unknown")
+    print(f"{bullet}{fg.BLUE}Num. resources = {num_obj}")
+    print(f"\n{fg.MAGENTA}{sty.BRIGHT}Configuration")
     already_shown = (ws.CONF_MODIFIED, ws.CONF_CREATED, ws.CONF_NAME, ws.CONF_DESC)
     for k in info.keys():
         if k in already_shown:
             continue
         v = info[k]
-        cp('{}@b[{}] = {}'.format(bullet, k, v))
-    cp('')
+        print(f"{bullet}{fg.BLUE}{k} = {v}")
+    print("")
 
 
 def init_conf(workspace):
     # type: (str) -> int
     """Initialize the workspace.
     """
+    fg, sty = colorama.Fore, colorama.Style
     # Open/create configuration file
     try:
         conf = DMFConfig()
     except IOError as err:
-        print('Failed to open global configuration: {}'.format(err))
+        print(f"Failed to open global configuration: {err}")
         try:
-            open(DMFConfig._filename, 'w')
+            open(DMFConfig._filename, "w")
         except IOError:
-            print('Failed to create new configuration file')
+            print("Failed to create new configuration file")
             return -1
-        print('Created new configuration file')
+        print("Created new configuration file")
         conf = DMFConfig()
     # If a workspace argument is given, save this value,
     # as the default workspace, in the configuration file
@@ -146,14 +148,15 @@ def init_conf(workspace):
         conf.c[conf.WORKSPACE] = fullpath
         conf.save()
     # Print contents of configuration file to standard output
-    cp = CPrint()
-    cp('@h[DMF global configuration] <@g[{}]>'.format(conf._filename))
+    print(
+        f"{fg.MAGENTA}{sty.BRIGHT}DMF global configuration{sty.RESET} <{fg.GREEN}{conf._filename}>"
+    )
     keys = conf.c.keys()
     if keys:
         for k in sorted(keys):
-            cp(' > @b[{}] = @*[{}]'.format(k, conf.c[k]))
+            print(f" > {fg.BLUE}{k}{fg.RESET} = {sty.BRIGHT}{conf.c[k]}]")
     else:
-        print('@b[(empty)]')
+        print("{fg.BLUE}(empty)")
     return 0
 
 
@@ -189,7 +192,7 @@ def workspace_import(path, patterns, exit_on_error):
                     rsrc = _import_jupyternb(filename)
                 except ValueError as e:
                     msg = (
-                        'Cannot create resource from Jupyter Notebook '
+                        "Cannot create resource from Jupyter Notebook "
                         '"{}": {}'.format(filename, e)
                     )
                     if exit_on_error:
@@ -202,7 +205,7 @@ def workspace_import(path, patterns, exit_on_error):
                 try:
                     rsrc = _import_python(filename)
                 except ValueError as e:
-                    msg = 'Cannot create resource from Python file ' '"{}": {}'.format(
+                    msg = "Cannot create resource from Python file " '"{}": {}'.format(
                         filename, e
                     )
                     if exit_on_error:
@@ -224,7 +227,7 @@ def workspace_import(path, patterns, exit_on_error):
                 try:
                     rsrc = _import_file(filename)
                 except ValueError as e:
-                    msg = 'Cannot create resource from file ' '"{}": {}'.format(
+                    msg = "Cannot create resource from file " '"{}": {}'.format(
                         filename, e
                     )
                     if exit_on_error:
@@ -244,16 +247,16 @@ def list_workspaces(root, stream=None):
         root: root path
         stream: Output stream (must have .write() method)
     """
+    fg, sty = colorama.Fore, colorama.Style
     workspaces = find_workspaces(root)
     if stream is None or stream == sys.stdout:
-        stream = CPrint()
         colors = True
     else:
         colors = False
     if colors:
-        output_table = [('Path', 'Name')]
+        output_table = [("Path", "Name")]
     else:
-        output_table = [('Path', 'Name'), ('----', '----')]
+        output_table = [("Path", "Name"), ("----", "----")]
     widths = [4, 4]
     any_good_workspaces = False
     for w in sorted(workspaces):
@@ -266,21 +269,22 @@ def list_workspaces(root, stream=None):
             pass  # XXX: Should we print a warning?
     if not any_good_workspaces:
         # either no paths, or all paths raised an error
-        stream.write('ERROR: No valid workspaces found\n')
+        stream.write("ERROR: No valid workspaces found\n")
     else:
-        colfmts = ['{{:{:d}s}}'.format(width) for width in widths]
+        colfmts = ["{{:{:d}s}}".format(width) for width in widths]
         first_row = True
         for row in output_table:
             for i in (0, 1):
                 if colors:
                     if first_row:
-                        fmt = '@_h[{t}]'.format(t=colfmts[i])
+                        fmt = f"{sty.BRIGHT}{colfmts[i]}"
                     else:
-                        fmt = '@{c}[{t}]'.format(c=('b', 'w')[i], t=colfmts[i])
+                        fmt = f"{[fg.BLUE, fg.WHITE][i]}{colfmts[i]}"
+                    fmt += sty.RESET_ALL
                 else:
                     fmt = colfmts[i]
                 stream.write(fmt.format(row[i]))
-                stream.write('\n' if i == 1 else ' ')
+                stream.write("\n" if i == 1 else " ")
             first_row = False
 
 
@@ -295,21 +299,22 @@ def list_resources(path, long_format=None, relations=False):
     Returns:
         None
     """
-    d, cp = DMF(path), CPrint()
+    fg, sty = colorama.Fore, colorama.Style
+    d = DMF(path)
     if long_format:
         resources = list(d.find())
         uuid_pfx = _uuid_prefix([r.uuid for r in resources])
-        fields = ('uuid', 'name', 'type', 'modified', 'created')
+        fields = ("uuid", "name", "type", "modified", "created")
         widths = (uuid_pfx, 30, 20, 19, 19)
-        colors = ('g', 'w', 'y', 'w', 'w')
-        fmts = ['{{:{:d}s}}'.format(w) for w in widths]
-        left_gutter = '| ' if relations else ''
+        colors = ("g", "w", "y", "w", "w")
+        fmts = ["{{:{:d}s}}".format(w) for w in widths]
+        left_gutter = "| " if relations else ""
         # table header
         cp.println(
-            ' ' * len(left_gutter)
-            + '  '.join(
+            " " * len(left_gutter)
+            + "  ".join(
                 [
-                    cp.colorize('@_h[{}]'.format(f).format(v))
+                    cp.colorize("@_h[{}]".format(f).format(v))
                     for f, v in zip(fmts, fields)
                 ]
             )
@@ -332,9 +337,9 @@ def list_resources(path, long_format=None, relations=False):
                 values[0] = values[0][:uuid_pfx]
             cp.println(
                 left_gutter
-                + '  '.join(
+                + "  ".join(
                     [
-                        cp.colorize('@{}[{}]'.format(c, f.format(v)))
+                        cp.colorize("@{}[{}]".format(c, f.format(v)))
                         for c, f, v in zip(colors, fmts, values)
                     ]
                 )
@@ -343,29 +348,29 @@ def list_resources(path, long_format=None, relations=False):
                 relitems = []
                 for rel in r.relations:
                     if rel.subject == r.uuid:
-                        fmt = '@-w[{p}]->@b[{o}]'
+                        fmt = "@-w[{p}]->{fg.BLUE}{o}"
                     else:
-                        fmt = '@b[{s}]->@-w[{p}]'
+                        fmt = "{fg.BLUE}{s}->@-w[{p}]"
                     item = fmt.format(
                         s=rel.subject[:uuid_pfx],
                         p=rel.predicate,
                         o=rel.object[:uuid_pfx],
                     )
                     relitems.append(item)
-                cp.println('+-- {}'.format(' / '.join(relitems)))
+                cp.println("+-- {}".format(" / ".join(relitems)))
     else:
         items = []
         for r in d.find():
-            name_color = 'w'
+            name_color = "w"
             if r.name:
                 name = r.name
             elif r.desc:
                 name = r.desc[:40]
-                name_color = 'b'
+                name_color = "b"
             else:
                 name = r.uuid
-                name_color = 'g'
-            item = cp.colorize('@{}[{}]@y[:{}]'.format(name_color, name, r.type))
+                name_color = "g"
+            item = cp.colorize("@{}[{}]@y[:{}]".format(name_color, name, r.type))
             items.append(item)
         if items:
             tsz = get_terminal_size((80, 20))
@@ -404,7 +409,7 @@ def cat_resources(path, objects=(), color=True):
 
 
 def _cat_resource_sep(cp):
-    cp.println('@b[{}]'.format('-' * 60))
+    cp.println("{fg.BLUE}{}".format("-" * 60))
 
 
 def _cat_resource_show(cp, r):
@@ -414,10 +419,10 @@ def _cat_resource_show(cp, r):
 
 
 # regular expression to find VT100 color escape codes
-_noprint_re = re.compile(r'\033\[[0-9]+m')
+_noprint_re = re.compile(r"\033\[[0-9]+m")
 
 
-def _display_in_columns(items, max_line=80, col_sep='  ', row_sep='\n'):
+def _display_in_columns(items, max_line=80, col_sep="  ", row_sep="\n"):
     """Take a list of items and max line width, and calculate  display
     of the items in columns.
 
@@ -436,11 +441,11 @@ def _display_in_columns(items, max_line=80, col_sep='  ', row_sep='\n'):
         str:
     """
     if not items:
-        return ''
+        return ""
     # Calculate item lengths, stripping terminal escapes
     lengths, nplengths = [], []
     for item in items:
-        clean = _noprint_re.sub('', item)
+        clean = _noprint_re.sub("", item)
         lengths.append(len(clean))
         nplengths.append(len(item) - len(clean))
     col_sep_len = len(col_sep)  # useful later
@@ -486,7 +491,7 @@ def _display_in_columns(items, max_line=80, col_sep='  ', row_sep='\n'):
             # but without padding since we will add that when we join
             # the row items together
             pad = 0 if col == (max_columns - 1) else col_sep_len
-            fmt = '{{:{n}s}}'.format(n=max_widths[col] + nplengths[i] - pad)
+            fmt = "{{:{n}s}}".format(n=max_widths[col] + nplengths[i] - pad)
             # format row item for column
             row_items.append(fmt.format(items[i]))
             col += 1  # move to next column
@@ -514,7 +519,7 @@ def _import_resource(filename):
         r = resource.Resource(value=j)
         r.validate()
     except (ValueError, jsonschema.ValidationError) as err:
-        raise ValueError('Invalid resource: {}'.format(err))
+        raise ValueError("Invalid resource: {}".format(err))
     return r
 
 
@@ -530,8 +535,8 @@ def _import_jupyternb(path):
     r = resource.Resource(type_=resource.TY_NOTEBOOK)
     filename = os.path.splitext(os.path.split(path)[1])[0]
     # XXX: add notebook 'metadata' as FilePath metadata attr
-    r.v['datafiles'].append({'desc': filename, 'path': path})
-    r.v['desc'] = filename
+    r.v["datafiles"].append({"desc": filename, "path": path})
+    r.v["desc"] = filename
     r.validate()
     return r
 
@@ -547,8 +552,8 @@ def _import_python(path):
     """
     r = resource.Resource(type_=resource.TY_CODE)
     filename = os.path.splitext(os.path.split(path)[1])[0]
-    r.v['codes'].append({'name': filename, 'language': 'python', 'type': 'module'})
-    r.v['datafiles'].append({'desc': filename, 'path': path})
+    r.v["codes"].append({"name": filename, "language": "python", "type": "module"})
+    r.v["datafiles"].append({"desc": filename, "path": path})
     r.validate()
     return r
 
@@ -564,7 +569,7 @@ def _import_file(path):
     """
     r = resource.Resource(type_=resource.TY_DATA)
     filename = os.path.split(path)[1]
-    r.v['datafiles'].append({'desc': filename, 'path': path})
-    r.v['desc'] = filename
+    r.v["datafiles"].append({"desc": filename, "path": path})
+    r.v["desc"] = filename
     r.validate()
     return r

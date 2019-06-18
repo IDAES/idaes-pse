@@ -29,8 +29,8 @@ from urllib.parse import urlparse, ParseResult
 import yaml
 
 # third-party
-from blessings import Terminal
 import click
+import colorama
 import humanize
 import pendulum
 
@@ -43,12 +43,20 @@ from idaes.dmf import util
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
-try:
-    _cterm = Terminal()  # color terminal (as per TERM env)
-except Exception:
-    _cterm = Terminal(force_styling=None)
-_noterm = Terminal(force_styling=None)  # no styling, regardless of TERM
 
+colorama.init()
+
+class CTerm:
+    Fore = colorama.Fore
+    Back = colorama.Back
+    Style = colorama.Style
+
+class NoCode:
+    def __getattr__(self, a):
+        return ''
+
+class PlainTerm:
+    Fore, Back, Style = NoCode(), NoCode(), NoCode()
 
 class Code(Enum):
     """Return codes from the CLI.
@@ -276,7 +284,7 @@ def status(color, show, show_all):
     if show_all == "yes":
         show = ["all"]
     _log.debug(f"Get status. Show items: {' '.join(show) if show else '(basic)'}")
-    t = _cterm if color else _noterm
+    t = CTerm() if color else PlainTerm()
     if not DMFConfig.configuration_exists():
         click.echo(f"No configuration found at '{DMFConfig.configuration_path()}'")
         sys.exit(Code.CONFIGURATION_NOT_FOUND.value)
@@ -288,23 +296,23 @@ def status(color, show, show_all):
         sys.exit(Code.WORKSPACE_NOT_FOUND.value)
 
     # pretty-display a key/value pair or list value
-    def item(key, value=None, before="", color=t.green):
+    def item(key, value=None, before="", color=t.Fore.GREEN):
         after_key = "" if key == "" else ":"
         if value is None:
-            return f"{before}{color}{key}{after_key}{t.normal}"
+            return f"{before}{color}{key}{after_key}{t.RESET}"
         elif key is None:
-            return f"{before}{color}{value}{t.normal}"
-        return f"{before}{color}{key}{after_key}{t.normal} {value}"
+            return f"{before}{color}{value}{t.RESET}"
+        return f"{before}{color}{key}{after_key}{t.RESET} {value}"
 
     indent_spc = "  "
 
-    print(item("settings", color=t.blue))
+    print(item("settings", color=t.Fore.BLUE))
     indent = indent_spc
     conf = DMFConfig()  # note: must exist due to earlier check
     for key, value in conf.c.items():
         print(item(key, value, before=indent))
 
-    print(item("workspace", color=t.blue))
+    print(item("workspace", color=t.Fore.BLUE))
     indent = indent_spc
     for key, value in (
         ("location", d.root),
@@ -346,7 +354,7 @@ def _show_optional_workspace_items(d, items, indent_spc, item_fn, t=None):
             log_conf = d.meta.get(Fields.LOG_CONF, None)
             indent = 2 * indent_spc
             if log_conf is None:
-                print(item_fn(None, "not configured", before=indent, color=t.yellow))
+                print(item_fn(None, "not configured", before=indent, color=t.Fore.YELLOW))
             else:
                 for subconf in sorted(log_conf.keys()):
                     print(item_fn(subconf, before=indent))
@@ -605,7 +613,7 @@ def _split_and_validate_fields(fields: List[str]) -> List[str]:
 def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, color):
     """Text-mode `ls`.
     """
-    t = _cterm if color else _noterm
+    t = CTerm() if color else PlainTerm()
     if len(resources) == 0:
         print("no resources to display")
         return
@@ -660,15 +668,15 @@ def _print_resource_table(resources, show_fields, sort_by, reverse, prefix, colo
         col = []
         for i, fld in enumerate(fields):
             if i == 0:
-                col.append(t.red)
+                col.append(t.Fore.RED)
             elif fld == resource.Resource.TYPE_FIELD:
-                col.append(t.yellow)
+                col.append(t.Fore.YELLOW)
             elif fld != "desc":
-                col.append(t.green)
+                col.append(t.Fore.GREEN)
             else:
                 col.append("")
         row_columns = [
-            f"{col[i]}{f:{w}}{t.normal}"
+            f"{col[i]}{f:{w}}{t.Fore.RESET}"
             for i, f, w in zip(range(len(widths)), row[:nfields], widths)
         ]
         print(" ".join(row_columns))
@@ -887,7 +895,7 @@ def info(identifier, multiple, output_format, color):
 )
 def related(identifier, direction, color, unicode):
     _log.info(f"related to resource id='{identifier}'")
-    t = _cterm if color else _noterm
+    t = CTerm() if color else PlainTerm()
     dmf = DMF()
     try:
         resource.identifier_str(identifier, allow_prefix=True)
@@ -959,12 +967,12 @@ def related(identifier, direction, color, unicode):
         n_at_level[depth] -= 1
         indent = ''.join(
             [
-                f" {t.blue}{vrd if n_at_level[i - 1] else ' '}{t.normal} "
+                f" {t.Fore.BLUE}{vrd if n_at_level[i - 1] else ' '}{t.Fore.RESET} "
                 for i in range(1, depth + 1)
             ]
         )
-        print(f"{indent} {t.blue}{vrt}{t.normal}")
-        rstr = f"{t.blue}{relpre}{t.yellow}{rel.predicate}{t.blue}{relarr}{t.normal}"
+        print(f"{indent} {t.Fore.BLUE}{vrt}{t.Fore.RESET}")
+        rstr = f"{t.Fore.BLUE}{relpre}{t.Fore.YELLOW}{rel.predicate}{t.Fore.BLUE}{relarr}{t.Fore.RESET}"
         if meta["aliases"]:
             item_name = meta["aliases"][0]
         else:
@@ -974,7 +982,7 @@ def related(identifier, direction, color, unicode):
         )
         # determine correct connector (whether there is another one down the stack)
         elbow = relbow if (not q or q[-1][0] != depth) else relbow2
-        print(f"{indent} {t.blue}{elbow}{rarr}{t.normal}{rstr} {istr}")
+        print(f"{indent} {t.Fore.BLUE}{elbow}{rarr}{t.Fore.RESET}{rstr} {istr}")
         new_rr = []
         for d2, rel2, _ in rr:
             if outgoing:
@@ -989,7 +997,7 @@ def related(identifier, direction, color, unicode):
 
 
 def _related_item(id_, name, type_, pfx, t, unicode):
-    return f"{t.red}{id_[:pfx]} {t.green}{type_} {t.normal}{name}"
+    return f"{t.Fore.RED}{id_[:pfx]} {t.Fore.GREEN}{type_} {t.Fore.RESET}{name}"
 
 
 @click.command(help="Remove a resource")  # aliases: delete
@@ -1057,7 +1065,7 @@ class _ShowInfo:
     contents_indent, json_indent = 4, 2  # for `term` output
 
     def __init__(self, output_format, pfxlen, color=None, unicode=True):
-        self._terminal = _cterm if color else _noterm
+        self._terminal = CTerm() if color else PlainTerm()
         self._pfxlen = pfxlen
         self._fmt = output_format
         self._resource = None
@@ -1099,13 +1107,13 @@ class _ShowInfo:
                 if contents_str.endswith('...\n'):
                     contents_str = contents_str[:-4]
                 print(
-                    f"{t.cyan}{self._vt}{t.normal} {t.bold}{t.cyan}{tk}{t.normal}"
-                    f"{' ' * (width - len(tk) - 3)}{t.cyan}{self._vt}{t.normal}"
+                    f"{t.Fore.CYAN}{self._vt}{t.Fore.RESET} {t.Style.BRIGHT}{t.Fore.CYAN}{tk}{t.Style.RESET_ALL}"
+                    f"{' ' * (width - len(tk) - 3)}{t.Fore.CYAN}{self._vt}{t.Fore.RESET}"
                 )
                 self._print_info_contents_term(contents_str, width)
         print(
-            f"{t.cyan}{self._corners.sw}{self._hz * (width - 2)}"
-            f"{self._corners.se}{t.normal}"
+            f"{t.Fore.CYAN}{self._corners.sw}{self._hz * (width - 2)}"
+            f"{self._corners.se}{t.Fore.RESET}"
         )
 
     def _longest_line(self, formatted_resource):
@@ -1126,10 +1134,10 @@ class _ShowInfo:
         else:
             lpad, rpad = padding // 2 - 1, padding // 2 - 2
         print(
-            f"{t.cyan}{self._corners.nw}{lpad * self._hz}{t.normal} Resource "
-            f"{t.red}{r.id[:self._pfxlen]}"
-            f"{t.green}{r.id[self._pfxlen:]} "
-            f"{t.cyan}{rpad * self._hz}{self._corners.ne}{t.normal}"
+            f"{t.Fore.CYAN}{self._corners.nw}{lpad * self._hz}{t.Fore.RESET} Resource "
+            f"{t.Fore.RED}{r.id[:self._pfxlen]}"
+            f"{t.Fore.GREEN}{r.id[self._pfxlen:]} "
+            f"{t.Fore.CYAN}{rpad * self._hz}{self._corners.ne}{t.Fore.RESET}"
         )
 
     def _print_info_contents_term(self, s, width):
@@ -1141,9 +1149,9 @@ class _ShowInfo:
             while p < len(line):
                 print_line = line[p : p + contents_width]
                 print(
-                    f"{t.cyan}{self._vt}{t.normal}{indent}{print_line}"
-                    f"{' ' * (contents_width - len(print_line))}{t.cyan}{self._vt}"
-                    f"{t.normal}"
+                    f"{t.Fore.CYAN}{self._vt}{t.Fore.RESET}{indent}{print_line}"
+                    f"{' ' * (contents_width - len(print_line))}{t.Fore.CYAN}{self._vt}"
+                    f"{t.Fore.RESET}"
                 )
                 p += contents_width
 
@@ -1247,7 +1255,7 @@ class _IdField(_LsField):
         if self.pfxlen < len(self.value):
             if self.flen > self.pfxlen:
                 return (
-                    f"{t.cyan}{self.value[: self.pfxlen]}{t.normal}"
+                    f"{t.Fore.CYAN}{self.value[: self.pfxlen]}{t.Fore.RESET}"
                     f"{self.value[self.pfxlen: self.flen]}"
                 )
             else:

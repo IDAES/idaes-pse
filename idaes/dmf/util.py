@@ -26,28 +26,20 @@ import sys
 import tempfile
 import time
 
-__author__ = 'Dan Gunter'
+__author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
 
 
-def strlist(x, sep=', '):
+def strlist(x, sep=", "):
     # type: (list, str) -> str
     return sep.join([str(item) for item in x])
 
 
-# def pluck(obj, key):
-#     """Remove and return obj[key].
-#     """
-#     value = obj[key]
-#     del obj[key]
-#     return value
-
-
-def get_file(file_or_path, mode='r'):
+def get_file(file_or_path, mode="r"):
     """Open a file for reading, or simply return the file object.
     """
-    if hasattr(file_or_path, 'read'):
+    if hasattr(file_or_path, "read"):
         return file_or_path
     return open(file_or_path, mode)
 
@@ -75,10 +67,10 @@ def get_module_version(mod):
     Raises:
         ValueError if version is found but not valid
     """
-    v = getattr(mod, '__version__', None)
+    v = getattr(mod, "__version__", None)
     if v is None:
         return None
-    pat = r'\d+\.\d+\.\d+.*'
+    pat = r"\d+\.\d+\.\d+.*"
     if not re.match(pat, v):
         raise ValueError(
             'Version "{}" does not match regular expression '
@@ -97,7 +89,7 @@ def get_module_author(mod):
     Raises:
         nothing
     """
-    return getattr(mod, '__author__', None)
+    return getattr(mod, "__author__", None)
 
 
 class TempDir(object):
@@ -122,14 +114,14 @@ def is_jupyter_notebook(filename, check_contents=True):
     # type: (str) -> bool
     """See if this is a Jupyter notebook.
     """
-    if not filename.endswith('.ipynb'):
+    if not filename.endswith(".ipynb"):
         return False
     if check_contents:
         try:
             nb = json.load(open(filename))
         except (UnicodeDecodeError, JSONDecodeError):
             return False
-        for key in 'cells', 'metadata', 'nbformat':
+        for key in "cells", "metadata", "nbformat":
             if key not in nb:
                 return False
     return True
@@ -140,7 +132,7 @@ def is_python(filename):
     """See if this is a Python file.
     Do *not* import the source code.
     """
-    if not filename.endswith('.py'):
+    if not filename.endswith(".py"):
         return False
     return True  # XXX: look inside?
 
@@ -158,7 +150,7 @@ def is_resource_json(filename, max_bytes=1e6):
     Returns:
         (bool) Whether it's a resource JSON file.
     """
-    if not filename.endswith('.json'):
+    if not filename.endswith(".json"):
         return False
     # get size
     st = os.stat(filename)
@@ -169,7 +161,7 @@ def is_resource_json(filename, max_bytes=1e6):
         except (UnicodeDecodeError, JSONDecodeError):
             return False
         # look for a couple distinctive keys
-        for key in 'id_', 'type':
+        for key in "id_", "type":
             if key not in d:
                 return False
         return True
@@ -188,82 +180,13 @@ def datetime_timestamp(v):
     Returns:
         (float) Floating point timestamp
     """
-    if hasattr(v, 'timestamp'):  # Python 2/3 test
+    if hasattr(v, "timestamp"):  # Python 2/3 test
         # Python 2
         result = v.timestamp()
     else:
         # Python 3
         result = time.mktime(v.timetuple()) + v.microsecond / 1e6
     return result
-
-
-#
-# XXX: Replace this with 'blessings' module
-#
-class CPrint(object):
-    """Colorized terminal printing.
-
-    Codes are below. To use:
-
-        cprint = CPrint()
-        cprint('This has no colors')  # just like print()
-        cprint('This is @b[blue] and @_r[red underlined]')
-
-    You can use the same class as a no-op by just passing `color=False` to
-    the constructor.
-    """
-
-    COLORS = {
-        'h': '\033[1m\033[95m',
-        'r': '\033[91m',
-        'g': '\033[92m',
-        'y': '\033[93m',
-        'b': '\033[94m',
-        'm': '\033[95m',
-        'c': '\033[96m',
-        'w': '\033[97m',
-        '.': '\033[0m',
-        '*': '\033[1m',
-        '-': '\033[2m',
-        '_': '\033[4m',
-    }
-
-    _styled = re.compile(r'@([*_-]?[hbgyrwcm*_-])\[([^]]*)\]')
-
-    def __init__(self, color=True):
-        self._c = color
-
-    def println(self, s):
-        print(self.colorize(s))
-
-    def __call__(self, *args):
-        return self.println(args[0])
-
-    def write(self, s):
-        sys.stdout.write(self.colorize(s))
-
-    def colorize(self, s):
-        chunks = []
-        last = 0
-        c, stop = '', ''
-        for m in re.finditer(self._styled, s):
-            code, text = m.groups()
-            clen = len(code)
-            if self._c:
-                if clen == 2:
-                    if code[0] == code[1]:
-                        c = self.COLORS[code]
-                    else:
-                        c = self.COLORS[code[0]] + self.COLORS[code[1]]
-                else:
-                    c = self.COLORS[code]
-                stop = self.COLORS['.']
-            x, y = m.span()
-            chunks.append(s[last:x])  # text since last found piece
-            chunks.append(c + s[x + 2 + clen : y - 1] + stop)  # colorized
-            last = y
-        chunks.append(s[last:])  # to end of string
-        return ''.join(chunks)
 
 
 def mkdir_p(path, *args):
@@ -278,12 +201,12 @@ def mkdir_p(path, *args):
         os.error: Raised from `os.mkdir()`
     """
     plist = path.split(os.path.sep)
-    if plist[0] == '':
+    if plist[0] == "":
         # do not try to create filesystem root
         dir_name = os.path.sep
         plist = plist[1:]
     else:
-        dir_name = ''
+        dir_name = ""
     for p in plist:
         dir_name = os.path.join(dir_name, p)
         if not os.path.exists(dir_name):
