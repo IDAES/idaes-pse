@@ -27,8 +27,6 @@ import re
 import sys
 
 # Third-party
-from backports.shutil_get_terminal_size import get_terminal_size
-import colorama
 import jsonschema
 import pendulum
 
@@ -36,6 +34,7 @@ import pendulum
 from .dmfbase import DMF, DMFConfig
 from .util import strlist
 from .util import is_jupyter_notebook, is_python, is_resource_json
+from .util import ColorTerm
 from .errors import (
     ParseError,
     CommandError,
@@ -73,8 +72,7 @@ def workspace_init(dirname, metadata):
 
 def workspace_info(dirname):
     # type: (str) -> None
-    colorama.init(autoreset=True)
-    fg, sty = colorama.Fore, colorama.Style
+    t = ColorTerm()
     try:
         ws = Workspace(dirname, create=False)
     except WorkspaceNotFoundError:
@@ -87,40 +85,40 @@ def workspace_info(dirname):
         )
     num_obj = DMF(path=ws.root).count()
     bullet = " - "
-    print(f"\n{fg.BLUE}Workspace")
+    print(f"\n{t.blue}Workspace")
     if ws.name and (ws.name != "none"):
         if ws.description and (ws.description != "none"):
-            print(f"  {fg.BLUE}[{ws.name}] - {ws.description}")
+            print(f"  {t.blue}[{ws.name}] - {ws.description}")
         else:
-            print("  {fg.BLUE}{ws.name} - (no description)")
+            print("  {t.blue}{ws.name} - (no description)")
     elif ws.description and (ws.description != "none"):
-        print(f"  {fg.BLUE}(no name) - {ws.description}")
+        print(f"  {t.blue}(no name) - {ws.description}")
     else:
-        print(f"  {fg.BLUE}(no name or description)")
+        print(f"  {t.blue}(no name or description)")
     print("\nGeneral information")
-    print(f"{bullet}{fg.BLUE}Location = {ws.root}")
+    print(f"{bullet}{t.blue}Location = {ws.root}")
     info = ws.meta.copy()
     if "_id" in info:
-        print(f"{bullet}{fg.BLUE}Workspace identifier (_id) = {info['_id']}")
+        print(f"{bullet}{t.blue}Workspace identifier (_id) = {info['_id']}")
         del info["_id"]
     else:
-        print(f"{bullet}{fg.BLUE}Workspace identifier (_id) = unknown")
+        print(f"{bullet}{t.blue}Workspace identifier (_id) = unknown")
     if "created" in info:
-        print(f"{bullet}{fg.BLUE}Created = {info[ws.CONF_CREATED]}")
+        print(f"{bullet}{t.blue}Created = {info[ws.CONF_CREATED]}")
     else:
-        print(f"{bullet}{fg.BLUE}Created = unknown")
+        print(f"{bullet}{t.blue}Created = unknown")
     if "modified" in info:
-        print(f"{bullet}{fg.BLUE}Modified = {info[ws.CONF_MODIFIED]}")
+        print(f"{bullet}{t.blue}Modified = {info[ws.CONF_MODIFIED]}")
     else:
-        print(f"{bullet}{fg.BLUE}Modified = unknown")
-    print(f"{bullet}{fg.BLUE}Num. resources = {num_obj}")
-    print(f"\n{fg.MAGENTA}{sty.BRIGHT}Configuration")
+        print(f"{bullet}{t.blue}Modified = unknown")
+    print(f"{bullet}{t.blue}Num. resources = {num_obj}")
+    print(f"\n{t.magenta}{t.bold}Configuration")
     already_shown = (ws.CONF_MODIFIED, ws.CONF_CREATED, ws.CONF_NAME, ws.CONF_DESC)
     for k in info.keys():
         if k in already_shown:
             continue
         v = info[k]
-        print(f"{bullet}{fg.BLUE}{k} = {v}")
+        print(f"{bullet}{t.blue}{k} = {v}")
     print("")
 
 
@@ -128,7 +126,7 @@ def init_conf(workspace):
     # type: (str) -> int
     """Initialize the workspace.
     """
-    fg, sty = colorama.Fore, colorama.Style
+    t = ColorTerm()
     # Open/create configuration file
     try:
         conf = DMFConfig()
@@ -149,14 +147,15 @@ def init_conf(workspace):
         conf.save()
     # Print contents of configuration file to standard output
     print(
-        f"{fg.MAGENTA}{sty.BRIGHT}DMF global configuration{sty.RESET} <{fg.GREEN}{conf._filename}>"
+        f"{t.magenta}{t.bold}DMF global configuration{t.reset} "
+        f"<{t.green}{conf._filename}>"
     )
     keys = conf.c.keys()
     if keys:
         for k in sorted(keys):
-            print(f" > {fg.BLUE}{k}{fg.RESET} = {sty.BRIGHT}{conf.c[k]}]")
+            print(f" > {t.blue}{k}{t.reset} = {t.bold}{conf.c[k]}]")
     else:
-        print("{fg.BLUE}(empty)")
+        print(f"{t.blue}(empty)")
     return 0
 
 
@@ -247,12 +246,12 @@ def list_workspaces(root, stream=None):
         root: root path
         stream: Output stream (must have .write() method)
     """
-    fg, sty = colorama.Fore, colorama.Style
     workspaces = find_workspaces(root)
     if stream is None or stream == sys.stdout:
         colors = True
     else:
         colors = False
+    t = ColorTerm(enabled=colors)
     if colors:
         output_table = [("Path", "Name")]
     else:
@@ -277,10 +276,10 @@ def list_workspaces(root, stream=None):
             for i in (0, 1):
                 if colors:
                     if first_row:
-                        fmt = f"{sty.BRIGHT}{colfmts[i]}"
+                        fmt = f"{t.bold}{colfmts[i]}"
                     else:
-                        fmt = f"{[fg.BLUE, fg.WHITE][i]}{colfmts[i]}"
-                    fmt += sty.RESET_ALL
+                        fmt = f"{[t.blue, t.white][i]}{colfmts[i]}"
+                    fmt += t.reset
                 else:
                     fmt = colfmts[i]
                 stream.write(fmt.format(row[i]))
@@ -299,25 +298,22 @@ def list_resources(path, long_format=None, relations=False):
     Returns:
         None
     """
-    fg, sty = colorama.Fore, colorama.Style
+    t = ColorTerm()
     d = DMF(path)
     if long_format:
         resources = list(d.find())
         uuid_pfx = _uuid_prefix([r.uuid for r in resources])
         fields = ("uuid", "name", "type", "modified", "created")
         widths = (uuid_pfx, 30, 20, 19, 19)
-        colors = ("g", "w", "y", "w", "w")
-        fmts = ["{{:{:d}s}}".format(w) for w in widths]
+        colors = (t.green, t.white, t.yellow, t.white, t.white)
+        fmts = [f"{{:{w}s}}" for w in widths]
         left_gutter = "| " if relations else ""
         # table header
-        cp.println(
+        print(
             " " * len(left_gutter)
-            + "  ".join(
-                [
-                    cp.colorize("@_h[{}]".format(f).format(v))
-                    for f, v in zip(fmts, fields)
-                ]
-            )
+            + t.bold
+            + "  ".join([f.format(v) for f, v in zip(fmts, fields)])
+            + t.reset
         )
 
         def datestr(t):
@@ -335,29 +331,25 @@ def list_resources(path, long_format=None, relations=False):
                 values[1] = values[1][: widths[1]]
             if uuid_pfx < 32:
                 values[0] = values[0][:uuid_pfx]
-            cp.println(
+            print(
                 left_gutter
-                + "  ".join(
-                    [
-                        cp.colorize("@{}[{}]".format(c, f.format(v)))
-                        for c, f, v in zip(colors, fmts, values)
-                    ]
-                )
+                + "  ".join([c + f.format(v) for c, f, v in zip(colors, fmts, values)])
+                + t.reset
             )
             if relations and len(r.relations) > 0:
                 relitems = []
                 for rel in r.relations:
                     if rel.subject == r.uuid:
-                        fmt = "@-w[{p}]->{fg.BLUE}{o}"
+                        fmt = f"{t.white}{{p}}->{t.blue}{{o}}"
                     else:
-                        fmt = "{fg.BLUE}{s}->@-w[{p}]"
+                        fmt = f"{t.blue}{{s}}->{t.white}{{p}}"
                     item = fmt.format(
                         s=rel.subject[:uuid_pfx],
                         p=rel.predicate,
                         o=rel.object[:uuid_pfx],
                     )
                     relitems.append(item)
-                cp.println("+-- {}".format(" / ".join(relitems)))
+                print(f"+-- {' / '.join(relitems)}")
     else:
         items = []
         for r in d.find():
@@ -366,17 +358,15 @@ def list_resources(path, long_format=None, relations=False):
                 name = r.name
             elif r.desc:
                 name = r.desc[:40]
-                name_color = "b"
+                name_color = t.blue
             else:
                 name = r.uuid
-                name_color = "g"
-            item = cp.colorize("@{}[{}]@y[:{}]".format(name_color, name, r.type))
+                name_color = t.green
+            item = f"{name_color}{name}{t.yellow}:{r.type}"
             items.append(item)
         if items:
-            tsz = get_terminal_size((80, 20))
-            term_width = max(tsz.columns, 1)
-            columnized = _display_in_columns(items, max_line=term_width)
-            print(columnized)
+            columnized = _display_in_columns(items, max_line=t.width)
+            print(columnized + t.reset)
 
 
 def _uuid_prefix(uuids, step=4, maxlen=32):
@@ -392,7 +382,7 @@ def _uuid_prefix(uuids, step=4, maxlen=32):
 
 def cat_resources(path, objects=(), color=True):
     d = DMF(path=path)
-    cp = CPrint(color=color)
+    t = ColorTerm(enabled=color)
     unmatched = set(objects)
     first = True
     # get all resources,
@@ -402,14 +392,14 @@ def cat_resources(path, objects=(), color=True):
             if r.uuid.startswith(oid):
                 unmatched.remove(oid)  # don't show twice
                 if not first:
-                    _cat_resource_sep(cp)
-                _cat_resource_show(cp, r)
+                    _cat_resource_sep(t)
+                _cat_resource_show(t, r)
                 first = False
                 break
 
 
-def _cat_resource_sep(cp):
-    cp.println("{fg.BLUE}{}".format("-" * 60))
+def _cat_resource_sep(t):
+    print(f"{t.blue}{'-' * 60}")
 
 
 def _cat_resource_show(cp, r):

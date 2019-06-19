@@ -16,19 +16,25 @@ Utility functions.
 # stdlib
 import importlib
 import json
-
 from json import JSONDecodeError
 import logging
 import os
 import re
 import shutil
-import sys
 import tempfile
 import time
+import yaml
+
+# third-party
+import colorama
 
 __author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
+
+
+def yaml_load(*args):
+    return yaml.load(*args, Loader=yaml.SafeLoader)
 
 
 def strlist(x, sep=", "):
@@ -187,6 +193,110 @@ def datetime_timestamp(v):
         # Python 3
         result = time.mktime(v.timetuple()) + v.microsecond / 1e6
     return result
+
+
+class ColorTerm:
+    """For colorized printing, a very simple wrapper that
+    allows colorama objects, or nothing, to be used.
+    """
+
+    class EmptyStr:
+        """Return an empty string on any attribute requested."""
+
+        def __getattr__(self, a):
+            return ""
+
+    def __init__(self, enabled=True):
+        self._width = None
+        if enabled:
+            colorama.init(autoreset=True)
+            # Colorama colors and styles
+            F = self.Fore = colorama.Fore
+            B = self.Back = colorama.Back
+            S = self.Style = colorama.Style
+            # Aliases for colors and styles
+            (
+                self.blue,
+                self.green,
+                self.yellow,
+                self.red,
+                self.cyan,
+                self.magenta,
+                self.bluebg,
+                self.greenbg,
+                self.yellowbg,
+                self.redbg,
+                self.cyanbg,
+                self.magentabg,
+                self.white,
+                self.black,
+                self.whitebg,
+                self.blackbg,
+                self.bold,
+                self.dim,
+                self.normal,
+                self.reset,
+                self.resetc,
+            ) = (
+                F.BLUE,
+                F.GREEN,
+                F.YELLOW,
+                F.RED,
+                F.CYAN,
+                F.MAGENTA,
+                B.BLUE,
+                B.GREEN,
+                B.YELLOW,
+                B.RED,
+                B.CYAN,
+                B.MAGENTA,
+                F.WHITE,
+                F.BLACK,
+                B.WHITE,
+                B.BLACK,
+                S.BRIGHT,
+                S.DIM,
+                S.NORMAL,
+                S.RESET_ALL,
+                F.RESET,
+            )
+        else:
+            # Make any attribute (e.g. `Fore.BLUE`) return an empty
+            # string, thus disabling all the color codes.
+            self.Fore, self.Back, self.Style = (
+                self.EmptyStr(),
+                self.EmptyStr(),
+                self.EmptyStr(),
+            )
+            (
+                self.blue,
+                self.green,
+                self.yellow,
+                self.red,
+                self.cyan,
+                self.magenta,
+                self.bluebg,
+                self.greenbg,
+                self.yellowbg,
+                self.redbg,
+                self.cyanbg,
+                self.magentabg,
+                self.white,
+                self.black,
+                self.whitebg,
+                self.blackbg,
+                self.bold,
+                self.dim,
+                self.normal,
+                self.reset,
+                self.resetc,
+            ) = [""] * 21
+
+    @property
+    def width(self):
+        if self._width is None:
+            self._width = shutil.get_terminal_size()[0]
+        return self._width
 
 
 def mkdir_p(path, *args):
