@@ -37,6 +37,7 @@ RUN conda install --quiet --yes \
 # Add idaes directory and change permissions to the notebook user:
 ADD . /home/idaes
 USER root
+RUN mv /home/idaes/idaes-coinbinary-1.8.0 /usr/local
 RUN sudo apt-get update
 RUN echo "America/Los_Angeles" > /etc/timezone
 RUN chown -R $NB_UID /home/idaes
@@ -44,22 +45,27 @@ RUN chown -R $NB_UID /home/idaes
 # Copying part of install-solvers here:
 WORKDIR /home/idaes
 RUN sudo apt-get update && sudo apt-get install -y libboost-dev
+RUN sudo apt-get install -y libgfortran3
 RUN wget https://ampl.com/netlib/ampl/solvers.tgz
 RUN tar -xf solvers.tgz
 WORKDIR /home/idaes/solvers 
 RUN ./configure && make
 ENV ASL_BUILD=/home/idaes/solvers/sys.x86_64.Linux
 
-# Install ipopt:
-RUN conda install -c conda-forge ipopt=3.12.12=hc6e8484_1002
-# RUN conda install -c conda-forge ipopt
+# Install ipopt from conda (pinned version to avoid JupyterHub issues):
+# Commenting this in favor of using COIN-OR suite binary.
+# RUN conda install -c conda-forge ipopt=3.12.12=hc6e8484_1002
 
 # Install idaes requirements.txt
 USER $NB_UID
 WORKDIR /home/idaes
-RUN pip install -r requirements.txt
+RUN pip install -r requirements-dev.txt
 RUN make
 RUN python setup.py install
 
 WORKDIR /home
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/idaes-coinbinary-1.8.0/lib:/opt/conda/lib/
+ENV PATH=$PATH:/usr/local/idaes-coinbinary-1.8.0/bin
+# Command to smoke-test ipopt install in the Docker container:
+# cd /usr/local/idaes-coinbinary-1.8.0 && ./bin/ipopt ./test/mytoy.nl -AMPL linear_solver=ma57
 USER $NB_UID
