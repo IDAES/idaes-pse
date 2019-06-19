@@ -26,7 +26,8 @@ from idaes.core import (FlowsheetBlock,
                         declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlock,
-                        StateBlockData)
+                        StateBlockData,
+                        MaterialBalanceType)
 from idaes.unit_models.separator import (Separator,
                                          SeparatorData,
                                          SplittingType,
@@ -144,7 +145,7 @@ def test_separator_config():
 
     m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp})
 
-    assert len(m.fs.sep.config) == 12
+    assert len(m.fs.sep.config) == 14
     assert m.fs.sep.config.dynamic is False
     assert m.fs.sep.config.has_holdup is False
     assert m.fs.sep.config.property_package == m.fs.pp
@@ -154,9 +155,25 @@ def test_separator_config():
     assert m.fs.sep.config.num_outlets is None
     assert m.fs.sep.config.split_basis == SplittingType.totalFlow
     assert m.fs.sep.config.ideal_separation is True
-    assert m.fs.sep.config.ideal_split_map == None
+    assert m.fs.sep.config.ideal_split_map is None
     assert m.fs.sep.config.mixed_state_block is None
     assert m.fs.sep.config.construct_ports is True
+    assert m.fs.sep.config.material_balance_type == \
+        MaterialBalanceType.componentPhase
+    assert m.fs.sep.config.has_phase_equilibrium is False
+
+
+def test_validate_config_arguments():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+
+    m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
+                                       "has_phase_equilibrium": True,
+                                       "ideal_separation": True})
+
+    with pytest.raises(ConfigurationError):
+        m.fs.sep._validate_config_arguments()
 
 
 def test_inherited_methods():
@@ -530,7 +547,7 @@ def test_add_split_fractions_phase_component():
     assert len(m.fs.sep.sum_split_frac) == 4
 
 
-def test_add_material_splitting_constraints_total():
+def test_add_material_splitting_constraints_pc_total_no_equil():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
@@ -551,9 +568,10 @@ def test_add_material_splitting_constraints_total():
 
     assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
     assert len(m.fs.sep.material_splitting_eqn) == 8
+    assert not hasattr(m.fs.sep, "phase_equilibrium_generation")
 
 
-def test_add_material_splitting_constraints_phase():
+def test_add_material_splitting_constraints_pc_phase_no_equil():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
@@ -575,9 +593,10 @@ def test_add_material_splitting_constraints_phase():
 
     assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
     assert len(m.fs.sep.material_splitting_eqn) == 8
+    assert not hasattr(m.fs.sep, "phase_equilibrium_generation")
 
 
-def test_add_material_splitting_constraints_component():
+def test_add_material_splitting_constraints_pc_component_no_equil():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
@@ -600,9 +619,10 @@ def test_add_material_splitting_constraints_component():
 
     assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
     assert len(m.fs.sep.material_splitting_eqn) == 8
+    assert not hasattr(m.fs.sep, "phase_equilibrium_generation")
 
 
-def test_add_material_splitting_constraints_phase_component():
+def test_add_material_splitting_constraints_pc_phase_component_no_equil():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
     m.fs.pp = PhysicalParameterTestBlock()
@@ -625,6 +645,444 @@ def test_add_material_splitting_constraints_phase_component():
 
     assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
     assert len(m.fs.sep.material_splitting_eqn) == 8
+    assert not hasattr(m.fs.sep, "phase_equilibrium_generation")
+
+
+def test_add_material_splitting_constraints_pc_total_equil():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
+                                       "mixed_state_block": m.fs.sb,
+                                       "has_phase_equilibrium": True})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 8
+    assert isinstance(m.fs.sep.phase_equilibrium_generation, Var)
+    assert len(m.fs.sep.phase_equilibrium_generation) == 2
+
+
+def test_add_material_splitting_constraints_pc_phase_equil():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
+                                       "mixed_state_block": m.fs.sb,
+                                       "split_basis": SplittingType.phaseFlow,
+                                       "has_phase_equilibrium": True})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 8
+    assert isinstance(m.fs.sep.phase_equilibrium_generation, Var)
+    assert len(m.fs.sep.phase_equilibrium_generation) == 2
+
+
+def test_add_material_splitting_constraints_pc_component_equil():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
+                                       "mixed_state_block": m.fs.sb,
+                                       "split_basis":
+                                           SplittingType.componentFlow,
+                                       "has_phase_equilibrium": True})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 8
+    assert isinstance(m.fs.sep.phase_equilibrium_generation, Var)
+    assert len(m.fs.sep.phase_equilibrium_generation) == 2
+
+
+def test_add_material_splitting_constraints_pc_phase_component_equil():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={"property_package": m.fs.pp,
+                                       "mixed_state_block": m.fs.sb,
+                                       "split_basis":
+                                           SplittingType.phaseComponentFlow,
+                                       "has_phase_equilibrium": True})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 8
+    assert isinstance(m.fs.sep.phase_equilibrium_generation, Var)
+    assert len(m.fs.sep.phase_equilibrium_generation) == 2
+
+
+def test_add_material_splitting_constraints_tc_total():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "material_balance_type": MaterialBalanceType.componentTotal})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 4
+
+
+def test_add_material_splitting_constraints_tc_phase():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "split_basis": SplittingType.phaseFlow,
+            "material_balance_type": MaterialBalanceType.componentTotal})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 4
+
+
+def test_add_material_splitting_constraints_tc_component():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "split_basis": SplittingType.componentFlow,
+            "material_balance_type": MaterialBalanceType.componentTotal})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 4
+
+
+def test_add_material_splitting_constraints_tc_phase_component():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "split_basis": SplittingType.phaseComponentFlow,
+            "material_balance_type": MaterialBalanceType.componentTotal})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 4
+
+
+def test_add_material_splitting_constraints_t_total():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "material_balance_type": MaterialBalanceType.total})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 2
+
+
+def test_add_material_splitting_constraints_t_phase():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "split_basis": SplittingType.phaseFlow,
+            "material_balance_type": MaterialBalanceType.total})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 2
+
+
+def test_add_material_splitting_constraints_t_component():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "split_basis": SplittingType.componentFlow,
+            "material_balance_type": MaterialBalanceType.total})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 2
+
+
+def test_add_material_splitting_constraints_t_phase_component():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "split_basis": SplittingType.phaseComponentFlow,
+            "material_balance_type": MaterialBalanceType.total})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
+    assert len(m.fs.sep.material_splitting_eqn) == 2
+
+
+def test_add_material_splitting_constraints_te_total():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "material_balance_type": MaterialBalanceType.elementTotal})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    with pytest.raises(ConfigurationError):
+        m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+
+def test_add_material_splitting_constraints_none_total():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "material_balance_type": MaterialBalanceType.none})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert not hasattr(m.fs.sep, "material_splitting_eqn")
+
+
+def test_add_material_splitting_constraints_none_phase():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "split_basis": SplittingType.phaseFlow,
+            "material_balance_type": MaterialBalanceType.none})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert not hasattr(m.fs.sep, "material_splitting_eqn")
+
+
+def test_add_material_splitting_constraints_none_component():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "split_basis": SplittingType.componentFlow,
+            "material_balance_type": MaterialBalanceType.none})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert not hasattr(m.fs.sep, "material_splitting_eqn")
+
+
+def test_add_material_splitting_constraints_none_phase_component():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.sep = SeparatorFrame(default={
+            "property_package": m.fs.pp,
+            "mixed_state_block": m.fs.sb,
+            "split_basis": SplittingType.phaseComponentFlow,
+            "material_balance_type": MaterialBalanceType.none})
+
+    m.fs.sep._get_property_package()
+    m.fs.sep._get_indexing_sets()
+
+    outlet_list = m.fs.sep.create_outlet_list()
+    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
+    mixed_block = m.fs.sep.get_mixed_state_block()
+    m.fs.sep.add_split_fractions(outlet_list)
+
+    m.fs.sep.add_material_splitting_constraints(mixed_block)
+
+    assert not hasattr(m.fs.sep, "material_splitting_eqn")
 
 
 def test_add_energy_splitting_constraints():
