@@ -582,15 +582,16 @@ linked the mixed state and all outlet states,
                         for p in b.config.property_package.phase_list))
         elif self.config.material_balance_type == \
                 MaterialBalanceType.elementTotal:
-            raise ConfigurationError("Separators do not support elemental "
-                                     "material balances.")
+            raise ConfigurationError("{} Separators do not support elemental "
+                                     "material balances.".format(self.name))
         elif self.config.material_balance_type == \
                 MaterialBalanceType.none:
             pass
         else:
-            raise BurntToast("Separator recieved unrecognised value for "
+            raise BurntToast("{} Separator received unrecognised value for "
                              "material_balance_type. This should not happen, "
-                             "please report this bug to the IDAES developers.")
+                             "please report this bug to the IDAES developers."
+                             .format(self.name))
 
     def add_energy_splitting_constraints(self, mixed_block):
         """
