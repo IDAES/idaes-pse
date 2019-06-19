@@ -23,7 +23,7 @@ from idaes.core import FlowsheetBlock
 from idaes.unit_models.gibbs_reactor import GibbsReactor
 from idaes.property_models.examples.methane_combustion_ideal import (
     MethaneCombustionParameterBlock)
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------

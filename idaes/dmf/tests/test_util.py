@@ -19,21 +19,26 @@ import json
 import logging
 import os
 import shutil
+import sys
 import time
 
 import pytest
+
 #
 from idaes.dmf import util, resource
 from .util import init_logging, TempDir
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 init_logging()
 _log = logging.getLogger(__name__)
 
 
 def test_strlist():
-    input = [1,2,3]
-    output = util.strlist(input, sep='/')
-    assert output == '1/2/3'
+    input = [1, 2, 3]
+    output = util.strlist(input, sep="/")
+    assert output == "1/2/3"
 
 
 def test_get_file():
@@ -45,27 +50,27 @@ def test_get_file():
 
 
 def test_import_module():
-    m = util.import_module('idaes.dmf.util')
+    m = util.import_module("idaes.dmf.util")
     assert m is not None
 
 
 def test_get_module_version():
-    m = util.import_module('idaes.dmf.util')
+    m = util.import_module("idaes.dmf.util")
     v1 = util.get_module_version(m)
     assert v1 is None
-    m.__version__ = 'foobar'
+    m.__version__ = "foobar"
     try:
         util.get_module_version(m)
     except ValueError:
         pass
     else:
-        assert False, 'ValueError expected for {}'.format(m.__version__)
-    m.__version__ = '1.2.3-alpha'
+        assert False, "ValueError expected for {}".format(m.__version__)
+    m.__version__ = "1.2.3-alpha"
     util.get_module_version(m)
 
 
 def test_get_module_author():
-    m = util.import_module('idaes.dmf.util')
+    m = util.import_module("idaes.dmf.util")
     util.get_module_author(m)
 
 
@@ -84,37 +89,37 @@ def test_datetime_timestamp():
 def test_mkdir_p():
     random_str = hashlib.sha1().hexdigest()
     # test absolute
-    path = '/tmp/{}/idaes/dmf/util/mkdir_p'.format(random_str)
+    path = "/tmp/{}/idaes/dmf/util/mkdir_p".format(random_str)
     util.mkdir_p(path)
     assert os.path.exists(path)
-    shutil.rmtree('/tmp/{}'.format(random_str))
+    shutil.rmtree("/tmp/{}".format(random_str))
     # test relative
-    path = '{}/idaes/dmf/util/mkdir_p'.format(random_str)
+    path = "{}/idaes/dmf/util/mkdir_p".format(random_str)
     util.mkdir_p(path)
     assert os.path.exists(path)
     shutil.rmtree(random_str)
 
 
 def test_is_jupyter_notebook():
-    nbtext = '''
+    nbtext = """
     {
         "cells": [],
         "metadata": {},
         "nbformat": 4,
         "nbformat_minor": 2
     }
-    '''
+    """
     with TempDir() as d:
-        f = open(os.path.join(d, 'sample.txt'), 'w')
+        f = open(os.path.join(d, "sample.txt"), "w")
         assert not util.is_jupyter_notebook(f.name)
-        f = open(os.path.join(d, 'null.ipynb'), 'w')
+        f = open(os.path.join(d, "null.ipynb"), "w")
         assert util.is_jupyter_notebook(f.name, check_contents=False)
         assert not util.is_jupyter_notebook(f.name)
-        f = open(os.path.join(d, 'basic.ipynb'), 'w')
+        f = open(os.path.join(d, "basic.ipynb"), "w")
         f.write(nbtext)
         f.close()
         assert util.is_jupyter_notebook(f.name)
-        f = open(os.path.join(d, 'random.ipynb'), 'w')
+        f = open(os.path.join(d, "random.ipynb"), "w")
         f.write('{"random": [1,2,3]}')
         f.close()
         assert not util.is_jupyter_notebook(f.name)
@@ -122,17 +127,17 @@ def test_is_jupyter_notebook():
 
 def test_is_python():
     with TempDir() as d:
-        f = open(os.path.join(d, 'sample.txt'), 'w')
+        f = open(os.path.join(d, "sample.txt"), "w")
         assert not util.is_python(f.name)
-        f = open(os.path.join(d, 'sample.py'), 'w')
+        f = open(os.path.join(d, "sample.py"), "w")
         assert util.is_python(f.name)
 
 
 def test_is_resource_json():
     with TempDir() as d:
-        f = open(os.path.join(d, 'sample.txt'), 'w')
+        f = open(os.path.join(d, "sample.txt"), "w")
         assert not util.is_resource_json(f.name)
-        f = open(os.path.join(d, 'sample.json'), 'w')
+        f = open(os.path.join(d, "sample.json"), "w")
         assert not util.is_resource_json(f.name)
         r = resource.Resource()
         json.dump(r.v, f)

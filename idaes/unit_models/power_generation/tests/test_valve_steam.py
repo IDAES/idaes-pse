@@ -22,7 +22,9 @@ from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.power_generation import SteamValve
 from idaes.property_models import iapws95_ph
-from idaes.ui.report import degrees_of_freedom, active_equalities
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom,
+        activated_equalities_generator)
 from idaes.property_models.iapws95 import iapws95_available
 
 prop_available = iapws95_available()
@@ -73,6 +75,9 @@ def test_vapor_steady_state_initialize(build_valve_vapor):
     m.fs.valve.Cv.fix(0.01)
 
     m.fs.valve.initialize(outlvl=1)
-    for c in active_equalities(m):
+
+    eq_cons = activated_equalities_generator(m)
+
+    for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
     assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be

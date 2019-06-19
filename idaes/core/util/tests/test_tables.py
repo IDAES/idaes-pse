@@ -11,28 +11,178 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
-import pandas as pd
-import pyomo.environ as pyo
-from pyomo.common.config import ConfigBlock
-from idaes.core import StateBlock, StateBlockData, declare_process_block_class
-from idaes.core.util.tables import stream_table, state_table
+from pandas import isna
+import pytest
+
+from pyomo.environ import (ConcreteModel,
+                           Expression,
+                           TransformationFactory,
+                           Var)
+from pyomo.network import Arc
+from idaes.core import (FlowsheetBlock,
+                        StateBlock,
+                        StateBlockData,
+                        declare_process_block_class)
+from idaes.core.util.tables import (create_stream_table_dataframe,
+                                    stream_table_dataframe_to_string,
+                                    generate_table)
+
+import idaes.property_models.examples.saponification_thermo as thermo_props
+import idaes.property_models.examples.saponification_reactions as rxn_props
+from idaes.unit_models import CSTR
+
+
+@pytest.fixture()
+def m():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
+    m.fs.reaction_params = rxn_props.SaponificationReactionParameterBlock(
+        default={"property_package": m.fs.thermo_params})
+
+    m.fs.tank1 = CSTR(default={"property_package": m.fs.thermo_params,
+                               "reaction_package": m.fs.reaction_params})
+    m.fs.tank2 = CSTR(default={"property_package": m.fs.thermo_params,
+                               "reaction_package": m.fs.reaction_params})
+
+    m.fs.stream = Arc(source=m.fs.tank1.outlet,
+                      destination=m.fs.tank2.inlet)
+    TransformationFactory("network.expand_arcs").apply_to(m)
+
+    return m
+
+
+def test_create_stream_table_dataframe_from_StateBlock(m):
+    df = create_stream_table_dataframe({
+            "state": m.fs.tank1.control_volume.properties_out})
+
+    assert df.loc["Pressure"]["state"] == 101325
+    assert df.loc["Temperature"]["state"] == 298.15
+    assert df.loc["Volumetric Flowrate"]["state"] == 1.0
+    assert df.loc["Molar Concentration H2O"]["state"] == 100.0
+    assert df.loc["Molar Concentration NaOH"]["state"] == 100.0
+    assert df.loc["Molar Concentration EthylAcetate"]["state"] == 100.0
+    assert df.loc["Molar Concentration SodiumAcetate"]["state"] == 100.0
+    assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
+
+
+def test_create_stream_table_dataframe_from_StateBlock_true_state(m):
+    df = create_stream_table_dataframe({
+            "state": m.fs.tank1.control_volume.properties_out},
+            true_state=True)
+
+    assert df.loc["pressure"]["state"] == 101325
+    assert df.loc["temperature"]["state"] == 298.15
+    assert df.loc["flow_vol"]["state"] == 1.0
+    assert df.loc["conc_mol_comp H2O"]["state"] == 100.0
+    assert df.loc["conc_mol_comp NaOH"]["state"] == 100.0
+    assert df.loc["conc_mol_comp EthylAcetate"]["state"] == 100.0
+    assert df.loc["conc_mol_comp SodiumAcetate"]["state"] == 100.0
+    assert df.loc["conc_mol_comp Ethanol"]["state"] == 100.0
+
+
+def test_create_stream_table_dataframe_from_StateBlock_orient(m):
+    df = create_stream_table_dataframe({
+            "state": m.fs.tank1.control_volume.properties_out},
+            orient='index')
+
+    assert df.loc["state"]["Pressure"] == 101325
+    assert df.loc["state"]["Temperature"] == 298.15
+    assert df.loc["state"]["Volumetric Flowrate"] == 1.0
+    assert df.loc["state"]["Molar Concentration H2O"] == 100.0
+    assert df.loc["state"]["Molar Concentration NaOH"] == 100.0
+    assert df.loc["state"]["Molar Concentration EthylAcetate"] == 100.0
+    assert df.loc["state"]["Molar Concentration SodiumAcetate"] == 100.0
+    assert df.loc["state"]["Molar Concentration Ethanol"] == 100.0
+
+
+def test_create_stream_table_dataframe_from_StateBlock_time():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False, "time_set": [3]})
+    m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
+    m.fs.reaction_params = rxn_props.SaponificationReactionParameterBlock(
+        default={"property_package": m.fs.thermo_params})
+
+    m.fs.tank1 = CSTR(default={"property_package": m.fs.thermo_params,
+                               "reaction_package": m.fs.reaction_params})
+    m.fs.tank2 = CSTR(default={"property_package": m.fs.thermo_params,
+                               "reaction_package": m.fs.reaction_params})
+
+    m.fs.stream = Arc(source=m.fs.tank1.outlet,
+                      destination=m.fs.tank2.inlet)
+    TransformationFactory("network.expand_arcs").apply_to(m)
+
+    df = create_stream_table_dataframe({
+            "state": m.fs.tank1.control_volume.properties_out},
+            time_point=3)
+
+    assert df.loc["Pressure"]["state"] == 101325
+    assert df.loc["Temperature"]["state"] == 298.15
+    assert df.loc["Volumetric Flowrate"]["state"] == 1.0
+    assert df.loc["Molar Concentration H2O"]["state"] == 100.0
+    assert df.loc["Molar Concentration NaOH"]["state"] == 100.0
+    assert df.loc["Molar Concentration EthylAcetate"]["state"] == 100.0
+    assert df.loc["Molar Concentration SodiumAcetate"]["state"] == 100.0
+    assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
+
+
+def test_create_stream_table_dataframe_from_Port(m):
+    df = create_stream_table_dataframe({
+            "state": m.fs.tank1.outlet})
+
+    assert df.loc["Pressure"]["state"] == 101325
+    assert df.loc["Temperature"]["state"] == 298.15
+    assert df.loc["Volumetric Flowrate"]["state"] == 1.0
+    assert df.loc["Molar Concentration H2O"]["state"] == 100.0
+    assert df.loc["Molar Concentration NaOH"]["state"] == 100.0
+    assert df.loc["Molar Concentration EthylAcetate"]["state"] == 100.0
+    assert df.loc["Molar Concentration SodiumAcetate"]["state"] == 100.0
+    assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
+
+
+def test_create_stream_table_dataframe_from_Arc(m):
+    df = create_stream_table_dataframe({
+            "state": m.fs.stream})
+
+    assert df.loc["Pressure"]["state"] == 101325
+    assert df.loc["Temperature"]["state"] == 298.15
+    assert df.loc["Volumetric Flowrate"]["state"] == 1.0
+    assert df.loc["Molar Concentration H2O"]["state"] == 100.0
+    assert df.loc["Molar Concentration NaOH"]["state"] == 100.0
+    assert df.loc["Molar Concentration EthylAcetate"]["state"] == 100.0
+    assert df.loc["Molar Concentration SodiumAcetate"]["state"] == 100.0
+    assert df.loc["Molar Concentration Ethanol"]["state"] == 100.0
+
+
+def test_create_stream_table_dataframe_wrong_type(m):
+    with pytest.raises(TypeError):
+        create_stream_table_dataframe({"state": m.fs.tank1})
+
+
+def test_stream_table_dataframe_to_string(m):
+    df = create_stream_table_dataframe({
+            "state": m.fs.tank1.control_volume.properties_out})
+
+    stream_table_dataframe_to_string(df)
+
+
+# -----------------------------------------------------------------------------
 ###
 # Create a dummy StateBlock class
 ##
-
 @declare_process_block_class("TestStateBlock", block_class=StateBlock)
 class StateTestBlockData(StateBlockData):
     def build(self):
-        self.x = pyo.Var(initialize=0)
-        self.pressure = pyo.Var()
-        self.enth_mol = pyo.Var()
-        self.temperature = pyo.Expression(expr=self.enth_mol*2.0)
-        self.div0 = pyo.Expression(expr=4.0/self.x)
-        self.flow_mol = pyo.Var()
+        self.x = Var(initialize=0)
+        self.pressure = Var()
+        self.enth_mol = Var()
+        self.temperature = Expression(expr=self.enth_mol*2.0)
+        self.div0 = Expression(expr=4.0/self.x)
+        self.flow_mol = Var()
 
 
-def make_model():
-    m = pyo.ConcreteModel()
+def test_generate_table():
+    m = ConcreteModel()
     m.state_a = TestStateBlock()
     m.state_b = TestStateBlock([1,2,3])
 
@@ -52,40 +202,19 @@ def make_model():
     m.state_b[3].enth_mol = 3000
     m.state_b[3].flow_mol = 300
 
-    return m
-
-
-def test_stream_table():
-    m = make_model()
-
-    sd = {"a":m.state_a, "b1": m.state_b[1]}
-    st = stream_table(sd,
-        attributes=["pressure", "temperature", "div0", "flow_mol", "not_there"],
+    sd = {"a": m.state_a, "b1": m.state_b[1]}
+    st = generate_table(
+        sd,
+        attributes=["pressure", "temperature", "div0",
+                    "flow_mol", "not_there"],
         heading=["P", "T", "ERR", "F", "Miss"])
 
-    assert(st.loc["a"]["P"]==11000)
+    assert(st.loc["a"]["P"] == 11000)
     assert(abs(st.loc["a"]["T"] - 1100*2) < 0.001)
-    assert(pd.isna(st.loc["a"]["ERR"]))
-    assert(pd.isna(st.loc["a"]["Miss"]))
+    assert(isna(st.loc["a"]["ERR"]))
+    assert(isna(st.loc["a"]["Miss"]))
 
-    assert(st.loc["b1"]["P"]==10000)
+    assert(st.loc["b1"]["P"] == 10000)
     assert(abs(st.loc["b1"]["T"] - 1000*2) < 0.001)
-    assert(pd.isna(st.loc["b1"]["ERR"]))
-    assert(pd.isna(st.loc["b1"]["Miss"]))
-
-def test_stream_table():
-    m = make_model()
-
-    st = state_table(m,
-        attributes=["pressure", "temperature", "div0", "flow_mol", "not_there"],
-        heading=["P", "T", "ERR", "F", "Miss"])
-    print(st)
-    assert(st.loc["state_a"]["P"]==11000)
-    assert(abs(st.loc["state_a"]["T"] - 1100*2) < 0.001)
-    assert(pd.isna(st.loc["state_a"]["ERR"]))
-    assert(pd.isna(st.loc["state_a"]["Miss"]))
-
-    assert(st.loc["state_b[1]"]["P"]==10000)
-    assert(abs(st.loc["state_b[1]"]["T"] - 1000*2) < 0.001)
-    assert(pd.isna(st.loc["state_b[1]"]["ERR"]))
-    assert(pd.isna(st.loc["state_b[1]"]["Miss"]))
+    assert(isna(st.loc["b1"]["ERR"]))
+    assert(isna(st.loc["b1"]["Miss"]))

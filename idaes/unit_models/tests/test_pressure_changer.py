@@ -20,7 +20,7 @@ from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.pressure_changer import (PressureChanger,
                                                 ThermodynamicAssumption)
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import property package for testing
 from idaes.property_models import iapws95_ph as pp

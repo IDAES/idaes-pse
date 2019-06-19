@@ -34,7 +34,7 @@ from idaes.unit_models.separator import (Separator,
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError)
 
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)
 
