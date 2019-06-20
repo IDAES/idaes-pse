@@ -41,6 +41,7 @@ from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError)
 from idaes.core.util.math import smooth_min
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Andrew Lee"
 
@@ -816,3 +817,16 @@ linked to all inlet states and the mixed state,
         for i in inlet_list:
             i_block = getattr(blk, i+"_state")
             i_block.release_state(flags[i], outlvl=outlvl-1)
+
+    def _get_stream_table_contents(self, time_point=0):
+        io_dict = {}
+        inlet_list = self.create_inlet_list()
+        for i in inlet_list:
+            io_dict[i] = getattr(self, i+"_state")
+        if self.config.mixed_state_block is None:
+            io_dict["Outlet"] = self.mixed_state
+        else:
+            io_dict["Outlet"] = self.config.mixed_state_block
+        return create_stream_table_dataframe(
+                io_dict,
+                time_point=time_point)

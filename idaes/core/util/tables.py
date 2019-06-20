@@ -24,7 +24,26 @@ def create_stream_table_dataframe(streams,
                                   true_state=False,
                                   time_point=0,
                                   orient='columns'):
+    """
+    Method to create a stream table in the form of a pandas dataframe. Method
+    takes a dict with name keys and stream values.
 
+    Args:
+        streams : dict with name keys and stream values. Names will be used as
+            display names for stream table, and streams may be Arcs, Ports or
+            StateBlocks.
+        true_state : indicated whether the stream table should contain the
+            display variables define in the StateBlock (False, default) or the
+            state variables (True).
+        time_point : point in the time domain at which to generate stream table
+            (default = 0)
+        orient : orientation of stream table. Accepted values are 'columns'
+            (default) where streams are displayed as columns, or 'index' where
+            stream are displayed as rows.
+
+    Returns:
+        A pandas DataFrame containing the stream table data.
+    """
     stream_attributes = {}
 
     for n in streams.keys():
@@ -32,16 +51,16 @@ def create_stream_table_dataframe(streams,
             if isinstance(streams[n], Arc):
                 # Use destination of Arc, as inlets are more likely (?) to be
                 # fully-defined StateBlocks
-                sb = _get_state_from_port(streams[n].destination)
+                sb = _get_state_from_port(streams[n].destination, time_point)
             elif isinstance(streams[n], Port):
-                sb = _get_state_from_port(streams[n])
+                sb = _get_state_from_port(streams[n], time_point)
             else:
-                sb = streams[n]
+                sb = streams[n][time_point]
 
             if true_state:
-                disp_dict = sb[time_point].define_state_vars()
+                disp_dict = sb.define_state_vars()
             else:
-                disp_dict = sb[time_point].define_display_vars()
+                disp_dict = sb.define_display_vars()
 
             stream_attributes[n] = {}
 
@@ -50,7 +69,8 @@ def create_stream_table_dataframe(streams,
                     if i is None:
                         stream_attributes[n][k] = value(disp_dict[k][i])
                     else:
-                        stream_attributes[n][k+" "+i] = value(disp_dict[k][i])
+                        stream_attributes[n][k+" "+str(i)] = \
+                            value(disp_dict[k][i])
         except (AttributeError, KeyError):
             raise TypeError(
                     f"Unrecognised component provided in stream argument "
@@ -81,17 +101,20 @@ def stream_table_dataframe_to_string(stream_table, **kwargs):
                                   **kwargs)
 
 
-def _get_state_from_port(port):
+def _get_state_from_port(port, time_point):
     # Check port for _state_block attribute
     try:
-        return port._state_block
+        if len(port._state_block) == 1:
+            return port._state_block[0][time_point]
+        else:
+            return port._state_block[0][time_point, port._state_block[1]]
     except AttributeError:
         # Port was not created by IDAES add_port methods. Return exception for
         # the user to fix.
         raise ConfigurationError(
                 f"Port {port.name} does not have a _state_block attribute, "
                 f"thus cannot determine StateBlock to use for collecting data."
-                f" Please provide the associated StateBLock instead, or use "
+                f" Please provide the associated StateBlock instead, or use "
                 f"the IDAES add_port methods to create the Port.")
 
 

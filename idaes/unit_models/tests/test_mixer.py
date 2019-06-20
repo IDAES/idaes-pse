@@ -859,3 +859,15 @@ def test_initialize():
     assert m.fs.mix.inlet_1_state[0].hold_state is False
     assert m.fs.mix.inlet_2_state[0].hold_state is False
     assert m.fs.sb[0].hold_state is False
+
+
+def test_report():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
+
+    m.fs.mix = Mixer(default={
+            "property_package": m.fs.pp})
+
+    m.fs.mix.report()

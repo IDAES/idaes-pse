@@ -111,3 +111,20 @@ def test_initialize():
             m.fs.pfr.outlet.pressure[0].value)
     assert (pytest.approx(303.15, abs=1e-2) ==
             m.fs.pfr.outlet.temperature[0].value)
+
+
+def test_report():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = SaponificationParameterBlock()
+    m.fs.reactions = SaponificationReactionParameterBlock(default={
+                            "property_package": m.fs.properties})
+
+    m.fs.pfr = PFR(default={"property_package": m.fs.properties,
+                            "reaction_package": m.fs.reactions,
+                            "has_equilibrium_reactions": False,
+                            "has_heat_transfer": False,
+                            "has_pressure_change": False})
+
+    m.fs.pfr.report()

@@ -97,3 +97,7 @@ def test_initialization():
             value(m.fs.flash.vap_outlet.mole_frac[0, "benzene"]))
     assert (pytest.approx(0.357, abs=1e-3) ==
             value(m.fs.flash.vap_outlet.mole_frac[0, "toluene"]))
+#
+#
+#def test_report():
+#    m.fs.flash.report()
