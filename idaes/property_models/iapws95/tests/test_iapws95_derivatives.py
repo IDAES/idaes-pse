@@ -15,8 +15,7 @@ from __future__ import division, print_function, absolute_import
 from pyomo.environ import *
 from pyomo.core.base.external import AMPLExternalFunction
 from pyomo.opt import SolverFactory
-from idaes.property_models import iapws95_ph as iapws95
-from idaes.property_models.iapws95 import iapws95_available
+from idaes.property_models import iapws95
 
 import unittest
 import pytest
@@ -24,7 +23,7 @@ import pytest
 import csv
 import os
 
-prop_available = iapws95_available()
+prop_available = iapws95.iapws95_available()
 
 def between(y, x1, x2):
     return 0 > (y-x1)*(y-x2)
@@ -236,7 +235,7 @@ class TestIAPWS95(unittest.TestCase):
                 self.bin_derivs_fd_test(f, c[2], c[1]/1000, d0=1e-4, d1=1e-3, tol=0.001)
 
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-    #@pytest.mark.skip(reason="temporary to save time")
+    @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_vf_2phase(self):
         model = self.make_model()
         hvdat = self.read_data("sat_prop.txt", col=17)
@@ -301,7 +300,7 @@ class TestIAPWS95(unittest.TestCase):
 
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     #@pytest.mark.skip(reason="temporary to save time")
-    def test_derivs_push(self):
+    def test_derivs_pushfg(self):
         model = self.make_model()
         cond = self.read_data("prop.txt", col=2)
         for i, c in enumerate(cond):
