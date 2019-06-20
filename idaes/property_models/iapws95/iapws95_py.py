@@ -173,6 +173,11 @@ enthalpy are the best choice because they are well behaved during a phase change
 
         # Component list - a list of component identifiers
         self.component_list = Set(initialize=['H2O'])
+
+        # List of phase equilibrium
+        self.phase_equilibrium_idx = Set(initialize=[1])
+        self.phase_equilibrium_list = {1: ["H2O", ("Vap", "Liq")]}
+
         # Parameters, these should match what's in the C code
         self.temperature_crit = Param(initialize=647.096,
             doc='Critical temperature [K]')
@@ -512,6 +517,9 @@ class Iapws95StateBlockData(StateBlockData):
         rhoc = self.config.parameters.dens_mass_crit
         gas_const = self.config.parameters.gas_const
         phase_set = self.config.parameters.config.phase_presentation
+
+        #self.phase_equilibrium_idx = Set(initialize=[1])
+        self.phase_equilibrium_list = {1: ["H2O", ("Vap", "Liq")]}
 
         mixed_phase = self.config.parameters.config.phase_presentation == \
             PhaseType.MIX
