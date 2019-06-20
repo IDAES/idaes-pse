@@ -41,14 +41,9 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
                                     list_of_strings)
 from idaes.core.util.exceptions import (BurntToast,
-<<<<<<< HEAD
                                         ConfigurationError,
                                         PropertyNotSupportedError)
 from idaes.core.util.misc import add_object_reference
-=======
-                                        ConfigurationError)
-from idaes.core.util.tables import create_stream_table_dataframe
->>>>>>> ce2335c3503dc530f30498d52acc4154867e5fd9
 
 __author__ = "Andrew Lee"
 
