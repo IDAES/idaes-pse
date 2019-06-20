@@ -674,7 +674,7 @@ def test_add_material_splitting_constraints_pc_total_equil():
     assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
     assert len(m.fs.sep.material_splitting_eqn) == 8
     assert isinstance(m.fs.sep.phase_equilibrium_generation, Var)
-    assert len(m.fs.sep.phase_equilibrium_generation) == 2
+    assert len(m.fs.sep.phase_equilibrium_generation) == 4
 
 
 def test_add_material_splitting_constraints_pc_phase_equil():
@@ -701,7 +701,7 @@ def test_add_material_splitting_constraints_pc_phase_equil():
     assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
     assert len(m.fs.sep.material_splitting_eqn) == 8
     assert isinstance(m.fs.sep.phase_equilibrium_generation, Var)
-    assert len(m.fs.sep.phase_equilibrium_generation) == 2
+    assert len(m.fs.sep.phase_equilibrium_generation) == 4
 
 
 def test_add_material_splitting_constraints_pc_component_equil():
@@ -729,7 +729,7 @@ def test_add_material_splitting_constraints_pc_component_equil():
     assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
     assert len(m.fs.sep.material_splitting_eqn) == 8
     assert isinstance(m.fs.sep.phase_equilibrium_generation, Var)
-    assert len(m.fs.sep.phase_equilibrium_generation) == 2
+    assert len(m.fs.sep.phase_equilibrium_generation) == 4
 
 
 def test_add_material_splitting_constraints_pc_phase_component_equil():
@@ -757,7 +757,7 @@ def test_add_material_splitting_constraints_pc_phase_component_equil():
     assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
     assert len(m.fs.sep.material_splitting_eqn) == 8
     assert isinstance(m.fs.sep.phase_equilibrium_generation, Var)
-    assert len(m.fs.sep.phase_equilibrium_generation) == 2
+    assert len(m.fs.sep.phase_equilibrium_generation) == 4
 
 
 def test_add_material_splitting_constraints_tc_total():

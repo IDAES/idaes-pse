@@ -516,6 +516,7 @@ linked the mixed state and all outlet states,
                         .format(self.name))
                 self.phase_equilibrium_generation = Var(
                             self.flowsheet().config.time,
+                            self.outlet_idx,
                             self.phase_equilibrium_idx_ref,
                             domain=Reals,
                             doc="Amount of generation in unit by phase "
@@ -523,7 +524,7 @@ linked the mixed state and all outlet states,
                                 .format(units['holdup'], units['time']))
 
             # Define terms to use in mixing equation
-            def phase_equilibrium_term(b, t, p, j):
+            def phase_equilibrium_term(b, t, o, p, j):
                 if self.config.has_phase_equilibrium:
                     sd = {}
                     sblock = mixed_block[t]
@@ -538,7 +539,7 @@ linked the mixed state and all outlet states,
                         else:
                             sd[r] = 0
 
-                    return sum(b.phase_equilibrium_generation[t, r]*sd[r]
+                    return sum(b.phase_equilibrium_generation[t, o, r]*sd[r]
                                for r in b.phase_equilibrium_idx_ref)
                 else:
                     return 0
@@ -553,7 +554,7 @@ linked the mixed state and all outlet states,
                 return (sf(t, o, p, j) *
                         mixed_block[t].get_material_flow_terms(p, j) ==
                         o_block[t].get_material_flow_terms(p, j) -
-                        phase_equilibrium_term(b, t, p, j))
+                        phase_equilibrium_term(b, t, o, p, j))
         elif self.config.material_balance_type == \
                 MaterialBalanceType.componentTotal:
             @self.Constraint(self.flowsheet().config.time,
