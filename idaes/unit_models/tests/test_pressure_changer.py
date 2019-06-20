@@ -261,3 +261,55 @@ def test_initialization_isentropic():
             m.fs.pc.outlet.pressure[0].value)
 
     solver.solve(m)
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_isothermal():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.isothermal})
+
+    m.fs.pc.report()
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_pump():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.pump})
+
+    m.fs.pc.report()
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_adiabatic():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.adiabatic})
+
+    m.fs.pc.report()
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_isentropic():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.isentropic})
+
+    m.fs.pc.report()

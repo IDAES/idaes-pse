@@ -92,3 +92,9 @@ def test_initialize_dyn(build_turbine_dyn):
 
     m.fs.turb.initialize(outlvl=4)
     """
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report(build_turbine):
+    m = build_turbine
+    m.fs.turb.report()

@@ -80,3 +80,10 @@ def test_vapor_steady_state_initialize(build_valve_vapor):
     for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
     assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report(build_valve_vapor):
+    """Initialize a turbine model"""
+    m = build_valve_vapor
+    m.fs.valve.report()
