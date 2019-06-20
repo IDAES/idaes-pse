@@ -23,10 +23,9 @@ from idaes.unit_models.pressure_changer import (PressureChanger,
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import property package for testing
-from idaes.property_models import iapws95_ph as pp
-from idaes.property_models.iapws95 import iapws95_available
+from idaes.property_models import iapws95 as pp
 
-prop_available = iapws95_available()
+prop_available = pp.iapws95_available()
 
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
