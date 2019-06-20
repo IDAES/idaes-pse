@@ -107,7 +107,7 @@ def test_sep_ph_lg_total_mb():
         "split_basis":SplittingType.totalFlow,
         "ideal_separation":False,
         "num_outlets":2,
-        "material_balance_type":MaterialBalanceType.componentTotal,
+        "material_balance_type":MaterialBalanceType.total,
         "energy_split_basis":EnergySplittingType.equal_molar_enthalpy})
 
     m.fs.sep.inlet.enth_mol.fix(24000)
