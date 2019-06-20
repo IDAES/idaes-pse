@@ -76,4 +76,18 @@ def test_initialize():
                          "outlet_property_package": m.fs.sap})
 
     m.fs.trans.initialize(outlvl=5,
-                         optarg={'tol': 1e-6})
+                          optarg={'tol': 1e-6})
+
+
+def test_report():
+    # Very basic test of initialization routine - only checks data flow
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.sap = SaponificationParameterBlock()
+
+    m.fs.trans = Translator(
+                default={"inlet_property_package": m.fs.sap,
+                         "outlet_property_package": m.fs.sap})
+
+    m.fs.trans.report()

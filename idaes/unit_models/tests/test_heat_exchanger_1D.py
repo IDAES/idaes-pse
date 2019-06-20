@@ -267,6 +267,12 @@ def test_initialization():
     assert (shell_side - tube_side) <= 1e-6
 
 
+def test_report():
+    """Test initialize and solve for co-current heat exchanger."""
+    m.fs.HX_co_current.report()
+    m.fs.HX_counter_current.report()
+
+
 # Test the custom discretisation options
 m.fs1 = FlowsheetBlock(default={"dynamic": False})
 

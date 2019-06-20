@@ -950,6 +950,20 @@ def test_initialize_total_flow():
             m.fs.sb.outlet_2.conc_mol_comp[0, "Ethanol"].value)
 
 
+def test_report():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = SaponificationParameterBlock()
+
+    m.fs.sb = Separator(default={
+            "property_package": m.fs.properties,
+            "ideal_separation": False,
+            "split_basis": SplittingType.totalFlow})
+
+    m.fs.sb.report()
+
+
 # -----------------------------------------------------------------------------
 # Testing of ideal splitting methods
 @declare_process_block_class("PhysicalParameterBlock2")
