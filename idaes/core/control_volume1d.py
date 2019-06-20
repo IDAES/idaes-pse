@@ -389,15 +389,14 @@ argument)."""))
 
         # Material holdup and accumulation
         if has_holdup:
-            self.material_holdup = Var(self.flowsheet().config.time,
-                                       self.length_domain,
-                                       self.config.property_package.phase_list,
-                                       self.config.property_package.component_list,
-                                       domain=Reals,
-                                       doc="Material holdup per unit length "
-                                           "[{}/{}]"
-                                           .format(units['holdup'],
-                                                   units['length']))
+            self.material_holdup = Var(
+                    self.flowsheet().config.time,
+                    self.length_domain,
+                    self.config.property_package.phase_list,
+                    self.config.property_package.component_list,
+                    domain=Reals,
+                    doc="Material holdup per unit length [{}/{}]"
+                        .format(units['holdup'], units['length']))
         if dynamic:
             self.material_accumulation = DerivativeVar(
                     self.material_holdup,
@@ -540,8 +539,9 @@ argument)."""))
                     else:
                         sd[r] = 0
 
-                return sum(b.phase_equilibrium_generation[t, x, r] * sd[r]
-                           for r in b.config.property_package.phase_equilibrium_idx)
+                return sum(
+                        b.phase_equilibrium_generation[t, x, r] * sd[r] for
+                        r in b.config.property_package.phase_equilibrium_idx)
             else:
                 return 0
 
@@ -670,8 +670,8 @@ argument)."""))
                     rparam = rblock[t, x].config.parameters
                     return b.rate_reaction_generation[t, x, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
-                            b.rate_reaction_extent[t, x, r]
-                            for r in b.config.reaction_package.rate_reaction_idx))
+                            b.rate_reaction_extent[t, x, r] for r in
+                            b.config.reaction_package.rate_reaction_idx))
                 else:
                     return Constraint.Skip
 
@@ -1034,8 +1034,8 @@ argument)."""))
                     rparam = rblock[t, x].config.parameters
                     return b.rate_reaction_generation[t, x, p, j] == (
                         sum(rparam.rate_reaction_stoichiometry[r, p, j] *
-                            b.rate_reaction_extent[t, x, r]
-                            for r in b.config.reaction_package.rate_reaction_idx))
+                            b.rate_reaction_extent[t, x, r] for r in
+                            b.config.reaction_package.rate_reaction_idx))
                 else:
                     return Constraint.Skip
 
@@ -1438,8 +1438,9 @@ argument)."""))
                      x == b.length_domain.last())):
                 return Constraint.Skip
             else:
-                return (b.length*sum(accumulation_term(b, t, x, p)
-                                     for p in b.config.property_package.phase_list) *
+                return (b.length*sum(
+                        accumulation_term(b, t, x, p) for p in
+                        b.config.property_package.phase_list) *
                         b.scaling_factor_energy) == (
                     b._flow_direction_term * sum(b.enthalpy_flow_dx[t, x, p]
                                                  for p in b.config.
@@ -1884,8 +1885,9 @@ argument)."""))
                              self.length_domain,
                              doc='Sum of phase fractions == 1')
             def sum_of_phase_fractions(b, t, x):
-                return 1 == sum(b.phase_fraction[t, x, p]
-                                for p in self.config.property_package.phase_list)
+                return 1 == sum(
+                        b.phase_fraction[t, x, p]
+                        for p in self.config.property_package.phase_list)
         else:
             @self.Expression(self.flowsheet().config.time,
                              self.length_domain,
@@ -1898,3 +1900,14 @@ argument)."""))
         if b.config.area_definition == DistributedVars.uniform:
             return b.area
         return b.area[t, x]
+
+    def report(self, time_point=0, dof=False, ostream=None, prefix=""):
+        """
+        No report method defined for ControlVolume1D class. This is due to the
+        difficulty of presenting spatially discretized data in a readable form
+        without plotting.
+        """
+        raise NotImplementedError("""
+                Due ot the difficultly in presenting spatially distributed data
+                in a clean format, ControlVolume1D does not currently support
+                the report method.""")

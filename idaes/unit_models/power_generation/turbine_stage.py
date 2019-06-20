@@ -34,7 +34,7 @@ from idaes.core import declare_process_block_class
 from idaes.unit_models.pressure_changer import (PressureChangerData,
                                                 ThermodynamicAssumption)
 from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 @declare_process_block_class("TurbineStage",
