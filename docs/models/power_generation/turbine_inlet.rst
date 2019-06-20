@@ -20,13 +20,13 @@ Example
     from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
     from idaes.core import FlowsheetBlock
     from idaes.unit_models.power_generation import TurbineInletStage
-    from idaes.property_models import iapws95_ph
+    from idaes.property_models import iapws95
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.turb = TurbineInletStage(default={"property_package": m.fs.properties})
-    hin = iapws95_ph.htpx(T=880, P=2.4233e7)
+    hin = iapws95.htpx(T=880, P=2.4233e7)
     # set inlet
     m.fs.turb.inlet[:].enth_mol.fix(hin)
     m.fs.turb.inlet[:].flow_mol.fix(26000/4.0)

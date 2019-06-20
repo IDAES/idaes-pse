@@ -22,7 +22,8 @@ from enum import Enum
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
 
-from idaes.unit_models.pressure_changer import ThermodynamicAssumption
+from idaes.unit_models.pressure_changer import ThermodynamicAssumption,\
+                                               MaterialBalanceType
 
 
 class ValveFunctionType(Enum):
@@ -36,6 +37,9 @@ def _define_config(config):
     config.compressor = False
     config.get('compressor')._default = False
     config.get('compressor')._domain = In([False])
+    config.material_balance_type = MaterialBalanceType.componentTotal
+    config.get('material_balance_type')._default = \
+        MaterialBalanceType.componentTotal
     config.thermodynamic_assumption = ThermodynamicAssumption.adiabatic
     config.get('thermodynamic_assumption')._default = \
         ThermodynamicAssumption.adiabatic
