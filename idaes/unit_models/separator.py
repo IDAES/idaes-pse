@@ -18,6 +18,7 @@ from __future__ import division, print_function
 
 import logging
 from enum import Enum
+from pandas import DataFrame
 
 from pyomo.environ import (Constraint,
                            Expression,
@@ -40,9 +41,14 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
                                     list_of_strings)
 from idaes.core.util.exceptions import (BurntToast,
+<<<<<<< HEAD
                                         ConfigurationError,
                                         PropertyNotSupportedError)
 from idaes.core.util.misc import add_object_reference
+=======
+                                        ConfigurationError)
+from idaes.core.util.tables import create_stream_table_dataframe
+>>>>>>> ce2335c3503dc530f30498d52acc4154867e5fd9
 
 __author__ = "Andrew Lee"
 
@@ -1178,3 +1184,47 @@ linked the mixed state and all outlet states,
             mblock = blk.config.mixed_state_block
 
         mblock.release_state(flags, outlvl=outlvl-1)
+
+    def _get_performance_contents(self, time_point=0):
+        if hasattr(self, "split_fraction"):
+            for k in self.split_fraction.keys():
+                if k[0] == time_point:
+                    var_dict = {f"Split Fraction [{str(k[1:])}]":
+                                self.split_fraction[k]}
+            return {"vars": var_dict}
+        else:
+            return {}
+
+    def _get_stream_table_contents(self, time_point=0):
+        outlet_list = self.create_outlet_list()
+
+        if not self.config.ideal_separation:
+            io_dict = {}
+            if self.config.mixed_state_block is None:
+                io_dict["Inlet"] = self.mixed_state
+            else:
+                io_dict["Inlet"] = self.config.mixed_state_block
+
+                for o in outlet_list:
+                    io_dict[o] = getattr(self, o+"_state")
+            return create_stream_table_dataframe(
+                    io_dict,
+                    time_point=time_point)
+
+        else:
+            stream_attributes = {}
+
+            for n in outlet_list+["inlet"]:
+                port_obj = getattr(self, n)[time_point]
+
+                stream_attributes[n] = {}
+
+                for k in port_obj:
+                    for i in port_obj[k]:
+                        if i is None:
+                            stream_attributes[n][k] = value(port_obj[k][i])
+                        else:
+                            stream_attributes[n][k+" "+str(i)] = \
+                                value(port_obj[k][i])
+
+            return DataFrame.from_dict(stream_attributes, orient="column")

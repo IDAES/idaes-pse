@@ -81,7 +81,7 @@ def test_initialize():
     m.fs.sj.inlet.pressure.fix(101325.0)
 
     m.fs.sj.initialize(outlvl=5,
-                         optarg={'tol': 1e-6})
+                       optarg={'tol': 1e-6})
 
     assert (pytest.approx(101325.0, abs=1e-2) ==
             m.fs.sj.outlet.pressure[0].value)
@@ -89,3 +89,14 @@ def test_initialize():
             m.fs.sj.outlet.temperature[0].value)
     assert (pytest.approx(100, abs=1e-2) ==
             m.fs.sj.outlet.conc_mol_comp[0, "EthylAcetate"].value)
+
+
+def test_report():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = SaponificationParameterBlock()
+
+    m.fs.sj = StateJunction(default={"property_package": m.fs.properties})
+
+    m.fs.sj.report()

@@ -87,3 +87,14 @@ def test_initialize():
     assert m.fs.feed.outlet.conc_mol_comp[0, "EthylAcetate"].value == 100.0
     assert m.fs.feed.outlet.conc_mol_comp[0, "SodiumAcetate"].value == 0.0
     assert m.fs.feed.outlet.conc_mol_comp[0, "Ethanol"].value == 0.0
+
+
+def test_report():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = SaponificationParameterBlock()
+
+    m.fs.feed = Feed(default={"property_package": m.fs.properties})
+
+    m.fs.feed.report()
