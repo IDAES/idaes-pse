@@ -68,11 +68,11 @@ def test_workspace_info(wspath):
         pass
 
 
-@pytest.mark.skip
 def test_find_html_docs(wspath):
     filedir = os.path.dirname(__file__)
     docpath = os.path.join(filedir, "..", "docs", "build", "html")
-    commands.workspace_init(wspath, {}, html_paths=[docpath])
-    dmfobj = dmfbase.DMF(wspath)
-    filenames = commands.find_html_docs(dmfobj, dmfobj)
-    assert len(filenames) > 0
+    if os.path.exists(docpath):
+        commands.workspace_init(wspath, {}, html_paths=[docpath])
+        dmfobj = dmfbase.DMF(wspath)
+        filenames = commands.find_html_docs(dmfobj, dmfobj)
+        assert len(filenames) > 0
