@@ -27,14 +27,14 @@ The example below shows how to setup a feedwater heater with all tree sections. 
   from idaes.core import FlowsheetBlock
   from idaes.unit_models.heat_exchanger import (delta_temperature_underwood2_rule,
       delta_temperature_underwood_rule, delta_temperature_lmtd_rule)
-  from idaes.property_models import Iapws95ParameterBlock
+  from idaes.property_models import iapws95
   from idaes.unit_models.power_generation import FWH0D
 
   def make_fwh_model():
       model = pyo.ConcreteModel()
       model.fs = FlowsheetBlock(default={
           "dynamic": False,
-          "default_property_package": Iapws95ParameterBlock()})
+          "default_property_package": iapws95.Iapws95ParameterBlock()})
       model.fs.properties = model.fs.config.default_property_package
       model.fs.fwh = FWH0D(default={
           "has_desuperheat":True,
