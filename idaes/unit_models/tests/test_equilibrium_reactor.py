@@ -23,7 +23,12 @@ from idaes.property_models.examples.saponification_thermo import (
                         SaponificationParameterBlock)
 from idaes.property_models.examples.saponification_reactions import (
                         SaponificationReactionParameterBlock)
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              number_variables,
+                                              number_total_constraints,
+                                              fixed_variables_set,
+                                              activated_constraints_set,
+                                              number_unused_variables)
 
 
 # -----------------------------------------------------------------------------
@@ -38,92 +43,99 @@ else:
 
 
 # -----------------------------------------------------------------------------
-def test_build():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+class TestSaponification(object):
+    @pytest.fixture(scope="class")
+    def sapon(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = SaponificationParameterBlock()
-    m.fs.reactions = SaponificationReactionParameterBlock(default={
-                            "property_package": m.fs.properties})
+        m.fs.properties = SaponificationParameterBlock()
+        m.fs.reactions = SaponificationReactionParameterBlock(default={
+                                "property_package": m.fs.properties})
 
-    m.fs.req = EquilibriumReactor(
-            default={"property_package": m.fs.properties,
-                     "reaction_package": m.fs.reactions,
-                     "has_equilibrium_reactions": False,
-                     "has_heat_transfer": True,
-                     "has_pressure_change": False})
+        m.fs.unit = EquilibriumReactor(
+                default={"property_package": m.fs.properties,
+                         "reaction_package": m.fs.reactions,
+                         "has_equilibrium_reactions": False,
+                         "has_heat_transfer": True,
+                         "has_heat_of_reaction": True,
+                         "has_pressure_change": True})
 
-    assert hasattr(m.fs.req, "inlet")
-    assert len(m.fs.req.inlet.vars) == 4
-    assert hasattr(m.fs.req.inlet, "flow_vol")
-    assert hasattr(m.fs.req.inlet, "conc_mol_comp")
-    assert hasattr(m.fs.req.inlet, "temperature")
-    assert hasattr(m.fs.req.inlet, "pressure")
+        return m
 
-    assert hasattr(m.fs.req, "outlet")
-    assert len(m.fs.req.outlet.vars) == 4
-    assert hasattr(m.fs.req.outlet, "flow_vol")
-    assert hasattr(m.fs.req.outlet, "conc_mol_comp")
-    assert hasattr(m.fs.req.outlet, "temperature")
-    assert hasattr(m.fs.req.outlet, "pressure")
+    @pytest.mark.build
+    def test_build(self, sapon):
+        assert hasattr(sapon.fs.unit, "inlet")
+        assert len(sapon.fs.unit.inlet.vars) == 4
+        assert hasattr(sapon.fs.unit.inlet, "flow_vol")
+        assert hasattr(sapon.fs.unit.inlet, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit.inlet, "temperature")
+        assert hasattr(sapon.fs.unit.inlet, "pressure")
 
-    assert hasattr(m.fs.req, "rate_reaction_constraint")
-    assert hasattr(m.fs.req.control_volume, "heat")
-    assert hasattr(m.fs.req, "heat_duty")
+        assert hasattr(sapon.fs.unit, "outlet")
+        assert len(sapon.fs.unit.outlet.vars) == 4
+        assert hasattr(sapon.fs.unit.outlet, "flow_vol")
+        assert hasattr(sapon.fs.unit.outlet, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit.outlet, "temperature")
+        assert hasattr(sapon.fs.unit.outlet, "pressure")
 
+        assert hasattr(sapon.fs.unit, "rate_reaction_constraint")
+        assert hasattr(sapon.fs.unit, "heat_duty")
+        assert hasattr(sapon.fs.unit, "deltaP")
 
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_initialize():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+        assert number_variables(sapon) == 26
+        assert number_total_constraints(sapon) == 16
+        assert number_unused_variables(sapon) == 0
 
-    m.fs.properties = SaponificationParameterBlock()
-    m.fs.reactions = SaponificationReactionParameterBlock(default={
-                            "property_package": m.fs.properties})
+    def test_dof(self, sapon):
+        sapon.fs.unit.inlet.flow_vol.fix(1.0e-03)
+        sapon.fs.unit.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
+        sapon.fs.unit.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
+        sapon.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        sapon.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        sapon.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-    m.fs.req = EquilibriumReactor(
-            default={"property_package": m.fs.properties,
-                     "reaction_package": m.fs.reactions,
-                     "has_equilibrium_reactions": False,
-                     "has_heat_transfer": False,
-                     "has_pressure_change": False})
+        sapon.fs.unit.inlet.temperature.fix(303.15)
+        sapon.fs.unit.inlet.pressure.fix(101325.0)
 
-    m.fs.req.inlet.flow_vol.fix(1.0e-03)
-    m.fs.req.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-    m.fs.req.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-    m.fs.req.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-    m.fs.req.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-    m.fs.req.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        sapon.fs.unit.heat_duty.fix(0)
+        sapon.fs.unit.deltaP.fix(0)
 
-    m.fs.req.inlet.temperature.fix(303.15)
-    m.fs.req.inlet.pressure.fix(101325.0)
+        assert degrees_of_freedom(sapon) == 0
 
-    assert degrees_of_freedom(m) == 0
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialize(self, sapon):
+        orig_fixed_vars = fixed_variables_set(sapon)
+        orig_act_consts = activated_constraints_set(sapon)
 
-    m.fs.req.initialize(outlvl=5,
-                        optarg={'tol': 1e-6})
+        sapon.fs.unit.initialize(optarg={'tol': 1e-6})
 
-    assert (pytest.approx(101325.0, abs=1e-2) ==
-            m.fs.req.outlet.pressure[0].value)
-    assert (pytest.approx(303.15, abs=1e-2) ==
-            m.fs.req.outlet.temperature[0].value)
-    assert (pytest.approx(0.02, abs=1e-2) ==
-            m.fs.req.outlet.conc_mol_comp[0, "EthylAcetate"].value)
+        assert degrees_of_freedom(sapon) == 0
 
+        fin_fixed_vars = fixed_variables_set(sapon)
+        fin_act_consts = activated_constraints_set(sapon)
 
-def test_report():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
 
-    m.fs.properties = SaponificationParameterBlock()
-    m.fs.reactions = SaponificationReactionParameterBlock(default={
-                            "property_package": m.fs.properties})
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
 
-    m.fs.req = EquilibriumReactor(
-            default={"property_package": m.fs.properties,
-                     "reaction_package": m.fs.reactions,
-                     "has_equilibrium_reactions": False,
-                     "has_heat_transfer": False,
-                     "has_pressure_change": False})
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, sapon):
+        assert (pytest.approx(101325.0, abs=1e-2) ==
+                sapon.fs.unit.outlet.pressure[0].value)
+        assert (pytest.approx(304.32, abs=1e-2) ==
+                sapon.fs.unit.outlet.temperature[0].value)
+        assert (pytest.approx(0.02, abs=1e-2) ==
+                sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"].value)
 
-    m.fs.req.report()
+    @pytest.mark.ui
+    def test_report(self, sapon):
+        sapon.fs.unit.report()
