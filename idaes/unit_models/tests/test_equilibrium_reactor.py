@@ -16,8 +16,14 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, SolverFactory
-from idaes.core import FlowsheetBlock
+from pyomo.environ import (ConcreteModel,
+                           TerminationCondition,
+                           SolverStatus,
+                           value)
+from idaes.core import (FlowsheetBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.unit_models.equilibrium_reactor import EquilibriumReactor
 from idaes.property_models.examples.saponification_thermo import (
                         SaponificationParameterBlock)
@@ -29,17 +35,48 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set,
                                               number_unused_variables)
+from idaes.core.util.testing import (get_default_solver,
+                                     PhysicalParameterTestBlock,
+                                     ReactionParameterTestBlock)
 
 
 # -----------------------------------------------------------------------------
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
-                      'mu_init': 1e-8,
-                      'bound_push': 1e-8}
-else:
-    solver = None
+# Get default solver for testing
+solver = get_default_solver()
+
+
+# -----------------------------------------------------------------------------
+def test_config():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+    m.fs.reactions = ReactionParameterTestBlock(default={
+                            "property_package": m.fs.properties})
+
+    m.fs.unit = EquilibriumReactor(default={
+            "property_package": m.fs.properties,
+            "reaction_package": m.fs.reactions})
+
+    # Check unit config arguments
+    assert len(m.fs.unit.config) == 15
+
+    assert not m.fs.unit.config.dynamic
+    assert not m.fs.unit.config.has_holdup
+    assert m.fs.unit.config.material_balance_type == \
+        MaterialBalanceType.componentPhase
+    assert m.fs.unit.config.energy_balance_type == \
+        EnergyBalanceType.enthalpyTotal
+    assert m.fs.unit.config.momentum_balance_type == \
+        MomentumBalanceType.pressureTotal
+    assert m.fs.unit.config.has_rate_reactions
+    assert not m.fs.unit.config.has_heat_transfer
+    assert not m.fs.unit.config.has_pressure_change
+    assert m.fs.unit.config.has_equilibrium_reactions
+    assert not m.fs.unit.config.has_phase_equilibrium
+    assert not m.fs.unit.config.has_heat_of_reaction
+    assert m.fs.unit.config.property_package is m.fs.properties
+    assert m.fs.unit.config.reaction_package is m.fs.reactions
 
 
 # -----------------------------------------------------------------------------
@@ -125,16 +162,26 @@ class TestSaponification(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, sapon):
+        results = solver.solve(sapon)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, sapon):
         assert (pytest.approx(101325.0, abs=1e-2) ==
-                sapon.fs.unit.outlet.pressure[0].value)
+                value(sapon.fs.unit.outlet.pressure[0]))
         assert (pytest.approx(304.32, abs=1e-2) ==
-                sapon.fs.unit.outlet.temperature[0].value)
-        assert (pytest.approx(0.02, abs=1e-2) ==
-                sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"].value)
+                value(sapon.fs.unit.outlet.temperature[0]))
+        assert (pytest.approx(0.01, abs=1e-2) ==
+                value(sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]))
 
     @pytest.mark.ui
     def test_report(self, sapon):

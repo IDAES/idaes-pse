@@ -16,8 +16,11 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, SolverFactory, value
-from idaes.core import FlowsheetBlock
+from pyomo.environ import (ConcreteModel,
+                           TerminationCondition,
+                           SolverStatus,
+                           value)
+from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.unit_models.feed_flash import FeedFlash, FlashType
 from idaes.property_models import iapws95
 from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
@@ -27,17 +30,33 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               fixed_variables_set,
                                               activated_constraints_set,
                                               number_unused_variables)
+from idaes.core.util.testing import (get_default_solver,
+                                     PhysicalParameterTestBlock)
 
 
 # -----------------------------------------------------------------------------
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
-                      'mu_init': 1e-8,
-                      'bound_push': 1e-8}
-else:
-    solver = None
+# Get default solver for testing
+solver = get_default_solver()
+
+
+# -----------------------------------------------------------------------------
+def test_config():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = PhysicalParameterTestBlock()
+
+    m.fs.unit = FeedFlash(default={"property_package": m.fs.properties})
+
+    # Check unit config arguments
+    assert len(m.fs.unit.config) == 6
+
+    assert not m.fs.unit.config.dynamic
+    assert not m.fs.unit.config.has_holdup
+    assert m.fs.unit.config.material_balance_type == \
+        MaterialBalanceType.componentPhase
+    assert m.fs.unit.config.flash_type == FlashType.isothermal
+    assert m.fs.unit.config.property_package is m.fs.properties
 
 
 # -----------------------------------------------------------------------------
@@ -104,19 +123,29 @@ class TestBTX(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, btx):
+        results = solver.solve(btx)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, btx):
         assert (pytest.approx(101325.0, abs=1e3) ==
-                btx.fs.unit.outlet.pressure[0].value)
+                value(btx.fs.unit.outlet.pressure[0]))
         assert (pytest.approx(368.00, abs=1e-0) ==
-                btx.fs.unit.outlet.temperature[0].value)
+                value(btx.fs.unit.outlet.temperature[0]))
         assert (pytest.approx(1.0, abs=1e-2) ==
-                btx.fs.unit.outlet.flow_mol[0].value)
+                value(btx.fs.unit.outlet.flow_mol[0]))
         assert (pytest.approx(0.355, abs=1e-3) ==
-                btx.fs.unit.control_volume.
-                properties_out[0].flow_mol_phase["Vap"].value)
+                value(btx.fs.unit.control_volume.
+                      properties_out[0].flow_mol_phase["Vap"]))
 
     @pytest.mark.ui
     def test_report(self, btx):
@@ -125,6 +154,8 @@ class TestBTX(object):
 
 # -----------------------------------------------------------------------------
 @pytest.mark.iapws
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
 class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
@@ -186,16 +217,26 @@ class TestIAPWS(object):
         for v in fin_fixed_vars:
             assert v in orig_fixed_vars
 
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, iapws):
+        results = solver.solve(iapws)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, iapws):
         assert (pytest.approx(101325.0, abs=1e3) ==
-                iapws.fs.unit.outlet.pressure[0].value)
+                value(iapws.fs.unit.outlet.pressure[0]))
         assert (pytest.approx(24000, abs=1e3) ==
-                iapws.fs.unit.outlet.enth_mol[0].value)
+                value(iapws.fs.unit.outlet.enth_mol[0]))
         assert (pytest.approx(100.0, abs=1e-2) ==
-                iapws.fs.unit.outlet.flow_mol[0].value)
+                value(iapws.fs.unit.outlet.flow_mol[0]))
 
         assert (pytest.approx(373.12, abs=1e-2) == value(
             iapws.fs.unit.control_volume.properties_out[0].temperature))
