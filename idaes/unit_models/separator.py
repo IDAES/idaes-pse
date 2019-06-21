@@ -23,6 +23,7 @@ from pandas import DataFrame
 from pyomo.environ import (Constraint,
                            Expression,
                            Param,
+                           Reals,
                            Reference,
                            Set,
                            SolverFactory,
@@ -34,13 +35,16 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
-                        useDefault)
+                        useDefault,
+                        MaterialBalanceType)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
                                     list_of_strings)
 from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError)
+                                        ConfigurationError,
+                                        PropertyNotSupportedError)
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee"
 
@@ -146,6 +150,29 @@ indexed by time, outlet and phase),
 fraction indexed by time, outlet and components),
 **SplittingType.phaseComponentFlow** - split based on phase-component flows (
 split fraction indexed by both time, outlet, phase and components).}"""))
+    CONFIG.declare("material_balance_type", ConfigValue(
+        default=MaterialBalanceType.componentPhase,
+        domain=In(MaterialBalanceType),
+        description="Material balance construction flag",
+        doc="""Indicates what type of mass balance should be constructed. Only
+used if ideal_separation = False.
+**default** - MaterialBalanceType.componentPhase.
+**Valid values:** {
+**MaterialBalanceType.none** - exclude material balances,
+**MaterialBalanceType.componentPhase** - use phase component balances,
+**MaterialBalanceType.componentTotal** - use total component balances,
+**MaterialBalanceType.elementTotal** - use total element balances,
+**MaterialBalanceType.total** - use total material balance.}"""))
+    CONFIG.declare("has_phase_equilibrium", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Calculate phase equilibrium in mixed stream",
+        doc="""Argument indicating whether phase equilibrium should be
+calculated for the resulting mixed stream,
+**default** - False.
+**Valid values:** {
+**True** - calculate phase equilibrium in mixed stream,
+**False** - do not calculate equilibrium in mixed stream.}"""))
     CONFIG.declare("energy_split_basis", ConfigValue(
         default=EnergySplittingType.equal_temperature,
         domain=EnergySplittingType,
@@ -167,7 +194,8 @@ avoid duplication of StateBlocks by directly partitioning outlet flows to
 ports,
 **default** - True.
 **Valid values:** {
-**True** - use ideal splitting methods,
+**True** - use ideal splitting methods. Cannot be combined with
+has_phase_equilibrium = True,
 **False** - use explicit splitting equations with split fractions.}"""))
     CONFIG.declare("ideal_split_map", ConfigValue(
         domain=dict,
@@ -216,6 +244,8 @@ linked the mixed state and all outlet states,
         # Call super.build()
         super(SeparatorData, self).build()
 
+        self._validate_config_arguments()
+
         # Call setup methods from ControlVolumeBlockData
         self._get_property_package()
         self._get_indexing_sets()
@@ -249,6 +279,14 @@ linked the mixed state and all outlet states,
 
             # Construct outlet port objects
             self.add_outlet_port_objects(outlet_list, outlet_blocks)
+
+    def _validate_config_arguments(self):
+        if self.config.has_phase_equilibrium and self.config.ideal_separation:
+            raise ConfigurationError(
+                    """{} recieved arguments has_phase_equilibrium = True and
+                    ideal_separation = True. These arguments are incompatible
+                    with each other, and you should choose one or the other."""
+                    .format(self.name))
 
     def create_outlet_list(self):
         """
@@ -453,16 +491,110 @@ linked the mixed state and all outlet states,
             elif self.config.split_basis == SplittingType.phaseComponentFlow:
                 return self.split_fraction[t, o, p, j]
 
-        @self.Constraint(self.flowsheet().config.time,
-                         self.outlet_idx,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
-                         doc="Material splitting equations")
-        def material_splitting_eqn(b, t, o, p, j):
-            o_block = getattr(self, o+"_state")
-            return (sf(t, o, p, j) *
-                    mixed_block[t].get_material_flow_terms(p, j) ==
-                    o_block[t].get_material_flow_terms(p, j))
+        if self.config.material_balance_type == \
+                MaterialBalanceType.componentPhase:
+            if self.config.has_phase_equilibrium is True:
+                # Get units from property package
+                units = {}
+                for u in ['holdup', 'time']:
+                    try:
+                        units[u] = (self.config.property_package
+                                    .get_metadata().default_units[u])
+                    except KeyError:
+                        units[u] = '-'
+
+                try:
+                    add_object_reference(
+                        self,
+                        "phase_equilibrium_idx_ref",
+                        self.config.property_package.phase_equilibrium_idx)
+                except AttributeError:
+                    raise PropertyNotSupportedError(
+                        "{} Property package does not contain a list of phase "
+                        "equilibrium reactions (phase_equilibrium_idx), thus "
+                        "does not support phase equilibrium."
+                        .format(self.name))
+                self.phase_equilibrium_generation = Var(
+                            self.flowsheet().config.time,
+                            self.outlet_idx,
+                            self.phase_equilibrium_idx_ref,
+                            domain=Reals,
+                            doc="Amount of generation in unit by phase "
+                                "equilibria [{}/{}]"
+                                .format(units['holdup'], units['time']))
+
+            # Define terms to use in mixing equation
+            def phase_equilibrium_term(b, t, o, p, j):
+                if self.config.has_phase_equilibrium:
+                    sd = {}
+                    sblock = mixed_block[t]
+                    for r in b.phase_equilibrium_idx_ref:
+                        if sblock.phase_equilibrium_list[r][0] == j:
+                            if sblock.phase_equilibrium_list[r][1][0] == p:
+                                sd[r] = 1
+                            elif sblock.phase_equilibrium_list[r][1][1] == p:
+                                sd[r] = -1
+                            else:
+                                sd[r] = 0
+                        else:
+                            sd[r] = 0
+
+                    return sum(b.phase_equilibrium_generation[t, o, r]*sd[r]
+                               for r in b.phase_equilibrium_idx_ref)
+                else:
+                    return 0
+
+            @self.Constraint(self.flowsheet().config.time,
+                             self.outlet_idx,
+                             self.config.property_package.phase_list,
+                             self.config.property_package.component_list,
+                             doc="Material splitting equations")
+            def material_splitting_eqn(b, t, o, p, j):
+                o_block = getattr(self, o+"_state")
+                return (sf(t, o, p, j) *
+                        mixed_block[t].get_material_flow_terms(p, j) ==
+                        o_block[t].get_material_flow_terms(p, j) -
+                        phase_equilibrium_term(b, t, o, p, j))
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.componentTotal:
+            @self.Constraint(self.flowsheet().config.time,
+                             self.outlet_idx,
+                             self.config.property_package.component_list,
+                             doc="Material splitting equations")
+            def material_splitting_eqn(b, t, o, j):
+                o_block = getattr(self, o+"_state")
+                return (sum(sf(t, o, p, j) *
+                            mixed_block[t].get_material_flow_terms(p, j) for p
+                            in b.config.property_package.phase_list) ==
+                        sum(o_block[t].get_material_flow_terms(p, j) for p in
+                            b.config.property_package.phase_list))
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.total:
+            @self.Constraint(self.flowsheet().config.time,
+                             self.outlet_idx,
+                             doc="Material splitting equations")
+            def material_splitting_eqn(b, t, o):
+                o_block = getattr(self, o+"_state")
+                return (
+                    sum(sum(sf(t, o, p, j) *
+                            mixed_block[t].get_material_flow_terms(p, j) for j
+                            in b.config.property_package.component_list)
+                        for p in b.config.property_package.phase_list) ==
+                    sum(sum(o_block[t].get_material_flow_terms(p, j) for j
+                            in b.config.property_package.component_list)
+                        for p in b.config.property_package.phase_list))
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.elementTotal:
+            raise ConfigurationError("{} Separators do not support elemental "
+                                     "material balances.".format(self.name))
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.none:
+            pass
+        else:
+            raise BurntToast("{} Separator received unrecognised value for "
+                             "material_balance_type. This should not happen, "
+                             "please report this bug to the IDAES developers."
+                             .format(self.name))
 
     def add_energy_splitting_constraints(self, mixed_block):
         """
