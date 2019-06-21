@@ -86,4 +86,3 @@ Degrees of Freedom
 The ``area`` and ``overall_heat_transfer_coefficient`` should be fixed or constraints should be provided to calculate ``overall_heat_transfer_coefficient``.  If the inlets are also fixed except for the inlet steam flow rate (``inlet_1.flow_mol``), the model will have 0 degrees of freedom.
 
 See :class:`FWH0D` and :class:`FWH0DData` for full Python class details.
-
