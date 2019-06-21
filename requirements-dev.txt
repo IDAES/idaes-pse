@@ -11,4 +11,5 @@ git+https://github.com/PyUtilib/pyutilib
 git+https://github.com/pyomo/pyomo.git@IDAES
 
 # Install abstract dependencies from `setup.py`
+-e .
 -e .[dev]
