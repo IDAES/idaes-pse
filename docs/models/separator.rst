@@ -49,9 +49,23 @@ Constraints
 
 Separator units have the following Constraints, unless `ideal_separation` is True.
 
+* If `material_balance_type` is `componentPhase`:
+
 `material_splitting_eqn(t, o, p, j)`:
 
 .. math:: F_{in, t, p, j} = \phi_{t, p, *} \times F_{t, o, p, j}
+
+* If `material_balance_type` is `componentTotal`:
+
+`material_splitting_eqn(t, o, j)`:
+
+.. math:: \sum_p{F_{in, t, p, j}} = \sum_p{\phi_{t, p, *} \times F_{t, o, p, j}}
+
+* If `material_balance_type` is `total`:
+
+`material_splitting_eqn(t, o)`:
+
+.. math:: \sum_p{\sum_j{F_{in, t, p, j}}} = \sum_p{\sum_j{\phi_{t, p, *} \times F_{t, o, p, j}}}
 
 `temperature_equality_eqn(t, o)`:
 

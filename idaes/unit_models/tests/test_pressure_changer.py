@@ -23,10 +23,9 @@ from idaes.unit_models.pressure_changer import (PressureChanger,
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import property package for testing
-from idaes.property_models import iapws95_ph as pp
-from idaes.property_models.iapws95 import iapws95_available
+from idaes.property_models import iapws95 as pp
 
-prop_available = iapws95_available()
+prop_available = pp.iapws95_available()
 
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
@@ -262,3 +261,55 @@ def test_initialization_isentropic():
             m.fs.pc.outlet.pressure[0].value)
 
     solver.solve(m)
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_isothermal():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.isothermal})
+
+    m.fs.pc.report()
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_pump():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.pump})
+
+    m.fs.pc.report()
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_adiabatic():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.adiabatic})
+
+    m.fs.pc.report()
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_isentropic():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.isentropic})
+
+    m.fs.pc.report()
