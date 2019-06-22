@@ -49,7 +49,7 @@ kwargs = dict(
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
         "backports.shutil_get_terminal_size",
-        "bokeh",
+        "bokeh==0.12.9",
         "bunch",
         "click",
         "colorama",
@@ -59,7 +59,7 @@ kwargs = dict(
         "matplotlib",
         "mock",
         "pandas",
-        "pendulum",
+        "pendulum==1.4.4",
         "psutil",
         "pyomo",
         "pytest",
