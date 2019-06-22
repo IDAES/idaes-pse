@@ -2,6 +2,7 @@
 """
 Institute for the Design of Advanced Energy Systems
 """
+from pathlib import Path
 import os
 import sys
 from setuptools import setup, find_packages
@@ -24,10 +25,24 @@ def get_version(file, name="__version__"):
 NAME = "idaes"
 VERSION = get_version(os.path.join(NAME, "ver.py"))
 
+
+def rglob(path, glob):
+    """Return list of paths from `path` matching `glob`.
+    """
+    p = Path(path)
+    return list(map(str, p.rglob(glob)))
+
+
 kwargs = dict(
     name=NAME,
     version=VERSION,
-    packages=find_packages(),
+    packages=find_packages()
+    + find_packages("apps/ddm-learning/alamo_python")
+    + find_packages("apps/ddm-learning/ripe_python"),
+    package_dir={
+        "alamopy": "apps/ddm-learning/alamo_python/alamopy",
+        "ripe": "apps/ddm-learning/ripe_python/ripe",
+    },
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
@@ -44,16 +59,15 @@ kwargs = dict(
         "pandas",
         "pendulum",
         "psutil",
+        "pyomo",
         "pytest",
+        "pyutilib",
         "pyyaml",
         "sympy",
         "tinydb",
         "toml",
     ],
-    entry_points="""
-    [console_scripts]
-    dmf=idaes.dmf.cli:base_command
-    """,
+    entry_points={"console_scripts": ["dmf = idaes.dmf.cli:base_command"]},
     extras_require={
         # For developers. Only installed if [dev] is added to package name
         "dev": [
@@ -81,6 +95,12 @@ kwargs = dict(
         # *.so file, include them:
         "": ["*.template", "*.json", "*.dll", "*.so", "*.svg"]
     },
+    include_package_data=True,
+    data_files=[
+        ("examples", rglob("examples", "*.ipynb")),
+        ("examples", rglob("examples", "*.png")),
+        ("examples", rglob("examples", "*.py")),
+    ],
     author="IDAES Team",
     author_email="idaes-dev@idaes.org",
     maintainer="Keith Beattie",
@@ -88,7 +108,6 @@ kwargs = dict(
     license="BSD 3-clause",
     description="IDAES core framework",
     long_description=__doc__,
-    data_files=[],
     keywords=[NAME, "energy systems"],
     classifiers=[
         "Programming Language :: Python :: 3.7",
