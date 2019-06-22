@@ -24,6 +24,8 @@ def get_version(file, name="__version__"):
 
 NAME = "idaes"
 VERSION = get_version(os.path.join(NAME, "ver.py"))
+README = open('README.md').read()
+README = README[README.find('#'):]  # ignore everything before title
 
 
 def rglob(path, glob):
@@ -101,20 +103,31 @@ kwargs = dict(
         ("examples", rglob("examples", "*.png")),
         ("examples", rglob("examples", "*.py")),
     ],
-    author="IDAES Team",
-    author_email="idaes-dev@idaes.org",
     maintainer="Keith Beattie",
-    url="https://github.com/IDAES/idaes",
-    license="BSD 3-clause",
-    description="IDAES core framework",
-    long_description=__doc__,
-    keywords=[NAME, "energy systems"],
+    maintainer_email="ksbeattie@lbl.gov",
+    url="https://idaes.org",
+    license="BSD ",
+    platforms=["any"],
+    description="IDAES Process Systems Engineering Framework",
+    long_description=README,
+    long_description_content_type='text/markdown',
+    keywords=[NAME, "energy systems", "chemical engineering", "process modeling"],
     classifiers=[
-        "Programming Language :: Python :: 3.7",
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: End Users/Desktop",
+        "Intended Audience :: Science/Research",
         "License :: OSI Approved :: BSD License",
-        "Operating System :: OS Independent",
+        "Natural Language :: English",
+        "Operating System :: MacOS",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: Unix",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Topic :: Scientific/Engineering :: Mathematics",
+        "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
 )
