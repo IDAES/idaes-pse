@@ -136,8 +136,8 @@ that only one phase is present.
 **Valid values:** {
 **PhaseType.MIX** - Present a mixed phase with liquid and/or vapor,
 **PhaseType.LG** - Present a liquid and vapor phase,
-**PhaseType.L - Assume only liquid can be present,
-**PhaseType.G - Assume only vapor can be present}"""))
+**PhaseType.L** - Assume only liquid can be present,
+**PhaseType.G** - Assume only vapor can be present}"""))
 
     CONFIG.declare("state_vars", ConfigValue(
         default=StateVars.PH,

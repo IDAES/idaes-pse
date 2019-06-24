@@ -2,14 +2,23 @@ Water/Steam
 ===========
 
 .. index::
-  pair: idaes.property_models.iapws95.iapws95_wrap_ph; Iapws95StateBlock
+  pair: idaes.property_models.iapws95.iapws95_py; Iapws95StateBlock
 
-.. module:: idaes.property_models.iapws95.iapws95_wrap_ph
+.. module:: idaes.property_models.iapws95.iapws95_py
 
-Two property modules are available for pure water and steam properties.  The
-property modules use the same calculations and yield consistent results, but one
-uses pressure and molar enthalpy as state variables and the other uses
-temperature, pressure, and vapor fraction as the state variables.
+Accurate steam properties are critical for power system models involving steam
+cycles. The International Association for the Properties of Water and Steam's
+:ref:`"Revised Release on the IAPWS Formulation 1995 for the Thermodynamic
+Properties of Ordinary Water Substance for General and Scientific Use"
+<iapws-2016>` was implemented in the IDAES framework using AMPL user defined
+functions. Non-analytic terms designed to improve accuracy very near the
+critical point were omitted, because they cause a singularity at
+the critical point, a feature which is undesirable in optimization problems.
+The IAPWS-95 functions can be used with any AMPL solver from the IDAES
+framework. Additional derivatives were included to provide exact first
+and second derivative information to optimization solvers for all function calls.
+An IDAES framework wrapper takes the user defined functions which are written in
+C++, and provides a standard IDAES property package interface.
 
 Theses modules can be imported as:
 
@@ -66,7 +75,8 @@ Property Package Classes>`.
 Units
 -----
 
-The water property modules are in SI units (m, kg, s, mol). Temperature is in K.
+The iapws95 property module is in SI units (m, kg, s, mol). Temperature is in K.
+Note that this means molecular weight is in the unusual unit of kg/mol.
 
 Methods
 -------
@@ -87,47 +97,78 @@ External Functions
 ------------------
 
 The IAPWS-95 formulation uses density and temperature as state variables. For
-most applications those sate variables are not the most convenient choices. Using
-other state variables requires solving an equation or two to get density and
-temperature from the chosen state variables. This can have numerous solutions
-only one of which is physically meaningful. Rather than solve these equations as
-part of the full process simulation, external functions were developed that can
-solve the equations required to change state variables and guarantee the correct
-roots.
+most applications those state variables are not the most convenient choices.
+Using other state variables requires solving equations to get density and
+temperature from the chosen state variables. These equations can have numerous
+solutions only one of which is physically meaningful. Rather than solve these
+equations as part of the full process simulation, external functions were
+developed that can solve the equations required to change state variables and
+guarantee the correct roots.
 
 The external property functions are written in C++ and complied such that they
-can be called by AMPL solvers.  See the :ref:`idaes_installation` page for information about compiling these
-functions. The external functions provide both first and second derivatives for
-all property function calls, however at phase transitions some of these functions
-may be non-smooth.
+can be called by AMPL solvers.  See the :ref:`idaes_installation` page for
+information about compiling these functions. The external functions provide
+both first and second derivatives for all property function calls, however at
+phase transitions some of these functions may be non-smooth.
 
-IDAES Framework Wrappers
-------------------------
+IDAES Framework Wrapper
+-----------------------
 
-Wrappers for these function are provided for compatibility with the IDAES
-framework. Some methods for dealing with non-smoothness may also be included in
-the IDAES wrappers. The wrappers provide most properties in the form of Pyomo
-Expressions, with only the chosen set of state variables being Pyomo Vars. The
-expressions pass the state variables to the external functions and do unit
-conversion to put the results in SI units. This means that only the state
-variables can be fixed and other quantities cannot be fixed, but constraints
-can be added to set them to a specific value.
-
-Since state variables are calculated when solving a model, and the rest of the
-properties are Expressions, any property available can be easily calculated
-after the model is solved, whether is was needed in the model or not.
+A wrapper for the external functions is provided for compatibility with the IDAES
+framework. Most properties are available as Pyomo Expressions from the wrapper.
+Only the state variables are model variables. Benefit of using mostly
+expressions in the property package are: no initialization is required
+specifically for the property package, the model has fewer equations, and
+all properties can be easily calculated after the model is solved from the
+state variable values even if they were not used in the model. Calls to the
+external functions are used within expressions so users do not need to directly
+call any functions. The potential downside of the extensive use of expressions
+here is that combining the expressions to form constraints could yield equations
+that are more difficult to solve than, they would have been if an equivalent
+system of equations was written with more variables and simpler equations.
+Quantifying the effect of writing larger equations with fewer variables is
+difficult. Experience suggests in this particular case more expressions and fewer
+variables is better.
 
 Although not generally used the wrappers provide direct access to the
-ExternalFunctions also. For more information see section :ref:`ExternalFunctions
-<property_models/water:ExternalFunctions>`
+ExternalFunctions, including intermediate functions. For more information see
+section :ref:`ExternalFunctions <property_models/water:ExternalFunctions>`.
+These are mostly available for testing purposes.
 
-Pressure-Enthalpy
-~~~~~~~~~~~~~~~~~
+Phase Presentation
+~~~~~~~~~~~~~~~~~~
 
-Although Expressions for properties of different phases are available, the
-pressure-enthalpy formulation treats the fluid as a single mixed phase with a
-vapor fraction.  This bypasses some of the IDAES framework phase equilibrium
-mechanisms and phase equilibrium is always calculated.
+The property package wrapper and present the fluid phase information to the
+IDAES framework in different ways.  See the
+:ref:`class reference <property_models/water:Iapws95ParameterBlock>` for details
+on how to set these options.  The ``phase_presentation=PhaseType.MIX`` option
+looks like one phase called "Mix" to the IDAES framework. The property
+package will calculate a phase fraction. This will bypass any two phase
+handling equations written for unit models, and should work with any unit model
+options as long as you do not want to separate the phases. The benefit of this
+option is that it can potentially lead to a simpler set of equations.
+
+The ``phase_presentation=PhaseType.LG`` option appears to the IDAES framework to
+be two phases "Vap" and "Liq".  This option requires one of two unit model
+options to be set.  You can use the total material balance option for unit
+models, to specify that only one material balance equation should be written
+not one per phase. The other possible option is to specify
+``has_phase_equlibrium=True``. This will still write a material balance
+per phase, but will add a phase generation term to the model. For the IAPWS-95
+package, it is generally recommended that specifying total material balances is
+best because it results in a problem with fewer variables.
+
+There are also two single phase options ``phase_presentation=PhaseType.L`` and
+``phase_presentation=PhaseType.G``, these present a single phase "Liq" or "Vap"
+to the framework.  The vapor fraction will also always return 0 or 1 as
+appropriate. These options can be used when the phase of a fluid is know for
+certain to only be liquid or only be vapor. For the temperature-pressure-vapor
+fraction formulation this eliminates the complimentary constraint, but for the
+enthalpy-pressure formulation, where the vapor fraction is always calculated,
+the single phase options probably do not provide any real benefit.
+
+Pressure-Enthalpy Formulation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The advantage of this choice of state variables is that it is very robust when
 phase changes occur, and is especially useful when it is not known if a phase
@@ -161,48 +202,99 @@ These expressions are specific to the P-H formulation:
 Temperature-Pressure-Vapor Fraction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Coming soon.
+This formulation uses temperature (K), pressure (Pa), and vapor fraction as
+state variables.  When a single phase option is given, the vapor fraction is
+fixed to the appropriate value and not included in the state variable set. For
+single phase, the complementarity constraint is also deactivated.
 
+A complimentary constraint is required for the T-P-x formulation.  First, two
+expressions are defined below where :math:`P^-` is pressure under saturation
+pressure and :math:`P^+` is pressure over saturation pressure. The max function
+is provided by an IDAES utility function which provides a smooth max expression.
+
+.. math::
+
+  P^- = \max(0, P_{\text{sat}} - P)
+
+.. math::
+
+  P^+ = \max(0, P - P_{\text{sat}})
+
+With the pressure over and pressure under saturated pressure expressions a
+complimentary constraint can be written.  If the pressure under saturation is
+more than zero, only vapor exists.  If the pressure over saturation is greater
+than zero only a liquid exists.  If both are about zero two phases can exist.
+The saturation pressure function maxes out at the critical pressure and any
+temperature above the critical temperature will yield a saturation pressure that
+is the critical pressure, so supercritical fluids will be classified as liquids
+as the convention for this property package.
+
+.. math::
+
+  0 = xP^+  - (1 - x)P^-
+
+Assuming the vapor fraction (:math:`x`) is positive and noting that only one of
+:math:`P^+` and :math:`P^-` can be nonzero (approximately), the complimentarily
+equation above requires :math:`x` to be 0 when :math:`P^+` is not zero (liquid)
+or :math:`x` to be 1 when :math:`P^-`` is not zero (vapor).  When both
+:math:`P^+` and :math:`P^-`` are about 0, the complimentary constraint says
+nothing about x, but it does provide another constraint, that
+:math:`P=P_{\text{sat}}`. When two phases are present :math:`x` can be found
+by the unit model energy balance and the temperature will be
+:math:`T_{\text{sat}}`.
+
+An alternative approach is sometimes useful. If you know for certain that you
+have two phases, the complimentary constraint can be deactivated and a
+:math:`P=P_{\text{sat}}` or :math:`T=T_{\text{sat}}` constraint can be added.
+
+Using the T-P-x formulation requires better initial guesses than the P-H form.
 
 Expressions
 ~~~~~~~~~~~
 
-Unless otherwise noted above, the property expressions are common to both the
+Unless otherwise noted, the property expressions are common to both the
 T-P-x and P-H formulations. For phase specific properties, valid phase indexes
 are ``"Liq"`` and ``"Vap"``
 
-================================ ===============================================================================================
-Expression                       Description
-================================ ===============================================================================================
-``mw``                           Molecular weight (kg/mol)
-``tau``                          Critical temperature divided by temperature (unitless)
-``temperature_red``              Reduced temperature, temperature divided by critical temperature (unitless)
-``temperature_sat``              Saturation temperature (K)
-``tau_sat``                      Critical temperature divided by saturation temperature (unitless)
-``pressure_sat``                 Saturation pressure (Pa)
-``dens_mass_phase[phase]``       Density phase (kg/m\ :superscript:`3`)
-``dens_phase_red[phase]``        Phase reduced density (:math:`\delta`), mass density divided by critical density (unitless)
-``dens_mass``                    Total mixed phase mass density (kg/m\ :superscript:`3`)
-``dens_mol``                     Total mixed phase mole density (kg/m\ :superscript:`3`)
-``flow_vol``                     Total volumetric flow rate (m\ :superscript:`3`/s)
-``enth_mass``                    Mass enthalpy (kJ/kg)
-``enth_mol_sat_phase[phase]``    Saturation enthalpy of phase, enthalpy at P and T\ :subscript:`sat` (kJ/mol)
-``enth_mol_phase[phase]``        Molar enthalpy of phase (kJ/mol)
-``entr_mol_phase``               Molar entropy of phase (kJ/mol/K)
-``entr_mol``                     Total mixed phase entropy (kJ/mol/K)
-``cp_mol_phase[phase]``          Constant pressure molar heat capacity of phase (kJ/mol/K)
-``cv_mol_phase[phase]``          Constant pressure volume heat capacity of phase (kJ/mol/K)
-``cp_mol``                       Total mixed phase constant pressure heat capacity (kJ/mol/K)
-``cv_mol``                       Total mixed phase constant volume heat capacity (kJ/mol/K)
-``heat_capacity_ratio``          :code:`cp_mol/cv_mol`
-``speed_sound_phase[phase]``     Speed of sound in phase (m/s)
-``dens_mol_phase[phase]``        Mole density of phase (mol/m\ :superscript:`3`)
-``therm_cond_phase[phase]``      Thermal conductivity of phase (W/K/m)
-``visc_d_phase[phase]``          Viscosity of phase (Pa/s)
-``visc_k_phase[phase]``          Kinimatic viscosity of phase (m\ :superscript:`2`/s)
-``phase_frac[phase]``            Phase fraction
-``flow_mol_comp["H2O"]``         Same as total flow since only water (mol/s)
-================================ ===============================================================================================
+==================================== ===============================================================================================
+Expression                           Description
+==================================== ===============================================================================================
+``mw``                               Molecular weight (kg/mol)
+``tau``                              Critical temperature divided by temperature (unitless)
+``temperature``                      Temperature (K) if PH form
+``temperature_red``                  Reduced temperature, temperature divided by critical temperature (unitless)
+``temperature_sat``                  Saturation temperature (K)
+``tau_sat``                          Critical temperature divided by saturation temperature (unitless)
+``pressure_sat``                     Saturation pressure (Pa)
+``dens_mass_phase[phase]``           Density phase (kg/m\ :superscript:`3`)
+``dens_phase_red[phase]``            Phase reduced density (:math:`\delta`), mass density divided by critical density (unitless)
+``dens_mass``                        Total mixed phase mass density (kg/m\ :superscript:`3`)
+``dens_mol``                         Total mixed phase mole density (kg/m\ :superscript:`3`)
+``flow_vol``                         Total volumetric flow rate (m\ :superscript:`3`/s)
+``enth_mass``                        Mass enthalpy (J/kg)
+``enth_mol_sat_phase[phase]``        Saturation enthalpy of phase, enthalpy at P and T\ :subscript:`sat` (J/mol)
+``enth_mol``                         Molar enthalpy (J/mol) if TPx form
+``enth_mol_phase[phase]``            Molar enthalpy of phase (J/mol)
+``energy_internal_mol``              molar internal energy (J/mol)
+``energy_internal_mol_phase[phase]`` Molar internal energy of phase (J/mol)
+``entr_mol_phase``                   Molar entropy of phase (J/mol/K)
+``entr_mol``                         Total mixed phase entropy (J/mol/K)
+``cp_mol_phase[phase]``              Constant pressure molar heat capacity of phase (J/mol/K)
+``cv_mol_phase[phase]``              Constant pressure volume heat capacity of phase (J/mol/K)
+``cp_mol``                           Total mixed phase constant pressure heat capacity (J/mol/K)
+``cv_mol``                           Total mixed phase constant volume heat capacity (J/mol/K)
+``heat_capacity_ratio``              :code:`cp_mol/cv_mol`
+``speed_sound_phase[phase]``         Speed of sound in phase (m/s)
+``dens_mol_phase[phase]``            Mole density of phase (mol/m\ :superscript:`3`)
+``therm_cond_phase[phase]``          Thermal conductivity of phase (W/K/m)
+``vapor_frac``                       Vapor fraction, if PH form
+``visc_d_phase[phase]``              Viscosity of phase (Pa/s)
+``visc_k_phase[phase]``              Kinimatic viscosity of phase (m\ :superscript:`2`/s)
+``phase_frac[phase]``                Phase fraction
+``flow_mol_comp["H2O"]``             Same as total flow since only water (mol/s)
+``P_under_sat``                      Pressure under saturation pressure (kPA)
+``P_over_sat``                       Pressure over saturation pressure (kPA)
+==================================== ===============================================================================================
 
 ExternalFunctions
 ~~~~~~~~~~~~~~~~~
@@ -263,9 +355,9 @@ func_phir_delta_tau  phir_delta_tau :math:`\frac{\partial^2 \phi_r}{\partial \de
 Initialization
 --------------
 
-The IAPWS-95 property functions do provide initilaization functions for general
+The IAPWS-95 property functions do provide initialization functions for general
 compatibility with the IDAES framework, but as long as the state variables are
-specified to some resonalbe value, initialization is not required. All required
+specified to some reasonable value, initialization is not required. All required
 solves are handled by external functions.
 
 References
