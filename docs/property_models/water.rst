@@ -6,19 +6,13 @@ Water/Steam
 
 .. module:: idaes.property_models.iapws95.iapws95_py
 
-Accurate steam properties are critical for power system models involving steam
-cycles. The International Association for the Properties of Water and Steam's
+The International Association for the Properties of Water and Steam's
 :ref:`"Revised Release on the IAPWS Formulation 1995 for the Thermodynamic
 Properties of Ordinary Water Substance for General and Scientific Use"
-<iapws-2016>` was implemented in the IDAES framework using AMPL user defined
-functions. Non-analytic terms designed to improve accuracy very near the
-critical point were omitted, because they cause a singularity at
-the critical point, a feature which is undesirable in optimization problems.
-The IAPWS-95 functions can be used with any AMPL solver from the IDAES
-framework. Additional derivatives were included to provide exact first
-and second derivative information to optimization solvers for all function calls.
-An IDAES framework wrapper takes the user defined functions which are written in
-C++, and provides a standard IDAES property package interface.
+<iapws-2016>` was implemented in the IDAES framework. Non-analytic terms
+designed to improve accuracy very near the critical point were omitted, because
+they cause a singularity at the critical point, a feature which is undesirable
+in optimization problems.
 
 Theses modules can be imported as:
 
