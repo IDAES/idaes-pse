@@ -1241,6 +1241,7 @@ def test_add_outlet_port_objects_construct_ports_False():
     assert hasattr(m.fs.sep, "outlet_2") is False
 
 
+@pytest.mark.build
 def test_build_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1277,6 +1278,7 @@ def test_model_checks():
     assert m.fs.sep.mixed_state[0].check is True
 
 
+@pytest.mark.initialize
 def test_initialize():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1324,6 +1326,7 @@ def test_initialize():
     assert m.fs.sb[0].hold_state is False
 
 
+@pytest.mark.initialization
 def test_initialize_inconsistent_keys():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -1343,6 +1346,8 @@ def test_initialize_inconsistent_keys():
         m.fs.sep.initialize()
 
 
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_total_flow():
     m = ConcreteModel()
@@ -1411,6 +1416,7 @@ def test_initialize_total_flow():
             m.fs.sb.outlet_2.conc_mol_comp[0, "Ethanol"].value)
 
 
+@pytest.mark.ui
 def test_report():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})

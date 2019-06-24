@@ -64,6 +64,7 @@ class SplittingType(Enum):
 class EnergySplittingType(Enum):
     equal_temperature = 1
     equal_molar_enthalpy = 2
+    enthalpy_split = 3
 
 
 @declare_process_block_class("Separator")
@@ -183,7 +184,9 @@ not used for when ideal_separation == True.
 **Valid values:** {
 **EnergySplittingType.equal_temperature** - outlet temperatures equal inlet
 **EnergySplittingType.equal_molar_enthalpy** - oulet molar enthalpies equal
-inlet}"""))
+inlet,
+**EnergySplittingType.enthalpy_split** - apply split fractions to enthalpy
+flows. Does not work with component or phase-component splitting.}"""))
     CONFIG.declare("ideal_separation", ConfigValue(
         default=True,
         domain=In([True, False]),
@@ -617,6 +620,37 @@ linked the mixed state and all outlet states,
             def molar_enthalpy_equality_eqn(b, t, o):
                 o_block = getattr(self, o+"_state")
                 return mixed_block[t].enth_mol == o_block[t].enth_mol
+        elif self.config.energy_split_basis == \
+                EnergySplittingType.enthalpy_split:
+            # Validate split fraction type
+            if (self.config.split_basis == SplittingType.phaseComponentFlow or
+                    self.config.split_basis == SplittingType.componentFlow):
+                raise ConfigurationError(
+                        "{} Cannot use energy_split_basis == enthalpy_split "
+                        "with split_basis == component or phaseComponent."
+                        .format(self.name))
+
+            def sf(t, o, p):
+                if self.config.split_basis == SplittingType.totalFlow:
+                    return self.split_fraction[t, o]
+                elif self.config.split_basis == SplittingType.phaseFlow:
+                    return self.split_fraction[t, o, p]
+
+            @self.Constraint(self.flowsheet().config.time,
+                             self.outlet_idx,
+                             doc="Molar enthalpy splitting constraint")
+            def molar_enthalpy_splitting_eqn(b, t, o):
+                o_block = getattr(self, o+"_state")
+                return (sum(mixed_block[t].get_enthalpy_flow_terms(p) *
+                            sf(t, o, p)
+                            for p in b.config.property_package.phase_list) ==
+                        sum(o_block[t].get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list))
+        else:
+            raise BurntToast("{} received unrecognised value for "
+                             "energy_split_basis. This should never happen, so"
+                             " please contact the IDAES developers with this "
+                             "bug.".format(self.name))
 
     def add_momentum_splitting_constraints(self, mixed_block):
         """
