@@ -425,34 +425,32 @@ linked to all inlet states and the mixed state,
                         units[u] = '-'
 
                 try:
-                    add_object_reference(
-                        self,
-                        "phase_equilibrium_idx_ref",
-                        self.config.property_package.phase_equilibrium_idx)
+                    self.phase_equilibrium_generation = Var(
+                            self.flowsheet().config.time,
+                            self.config.property_package.phase_equilibrium_idx,
+                            domain=Reals,
+                            doc="Amount of generation in unit by phase "
+                                "equilibria [{}/{}]"
+                                .format(units['holdup'], units['time']))
                 except AttributeError:
                     raise PropertyNotSupportedError(
                         "{} Property package does not contain a list of phase "
                         "equilibrium reactions (phase_equilibrium_idx), "
                         "thus does not support phase equilibrium."
                         .format(self.name))
-                self.phase_equilibrium_generation = Var(
-                            self.flowsheet().config.time,
-                            self.phase_equilibrium_idx_ref,
-                            domain=Reals,
-                            doc="Amount of generation in unit by phase "
-                                "equilibria [{}/{}]"
-                                .format(units['holdup'], units['time']))
 
             # Define terms to use in mixing equation
             def phase_equilibrium_term(b, t, p, j):
                 if self.config.has_phase_equilibrium:
                     sd = {}
-                    sblock = mixed_block[t]
-                    for r in b.phase_equilibrium_idx_ref:
-                        if sblock.phase_equilibrium_list[r][0] == j:
-                            if sblock.phase_equilibrium_list[r][1][0] == p:
+                    for r in b.config.property_package.phase_equilibrium_idx:
+                        if b.config.property_package.\
+                                phase_equilibrium_list[r][0] == j:
+                            if b.config.property_package.\
+                                    phase_equilibrium_list[r][1][0] == p:
                                 sd[r] = 1
-                            elif sblock.phase_equilibrium_list[r][1][1] == p:
+                            elif b.config.property_package.\
+                                    phase_equilibrium_list[r][1][1] == p:
                                 sd[r] = -1
                             else:
                                 sd[r] = 0
@@ -460,7 +458,8 @@ linked to all inlet states and the mixed state,
                             sd[r] = 0
 
                     return sum(b.phase_equilibrium_generation[t, r]*sd[r]
-                               for r in b.phase_equilibrium_idx_ref)
+                               for r in
+                               b.config.property_package.phase_equilibrium_idx)
                 else:
                     return 0
 
