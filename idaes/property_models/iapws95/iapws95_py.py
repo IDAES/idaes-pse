@@ -357,8 +357,8 @@ class _StateBlock(StateBlock):
     def initialize(self, *args, **kwargs):
         flags = {}
         hold_state = kwargs.pop("hold_state", False)
-
         for i, v in self.items():
+            pp = self[i].config.parameters.config.phase_presentation
             if self[i].state_vars == StateVars.PH:
                 # hold the P-H vars
                 flags[i] = (v.flow_mol.fixed,
@@ -370,15 +370,24 @@ class _StateBlock(StateBlock):
                     v.pressure.fix()
             elif self[i].state_vars == StateVars.TPX:
                 # Hold the T-P-x vars
-                flags[i] = (v.flow_mol.fixed,
-                            v.temperature.fixed,
-                            v.pressure.fixed,
-                            v.vapor_frac.fixed)
-                if hold_state:
-                    v.flow_mol.fix()
-                    v.temperature.fix()
-                    v.pressure.fix()
-                    v.vapor_frac.fix()
+                if pp in (PhaseType.MIX, PhaseType.LG):
+                    flags[i] = (v.flow_mol.fixed,
+                                v.temperature.fixed,
+                                v.pressure.fixed,
+                                v.vapor_frac.fixed)
+                    if hold_state:
+                        v.flow_mol.fix()
+                        v.temperature.fix()
+                        v.pressure.fix()
+                        v.vapor_frac.fix()
+                else:
+                    flags[i] = (v.flow_mol.fixed,
+                                v.temperature.fixed,
+                                v.pressure.fixed)
+                    if hold_state:
+                        v.flow_mol.fix()
+                        v.temperature.fix()
+                        v.pressure.fix()
 
         # Call initialize on each data element
         for i in self:
@@ -387,6 +396,7 @@ class _StateBlock(StateBlock):
 
     def release_state(self, flags, **kwargs):
         for i, f in flags.items():
+            pp = self[i].config.parameters.config.phase_presentation
             if self[i].state_vars == StateVars.PH:
                 self._set_fixed(self[i].flow_mol, f[0])
                 self._set_fixed(self[i].enth_mol, f[1])
@@ -395,7 +405,8 @@ class _StateBlock(StateBlock):
                 self._set_fixed(self[i].flow_mol, f[0])
                 self._set_fixed(self[i].temperature, f[1])
                 self._set_fixed(self[i].pressure, f[2])
-                self._set_fixed(self[i].vapor_frac, f[3])
+                if pp in (PhaseType.MIX, PhaseType.LG):
+                    self._set_fixed(self[i].vapor_frac, f[3])
 
 @declare_process_block_class("Iapws95StateBlock", block_class=_StateBlock,
     doc="""This is some placeholder doc.
@@ -483,15 +494,11 @@ class Iapws95StateBlockData(StateBlockData):
         delta = self.dens_phase_red
 
         # If there is only one phase fix the vapor fraction appropriatly
-        if len(plist) == 1 and not self.config.defined_state:
+        if len(plist) == 1:
             if "Vap" in plist:
-                self.vapor_fraction_constarint = Constraint(
-                    expr=self.vapor_frac==1.0)
-                self.vapor_frac=1.0
+                self.vapor_frac.fix(1.0)
             else:
-                self.vapor_fraction_constarint = Constraint(
-                    expr=self.vapor_frac==0.0)
-                self.vapor_frac=0.0
+                self.vapor_frac.fix(0.0)
         elif not self.config.defined_state:
             self.eq_complimentarity = Constraint(
                 expr=0 == (vf*self.P_over_sat  - (1 - vf)*self.P_under_sat))
@@ -801,6 +808,26 @@ class Iapws95StateBlockData(StateBlockData):
         self.enth_mass = Expression(expr = self.enth_mol/mw,
             doc="Mass enthalpy (J/kg)")
 
+        # Set the state vars dictionary
+        if self.state_vars == StateVars.PH:
+            self._state_vars_dict = {
+                "flow_mol": self.flow_mol,
+                "enth_mol": self.enth_mol,
+                "pressure": self.pressure}
+        elif self.state_vars == StateVars.TPX and \
+            phase_set in (PhaseType.MIX, PhaseType.LG):
+            self._state_vars_dict = {
+                "flow_mol": self.flow_mol,
+                "temperature": self.temperature,
+                "pressure": self.pressure,
+                "vapor_frac": self.vapor_frac}
+        elif self.state_vars == StateVars.TPX and \
+            phase_set in (PhaseType.G, PhaseType.L):
+            self._state_vars_dict = {
+                "flow_mol": self.flow_mol,
+                "temperature": self.temperature,
+                "pressure": self.pressure}
+
     def get_material_flow_terms(self, p, j):
         if p == "Mix":
             return self.flow_mol
@@ -826,15 +853,7 @@ class Iapws95StateBlockData(StateBlockData):
             return self.dens_mol_phase[p]*self.enth_mol_phase[p]
 
     def define_state_vars(self):
-        if self.state_vars == StateVars.PH:
-            return {"flow_mol": self.flow_mol,
-                    "enth_mol": self.enth_mol,
-                    "pressure": self.pressure}
-        elif self.state_vars == StateVars.TPX:
-            return {"flow_mol": self.flow_mol,
-                    "temperature": self.temperature,
-                    "pressure": self.pressure,
-                    "vapor_frac": self.vapor_frac}
+        return self._state_vars_dict
 
     def extensive_state_vars(self):
         return self.extensive_set
