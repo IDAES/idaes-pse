@@ -176,6 +176,14 @@ class TestSaponification(object):
         assert (pytest.approx(0.357, abs=1e-3) ==
                 value(btx.fs.unit.vap_outlet.mole_frac[0, "toluene"]))
 
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, btx):
+        assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
+                         (btx.fs.unit.vap_outlet.flow_mol[0] +
+                          btx.fs.unit.liq_outlet.flow_mol[0]))) <= 1e-6
+
     @pytest.mark.ui
     def test_report(self, btx):
         btx.fs.unit.report()
@@ -296,6 +304,20 @@ class TestIAPWS(object):
                 value(iapws.fs.unit.liq_outlet.enth_mol[0]))
         assert (pytest.approx(59.532, abs=1e-3) ==
                 value(iapws.fs.unit.liq_outlet.flow_mol[0]))
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, iapws):
+        assert abs(value(iapws.fs.unit.inlet.flow_mol[0] -
+                         (iapws.fs.unit.vap_outlet.flow_mol[0] +
+                          iapws.fs.unit.liq_outlet.flow_mol[0]))) <= 1e-6
+        assert abs(value(iapws.fs.unit.inlet.flow_mol[0] *
+                         iapws.fs.unit.inlet.enth_mol[0] -
+                         (iapws.fs.unit.vap_outlet.flow_mol[0] *
+                          iapws.fs.unit.vap_outlet.enth_mol[0] +
+                          iapws.fs.unit.liq_outlet.flow_mol[0] *
+                          iapws.fs.unit.liq_outlet.enth_mol[0]))) <= 1e-6
 
     @pytest.mark.ui
     def test_report(self, iapws):

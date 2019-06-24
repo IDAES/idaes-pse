@@ -181,6 +181,29 @@ class TestSaponification(object):
         assert (pytest.approx(20.32, abs=1e-2) ==
                 value(sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"]))
 
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, sapon):
+        assert abs(value(sapon.fs.unit.inlet.flow_vol[0] -
+                         sapon.fs.unit.outlet.flow_vol[0])) <= 1e-6
+        assert (abs(value(sapon.fs.unit.inlet.flow_vol[0] *
+                          sum(sapon.fs.unit.inlet.conc_mol_comp[0, j]
+                              for j in sapon.fs.properties.component_list) -
+                          sapon.fs.unit.outlet.flow_vol[0] *
+                          sum(sapon.fs.unit.outlet.conc_mol_comp[0, j]
+                              for j in sapon.fs.properties.component_list)))
+                <= 1e-6)
+        assert abs(value(sapon.fs.unit.inlet.flow_vol[0] *
+                         sapon.fs.properties.cp_mol *
+                         (sapon.fs.unit.inlet.temperature[0] -
+                          sapon.fs.properties.temperature_ref) -
+                         sapon.fs.unit.outlet.flow_vol[0] *
+                         sapon.fs.properties.cp_mol *
+                         (sapon.fs.unit.outlet.temperature[0] -
+                          sapon.fs.properties.temperature_ref) +
+                         sapon.fs.unit.heat_duty[0])) <= 1e-1
+
     @pytest.mark.ui
     def test_report(self, sapon):
         sapon.fs.unit.report()

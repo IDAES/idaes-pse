@@ -268,7 +268,15 @@ class TestBTX_cocurrent(object):
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx.fs.unit.tube_outlet.pressure[0]))
 
-        # Check for energy conservation
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, btx):
+        assert abs(value(btx.fs.unit.shell_inlet.flow_mol[0] -
+                         btx.fs.unit.shell_outlet.flow_mol[0])) <= 1e-6
+        assert abs(value(btx.fs.unit.tube_inlet.flow_mol[0] -
+                         btx.fs.unit.tube_outlet.flow_mol[0])) <= 1e-6
+
         shell_side = value(
                 btx.fs.unit.shell_outlet.flow_mol[0] *
                 (btx.fs.unit.shell.properties[0, 0].enth_mol_phase['Liq'] -
@@ -429,7 +437,15 @@ class TestBTX_countercurrent(object):
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx.fs.unit.tube_outlet.pressure[0]))
 
-        # Check for energy conservation
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, btx):
+        assert abs(value(btx.fs.unit.shell_inlet.flow_mol[0] -
+                         btx.fs.unit.shell_outlet.flow_mol[0])) <= 1e-6
+        assert abs(value(btx.fs.unit.tube_inlet.flow_mol[0] -
+                         btx.fs.unit.tube_outlet.flow_mol[0])) <= 1e-6
+
         shell_side = value(
                 btx.fs.unit.shell_outlet.flow_mol[0] *
                 (btx.fs.unit.shell.properties[0, 0].enth_mol_phase['Liq'] -

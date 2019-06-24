@@ -190,6 +190,19 @@ class TestSaponification(object):
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation_temperature(self, methane):
+        assert abs(value(
+                sum(methane.fs.unit.inlet.flow_mol_comp[0, j]
+                    for j in methane.fs.properties.component_list) *
+                methane.fs.unit.control_volume.properties_in[0].enth_mol -
+                sum(methane.fs.unit.outlet.flow_mol_comp[0, j]
+                    for j in methane.fs.properties.component_list) *
+                methane.fs.unit.control_volume.properties_out[0].enth_mol +
+                methane.fs.unit.heat_duty[0])) <= 1e-6
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize_duty(self, methane):
         methane.fs.unit.outlet.temperature[0].unfix()
         methane.fs.unit.heat_duty.fix(161882.303661)
@@ -258,6 +271,19 @@ class TestSaponification(object):
                 value(methane.fs.unit.heat_duty[0]))
         assert (pytest.approx(101325.0, abs=1e-2) ==
                 value(methane.fs.unit.outlet.pressure[0]))
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation_duty(self, methane):
+        assert abs(value(
+                sum(methane.fs.unit.inlet.flow_mol_comp[0, j]
+                    for j in methane.fs.properties.component_list) *
+                methane.fs.unit.control_volume.properties_in[0].enth_mol -
+                sum(methane.fs.unit.outlet.flow_mol_comp[0, j]
+                    for j in methane.fs.properties.component_list) *
+                methane.fs.unit.control_volume.properties_out[0].enth_mol +
+                methane.fs.unit.heat_duty[0])) <= 1e-6
 
     @pytest.mark.ui
     def test_report(self, methane):
