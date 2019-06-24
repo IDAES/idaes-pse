@@ -36,7 +36,7 @@ def get_default_solver():
     Tries to set-up the default solver for testing, and returns None if not
     available
     """
-    if SolverFactory('ipopt').available():
+    if SolverFactory('ipopt').available(exception_flag=False):
         solver = SolverFactory('ipopt')
         solver.options = {'tol': 1e-6}
     else:

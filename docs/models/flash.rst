@@ -20,7 +20,7 @@ Model Structure
 
 The core Flash unit model consists of a single ControlVolume0DBlock (named control_volume) with one Inlet Port (named inlet) connected to a Separator unit model with two outlet Ports named 'vap_outlet' and 'liq_outlet'. The Flash model utilizes the separator unit model in IDAES to split the outlets by phase flows to the liquid and vapor outlets respectively.
 
-The Separator unit model supports both direct splitting of state variables and writting of full splitting constraints via the `ideal_separation` construction argument. Full details on the Separator unit model can be found in the documentation forthat unit. To support direct splitting, the property package must use one of a specified set of state variables and support a certain set of property calacuations, as outlined in the table below.
+The Separator unit model supports both direct splitting of state variables and writting of full splitting constraints via the `ideal_separation` construction argument. Full details on the Separator unit model can be found in the documentation for that unit. To support direct splitting, the property package must use one of a specified set of state variables and support a certain set of property calacuations, as outlined in the table below.
 
 ==================================== ===================================
 State Variables                      Required Properties
@@ -70,7 +70,7 @@ has_heat_transfer         True
 has_pressure_change       True
 ========================= =================
 
-Finally, Flash units also have the follwing arguments which are passed to the Separator block for determining how to split to two-phase mixture.
+Finally, Flash units also have the following arguments which are passed to the Separator block for determining how to split to two-phase mixture.
 
 =================== =================
 Argument            Default Value

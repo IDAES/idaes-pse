@@ -119,7 +119,7 @@ flows.}"""))
         domain=In([True, False]),
         description="Ideal splitting flag",
         doc="""Argument indicating whether ideal splitting should be used.
-Ideal splitting assumes perfect spearation of material, and attempts to
+Ideal splitting assumes perfect separation of material, and attempts to
 avoid duplication of StateBlocks by directly partitioning outlet flows to
 ports,
 **default** - True.
