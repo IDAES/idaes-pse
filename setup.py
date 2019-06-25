@@ -32,10 +32,10 @@ kwargs = dict(
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
         "backports.shutil_get_terminal_size",
-        "blessings",
         "bokeh",
         "bunch",
         "click",
+        "colorama",
         "humanize",
         "jupyter",
         "lxml",

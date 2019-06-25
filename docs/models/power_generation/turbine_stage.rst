@@ -16,17 +16,17 @@ initialization scheme is the same as the :ref:`TurbineInletStage model
 Example
 -------
 
-.. testcode:: 
+.. testcode::
 
     from pyomo.environ import ConcreteModel, SolverFactory
 
     from idaes.core import FlowsheetBlock
     from idaes.unit_models.power_generation import TurbineStage
-    from idaes.property_models import iapws95_ph
+    from idaes.property_models import iapws95
 
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.turb = TurbineStage(default={"property_package": m.fs.properties})
     # set inlet
     m.fs.turb.inlet[:].enth_mol.fix(70000)

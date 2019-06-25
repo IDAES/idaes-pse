@@ -33,6 +33,7 @@ from .errors import (
     WorkspaceConfMissingField,
     WorkspaceCannotCreateError,
 )
+from .util import yaml_load
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
@@ -341,7 +342,7 @@ class Workspace(object):
             _log.debug('Load workspace configuration from "{}"'.format(self._conf))
             conf = open(self._conf, 'r')
             try:
-                contents = yaml.load(conf)
+                contents = yaml_load(conf)
             except Exception as err:
                 raise ParseError(
                     'Cannot load config file "{f}": {e}'.format(f=self._conf, e=err)

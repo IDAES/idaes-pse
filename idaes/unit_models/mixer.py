@@ -31,7 +31,8 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
-                        useDefault)
+                        useDefault,
+                        MaterialBalanceType)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
                                     list_of_strings)
@@ -40,6 +41,7 @@ from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError)
 from idaes.core.util.math import smooth_min
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Andrew Lee"
 
@@ -129,6 +131,19 @@ used if inlet_list arg is provided,
 provided,
 **int** - number of inlets to create (will be named with sequential integers
 from 1 to num_inlets).}"""))
+    CONFIG.declare("material_balance_type", ConfigValue(
+        default=MaterialBalanceType.componentPhase,
+        domain=In(MaterialBalanceType),
+        description="Material balance construction flag",
+        doc="""Indicates what type of mass balance should be constructed. Only
+used if ideal_separation = False.
+**default** - MaterialBalanceType.componentPhase.
+**Valid values:** {
+**MaterialBalanceType.none** - exclude material balances,
+**MaterialBalanceType.componentPhase** - use phase component balances,
+**MaterialBalanceType.componentTotal** - use total component balances,
+**MaterialBalanceType.elementTotal** - use total element balances,
+**MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -391,75 +406,116 @@ linked to all inlet states and the mixed state,
 
     def add_material_mixing_equations(self, inlet_blocks, mixed_block):
         """
-        Add material mixing equations (phase-component balances).
+        Add material mixing equations.
         """
-        # Create equilibrium generation term and constraints if required
-        if self.config.has_phase_equilibrium is True:
-            # Get units from property package
-            units = {}
-            for u in ['holdup', 'time']:
-                try:
-                    units[u] = (self.config.property_package
-                                .get_metadata().default_units[u])
-                except KeyError:
-                    units[u] = '-'
-
-            try:
-                add_object_reference(
-                    self,
-                    "phase_equilibrium_idx_ref",
-                    self.config.property_package.phase_equilibrium_idx)
-            except AttributeError:
-                raise PropertyNotSupportedError(
-                    "{} Property package does not contain a list of phase "
-                    "equilibrium reactions (phase_equilibrium_idx), thus does "
-                    "not support phase equilibrium.".format(self.name))
-            self.phase_equilibrium_generation = Var(
-                        self.flowsheet().config.time,
-                        self.phase_equilibrium_idx_ref,
-                        domain=Reals,
-                        doc="Amount of generation in unit by phase "
-                            "equilibria [{}/{}]"
-                            .format(units['holdup'], units['time']))
-
-        # Define terms to use in mixing equation
-        def phase_equilibrium_term(b, t, p, j):
-            if self.config.has_phase_equilibrium:
-                sd = {}
-                sblock = mixed_block[t]
-                for r in b.phase_equilibrium_idx_ref:
-                    if sblock.phase_equilibrium_list[r][0] == j:
-                        if sblock.phase_equilibrium_list[r][1][0] == p:
-                            sd[r] = 1
-                        elif sblock.phase_equilibrium_list[r][1][1] == p:
-                            sd[r] = -1
-                        else:
-                            sd[r] = 0
-                    else:
-                        sd[r] = 0
-
-                return sum(b.phase_equilibrium_generation[t, r]*sd[r]
-                           for r in b.phase_equilibrium_idx_ref)
-            else:
-                return 0
-
         # Get phase component list(s)
         phase_component_list = self._get_phase_comp_list()
 
-        # Write phase-component balances
-        @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
-                         doc="Material mixing equations")
-        def material_mixing_equations(b, t, p, j):
-            if j in phase_component_list[p]:
-                return 0 == (
+        if self.config.material_balance_type == \
+                MaterialBalanceType.componentPhase:
+            # Create equilibrium generation term and constraints if required
+            if self.config.has_phase_equilibrium is True:
+                # Get units from property package
+                units = {}
+                for u in ['holdup', 'time']:
+                    try:
+                        units[u] = (self.config.property_package
+                                    .get_metadata().default_units[u])
+                    except KeyError:
+                        units[u] = '-'
+
+                try:
+                    add_object_reference(
+                        self,
+                        "phase_equilibrium_idx_ref",
+                        self.config.property_package.phase_equilibrium_idx)
+                except AttributeError:
+                    raise PropertyNotSupportedError(
+                        "{} Property package does not contain a list of phase "
+                        "equilibrium reactions (phase_equilibrium_idx), "
+                        "thus does not support phase equilibrium."
+                        .format(self.name))
+                self.phase_equilibrium_generation = Var(
+                            self.flowsheet().config.time,
+                            self.phase_equilibrium_idx_ref,
+                            domain=Reals,
+                            doc="Amount of generation in unit by phase "
+                                "equilibria [{}/{}]"
+                                .format(units['holdup'], units['time']))
+
+            # Define terms to use in mixing equation
+            def phase_equilibrium_term(b, t, p, j):
+                if self.config.has_phase_equilibrium:
+                    sd = {}
+                    sblock = mixed_block[t]
+                    for r in b.phase_equilibrium_idx_ref:
+                        if sblock.phase_equilibrium_list[r][0] == j:
+                            if sblock.phase_equilibrium_list[r][1][0] == p:
+                                sd[r] = 1
+                            elif sblock.phase_equilibrium_list[r][1][1] == p:
+                                sd[r] = -1
+                            else:
+                                sd[r] = 0
+                        else:
+                            sd[r] = 0
+
+                    return sum(b.phase_equilibrium_generation[t, r]*sd[r]
+                               for r in b.phase_equilibrium_idx_ref)
+                else:
+                    return 0
+
+            # Write phase-component balances
+            @self.Constraint(self.flowsheet().config.time,
+                             self.config.property_package.phase_list,
+                             self.config.property_package.component_list,
+                             doc="Material mixing equations")
+            def material_mixing_equations(b, t, p, j):
+                if j in phase_component_list[p]:
+                    return 0 == (
                         sum(inlet_blocks[i][t].get_material_flow_terms(p, j)
                             for i in range(len(inlet_blocks))) -
                         mixed_block[t].get_material_flow_terms(p, j) +
                         phase_equilibrium_term(b, t, p, j))
-            else:
-                return Constraint.Skip
+                else:
+                    return Constraint.Skip
+
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.componentTotal:
+            # Write phase-component balances
+            @self.Constraint(self.flowsheet().config.time,
+                             self.config.property_package.component_list,
+                             doc="Material mixing equations")
+            def material_mixing_equations(b, t, j):
+                return 0 == sum(
+                    sum(inlet_blocks[i][t].get_material_flow_terms(p, j)
+                        for i in range(len(inlet_blocks))) -
+                    mixed_block[t].get_material_flow_terms(p, j)
+                    for p in b.config.property_package.phase_list)
+
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.total:
+            # Write phase-component balances
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Material mixing equations")
+            def material_mixing_equations(b, t):
+                return 0 == sum(sum(
+                    sum(inlet_blocks[i][t].get_material_flow_terms(p, j)
+                        for i in range(len(inlet_blocks))) -
+                    mixed_block[t].get_material_flow_terms(p, j)
+                    for j in b.config.property_package.component_list)
+                    for p in b.config.property_package.phase_list)
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.elementTotal:
+            raise ConfigurationError("{} Mixers do not support elemental "
+                                     "material balances.".format(self.name))
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.none:
+            pass
+        else:
+            raise BurntToast("{} Mixer received unrecognised value for "
+                             "material_balance_type. This should not happen, "
+                             "please report this bug to the IDAES developers."
+                             .format(self.name))
 
     def add_energy_mixing_equations(self, inlet_blocks, mixed_block):
         """
@@ -761,3 +817,16 @@ linked to all inlet states and the mixed state,
         for i in inlet_list:
             i_block = getattr(blk, i+"_state")
             i_block.release_state(flags[i], outlvl=outlvl-1)
+
+    def _get_stream_table_contents(self, time_point=0):
+        io_dict = {}
+        inlet_list = self.create_inlet_list()
+        for i in inlet_list:
+            io_dict[i] = getattr(self, i+"_state")
+        if self.config.mixed_state_block is None:
+            io_dict["Outlet"] = self.mixed_state
+        else:
+            io_dict["Outlet"] = self.config.mixed_state_block
+        return create_stream_table_dataframe(
+                io_dict,
+                time_point=time_point)

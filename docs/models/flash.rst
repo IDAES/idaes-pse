@@ -13,14 +13,14 @@ Typical fixed variables are:
 * heat duty or outlet temperature (see note),
 * pressure change or outlet pressure.
 
-Note: When setting the outlet temeprature of a Flash unit, it is best to set control_volume.properties_out[t].temperature. Setting the temperature in one of the outlet streams directly results in a much harder problme ot solve, and may be degenerate in some cases.
+Note: When setting the outlet temeprature of a Flash unit, it is best to set control_volume.properties_out[t].temperature. Setting the temperature in one of the outlet streams directly results in a much harder problme to solve, and may be degenerate or unbounded in some cases.
 
 Model Structure
 ---------------
 
-The core Flash unit model consists of a single ControlVolume0DBlock (named control_volume) with one Inlet Port (named inlet) and one Outlet Port (named outlet, default with two indexes ('vap_outlet' and 'liq_outlet')). The Flash model utilizes the separator unit model in IDAES to split the outlets by phase flows to the liquid and vapor outlets respectively.
+The core Flash unit model consists of a single ControlVolume0DBlock (named control_volume) with one Inlet Port (named inlet) connected to a Separator unit model with two outlet Ports named 'vap_outlet' and 'liq_outlet'. The Flash model utilizes the separator unit model in IDAES to split the outlets by phase flows to the liquid and vapor outlets respectively.
 
-The state variables used by the assoicated property package should meet specific requirements in order that the Flash model can find the necessary information for splitting the outlet flows. To support direct splitting, the property package must use one of a specified set of state variables and support a certain set of property calacuations, as outlined in the table below.
+The Separator unit model supports both direct splitting of state variables and writting of full splitting constraints via the `ideal_separation` construction argument. Full details on the Separator unit model can be found in the documentation for that unit. To support direct splitting, the property package must use one of a specified set of state variables and support a certain set of property calacuations, as outlined in the table below.
 
 ==================================== ===================================
 State Variables                      Required Properties
@@ -70,11 +70,19 @@ has_heat_transfer         True
 has_pressure_change       True
 ========================= =================
 
+Finally, Flash units also have the following arguments which are passed to the Separator block for determining how to split to two-phase mixture.
+
+=================== =================
+Argument            Default Value
+=================== =================
+ideal_separation    True
+energy_split_basis  EnergySplittingType.equal_temperature
+=================== =================
+
 Additional Constraints
 ----------------------
 
 Flash units write no additional Constraints beyond those written by the ControlVolume0DBlock and the Separator block.
-
 
 Variables
 ---------

@@ -1,5 +1,1 @@
-import os
-
-def iapws95_available():
-    plib = os.path.join(os.path.dirname(__file__), "iapws95.so")
-    return os.path.isfile(plib)
+import idaes.property_models.iapws95.iapws95_py as iapws95

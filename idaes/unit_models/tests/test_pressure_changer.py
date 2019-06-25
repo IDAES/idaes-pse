@@ -23,10 +23,9 @@ from idaes.unit_models.pressure_changer import (PressureChanger,
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import property package for testing
-from idaes.property_models import iapws95_ph as pp
-from idaes.property_models.iapws95 import iapws95_available
+from idaes.property_models import iapws95 as pp
 
-prop_available = iapws95_available()
+prop_available = pp.iapws95_available()
 
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
@@ -37,6 +36,7 @@ else:
 
 def test_ThermodynamicAssumption():
     assert len(ThermodynamicAssumption) == 4
+
 
 def test_build_pc():
     m = ConcreteModel()
@@ -118,6 +118,10 @@ def test_make_isentropic():
     assert hasattr(m.fs.pc, "isentropic_energy_balance")
     assert hasattr(m.fs.pc, "actual_work")
 
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_isothermal():
@@ -153,6 +157,10 @@ def test_initialization_isothermal():
 
     solver.solve(m)
 
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_pump():
@@ -190,6 +198,10 @@ def test_initialization_pump():
 
     solver.solve(m)
 
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_adiabatic():
@@ -226,6 +238,10 @@ def test_initialization_adiabatic():
 
     solver.solve(m)
 
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_isentropic():
@@ -262,3 +278,63 @@ def test_initialization_isentropic():
             m.fs.pc.outlet.pressure[0].value)
 
     solver.solve(m)
+
+
+@pytest.mark.iapws
+@pytest.mark.ui
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_isothermal():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.isothermal})
+
+    m.fs.pc.report()
+
+
+@pytest.mark.iapws
+@pytest.mark.ui
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_pump():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.pump})
+
+    m.fs.pc.report()
+
+
+@pytest.mark.iapws
+@pytest.mark.ui
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_adiabatic():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.adiabatic})
+
+    m.fs.pc.report()
+
+
+@pytest.mark.iapws
+@pytest.mark.ui
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_isentropic():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.props = pp.Iapws95ParameterBlock()
+
+    m.fs.pc = PressureChanger(default={
+            "property_package": m.fs.props,
+            "thermodynamic_assumption": ThermodynamicAssumption.isentropic})
+
+    m.fs.pc.report()

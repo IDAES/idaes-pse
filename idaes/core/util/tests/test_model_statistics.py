@@ -211,6 +211,14 @@ def test_number_fixed_variables(m):
     assert number_fixed_variables(m) == 2
 
 
+def test_unfixed_variables_set(m):
+    assert len(unfixed_variables_set(m)) == 26
+
+
+def test_number_unfixed_variables(m):
+    assert number_unfixed_variables(m) == 26
+
+
 # -------------------------------------------------------------------------
 # Variables in Constraints
 def test_variables_in_activated_constraints_set(m):

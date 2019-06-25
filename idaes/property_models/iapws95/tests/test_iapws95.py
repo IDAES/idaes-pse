@@ -15,13 +15,15 @@ from __future__ import division, print_function, absolute_import
 import pytest
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
-from idaes.property_models import iapws95_ph as iapws95
-from idaes.property_models.iapws95 import iapws95_available
+from idaes.property_models import iapws95
 import csv
 import math
 import os
 
-prop_available = iapws95_available()
+# Set module level pyest marker
+pytestmark = pytest.mark.iapws
+prop_available = iapws95.iapws95_available()
+
 
 def read_data(fname, col):
     dfile = os.path.dirname(__file__)
@@ -38,6 +40,8 @@ def read_data(fname, col):
             cond.append((float(row[0]), float(row[1]) * 1e6, x))
     return cond
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_tau_sat():
@@ -50,6 +54,7 @@ def test_tau_sat():
         T = 647.096/tau
         print("{}, {}, {}".format(c[1], c[0], T))
         assert(abs(T-c[0]) < 0.1)
+
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
@@ -69,6 +74,7 @@ def test_liquid_density_sat():
         #print("{:.2f}, {:.2f}, {:.2f}, {:.2f}".format(c[0], c[1], rho, c[2]))
         assert(abs(rho-c[2])/c[2] < tol)
 
+
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_vapor_density_sat():
@@ -86,6 +92,8 @@ def test_vapor_density_sat():
         rho = value(model.prop_in.dens_mass_phase["Vap"])
         assert(abs(rho-c[2])/c[2] < tol)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_liquid_enthalpy_sat():
@@ -102,6 +110,8 @@ def test_liquid_enthalpy_sat():
         enth = value(model.prop_in.enth_mol_sat_phase["Liq"]/model.prop_in.mw/1000.0)
         assert(abs((enth-c[2])/c[2]) < tol)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_vapor_enthalpy_sat():
@@ -118,6 +128,8 @@ def test_vapor_enthalpy_sat():
         enth = value(model.prop_in.enth_mol_sat_phase["Vap"]/model.prop_in.mw/1000.0)
         assert(abs((enth-c[2])/c[2]) < tol)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_enthalpy_of_vaporization():
@@ -143,6 +155,8 @@ def test_enthalpy_of_vaporization():
     enth = value(model.prop_in.dh_vap_mol/model.prop_in.mw/1000.0)
     assert(abs(enth) < 0.001)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_density():
@@ -167,6 +181,8 @@ def test_density():
             tol = 0.001
         assert(abs(rho-c[2])/c[2] < tol)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_enthalpy():
@@ -192,6 +208,8 @@ def test_enthalpy():
             tol = 0.0015
         assert(abs(h-c[2])/c[2] < tol)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_enthalpy_vapor_as_function_of_p_and_tau():
@@ -212,6 +230,8 @@ def test_enthalpy_vapor_as_function_of_p_and_tau():
             tol = 0.003
         assert(abs(h-c[2])/c[2] < tol)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_enthalpy_liquid_as_function_of_p_and_tau():
@@ -234,6 +254,8 @@ def test_enthalpy_liquid_as_function_of_p_and_tau():
             tol = 0.006
         assert(abs(h-c[2])/c[2] < tol)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_entropy():
@@ -257,6 +279,33 @@ def test_entropy():
             tol = 0.003
         assert(abs(s-c[2])/c[2] < tol)
 
+
+@pytest.mark.slow
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+@pytest.mark.nocircleci()
+def test_internal_energy():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock()
+    model.prop_in = iapws95.Iapws95StateBlock(default={"parameters":model.prop_param})
+    cond = read_data("prop.txt", col=4)
+    phase = read_data("prop.txt", col=13)
+    for i, c in enumerate(cond):
+        if phase[i][2] in ["liquid", "supercritical"]:
+            p = "Liq"
+        else:
+            p = "Vap"
+        model.prop_in.temperature.set_value(c[0])
+        model.prop_in.pressure = c[1]
+        u = value(model.prop_in.energy_internal_mol_phase[p]/model.prop_in.mw/1000)
+        rho = value(model.prop_in.dens_mass_phase[p])
+        if rho > 250 and rho < 420 and c[0] < 700 and c[0] > 640:
+            tol = 0.02 # steep part in sc region
+        else:
+            tol = 0.002
+        assert(abs(u-c[2])/c[2] < tol)
+
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_speed_of_sound():
@@ -285,6 +334,8 @@ def test_speed_of_sound():
             tol = 0.005
         assert(abs(w-c[2])/c[2] < tol)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_cp():
@@ -313,6 +364,8 @@ def test_cp():
             tol = 0.005
         assert(abs(cp-c[2])/c[2] < tol)
 
+
+@pytest.mark.slow
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.nocircleci()
 def test_cv():

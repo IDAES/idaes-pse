@@ -49,13 +49,41 @@ Constraints
 
 Separator units have the following Constraints, unless `ideal_separation` is True.
 
+* If `material_balance_type` is `componentPhase`:
+
 `material_splitting_eqn(t, o, p, j)`:
 
 .. math:: F_{in, t, p, j} = \phi_{t, p, *} \times F_{t, o, p, j}
 
+* If `material_balance_type` is `componentTotal`:
+
+`material_splitting_eqn(t, o, j)`:
+
+.. math:: \sum_p{F_{in, t, p, j}} = \sum_p{\phi_{t, p, *} \times F_{t, o, p, j}}
+
+* If `material_balance_type` is `total`:
+
+`material_splitting_eqn(t, o)`:
+
+.. math:: \sum_p{\sum_j{F_{in, t, p, j}}} = \sum_p{\sum_j{\phi_{t, p, *} \times F_{t, o, p, j}}}
+
+If `energy_split_basis` is `equal_temperature`:
+
 `temperature_equality_eqn(t, o)`:
 
 .. math:: T_{in, t} = T_{t, o}
+
+If `energy_split_basis` is `equal_molar_enthalpy`:
+
+`molar_enthalpy_equality_eqn(t, o)`:
+
+.. math:: h_{in, t} = h_{t, o}
+
+If `energy_split_basis` is `enthalpy_split`:
+
+`molar_enthalpy_splitting_eqn(t, o)`:
+
+.. math:: sum_p{h_{in, t, p}*sf_{t, o, p}} = sum_p{h_{t, o, p}}
 
 `pressure_equality_eqn(t, o)`:
 
