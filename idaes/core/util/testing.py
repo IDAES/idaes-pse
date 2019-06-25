@@ -105,11 +105,6 @@ class StateTestBlockData(StateBlockData):
                                         self._params.component_list,
                                         initialize=50)
 
-#        self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
-#        self.phase_equilibrium_list = \
-#            {"e1": ["c1", ("p1", "p2")],
-#             "e2": ["c2", ("p1", "p2")]}
-
     def get_material_flow_terms(b, p, j):
         return b.test_var
 
