@@ -16,37 +16,36 @@ the critical point, a feature which is undesirable in optimization problems. The
 IDAES implementation provides features which make the water and steam property
 calculations amenable to rigorous mathematical optimization.
 
+Example
+-------
+
 Theses modules can be imported as:
 
 .. testcode::
 
   from idaes.property_models import iapws95
 
-Example
--------
-
 The Heater unit model :ref:`example <models/heater:Example>`, provides a simple
 example for using water properties.
 
-Since all properties except the state variables are Pyomo Expressions in the
-water properties module, after solving the problem any property can be
-calculated in any state block after the problem is solved. To get the viscosity
-of the water at the heater outlet, for example, the line below could be added.
-
-.. testsetup::
+.. testcode::
 
   import pyomo.environ as pe # Pyomo environment
-  from idaes.core import FlowsheetBlock, StateBlock
+  from idaes.core import FlowsheetBlock
   from idaes.unit_models import Heater
   from idaes.property_models import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()
   model.fs = FlowsheetBlock(default={"dynamic": False})
-  model.fs.properties = iapws95.Iapws95ParameterBlock()
+  model.fs.properties = iapws95.Iapws95ParameterBlock(default={
+    "phase_presentation":iapws95.PhaseType.LG,
+    "state_vars":iapws95.StateVars.PH})
 
   # Add a Heater model to the flowsheet.
-  model.fs.heater = Heater(default={"property_package": model.fs.properties})
+  model.fs.heater = Heater(default={
+    "property_package": model.fs.properties,
+    "material_balance_type":MaterialBalanceType.componentTotal})
 
   # Setup the heater model by fixing the inputs and heat duty
   model.fs.heater.inlet[:].enth_mol.fix(4000)
@@ -57,22 +56,30 @@ of the water at the heater outlet, for example, the line below could be added.
   # Initialize the model.
   model.fs.heater.initialize()
 
+Since all properties except the state variables are Pyomo Expressions in the
+water properties module, after solving the problem any property can be
+calculated in any state block after the problem is solved. Continuing from the
+heater example, to get the viscosity of both phases, the lines below could be
+added.
 
 .. testcode::
 
-  import pyomo.environ as pe
   mu_l = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Liq"])
   mu_v = pe.value(model.fs.heater.control_volume.properties_out[0].visc_d_phase["Vap"])
 
-For more information about how StateBlocks and PropertyParameterBlocks
-work see the :ref:`StateBlock documentation <core/state_block:Physical
-Property Package Classes>`.
+For more information about how StateBlocks and PropertyParameterBlocks work see
+the :ref:`StateBlock documentation <core/state_block:Physical Property Package
+Classes>`.
 
 Units
 -----
 
-The iapws95 property module is in SI units (m, kg, s, mol). Temperature is in K.
-Note that this means molecular weight is in the unusual unit of kg/mol.
+The iapws95 property module uses SI units (m, kg, s, J, mol) for all public
+variables and expressions. Temperature is in K. Note that this means molecular
+weight is in the unusual unit of kg/mol.
+
+A few expressions intended to be used internally and all external function calls
+use units of kg, kJ, kPa, and K.  These generally are not needed by the end user.
 
 Methods
 -------
@@ -134,7 +141,7 @@ These are mostly available for testing purposes.
 Phase Presentation
 ~~~~~~~~~~~~~~~~~~
 
-The property package wrapper can present the fluid phase information to the
+The property package wrapper can present fluid phase information to the
 IDAES framework in different ways.  See the
 :ref:`class reference <property_models/water:Iapws95ParameterBlock>` for details
 on how to set these options.  The ``phase_presentation=PhaseType.MIX`` option
@@ -159,7 +166,7 @@ There are also two single phase options ``phase_presentation=PhaseType.L`` and
 to the framework.  The vapor fraction will also always return 0 or 1 as
 appropriate. These options can be used when the phase of a fluid is know for
 certain to only be liquid or only be vapor. For the temperature-pressure-vapor
-fraction formulation this eliminates the complimentary constraint, but for the
+fraction formulation, this eliminates the complimentary constraint, but for the
 enthalpy-pressure formulation, where the vapor fraction is always calculated,
 the single phase options probably do not provide any real benefit.
 
@@ -171,8 +178,11 @@ phase changes occur, and is especially useful when it is not known if a phase
 change will occur.  The disadvantage of this choice of state variables is that
 for equations like heat transfer equations that are highly dependent on
 temperature, a model could be harder to solve near regions with phase change.
-Temperature is a non-smooth function with a zero derivative with respect to
-enthalpy in the two-phase region.
+Temperature is a non-smooth function with non-smoothness when transitioning
+from the single-phase to the two-phase region. Temperature also has a zero
+derivative with respect to enthalpy in the two-phase region, so near the
+two-phase region solving a constraint that specifies a specific temperature
+may not be possible.
 
 The variables for this form are ``flow_mol`` (mol/s), ``pressure`` (Pa), and
 ``enth_mol`` (J/mol).
@@ -244,6 +254,9 @@ have two phases, the complimentary constraint can be deactivated and a
 :math:`P=P_{\text{sat}}` or :math:`T=T_{\text{sat}}` constraint can be added.
 
 Using the T-P-x formulation requires better initial guesses than the P-H form.
+It is not strictly necessary but it is best to try to get an initial guess that
+is in the correct phase region for the expected result model.
+
 
 Expressions
 ~~~~~~~~~~~
@@ -295,20 +308,21 @@ Expression                           Description
 ExternalFunctions
 ~~~~~~~~~~~~~~~~~
 
-This provides a list of ExternalFuctions available in the wrappers.  These
+This provides a list of ExternalFuctions available in the wrapper.  These
 functions do not use SI units and are not usually called directly.  If these
 functions are needed, they should be used with caution. Some of these are used
 in the property expressions, some are just provided to allow easier testing with
 a Python framework.
 
 All of these functions provide first and second derivative and are generally
-suited to optimization. Some functions may have non-smoothness at phase
-transitions.  The delta_vap and delta_liq functions return the same values in
-the critical region.  They will also return real values when a phase doesn't
-exist, but those values do not necessarily have physical meaning.
+suited to optimization (including the ones that return derivatives of Helmholtz
+free energy). Some functions may have non-smoothness at phase transitions.  The
+``delta_vap`` and ``delta_liq`` functions return the same values in the critical
+region.  They will also return real values when a phase doesn't exist, but those
+values do not necessarily have physical meaning.
 
 There are a few variables that are common to a lot of these functions, so they
-are summarized here :math:`tau` is the critical temperature divided by the
+are summarized here :math:`\tau` is the critical temperature divided by the
 temperature :math:`\frac{T_c}{T}`, :math:`\delta` is density divided by the
 critical density :math:`\frac{\rho}{\rho_c}`, and :math:`\phi` is Helmholtz free
 energy divided by the ideal gas constant and temperature :math:`\frac{f}{RT}`.

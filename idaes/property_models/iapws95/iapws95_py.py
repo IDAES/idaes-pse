@@ -93,6 +93,7 @@ def htpx(T, P=None, x=None):
     Convenience function to calculate steam enthalpy from temperature and
     either pressure or vapor fraction. This function can be used for inlet
     streams and initialization where temperature is known instead of enthalpy.
+    
     Args:
         T: Temperature [K]
         P: Pressure [Pa], None if saturated steam
