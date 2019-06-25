@@ -6,13 +6,15 @@ Water/Steam
 
 .. module:: idaes.property_models.iapws95.iapws95_py
 
-The International Association for the Properties of Water and Steam's
-:ref:`"Revised Release on the IAPWS Formulation 1995 for the Thermodynamic
-Properties of Ordinary Water Substance for General and Scientific Use"
-<iapws-2016>` was implemented in the IDAES framework. Non-analytic terms
-designed to improve accuracy very near the critical point were omitted, because
-they cause a singularity at the critical point, a feature which is undesirable
-in optimization problems.
+Accurate and thermodynamically consistent steam properties are provided for the
+IDAES framework by implementing the International Association for the Properties
+of Water and Steam's :ref:`"Revised Release on the IAPWS Formulation 1995 for
+the Thermodynamic Properties of Ordinary Water Substance for General and
+Scientific Use." <iapws-2016>` Non-analytic terms designed to improve accuracy
+very near the critical point were omitted, because they cause a singularity at
+the critical point, a feature which is undesirable in optimization problems. The
+IDAES implementation provides features which make the water and steam property
+calculations amenable to rigorous mathematical optimization.
 
 Theses modules can be imported as:
 
@@ -29,7 +31,7 @@ example for using water properties.
 Since all properties except the state variables are Pyomo Expressions in the
 water properties module, after solving the problem any property can be
 calculated in any state block after the problem is solved. To get the viscosity
-of the water at the heater outlet, for example the line below could be added.
+of the water at the heater outlet, for example, the line below could be added.
 
 .. testsetup::
 
@@ -110,7 +112,7 @@ IDAES Framework Wrapper
 
 A wrapper for the external functions is provided for compatibility with the IDAES
 framework. Most properties are available as Pyomo Expressions from the wrapper.
-Only the state variables are model variables. Benefit of using mostly
+Only the state variables are model variables. Benefits of using mostly
 expressions in the property package are: no initialization is required
 specifically for the property package, the model has fewer equations, and
 all properties can be easily calculated after the model is solved from the
@@ -124,7 +126,7 @@ Quantifying the effect of writing larger equations with fewer variables is
 difficult. Experience suggests in this particular case more expressions and fewer
 variables is better.
 
-Although not generally used the wrappers provide direct access to the
+Although not generally used, the wrapper provides direct access to the
 ExternalFunctions, including intermediate functions. For more information see
 section :ref:`ExternalFunctions <property_models/water:ExternalFunctions>`.
 These are mostly available for testing purposes.
@@ -132,7 +134,7 @@ These are mostly available for testing purposes.
 Phase Presentation
 ~~~~~~~~~~~~~~~~~~
 
-The property package wrapper and present the fluid phase information to the
+The property package wrapper can present the fluid phase information to the
 IDAES framework in different ways.  See the
 :ref:`class reference <property_models/water:Iapws95ParameterBlock>` for details
 on how to set these options.  The ``phase_presentation=PhaseType.MIX`` option
