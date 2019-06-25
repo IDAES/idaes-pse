@@ -165,7 +165,7 @@ There are also two single phase options ``phase_presentation=PhaseType.L`` and
 to the framework.  The vapor fraction will also always return 0 or 1 as
 appropriate. These options can be used when the phase of a fluid is know for
 certain to only be liquid or only be vapor. For the temperature-pressure-vapor
-fraction formulation, this eliminates the complimentary constraint, but for the
+fraction formulation, this eliminates the complementarity constraint, but for the
 enthalpy-pressure formulation, where the vapor fraction is always calculated,
 the single phase options probably do not provide any real benefit.
 
@@ -212,7 +212,7 @@ state variables.  When a single phase option is given, the vapor fraction is
 fixed to the appropriate value and not included in the state variable set. For
 single phase, the complementarity constraint is also deactivated.
 
-A complimentary constraint is required for the T-P-x formulation.  First, two
+A complementarity constraint is required for the T-P-x formulation.  First, two
 expressions are defined below where :math:`P^-` is pressure under saturation
 pressure and :math:`P^+` is pressure over saturation pressure. The max function
 is provided by an IDAES utility function which provides a smooth max expression.
@@ -226,7 +226,7 @@ is provided by an IDAES utility function which provides a smooth max expression.
   P^+ = \max(0, P - P_{\text{sat}})
 
 With the pressure over and pressure under saturated pressure expressions a
-complimentary constraint can be written.  If the pressure under saturation is
+complementarity constraint can be written.  If the pressure under saturation is
 more than zero, only vapor exists.  If the pressure over saturation is greater
 than zero only a liquid exists.  If both are about zero two phases can exist.
 The saturation pressure function maxes out at the critical pressure and any
@@ -239,17 +239,17 @@ as the convention for this property package.
   0 = xP^+  - (1 - x)P^-
 
 Assuming the vapor fraction (:math:`x`) is positive and noting that only one of
-:math:`P^+` and :math:`P^-` can be nonzero (approximately), the complimentarily
+:math:`P^+` and :math:`P^-` can be nonzero (approximately), the complementarity
 equation above requires :math:`x` to be 0 when :math:`P^+` is not zero (liquid)
 or :math:`x` to be 1 when :math:`P^-`` is not zero (vapor).  When both
-:math:`P^+` and :math:`P^-`` are about 0, the complimentary constraint says
+:math:`P^+` and :math:`P^-`` are about 0, the complementarity constraint says
 nothing about x, but it does provide another constraint, that
 :math:`P=P_{\text{sat}}`. When two phases are present :math:`x` can be found
 by the unit model energy balance and the temperature will be
 :math:`T_{\text{sat}}`.
 
 An alternative approach is sometimes useful. If you know for certain that you
-have two phases, the complimentary constraint can be deactivated and a
+have two phases, the complementarity constraint can be deactivated and a
 :math:`P=P_{\text{sat}}` or :math:`T=T_{\text{sat}}` constraint can be added.
 
 Using the T-P-x formulation requires better initial guesses than the P-H form.
