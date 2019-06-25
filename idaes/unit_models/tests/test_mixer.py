@@ -725,6 +725,7 @@ def test_add_port_objects_construct_ports_False():
 
 # -----------------------------------------------------------------------------
 # Test build method
+@pytest.mark.build
 def test_build_default():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -752,6 +753,7 @@ def test_build_default():
     assert isinstance(m.fs.mix.outlet, Port)
 
 
+@pytest.mark.build
 def test_build_phase_equilibrium():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -781,6 +783,7 @@ def test_build_phase_equilibrium():
     assert isinstance(m.fs.mix.outlet, Port)
 
 
+@pytest.mark.build
 def test_build_phase_pressure_equality():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -822,6 +825,7 @@ def test_model_checks():
     assert m.fs.mix.mixed_state[0].check is True
 
 
+@pytest.mark.initialization
 def test_initialize():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
@@ -861,6 +865,7 @@ def test_initialize():
     assert m.fs.sb[0].hold_state is False
 
 
+@pytest.mark.ui
 def test_report():
     m = ConcreteModel()
     m.fs = Flowsheet(default={"dynamic": False})
