@@ -58,9 +58,8 @@ example for using water properties.
 
 Since all properties except the state variables are Pyomo Expressions in the
 water properties module, after solving the problem any property can be
-calculated in any state block after the problem is solved. Continuing from the
-heater example, to get the viscosity of both phases, the lines below could be
-added.
+calculated in any state block. Continuing from the heater example, to get the
+viscosity of both phases, the lines below could be added.
 
 .. testcode::
 
