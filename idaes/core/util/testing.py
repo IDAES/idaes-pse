@@ -38,7 +38,8 @@ def get_default_solver():
     """
     if SolverFactory('ipopt').available(exception_flag=False):
         solver = SolverFactory('ipopt')
-        solver.options = {'tol': 1e-6}
+        solver.options = {'tol': 1e-6,
+                          'linear_solver': 'mumps'}
     else:
         solver = None
 
