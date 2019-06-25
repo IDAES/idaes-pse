@@ -24,8 +24,8 @@ def get_version(file, name="__version__"):
 
 NAME = "idaes"
 VERSION = get_version(os.path.join(NAME, "ver.py"))
-README = open('README.md').read()
-README = README[README.find('#'):]  # ignore everything before title
+README = open("README.md").read()
+README = README[README.find("#") :]  # ignore everything before title
 
 
 def rglob(path, glob):
@@ -93,16 +93,12 @@ kwargs = dict(
         ]
     },
     package_data={
-        # If any package contains *.template, *.json files, *.dll files, or
-        # *.so file, include them:
-        "": ["*.template", "*.json", "*.dll", "*.so", "*.svg"]
+        # If any package contains these files, include them:
+        "": ["*.template", "*.json", "*.dll", "*.so", "*.svg",
+             "*.png", "*.jpg", "*.csv", "*.ipynb"],
     },
     include_package_data=True,
-    data_files=[
-        ("examples", rglob("examples", "*.ipynb")),
-        ("examples", rglob("examples", "*.png")),
-        ("examples", rglob("examples", "*.py")),
-    ],
+    data_files=[],
     maintainer="Keith Beattie",
     maintainer_email="ksbeattie@lbl.gov",
     url="https://idaes.org",
@@ -110,7 +106,7 @@ kwargs = dict(
     platforms=["any"],
     description="IDAES Process Systems Engineering Framework",
     long_description=README,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     keywords=[NAME, "energy systems", "chemical engineering", "process modeling"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
