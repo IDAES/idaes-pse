@@ -630,6 +630,48 @@ def number_fixed_variables(block):
     return len(fixed_variables_set(block))
 
 
+def unfixed_variables_generator(block):
+    """
+    Generator which returns all unfixed Var components in a model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        A generator which returns all unfixed Var components block
+    """
+    for v in block.component_data_objects(
+            ctype=Var, active=True, descend_into=True):
+        if not v.fixed:
+            yield v
+
+
+def unfixed_variables_set(block):
+    """
+    Method to return a ComponentSet of all unfixed Var components in a model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        A ComponentSet including all unfixed Var components in block
+    """
+    return ComponentSet(unfixed_variables_generator(block))
+
+
+def number_unfixed_variables(block):
+    """
+    Method to return the number of unfixed Var components in a model.
+
+    Args:
+        block : model to be studied
+
+    Returns:
+        Number of unfixed Var components in block
+    """
+    return len(unfixed_variables_set(block))
+
+
 # -------------------------------------------------------------------------
 # Variables in Constraints
 def variables_in_activated_constraints_set(block):
