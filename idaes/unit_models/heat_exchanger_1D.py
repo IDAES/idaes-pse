@@ -133,7 +133,7 @@ constructed,
         description="Phase equilibrium term construction flag",
         doc="""Argument to enable phase equilibrium on the shell side.
 - True - include phase equilibrium term
-- False - do not include phase equilinrium term"""))
+- False - do not include phase equilibrium term"""))
     _SideTemplate.declare("property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
@@ -188,6 +188,7 @@ discretizing length domain (default=3)"""))
         description="Flow configuration of heat exchanger",
         doc="""Flow configuration of heat exchanger
 - HeatExchangerFlowPattern.cocurrent: shell and tube flows from 0 to 1
+(default)
 - HeatExchangerFlowPattern.countercurrent: shell side flows from 0 to 1
 tube side flows from 1 to 0"""))
     CONFIG.declare("has_wall_conduction", ConfigValue(
@@ -195,7 +196,7 @@ tube side flows from 1 to 0"""))
         domain=In(WallConductionType),
         description="Conduction model for tube wall",
         doc="""Argument to enable type of wall heat conduction model.
-- WallConductionType.zero_dimensional - 0D wall model,
+- WallConductionType.zero_dimensional - 0D wall model (default),
 - WallConductionType.one_dimensional - 1D wall model along the thickness of the
 tube,
 - WallConductionType.two_dimensional - 2D wall model along the lenghth and

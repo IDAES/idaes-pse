@@ -25,6 +25,9 @@ from idaes.unit_models import Heater, HeatExchanger
 from idaes.property_models import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import MaterialBalanceType
+
+# Set module level pyest marker
+pytestmark = pytest.mark.iapws
 prop_available = iapws95.iapws95_available()
 
 # -----------------------------------------------------------------------------
@@ -35,6 +38,8 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
+
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_ph_mixed_byphase():
@@ -62,6 +67,8 @@ def test_heater_ph_mixed_byphase():
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
 
+
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_phmixed_mixed_total():
@@ -90,6 +97,8 @@ def test_heater_phmixed_mixed_total():
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
 
+
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_ph_lg_total():
@@ -118,6 +127,9 @@ def test_heater_ph_lg_total():
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
 
+
+@pytest.mark.initialize
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_ph_lg_phase():
@@ -143,6 +155,8 @@ def test_heater_ph_lg_phase():
     m.fs.heater.initialize()
     assert degrees_of_freedom(m) == -1
 
+
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_ph_l_phase_two():
@@ -175,6 +189,8 @@ def test_heater_ph_l_phase_two():
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
 
+
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_ph_l_phase():
@@ -203,6 +219,8 @@ def test_heater_ph_l_phase():
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 0) <= 1e-6
 
+
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_ph_g_phase():
@@ -231,6 +249,8 @@ def test_heater_ph_g_phase():
     assert abs(value(prop_in.phase_frac["Vap"]) - 1) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 1) <= 1e-6
 
+
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_tpx_g_phase():
@@ -264,6 +284,8 @@ def test_heater_tpx_g_phase():
     assert abs(value(prop_in.phase_frac["Vap"]) - 1) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 1) <= 1e-6
 
+
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_tpx_lg_total():
@@ -296,6 +318,8 @@ def test_heater_tpx_lg_total():
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-2
     assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-2
 
+
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_tpx_lg_total_2():
@@ -328,6 +352,8 @@ def test_heater_tpx_lg_total_2():
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-2
     assert abs(value(prop_out.phase_frac["Vap"]) - 1) <= 1e-2
 
+
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_tpx_lg_phase():

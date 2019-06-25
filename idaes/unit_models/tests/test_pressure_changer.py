@@ -37,6 +37,7 @@ else:
 def test_ThermodynamicAssumption():
     assert len(ThermodynamicAssumption) == 4
 
+
 def test_build_pc():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -117,6 +118,10 @@ def test_make_isentropic():
     assert hasattr(m.fs.pc, "isentropic_energy_balance")
     assert hasattr(m.fs.pc, "actual_work")
 
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_isothermal():
@@ -152,6 +157,10 @@ def test_initialization_isothermal():
 
     solver.solve(m)
 
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_pump():
@@ -189,6 +198,10 @@ def test_initialization_pump():
 
     solver.solve(m)
 
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_adiabatic():
@@ -225,6 +238,10 @@ def test_initialization_adiabatic():
 
     solver.solve(m)
 
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialization_isentropic():
@@ -263,6 +280,8 @@ def test_initialization_isentropic():
     solver.solve(m)
 
 
+@pytest.mark.iapws
+@pytest.mark.ui
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 def test_report_isothermal():
     m = ConcreteModel()
@@ -276,6 +295,8 @@ def test_report_isothermal():
     m.fs.pc.report()
 
 
+@pytest.mark.iapws
+@pytest.mark.ui
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 def test_report_pump():
     m = ConcreteModel()
@@ -289,6 +310,8 @@ def test_report_pump():
     m.fs.pc.report()
 
 
+@pytest.mark.iapws
+@pytest.mark.ui
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 def test_report_adiabatic():
     m = ConcreteModel()
@@ -302,6 +325,8 @@ def test_report_adiabatic():
     m.fs.pc.report()
 
 
+@pytest.mark.iapws
+@pytest.mark.ui
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 def test_report_isentropic():
     m = ConcreteModel()

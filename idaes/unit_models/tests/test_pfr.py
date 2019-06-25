@@ -40,6 +40,7 @@ else:
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.build
 def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -74,6 +75,7 @@ def test_build():
     assert hasattr(m.fs.pfr, "deltaP")
 
 
+@pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize():
     m = ConcreteModel()
@@ -113,6 +115,7 @@ def test_initialize():
             m.fs.pfr.outlet.temperature[0].value)
 
 
+@pytest.mark.ui
 def test_report():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
