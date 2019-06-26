@@ -1246,16 +1246,21 @@ linked the mixed state and all outlet states,
             stream_attributes = {}
 
             for n in outlet_list+["inlet"]:
-                port_obj = getattr(self, n)[time_point]
+                port_obj = getattr(self, n)
 
                 stream_attributes[n] = {}
 
-                for k in port_obj:
-                    for i in port_obj[k]:
-                        if i is None:
-                            stream_attributes[n][k] = value(port_obj[k][i])
+                for k in port_obj.vars:
+                    for i in port_obj.vars[k]:
+                        if isinstance(i, float):
+                            stream_attributes[n][k] = value(
+                                port_obj.vars[k][time_point])
                         else:
-                            stream_attributes[n][k+" "+str(i)] = \
-                                value(port_obj[k][i])
+                            if len(i) == 2:
+                                kname = str(i[1])
+                            else:
+                                kname = str(i[1:])
+                            stream_attributes[n][k+" "+kname] = \
+                                value(port_obj.vars[k][time_point, i[1:]])
 
             return DataFrame.from_dict(stream_attributes, orient="column")
