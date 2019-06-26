@@ -183,6 +183,34 @@ class TestBTX(object):
         btx.fs.unit.report()
 
 
+# -----------------------------------------------------------------------------
+# Bug test
+def test_build():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+    m.fs.unit = Heater(default={"property_package": m.fs.properties})
+
+    assert len(m.fs.unit.inlet.vars) == 3
+    assert hasattr(m.fs.unit.inlet, "flow_mol")
+    assert hasattr(m.fs.unit.inlet, "enth_mol")
+    assert hasattr(m.fs.unit.inlet, "pressure")
+
+    assert hasattr(m.fs.unit, "outlet")
+    assert len(m.fs.unit.outlet.vars) == 3
+    assert hasattr(m.fs.unit.outlet, "flow_mol")
+    assert hasattr(m.fs.unit.outlet, "enth_mol")
+    assert hasattr(m.fs.unit.outlet, "pressure")
+
+    assert hasattr(m.fs.unit, "heat_duty")
+
+    assert number_variables(m) == 7
+    assert number_total_constraints(m) == 3
+    assert number_unused_variables(m) == 0
+
+
 ## -----------------------------------------------------------------------------
 #@pytest.mark.iapws
 #@pytest.mark.skipif(not iapws95.iapws95_available(),
@@ -287,8 +315,8 @@ class TestBTX(object):
 #    @pytest.mark.ui
 #    def test_report(self, iapws):
 #        iapws.fs.unit.report()
-#
-#
+
+
 # -----------------------------------------------------------------------------
 class TestSaponification(object):
     @pytest.fixture(scope="class")
