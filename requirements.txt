@@ -6,8 +6,8 @@ bokeh==0.12.9
 pendulum==1.4.4
 
 # Pyomo
-git+https://github.com/PyUtilib/pyutilib
-git+https://github.com/pyomo/pyomo.git@IDAES
+git+https://github.com/PyUtilib/pyutilib@5.7.1
+git+https://github.com/pyomo/pyomo.git@5.6.6
 
 # Install abstract dependencies from `setup.py`
 -e .
