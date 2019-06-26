@@ -7,3 +7,4 @@ Utility Methods
 
     model_serializer
     model_statistics
+    tables

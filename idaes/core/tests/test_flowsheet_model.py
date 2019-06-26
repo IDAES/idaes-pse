@@ -16,11 +16,21 @@ Tests for flowsheet_model.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import ConcreteModel, Set
+
+from pyomo.environ import ConcreteModel, Set, TransformationFactory
 from pyomo.dae import ContinuousSet
-from idaes.core import FlowsheetBlockData, declare_process_block_class, \
-                        PhysicalParameterBlock, useDefault
+from pyomo.network import Arc
+
+from idaes.core import (FlowsheetBlockData,
+                        FlowsheetBlock,
+                        declare_process_block_class,
+                        PhysicalParameterBlock,
+                        useDefault)
 from idaes.core.util.exceptions import DynamicError
+
+import idaes.property_models.examples.saponification_thermo as thermo_props
+import idaes.property_models.examples.saponification_reactions as rxn_props
+from idaes.unit_models import CSTR
 
 
 @declare_process_block_class("Flowsheet")
@@ -279,3 +289,37 @@ def test_setup_dynamics_sub_dynamic_external_invalid():
     m.fs.sub = Flowsheet(default={"dynamic": True, "time": m.s})
     with pytest.raises(DynamicError):
         m.fs.sub._setup_dynamics()
+
+
+def test_flowsheet_report_no_arcs():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.report()
+
+
+def test_flowsheet_report_with_arcs():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs.thermo_params = thermo_props.SaponificationParameterBlock()
+    m.fs.reaction_params = rxn_props.SaponificationReactionParameterBlock(
+        default={"property_package": m.fs.thermo_params})
+
+    m.fs.tank1 = CSTR(default={"property_package": m.fs.thermo_params,
+                               "reaction_package": m.fs.reaction_params})
+    m.fs.tank2 = CSTR(default={"property_package": m.fs.thermo_params,
+                               "reaction_package": m.fs.reaction_params})
+
+    m.fs.stream = Arc(source=m.fs.tank1.outlet,
+                      destination=m.fs.tank2.inlet)
+    TransformationFactory("network.expand_arcs").apply_to(m)
+
+    df = m.fs._get_stream_table_contents()
+
+    assert df.loc["Pressure"]["stream"] == 101325
+    assert df.loc["Temperature"]["stream"] == 298.15
+    assert df.loc["Volumetric Flowrate"]["stream"] == 1.0
+    assert df.loc["Molar Concentration H2O"]["stream"] == 100.0
+    assert df.loc["Molar Concentration NaOH"]["stream"] == 100.0
+    assert df.loc["Molar Concentration EthylAcetate"]["stream"] == 100.0
+    assert df.loc["Molar Concentration SodiumAcetate"]["stream"] == 100.0
+    assert df.loc["Molar Concentration Ethanol"]["stream"] == 100.0

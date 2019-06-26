@@ -31,6 +31,7 @@ from .control_volume_base import ControlVolumeBlockData, FlowDirection
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
                                         PropertyPackageError)
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -137,6 +138,8 @@ Must be True if dynamic = True,
         p = Port(noruleinit=True, doc=doc)
         setattr(blk, name, p)
 
+        p._state_block = (block, )
+
         # Get dict of Port members and names
         member_list = block[
                 blk.flowsheet().config.time.first()].define_port_members()
@@ -217,11 +220,18 @@ Must be True if dynamic = True,
                 member_list = (block.properties_in[
                                     block.flowsheet().config.time.first()]
                                .define_port_members())
+                p._state_block = (block.properties_in, )
             except AttributeError:
                 try:
                     member_list = (block.properties[
                                     block.flowsheet().config.time.first(), 0]
                                    .define_port_members())
+                    if block._flow_direction == FlowDirection.forward:
+                        p._state_block = (block.properties,
+                                          block.length_domain.first())
+                    elif block._flow_direction == FlowDirection.backward:
+                        p._state_block = (block.properties,
+                                          block.length_domain.last())
                 except AttributeError:
                     raise PropertyPackageError(
                             "{} property package does not appear to have "
@@ -231,6 +241,7 @@ Must be True if dynamic = True,
         elif isinstance(block, StateBlock):
             member_list = block[
                     blk.flowsheet().config.time.first()].define_port_members()
+            p._state_block = (block, )
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "
@@ -364,20 +375,28 @@ Must be True if dynamic = True,
                 member_list = (block.properties_out[
                                     block.flowsheet().config.time.first()]
                                .define_port_members())
+                p._state_block = (block.properties_out, )
             except AttributeError:
                 try:
                     member_list = (block.properties[
                                     block.flowsheet().config.time.first(), 0]
                                    .define_port_members())
+                    if block._flow_direction == FlowDirection.forward:
+                        p._state_block = (block.properties,
+                                          block.length_domain.last())
+                    elif block._flow_direction == FlowDirection.backward:
+                        p._state_block = (block.properties,
+                                          block.length_domain.first())
                 except AttributeError:
                     raise PropertyPackageError(
                             "{} property package does not appear to have "
-                            "implemented a define_port_memebers method. "
+                            "implemented a define_port_members method. "
                             "Please contact the developer of the property "
                             "package.".format(blk.name))
         elif isinstance(block, StateBlock):
             member_list = block[
                     blk.flowsheet().config.time.first()].define_port_members()
+            p._state_block = (block, )
         else:
             raise ConfigurationError(
                     "{} block provided to add_inlet_port "
@@ -450,6 +469,22 @@ Must be True if dynamic = True,
             p.add(r, s)
 
         return p
+
+    def _get_stream_table_contents(self, time_point=0):
+        """
+        Assume unit has standard configuration of 1 inlet and 1 outlet.
+
+        Developers should overload this as appropriate.
+        """
+        try:
+            return create_stream_table_dataframe({"Inlet": self.inlet,
+                                                  "Outlet": self.outlet},
+                                                 time_point=time_point)
+        except AttributeError:
+            raise ConfigurationError(
+                    f"Unit model {self.name} does not have the standard Port "
+                    f"names (inet and outlet). Please contact the unit model "
+                    f"developer to develop a unit specific stream table.")
 
     def initialize(blk, state_args=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}):

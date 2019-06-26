@@ -120,6 +120,24 @@ class TurbineOutletStageData(PressureChangerData):
         def power_shaft(b, t):
             return b.power_thermo[t]*b.efficiency_mech
 
+    def _get_performance_contents(self, time_point=0):
+        pc = super()._get_performance_contents(time_point=time_point)
+        pc["vars"]["Mechanical Efficiency"] = self.efficiency_mech
+        pc["vars"]["Flow Coefficient"] = self.flow_coeff
+        pc["vars"]["Isentropic Specific Enthalpy"] = \
+            self.delta_enth_isentropic[time_point]
+        pc["vars"]["Isentropic Efficieincy (Dry)"] = self.eff_dry
+        pc["vars"]["Design Exhaust Flow"] = self.design_exhaust_flow_vol
+
+        pc["exprs"] = {}
+        pc["exprs"]["Thermodynamic Power"] = self.power_thermo[time_point]
+        pc["exprs"]["Shaft Power"] = self.power_shaft[time_point]
+
+        pc["params"] = {}
+        pc["params"]["Flow Scaling"] = self.flow_scale
+
+        return pc
+
     def initialize(self, state_args={}, outlvl=0, solver='ipopt',
         optarg={'tol': 1e-6, 'max_iter':30}):
         """

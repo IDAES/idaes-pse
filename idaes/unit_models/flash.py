@@ -17,8 +17,10 @@ from __future__ import division
 
 # Import Python libraries
 import logging
+from pandas import DataFrame
 
 # Import Pyomo libraries
+from pyomo.environ import Constraint, value
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 
@@ -30,7 +32,9 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
-from idaes.unit_models.separator import Separator, SplittingType
+from idaes.unit_models.separator import (Separator,
+                                         SplittingType,
+                                         EnergySplittingType)
 
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
@@ -97,6 +101,32 @@ this must be False."""))
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
+    CONFIG.declare("energy_split_basis", ConfigValue(
+        default=EnergySplittingType.equal_temperature,
+        domain=EnergySplittingType,
+        description="Type of constraint to write for energy splitting",
+        doc="""Argument indicating basis to use for splitting energy this is
+not used for when ideal_separation == True.
+**default** - EnergySplittingType.equal_temperature.
+**Valid values:** {
+**EnergySplittingType.equal_temperature** - outlet temperatures equal inlet
+**EnergySplittingType.equal_molar_enthalpy** - oulet molar enthalpies equal
+inlet,
+**EnergySplittingType.enthalpy_split** - apply split fractions to enthalpy
+flows.}"""))
+    CONFIG.declare("ideal_separation", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Ideal splitting flag",
+        doc="""Argument indicating whether ideal splitting should be used.
+Ideal splitting assumes perfect separation of material, and attempts to
+avoid duplication of StateBlocks by directly partitioning outlet flows to
+ports,
+**default** - True.
+**Valid values:** {
+**True** - use ideal splitting methods. Cannot be combined with
+has_phase_equilibrium = True,
+**False** - use explicit splitting equations with split fractions.}"""))
     CONFIG.declare("has_heat_transfer", ConfigValue(
         default=True,
         domain=In([True, False]),
@@ -176,17 +206,22 @@ see property package for documentation.}"""))
         for p in self.config.property_package.phase_list:
             split_map[p] = p
 
-        self.split = Separator(default={"property_package":
-                                        self.config.property_package,
-                                        "property_package_args":
-                                        self.config.property_package_args,
-                                        "outlet_list": ["Vap", "Liq"],
-                                        "split_basis":
-                                        SplittingType.phaseFlow,
-                                        "ideal_separation": True,
-                                        "ideal_split_map": split_map,
-                                        "mixed_state_block":
-                                        self.control_volume.properties_out})
+        self.split = Separator(default={
+                "property_package": self.config.property_package,
+                "property_package_args": self.config.property_package_args,
+                "outlet_list": ["Vap", "Liq"],
+                "split_basis": SplittingType.phaseFlow,
+                "ideal_separation": self.config.ideal_separation,
+                "ideal_split_map": split_map,
+                "mixed_state_block": self.control_volume.properties_out,
+                "has_phase_equilibrium": not self.config.ideal_separation,
+                "energy_split_basis": self.config.energy_split_basis})
+        if not self.config.ideal_separation:
+            def split_frac_rule(b, t, o):
+                return b.split.split_fraction[t, o, o] == 1
+            self.split_fraction_eq = Constraint(self.flowsheet().config.time,
+                                                self.split.outlet_idx,
+                                                rule=split_frac_rule)
 
         self.vap_outlet = Port(extends=self.split.Vap)
         self.liq_outlet = Port(extends=self.split.Liq)
@@ -198,3 +233,37 @@ see property package for documentation.}"""))
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
             add_object_reference(self, "deltaP", self.control_volume.deltaP)
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        if hasattr(self, "heat_duty"):
+            var_dict["Heat Duty"] = self.heat_duty[time_point]
+        if hasattr(self, "deltaP"):
+            var_dict["Pressure Change"] = self.deltaP[time_point]
+
+        return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        stream_attributes = {}
+
+        for n, v in {"Inlet": "inlet",
+                     "Vapor Outlet": "vap_outlet",
+                     "Liquid Outlet": "liq_outlet"}.items():
+            port_obj = getattr(self, v)
+
+            stream_attributes[n] = {}
+
+            for k in port_obj.vars:
+                for i in port_obj.vars[k].keys():
+                    if isinstance(i, float):
+                        stream_attributes[n][k] = value(
+                                port_obj.vars[k][time_point])
+                    else:
+                        if len(i) == 2:
+                            kname = str(i[1])
+                        else:
+                            kname = str(i[1:])
+                        stream_attributes[n][k+" "+kname] = \
+                            value(port_obj.vars[k][time_point, i[1:]])
+
+        return DataFrame.from_dict(stream_attributes, orient="columns")

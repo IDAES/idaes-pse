@@ -618,3 +618,18 @@ see property package for documentation.}"""))
 
         if outlvl > 0:
             logger.info('{} Initialisation Complete.'.format(blk.name))
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        if hasattr(self, "deltaP"):
+            var_dict["Mechanical Work"] = self.work_mechanical[time_point]
+        if hasattr(self, "deltaP"):
+            var_dict["Pressure Change"] = self.deltaP[time_point]
+        if hasattr(self, "ratioP"):
+            var_dict["Pressure Ratio"] = self.deltaP[time_point]
+        if hasattr(self, "efficiency_pump"):
+            var_dict["Efficiency"] = self.deltaP[time_point]
+        if hasattr(self, "efficiency_isentropic"):
+            var_dict["Isentropic Efficiency"] = self.deltaP[time_point]
+
+        return {"vars": var_dict}

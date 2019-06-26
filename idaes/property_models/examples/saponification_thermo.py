@@ -101,7 +101,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'pressure': {'method': None, 'units': 'Pa'},
                 'temperature': {'method': None, 'units': 'K'},
                 'conc_mol_comp': {'method': None, 'units': 'mol/m^3'},
-                'cp_mol': {'method': None, 'units': 'J/mol.K'},
                 'dens_mol': {'method': None, 'units': 'mol/m^3'}})
         obj.add_default_units({'time': 's',
                                'length': 'm',
@@ -333,6 +332,12 @@ class SaponificationStateBlockData(StateBlockData):
                 "conc_mol_comp": b.conc_mol_comp,
                 "temperature": b.temperature,
                 "pressure": b.pressure}
+
+    def define_display_vars(b):
+        return {"Volumetric Flowrate": b.flow_vol,
+                "Molar Concentration": b.conc_mol_comp,
+                "Temperature": b.temperature,
+                "Pressure": b.pressure}
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
