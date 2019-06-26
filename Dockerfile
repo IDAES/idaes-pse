@@ -37,14 +37,15 @@ RUN conda install --quiet --yes \
 # Add idaes directory and change permissions to the notebook user:
 ADD . /home/idaes
 USER root
-RUN wget https://idaes-files.s3.amazonaws.com/public/idaes-coinbinary.tar.gz -P /usr/local
+RUN wget https://idaes-files.s3.amazonaws.com/public/idaes-coinbinary-static-build.zip -P /usr/local
 RUN sudo apt-get update
 RUN echo "America/Los_Angeles" > /etc/timezone
 RUN chown -R $NB_UID /home/idaes
 
 # Expand idaes-coinbinary contents:
 WORKDIR /usr/local
-RUN tar xvzf idaes-coinbinary.tar.gz
+RUN unzip idaes-coinbinary-static-build.zip -d /usr/local/coinor-optimization-suite-1.8
+RUN cp /usr/local/coinor-optimization-suite-1.8/bin/* /usr/local/bin
 
 # Copying part of install-solvers here:
 WORKDIR /home/idaes
@@ -68,8 +69,8 @@ RUN make
 RUN python setup.py install
 
 WORKDIR /home
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/idaes-coinbinary-1.8.0/lib:/opt/conda/lib/
-ENV PATH=$PATH:/usr/local/idaes-coinbinary-1.8.0/bin
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/coinor-optimization-suite-1.8/lib:/opt/conda/lib/
+ENV PATH=$PATH:/usr/local/bin
 # Command to smoke-test ipopt install in the Docker container:
 # cd /usr/local/idaes-coinbinary-1.8.0 && ./bin/ipopt ./test/mytoy.nl -AMPL linear_solver=ma57
 USER $NB_UID
