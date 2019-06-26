@@ -37,14 +37,14 @@ RUN conda install --quiet --yes \
 # Add idaes directory and change permissions to the notebook user:
 ADD . /home/idaes
 USER root
-RUN wget https://idaes-files.s3.amazonaws.com/public/idaes-coinbinary-static-build.zip -P /usr/local
+RUN wget https://idaes-files.s3.amazonaws.com/public/idaes-coinbinary-1.2.0.dev0.zip -P /usr/local
 RUN sudo apt-get update
 RUN echo "America/Los_Angeles" > /etc/timezone
 RUN chown -R $NB_UID /home/idaes
 
 # Expand idaes-coinbinary contents:
 WORKDIR /usr/local
-RUN unzip idaes-coinbinary-static-build.zip -d /usr/local/coinor-optimization-suite-1.8
+RUN unzip idaes-coinbinary-1.2.0.dev0.zip -d /usr/local/coinor-optimization-suite-1.8
 RUN cp /usr/local/coinor-optimization-suite-1.8/bin/* /usr/local/bin
 
 # Copying part of install-solvers here:
