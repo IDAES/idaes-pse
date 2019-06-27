@@ -184,137 +184,109 @@ class TestBTX(object):
 
 
 # -----------------------------------------------------------------------------
-# Bug test
-def test_build():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+@pytest.mark.iapws
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+class TestIAPWS(object):
+    @pytest.fixture(scope="class")
+    def iapws(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = iapws95.Iapws95ParameterBlock()
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
 
-    m.fs.unit = Heater(default={"property_package": m.fs.properties})
+        m.fs.unit = Heater(default={"property_package": m.fs.properties})
 
-    assert len(m.fs.unit.inlet.vars) == 3
-    assert hasattr(m.fs.unit.inlet, "flow_mol")
-    assert hasattr(m.fs.unit.inlet, "enth_mol")
-    assert hasattr(m.fs.unit.inlet, "pressure")
+        return m
 
-    assert hasattr(m.fs.unit, "outlet")
-    assert len(m.fs.unit.outlet.vars) == 3
-    assert hasattr(m.fs.unit.outlet, "flow_mol")
-    assert hasattr(m.fs.unit.outlet, "enth_mol")
-    assert hasattr(m.fs.unit.outlet, "pressure")
+    @pytest.mark.build
+    def test_build(self, iapws):
+        assert len(iapws.fs.unit.inlet.vars) == 3
+        assert hasattr(iapws.fs.unit.inlet, "flow_mol")
+        assert hasattr(iapws.fs.unit.inlet, "enth_mol")
+        assert hasattr(iapws.fs.unit.inlet, "pressure")
 
-    assert hasattr(m.fs.unit, "heat_duty")
+        assert hasattr(iapws.fs.unit, "outlet")
+        assert len(iapws.fs.unit.outlet.vars) == 3
+        assert hasattr(iapws.fs.unit.outlet, "flow_mol")
+        assert hasattr(iapws.fs.unit.outlet, "enth_mol")
+        assert hasattr(iapws.fs.unit.outlet, "pressure")
 
-    assert number_variables(m) == 7
-    assert number_total_constraints(m) == 3
-    assert number_unused_variables(m) == 0
+        assert hasattr(iapws.fs.unit, "heat_duty")
 
+        assert number_variables(iapws) == 7
+        assert number_total_constraints(iapws) == 3
+        assert number_unused_variables(iapws) == 0
 
-## -----------------------------------------------------------------------------
-#@pytest.mark.iapws
-#@pytest.mark.skipif(not iapws95.iapws95_available(),
-#                    reason="IAPWS not available")
-#class TestIAPWS(object):
-#    @pytest.fixture(scope="class")
-#    def iapws(self):
-#        m = ConcreteModel()
-#        m.fs = FlowsheetBlock(default={"dynamic": False})
-#
-#        m.fs.properties = iapws95.Iapws95ParameterBlock()
-#
-#        m.fs.unit = Heater(default={"property_package": m.fs.properties})
-#
-#        return m
-#
-#    @pytest.mark.build
-#    def test_build(self, iapws):
-#        assert len(iapws.fs.unit.inlet.vars) == 3
-#        assert hasattr(iapws.fs.unit.inlet, "flow_mol")
-#        assert hasattr(iapws.fs.unit.inlet, "enth_mol")
-#        assert hasattr(iapws.fs.unit.inlet, "pressure")
-#
-#        assert hasattr(iapws.fs.unit, "outlet")
-#        assert len(iapws.fs.unit.outlet.vars) == 3
-#        assert hasattr(iapws.fs.unit.outlet, "flow_mol")
-#        assert hasattr(iapws.fs.unit.outlet, "enth_mol")
-#        assert hasattr(iapws.fs.unit.outlet, "pressure")
-#
-#        assert hasattr(iapws.fs.unit, "heat_duty")
-#
-#        assert number_variables(iapws) == 7
-#        assert number_total_constraints(iapws) == 3
-#        assert number_unused_variables(iapws) == 0
-#
-#    def test_dof(self, iapws):
-#        iapws.fs.unit.inlet.flow_mol[0].fix(5)
-#        iapws.fs.unit.inlet.enth_mol[0].fix(50000)
-#        iapws.fs.unit.inlet.pressure[0].fix(101325)
-#
-#        iapws.fs.unit.heat_duty.fix(10000)
-#
-#        assert degrees_of_freedom(iapws) == 0
-#
-#    @pytest.mark.initialization
-#    @pytest.mark.solver
-#    @pytest.mark.skipif(solver is None, reason="Solver not available")
-#    def test_initialize(self, iapws):
-#        orig_fixed_vars = fixed_variables_set(iapws)
-#        orig_act_consts = activated_constraints_set(iapws)
-#
-#        iapws.fs.unit.initialize(optarg={'tol': 1e-6})
-#
-#        assert degrees_of_freedom(iapws) == 0
-#
-#        fin_fixed_vars = fixed_variables_set(iapws)
-#        fin_act_consts = activated_constraints_set(iapws)
-#
-#        assert len(fin_act_consts) == len(orig_act_consts)
-#        assert len(fin_fixed_vars) == len(orig_fixed_vars)
-#
-#        for c in fin_act_consts:
-#            assert c in orig_act_consts
-#        for v in fin_fixed_vars:
-#            assert v in orig_fixed_vars
-#
-#    @pytest.mark.solver
-#    @pytest.mark.skipif(solver is None, reason="Solver not available")
-#    def test_solve(self, iapws):
-#        results = solver.solve(iapws)
-#
-#        # Check for optimal solution
-#        assert results.solver.termination_condition == \
-#            TerminationCondition.optimal
-#        assert results.solver.status == SolverStatus.ok
-#
-#    @pytest.mark.initialize
-#    @pytest.mark.solver
-#    @pytest.mark.skipif(solver is None, reason="Solver not available")
-#    def test_solution(self, iapws):
-#        assert pytest.approx(5, abs=1e-5) == \
-#            value(iapws.fs.unit.outlet.flow_mol[0])
-#
-#        assert pytest.approx(52000, abs=1e0) == \
-#            value(iapws.fs.unit.outlet.enth_mol[0])
-#
-#        assert pytest.approx(101325, abs=1e2) == \
-#            value(iapws.fs.unit.outlet.pressure[0])
-#
-#    @pytest.mark.initialize
-#    @pytest.mark.solver
-#    @pytest.mark.skipif(solver is None, reason="Solver not available")
-#    def test_conservation(self, iapws):
-#        assert abs(value(iapws.fs.unit.inlet.flow_mol[0] -
-#                         iapws.fs.unit.outlet.flow_mol[0])) <= 1e-6
-#
-#        assert abs(value(
-#            iapws.fs.unit.inlet.flow_mol[0]*iapws.fs.unit.inlet.enth_mol[0] -
-#            iapws.fs.unit.outlet.flow_mol[0]*iapws.fs.unit.outlet.enth_mol[0] +
-#            iapws.fs.unit.heat_duty[0])) <= 1e-6
-#
-#    @pytest.mark.ui
-#    def test_report(self, iapws):
-#        iapws.fs.unit.report()
+    def test_dof(self, iapws):
+        iapws.fs.unit.inlet.flow_mol[0].fix(5)
+        iapws.fs.unit.inlet.enth_mol[0].fix(50000)
+        iapws.fs.unit.inlet.pressure[0].fix(101325)
+
+        iapws.fs.unit.heat_duty.fix(10000)
+
+        assert degrees_of_freedom(iapws) == 0
+
+    @pytest.mark.initialization
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialize(self, iapws):
+        orig_fixed_vars = fixed_variables_set(iapws)
+        orig_act_consts = activated_constraints_set(iapws)
+
+        iapws.fs.unit.initialize(optarg={'tol': 1e-6})
+
+        assert degrees_of_freedom(iapws) == 0
+
+        fin_fixed_vars = fixed_variables_set(iapws)
+        fin_act_consts = activated_constraints_set(iapws)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, iapws):
+        results = solver.solve(iapws)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, iapws):
+        assert pytest.approx(5, abs=1e-5) == \
+            value(iapws.fs.unit.outlet.flow_mol[0])
+
+        assert pytest.approx(52000, abs=1e0) == \
+            value(iapws.fs.unit.outlet.enth_mol[0])
+
+        assert pytest.approx(101325, abs=1e2) == \
+            value(iapws.fs.unit.outlet.pressure[0])
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, iapws):
+        assert abs(value(iapws.fs.unit.inlet.flow_mol[0] -
+                         iapws.fs.unit.outlet.flow_mol[0])) <= 1e-6
+
+        assert abs(value(
+            iapws.fs.unit.inlet.flow_mol[0]*iapws.fs.unit.inlet.enth_mol[0] -
+            iapws.fs.unit.outlet.flow_mol[0]*iapws.fs.unit.outlet.enth_mol[0] +
+            iapws.fs.unit.heat_duty[0])) <= 1e-6
+
+    @pytest.mark.ui
+    def test_report(self, iapws):
+        iapws.fs.unit.report()
 
 
 # -----------------------------------------------------------------------------

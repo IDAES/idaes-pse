@@ -466,17 +466,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                          doc="Material balances")
         def material_balances(b, t, p, j):
             if j in phase_component_list[p]:
-#                print(p, j)
-#                print(accumulation_term(b, t, p, j))
-#                print(value(b.properties_in[t].get_material_flow_terms(p, j)))
-#                print(value(b.properties_out[t].get_material_flow_terms(p, j)))
-#                print(kinetic_term(b, t, p, j))
-#                print(b._rxn_rate_conv(t, j, has_rate_reactions))
-#                print(equilibrium_term(b, t, p, j))
-#                print(phase_equilibrium_term(b, t, p, j))
-#                print(transfer_term(b, t, p, j))
-#                print(user_term_mol(b, t, p, j))
-#                print(user_term_mass(b, t, p, j))
                 return accumulation_term(b, t, p, j) == (
                         b.properties_in[t].get_material_flow_terms(p, j) -
                         b.properties_out[t].get_material_flow_terms(p, j) +
