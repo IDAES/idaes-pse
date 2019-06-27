@@ -15,15 +15,18 @@
 This script downloads a python file from pyomo.org that will allow us to update 
 the workshop material easily during a workshop.
 
-The file install_idaes_workshop_material.py is downloaded from pyomo.org, imported,
+The file install_idaes_workshop_materials.py is downloaded from pyomo.org, imported,
  and the method execute() is then called to do whatever actions are necessary.
 
 To explain what happens:
-- update_workshop_materials.py is a static file in the idaes/util folder
+- update_workshop_materials.py is a module in the idaes/util folder that does the work
 - install_idaes_workshop_materials.py is posted on a site (for now pyomo.org, but later could be a repository on github).
-1) JupyterHub: User executes update_workshop_materials.ipynb
-2) update_workshop_materials.py downloads another python file (install_idaes_workshop_materials.py) and calls "execute()" from that module.
-3) install_idaes_workshop_materials.py does whatever is necessary to get the workshop materials into the user folder (and perform any updates necessary).
+
+1) JupyterHub: User executes update_workshop_materials.ipynb which calls to update_workshop_materials.py in idaes/util
+2) update_workshop_materials.py downloads another python file (install_idaes_workshop_materials.py)
+   from pyomo.org and calls "execute()" from that module.
+3) install_idaes_workshop_materials.py does whatever is necessary to get the workshop materials 
+   into the user folder (and perform any updates necessary).
 
 TODO: This should probably be changed to get a zip file from an IDAES repository rather than install_idaes_workshop_materials.py from pyomo.org
 """
@@ -37,6 +40,9 @@ from pyutilib.misc import import_file
 _install_idaes_workshop_materials_url = 'http://www.pyomo.org/s/install_idaes_workshop_materials.py'
 
 def download_and_import_install_module():
+    """
+    Downloads install_idaes_workshop_materials.py from pyomo.org and imports the module.
+    """
     download_dir = futils.this_file_dir()
     download_dir = os.path.join(download_dir, '../../examples/workshops')
     download_dest = os.path.join(download_dir, 'install_idaes_workshop_materials.py')
@@ -66,6 +72,9 @@ def download_and_import_install_module():
     return install_module
 
 def download_and_execute_install_module():
+    """
+    Downloads, imports, and calls execute on the install_idaes_workshop_materials.py file from pyomo.org
+    """
     install_module = download_and_import_install_module()
     install_module.execute()
     

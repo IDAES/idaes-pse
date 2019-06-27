@@ -10,10 +10,10 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+
 """
 Tests for update_workshop_materials
 """
-
 import idaes.util.update_workshop_materials as up
 
 def test_update_workshop_materials():
