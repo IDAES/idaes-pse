@@ -79,7 +79,7 @@ class TestMixer(object):
         return m
 
     def test_mixer_config(self, mixer_frame):
-        assert len(mixer_frame.fs.mix.config) == 13
+        assert len(mixer_frame.fs.mix.config) == 12
         assert mixer_frame.fs.mix.config.dynamic is False
         assert mixer_frame.fs.mix.config.has_holdup is False
         assert mixer_frame.fs.mix.config.property_package == mixer_frame.fs.pp
@@ -89,8 +89,6 @@ class TestMixer(object):
         assert mixer_frame.fs.mix.config.inlet_list is None
         assert mixer_frame.fs.mix.config.num_inlets is None
         assert mixer_frame.fs.mix.config.has_phase_equilibrium is False
-        assert mixer_frame.fs.mix.config.material_mixing_type == \
-            MixingType.extensive
         assert mixer_frame.fs.mix.config.energy_mixing_type == \
             MixingType.extensive
         assert mixer_frame.fs.mix.config.momentum_mixing_type == \
@@ -708,7 +706,7 @@ class TestBTX(object):
     def test_dof(self, btx):
         btx.fs.unit.inlet_1.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.inlet_1.temperature[0].fix(365)  # K
-        btx.fs.unit.inlet_1.pressure[0].fix(101325)  # Pa
+        btx.fs.unit.inlet_1.pressure[0].fix(2e5)  # Pa
         btx.fs.unit.inlet_1.mole_frac[0, "benzene"].fix(0.5)
         btx.fs.unit.inlet_1.mole_frac[0, "toluene"].fix(0.5)
 
@@ -752,43 +750,286 @@ class TestBTX(object):
             TerminationCondition.optimal
         assert results.solver.status == SolverStatus.ok
 
-#    @pytest.mark.initialize
-#    @pytest.mark.solver
-#    @pytest.mark.skipif(solver is None, reason="Solver not available")
-#    def test_solution(self, btx):
-#        assert (pytest.approx(5, abs=1e-3) ==
-#                value(btx.fs.unit.outlet_1.flow_mol[0]))
-#        assert (pytest.approx(359.5, abs=1e-1) ==
-#                value(btx.fs.unit.outlet_1.temperature[0]))
-#        assert (pytest.approx(101325, abs=1e-3) ==
-#                value(btx.fs.unit.outlet_1.pressure[0]))
-#
-#        assert (pytest.approx(1, abs=1e-3) ==
-#                value(btx.fs.unit.outlet_2.flow_mol[0]))
-#        assert (pytest.approx(329.9, abs=1e-1) ==
-#                value(btx.fs.unit.outlet_2.temperature[0]))
-#        assert (pytest.approx(101325, abs=1e-3) ==
-#                value(btx.fs.unit.outlet_2.pressure[0]))
-#
-#    @pytest.mark.initialize
-#    @pytest.mark.solver
-#    @pytest.mark.skipif(solver is None, reason="Solver not available")
-#    def test_conservation(self, btx):
-#        assert abs(value(btx.fs.unit.inlet_1.flow_mol[0] -
-#                         btx.fs.unit.outlet_1.flow_mol[0])) <= 1e-6
-#        assert abs(value(btx.fs.unit.inlet_2.flow_mol[0] -
-#                         btx.fs.unit.outlet_2.flow_mol[0])) <= 1e-6
-#
-#        side_1 = value(
-#                btx.fs.unit.outlet_1.flow_mol[0] *
-#                (btx.fs.unit.side_1.properties_in[0].enth_mol_phase['Liq'] -
-#                 btx.fs.unit.side_1.properties_out[0].enth_mol_phase['Liq']))
-#        side_2 = value(
-#                btx.fs.unit.outlet_2.flow_mol[0] *
-#                (btx.fs.unit.side_2.properties_in[0].enth_mol_phase['Liq'] -
-#                 btx.fs.unit.side_2.properties_out[0].enth_mol_phase['Liq']))
-#        assert abs(side_1 + side_2) <= 1e-6
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, btx):
+        assert (pytest.approx(6, abs=1e-3) ==
+                value(btx.fs.unit.outlet.flow_mol[0]))
+        assert (pytest.approx(354.7, abs=1e-1) ==
+                value(btx.fs.unit.outlet.temperature[0]))
+        assert (pytest.approx(101325, abs=1e3) ==
+                value(btx.fs.unit.outlet.pressure[0]))
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, btx):
+        assert abs(value(btx.fs.unit.inlet_1.flow_mol[0] +
+                         btx.fs.unit.inlet_2.flow_mol[0] -
+                         btx.fs.unit.outlet.flow_mol[0])) <= 1e-6
+
+        assert 1e-6 >= abs(value(
+                btx.fs.unit.inlet_1.flow_mol[0] *
+                btx.fs.unit.inlet_1_state[0].enth_mol_phase['Liq'] +
+                btx.fs.unit.inlet_2.flow_mol[0] *
+                btx.fs.unit.inlet_2_state[0].enth_mol_phase['Liq'] -
+                btx.fs.unit.outlet.flow_mol[0] *
+                btx.fs.unit.mixed_state[0].enth_mol_phase['Liq']))
 
     @pytest.mark.ui
     def test_report(self, btx):
         btx.fs.unit.report()
+
+
+# -----------------------------------------------------------------------------
+@pytest.mark.iapws
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+class TestIAPWS(object):
+    @pytest.fixture(scope="class")
+    def iapws(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = Mixer(default={
+                "property_package": m.fs.properties,
+                "material_balance_type": MaterialBalanceType.componentTotal,
+                "momentum_mixing_type": MomentumMixingType.equality})
+
+        return m
+
+    @pytest.mark.build
+    def test_build(self, iapws):
+        assert len(iapws.fs.unit.inlet_1.vars) == 3
+        assert hasattr(iapws.fs.unit.inlet_1, "flow_mol")
+        assert hasattr(iapws.fs.unit.inlet_1, "enth_mol")
+        assert hasattr(iapws.fs.unit.inlet_1, "pressure")
+
+        assert len(iapws.fs.unit.inlet_2.vars) == 3
+        assert hasattr(iapws.fs.unit.inlet_2, "flow_mol")
+        assert hasattr(iapws.fs.unit.inlet_2, "enth_mol")
+        assert hasattr(iapws.fs.unit.inlet_2, "pressure")
+
+        assert hasattr(iapws.fs.unit, "outlet")
+        assert len(iapws.fs.unit.outlet.vars) == 3
+        assert hasattr(iapws.fs.unit.outlet, "flow_mol")
+        assert hasattr(iapws.fs.unit.outlet, "enth_mol")
+        assert hasattr(iapws.fs.unit.outlet, "pressure")
+
+    def test_dof(self, iapws):
+        iapws.fs.unit.inlet_1.flow_mol[0].fix(100)
+        iapws.fs.unit.inlet_1.enth_mol[0].fix(4000)
+        iapws.fs.unit.inlet_1.pressure[0].fix(101325)
+
+        iapws.fs.unit.inlet_2.flow_mol[0].fix(100)
+        iapws.fs.unit.inlet_2.enth_mol[0].fix(3500)
+
+        assert degrees_of_freedom(iapws) == 0
+
+    @pytest.mark.initialization
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialize(self, iapws):
+        orig_fixed_vars = fixed_variables_set(iapws)
+        orig_act_consts = activated_constraints_set(iapws)
+
+        iapws.fs.unit.initialize(optarg={'tol': 1e-6})
+
+        assert degrees_of_freedom(iapws) == 0
+
+        fin_fixed_vars = fixed_variables_set(iapws)
+        fin_act_consts = activated_constraints_set(iapws)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, iapws):
+        results = solver.solve(iapws)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, iapws):
+        assert pytest.approx(200, abs=1e-5) == \
+            value(iapws.fs.unit.outlet.flow_mol[0])
+
+        assert pytest.approx(3750, abs=1e0) == \
+            value(iapws.fs.unit.outlet.enth_mol[0])
+
+        assert pytest.approx(101325, abs=1e2) == \
+            value(iapws.fs.unit.outlet.pressure[0])
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, iapws):
+        assert abs(value(iapws.fs.unit.inlet_1.flow_mol[0] +
+                         iapws.fs.unit.inlet_2.flow_mol[0] -
+                         iapws.fs.unit.outlet.flow_mol[0])) <= 1e-6
+
+        assert abs(value(iapws.fs.unit.inlet_1.flow_mol[0] *
+                         iapws.fs.unit.inlet_1.enth_mol[0] +
+                         iapws.fs.unit.inlet_2.flow_mol[0] *
+                         iapws.fs.unit.inlet_2.enth_mol[0] -
+                         iapws.fs.unit.outlet.flow_mol[0] *
+                         iapws.fs.unit.outlet.enth_mol[0])) <= 1e-6
+
+    @pytest.mark.ui
+    def test_report(self, iapws):
+        iapws.fs.unit.report()
+
+
+# -----------------------------------------------------------------------------
+class TestSaponification(object):
+    @pytest.fixture(scope="class")
+    def sapon(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = SaponificationParameterBlock()
+
+        m.fs.unit = Mixer(default={"property_package": m.fs.properties})
+
+        return m
+
+    @pytest.mark.build
+    def test_build(self, sapon):
+        assert len(sapon.fs.unit.inlet_1.vars) == 4
+        assert hasattr(sapon.fs.unit.inlet_1, "flow_vol")
+        assert hasattr(sapon.fs.unit.inlet_1, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit.inlet_1, "temperature")
+        assert hasattr(sapon.fs.unit.inlet_1, "pressure")
+
+        assert len(sapon.fs.unit.inlet_2.vars) == 4
+        assert hasattr(sapon.fs.unit.inlet_2, "flow_vol")
+        assert hasattr(sapon.fs.unit.inlet_2, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit.inlet_2, "temperature")
+        assert hasattr(sapon.fs.unit.inlet_2, "pressure")
+
+        assert len(sapon.fs.unit.outlet.vars) == 4
+        assert hasattr(sapon.fs.unit.outlet, "flow_vol")
+        assert hasattr(sapon.fs.unit.outlet, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit.outlet, "temperature")
+        assert hasattr(sapon.fs.unit.outlet, "pressure")
+
+        assert number_variables(sapon) == 26
+        assert number_total_constraints(sapon) == 10
+        assert number_unused_variables(sapon) == 0
+
+    def test_dof(self, sapon):
+        sapon.fs.unit.inlet_1.flow_vol[0].fix(1e-3)
+        sapon.fs.unit.inlet_1.temperature[0].fix(320)
+        sapon.fs.unit.inlet_1.pressure[0].fix(101325)
+        sapon.fs.unit.inlet_1.conc_mol_comp[0, "H2O"].fix(55388.0)
+        sapon.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"].fix(100.0)
+        sapon.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        sapon.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        sapon.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        sapon.fs.unit.inlet_2.flow_vol[0].fix(1e-3)
+        sapon.fs.unit.inlet_2.temperature[0].fix(300)
+        sapon.fs.unit.inlet_2.pressure[0].fix(101325)
+        sapon.fs.unit.inlet_2.conc_mol_comp[0, "H2O"].fix(55388.0)
+        sapon.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"].fix(100.0)
+        sapon.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        sapon.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        sapon.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        assert degrees_of_freedom(sapon) == 0
+
+    @pytest.mark.initialization
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialize(self, sapon):
+        orig_fixed_vars = fixed_variables_set(sapon)
+        orig_act_consts = activated_constraints_set(sapon)
+
+        sapon.fs.unit.initialize(optarg={'tol': 1e-6})
+
+        assert degrees_of_freedom(sapon) == 0
+
+        fin_fixed_vars = fixed_variables_set(sapon)
+        fin_act_consts = activated_constraints_set(sapon)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, sapon):
+        results = solver.solve(sapon)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, sapon):
+        assert pytest.approx(2e-3, abs=1e-6) == \
+            value(sapon.fs.unit.outlet.flow_vol[0])
+
+        assert pytest.approx(55388.0, abs=1e0) == value(
+                sapon.fs.unit.outlet.conc_mol_comp[0, "H2O"])
+        assert pytest.approx(100.0, abs=1e-3) == value(
+                sapon.fs.unit.outlet.conc_mol_comp[0, "NaOH"])
+        assert pytest.approx(100.0, abs=1e-3) == value(
+                sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"])
+        assert pytest.approx(0.0, abs=1e-3) == value(
+                sapon.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"])
+        assert pytest.approx(0.0, abs=1e-3) == value(
+                sapon.fs.unit.outlet.conc_mol_comp[0, "Ethanol"])
+
+        assert pytest.approx(310.0, abs=1e-1) == \
+            value(sapon.fs.unit.outlet.temperature[0])
+
+        assert pytest.approx(101325, abs=1e2) == \
+            value(sapon.fs.unit.outlet.pressure[0])
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, sapon):
+        assert abs(value(sapon.fs.unit.inlet_1.flow_vol[0] +
+                         sapon.fs.unit.inlet_2.flow_vol[0] -
+                         sapon.fs.unit.outlet.flow_vol[0])) <= 1e-6
+
+        assert abs(value(
+                sapon.fs.unit.inlet_1.flow_vol[0] *
+                sapon.fs.properties.dens_mol*sapon.fs.properties.cp_mol *
+                (sapon.fs.unit.inlet_1.temperature[0] -
+                 sapon.fs.properties.temperature_ref) +
+                sapon.fs.unit.inlet_2.flow_vol[0] *
+                sapon.fs.properties.dens_mol*sapon.fs.properties.cp_mol *
+                (sapon.fs.unit.inlet_2.temperature[0] -
+                 sapon.fs.properties.temperature_ref) -
+                sapon.fs.unit.outlet.flow_vol[0] *
+                sapon.fs.properties.dens_mol*sapon.fs.properties.cp_mol *
+                (sapon.fs.unit.outlet.temperature[0] -
+                 sapon.fs.properties.temperature_ref))) <= 1e-3
+
+    @pytest.mark.ui
+    def test_report(self, sapon):
+        sapon.fs.unit.report()

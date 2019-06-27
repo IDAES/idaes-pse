@@ -154,16 +154,6 @@ calculated for the resulting mixed stream,
 **Valid values:** {
 **True** - calculate phase equilibrium in mixed stream,
 **False** - do not calculate equilibrium in mixed stream.}"""))
-    CONFIG.declare("material_mixing_type", ConfigValue(
-        default=MixingType.extensive,
-        domain=MixingType,
-        description="Method to use when mixing material flows",
-        doc="""Argument indicating what method to use when mixing material
-flows of incoming streams,
-**default** - MixingType.extensive.
-**Valid values:** {
-**MixingType.none** - do not include material mixing equations,
-**MixingType.extensive** - mix total flows of each phase-component pair.}"""))
     CONFIG.declare("energy_mixing_type", ConfigValue(
         default=MixingType.extensive,
         domain=MixingType,
@@ -246,17 +236,15 @@ linked to all inlet states and the mixed state,
         else:
             mixed_block = self.get_mixed_state_block()
 
-        if self.config.material_mixing_type == MixingType.extensive:
+        if self.config.material_balance_type != MaterialBalanceType.none:
             self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
                                                mixed_block=mixed_block)
-        elif self.config.material_mixing_type == MixingType.none:
-            pass
         else:
-            raise ConfigurationError("{} received unrecognised value for "
-                                     "material_mixing_type argument. This "
-                                     "should not occur, so please contact "
-                                     "the IDAES developers with this bug."
-                                     .format(self.name))
+            raise BurntToast("{} received unrecognised value for "
+                             "material_mixing_type argument. This "
+                             "should not occur, so please contact "
+                             "the IDAES developers with this bug."
+                             .format(self.name))
 
         if self.config.energy_mixing_type == MixingType.extensive:
             self.add_energy_mixing_equations(inlet_blocks=inlet_blocks,

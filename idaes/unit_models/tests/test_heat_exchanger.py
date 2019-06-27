@@ -524,26 +524,26 @@ class TestSaponification_crossflow(object):
             value(sapon.fs.unit.outlet_2.flow_vol[0])
 
         assert 55388.0 == value(
-                sapon.fs.unit.inlet_1.conc_mol_comp[0, "H2O"])
+                sapon.fs.unit.outlet_1.conc_mol_comp[0, "H2O"])
         assert 100.0 == value(
-                sapon.fs.unit.inlet_1.conc_mol_comp[0, "NaOH"])
+                sapon.fs.unit.outlet_1.conc_mol_comp[0, "NaOH"])
         assert 100.0 == value(
-                sapon.fs.unit.inlet_1.conc_mol_comp[0, "EthylAcetate"])
+                sapon.fs.unit.outlet_1.conc_mol_comp[0, "EthylAcetate"])
         assert 0.0 == value(
-                sapon.fs.unit.inlet_1.conc_mol_comp[0, "SodiumAcetate"])
+                sapon.fs.unit.outlet_1.conc_mol_comp[0, "SodiumAcetate"])
         assert 0.0 == value(
-                sapon.fs.unit.inlet_1.conc_mol_comp[0, "Ethanol"])
+                sapon.fs.unit.outlet_1.conc_mol_comp[0, "Ethanol"])
 
         assert 55388.0 == value(
-                sapon.fs.unit.inlet_2.conc_mol_comp[0, "H2O"])
+                sapon.fs.unit.outlet_2.conc_mol_comp[0, "H2O"])
         assert 100.0 == value(
-                sapon.fs.unit.inlet_2.conc_mol_comp[0, "NaOH"])
+                sapon.fs.unit.outlet_2.conc_mol_comp[0, "NaOH"])
         assert 100.0 == value(
-                sapon.fs.unit.inlet_2.conc_mol_comp[0, "EthylAcetate"])
+                sapon.fs.unit.outlet_2.conc_mol_comp[0, "EthylAcetate"])
         assert 0.0 == value(
-                sapon.fs.unit.inlet_2.conc_mol_comp[0, "SodiumAcetate"])
+                sapon.fs.unit.outlet_2.conc_mol_comp[0, "SodiumAcetate"])
         assert 0.0 == value(
-                sapon.fs.unit.inlet_2.conc_mol_comp[0, "Ethanol"])
+                sapon.fs.unit.outlet_2.conc_mol_comp[0, "Ethanol"])
 
         assert pytest.approx(301.3, abs=1e-1) == \
             value(sapon.fs.unit.outlet_1.temperature[0])
