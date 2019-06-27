@@ -430,7 +430,7 @@ class Iapws95StateBlockData(StateBlockData):
 
         if self.state_vars == StateVars.PH:
             self.pressure = Var(domain=PositiveReals, initialize=1e5,
-                doc="Pressure [Pa]", bounds=(10, 1e9))
+                doc="Pressure [Pa]", bounds=(1, 1e9))
             self.pressure.latex_symbol = "P"
 
             self.enth_mol = Var(initialize=1000,
@@ -443,11 +443,11 @@ class Iapws95StateBlockData(StateBlockData):
 
         elif self.state_vars == StateVars.TPX:
             self.temperature = Var(initialize=300,
-                doc="Temperature [K]", bounds=(220,3e3))
+                doc="Temperature [K]", bounds=(200,3e3))
             self.temperature.latex_symbol = "T"
 
             self.pressure = Var(domain=PositiveReals, initialize=1e5,
-                doc="Pressure [Pa]", bounds=(10, 1e9))
+                doc="Pressure [Pa]", bounds=(1, 1e9))
             self.pressure.latex_symbol = "P"
 
             self.vapor_frac = Var(initialize=0.0,
