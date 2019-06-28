@@ -36,6 +36,7 @@ else:
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.build
 def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -57,6 +58,8 @@ def test_build():
     assert hasattr(m.fs.prod.inlet, "pressure")
 
 
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize():
     m = ConcreteModel()
@@ -81,9 +84,21 @@ def test_initialize():
     m.fs.prod.initialize(outlvl=5,
                          optarg={'tol': 1e-6})
 
-    assert m.fs.prod.inlet.flow_vol[0].value== 1.0e-03
+    assert m.fs.prod.inlet.flow_vol[0].value == 1.0e-03
     assert m.fs.prod.inlet.conc_mol_comp[0, "H2O"].value == 55388.0
     assert m.fs.prod.inlet.conc_mol_comp[0, "NaOH"].value == 100.0
     assert m.fs.prod.inlet.conc_mol_comp[0, "EthylAcetate"].value == 100.0
     assert m.fs.prod.inlet.conc_mol_comp[0, "SodiumAcetate"].value == 0.0
     assert m.fs.prod.inlet.conc_mol_comp[0, "Ethanol"].value == 0.0
+
+
+@pytest.mark.ui
+def test_report():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = SaponificationParameterBlock()
+
+    m.fs.prod = Product(default={"property_package": m.fs.properties})
+
+    m.fs.prod.report()

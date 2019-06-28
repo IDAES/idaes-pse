@@ -21,11 +21,10 @@ from pyomo.environ import ConcreteModel, SolverFactory, value
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models import Heater, HeatExchanger
-from idaes.property_models import iapws95_ph
-from idaes.property_models.iapws95 import iapws95_available
+from idaes.property_models import iapws95
 from idaes.core.util.model_statistics import degrees_of_freedom
 
-prop_available = iapws95_available()
+prop_available = iapws95.iapws95_available()
 
 # -----------------------------------------------------------------------------
 # See if ipopt is available and set up solver
@@ -35,23 +34,26 @@ if SolverFactory('ipopt').available():
 else:
     solver = None
 
+
 @pytest.fixture()
 def build_heater():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.heater = Heater(default={"property_package": m.fs.properties})
     return m
+
 
 @pytest.fixture()
 def build_heat_exchanger():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.heat_exchanger = HeatExchanger(default={
         "side_1":{"property_package": m.fs.properties},
         "side_2":{"property_package": m.fs.properties}})
     return m
+
 
 def test_build_heat_exchanger(build_heat_exchanger):
     m = build_heat_exchanger
@@ -63,6 +65,10 @@ def test_build_heat_exchanger(build_heat_exchanger):
     assert(m.fs.heat_exchanger.side_1.scaling_factor_energy == 1e-3)
     assert(m.fs.heat_exchanger.side_2.scaling_factor_energy == 1e-3)
 
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_heat_exchanger(build_heat_exchanger):
@@ -107,6 +113,17 @@ def test_initialize_heat_exchanger(build_heat_exchanger):
     assert abs(value(prop_in_1.phase_frac["Vap"]) - 0) <= 1e-6
     assert abs(value(prop_out_1.phase_frac["Vap"]) - 0) <= 1e-6
 
+
+@pytest.mark.iapws
+@pytest.mark.ui
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_heat_exchanger(build_heat_exchanger):
+    m = build_heat_exchanger
+
+    m.fs.heat_exchanger.report()
+
+
+@pytest.mark.build
 def test_build_heater(build_heater):
     m = build_heater
     assert hasattr(m.fs.heater, "inlet")
@@ -119,6 +136,10 @@ def test_build_heater(build_heater):
         assert hasattr(port, "enth_mol")
         assert hasattr(port, "pressure")
 
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize_heater(build_heater):
@@ -138,6 +159,18 @@ def test_initialize_heater(build_heater):
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-6
     assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
 
+
+@pytest.mark.iapws
+@pytest.mark.ui
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report_heater(build_heater):
+    m = build_heater
+    m.fs.heater.report()
+
+
+@pytest.mark.iapws
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_heater_q1(build_heater):

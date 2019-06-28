@@ -101,7 +101,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'pressure': {'method': None, 'units': 'Pa'},
                 'temperature': {'method': None, 'units': 'K'},
                 'conc_mol_comp': {'method': None, 'units': 'mol/m^3'},
-                'cp_mol': {'method': None, 'units': 'J/mol.K'},
                 'dens_mol': {'method': None, 'units': 'mol/m^3'}})
         obj.add_default_units({'time': 's',
                                'length': 'm',

@@ -15,8 +15,7 @@ from __future__ import division, print_function, absolute_import
 from pyomo.environ import *
 from pyomo.core.base.external import AMPLExternalFunction
 from pyomo.opt import SolverFactory
-from idaes.property_models import iapws95_ph as iapws95
-from idaes.property_models.iapws95 import iapws95_available
+from idaes.property_models import iapws95
 
 import unittest
 import pytest
@@ -24,11 +23,13 @@ import pytest
 import csv
 import os
 
-prop_available = iapws95_available()
+prop_available = iapws95.iapws95_available()
 
 def between(y, x1, x2):
     return 0 > (y-x1)*(y-x2)
 
+
+@pytest.mark.iapws
 class TestIAPWS95(unittest.TestCase):
     def read_data(self, fname, col):
         dfile = os.path.dirname(__file__)
@@ -131,6 +132,7 @@ class TestIAPWS95(unittest.TestCase):
                    abs((hb[2] - h[2])/h[2]) < tol or
                    between(h[2], hf[2], hb[2]))
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_sat_deltal(self):
@@ -141,6 +143,7 @@ class TestIAPWS95(unittest.TestCase):
             print(c[0])
             self.un_derivs_fd_test(f, 647.096/c[0], d=1e-6, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_sat_deltav(self):
@@ -151,6 +154,7 @@ class TestIAPWS95(unittest.TestCase):
             print(c[0])
             self.un_derivs_fd_test(f, 647.096/c[0], d=1e-6, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_psat(self):
@@ -161,6 +165,7 @@ class TestIAPWS95(unittest.TestCase):
             print(c[0])
             self.un_derivs_fd_test(f, 647.096/c[0], d=1e-6, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_tau_sat(self):
@@ -172,6 +177,7 @@ class TestIAPWS95(unittest.TestCase):
             if c[1] > 22040000.0: break # dont want to do critical point here.
             self.un_derivs_fd_test(f, c[1]/1000.0, d=1e-3, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_dens(self):
@@ -191,6 +197,7 @@ class TestIAPWS95(unittest.TestCase):
             self.bin_derivs_fd_test(
                 f_dens, c[1]/1000, 647.096/c[0], d0=1e-3, d1=1e-6, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_hxpt(self):
@@ -207,6 +214,7 @@ class TestIAPWS95(unittest.TestCase):
             print("{} {}".format(c[0], c[1]))
             self.bin_derivs_fd_test(f, c[1]/1000, 647.096/c[0], d0=1e-3, d1=1e-6, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     #@pytest.mark.skip(reason="temporary to save time")
     def test_derivs_tau(self):
@@ -221,6 +229,7 @@ class TestIAPWS95(unittest.TestCase):
                 print("{} {} {}".format(c[0], c[1], c[2]))
                 self.bin_derivs_fd_test(f, c[2], c[1]/1000, d0=1e-4, d1=1e-3, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_vf_1phase(self):
@@ -235,8 +244,9 @@ class TestIAPWS95(unittest.TestCase):
                 print("{} {} {}".format(c[0], c[1], c[2]))
                 self.bin_derivs_fd_test(f, c[2], c[1]/1000, d0=1e-4, d1=1e-3, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
-    #@pytest.mark.skip(reason="temporary to save time")
+    @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_vf_2phase(self):
         model = self.make_model()
         hvdat = self.read_data("sat_prop.txt", col=17)
@@ -253,6 +263,7 @@ class TestIAPWS95(unittest.TestCase):
             print("{} {} {}".format(T, p, ht))
             self.bin_derivs_fd_test(f, ht, p, d0=1e-4, d1=1e-3, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_phi0(self):
@@ -275,6 +286,7 @@ class TestIAPWS95(unittest.TestCase):
             self.bin_derivs_fd_test(
                 model.prop_in.func_phi0_tau2, delta, tau, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_phir(self):
@@ -299,9 +311,10 @@ class TestIAPWS95(unittest.TestCase):
             self.bin_derivs_fd_test(
                 model.prop_in.func_phir_delta_tau, delta, tau, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     #@pytest.mark.skip(reason="temporary to save time")
-    def test_derivs_push(self):
+    def test_derivs_pushfg(self):
         model = self.make_model()
         cond = self.read_data("prop.txt", col=2)
         for i, c in enumerate(cond):
@@ -323,6 +336,7 @@ class TestIAPWS95(unittest.TestCase):
             self.bin_derivs_fd_test(
                 model.prop_in.func_g, delta, tau, tol=0.001)
 
+    @pytest.mark.slow
     @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
     @pytest.mark.skip(reason="temporary to save time")
     def test_derivs_cp_cv(self):
