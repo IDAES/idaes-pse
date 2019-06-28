@@ -611,7 +611,7 @@ class Iapws95StateBlockData(StateBlockData):
         # Saturation temperature expression
         self.temperature_sat = Expression(expr=Tc/self.func_tau_sat(P),
             doc="Stauration temperature (K)")
-        self.temperature_sat.latex_symbol = "T_\{sat\}"
+        self.temperature_sat.latex_symbol = "T_{sat}"
 
         # Saturation tau (tau = Tc/T)
         self.tau_sat = Expression(expr=self.func_tau_sat(P))
@@ -628,7 +628,7 @@ class Iapws95StateBlockData(StateBlockData):
         # Saturation pressure
         self.pressure_sat = Expression(expr=1000*self.func_p_sat(tau),
             doc="Saturation pressure (Pa)")
-        self.pressure_sat.latex_symbol = "P_\{sat\}"
+        self.pressure_sat.latex_symbol = "P_{sat}"
         Psat = self.pressure_sat/1000.0 # expression for Psat in kPA
 
         if self.state_vars == StateVars.PH:
@@ -854,6 +854,15 @@ class Iapws95StateBlockData(StateBlockData):
 
     def define_state_vars(self):
         return self._state_vars_dict
+
+    def define_display_vars(self):
+        return {
+            "flow_mol": self.flow_mol,
+            "flow_mass": self.flow_mass,
+            "temperature": self.temperature,
+            "pressure": self.pressure,
+            "vapor_frac": self.vapor_frac,
+            "enth_mol_phase": self.enth_mol_phase}
 
     def extensive_state_vars(self):
         return self.extensive_set
