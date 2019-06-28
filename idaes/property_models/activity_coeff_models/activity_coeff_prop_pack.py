@@ -72,6 +72,7 @@ __version__ = "0.0.2"
 _log = logging.getLogger(__name__)
 
 
+@declare_process_block_class("ActivityCoeffParameterBlock")
 class ActivityCoeffParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
@@ -743,13 +744,13 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         self.tau = Var(self._params.component_list, self._params.component_list,
                        initialize=1.0,
-                       doc="Binary interaction parameter for NRTL model")
+                       doc="Binary interaction parameter for Wilson model")
 
         # Wilson model variables
         self.Gij_coeff = Var(self._params.component_list,
                              self._params.component_list,
                              initialize=1.0,
-                             doc="Gij coefficient for use in NRTL model ")
+                             doc="Gij coefficient for use in Wilson model ")
 
         self.activity_coeff_comp = Var(self._params.component_list,
                                        initialize=1.0,
@@ -891,7 +892,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
     def _enthalpy_liq(self):
         # Liquid phase enthalpy
-        self.enthalpy_liq = Var()
+        self.enthalpy_liq = Var(initialize=10000)
 
         def rule_hliq(self):
             return self.enthalpy_liq == \
@@ -926,7 +927,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
     def _enthalpy_vap(self):
         # Vapor phase enthalpy
-        self.enthalpy_vap = Var()
+        self.enthalpy_vap = Var(initialize=10000)
 
         def rule_hvap(self):
             return self.enthalpy_vap == \
