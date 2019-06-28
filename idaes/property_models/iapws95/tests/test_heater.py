@@ -346,7 +346,7 @@ def test_heater_tpx_lg_total_2():
     m.fs.heater.initialize(outlvl=5)
     assert degrees_of_freedom(m) == 0
     solver.solve(m, tee=True)
-    assert abs(value(prop_out.temperature) - 534.6889772922356) <= 1e-4
+    assert abs(value(prop_out.temperature) - 534.6889772922356) <= 2e-4
     assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-2
     assert abs(value(prop_out.phase_frac["Liq"]) - 0) <= 1e-2
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-2
