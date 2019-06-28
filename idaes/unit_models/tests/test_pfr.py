@@ -210,17 +210,26 @@ class TestSaponification(object):
                               for j in sapon.fs.properties.component_list)))
                 <= 1e-6)
 
-        assert abs(value(sapon.fs.unit.inlet.flow_vol[0] *
-                         sapon.fs.properties.cp_mol *
-                         (sapon.fs.unit.inlet.temperature[0] -
-                          sapon.fs.properties.temperature_ref) -
-                         sapon.fs.unit.outlet.flow_vol[0] *
-                         sapon.fs.properties.cp_mol *
-                         (sapon.fs.unit.outlet.temperature[0] -
-                          sapon.fs.properties.temperature_ref) +
-                         sapon.fs.unit.outlet.flow_vol[0] *
-                         sapon.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"] *
-                         sapon.fs.reactions.dh_rxn["R1"])) <= 1e-1
+        hrxn = 0
+        for x in sapon.fs.unit.control_volume.length_domain:
+            if x != 0:
+                hrxn += value(
+                    sapon.fs.unit.control_volume.heat_of_reaction[0, x] *
+                    (x-sapon.fs.unit.control_volume.length_domain.prev(x)) *
+                    sapon.fs.unit.control_volume.length)
+        assert (pytest.approx(1847000, abs=1e3) == hrxn)
+        assert abs(value(
+                (sapon.fs.unit.inlet.flow_vol[0] *
+                 sapon.fs.properties.dens_mol *
+                 sapon.fs.properties.cp_mol *
+                 (sapon.fs.unit.inlet.temperature[0] -
+                    sapon.fs.properties.temperature_ref)) -
+                (sapon.fs.unit.outlet.flow_vol[0] *
+                 sapon.fs.properties.dens_mol *
+                 sapon.fs.properties.cp_mol *
+                 (sapon.fs.unit.outlet.temperature[0] -
+                  sapon.fs.properties.temperature_ref)) +
+                hrxn)) <= 1e-6
 
     @pytest.mark.ui
     def test_report(self, sapon):

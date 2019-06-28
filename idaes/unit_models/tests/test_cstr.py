@@ -194,25 +194,21 @@ class TestSaponification(object):
                           sum(sapon.fs.unit.outlet.conc_mol_comp[0, j]
                               for j in sapon.fs.properties.component_list)))
                 <= 1e-6)
-        assert abs(value(sapon.fs.unit.inlet.flow_vol[0] *
-                         sapon.fs.properties.cp_mol *
-                         (sapon.fs.unit.inlet.temperature[0] -
-                          sapon.fs.properties.temperature_ref) -
-                         sapon.fs.unit.outlet.flow_vol[0] *
-                         sapon.fs.properties.cp_mol *
-                         (sapon.fs.unit.outlet.temperature[0] -
-                          sapon.fs.properties.temperature_ref) +
-                         sapon.fs.unit.heat_duty[0])) <= 1e-1
 
-        print(value(sapon.fs.unit.inlet.flow_vol[0] *
-                         sapon.fs.properties.cp_mol *
-                         (sapon.fs.unit.inlet.temperature[0] -
-                          sapon.fs.properties.temperature_ref)))
-        print(value(sapon.fs.unit.outlet.flow_vol[0] *
-                         sapon.fs.properties.cp_mol *
-                         (sapon.fs.unit.outlet.temperature[0] -
-                          sapon.fs.properties.temperature_ref)))
-        assert value(sapon.fs.unit.control_volume.heat_of_reaction[0]) == 0
+        assert (pytest.approx(3904.09, abs=1e-2) == value(
+                sapon.fs.unit.control_volume.heat_of_reaction[0]))
+        assert abs(value(
+                (sapon.fs.unit.inlet.flow_vol[0] *
+                 sapon.fs.properties.dens_mol *
+                 sapon.fs.properties.cp_mol *
+                 (sapon.fs.unit.inlet.temperature[0] -
+                    sapon.fs.properties.temperature_ref)) -
+                (sapon.fs.unit.outlet.flow_vol[0] *
+                 sapon.fs.properties.dens_mol *
+                 sapon.fs.properties.cp_mol *
+                 (sapon.fs.unit.outlet.temperature[0] -
+                  sapon.fs.properties.temperature_ref)) +
+                sapon.fs.unit.control_volume.heat_of_reaction[0])) <= 1e-3
 
     @pytest.mark.ui
     def test_report(self, sapon):
