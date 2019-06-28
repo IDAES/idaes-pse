@@ -857,12 +857,12 @@ class Iapws95StateBlockData(StateBlockData):
 
     def define_display_vars(self):
         return {
-            "flow_mol": self.flow_mol,
-            "flow_mass": self.flow_mass,
-            "temperature": self.temperature,
-            "pressure": self.pressure,
-            "vapor_frac": self.vapor_frac,
-            "enth_mol_phase": self.enth_mol_phase}
+            "Molar Flow (mol/s)": self.flow_mol,
+            "Mass Flow (kg/s)": self.flow_mass,
+            "T (K)": self.temperature,
+            "P (Pa)": self.pressure,
+            "Vapor Fraction": self.vapor_frac,
+            "Molar Enthalpy (J/mol)": self.enth_mol_phase}
 
     def extensive_state_vars(self):
         return self.extensive_set
