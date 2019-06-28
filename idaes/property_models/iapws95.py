@@ -63,13 +63,13 @@ from idaes.core.util.math import smooth_max
 
 # Logger
 _log = logging.getLogger(__name__)
+_so = os.path.join(os.path.dirname(__file__), "iapws95_lib/iapws95_external.so")
 
 def iapws95_available():
     """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
     the .so extention is still used.
     """
-    plib = os.path.join(os.path.dirname(__file__), "iapws95.so")
-    return os.path.isfile(plib)
+    return os.path.isfile(_so)
 
 class StateVars(enum.Enum):
     """
@@ -156,8 +156,7 @@ enthalpy are the best choice because they are well behaved during a phase change
         super(Iapws95ParameterBlockData, self).build()
         self.state_block_class = Iapws95StateBlock
         # Location of the *.so or *.dll file for external functions
-        self.plib = os.path.dirname(__file__)
-        self.plib = os.path.join(self.plib, "iapws95.so")
+        self.plib = _so
         self.available = os.path.isfile(self.plib)
         # Phase list
         self.private_phase_list = Set(initialize=["Vap", "Liq"])
@@ -501,11 +500,11 @@ class Iapws95StateBlockData(StateBlockData):
             else:
                 self.vapor_frac.fix(0.0)
         elif not self.config.defined_state:
-            self.eq_complimentarity = Constraint(
+            self.eq_complementarity = Constraint(
                 expr=0 == (vf*self.P_over_sat  - (1 - vf)*self.P_under_sat))
 
         # eq_sat can activated to force the pressure to be the saturation
-        # pressure, if you use this constraint deactivate eq_complimentarity
+        # pressure, if you use this constraint deactivate eq_complementarity
         self.eq_sat = Constraint(expr=P/1000.0 == Psat/1000.0)
         self.eq_sat.deactivate()
 

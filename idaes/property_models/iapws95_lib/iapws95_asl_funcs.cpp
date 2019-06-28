@@ -21,7 +21,7 @@
 
 #include<stdio.h>
 #include<math.h>
-#include"iapws95.h"
+#include"iapws95_external.h"
 #include"iapws95_phi.h"
 #include"iapws95_asl_funcs.h"
 
