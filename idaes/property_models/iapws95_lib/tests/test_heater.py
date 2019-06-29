@@ -266,13 +266,11 @@ def test_heater_tpx_g_phase():
                  "material_balance_type":MaterialBalanceType.componentPhase})
     m.fs.heater.inlet.flow_mol.fix(100)
     m.fs.heater.inlet.temperature.fix(422.60419933276177)
-    m.fs.heater.inlet.vapor_frac.fix(1)
     m.fs.heater.inlet.pressure.fix(101325)
     m.fs.heater.heat_duty[0].fix(100*10000)
     prop_in = m.fs.heater.control_volume.properties_in[0]
     prop_out = m.fs.heater.control_volume.properties_out[0]
     prop_out.temperature = 550
-    prop_out.vapor_frac = 1.0
     prop_out.pressure = 101325
     prop_out.flow_mol = 100
     m.fs.heater.initialize(outlvl=5)
@@ -346,7 +344,7 @@ def test_heater_tpx_lg_total_2():
     m.fs.heater.initialize(outlvl=5)
     assert degrees_of_freedom(m) == 0
     solver.solve(m, tee=True)
-    assert abs(value(prop_out.temperature) - 534.6889772922356) <= 1e-4
+    assert abs(value(prop_out.temperature) - 534.6889772922356) <= 2e-4
     assert abs(value(prop_in.phase_frac["Liq"]) - 1) <= 1e-2
     assert abs(value(prop_out.phase_frac["Liq"]) - 0) <= 1e-2
     assert abs(value(prop_in.phase_frac["Vap"]) - 0) <= 1e-2

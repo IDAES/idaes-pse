@@ -16,51 +16,59 @@ Tests for Workshop Modules.
 Author: Jaffer Ghouse
 """
 import os
+from types import ModuleType
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
+from idaes.examples.workshops import (
+    Module_1_Flash_Unit,
+    Module_2_Flowsheet,
+    Module_3_Custom_Unit_Model,
+)
 
-path = os.path.dirname(__file__)
+
+def module_path(modobj: ModuleType):
+    return os.path.dirname(modobj.__file__)
 
 
-# Method to run a specific jupyter notebook
-def run_notebook(notebook_name):
-    with open(notebook_name) as f:
+def run_notebook(path: str, name: str):
+    """Run a specific jupyter notebook 'name' located at `path`.
+    """
+    fullpath = os.path.join(path, name)
+    with open(fullpath) as f:
         nb = nbformat.read(f, as_version=nbformat.NO_CONVERT)
 
     ep = ExecutePreprocessor(timeout=100)
     ep.allow_errors = True
-    ep.preprocess(nb, {'metadata':
-                       {'path': os.path.dirname(notebook_name)}})
+    ep.preprocess(nb, {"metadata": {"path": path}})
 
-    errors = []
+    failed = False
     for cell in nb.cells:
-        if 'outputs' in cell:
-            for output in cell['outputs']:
-                if output.output_type == 'error':
-                    errors.append(output)
-    return errors
+        if "outputs" in cell:
+            for output in cell["outputs"]:
+                if output.output_type == "error":
+                    failed = True
+                    num = cell["execution_count"]
+                    exc = f"{output['ename']} = {output['evalue']}"
+                    print(f"ERROR in {fullpath} [{num}]: {exc}")
+    return not failed
 
 
 # Test the solution jupyter notebooks for all modules
-# Module 1
+
+
 def test_module_1():
-    errors = \
-        run_notebook(os.path.join(path, '../Module_1_Flash_Unit/'
-                                  'Module_1_Flash_Unit_Solution.ipynb'))
-    assert errors == []
+    assert run_notebook(
+        module_path(Module_1_Flash_Unit), "Module_1_Flash_Unit_Solution.ipynb"
+    )
 
 
-# Module 2
 def test_module_2():
-    errors = \
-        run_notebook(os.path.join(path, '../Module_2_Flowsheet/'
-                                  'Module_2_Flowsheet_Solution.ipynb'))
-    assert errors == []
+    assert run_notebook(
+        module_path(Module_2_Flowsheet), "Module_2_Flowsheet_Solution.ipynb"
+    )
 
 
-# Module 3
 def test_module_3():
-    errors = \
-        run_notebook(os.path.join(path, '../Module_3_Custom_Unit_Model/'
-                                  'Module_3_Exercise_1_Solution.ipynb'))
-    assert errors == []
+    assert run_notebook(
+        module_path(Module_3_Custom_Unit_Model), "Module_3_Exercise_1_Solution.ipynb"
+    )

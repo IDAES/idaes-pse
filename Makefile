@@ -5,10 +5,10 @@
 ALL: iapws95 cubic_eos functions
 
 iapws95:
-	$(MAKE) -C ./idaes/property_models/iapws95
+	$(MAKE) -C ./idaes/property_models/iapws95_lib
 
 iapws95_clean:
-	$(MAKE) -C ./idaes/property_models/iapws95 clean
+	$(MAKE) -C ./idaes/property_models/iapws95_lib clean
 
 cubic_eos:
 	$(MAKE) -C ./idaes/property_models/cubic_eos
