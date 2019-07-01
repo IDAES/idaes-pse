@@ -12,6 +12,7 @@
 ##############################################################################
 
 from pandas import DataFrame
+from collections import OrderedDict
 from pyomo.environ import value
 from pyomo.network import Arc, Port
 
@@ -26,7 +27,9 @@ def create_stream_table_dataframe(streams,
                                   orient='columns'):
     """
     Method to create a stream table in the form of a pandas dataframe. Method
-    takes a dict with name keys and stream values.
+    takes a dict with name keys and stream values. Use an OrderedDict to list
+    the streams in a specific order, otherwise the dataframe can be sorted
+    later.
 
     Args:
         streams : dict with name keys and stream values. Names will be used as
@@ -44,7 +47,7 @@ def create_stream_table_dataframe(streams,
     Returns:
         A pandas DataFrame containing the stream table data.
     """
-    stream_attributes = {}
+    stream_attributes = OrderedDict()
 
     for n in streams.keys():
         try:
@@ -77,9 +80,7 @@ def create_stream_table_dataframe(streams,
                     f"{streams[n]}. get_stream_table_attributes only "
                     f"supports Arcs, Ports or StateBlocks.")
 
-    stream_table = DataFrame.from_dict(stream_attributes, orient=orient)
-
-    return stream_table
+    return DataFrame.from_dict(stream_attributes, orient=orient)
 
 
 def stream_table_dataframe_to_string(stream_table, **kwargs):
