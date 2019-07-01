@@ -31,7 +31,7 @@ example for using water properties.
 .. testcode::
 
   import pyomo.environ as pe # Pyomo environment
-  from idaes.core import FlowsheetBlock
+  from idaes.core import FlowsheetBlock, MaterialBalanceType
   from idaes.unit_models import Heater
   from idaes.property_models import iapws95
 
