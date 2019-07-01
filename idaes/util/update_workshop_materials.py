@@ -18,9 +18,12 @@ the workshop material easily during a workshop.
 The file install_idaes_workshop_materials.py is downloaded from pyomo.org, imported,
  and the method execute() is then called to do whatever actions are necessary.
 
-To explain what happens:
+Note:
 - update_workshop_materials.py is a module in the idaes/util folder that does the work
-- install_idaes_workshop_materials.py is posted on a site (for now pyomo.org, but later could be a repository on github).
+- update_workshop_materials.ipynb is a Jupyter notebook in the examples/workshops folder
+  that calls this module
+- install_idaes_workshop_materials.py is posted on a site (for now pyomo.org, but later 
+  could be a repository on github).
 
 1) JupyterHub: User executes update_workshop_materials.ipynb which calls to update_workshop_materials.py in idaes/util
 2) update_workshop_materials.py downloads another python file (install_idaes_workshop_materials.py)
@@ -70,6 +73,9 @@ def download_install_module():
     return download_dest
 
 def import_install_module(download_dest):
+    """
+    Imports the path in download_dest (install_idaes_workshop_materials.py module)
+    """
     install_module = import_file(download_dest)
     print('... importing install module')
     return install_module

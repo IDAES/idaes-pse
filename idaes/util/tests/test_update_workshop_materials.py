@@ -17,13 +17,16 @@ Tests for update_workshop_materials
 import idaes.util.update_workshop_materials as up
 
 def test_update_workshop_materials():
-    # Note: This tests that the install_idaes_workshop_materials succeeds
-    # We purposely do NOT test code within the file (don't want
-    # to run code outside our repository on testing)
-
+    # Note: This tests that the methods in update_workshop_materials.py
+    # successfully download install_idaes_workshop_materials.py from Pyomo.org
+    # We purposely do NOT test code within that downloaded module since we do
+    # not want to automatically execute code during testing that was downloaded
+    # from outside the IDAES repository.
+    
     # download the module from pyomo.org
     download_dest = up.download_install_module()
 
+    # check that the file contains the desired function (execute())
     download_succeeded = False
     with open(download_dest, 'r') as fd:
         for line in fd:
