@@ -27,7 +27,9 @@ def create_stream_table_dataframe(streams,
                                   orient='columns'):
     """
     Method to create a stream table in the form of a pandas dataframe. Method
-    takes a dict with name keys and stream values.
+    takes a dict with name keys and stream values. Use an OrderedDict to list
+    the streams in a specific order, otherwise the dataframe can be sorted
+    later.
 
     Args:
         streams : dict with name keys and stream values. Names will be used as
