@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="joint.min.css" />
+    </head>
+    <body>
+        <button onclick="saveFile(this)" id="save_file_button">Save Graph to File</button><br>
+        Load Graph From File: <input type="file" id="load_file_button" name="load file"/><br>
+        A sample saved graph is available at idaes/ui/html/demo_graph.json
+        <!-- content -->
+        <div id="myholder"></div>
+
+        <!-- dependencies -->
+        <script src="jquery.js"></script>
+        <script src="lodash.js"></script>
+        <script src="backbone.js"></script>
+        <script src="joint.min.js"></script>
+        <!-- code -->
+        <script type="module">
+        var graph = new joint.dia.Graph;
+
+        var paper = new joint.dia.Paper({
+                        el: document.getElementById('myholder'),
+                        model: graph,
+                        width: 1000,
+                        height: 1000,
+                        gridSize: 1
+                    });
+
+
+        // for prototype, just hardcode the json objects bleh
+        var nodes_data = {"M101": {type: "_ScalarMixer"},
+            "H101": {type: "_ScalarHeater"},
+            "R101": {type: "_ScalarStoichiometricReactor"},
+            "F101": {type: "_ScalarFlash"},
+            "S101": {type: "_ScalarSeparator"},
+            "C101": {type: "_ScalarPressureChanger"},
+            "F102": {type: "_ScalarFlash"}};
+
+        var edges_data = {"M101": ["H101"],
+            "H101": ["R101"],
+            "R101": ["F101"],
+            "F101": ["S101", "F102"],
+            "S101": ["C101"],
+            "C101": ["M101"]};
+
+        // We will deal with "orphaned" links later; they describe
+        // inlets and outlets to the entire flowsheet, a.k.a. they 
+        // are connected on one end to a unit model and on the other 
+        // to a source/sink.
+        // We will likely use a separate JSON for this information.
+
+        //"Orphaned": ["F102", "F102", "M101", "M101", "S101"]};
+
+        var icon_mapping = {
+            "_ScalarMixer": "mixer.svg",
+            "_ScalarHeater": "heater_1.svg",
+            "_ScalarStoichiometricReactor": "reactor_s.svg",
+            "_ScalarFlash": "flash.svg",
+            "_ScalarSeparator": "splitter.svg",
+            "_ScalarPressureChanger": "compressor_2.svg"
+                                };
+        var icon_root = "icons/";
+
+        // Create an object to hold references to the jointjs nodes
+        // because we should not programmatically generate object names, 
+        // only object properties; plus, using the node names gives us
+        // context.
+        var units = {};
+
+        // default positions
+        var posx = 10;
+        var posy = 10;
+
+        var node;
+        for (node in nodes_data) {
+            var icon = icon_mapping[nodes_data[node]["type"]];
+            units[node] = new joint.shapes.standard.Image();
+            units[node].position(posx, posy);
+
+            posx += 50;
+            posy += 50;
+
+            units[node].resize(100, 100);
+            units[node].attr('image/xlinkHref', icon_root + icon);
+            units[node].addTo(graph);
+            }
+            
+
+        var arc;
+        for (arc in edges_data) {
+
+            // We need a second for loop because a given node can 
+            // have multiple link destinations, so destinations are
+            // stored as an array.
+            var i;
+            for (i = 0; i < edges_data[arc].length; i++) {
+                var edge = new joint.shapes.standard.Link();
+                edge.source(units[arc]);
+                edge.target(units[edges_data[arc][i]]);
+                edge.addTo(graph);
+                }
+            }
+
+        //console.log(nodes_data)
+        //console.log(edges_data);
+        //console.log(icon_mapping);
+
+
+        function saveFile(evt) {
+            var jsonstring = JSON.stringify(graph.toJSON());
+            var data = "text/json;charset=utf-8," + encodeURIComponent(jsonstring);
+            var fakeobj = document.createElement('a');
+            fakeobj.href = "data:" + data;
+            fakeobj.download = 'serialized_graph.json';
+            fakeobj.click();
+            fakeobj.remove();
+        }
+
+        function loadFile(evt) {
+            // getting a hold of the file reference
+            var file = evt.target.files[0]; 
+            var reader = new FileReader();
+            reader.readAsText(file);
+ 
+            // here we tell the reader what to do when it's done reading...
+            reader.onload = readerEvent => {
+                      var content = readerEvent.target.result;
+                      graph.fromJSON(JSON.parse(content));
+                   }
+
+        }
+
+        document.getElementById('load_file_button').addEventListener('change', loadFile, false);
+        document.getElementById('save_file_button').onclick = saveFile;
+    </script>
+
+    </body>
+
+    </html>
