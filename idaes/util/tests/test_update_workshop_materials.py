@@ -17,11 +17,21 @@ Tests for update_workshop_materials
 import idaes.util.update_workshop_materials as up
 
 def test_update_workshop_materials():
-    # download the module from pyomo.org
-    im = up.download_and_import_install_module()
+    # Note: This tests that the install_idaes_workshop_materials succeeds
+    # We purposely do NOT test code within the file (don't want
+    # to run code outside our repository on testing)
 
-    # test that the module loaded and can be called
-    assert im.get_test_string() == 'Successfully called get_test_string()'
+    # download the module from pyomo.org
+    download_dest = up.download_install_module()
+
+    download_succeeded = False
+    with open(download_dest, 'r') as fd:
+        for line in fd:
+            if line.startswith('def execute():'):
+                download_succeeded = True
+                break
+
+    assert download_succeeded == True
 
 if __name__ == '__main__':
     test_update_workshop_materials()
