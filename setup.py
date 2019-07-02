@@ -4,6 +4,7 @@ Institute for the Design of Advanced Energy Systems
 """
 from pathlib import Path
 import os
+import re
 import sys
 from setuptools import setup, find_packages
 
@@ -12,20 +13,18 @@ def warn(s):
     sys.stderr.write("*** WARNING *** {}\n".format(s))
 
 
-def get_version(file, name="__version__"):
-    """Get the version of the package from the given file by
-    executing it and extracting the given `name`.
-    """
-    path = os.path.realpath(file)
+def get_version():
+    code_file = os.path.join("idaes", "ver.py")
+    code = open(code_file).read()
     local_namespace = {}
-    exec(open(path).read(), {}, local_namespace)
-    return local_namespace[name]
+    exec(code, {}, local_namespace)
+    return local_namespace["__version__"]
 
 
-NAME = "idaes"
-VERSION = get_version(os.path.join(NAME, "ver.py"))
+NAME = "idaes-pse"
+VERSION = get_version()
 README = open("README.md").read()
-README = README[README.find("#") :]  # ignore everything before title
+README = README[README.find("#"):]  # ignore everything before title
 
 
 def rglob(path, glob):
@@ -38,13 +37,13 @@ def rglob(path, glob):
 kwargs = dict(
     name=NAME,
     version=VERSION,
-    packages=find_packages()
-    + find_packages("apps/ddm-learning/alamo_python")
-    + find_packages("apps/ddm-learning/ripe_python"),
-    package_dir={
-        "alamopy": "apps/ddm-learning/alamo_python/alamopy",
-        "ripe": "apps/ddm-learning/ripe_python/ripe",
-    },
+    packages=find_packages(),
+    #    + find_packages("apps/ddm-learning/alamo_python")
+    #    + find_packages("apps/ddm-learning/ripe_python"),
+    package_dir={},
+    #        "alamopy": "apps/ddm-learning/alamo_python/alamopy",
+    #        "ripe": "apps/ddm-learning/ripe_python/ripe",
+    #    },
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
@@ -95,8 +94,17 @@ kwargs = dict(
     },
     package_data={
         # If any package contains these files, include them:
-        "": ["*.template", "*.json", "*.dll", "*.so", "*.svg",
-             "*.png", "*.jpg", "*.csv", "*.ipynb"],
+        "": [
+            "*.template",
+            "*.json",
+            "*.dll",
+            "*.so",
+            "*.svg",
+            "*.png",
+            "*.jpg",
+            "*.csv",
+            "*.ipynb",
+        ]
     },
     include_package_data=True,
     data_files=[],
