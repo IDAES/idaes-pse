@@ -38,7 +38,8 @@ def get_default_solver():
     """
     if SolverFactory('ipopt').available(exception_flag=False):
         solver = SolverFactory('ipopt')
-        solver.options = {'tol': 1e-6}
+        solver.options = {'tol': 1e-6,
+                          'linear_solver': 'mumps'}
     else:
         solver = None
 
@@ -98,6 +99,9 @@ class StateTestBlockData(StateBlockData):
     def build(self):
         super(StateTestBlockData, self).build()
 
+        self.flow_mol_phase_comp = Var(self._params.phase_list,
+                                       self._params.component_list,
+                                       initialize=2)
         self.test_var = Var(initialize=1)
         self.pressure = Var(initialize=1e5)
         self.temperature = Var(initialize=300)

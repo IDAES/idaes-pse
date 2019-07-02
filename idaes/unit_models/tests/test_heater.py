@@ -11,26 +11,22 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for Pressure Changer unit model.
+Tests for 0D heat exchanger models.
 
-Author: Andrew Lee, Emmanuel Ogbe
+Author: John Eslick
 """
 import pytest
 
 from pyomo.environ import (ConcreteModel,
-                           Constraint,
-                           TerminationCondition,
                            SolverStatus,
-                           value,
-                           Var)
+                           TerminationCondition,
+                           value)
 
 from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-
-from idaes.unit_models.pressure_changer import (PressureChanger,
-                                                ThermodynamicAssumption)
+from idaes.unit_models import Heater
 
 from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
 from idaes.property_models import iapws95
@@ -53,21 +49,18 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
-def test_ThermodynamicAssumption():
-    assert len(ThermodynamicAssumption) == 4
-
-
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
     m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = PressureChanger(default={"property_package": m.fs.properties})
+    m.fs.unit = Heater(default={"property_package": m.fs.properties})
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 10
-
+    assert len(m.fs.unit.config) == 9
+    assert not m.fs.unit.config.dynamic
+    assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == \
         MaterialBalanceType.componentPhase
     assert m.fs.unit.config.energy_balance_type == \
@@ -75,25 +68,12 @@ def test_config():
     assert m.fs.unit.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_phase_equilibrium
-    assert m.fs.unit.config.compressor
-    assert m.fs.unit.config.thermodynamic_assumption == \
-        ThermodynamicAssumption.isothermal
+    assert not m.fs.unit.config.has_pressure_change
     assert m.fs.unit.config.property_package is m.fs.properties
 
 
-def test_dynamic_build():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True})
-
-    m.fs.properties = PhysicalParameterTestBlock()
-
-    m.fs.unit = PressureChanger(default={"property_package": m.fs.properties})
-
-    assert hasattr(m.fs.unit, "volume")
-
-
 # -----------------------------------------------------------------------------
-class TestBTX_isothermal(object):
+class TestBTX(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
@@ -101,9 +81,8 @@ class TestBTX_isothermal(object):
 
         m.fs.properties = BTXParameterBlock(default={"valid_phase": 'Liq'})
 
-        m.fs.unit = PressureChanger(default={
-            "property_package": m.fs.properties,
-            "thermodynamic_assumption": ThermodynamicAssumption.isothermal})
+        m.fs.unit = Heater(default={"property_package": m.fs.properties,
+                                    "has_pressure_change": True})
 
         return m
 
@@ -123,13 +102,11 @@ class TestBTX_isothermal(object):
         assert hasattr(btx.fs.unit.outlet, "temperature")
         assert hasattr(btx.fs.unit.outlet, "pressure")
 
-        assert hasattr(btx.fs.unit, "work_mechanical")
+        assert hasattr(btx.fs.unit, "heat_duty")
         assert hasattr(btx.fs.unit, "deltaP")
-        assert isinstance(btx.fs.unit.ratioP, Var)
-        assert isinstance(btx.fs.unit.ratioP_calculation, Constraint)
 
-        assert number_variables(btx) == 25
-        assert number_total_constraints(btx) == 19
+        assert number_variables(btx) == 24
+        assert number_total_constraints(btx) == 17
         assert number_unused_variables(btx) == 0
 
     def test_dof(self, btx):
@@ -139,7 +116,8 @@ class TestBTX_isothermal(object):
         btx.fs.unit.inlet.mole_frac[0, "benzene"].fix(0.5)
         btx.fs.unit.inlet.mole_frac[0, "toluene"].fix(0.5)
 
-        btx.fs.unit.deltaP.fix(50000)
+        btx.fs.unit.heat_duty.fix(-5000)
+        btx.fs.unit.deltaP.fix(0)
 
         assert degrees_of_freedom(btx) == 0
 
@@ -181,12 +159,10 @@ class TestBTX_isothermal(object):
     def test_solution(self, btx):
         assert (pytest.approx(5, abs=1e-3) ==
                 value(btx.fs.unit.outlet.flow_mol[0]))
-        assert (pytest.approx(365, abs=1e-2) ==
+        assert (pytest.approx(358.9, abs=1e-1) ==
                 value(btx.fs.unit.outlet.temperature[0]))
-        assert (pytest.approx(151325, abs=1e2) ==
+        assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx.fs.unit.outlet.pressure[0]))
-        assert (pytest.approx(0, abs=1e-6) ==
-                value(btx.fs.unit.work_mechanical[0]))
 
     @pytest.mark.initialize
     @pytest.mark.solver
@@ -195,11 +171,12 @@ class TestBTX_isothermal(object):
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
                          btx.fs.unit.outlet.flow_mol[0])) <= 1e-6
 
-        assert abs(btx.fs.unit.outlet.flow_mol[0] *
-                   (btx.fs.unit.control_volume.properties_in[0]
-                    .enth_mol_phase['Liq'] -
-                    btx.fs.unit.control_volume.properties_out[0]
-                    .enth_mol_phase['Liq'])) <= 1e-6
+        assert abs(value(
+            btx.fs.unit.inlet.flow_mol[0] *
+            btx.fs.unit.control_volume.properties_in[0].enth_mol_phase["Liq"] -
+            btx.fs.unit.outlet.flow_mol[0] *
+            btx.fs.unit.control_volume.properties_out[0].enth_mol_phase["Liq"])
+            + btx.fs.unit.heat_duty[0]) <= 1e-6
 
     @pytest.mark.ui
     def test_report(self, btx):
@@ -218,10 +195,7 @@ class TestIAPWS(object):
 
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
-        m.fs.unit = PressureChanger(default={
-                "property_package": m.fs.properties,
-                "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
-                "compressor": True})
+        m.fs.unit = Heater(default={"property_package": m.fs.properties})
 
         return m
 
@@ -238,32 +212,18 @@ class TestIAPWS(object):
         assert hasattr(iapws.fs.unit.outlet, "enth_mol")
         assert hasattr(iapws.fs.unit.outlet, "pressure")
 
-        assert hasattr(iapws.fs.unit, "work_mechanical")
-        assert hasattr(iapws.fs.unit, "deltaP")
-        assert isinstance(iapws.fs.unit.ratioP, Var)
-        assert isinstance(iapws.fs.unit.ratioP_calculation, Constraint)
+        assert hasattr(iapws.fs.unit, "heat_duty")
 
-        assert isinstance(iapws.fs.unit.efficiency_isentropic, Var)
-        assert isinstance(iapws.fs.unit.work_isentropic, Var)
-
-        assert hasattr(iapws.fs.unit, "properties_isentropic")
-        assert isinstance(iapws.fs.unit.isentropic_pressure, Constraint)
-        assert isinstance(iapws.fs.unit.isentropic_material, Constraint)
-        assert isinstance(iapws.fs.unit.isentropic, Constraint)
-        assert isinstance(iapws.fs.unit.isentropic_energy_balance, Constraint)
-        assert isinstance(iapws.fs.unit.actual_work, Constraint)
-
-        assert number_variables(iapws) == 14
-        assert number_total_constraints(iapws) == 9
+        assert number_variables(iapws) == 7
+        assert number_total_constraints(iapws) == 3
         assert number_unused_variables(iapws) == 0
 
     def test_dof(self, iapws):
-        iapws.fs.unit.inlet.flow_mol[0].fix(100)
-        iapws.fs.unit.inlet.enth_mol[0].fix(4000)
+        iapws.fs.unit.inlet.flow_mol[0].fix(5)
+        iapws.fs.unit.inlet.enth_mol[0].fix(50000)
         iapws.fs.unit.inlet.pressure[0].fix(101325)
 
-        iapws.fs.unit.deltaP.fix(50000)
-        iapws.fs.unit.efficiency_isentropic.fix(0.9)
+        iapws.fs.unit.heat_duty.fix(10000)
 
         assert degrees_of_freedom(iapws) == 0
 
@@ -303,20 +263,14 @@ class TestIAPWS(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, iapws):
-        assert pytest.approx(100, abs=1e-5) == \
+        assert pytest.approx(5, abs=1e-5) == \
             value(iapws.fs.unit.outlet.flow_mol[0])
 
-        assert pytest.approx(4002, abs=1e0) == \
+        assert pytest.approx(52000, abs=1e0) == \
             value(iapws.fs.unit.outlet.enth_mol[0])
 
-        assert pytest.approx(151325, abs=1e2) == \
+        assert pytest.approx(101325, abs=1e2) == \
             value(iapws.fs.unit.outlet.pressure[0])
-
-        assert pytest.approx(151.5, abs=1e-1) == \
-            value(iapws.fs.unit.work_mechanical[0])
-
-        assert pytest.approx(136.4, abs=1e-1) == \
-            value(iapws.fs.unit.work_isentropic[0])
 
     @pytest.mark.initialize
     @pytest.mark.solver
@@ -326,10 +280,9 @@ class TestIAPWS(object):
                          iapws.fs.unit.outlet.flow_mol[0])) <= 1e-6
 
         assert abs(value(
-                iapws.fs.unit.outlet.flow_mol[0] *
-                (iapws.fs.unit.inlet.enth_mol[0] -
-                 iapws.fs.unit.outlet.enth_mol[0]) +
-                iapws.fs.unit.work_mechanical[0])) <= 1e-6
+            iapws.fs.unit.inlet.flow_mol[0]*iapws.fs.unit.inlet.enth_mol[0] -
+            iapws.fs.unit.outlet.flow_mol[0]*iapws.fs.unit.outlet.enth_mol[0] +
+            iapws.fs.unit.heat_duty[0])) <= 1e-6
 
     @pytest.mark.ui
     def test_report(self, iapws):
@@ -345,10 +298,7 @@ class TestSaponification(object):
 
         m.fs.properties = SaponificationParameterBlock()
 
-        m.fs.unit = PressureChanger(default={
-                "property_package": m.fs.properties,
-                "thermodynamic_assumption": ThermodynamicAssumption.pump,
-                "compressor": False})
+        m.fs.unit = Heater(default={"property_package": m.fs.properties})
 
         return m
 
@@ -366,18 +316,10 @@ class TestSaponification(object):
         assert hasattr(sapon.fs.unit.outlet, "temperature")
         assert hasattr(sapon.fs.unit.outlet, "pressure")
 
-        assert hasattr(sapon.fs.unit, "work_mechanical")
-        assert hasattr(sapon.fs.unit, "deltaP")
-        assert isinstance(sapon.fs.unit.ratioP, Var)
-        assert isinstance(sapon.fs.unit.ratioP_calculation, Constraint)
+        assert hasattr(sapon.fs.unit, "heat_duty")
 
-        assert isinstance(sapon.fs.unit.efficiency_pump, Var)
-        assert isinstance(sapon.fs.unit.work_fluid, Var)
-        assert isinstance(sapon.fs.unit.fluid_work_calculation, Constraint)
-        assert isinstance(sapon.fs.unit.actual_work, Constraint)
-
-        assert number_variables(sapon) == 21
-        assert number_total_constraints(sapon) == 11
+        assert number_variables(sapon) == 17
+        assert number_total_constraints(sapon) == 8
         assert number_unused_variables(sapon) == 0
 
     def test_dof(self, sapon):
@@ -390,8 +332,7 @@ class TestSaponification(object):
         sapon.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
         sapon.fs.unit.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
 
-        sapon.fs.unit.deltaP.fix(-20000)
-        sapon.fs.unit.efficiency_pump.fix(0.9)
+        sapon.fs.unit.heat_duty.fix(1000)
 
         assert degrees_of_freedom(sapon) == 0
 
@@ -434,38 +375,36 @@ class TestSaponification(object):
         assert pytest.approx(1e-3, abs=1e-6) == \
             value(sapon.fs.unit.outlet.flow_vol[0])
 
-        assert pytest.approx(55388.0, abs=1e-2) == value(
-                sapon.fs.unit.outlet.conc_mol_comp[0, "H2O"])
-        assert pytest.approx(100.0, abs=1e-2) == value(
-                sapon.fs.unit.outlet.conc_mol_comp[0, "NaOH"])
-        assert pytest.approx(100.0, abs=1e-2) == value(
-                sapon.fs.unit.outlet.conc_mol_comp[0, "EthylAcetate"])
-        assert pytest.approx(0.0, abs=1e-2) == value(
-                sapon.fs.unit.outlet.conc_mol_comp[0, "SodiumAcetate"])
-        assert pytest.approx(0.0, abs=1e-2) == value(
-                sapon.fs.unit.outlet.conc_mol_comp[0, "Ethanol"])
+        assert 55388.0 == value(
+                sapon.fs.unit.inlet.conc_mol_comp[0, "H2O"])
+        assert 100.0 == value(
+                sapon.fs.unit.inlet.conc_mol_comp[0, "NaOH"])
+        assert 100.0 == value(
+                sapon.fs.unit.inlet.conc_mol_comp[0, "EthylAcetate"])
+        assert 0.0 == value(
+                sapon.fs.unit.inlet.conc_mol_comp[0, "SodiumAcetate"])
+        assert 0.0 == value(
+                sapon.fs.unit.inlet.conc_mol_comp[0, "Ethanol"])
 
-        assert pytest.approx(320.0, abs=1e-1) == \
+        assert pytest.approx(320.2, abs=1e-1) == \
             value(sapon.fs.unit.outlet.temperature[0])
 
-        assert pytest.approx(81325, abs=1e2) == \
+        assert pytest.approx(101325, abs=1e2) == \
             value(sapon.fs.unit.outlet.pressure[0])
-
-        assert pytest.approx(-18.0, abs=1e-2) == \
-            value(sapon.fs.unit.work_mechanical[0])
-        assert pytest.approx(-20.0, abs=1e-2) == \
-            value(sapon.fs.unit.work_fluid[0])
 
     @pytest.mark.initialize
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_conservation(self, sapon):
+        assert abs(value(sapon.fs.unit.inlet.flow_vol[0] -
+                         sapon.fs.unit.outlet.flow_vol[0])) <= 1e-6
+
         assert abs(value(
-                sapon.fs.unit.outlet.flow_vol[0] *
-                sapon.fs.properties.dens_mol*sapon.fs.properties.cp_mol *
-                (sapon.fs.unit.inlet.temperature[0] -
-                 sapon.fs.unit.outlet.temperature[0]) +
-                sapon.fs.unit.work_mechanical[0])) <= 1e-4
+            sapon.fs.unit.outlet.flow_vol[0] *
+            sapon.fs.properties.dens_mol*sapon.fs.properties.cp_mol *
+            (sapon.fs.unit.inlet.temperature[0] -
+             sapon.fs.unit.outlet.temperature[0]) +
+            sapon.fs.unit.heat_duty[0])) <= 1e-3
 
     @pytest.mark.ui
     def test_report(self, sapon):

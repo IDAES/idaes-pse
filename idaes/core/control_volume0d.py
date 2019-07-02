@@ -20,7 +20,7 @@ from __future__ import division
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, Reals, Var
+from pyomo.environ import Constraint, Param, Reals, Var, value
 from pyomo.dae import DerivativeVar
 
 # Import IDAES cores

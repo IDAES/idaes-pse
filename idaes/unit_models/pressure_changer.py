@@ -107,7 +107,7 @@ constructed, **default** = False.
             compressor (True (default), pressure increase) or an expander
             (False, pressure decrease)."""))
     CONFIG.declare("thermodynamic_assumption", ConfigValue(
-        default=ThermodynamicAssumption.isentropic,
+        default=ThermodynamicAssumption.isothermal,
         domain=In(ThermodynamicAssumption),
         description="Thermodynamic assumption to use",
         doc="""Flag to set the thermodynamic assumption to use for the unit.
@@ -182,51 +182,10 @@ see property package for documentation.}"""))
         self.add_outlet_port()
 
         # Set Unit Geometry and holdup Volume
-        self.set_geometry()
-
-        # Construct performance equations
-        self.add_performance()
-
-        # Construct equations for thermodynamic assumption
-        if self.config.thermodynamic_assumption == \
-                ThermodynamicAssumption.isothermal:
-            self.add_isothermal()
-        elif self.config.thermodynamic_assumption == \
-                ThermodynamicAssumption.isentropic:
-            self.add_isentropic()
-        elif self.config.thermodynamic_assumption == \
-                ThermodynamicAssumption.pump:
-            self.add_pump()
-        elif self.config.thermodynamic_assumption == \
-                ThermodynamicAssumption.adiabatic:
-            self.add_adiabatic()
-
-    def set_geometry(self):
-        """
-        Define the geometry of the unit as necessary, and link to control
-        volume
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # For this case, just create a reference to control volume
         if self.config.has_holdup is True:
             add_object_reference(self, "volume", self.control_volume.volume)
 
-    def add_performance(self):
-        """
-        Define constraints which describe the behaviour of the unit model.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-
+        # Construct performance equations
         # Set references to balance terms at unit level
         # Add Work transfer variable 'work' as necessary
         add_object_reference(self, "work_mechanical", self.control_volume.work)
@@ -253,6 +212,20 @@ see property package for documentation.}"""))
             return (self.sfp*b.ratioP[t] *
                     b.control_volume.properties_in[t].pressure ==
                     self.sfp*b.control_volume.properties_out[t].pressure)
+
+        # Construct equations for thermodynamic assumption
+        if self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.isothermal:
+            self.add_isothermal()
+        elif self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.isentropic:
+            self.add_isentropic()
+        elif self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.pump:
+            self.add_pump()
+        elif self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.adiabatic:
+            self.add_adiabatic()
 
     def add_pump(self):
         """
@@ -371,11 +344,14 @@ see property package for documentation.}"""))
 
         # This assumes isentropic composition is the same as outlet
         @self.Constraint(self.flowsheet().config.time,
+                         self.config.property_package.phase_list,
                          self.config.property_package.component_list,
                          doc="Material flows for isentropic properties")
-        def isentropic_material(b, t, j):
-            return b.properties_isentropic[t].flow_mol_comp[j] == \
-                        b.control_volume.properties_out[t].flow_mol_comp[j]
+        def isentropic_material(b, t, p, j):
+            return (
+                b.properties_isentropic[t].get_material_flow_terms(p, j) ==
+                b.control_volume.properties_out[t].get_material_flow_terms(p,
+                                                                           j))
 
         # This assumes isentropic entropy is the same as outlet
         @self.Constraint(self.flowsheet().config.time,
