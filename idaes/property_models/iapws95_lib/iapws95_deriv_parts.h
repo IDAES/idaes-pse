@@ -19,7 +19,7 @@
  File: iapws95_deriv_parts.h
 ------------------------------------------------------------------------------*/
 
-#include "iapws95.h"
+#include "iapws95_external.h"
 #include "iapws95_param.h"
 
 #ifndef _INCLUDE_IAPWS95_DERIV_PARTS_H_
