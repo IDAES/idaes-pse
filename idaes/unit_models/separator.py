@@ -188,14 +188,14 @@ inlet,
 **EnergySplittingType.enthalpy_split** - apply split fractions to enthalpy
 flows. Does not work with component or phase-component splitting.}"""))
     CONFIG.declare("ideal_separation", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Ideal splitting flag",
         doc="""Argument indicating whether ideal splitting should be used.
 Ideal splitting assumes perfect spearation of material, and attempts to
 avoid duplication of StateBlocks by directly partitioning outlet flows to
 ports,
-**default** - True.
+**default** - False.
 **Valid values:** {
 **True** - use ideal splitting methods. Cannot be combined with
 has_phase_equilibrium = True,
@@ -306,7 +306,7 @@ linked the mixed state and all outlet states,
                         "{} Separator provided with both outlet_list and "
                         "num_outlets arguments, which were not consistent ("
                         "length of outlet_list was not equal to num_outlets). "
-                        "PLease check your arguments for consistency, and "
+                        "Please check your arguments for consistency, and "
                         "note that it is only necessry to provide one of "
                         "these arguments.".format(self.name))
         elif (self.config.outlet_list is None and
@@ -507,35 +507,31 @@ linked the mixed state and all outlet states,
                         units[u] = '-'
 
                 try:
-                    add_object_reference(
-                        self,
-                        "phase_equilibrium_idx_ref",
-                        self.config.property_package.phase_equilibrium_idx)
+                    self.phase_equilibrium_generation = Var(
+                            self.flowsheet().config.time,
+                            self.outlet_idx,
+                            self.config.property_package.phase_equilibrium_idx,
+                            domain=Reals,
+                            doc="Amount of generation in unit by phase "
+                                "equilibria [{}/{}]"
+                                .format(units['holdup'], units['time']))
                 except AttributeError:
                     raise PropertyNotSupportedError(
                         "{} Property package does not contain a list of phase "
                         "equilibrium reactions (phase_equilibrium_idx), thus "
                         "does not support phase equilibrium."
                         .format(self.name))
-                self.phase_equilibrium_generation = Var(
-                            self.flowsheet().config.time,
-                            self.outlet_idx,
-                            self.phase_equilibrium_idx_ref,
-                            domain=Reals,
-                            doc="Amount of generation in unit by phase "
-                                "equilibria [{}/{}]"
-                                .format(units['holdup'], units['time']))
 
             # Define terms to use in mixing equation
             def phase_equilibrium_term(b, t, o, p, j):
                 if self.config.has_phase_equilibrium:
                     sd = {}
                     sblock = mixed_block[t]
-                    for r in b.phase_equilibrium_idx_ref:
-                        if sblock.phase_equilibrium_list[r][0] == j:
-                            if sblock.phase_equilibrium_list[r][1][0] == p:
+                    for r in b.config.property_package.phase_equilibrium_idx:
+                        if sblock._params.phase_equilibrium_list[r][0] == j:
+                            if sblock._params.phase_equilibrium_list[r][1][0] == p:
                                 sd[r] = 1
-                            elif sblock.phase_equilibrium_list[r][1][1] == p:
+                            elif sblock._params.phase_equilibrium_list[r][1][1] == p:
                                 sd[r] = -1
                             else:
                                 sd[r] = 0
@@ -543,7 +539,8 @@ linked the mixed state and all outlet states,
                             sd[r] = 0
 
                     return sum(b.phase_equilibrium_generation[t, o, r]*sd[r]
-                               for r in b.phase_equilibrium_idx_ref)
+                               for r in
+                               b.config.property_package.phase_equilibrium_idx)
                 else:
                     return 0
 

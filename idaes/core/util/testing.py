@@ -105,6 +105,7 @@ class StateTestBlockData(StateBlockData):
         self.test_var = Var(initialize=1)
         self.pressure = Var(initialize=1e5)
         self.temperature = Var(initialize=300)
+        self.enth_mol = Var(initialize=5000)
         self.gibbs_mol_phase_comp = Var(self._params.phase_list,
                                         self._params.component_list,
                                         initialize=50)
