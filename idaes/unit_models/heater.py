@@ -158,8 +158,8 @@ class HeaterData(UnitModelBlockData):
     _make_heater_config_block(CONFIG)
 
     def build(self):
-        """
-        Building model
+        """Building model
+
         Args:
             None
         Returns:
@@ -174,13 +174,8 @@ class HeaterData(UnitModelBlockData):
         self.add_outlet_port()
         # Add a convienient reference to heat duty.
         self.heat_duty = Reference(self.control_volume.heat)
-
-        if (self.config.has_pressure_change is True and
-                self.config.momentum_balance_type != 'none'):
+        if hasattr(self.control_volume, "deltaP"):
             self.deltaP = Reference(self.control_volume.deltaP)
 
     def _get_performance_contents(self, time_point=0):
-        var_dict = {}
-        var_dict["Heat Duty"] = self.heat_duty[time_point]
-
-        return {"vars": var_dict}
+        return {"vars":{"Heat Duty":self.heat_duty[time_point]}}
