@@ -20,7 +20,7 @@ import logging
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import (Var, log, Expression, Constraint,
+from pyomo.environ import (Var, log, Expression, Constraint, Reference,
                            PositiveReals, SolverFactory, ExternalFunction)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
@@ -35,9 +35,10 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.misc import add_object_reference
 from idaes.functions import functions_lib
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.unit_models.heater import (_make_heater_config_block,
+                                      _make_heater_control_volume)
 
 _log = logging.getLogger(__name__)
 
@@ -46,195 +47,6 @@ class HeatExchangerFlowPattern(Enum):
     countercurrent = 1
     cocurrent = 2
     crossflow = 3
-
-
-def delta_temperature_lmtd_rule(b, t):
-    """
-    This is a rule for a temperaure difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using log-mean temperature
-    difference (LMTD).  It can be supplied to "delta_temperature_rule"
-    HeatExchanger configuration option.
-    """
-    dT1 = b.delta_temperature_in[t]
-    dT2 = b.delta_temperature_out[t]
-    return (dT1 - dT2) / (log(dT1) - log(dT2))
-
-
-def delta_temperature_amtd_rule(b, t):
-    """
-    This is a rule for a temperaure difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using arithmetic-mean
-    temperature difference (AMTD).  It can be supplied to
-    "delta_temperature_rule" HeatExchanger configuration option.
-    """
-    dT1 = b.delta_temperature_in[t]
-    dT2 = b.delta_temperature_out[t]
-    return (dT1 + dT2) * 0.5
-
-
-def delta_temperature_underwood_rule(b, t):
-    """
-    This is a rule for a temperaure difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using log-mean temperature
-    difference (LMTD) approximation given by Underwood (1970).  It can be
-    supplied to "delta_temperature_rule" HeatExchanger configuration option.
-    """
-    dT1 = b.delta_temperature_in[t]
-    dT2 = b.delta_temperature_out[t]
-    return ((dT1**(1.0/3.0) + dT2**(1.0/3.0))/2.0)**3
-
-
-def delta_temperature_underwood2_rule(b, t):
-    """
-    This is a rule for a temperaure difference expression to calculate
-    :math:`\Delta T` in the heat exchanger model using log-mean temperature
-    difference (LMTD) approximation given by Underwood (1970).  It can be
-    supplied to "delta_temperature_rule" HeatExchanger configuration option.
-    This uses a cube root function that works with negative numbers returning
-    the real negative root.  This function should always evaluate successfully.
-    """
-    dT1 = b.delta_temperature_in[t]
-    dT2 = b.delta_temperature_out[t]
-    return ((b.cbrt(dT1) + b.cbrt(dT2))/2.0)**3
-
-
-def _heat_transfer_rule(b, t):
-    """
-    This is the default rule used by the HeatExchanger model to calculate heat
-    transfer (:math:`Q = UA\Delta T`).
-    """
-    u = b.overall_heat_transfer_coefficient[t]
-    a = b.area
-    q = b.heat_duty[t]
-    deltaT = b.delta_temperature[t]
-    return 0 == (u*a*deltaT - q)*b.side_1.scaling_factor_energy
-
-
-def _cross_flow_heat_transfer_rule(b, t):
-    """
-    This is the default rule used by the HeatExchanger model to calculate heat
-    transfer (:math:`Q = UA\Delta T`).
-    """
-    u = b.overall_heat_transfer_coefficient[t]
-    a = b.area
-    q = b.heat_duty[t]
-    deltaT = b.delta_temperature[t]
-    f = b.crossflow_factor[t]
-    return 0 == (f*u*a*deltaT - q)*b.side_1.scaling_factor_energy
-
-
-def _make_heater_control_volume(o, name, config,
-                                dynamic=None, has_holdup=None):
-    """
-    This is seperated from the main heater class so it can be reused to create
-    control volumes for different types of heat exchange models.
-    """
-    if dynamic is None:
-        dynamic = config.dynamic
-    if has_holdup is None:
-        has_holdup = config.has_holdup
-    # we have to attach this control volume to the model for the rest of
-    # the steps to work
-    o.add_component(name, ControlVolume0DBlock(default={
-        "dynamic": dynamic,
-        "has_holdup": has_holdup,
-        "property_package": config.property_package,
-        "property_package_args": config.property_package_args}))
-    control_volume = getattr(o, name)
-    # Add inlet and outlet state blocks to control volume
-    control_volume.add_state_blocks(
-        has_phase_equilibrium=config.has_phase_equilibrium)
-    # Add material balance
-    control_volume.add_material_balances(
-        balance_type=config.material_balance_type,
-        has_phase_equilibrium=config.has_phase_equilibrium)
-    # add energy balance
-    control_volume.add_energy_balances(
-        balance_type=config.energy_balance_type,
-        has_heat_transfer=True)
-    # add momentum balance
-    control_volume.add_momentum_balances(
-        balance_type=config.momentum_balance_type,
-        has_pressure_change=config.has_pressure_change)
-    return control_volume
-
-
-def _make_heater_config_block(config):
-    """
-    Declare configuration options for HeaterData block.
-    """
-    config.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
-        domain=In(MaterialBalanceType),
-        description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed,
-**default** - MaterialBalanceType.componentPhase.
-**Valid values:** {
-**MaterialBalanceType.none** - exclude material balances,
-**MaterialBalanceType.componentPhase** - use phase component balances,
-**MaterialBalanceType.componentTotal** - use total component balances,
-**MaterialBalanceType.elementTotal** - use total element balances,
-**MaterialBalanceType.total** - use total material balance.}"""))
-    config.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
-        domain=In(EnergyBalanceType),
-        description="Energy balance construction flag",
-        doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyTotal.
-**Valid values:** {
-**EnergyBalanceType.none** - exclude energy balances,
-**EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
-**EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
-**EnergyBalanceType.energyTotal** - single energy balance for material,
-**EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
-    config.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
-        domain=In(MomentumBalanceType),
-        description="Momentum balance construction flag",
-        doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.pressureTotal.
-**Valid values:** {
-**MomentumBalanceType.none** - exclude momentum balances,
-**MomentumBalanceType.pressureTotal** - single pressure balance for material,
-**MomentumBalanceType.pressurePhase** - pressure balances for each phase,
-**MomentumBalanceType.momentumTotal** - single momentum balance for material,
-**MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
-    config.declare("has_phase_equilibrium", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Phase equilibrium construction flag",
-        doc="""Indicates whether terms for phase equilibrium should be
-constructed, **default** = False.
-**Valid values:** {
-**True** - include phase equilibrium terms
-**False** - exclude phase equilibrium terms.}"""))
-    config.declare("has_pressure_change", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Pressure change term construction flag",
-        doc="""Indicates whether terms for pressure change should be
-constructed,
-**default** - False.
-**Valid values:** {
-**True** - include pressure change terms,
-**False** - exclude pressure change terms.}"""))
-    config.declare("property_package", ConfigValue(
-        default=useDefault,
-        domain=is_physical_parameter_block,
-        description="Property package to use for control volume",
-        doc="""Property parameter object used to define property calculations,
-**default** - useDefault.
-**Valid values:** {
-**useDefault** - use default package from parent model or flowsheet,
-**PropertyParameterObject** - a PropertyParameterBlock object.}"""))
-    config.declare("property_package_args", ConfigBlock(
-        implicit=True,
-        description="Arguments to use for constructing property packages",
-        doc="""A ConfigBlock with arguments to be passed to a property block(s)
-and used when constructing these,
-**default** - None.
-**Valid values:** {
-see property package for documentation.}"""))
 
 
 def _make_heat_exchanger_config(config):
@@ -251,8 +63,8 @@ def _make_heat_exchanger_config(config):
         doc="""A config block used to construct the side_2 control volume."""))
     _make_heater_config_block(config.side_1)
     _make_heater_config_block(config.side_2)
-    config.declare("delta_temperature_rule", ConfigValue(
-        default=delta_temperature_lmtd_rule,
+    config.declare("delta_temperature_callback", ConfigValue(
+        default=delta_temperature_lmtd_callback,
         description="Rule for equation for temperature difference"))
     config.declare("flow_pattern", ConfigValue(
         default=HeatExchangerFlowPattern.countercurrent,
@@ -266,43 +78,49 @@ def _make_heat_exchanger_config(config):
 **HeatExchangerFlowPattern.crossflow** - cross flow, factor times
 countercurrent temperature difference.}"""))
 
-
-@declare_process_block_class("Heater", doc="Simple 0D heater/cooler model.")
-class HeaterData(UnitModelBlockData):
+def delta_temperature_lmtd_callback(b):
     """
-    Simple 0D heater unit.
-    Unit model to add or remove heat from a material.
+    This is a rule for a temperaure difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
+    difference (LMTD).  It can be supplied to "delta_temperature_rule"
+    HeatExchanger configuration option.
     """
-    CONFIG = UnitModelBlockData.CONFIG()
-    _make_heater_config_block(CONFIG)
+    dT1 = b.delta_temperature_in
+    dT2 = b.delta_temperature_out
+    @b.Expression(b.flowsheet().config.time)
+    def delta_temperature(b, t):
+        return (dT1[t] - dT2[t])/log(dT1[t]/dT2[t])
 
-    def build(self):
-        """
-        Building model
-        Args:
-            None
-        Returns:
-            None
-        """
-        # Call UnitModel.build to setup dynamics
-        super(HeaterData, self).build()
-        # Add Control Volume
-        _make_heater_control_volume(self, "control_volume", self.config)
-        # Add Ports
-        self.add_inlet_port()
-        self.add_outlet_port()
-        # Add a convienient reference to heat duty.
-        add_object_reference(self, "heat_duty", self.control_volume.heat)
+def delta_temperature_amtd_callback(b):
+    """
+    This is a rule for a temperaure difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using arithmetic-mean
+    temperature difference (AMTD).  It can be supplied to
+    "delta_temperature_rule" HeatExchanger configuration option.
+    """
+    dT1 = b.delta_temperature_in
+    dT2 = b.delta_temperature_out
+    @b.Expression(b.flowsheet().config.time)
+    def delta_temperature(b, t):
+        return (dT1[t] + dT2[t])*0.5
 
-        if (self.config.has_pressure_change is True and
-                self.config.momentum_balance_type != 'none'):
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
-
-    def _get_performance_contents(self, time_point=0):
-        var_dict = {}
-        var_dict["Heat Duty"] = self.heat_duty[time_point]
-
-        return {"vars": var_dict}
+def delta_temperature_underwood_callback(b):
+    """
+    This is a rule for a temperaure difference expression to calculate
+    :math:`\Delta T` in the heat exchanger model using log-mean temperature
+    difference (LMTD) approximation given by Underwood (1970).  It can be
+    supplied to "delta_temperature_rule" HeatExchanger configuration option.
+    This uses a cube root function that works with negative numbers returning
+    the real negative root.  This function should always evaluate successfully.
+    """
+    # external function that ruturns the real root, for the cuberoot of negitive
+    # numbers, so it will return without error for positive and negitive dT.
+    b.cbrt = ExternalFunction(library=functions_lib(), function="cbrt")
+    dT1 = b.delta_temperature_in
+    dT2 = b.delta_temperature_out
+    @b.Expression(b.flowsheet().config.time)
+    def delta_temperature(b, t):
+        return ((b.cbrt(dT1[t]) + b.cbrt(dT2[t]))/2.0)**3
 
 
 @declare_process_block_class("HeatExchanger",
@@ -337,99 +155,102 @@ class HeatExchangerData(UnitModelBlockData):
         Returns:
             None
         """
-        # Call UnitModel.build to setup dynamics
+        ########################################################################
+        #  Call UnitModel.build to setup dynamics and configure                #
+        ########################################################################
         super().build()
         config = self.config
-        # Add variables
-        self.overall_heat_transfer_coefficient = Var(
-                self.flowsheet().config.time,
-                domain=PositiveReals,
-                initialize=100,
-                doc="Overall heat transfer coefficient")
-        self.overall_heat_transfer_coefficient.latex_symbol = "U"
-        self.area = Var(domain=PositiveReals,
-                        initialize=1000,
-                        doc="Heat exchange area")
-        self.area.latex_symbol = "A"
-        if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+        ########################################################################
+        # Add variables                                                        #
+        ########################################################################
+        u = self.overall_heat_transfer_coefficient = Var(
+                self.flowsheet().config.time, domain=PositiveReals,
+                initialize=100.0, doc="Overall heat transfer coefficient")
+        a = self.area = Var(
+            domain=PositiveReals, initialize=1000.0, doc="Heat exchange area")
+        self.delta_temperature_in = Var(
+            self.flowsheet().config.time, initialize=10.0,
+            doc="Temperature difference at the side 1 inlet end")
+        self.delta_temperature_out = Var(
+            self.flowsheet().config.time, initialize=10.0,
+            doc="Temperature difference at the side 1 outlet end")
+        if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
             self.crossflow_factor = Var(
-                    self.flowsheet().config.time,
-                    initialize=1,
-                    doc="Factor to adjust coutercurrent flow heat transfer "
-                        "calculation for cross flow.")
-
-        if config.delta_temperature_rule == delta_temperature_underwood2_rule:
-            # Define a cube root function that return the real negative root
-            # for the cube root of a negative number.
-            self.cbrt = ExternalFunction(library=functions_lib(),
-                                         function="cbrt")
-
-        # Add Control Volumes
+                self.flowsheet().config.time, initialize=1.0,
+                doc="Factor to adjust coutercurrent flow heat "
+                                     "transfer calculation for cross flow.")
+            f = self.crossflow_factor
+        ########################################################################
+        # Add control volumes                                                  #
+        ########################################################################
         _make_heater_control_volume(self, "side_1", config.side_1,
                                     dynamic=config.dynamic,
                                     has_holdup=config.has_holdup)
         _make_heater_control_volume(self, "side_2", config.side_2,
                                     dynamic=config.dynamic,
                                     has_holdup=config.has_holdup)
-        # Add Ports
+        # Add convienient references to heat duty.
+        q = self.heat_duty = Reference(self.side_2.heat)
+        ########################################################################
+        # Add ports                                                            #
+        ########################################################################
         self.add_inlet_port(name="inlet_1", block=self.side_1)
         self.add_inlet_port(name="inlet_2", block=self.side_2)
         self.add_outlet_port(name="outlet_1", block=self.side_1)
         self.add_outlet_port(name="outlet_2", block=self.side_2)
-        # Add convienient references to heat duty.
-        add_object_reference(self, "heat_duty", self.side_2.heat)
+        ########################################################################
+        # Add end temperaure differnece constraints                            #
+        ########################################################################
+        @self.Constraint(self.flowsheet().config.time)
+        def delta_temperature_in_equation(b, t):
+            if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
+                return (b.delta_temperature_in[t] ==
+                    b.side_1.properties_in[t].temperature -
+                    b.side_2.properties_in[t].temperature)
+            else:
+                return (b.delta_temperature_in[t] ==
+                    b.side_1.properties_in[t].temperature -
+                    b.side_2.properties_out[t].temperature)
+        @self.Constraint(self.flowsheet().config.time)
+        def delta_temperature_out_equation(b, t):
+            if b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
+                return (b.delta_temperature_out[t] ==
+                    b.side_1.properties_out[t].temperature -
+                    b.side_2.properties_out[t].temperature)
+            else:
+                return (b.delta_temperature_out[t] ==
+                    b.side_1.properties_out[t].temperature -
+                    b.side_2.properties_in[t].temperature)
+        ########################################################################
+        # Add a unit level energy balance                                      #
+        ########################################################################
+        @self.Constraint(self.flowsheet().config.time)
+        def unit_heat_balance(b, t):
+            return 0 == self.side_1.heat[t] + self.side_2.heat[t]
+        ########################################################################
+        # Add delta T calculations using callack function, lots of options,    #
+        #   and users can provide their own if needed                          #
+        ########################################################################
+        config.delta_temperature_callback(self)
+        ########################################################################
+        # Add Heat transfer equation                                           #
+        ########################################################################
+        deltaT = self.delta_temperature
+        scale = self.side_1.scaling_factor_energy
+        @self.Constraint(self.flowsheet().config.time)
+        def heat_transfer_equation(b, t):
+            if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+                return 0 == (f[t]*u[t]*a*deltaT[t] - q[t])*scale
+            else:
+                return 0 == (u[t]*a*deltaT[t] - q[t])*scale
+        ########################################################################
+        # Add symbols for LaTeX equation rendering                             #
+        ########################################################################
+        self.overall_heat_transfer_coefficient.latex_symbol = "U"
+        self.area.latex_symbol = "A"
         self.side_1.heat.latex_symbol = "Q_1"
         self.side_2.heat.latex_symbol = "Q_2"
-
-        @self.Expression(self.flowsheet().config.time,
-                         doc="Temperature difference at the side 1 inlet end")
-        def delta_temperature_in(b, t):
-            if b.config.flow_pattern == \
-                    HeatExchangerFlowPattern.countercurrent:
-                return b.side_1.properties_in[t].temperature -\
-                       b.side_2.properties_out[t].temperature
-            elif b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
-                return b.side_1.properties_in[t].temperature -\
-                       b.side_2.properties_in[t].temperature
-            elif b.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
-                return b.side_1.properties_in[t].temperature -\
-                       b.side_2.properties_out[t].temperature
-            else:
-                raise ConfigurationError(
-                        "Flow pattern {} not supported"
-                        .format(b.config.flow_pattern))
-        @self.Expression(self.flowsheet().config.time,
-                         doc="Temperature difference at the side 1 outlet end")
-        def delta_temperature_out(b, t):
-            if b.config.flow_pattern == \
-                    HeatExchangerFlowPattern.countercurrent:
-                return b.side_1.properties_out[t].temperature -\
-                       b.side_2.properties_in[t].temperature
-            elif b.config.flow_pattern == HeatExchangerFlowPattern.cocurrent:
-                return b.side_1.properties_out[t].temperature -\
-                       b.side_2.properties_out[t].temperature
-            elif b.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
-                return b.side_1.properties_out[t].temperature -\
-                       b.side_2.properties_in[t].temperature
-
-        # Add a unit level energy balance
-        def unit_heat_balance_rule(b, t):
-            return 0 == self.side_1.heat[t] + self.side_2.heat[t]
-        self.unit_heat_balance = Constraint(
-            self.flowsheet().config.time, rule=unit_heat_balance_rule)
-        # Add heat transfer equation
-        self.delta_temperature = Expression(
-            self.flowsheet().config.time,
-            rule=config.delta_temperature_rule,
-            doc="Temperature difference driving force for heat transfer")
         self.delta_temperature.latex_symbol = "\\Delta T"
-
-        if config.flow_pattern == HeatExchangerFlowPattern.crossflow:
-            self.heat_transfer_equation = Constraint(
-                self.flowsheet().config.time, rule=_cross_flow_heat_transfer_rule)
-        else:
-            self.heat_transfer_equation = Constraint(
-                self.flowsheet().config.time, rule=_heat_transfer_rule)
 
     def initialize(self, state_args_1=None, state_args_2=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}, duty=1000):

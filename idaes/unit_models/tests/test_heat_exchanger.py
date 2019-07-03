@@ -30,7 +30,7 @@ from idaes.core import (FlowsheetBlock,
                         MaterialBalanceType,
                         EnergyBalanceType,
                         MomentumBalanceType)
-from idaes.unit_models.heat_exchanger import (delta_temperature_lmtd_rule,
+from idaes.unit_models.heat_exchanger import (delta_temperature_lmtd_callback,
                                               HeatExchanger,
                                               HeatExchangerFlowPattern)
 
@@ -72,8 +72,8 @@ def test_config():
     assert not m.fs.unit.config.has_holdup
     assert isinstance(m.fs.unit.config.side_1, ConfigBlock)
     assert isinstance(m.fs.unit.config.side_2, ConfigBlock)
-    assert m.fs.unit.config.delta_temperature_rule is \
-        delta_temperature_lmtd_rule
+    assert m.fs.unit.config.delta_temperature_callback is \
+        delta_temperature_lmtd_callback
     assert m.fs.unit.config.flow_pattern == \
         HeatExchangerFlowPattern.countercurrent
 
@@ -152,14 +152,14 @@ class TestBTX_cocurrent(object):
         assert isinstance(btx.fs.unit.area, Var)
         assert not hasattr(btx.fs.unit, "crossflow_factor")
         assert isinstance(btx.fs.unit.heat_duty, Var)
-        assert isinstance(btx.fs.unit.delta_temperature_in, Expression)
-        assert isinstance(btx.fs.unit.delta_temperature_out, Expression)
+        assert isinstance(btx.fs.unit.delta_temperature_in, Var)
+        assert isinstance(btx.fs.unit.delta_temperature_out, Var)
         assert isinstance(btx.fs.unit.unit_heat_balance, Constraint)
-        assert isinstance(btx.fs.unit.delta_temperature, Expression)
+        assert isinstance(btx.fs.unit.delta_temperature, (Var, Expression))
         assert isinstance(btx.fs.unit.heat_transfer_equation, Constraint)
 
-        assert number_variables(btx) == 48
-        assert number_total_constraints(btx) == 36
+        assert number_variables(btx) == 50
+        assert number_total_constraints(btx) == 38
         assert number_unused_variables(btx) == 0
 
     def test_dof(self, btx):
@@ -301,14 +301,14 @@ class TestIAPWS_countercurrent(object):
         assert isinstance(iapws.fs.unit.area, Var)
         assert not hasattr(iapws.fs.unit, "crossflow_factor")
         assert isinstance(iapws.fs.unit.heat_duty, Var)
-        assert isinstance(iapws.fs.unit.delta_temperature_in, Expression)
-        assert isinstance(iapws.fs.unit.delta_temperature_out, Expression)
+        assert isinstance(iapws.fs.unit.delta_temperature_in, Var)
+        assert isinstance(iapws.fs.unit.delta_temperature_out, Var)
         assert isinstance(iapws.fs.unit.unit_heat_balance, Constraint)
-        assert isinstance(iapws.fs.unit.delta_temperature, Expression)
+        assert isinstance(iapws.fs.unit.delta_temperature, (Expression, Var))
         assert isinstance(iapws.fs.unit.heat_transfer_equation, Constraint)
 
-        assert number_variables(iapws) == 16
-        assert number_total_constraints(iapws) == 8
+        assert number_variables(iapws) == 18
+        assert number_total_constraints(iapws) == 10
         assert number_unused_variables(iapws) == 0
 
     def test_dof(self, iapws):
@@ -401,7 +401,7 @@ class TestIAPWS_countercurrent(object):
 
 
 # -----------------------------------------------------------------------------
-@pytest.mark.skip(reason="Solutions vary with differnt versions of solver.")
+#@pytest.mark.skip(reason="Solutions vary with differnt versions of solver.")
 class TestSaponification_crossflow(object):
     @pytest.fixture(scope="class")
     def sapon(self):
@@ -447,14 +447,14 @@ class TestSaponification_crossflow(object):
         assert isinstance(sapon.fs.unit.area, Var)
         assert isinstance(sapon.fs.unit.crossflow_factor, Var)
         assert isinstance(sapon.fs.unit.heat_duty, Var)
-        assert isinstance(sapon.fs.unit.delta_temperature_in, Expression)
-        assert isinstance(sapon.fs.unit.delta_temperature_out, Expression)
+        assert isinstance(sapon.fs.unit.delta_temperature_in, Var)
+        assert isinstance(sapon.fs.unit.delta_temperature_out, Var)
         assert isinstance(sapon.fs.unit.unit_heat_balance, Constraint)
-        assert isinstance(sapon.fs.unit.delta_temperature, Expression)
+        assert isinstance(sapon.fs.unit.delta_temperature, (Expression,Var))
         assert isinstance(sapon.fs.unit.heat_transfer_equation, Constraint)
 
-        assert number_variables(sapon) == 37
-        assert number_total_constraints(sapon) == 18
+        assert number_variables(sapon) == 39
+        assert number_total_constraints(sapon) == 20
         assert number_unused_variables(sapon) == 0
 
     def test_dof(self, sapon):
@@ -523,26 +523,26 @@ class TestSaponification_crossflow(object):
         assert pytest.approx(1e-3, abs=1e-6) == \
             value(sapon.fs.unit.outlet_2.flow_vol[0])
 
-        assert 55388.0 == value(
+        assert pytest.approx(55388.0, 1e-3) == value(
                 sapon.fs.unit.outlet_1.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(
+        assert pytest.approx(100.0, 1e-3) == value(
                 sapon.fs.unit.outlet_1.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(
+        assert pytest.approx(100.0, 1e-3) == value(
                 sapon.fs.unit.outlet_1.conc_mol_comp[0, "EthylAcetate"])
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-2) == value(
                 sapon.fs.unit.outlet_1.conc_mol_comp[0, "SodiumAcetate"])
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-2) == value(
                 sapon.fs.unit.outlet_1.conc_mol_comp[0, "Ethanol"])
 
-        assert 55388.0 == value(
+        assert pytest.approx(55388.0, 1e-3) == value(
                 sapon.fs.unit.outlet_2.conc_mol_comp[0, "H2O"])
-        assert 100.0 == value(
+        assert pytest.approx(100.0, 1e-3) == value(
                 sapon.fs.unit.outlet_2.conc_mol_comp[0, "NaOH"])
-        assert 100.0 == value(
+        assert pytest.approx(100.0, 1e-3) == value(
                 sapon.fs.unit.outlet_2.conc_mol_comp[0, "EthylAcetate"])
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-2) == value(
                 sapon.fs.unit.outlet_2.conc_mol_comp[0, "SodiumAcetate"])
-        assert 0.0 == value(
+        assert pytest.approx(0.0, abs=1e-2) == value(
                 sapon.fs.unit.outlet_2.conc_mol_comp[0, "Ethanol"])
 
         assert pytest.approx(301.3, abs=1e-1) == \
