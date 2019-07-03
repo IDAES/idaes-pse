@@ -174,7 +174,9 @@ class HeaterData(UnitModelBlockData):
         self.add_outlet_port()
         # Add a convienient reference to heat duty.
         self.heat_duty = Reference(self.control_volume.heat)
-        if hasattr(self.control_volume, "deltaP"):
+        if (self.config.has_pressure_change is True and
+            self.config.momentum_balance_type != MomentumBalanceType.none):
+
             self.deltaP = Reference(self.control_volume.deltaP)
 
     def _get_performance_contents(self, time_point=0):
