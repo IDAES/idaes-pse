@@ -17,13 +17,10 @@ Basic heater/cooler models
 __author__ = "John Eslick"
 
 import logging
-from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import (Var, log, Expression, Constraint,
-                           PositiveReals, SolverFactory, ExternalFunction)
+from pyomo.environ import Reference
 from pyomo.common.config import ConfigBlock, ConfigValue, In
-from pyomo.opt import TerminationCondition
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -34,10 +31,6 @@ from idaes.core import (ControlVolume0DBlock,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
-from idaes.core.util.exceptions import ConfigurationError
-from idaes.core.util.misc import add_object_reference
-from idaes.functions import functions_lib
-from idaes.core.util.tables import create_stream_table_dataframe
 
 _log = logging.getLogger(__name__)
 
@@ -180,11 +173,11 @@ class HeaterData(UnitModelBlockData):
         self.add_inlet_port()
         self.add_outlet_port()
         # Add a convienient reference to heat duty.
-        add_object_reference(self, "heat_duty", self.control_volume.heat)
+        self.heat_duty = Reference(self.control_volume.heat)
 
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
-            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+            self.deltaP = Reference(self.control_volume.deltaP)
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
