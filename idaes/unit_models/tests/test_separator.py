@@ -1000,6 +1000,20 @@ class TestBTX(object):
                 value(btx.fs.unit.mixed_state[0].mole_frac_phase[
                         "Vap", "toluene"]))
 
+        # Also need to initialize outlet states
+        btx.fs.unit.outlet_1_state.initialize(flow_mol=1,
+                                              pressure=101325,
+                                              temperature=368,
+                                              mole_frac={"benzene": 0.5,
+                                                         "toluene": 0.5})
+        btx.fs.unit.outlet_2_state.initialize(flow_mol=1,
+                                              pressure=101325,
+                                              temperature=368,
+                                              mole_frac={"benzene": 0.5,
+                                                         "toluene": 0.5})
+
+        assert degrees_of_freedom(btx) == 0
+
         # Also trigger build of phase enthalpy vars.
         btx.fs.unit.mixed_state[0].enth_mol_phase["Vap"] = 0.5
         btx.fs.unit.outlet_1_state[0].enth_mol_phase["Vap"] = 0.5
