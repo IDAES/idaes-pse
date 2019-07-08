@@ -35,7 +35,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
+from idaes.core.util.exceptions import BalanceTypeNotSupportedError, BurntToast
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
 logger = logging.getLogger('idaes.unit_model')
@@ -382,8 +382,14 @@ see property package for documentation.}"""))
                         for p in self.config.property_package.phase_list))
         elif self.config.material_balance_type == \
                 MaterialBalanceType.elementTotal:
-            raise ConfigurationError(
+            raise BalanceTypeNotSupportedError(
                     "{} PressureChanger does not support element balances."
+                    .format(self.name))
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.none:
+            raise BalanceTypeNotSupportedError(
+                    "{} PressureChanger does not support material_balance_type"
+                    " = none."
                     .format(self.name))
         else:
             raise BurntToast(
