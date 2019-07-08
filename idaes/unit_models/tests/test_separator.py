@@ -30,7 +30,6 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.core import (FlowsheetBlock,
                         declare_process_block_class,
-                        PhysicalParameterBlock,
                         StateBlock,
                         MaterialBalanceType)
 from idaes.unit_models.separator import (Separator,
@@ -972,10 +971,11 @@ class TestBTX(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialiszation(self, btx):
-        # No initialisation test, as default initialisation cannot handle total
+        # Default initialisation will fail as it cannot handle total
         # flow with a phase split.
-        # However, need to do a manual initialization to get solution
-        btx.fs.unit.mixed_state.initialize()
+        # However, this should do enough that the problem can be solved
+        with pytest.raises(KeyError):
+            btx.fs.unit.initialize()
 
         assert (pytest.approx(1, abs=1e-4) ==
                 value(btx.fs.unit.mixed_state[0].flow_mol))
@@ -1081,179 +1081,128 @@ class TestBTX(object):
     def test_report(self, btx):
         btx.fs.unit.report()
 
-#@pytest.mark.build
-#def test_build_default():
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterTestBlock()
-#
-#    m.fs.sep = Separator(default={"property_package": m.fs.pp,
-#                                  "ideal_separation": False})
-#
-#    assert isinstance(m.fs.sep.material_splitting_eqn, Constraint)
-#    assert len(m.fs.sep.material_splitting_eqn) == 8
-#    assert isinstance(m.fs.sep.temperature_equality_eqn, Constraint)
-#    assert len(m.fs.sep.temperature_equality_eqn) == 2
-#    assert isinstance(m.fs.sep.pressure_equality_eqn, Constraint)
-#    assert len(m.fs.sep.pressure_equality_eqn) == 2
-#
-#    assert isinstance(m.fs.sep.outlet_1, Port)
-#    assert isinstance(m.fs.sep.outlet_2, Port)
-#    assert isinstance(m.fs.sep.inlet, Port)
-#
-#
-#def test_model_checks():
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterTestBlock()
-#
-#    m.fs.sep = Separator(default={
-#            "property_package": m.fs.pp,
-#            "ideal_separation": False})
-#
-#    m.fs.sep.model_check()
-#
-#    assert m.fs.sep.outlet_1_state[0].check is True
-#    assert m.fs.sep.outlet_2_state[0].check is True
-#    assert m.fs.sep.mixed_state[0].check is True
-#
-#
-#@pytest.mark.initialize
-#def test_initialize():
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterTestBlock()
-#    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
-#
-#    m.fs.sep = Separator(default={
-#            "property_package": m.fs.pp,
-#            "mixed_state_block": m.fs.sb,
-#            "ideal_separation": False,
-#            "split_basis": SplittingType.phaseComponentFlow})
-#
-#    # Change one outlet pressure to check initialization calculations
-#    m.fs.sep.outlet_1_state[0].pressure = 8e4
-#
-#    f = m.fs.sep.initialize(hold_state=True)
-#
-#    assert m.fs.sep.outlet_1_state[0].init_test is True
-#    assert m.fs.sep.outlet_2_state[0].init_test is True
-#    assert m.fs.sb[0].init_test is True
-#    assert m.fs.sep.outlet_1_state[0].hold_state is False
-#    assert m.fs.sep.outlet_2_state[0].hold_state is False
-#    assert m.fs.sb[0].hold_state is True
-#
-#    assert m.fs.sep.outlet_1.component_flow[0, "p1", "c1"].value == 0.5
-#    assert m.fs.sep.outlet_1.component_flow[0, "p1", "c2"].value == 0.5
-#    assert m.fs.sep.outlet_1.component_flow[0, "p2", "c1"].value == 0.5
-#    assert m.fs.sep.outlet_1.component_flow[0, "p2", "c2"].value == 0.5
-#    assert m.fs.sep.outlet_1.enthalpy[0, "p1"].value == 2
-#    assert m.fs.sep.outlet_1.enthalpy[0, "p2"].value == 2
-#    assert m.fs.sep.outlet_1.pressure[0].value == 1e5
-#
-#    assert m.fs.sep.outlet_2.component_flow[0, "p1", "c1"].value == 0.5
-#    assert m.fs.sep.outlet_2.component_flow[0, "p1", "c2"].value == 0.5
-#    assert m.fs.sep.outlet_2.component_flow[0, "p2", "c1"].value == 0.5
-#    assert m.fs.sep.outlet_2.component_flow[0, "p2", "c2"].value == 0.5
-#    assert m.fs.sep.outlet_2.enthalpy[0, "p1"].value == 2
-#    assert m.fs.sep.outlet_2.enthalpy[0 ,"p2"].value == 2
-#    assert m.fs.sep.outlet_2.pressure[0].value == 1e5
-#
-#    m.fs.sep.release_state(flags=f)
-#
-#    assert m.fs.sep.outlet_1_state[0].hold_state is False
-#    assert m.fs.sep.outlet_2_state[0].hold_state is False
-#    assert m.fs.sb[0].hold_state is False
-#
-#
-#@pytest.mark.initialization
-#def test_initialize_inconsistent_keys():
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterTestBlock()
-#    m.fs.sb = TestStateBlock(m.fs.time, default={"parameters": m.fs.pp})
-#
-#    m.fs.sep = Separator(default={
-#            "property_package": m.fs.pp,
-#            "mixed_state_block": m.fs.sb,
-#            "ideal_separation": False,
-#            "split_basis": SplittingType.phaseFlow})
-#
-#    # Change one outlet pressure to check initialization calculations
-#    m.fs.sep.outlet_1_state[0].pressure = 8e4
-#
-#    with pytest.raises(KeyError):
-#        m.fs.sep.initialize()
-#
-#
-#@pytest.mark.initialization
-#@pytest.mark.solver
-#@pytest.mark.skipif(solver is None, reason="Solver not available")
-#def test_initialize_total_flow():
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#
-#    m.fs.properties = SaponificationParameterBlock()
-#
-#    m.fs.sb = Separator(default={
-#            "property_package": m.fs.properties,
-#            "ideal_separation": False,
-#            "split_basis": SplittingType.totalFlow})
-#
-#    m.fs.sb.inlet.flow_vol.fix(1.0e-03)
-#    m.fs.sb.inlet.conc_mol_comp[0, "H2O"].fix(55388.0)
-#    m.fs.sb.inlet.conc_mol_comp[0, "NaOH"].fix(100.0)
-#    m.fs.sb.inlet.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-#    m.fs.sb.inlet.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-#    m.fs.sb.inlet.conc_mol_comp[0, "Ethanol"].fix(0.0)
-#
-#    m.fs.sb.inlet.temperature.fix(303.15)
-#    m.fs.sb.inlet.pressure.fix(101325.0)
-#
-#    m.fs.sb.split_fraction[0, "outlet_1"].fix(0.2)
-#
-#    assert degrees_of_freedom(m) == 0
-#
-#    m.fs.sb.initialize(outlvl=5, optarg={'tol': 1e-6})
-#
-#    assert (pytest.approx(0.2, abs=1e-3) ==
-#             m.fs.sb.split_fraction[0, "outlet_1"].value)
-#    assert (pytest.approx(0.8, abs=1e-3) ==
-#             m.fs.sb.split_fraction[0, "outlet_2"].value)
-#
-#    assert (pytest.approx(101325.0, abs=1e-2) ==
-#            m.fs.sb.outlet_1.pressure[0].value)
-#    assert (pytest.approx(303.15, abs=1e-2) ==
-#            m.fs.sb.outlet_1.temperature[0].value)
-#    assert (pytest.approx(2e-4, abs=1e-6) ==
-#            m.fs.sb.outlet_1.flow_vol[0].value)
-#    assert (pytest.approx(55388.0, abs=1e-2) ==
-#            m.fs.sb.outlet_1.conc_mol_comp[0, "H2O"].value)
-#    assert (pytest.approx(100.0, abs=1e-2) ==
-#            m.fs.sb.outlet_1.conc_mol_comp[0, "NaOH"].value)
-#    assert (pytest.approx(100.0, abs=1e-2) ==
-#            m.fs.sb.outlet_1.conc_mol_comp[0, "EthylAcetate"].value)
-#    assert (pytest.approx(0.0, abs=1e-2) ==
-#            m.fs.sb.outlet_1.conc_mol_comp[0, "SodiumAcetate"].value)
-#    assert (pytest.approx(0.0, abs=1e-2) ==
-#            m.fs.sb.outlet_1.conc_mol_comp[0, "Ethanol"].value)
-#
-#    assert (pytest.approx(101325.0, abs=1e-2) ==
-#            m.fs.sb.outlet_2.pressure[0].value)
-#    assert (pytest.approx(303.15, abs=1e-2) ==
-#            m.fs.sb.outlet_2.temperature[0].value)
-#    assert (pytest.approx(8e-4, abs=1e-6) ==
-#            m.fs.sb.outlet_2.flow_vol[0].value)
-#    assert (pytest.approx(55388.0, abs=1e-2) ==
-#            m.fs.sb.outlet_2.conc_mol_comp[0, "H2O"].value)
-#    assert (pytest.approx(100.0, abs=1e-2) ==
-#            m.fs.sb.outlet_2.conc_mol_comp[0, "NaOH"].value)
-#    assert (pytest.approx(100.0, abs=1e-2) ==
-#            m.fs.sb.outlet_2.conc_mol_comp[0, "EthylAcetate"].value)
-#    assert (pytest.approx(0.0, abs=1e-2) ==
-#            m.fs.sb.outlet_2.conc_mol_comp[0, "SodiumAcetate"].value)
-#    assert (pytest.approx(0.0, abs=1e-2) ==
-#            m.fs.sb.outlet_2.conc_mol_comp[0, "Ethanol"].value)
+
+# -----------------------------------------------------------------------------
+@pytest.mark.iapws
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+class TestIAPWS_countercurrent(object):
+    @pytest.fixture(scope="class")
+    def iapws(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = Separator(default={
+                "property_package": m.fs.properties,
+                "material_balance_type": MaterialBalanceType.componentPhase,
+                "split_basis": SplittingType.componentFlow,
+                "num_outlets": 3,
+                "ideal_separation": False,
+                "has_phase_equilibrium": False})
+
+        return m
+
+    @pytest.mark.build
+    def test_build(self, iapws):
+        assert len(iapws.fs.unit.inlet.vars) == 3
+        assert hasattr(iapws.fs.unit.inlet, "flow_mol")
+        assert hasattr(iapws.fs.unit.inlet, "enth_mol")
+        assert hasattr(iapws.fs.unit.inlet, "pressure")
+
+        assert hasattr(iapws.fs.unit, "outlet_1")
+        assert len(iapws.fs.unit.outlet_1.vars) == 3
+        assert hasattr(iapws.fs.unit.outlet_1, "flow_mol")
+        assert hasattr(iapws.fs.unit.outlet_1, "enth_mol")
+        assert hasattr(iapws.fs.unit.outlet_1, "pressure")
+
+        assert hasattr(iapws.fs.unit, "outlet_2")
+        assert len(iapws.fs.unit.outlet_2.vars) == 3
+        assert hasattr(iapws.fs.unit.outlet_2, "flow_mol")
+        assert hasattr(iapws.fs.unit.outlet_2, "enth_mol")
+        assert hasattr(iapws.fs.unit.outlet_2, "pressure")
+
+        assert hasattr(iapws.fs.unit, "outlet_3")
+        assert len(iapws.fs.unit.outlet_3.vars) == 3
+        assert hasattr(iapws.fs.unit.outlet_3, "flow_mol")
+        assert hasattr(iapws.fs.unit.outlet_3, "enth_mol")
+        assert hasattr(iapws.fs.unit.outlet_3, "pressure")
+
+        assert isinstance(iapws.fs.unit.split_fraction, Var)
+
+        assert number_variables(iapws) == 15
+        assert number_total_constraints(iapws) == 10
+        assert number_unused_variables(iapws) == 0
+
+    def test_dof(self, iapws):
+        iapws.fs.unit.inlet.flow_mol[0].fix(100)
+        iapws.fs.unit.inlet.enth_mol[0].fix(4000)
+        iapws.fs.unit.inlet.pressure[0].fix(101325)
+
+        iapws.fs.unit.split_fraction[0, "outlet_1", "H2O"].fix(0.4)
+        iapws.fs.unit.split_fraction[0, "outlet_2", "H2O"].fix(0.5)
+
+        assert degrees_of_freedom(iapws) == 0
+
+    # No initilaization test, as the default method doesn't support this yet
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, iapws):
+        results = solver.solve(iapws)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, iapws):
+        assert pytest.approx(40, abs=1e-3) == \
+            value(iapws.fs.unit.outlet_1.flow_mol[0])
+        assert pytest.approx(50, abs=1e-3) == \
+            value(iapws.fs.unit.outlet_2.flow_mol[0])
+        assert pytest.approx(10, abs=1e-3) == \
+            value(iapws.fs.unit.outlet_3.flow_mol[0])
+
+        assert pytest.approx(4000, abs=1e0) == \
+            value(iapws.fs.unit.outlet_1.enth_mol[0])
+        assert pytest.approx(4000, abs=1e0) == \
+            value(iapws.fs.unit.outlet_2.enth_mol[0])
+        assert pytest.approx(4000, abs=1e0) == \
+            value(iapws.fs.unit.outlet_3.enth_mol[0])
+
+        assert pytest.approx(101325, abs=1e2) == \
+            value(iapws.fs.unit.outlet_1.pressure[0])
+        assert pytest.approx(101325, abs=1e2) == \
+            value(iapws.fs.unit.outlet_2.pressure[0])
+        assert pytest.approx(101325, abs=1e2) == \
+            value(iapws.fs.unit.outlet_3.pressure[0])
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, iapws):
+        assert abs(value(iapws.fs.unit.inlet.flow_mol[0] -
+                         iapws.fs.unit.outlet_1.flow_mol[0] -
+                         iapws.fs.unit.outlet_2.flow_mol[0] -
+                         iapws.fs.unit.outlet_3.flow_mol[0])) <= 1e-6
+
+        assert abs(value(iapws.fs.unit.inlet.flow_mol[0] *
+                         iapws.fs.unit.inlet.enth_mol[0] -
+                         iapws.fs.unit.outlet_1.flow_mol[0] *
+                         iapws.fs.unit.outlet_1.enth_mol[0] -
+                         iapws.fs.unit.outlet_2.flow_mol[0] *
+                         iapws.fs.unit.outlet_2.enth_mol[0] -
+                         iapws.fs.unit.outlet_3.flow_mol[0] *
+                         iapws.fs.unit.outlet_3.enth_mol[0])) <= 1e-2
+
+    @pytest.mark.ui
+    def test_report(self, iapws):
+        iapws.fs.unit.report()
 
 
 ## -----------------------------------------------------------------------------
