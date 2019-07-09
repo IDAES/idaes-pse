@@ -32,7 +32,7 @@
             var data = "text/json;charset=utf-8," + encodeURIComponent(jsonstring);
             var fakeobj = document.createElement('a');
             fakeobj.href = "data:" + data;
-            fakeobj.download = 'serialized_graph.json';
+            fakeobj.download = 'serialized_graph.idaes.vis';
             fakeobj.click();
             fakeobj.remove();
         }
