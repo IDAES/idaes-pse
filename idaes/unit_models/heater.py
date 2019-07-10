@@ -53,6 +53,8 @@ def _make_heater_control_volume(o, name, config,
         "property_package_args": config.property_package_args}))
     control_volume = getattr(o, name)
     # Add inlet and outlet state blocks to control volume
+    if has_holdup:
+        control_volume.add_geometry()
     control_volume.add_state_blocks(
         has_phase_equilibrium=config.has_phase_equilibrium)
     # Add material balance
