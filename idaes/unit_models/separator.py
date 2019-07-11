@@ -781,7 +781,7 @@ linked the mixed state and all outlet states,
                                         "developers.".format(self.name))
 
                             if s_check == o:
-                                return mb[t].component(l_name)[p, j]
+                                return 1
                             else:
                                 return self.eps
 
@@ -882,9 +882,9 @@ linked the mixed state and all outlet states,
 
                     else:
                         def e_rule(b, t, p):
-                            try:
-                                mfp = mb[t].component(l_name+"_comp")
-                            except AttributeError:
+                            mfp = mb[t].component(l_name+"_comp")
+
+                            if mfp is None:
                                 raise AttributeError(
                                     "{} Cannot use ideal splitting with this "
                                     "property package. Package uses indexed "
