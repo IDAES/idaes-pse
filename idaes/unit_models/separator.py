@@ -796,15 +796,24 @@ linked the mixed state and all outlet states,
                                     SplittingType.componentFlow:
                             def e_rule(b, t, j):
                                 if split_map[j] == o:
-                                    return mb[t].component(l_name)[j]
+                                    return 1
+                                # else:
+                                return self.eps
+
+                        elif self.config.split_basis == \
+                                    SplittingType.phaseComponentFlow:
+                            def e_rule(b, t, j):
+                                if any(split_map[p, j] == o for p in
+                                       self.config.property_package.phase_list):
+                                    return 1
                                 # else:
                                 return self.eps
 
                         else:
                             def e_rule(b, t, j):
-                                try:
-                                    mfp = mb[t].component(l_name+"_phase")
-                                except AttributeError:
+                                mfp = mb[t].component(l_name+"_phase")
+
+                                if mfp is None:
                                     raise AttributeError(
                                         "{} Cannot use ideal splitting with "
                                         "this property package. Package uses "
@@ -818,9 +827,6 @@ linked the mixed state and all outlet states,
                                     if self.config.split_basis == \
                                             SplittingType.phaseFlow:
                                         s_check = split_map[p]
-                                    elif self.config.split_basis == \
-                                            SplittingType.phaseComponentFlow:
-                                        s_check = split_map[p, j]
                                     else:
                                         raise BurntToast(
                                             "{} This should not happen. Please"

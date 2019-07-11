@@ -134,7 +134,8 @@ class StateTestBlockData(StateBlockData):
             return MaterialFlowBasis.other
 
     def define_state_vars(self):
-        return {"temperature": self.temperature,
+        return {"component_flow": self.flow_mol_phase_comp,
+                "temperature": self.temperature,
                 "pressure": self.pressure}
 
 

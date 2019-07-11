@@ -31,7 +31,9 @@ from pyomo.common.config import ConfigBlock
 from idaes.core import (FlowsheetBlock,
                         declare_process_block_class,
                         StateBlock,
-                        MaterialBalanceType)
+                        MaterialBalanceType,
+                        StateBlockData,
+                        PhysicalParameterBlock)
 from idaes.unit_models.separator import (Separator,
                                          SeparatorData,
                                          SplittingType,
@@ -1100,7 +1102,7 @@ class TestBTX(object):
 @pytest.mark.iapws
 @pytest.mark.skipif(not iapws95.iapws95_available(),
                     reason="IAPWS not available")
-class TestIAPWS_countercurrent(object):
+class TestIAPWS(object):
     @pytest.fixture(scope="class")
     def iapws(self):
         m = ConcreteModel()
@@ -1219,316 +1221,492 @@ class TestIAPWS_countercurrent(object):
         iapws.fs.unit.report()
 
 
-## -----------------------------------------------------------------------------
-## Testing of ideal splitting methods
-#@declare_process_block_class("PhysicalParameterBlock2")
-#class _PhysicalParameterBlock2(PhysicalParameterBlock):
-#    def build(self):
-#        super(_PhysicalParameterBlock2, self).build()
-#
-#        self.phase_list = Set(initialize=["p1", "p2"])
-#        self.component_list = Set(initialize=["c1", "c2"])
-#        self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
-#
-#        self.state_block_class = StateBlock2
-#
-#    @classmethod
-#    def define_metadata(cls, obj):
-#        obj.add_default_units({'time': 's',
-#                               'length': 'm',
-#                               'mass': 'g',
-#                               'amount': 'mol',
-#                               'temperature': 'K',
-#                               'energy': 'J',
-#                               'holdup': 'mol'})
-#
-#
-#@declare_process_block_class("StateBlock2", block_class=SBlockBase)
-#class StateBlockData2(StateBlockData):
-#    CONFIG = ConfigBlock(implicit=True)
-#
-#    def build(self):
-#        super(StateBlockData2, self).build()
-#
-#        self.phase_list = Set(initialize=["p1", "p2"])
-#        self.component_list = Set(initialize=["c1", "c2"])
-#        self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
-#        self.phase_equilibrium_list = \
-#            {"e1": ["c1", ("p1", "p2")],
-#             "e2": ["c2", ("p1", "p2")]}
-#
-#        self.pressure = Var(initialize=1e5)
-#        self.flow_mol_phase_comp = Var(self.phase_list,
-#                                       self.component_list,
-#                                       initialize=1)
-#        self.enth_mol_phase = Var(self.phase_list, initialize=2)
-#        self.temperature = Var(initialize=5)
-#
-#    def get_material_flow_terms(b, p, j):
-#        return b.flow_mol_phase_comp[p, j]
-#
-#    def get_enthalpy_flow_terms(b, p):
-#        return b.enth_mol_phase[p]
-#
-#    def define_state_vars(self):
-#        return {"component_flow": self.flow_mol_phase_comp,
-#                "temperature": self.temperature,
-#                "pressure": self.pressure}
-#
-#    def model_check(self):
-#        self.check = True
-#
-#
-##def test_ideal_splitting_methods():
-##    m = ConcreteModel()
-##    m.fs = FlowsheetBlock(default={"dynamic": False})
-##    m.fs.pp = PhysicalParameterBlock2()
-##
-##    m.fs.sep = SeparatorFrame(default={
-##            "property_package": m.fs.pp,
-##            "split_basis": SplittingType.phaseComponentFlow,
-##            "ideal_split_map": {("p1", "c1"): "outlet_1",
-##                                ("p1", "c2"): "outlet_2",
-##                                ("p2", "c1"): "outlet_2",
-##                                ("p2", "c2"): "outlet_2"}})
-##
-##    m.fs.sep._get_property_package()
-##    m.fs.sep._get_indexing_sets()
-##
-##    outlet_list = m.fs.sep.create_outlet_list()
-##    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
-##    mixed_block = m.fs.sep.add_mixed_state_block()
-##
-##    m.fs.sep.partition_outlet_flows(mixed_block, outlet_list)
-##
-##    assert isinstance(m.fs.sep.outlet_1, Port)
-##    assert isinstance(m.fs.sep.outlet_2, Port)
-##
-##    assert m.fs.sep.outlet_1[0].component_flow["p1", "c1"].value == 1.0
-##    assert m.fs.sep.outlet_1[0].component_flow["p1", "c2"].value == 0.0
-##    assert m.fs.sep.outlet_1[0].component_flow["p2", "c1"].value == 0.0
-##    assert m.fs.sep.outlet_1[0].component_flow["p2", "c2"].value == 0.0
-##    assert m.fs.sep.outlet_1[0].temperature.value == 5
-##    assert m.fs.sep.outlet_1[0].pressure.value == 1e5
-##
-##    assert m.fs.sep.outlet_2[0].component_flow["p1", "c1"].value == 0.0
-##    assert m.fs.sep.outlet_2[0].component_flow["p1", "c2"].value == 1.0
-##    assert m.fs.sep.outlet_2[0].component_flow["p2", "c1"].value == 1.0
-##    assert m.fs.sep.outlet_2[0].component_flow["p2", "c2"].value == 1.0
-##    assert m.fs.sep.outlet_2[0].temperature.value == 5
-##    assert m.fs.sep.outlet_2[0].pressure.value == 1e5
-##
-##
-##def test_ideal_splitting_methods_key_error():
-##    m = ConcreteModel()
-##    m.fs = FlowsheetBlock(default={"dynamic": False})
-##    m.fs.pp = PhysicalParameterBlock2()
-##
-##    m.fs.sep = SeparatorFrame(default={
-##            "property_package": m.fs.pp,
-##            "split_basis": SplittingType.componentFlow,
-##            "ideal_split_map": {("p1", "c1"): "outlet_1",
-##                                ("p1", "c2"): "outlet_2",
-##                                ("p2", "c1"): "outlet_2",
-##                                ("p2", "c2"): "outlet_2"}})
-##
-##    m.fs.sep._get_property_package()
-##    m.fs.sep._get_indexing_sets()
-##
-##    outlet_list = m.fs.sep.create_outlet_list()
-##    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
-##    mixed_block = m.fs.sep.add_mixed_state_block()
-##
-##    with pytest.raises(KeyError):
-##        m.fs.sep.partition_outlet_flows(mixed_block, outlet_list)
-#
-#
-#def test_ideal_splitting_methods_no_map():
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock2()
-#
-#    m.fs.sep = SeparatorFrame(default={
-#            "property_package": m.fs.pp,
-#            "split_basis": SplittingType.phaseComponentFlow})
-#
-#    m.fs.sep._get_property_package()
-#    m.fs.sep._get_indexing_sets()
-#
-#    outlet_list = m.fs.sep.create_outlet_list()
-#    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
-#    mixed_block = m.fs.sep.add_mixed_state_block()
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.sep.partition_outlet_flows(mixed_block, outlet_list)
-#
-#
-#def test_ideal_splitting_methods_totalFlow():
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock2()
-#
-#    m.fs.sep = SeparatorFrame(default={
-#            "property_package": m.fs.pp,
-#            "split_basis": SplittingType.totalFlow,
-#            "ideal_split_map": {("p1", "c1"): "outlet_1",
-#                                ("p1", "c2"): "outlet_2",
-#                                ("p2", "c1"): "outlet_2",
-#                                ("p2", "c2"): "outlet_2"}})
-#
-#    m.fs.sep._get_property_package()
-#    m.fs.sep._get_indexing_sets()
-#
-#    outlet_list = m.fs.sep.create_outlet_list()
-#    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
-#    mixed_block = m.fs.sep.add_mixed_state_block()
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.sep.partition_outlet_flows(mixed_block, outlet_list)
-#
-#
-#def test_ideal_splitting_methods_no_ports():
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.pp = PhysicalParameterBlock2()
-#
-#    m.fs.sep = SeparatorFrame(default={
-#            "property_package": m.fs.pp,
-#            "split_basis": SplittingType.phaseComponentFlow,
-#            "ideal_split_map": {("p1", "c1"): "outlet_1",
-#                                ("p1", "c2"): "outlet_2",
-#                                ("p2", "c1"): "outlet_2",
-#                                ("p2", "c2"): "outlet_2"},
-#                                "construct_ports": False})
-#
-#    m.fs.sep._get_property_package()
-#    m.fs.sep._get_indexing_sets()
-#
-#    outlet_list = m.fs.sep.create_outlet_list()
-#    outlet_blocks = m.fs.sep.add_outlet_state_blocks(outlet_list)
-#    mixed_block = m.fs.sep.add_mixed_state_block()
-#
-#    with pytest.raises(ConfigurationError):
-#        m.fs.sep.partition_outlet_flows(mixed_block, outlet_list)
-#
-#@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS unavailable")
-#@pytest.mark.skipif(solver is None, reason="Solver not available")
-#def test_sep_ph_mixed_default():
-#    """Test mixed phase form with P-H state vars and phase mass balances
-#    """
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.properties = iapws95.Iapws95ParameterBlock(default={})
-#    m.fs.sep = Separator(default={
-#        "property_package":m.fs.properties,
-#        "split_basis":SplittingType.totalFlow,
-#        "ideal_separation":False,
-#        "num_outlets":2,
-#        "energy_split_basis":EnergySplittingType.equal_molar_enthalpy})
-#
-#    m.fs.sep.inlet.enth_mol.fix(24000)
-#    m.fs.sep.inlet.flow_mol.fix(100)
-#    m.fs.sep.inlet.pressure.fix(101325)
-#    m.fs.sep.split_fraction[0,"outlet_2"].fix(0.10)
-#    m.fs.sep.initialize()
-#    assert degrees_of_freedom(m) == 0
-#    solver.solve(m)
-#    prop_in = m.fs.sep.mixed_state[0]
-#    prop_out = m.fs.sep.outlet_1_state[0]
-#    prop_out2 =  m.fs.sep.outlet_2_state[0]
-#    assert abs(value(prop_out.temperature) - 373.12429584768876) <= 1e-4
-#    assert abs(value(prop_out.phase_frac["Liq"]) - 0.5953218682380845) <= 1e-6
-#    assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
-#    assert abs(value(prop_out.flow_mol - 90.0) <= 1e-6)
-#    assert abs(value(prop_out2.flow_mol - 10.0) <= 1e-6)
-#
-#@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS unavailable")
-#@pytest.mark.skipif(solver is None, reason="Solver not available")
-#def test_sep_ph_lg_default():
-#    """Test mixed phase form with P-H state vars and phase mass balances
-#    """
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.properties = iapws95.Iapws95ParameterBlock(default={
-#        "phase_presentation":iapws95.PhaseType.LG})
-#    m.fs.sep = Separator(default={
-#        "property_package":m.fs.properties,
-#        "split_basis":SplittingType.totalFlow,
-#        "ideal_separation":False,
-#        "num_outlets":2,
-#        "energy_split_basis":EnergySplittingType.equal_molar_enthalpy})
-#
-#    m.fs.sep.inlet.enth_mol.fix(24000)
-#    m.fs.sep.inlet.flow_mol.fix(100)
-#    m.fs.sep.inlet.pressure.fix(101325)
-#    m.fs.sep.split_fraction[0,"outlet_2"].fix(0.10)
-#    m.fs.sep.initialize()
-#    # by default the separator writes phase mass balances so -2 degress of
-#    # freedom is right.  for IAPWS need total mass balance.
-#    assert degrees_of_freedom(m) == -2
-#
-#@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS unavailable")
-#@pytest.mark.skipif(solver is None, reason="Solver not available")
-#def test_sep_ph_lg_total_mb():
-#    """Test mixed phase form with P-H state vars and phase mass balances
-#    """
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.properties = iapws95.Iapws95ParameterBlock(default={
-#        "phase_presentation":iapws95.PhaseType.LG})
-#    m.fs.sep = Separator(default={
-#        "property_package":m.fs.properties,
-#        "split_basis":SplittingType.totalFlow,
-#        "ideal_separation":False,
-#        "num_outlets":2,
-#        "material_balance_type":MaterialBalanceType.total,
-#        "energy_split_basis":EnergySplittingType.equal_molar_enthalpy})
-#
-#    m.fs.sep.inlet.enth_mol.fix(24000)
-#    m.fs.sep.inlet.flow_mol.fix(100)
-#    m.fs.sep.inlet.pressure.fix(101325)
-#    m.fs.sep.split_fraction[0,"outlet_2"].fix(0.10)
-#    m.fs.sep.initialize()
-#    assert degrees_of_freedom(m) == 0
-#    solver.solve(m)
-#    prop_in = m.fs.sep.mixed_state[0]
-#    prop_out = m.fs.sep.outlet_1_state[0]
-#    prop_out2 =  m.fs.sep.outlet_2_state[0]
-#    assert abs(value(prop_out.temperature) - 373.12429584768876) <= 1e-4
-#    assert abs(value(prop_out.phase_frac["Liq"]) - 0.5953218682380845) <= 1e-6
-#    assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
-#    assert abs(value(prop_out.flow_mol - 90.0) <= 1e-6)
-#    assert abs(value(prop_out2.flow_mol - 10.0) <= 1e-6)
-#
-#@pytest.mark.skipif(not iapws95.iapws95_available(), reason="IAPWS unavailable")
-#@pytest.mark.skipif(solver is None, reason="Solver not available")
-#def test_sep_ph_lg_has_phase_eq():
-#    """Test mixed phase form with P-H state vars and phase mass balances
-#    """
-#    m = ConcreteModel()
-#    m.fs = FlowsheetBlock(default={"dynamic": False})
-#    m.fs.properties = iapws95.Iapws95ParameterBlock(default={
-#        "phase_presentation":iapws95.PhaseType.LG})
-#    m.fs.sep = Separator(default={
-#        "has_phase_equilibrium":True,
-#        "property_package":m.fs.properties,
-#        "split_basis":SplittingType.totalFlow,
-#        "ideal_separation":False,
-#        "num_outlets":2,
-#        "energy_split_basis":EnergySplittingType.equal_molar_enthalpy})
-#
-#    m.fs.sep.inlet.enth_mol.fix(24000)
-#    m.fs.sep.inlet.flow_mol.fix(100)
-#    m.fs.sep.inlet.pressure.fix(101325)
-#    m.fs.sep.split_fraction[0,"outlet_2"].fix(0.10)
-#    m.fs.sep.initialize()
-#    assert degrees_of_freedom(m) == 0
-#    solver.solve(m)
-#    prop_in = m.fs.sep.mixed_state[0]
-#    prop_out = m.fs.sep.outlet_1_state[0]
-#    prop_out2 =  m.fs.sep.outlet_2_state[0]
-#    assert abs(value(prop_out.temperature) - 373.12429584768876) <= 1e-4
-#    assert abs(value(prop_out.phase_frac["Liq"]) - 0.5953218682380845) <= 1e-6
-#    assert abs(value(prop_out.phase_frac["Vap"]) - 0.40467813176191547) <= 1e-6
-#    assert abs(value(prop_out.flow_mol - 90.0) <= 1e-6)
-#    assert abs(value(prop_out2.flow_mol - 10.0) <= 1e-6)
+# -----------------------------------------------------------------------------
+# Tests of Separator unit model ideal construction methods
+@pytest.mark.build
+class TestIdealConstruction(object):
+    def test_phase_component(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 4,
+                "ideal_separation": True,
+                "split_basis": SplittingType.phaseComponentFlow,
+                "ideal_split_map": {("p1", "c1"): "outlet_1",
+                                    ("p1", "c2"): "outlet_2",
+                                    ("p2", "c1"): "outlet_3",
+                                    ("p2", "c2"): "outlet_4"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+        assert isinstance(m.fs.sep.outlet_1, Port)
+        assert isinstance(m.fs.sep.outlet_2, Port)
+        assert isinstance(m.fs.sep.outlet_3, Port)
+        assert isinstance(m.fs.sep.outlet_4, Port)
+    
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.temperature[0]) == 300
+        assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
+    
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.temperature[0]) == 300
+        assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
+
+        assert value(m.fs.sep.outlet_3.component_flow[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.component_flow[0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_3.component_flow[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_3.temperature[0]) == 300
+        assert value(m.fs.sep.outlet_3.pressure[0]) == 1e5
+    
+        assert value(m.fs.sep.outlet_4.component_flow[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.component_flow[0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_4.temperature[0]) == 300
+        assert value(m.fs.sep.outlet_4.pressure[0]) == 1e5
+
+    def test_phase(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 2,
+                "ideal_separation": True,
+                "split_basis": SplittingType.phaseFlow,
+                "ideal_split_map": {("p1"): "outlet_1",
+                                    ("p2"): "outlet_2"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+        assert isinstance(m.fs.sep.outlet_1, Port)
+        assert isinstance(m.fs.sep.outlet_2, Port)
+    
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.temperature[0]) == 300
+        assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
+    
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.temperature[0]) == 300
+        assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
+
+    def test_component(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 2,
+                "ideal_separation": True,
+                "split_basis": SplittingType.componentFlow,
+                "ideal_split_map": {("c1"): "outlet_1",
+                                    ("c2"): "outlet_2"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+        assert isinstance(m.fs.sep.outlet_1, Port)
+        assert isinstance(m.fs.sep.outlet_2, Port)
+    
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p1", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c1"]) == 2.0
+        assert value(m.fs.sep.outlet_1.component_flow[0, "p2", "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_1.temperature[0]) == 300
+        assert value(m.fs.sep.outlet_1.pressure[0]) == 1e5
+    
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p1", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c2"]) == 2.0
+        assert value(m.fs.sep.outlet_2.temperature[0]) == 300
+        assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
+
+
+    def test_ideal_w_no_ports(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 2,
+                "ideal_separation": True,
+                "split_basis": SplittingType.componentFlow,
+                "ideal_split_map": {("c1"): "outlet_1",
+                                    ("c2"): "outlet_2"},
+                "construct_ports": False})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        with pytest.raises(ConfigurationError):
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+    def test_ideal_w_total_flow(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 2,
+                "ideal_separation": True,
+                "split_basis": SplittingType.totalFlow,
+                "ideal_split_map": {("c1"): "outlet_1",
+                                    ("c2"): "outlet_2"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        with pytest.raises(ConfigurationError):
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+    def test_ideal_w_no_split_map(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 2,
+                "ideal_separation": True,
+                "split_basis": SplittingType.totalFlow})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        with pytest.raises(ConfigurationError):
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+    def test_phase_component_mismatch(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 4,
+                "ideal_separation": True,
+                "split_basis": SplittingType.phaseComponentFlow,
+                "ideal_split_map": {("p1", "c1"): "outlet_1",
+                                    ("p1", "c2"): "outlet_2"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        with pytest.raises(ConfigurationError):
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+    def test_component_mismatch(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 2,
+                "ideal_separation": True,
+                "split_basis": SplittingType.componentFlow,
+                "ideal_split_map": {("p1", "c1"): "outlet_1",
+                                    ("p1", "c2"): "outlet_2",
+                                    ("p2", "c1"): "outlet_3",
+                                    ("p2", "c2"): "outlet_4"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        with pytest.raises(ConfigurationError):
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+    def test_phase_mismatch(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 2,
+                "ideal_separation": True,
+                "split_basis": SplittingType.phaseFlow,
+                "ideal_split_map": {("p1", "c1"): "outlet_1",
+                                    ("p1", "c2"): "outlet_2",
+                                    ("p2", "c1"): "outlet_3",
+                                    ("p2", "c2"): "outlet_4"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        with pytest.raises(ConfigurationError):
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+    def test_split_map_mismatch(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = PhysicalParameterTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 1,
+                "ideal_separation": True,
+                "split_basis": SplittingType.phaseComponentFlow,
+                "ideal_split_map": {("p1", "c1"): "outlet_1",
+                                    ("p1", "c2"): "outlet_2",
+                                    ("p2", "c1"): "outlet_3",
+                                    ("p2", "c2"): "outlet_4"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        with pytest.raises(ConfigurationError):
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+    def test_mole_frac_component_split(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = IdealTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 2,
+                "ideal_separation": True,
+                "split_basis": SplittingType.componentFlow,
+                "ideal_split_map": {"c1": "outlet_1",
+                                    "c2": "outlet_2"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                        m.outlet_list)
+
+        assert value(m.fs.sep.outlet_1.mole_fraction[0, "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.mole_fraction[0, "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_fraction[0, "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_fraction[0, "c2"]) == 1
+
+    def test_mole_frac_phase_split(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = IdealTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 2,
+                "ideal_separation": True,
+                "split_basis": SplittingType.phaseFlow,
+                "ideal_split_map": {"p1": "outlet_1",
+                                    "p2": "outlet_2"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                        m.outlet_list)
+
+        # Set some values to make sure partitioning is correct
+        m.fs.sep.mixed_state[0].mole_frac_phase["p1", "c1"] = 0.9
+        m.fs.sep.mixed_state[0].mole_frac_phase["p1", "c2"] = 0.7
+        m.fs.sep.mixed_state[0].mole_frac_phase["p2", "c1"] = 0.5
+        m.fs.sep.mixed_state[0].mole_frac_phase["p2", "c2"] = 0.3
+
+        assert value(m.fs.sep.outlet_1.mole_fraction[0, "c1"]) == 0.9
+        assert value(m.fs.sep.outlet_1.mole_fraction[0, "c2"]) == 0.7
+        assert value(m.fs.sep.outlet_2.mole_fraction[0, "c1"]) == 0.5
+        assert value(m.fs.sep.outlet_2.mole_fraction[0, "c2"]) == 0.3
+
+    def test_mole_frac_phase_comp_split(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = IdealTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 4,
+                "ideal_separation": True,
+                "split_basis": SplittingType.phaseComponentFlow,
+                "ideal_split_map": {("p1", "c1"): "outlet_1",
+                                    ("p1", "c2"): "outlet_2",
+                                    ("p2", "c1"): "outlet_3",
+                                    ("p2", "c2"): "outlet_4"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                        m.outlet_list)
+
+        # Set some values to make sure partitioning is correct
+        m.fs.sep.mixed_state[0].mole_frac_phase["p1", "c1"] = 0.9
+        m.fs.sep.mixed_state[0].mole_frac_phase["p1", "c2"] = 0.7
+        m.fs.sep.mixed_state[0].mole_frac_phase["p2", "c1"] = 0.5
+        m.fs.sep.mixed_state[0].mole_frac_phase["p2", "c2"] = 0.3
+
+        assert value(m.fs.sep.outlet_1.mole_fraction[0, "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.mole_fraction[0, "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_fraction[0, "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_fraction[0, "c2"]) == 1
+        assert value(m.fs.sep.outlet_3.mole_fraction[0, "c1"]) == 1
+        assert value(m.fs.sep.outlet_3.mole_fraction[0, "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.mole_fraction[0, "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.mole_fraction[0, "c2"]) == 1
+
+
+    def test_mole_frac_phase_split_no_fallback(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+        m.fs.pp = IdealTestBlock()
+
+        m.fs.sep = SeparatorFrame(default={
+                "property_package": m.fs.pp,
+                "num_outlets": 2,
+                "ideal_separation": True,
+                "split_basis": SplittingType.phaseFlow,
+                "ideal_split_map": {"p1": "outlet_1",
+                                    "p2": "outlet_2"}})
+
+        m.fs.sep._get_property_package()
+        m.fs.sep._get_indexing_sets()
+
+        m.outlet_list = m.fs.sep.create_outlet_list()
+        m.fs.sep.add_mixed_state_block()
+
+        # Delete mole_frac_phase sothat the fallback should fail
+        m.fs.sep.mixed_state[0].del_component(
+                m.fs.sep.mixed_state[0].mole_frac_phase)
+
+        with pytest.raises(AttributeError):
+            m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
+                                            m.outlet_list)
+
+
+# -----------------------------------------------------------------------------
+# Define some generic Property Block classes fortesting ideal separations
+@declare_process_block_class("IdealTestBlock")
+class _IdealParameterBlock(PhysicalParameterBlock):
+    def build(self):
+        super(_IdealParameterBlock, self).build()
+
+        self.phase_list = Set(initialize=["p1", "p2"])
+        self.component_list = Set(initialize=["c1", "c2"])
+
+        self.state_block_class = IdealStateBlock
+
+    @classmethod
+    def define_metadata(cls, obj):
+        obj.add_default_units({'time': 's',
+                               'length': 'm',
+                               'mass': 'g',
+                               'amount': 'mol',
+                               'temperature': 'K',
+                               'energy': 'J',
+                               'holdup': 'mol'})
+
+@declare_process_block_class("IdealStateBlock")
+class IdealTestBlockData(StateBlockData):
+    CONFIG = ConfigBlock(implicit=True)
+
+    def build(self):
+        super(IdealTestBlockData, self).build()
+
+        # Add an attribute to allow us to change the state variable definition
+        self._state_var_switch = 1
+
+        self.flow_mol_phase_comp = Var(self._params.phase_list,
+                                       self._params.component_list,
+                                       initialize=2)
+        self.pressure = Var(initialize=1e5)
+        self.temperature = Var(initialize=300)
+
+        self.mole_frac = Var(self._params.component_list,
+                             initialize=0.5)
+        self.mole_frac_phase = Var(self._params.phase_list,
+                                   self._params.component_list,
+                                   initialize=0.5)
+
+    def define_state_vars(self):
+        if self._state_var_switch == 1:
+            return {"component_flow": self.flow_mol_phase_comp,
+                    "mole_fraction": self.mole_frac,
+                    "temperature": self.temperature,
+                    "pressure": self.pressure}
+        if self._state_var_switch == 2:
+            return {"component_flow": self.flow_mol_phase_comp,
+                    "mole_frac_phase": self.mole_frac_phase,
+                    "temperature": self.temperature,
+                    "pressure": self.pressure}
