@@ -88,14 +88,6 @@ class PIDBlockData(ProcessBlockData):
         # Smooth min and max are used to limit output, smoothing parmeter here
         self.smooth_eps = pyo.Param(mutable=True, initialize=1e-4,
             doc="Smoothing parameter for controler output limits")
-        # create a previous time lookup to make some of the expression cleaner
-        tp = {}  # will need to create controller block after DAE expansion
-        for j, t in enumerate(time_set):
-            i = j + 1 # The time set indexing starts at 1
-            if i == 1:
-                tp[t] = None
-            else:
-                tp[t] = time_set[i-1]
         # This is ugly, but want integral and derivative error as expressions,
         # nice implimentation with variables is harder to initialize and solve
         @self.Expression(time_set, doc="Derivative error.")
@@ -103,7 +95,8 @@ class PIDBlockData(ProcessBlockData):
             if t == t0:
                 return 0
             else:
-                return (b.dterm[t] - b.dterm[tp[t]])/(t - tp[t])
+                return (b.dterm[t] - b.dterm[time_set.prev(t)])\
+                       /(t - time_set.prev(t))
         # Want to fix the output varaible at the first time step to make
         # solving easier. This calculates the initial integral error to line up
         # with the initial output value, keeps the controller from initially
@@ -118,7 +111,8 @@ class PIDBlockData(ProcessBlockData):
             if t_end == t0:
                 return b.err_i0
             else:
-                return b.err_i0 + sum((b.iterm[t] + b.iterm[tp[t]])*(t - tp[t])/2
+                return b.err_i0 + sum((b.iterm[t] + b.iterm[time_set.prev(t)])\
+                                      *(t - time_set.prev(t))/2.0
                                     for t in time_set if t <= t_end and t > t0)
         # Calculate the unconstrainted contoller output
         @self.Expression(time_set, doc="Unconstrained contorler output")
