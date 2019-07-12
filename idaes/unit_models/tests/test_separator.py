@@ -2629,3 +2629,155 @@ class TestIdealConstruction(object):
         with pytest.raises(AttributeError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                             m.outlet_list)
+
+
+# -----------------------------------------------------------------------------
+class TestBTX_Ideal(object):
+    @pytest.fixture(scope="class")
+    def btx(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = BTXParameterBlock()
+
+        m.fs.unit = Separator(default={
+                "property_package": m.fs.properties,
+                "material_balance_type": MaterialBalanceType.componentPhase,
+                "split_basis": SplittingType.phaseFlow,
+                "ideal_separation": True,
+                "ideal_split_map": {"Vap": "outlet_1",
+                                    "Liq": "outlet_2"},
+                "has_phase_equilibrium": False})
+
+        return m
+
+    @pytest.mark.build
+    def test_build(self, btx):
+        assert hasattr(btx.fs.unit, "inlet")
+        assert len(btx.fs.unit.inlet.vars) == 4
+        assert hasattr(btx.fs.unit.inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet, "temperature")
+        assert hasattr(btx.fs.unit.inlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "outlet_1")
+        assert len(btx.fs.unit.outlet_1.vars) == 4
+        assert hasattr(btx.fs.unit.outlet_1, "flow_mol")
+        assert hasattr(btx.fs.unit.outlet_1, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet_1, "temperature")
+        assert hasattr(btx.fs.unit.outlet_1, "pressure")
+
+        assert hasattr(btx.fs.unit, "outlet_2")
+        assert len(btx.fs.unit.outlet_2.vars) == 4
+        assert hasattr(btx.fs.unit.outlet_2, "flow_mol")
+        assert hasattr(btx.fs.unit.outlet_2, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet_2, "temperature")
+        assert hasattr(btx.fs.unit.outlet_2, "pressure")
+
+        assert number_variables(btx) == 17
+        assert number_total_constraints(btx) == 12
+        assert number_unused_variables(btx) == 0
+
+    def test_dof(self, btx):
+        btx.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
+        btx.fs.unit.inlet.temperature[0].fix(368)  # K
+        btx.fs.unit.inlet.pressure[0].fix(101325)  # Pa
+        
+        btx.fs.unit.inlet.mole_frac[0, "benzene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac[0, "toluene"].fix(0.5)
+
+        assert degrees_of_freedom(btx) == 0
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialiszation(self, btx):
+        btx.fs.unit.initialize()
+
+        assert (pytest.approx(1, abs=1e-4) ==
+                value(btx.fs.unit.mixed_state[0].flow_mol))
+        assert (pytest.approx(0.645, abs=1e-3) ==
+                value(btx.fs.unit.mixed_state[0].flow_mol_phase["Liq"]))
+        assert (pytest.approx(0.355, abs=1e-3) ==
+                value(btx.fs.unit.mixed_state[0].flow_mol_phase["Vap"]))
+        assert (pytest.approx(368.0, abs=1e-1) ==
+                value(btx.fs.unit.mixed_state[0].temperature))
+        assert (pytest.approx(101325, abs=1e3) ==
+                value(btx.fs.unit.mixed_state[0].pressure))
+        assert (pytest.approx(0.421, abs=1e-3) ==
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                        "Liq", "benzene"]))
+        assert (pytest.approx(0.579, abs=1e-3) ==
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                        "Liq", "toluene"]))
+        assert (pytest.approx(0.643, abs=1e-3) ==
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                        "Vap", "benzene"]))
+        assert (pytest.approx(0.357, abs=1e-3) ==
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                        "Vap", "toluene"]))
+
+        assert degrees_of_freedom(btx) == 0
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, btx):
+        results = solver.solve(btx)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, btx):
+        assert (pytest.approx(0.355, abs=1e-3) ==
+                value(btx.fs.unit.outlet_1.flow_mol[0]))
+        assert (pytest.approx(368.0, abs=1e-1) ==
+                value(btx.fs.unit.outlet_1.temperature[0]))
+        assert (pytest.approx(101325, abs=1e3) ==
+                value(btx.fs.unit.outlet_1.pressure[0]))
+        assert (pytest.approx(0.643, abs=1e-3) ==
+                value(btx.fs.unit.outlet_1.mole_frac[0, "benzene"]))
+        assert (pytest.approx(0.357, abs=1e-3) ==
+                value(btx.fs.unit.outlet_1.mole_frac[0, "toluene"]))
+
+        assert (pytest.approx(0.645, abs=1e-3) ==
+                value(btx.fs.unit.outlet_2.flow_mol[0]))
+        assert (pytest.approx(368.0, abs=1e-1) ==
+                value(btx.fs.unit.outlet_2.temperature[0]))
+        assert (pytest.approx(101325, abs=1e3) ==
+                value(btx.fs.unit.outlet_2.pressure[0]))
+        assert (pytest.approx(0.421, abs=1e-3) ==
+                value(btx.fs.unit.outlet_2.mole_frac[0, "benzene"]))
+        assert (pytest.approx(0.579, abs=1e-3) ==
+                value(btx.fs.unit.outlet_2.mole_frac[0, "toluene"]))
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_conservation(self, btx):
+        assert abs(value(btx.fs.unit.inlet.flow_mol[0] -
+                         btx.fs.unit.outlet_1.flow_mol[0] -
+                         btx.fs.unit.outlet_2.flow_mol[0])) <= 1e-5
+
+        assert abs(value(btx.fs.unit.inlet.flow_mol[0] *
+                         btx.fs.unit.inlet.mole_frac[0, "benzene"] -
+                         btx.fs.unit.outlet_1.flow_mol[0] *
+                         btx.fs.unit.outlet_1.mole_frac[0, "benzene"] -
+                         btx.fs.unit.outlet_2.flow_mol[0] *
+                         btx.fs.unit.outlet_2.mole_frac[0, "benzene"])) <= 1e-5
+
+        assert abs(value(btx.fs.unit.inlet.flow_mol[0] *
+                         btx.fs.unit.inlet.mole_frac[0, "toluene"] -
+                         btx.fs.unit.outlet_1.flow_mol[0] *
+                         btx.fs.unit.outlet_1.mole_frac[0, "toluene"] -
+                         btx.fs.unit.outlet_2.flow_mol[0] *
+                         btx.fs.unit.outlet_2.mole_frac[0, "toluene"])) <= 1e-5
+
+        # Assume energy conservation is covered by control volume tests
+
+    @pytest.mark.ui
+    def test_report(self, btx):
+        btx.fs.unit.report()

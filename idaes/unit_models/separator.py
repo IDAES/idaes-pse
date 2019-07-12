@@ -1269,4 +1269,4 @@ linked the mixed state and all outlet states,
                             stream_attributes[n][k+" "+kname] = \
                                 value(port_obj.vars[k][time_point, i[1:]])
 
-            return DataFrame.from_dict(stream_attributes, orient="column")
+            return DataFrame.from_dict(stream_attributes, orient="columns")
