@@ -250,15 +250,10 @@ domain,
         self.add_inlet_port()
         self.add_outlet_port()
 
-        # Add performance equations
-        add_object_reference(self,
-                             "rate_reaction_idx_ref",
-                             self.config.reaction_package.rate_reaction_idx)
-
         # Add PFR performance equation
         @self.Constraint(self.flowsheet().config.time,
                          self.control_volume.length_domain,
-                         self.rate_reaction_idx_ref,
+                         self.config.reaction_package.rate_reaction_idx,
                          doc="PFR performance equation")
         def performance_eqn(b, t, x, r):
             return b.control_volume.rate_reaction_extent[t, x, r] == (
@@ -286,3 +281,10 @@ domain,
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
             add_object_reference(self, "deltaP", self.control_volume.deltaP)
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {"Volume": self.volume}
+        var_dict = {"Length": self.length}
+        var_dict = {"Area": self.area}
+
+        return {"vars": var_dict}

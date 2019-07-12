@@ -16,7 +16,7 @@ Tests for flowsheet_model.
 Author: Andrew Lee
 """
 import pytest
-from pyomo.environ import ConcreteModel, Constraint, Var
+from pyomo.environ import ConcreteModel, Constraint, Set, Var
 from pyomo.common.config import ConfigBlock
 from idaes.core import (declare_process_block_class, PhysicalParameterBlock,
                         StateBlock, StateBlockData)
@@ -63,13 +63,31 @@ class _StateBlockData(StateBlockData):
     pass
 
 
+@declare_process_block_class("TestStateBlock2", block_class=StateBlock)
+class _StateBlockData(StateBlockData):
+    def define_state_vars(self):
+        return {}
+
+
 def test_StateBlockBase_initialize():
     # Test that StateBlock initialize method raises NotImplementedError
     m = ConcreteModel()
-    m.p = TestStateBlock()
+    # Need to index block so that it does not do multiple inheritance
+    m.s = Set(initialize=[1, 2])
+    m.p = TestStateBlock2(m.s)
 
     with pytest.raises(NotImplementedError):
         m.p.initialize()
+
+
+def test_StateBlockBase_report():
+    # Test that StateBlock initialize method raises NotImplementedError
+    m = ConcreteModel()
+    # Need to index block so that it does not do multiple inheritance
+    m.s = Set(initialize=[0, 1])
+    m.p = TestStateBlock2(m.s)
+
+    m.p.report(dof=True)
 
 
 # -----------------------------------------------------------------------------

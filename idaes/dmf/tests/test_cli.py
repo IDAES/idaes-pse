@@ -16,6 +16,7 @@ Test the `idaes.dmf.cli` module.
 # stdlib
 import logging
 from urllib.parse import urlparse
+import sys
 
 # third-party
 import click
@@ -26,6 +27,10 @@ import pytest
 from idaes.dmf import cli
 
 __author__ = "Dan Gunter"
+
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 
 @pytest.fixture
@@ -57,10 +62,15 @@ class MockContext:
 
 
 def test_aliases():
-    ag = cli.AliasedGroup(aliases={"clark": "superman", "bruce": "batman",
-                                   "carter": "hawkman", "barbara": "batgirl"},
-                          commands={"superman": None, "batman": None,
-                                    "hawkman": None, "batgirl": None})
+    ag = cli.AliasedGroup(
+        aliases={
+            "clark": "superman",
+            "bruce": "batman",
+            "carter": "hawkman",
+            "barbara": "batgirl",
+        },
+        commands={"superman": None, "batman": None, "hawkman": None, "batgirl": None},
+    )
     context = MockContext("superman")
     cmd = ag.get_command(context, "clark")
     # match alias and command

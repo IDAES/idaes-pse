@@ -31,7 +31,7 @@ from pyomo.opt import TerminationCondition
 from idaes.core import declare_process_block_class
 from idaes.unit_models.pressure_changer import PressureChangerData
 from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 from .valve_steam_config import _define_config, ValveFunctionType
 
 def _linear_rule(b, t):
@@ -175,3 +175,16 @@ class SteamValveData(PressureChangerData):
 
         # reload original spec
         from_json(self, sd=istate, wts=sp)
+
+    def _get_performance_contents(self, time_point=0):
+        pc = super()._get_performance_contents(time_point=time_point)
+
+        pc["vars"]["Opening"] = self.valve_opening[time_point]
+        pc["vars"]["Valve Coefficient"] = self.Cv
+        if self.config.valve_function == ValveFunctionType.equal_percentage:
+            pc["vars"]["alpha"] = self.alpha
+
+        pc["params"] = {}
+        pc["params"]["Flow Scaling"] = self.flow_scale
+
+        return pc

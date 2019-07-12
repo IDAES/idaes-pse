@@ -2,9 +2,10 @@ Feedwater Heater (0D)
 =====================
 
 .. index::
-  pair: idaes.unit_models.power_generation.feedwater_heater_0D;FWH0D
+    pair: idaes.unit_models.power_generation.feedwater_heater_0D;FWH0D
 
 .. module:: idaes.unit_models.power_generation.feedwater_heater_0D
+  :noindex:
 
 The FWH0D model is a 0D feedwater heater model suitable for steady state modeling.  It is intended to be used primarily used with the :ref:`IAWPS95 <property_models/water:Water/Steam>` property package. The feedwater heater is split into three sections the condensing section is required while the desuperheating and drain cooling sections are optional. There is also an optional mixer for adding a drain stream from another feedwater heater to the condensing section.  The figure below shows the layout of the feedwater heater.  All but the condensing section are optional.
 
@@ -26,14 +27,14 @@ The example below shows how to setup a feedwater heater with all tree sections. 
   from idaes.core import FlowsheetBlock
   from idaes.unit_models.heat_exchanger import (delta_temperature_underwood2_rule,
       delta_temperature_underwood_rule, delta_temperature_lmtd_rule)
-  from idaes.property_models import Iapws95ParameterBlock
+  from idaes.property_models import iapws95
   from idaes.unit_models.power_generation import FWH0D
 
   def make_fwh_model():
       model = pyo.ConcreteModel()
       model.fs = FlowsheetBlock(default={
           "dynamic": False,
-          "default_property_package": Iapws95ParameterBlock()})
+          "default_property_package": iapws95.Iapws95ParameterBlock()})
       model.fs.properties = model.fs.config.default_property_package
       model.fs.fwh = FWH0D(default={
           "has_desuperheat":True,
@@ -84,14 +85,4 @@ Degrees of Freedom
 
 The ``area`` and ``overall_heat_transfer_coefficient`` should be fixed or constraints should be provided to calculate ``overall_heat_transfer_coefficient``.  If the inlets are also fixed except for the inlet steam flow rate (``inlet_1.flow_mol``), the model will have 0 degrees of freedom.
 
-FWH0D Class
------------
-
-.. autoclass:: FWH0D
-  :members:
-
-FWH0DData Class
----------------
-
-.. autoclass:: FWH0DData
-  :members:
+See :class:`FWH0D` and :class:`FWH0DData` for full Python class details.

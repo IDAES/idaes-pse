@@ -35,7 +35,7 @@ from . import errors
 from . import resource
 from . import resourcedb
 from . import workspace
-from .util import mkdir_p
+from .util import mkdir_p, yaml_load
 
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
@@ -130,7 +130,7 @@ class DMFConfig(object):
 
     def _parse(self, fp):
         try:
-            y = yaml.load(fp)
+            y = yaml_load(fp)
         except Exception as err:
             raise ValueError(err)
         if y:

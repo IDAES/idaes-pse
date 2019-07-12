@@ -47,9 +47,24 @@ The constraints written by the Mixer model depend upon the construction argument
 
 If `material_mixing_type` is `extensive`:
 
+* If `material_balance_type` is `componentPhase`:
+
 `material_mixing_equations(t, p, j)`:
 
 .. math:: 0 = \sum_i{F_{in, i, p, j}} - F_{out, p, j} + \sum_r {n_{r, p, j} \times X_{eq, t, r}}
+
+* If `material_balance_type` is `componentTotal`:
+
+`material_mixing_equations(t, j)`:
+
+.. math:: 0 = \sum_p{(\sum_i{F_{in, i, p, j}} - F_{out, p, j} + \sum_r {n_{r, p, j} \times X_{eq, t, r}})}
+
+* If `material_balance_type` is `total`:
+
+
+`material_mixing_equations(t)`:
+
+.. math:: 0 = \sum_p{\sum_j{(\sum_i{F_{in, i, p, j}} - F_{out, p, j} + \sum_r {n_{r, p, j} \times X_{eq, t, r}})}}
 
 where :math:`n_{r, p, j}` is the stoichiometric coefficient of component :math:`j` in phase :math:`p` in reaction :math:`r`.
 

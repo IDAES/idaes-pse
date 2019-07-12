@@ -23,7 +23,6 @@ from idaes.property_models.ideal.BTX_ideal_VLE import (
                         BTXParameterBlock)
 from idaes.property_models.examples.saponification_thermo import (
                         SaponificationParameterBlock)
-from idaes.ui.report import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
@@ -38,6 +37,7 @@ else:
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.build
 def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -64,6 +64,8 @@ def test_build():
     assert hasattr(m.fs.trans.outlet, "pressure")
 
 
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize():
     # Very basic test of initialization routine - only checks data flow
@@ -77,4 +79,19 @@ def test_initialize():
                          "outlet_property_package": m.fs.sap})
 
     m.fs.trans.initialize(outlvl=5,
-                         optarg={'tol': 1e-6})
+                          optarg={'tol': 1e-6})
+
+
+@pytest.mark.ui
+def test_report():
+    # Very basic test of initialization routine - only checks data flow
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.sap = SaponificationParameterBlock()
+
+    m.fs.trans = Translator(
+                default={"inlet_property_package": m.fs.sap,
+                         "outlet_property_package": m.fs.sap})
+
+    m.fs.trans.report()

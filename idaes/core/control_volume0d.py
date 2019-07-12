@@ -32,6 +32,7 @@ from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Andrew Lee"
 
@@ -296,6 +297,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                        self.config.property_package.
                                        component_list,
                                        domain=Reals,
+                                       initialize=1.0,
                                        doc="Material holdup in unit [{}]"
                                            .format(units['holdup']))
         if dynamic:
@@ -321,6 +323,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
+                        initialize=0.0,
                         doc="Amount of component generated in "
                             "unit by kinetic reactions [{}/{}]"
                             .format(units['holdup'], units['time']))
@@ -339,6 +342,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.config.property_package.phase_list,
                 self.config.property_package.component_list,
                 domain=Reals,
+                initialize=0.0,
                 doc="Amount of component generated in unit "
                     "by equilibrium reactions [{}/{}]"
                     .format(units['holdup'], units['time']))
@@ -355,6 +359,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.flowsheet().config.time,
                 self.config.property_package.phase_equilibrium_idx,
                 domain=Reals,
+                initialize=0.0,
                 doc="Amount of generation in unit by phase "
                     "equilibria [{}/{}]"
                     .format(units['holdup'], units['time']))
@@ -366,6 +371,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
+                        initialize=0.0,
                         doc="Component material transfer into unit [{}/{}]"
                             .format(units['holdup'], units['time']))
 
@@ -503,6 +509,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.flowsheet().config.time,
                     self.config.reaction_package.rate_reaction_idx,
                     domain=Reals,
+                    initialize=0.0,
                     doc="Extent of kinetic reactions[{}/{}]"
                         .format(units['holdup'], units['time']))
 
@@ -524,11 +531,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_equilibrium_reactions:
             # Add extents of reaction and stoichiometric constraints
             self.equilibrium_reaction_extent = Var(
-                            self.flowsheet().config.time,
-                            self.config.reaction_package.equilibrium_reaction_idx,
-                            domain=Reals,
-                            doc="Extent of equilibrium reactions[{}/{}]"
-                                .format(units['holdup'], units['time']))
+                    self.flowsheet().config.time,
+                    self.config.reaction_package.equilibrium_reaction_idx,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc="Extent of equilibrium reactions[{}/{}]"
+                        .format(units['holdup'], units['time']))
 
             @self.Constraint(self.flowsheet().config.time,
                              self.config.property_package.phase_list,
@@ -648,12 +656,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
 
         # Material holdup and accumulation
         if has_holdup:
-            self.material_holdup = Var(self.flowsheet().config.time,
-                                       self.config.property_package.phase_list,
-                                       self.config.property_package.component_list,
-                                       domain=Reals,
-                                       doc="Material holdup in unit [{}]"
-                                           .format(units['holdup']))
+            self.material_holdup = Var(
+                    self.flowsheet().config.time,
+                    self.config.property_package.phase_list,
+                    self.config.property_package.component_list,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc="Material holdup in unit [{}]".format(units['holdup']))
         if dynamic:
             self.material_accumulation = DerivativeVar(
                     self.material_holdup,
@@ -677,6 +686,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.config.property_package.phase_list,
                 self.config.property_package.component_list,
                 domain=Reals,
+                initialize=0.0,
                 doc="Amount of component generated in "
                     "unit by kinetic reactions [{}/{}]"
                     .format(units['holdup'], units['time']))
@@ -695,6 +705,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.config.property_package.phase_list,
                 self.config.property_package.component_list,
                 domain=Reals,
+                initialize=0.0,
                 doc="Amount of component generated in unit "
                     "by equilibrium reactions [{}/{}]"
                     .format(units['holdup'], units['time']))
@@ -706,6 +717,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
+                        initialize=0.0,
                         doc="Component material transfer into unit [{}/{}]"
                             .format(units['holdup'], units['time']))
 
@@ -822,6 +834,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.flowsheet().config.time,
                     self.config.reaction_package.rate_reaction_idx,
                     domain=Reals,
+                    initialize=0.0,
                     doc="Extent of kinetic reactions[{}/{}]"
                         .format(units['holdup'], units['time']))
 
@@ -843,11 +856,12 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_equilibrium_reactions:
             # Add extents of reaction and stoichiometric constraints
             self.equilibrium_reaction_extent = Var(
-                            self.flowsheet().config.time,
-                            self.config.reaction_package.equilibrium_reaction_idx,
-                            domain=Reals,
-                            doc="Extent of equilibrium reactions[{}/{}]"
-                                .format(units['holdup'], units['time']))
+                    self.flowsheet().config.time,
+                    self.config.reaction_package.equilibrium_reaction_idx,
+                    domain=Reals,
+                    initialize=0.0,
+                    doc="Extent of equilibrium reactions[{}/{}]"
+                        .format(units['holdup'], units['time']))
 
             @self.Constraint(self.flowsheet().config.time,
                              self.config.property_package.phase_list,
@@ -955,6 +969,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.flowsheet().config.time,
                     self.config.property_package.element_list,
                     domain=Reals,
+                    initialize=1.0,
                     doc="Elemental holdup in unit [{}]"
                         .format(units['amount']))
 
@@ -991,6 +1006,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             self.flowsheet().config.time,
                             self.config.property_package.element_list,
                             domain=Reals,
+                            initialize=0.0,
                             doc="Element material transfer into unit [{}/{}]"
                             .format(units['amount'], units['time']))
 
@@ -1109,6 +1125,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.flowsheet().config.time,
                         self.config.property_package.phase_list,
                         domain=Reals,
+                        initialize=1.0,
                         doc="Enthalpy holdup in unit [{}]"
                         .format(units['energy']))
 
@@ -1265,6 +1282,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_pressure_change:
             self.deltaP = Var(self.flowsheet().config.time,
                               domain=Reals,
+                              initialize=0.0,
                               doc="Pressure difference across unit [{}]"
                                   .format(p_units))
 
@@ -1481,3 +1499,128 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         """
         # Call the method in control_volume_base with x=None
         return super()._rxn_rate_conv(t, None, j, has_rate_reactions)
+
+    def _get_performance_contents(self, time_point=0):
+        """
+        Collect all CV variables which are present to report.
+        """
+        var_dict = {}
+        expr_dict = {}
+        param_dict = {}
+
+        time_only_vars = {"volume": "Volume",
+                          "heat": "Heat Transfer",
+                          "work": "Work Transfer",
+                          "deltaP": "Pressure Change"}
+
+        for v, n in time_only_vars.items():
+            try:
+                var_dict[n] = getattr(self, v)[time_point]
+            except AttributeError:
+                pass
+
+        p_vars = {
+            "phase_fraction": "Phase Fraction",
+            "enthalpy_holdup": "Enthalpy Holdup",
+            "enthalpy_accumulation": "Enthalpy Accumulation"}
+
+        for v, n in p_vars.items():
+            try:
+                var_obj = getattr(self, v)
+                for p in self.config.property_package.phase_list:
+                    var_dict[f"{n} [{p}]"] = var_obj[time_point, p]
+            except AttributeError:
+                pass
+
+        pc_vars = {
+            "material_holdup": "Material Holdup",
+            "material_accumulation": "Material Accumulation",
+            "rate_reaction_generation": "Rate Reaction Generation",
+            "equilibrium_reaction_generation":
+                "Equilibrium Reaction Generation",
+            "mass_transfer_term": "Mass Transfer Term"}
+
+        for v, n in pc_vars.items():
+            try:
+                var_obj = getattr(self, v)
+                for p in self.config.property_package.phase_list:
+                    for j in self.config.property_package.component_list:
+                        var_dict[f"{n} [{p}, {j}]"] = \
+                            var_obj[time_point, p, j]
+            except AttributeError:
+                pass
+
+        if hasattr(self, "rate_reaction_extent"):
+            for r in self.config.reaction_package.rate_reaction_idx:
+                var_dict[f"Rate Reaction Extent [{r}]"] = \
+                    self.rate_reaction_extent[time_point, r]
+        if hasattr(self, "equilibrium_reaction_extent"):
+            for r in self.config.reaction_package.equilibrium_reaction_idx:
+                var_dict[f"Equilibrium Reaction Extent [{r}]"] = \
+                    self.equilibrium_reaction_extent[time_point, r]
+        if hasattr(self, "phase_equilibrium_generation"):
+            for r in self.config.property_package.phase_equilibrium_idx:
+                var_dict[f"Phase Equilibrium Generation [{r}]"] = \
+                    self.phase_equilibrium_generation[time_point, r]
+
+        e_vars = {
+            "element_holdup": "Elemental Holdup",
+            "element_accumulation": "Elemental Accumulation",
+            "elemental_mass_transfer_term": "Elemental Transfer Term"}
+
+        for v, n in e_vars.items():
+            try:
+                var_obj = getattr(self, v)
+                for e in self.config.property_package.element_list:
+                    var_dict[f"{n} [{e}]"] = var_obj[time_point, e]
+            except AttributeError:
+                pass
+
+        time_only_exprs = {"heat_of_reaction": "Heat of Reaction Term"}
+
+        for e, n in time_only_exprs.items():
+            try:
+                expr_dict[n] = getattr(self, e)[time_point]
+            except AttributeError:
+                pass
+
+        e_exprs = {"elemental_flow_in": "Element Flow In",
+                   "elemental_flow_out": "Element Flow Out"}
+
+        for o, n in e_exprs.items():
+            try:
+                expr_obj = getattr(self, o)
+                for p in self.config.property_package.phase_list:
+                    for e in self.config.property_package.element_list:
+                        expr_dict[f"{n} [{p}, {e}]"] = \
+                            expr_obj[time_point, p, e]
+            except AttributeError:
+                pass
+
+        params = {"scaling_factor_energy": "Energy Scaling",
+                  "scaling_factor_pressure": "Pressure Scaling"}
+
+        for p, n in params.items():
+            try:
+                param_dict[n] = getattr(self, p)
+            except AttributeError:
+                pass
+
+        return {"vars": var_dict,
+                "exprs": expr_dict,
+                "params": param_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        """
+        Assume unit has standard configuration of 1 inlet and 1 outlet.
+
+        Developers should overload this as appropriate.
+        """
+        try:
+            return create_stream_table_dataframe({"In": self.properties_in,
+                                                  "Out": self.properties_out},
+                                                 time_point=time_point)
+        except AttributeError:
+            return (f"Unit model {self.name} does not have the standard Port "
+                    f"names (inet and outlet). Please contact the unit model "
+                    f"developer to develop a unit specific stream table.")

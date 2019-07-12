@@ -34,7 +34,7 @@ from idaes.core import declare_process_block_class
 from idaes.unit_models.pressure_changer import (PressureChangerData,
                                                 ThermodynamicAssumption)
 from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 @declare_process_block_class("TurbineStage",
@@ -69,6 +69,12 @@ class TurbineStageData(PressureChangerData):
         @self.Expression(self.flowsheet().config.time, doc="Shaft power [J/s]")
         def power_shaft(b, t):
             return b.power_thermo[t]*b.efficiency_mech
+
+    def _get_performance_contents(self, time_point=0):
+        pc = super()._get_performance_contents(time_point=time_point)
+        pc["vars"]["Mechanical Efficiency"] = self.efficiency_mech
+
+        return pc
 
     def initialize(self, state_args={}, outlvl=0, solver='ipopt',
         optarg={'tol': 1e-6, 'max_iter':30}):

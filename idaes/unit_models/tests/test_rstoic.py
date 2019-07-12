@@ -25,7 +25,7 @@ from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)
 from idaes.property_models.examples.saponification_reactions import (
     SaponificationReactionParameterBlock)
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 # -----------------------------------------------------------------------------
@@ -40,6 +40,7 @@ else:
 
 
 # -----------------------------------------------------------------------------
+@pytest.mark.build
 def test_build():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -73,6 +74,8 @@ def test_build():
     assert hasattr(m.fs.rstoic, "deltaP")
 
 
+@pytest.mark.initialization
+@pytest.mark.solver
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_initialize():
     m = ConcreteModel()
@@ -112,3 +115,21 @@ def test_initialize():
             m.fs.rstoic.outlet.temperature[0].value)
     assert (pytest.approx(90, abs=1e-2) ==
             m.fs.rstoic.outlet.conc_mol_comp[0, "Ethanol"].value)
+
+
+@pytest.mark.ui
+def test_report():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = SaponificationParameterBlock()
+    m.fs.reactions = SaponificationReactionParameterBlock(default={
+                            "property_package": m.fs.properties})
+
+    m.fs.rstoic = StoichiometricReactor(default={
+                            "property_package": m.fs.properties,
+                            "reaction_package": m.fs.reactions,
+                            "has_heat_transfer": False,
+                            "has_pressure_change": False})
+
+    m.fs.rstoic.report()

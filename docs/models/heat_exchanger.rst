@@ -2,9 +2,9 @@ HeatExchanger (0D)
 ==================
 
 .. index::
-  pair: idaes.unit_models.heat_exchanger;HeatExchanger
+   pair: idaes.unit_models.heat_exchanger;HeatExchanger
 
-.. module:: idaes.unit_models.heat_exchanger
+.. currentmodule:: idaes.unit_models.heat_exchanger
 
 The HeatExchanger model can be imported from :code:`idaes.unit_models`,
 while additional rules and utility functions can be imported from
@@ -22,12 +22,12 @@ override the default temperature difference calculation.
   from idaes.core import FlowsheetBlock, StateBlock
   from idaes.unit_models import HeatExchanger
   from idaes.unit_models.heat_exchanger import delta_temperature_amtd_rule
-  from idaes.property_models import iapws95_ph
+  from idaes.property_models import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()
   model.fs = FlowsheetBlock(default={"dynamic": False})
-  model.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+  model.fs.properties = iapws95.Iapws95ParameterBlock()
 
   # Add a Heater model to the flowsheet.
   model.fs.heat_exchanger = HeatExchanger(default={
@@ -106,17 +106,12 @@ Temperature difference is an expression:
 
 The heat transfer coefficient is a variable with no associated constraints by default.
 
-HeatExchanger Class
--------------------
 
 .. autoclass:: HeatExchanger
-  :members:
-
-HeatExchangerData Class
------------------------
+   :members:
 
 .. autoclass:: HeatExchangerData
-  :members:
+   :members:
 
 Rules
 -----

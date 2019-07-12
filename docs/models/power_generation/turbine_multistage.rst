@@ -44,14 +44,14 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
   from idaes.unit_models import Heater
   from idaes.unit_models.power_generation import (
       TurbineMultistage, TurbineStage, TurbineInletStage, TurbineOutletStage)
-  from idaes.property_models import iapws95_ph
+  from idaes.property_models import iapws95
 
   solver = SolverFactory('ipopt')
   solver.options = {'tol': 1e-6}
 
   m = ConcreteModel()
   m.fs = FlowsheetBlock(default={"dynamic": False})
-  m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+  m.fs.properties = iapws95.Iapws95ParameterBlock()
   m.fs.turb = TurbineMultistage(default={
       "property_package": m.fs.properties,
       "num_hp": 7,
@@ -71,14 +71,14 @@ reheater.  In this example, a heater block is a stand-in for a reheater model.
                           destination=m.fs.turb.ip_stages[1].inlet)
   # Set the turbine inlet conditions and an initial flow guess
   p = 2.4233e7
-  hin = iapws95_ph.htpx(T=880, P=p)
+  hin = iapws95.htpx(T=880, P=p)
   m.fs.turb.inlet_split.inlet.enth_mol[0].fix(hin)
   m.fs.turb.inlet_split.inlet.flow_mol[0].fix(26000)
   m.fs.turb.inlet_split.inlet.pressure[0].fix(p)
 
   # Set the inlet of the ip section for initialization, since it is disconnected
   p = 7.802e+06
-  hin = iapws95_ph.htpx(T=880, P=p)
+  hin = iapws95.htpx(T=880, P=p)
   m.fs.turb.ip_stages[1].inlet.enth_mol[0].value = hin
   m.fs.turb.ip_stages[1].inlet.flow_mol[0].value = 25220.0
   m.fs.turb.ip_stages[1].inlet.pressure[0].value = p

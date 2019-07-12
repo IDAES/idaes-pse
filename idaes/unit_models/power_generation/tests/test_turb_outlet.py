@@ -21,11 +21,12 @@ from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
 
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.power_generation import TurbineOutletStage
-from idaes.property_models import iapws95_ph
-from idaes.property_models.iapws95 import iapws95_available
-from idaes.ui.report import degrees_of_freedom, active_equalities
+from idaes.property_models import iapws95
+from idaes.core.util.model_statistics import (
+        degrees_of_freedom,
+        activated_equalities_generator)
 
-prop_available = iapws95_available()
+prop_available = iapws95.iapws95_available()
 
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
@@ -38,7 +39,7 @@ else:
 def build_turbine():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.turb = TurbineOutletStage(default={"property_package": m.fs.properties})
     return m
 
@@ -46,7 +47,7 @@ def build_turbine():
 def build_turbine_dyn():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": True})
-    m.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
     m.fs.turb = TurbineOutletStage(default={
         "dynamic": False,
         "property_package": m.fs.properties})
@@ -67,6 +68,14 @@ def test_initialize(build_turbine):
     m.fs.turb.inlet.pressure[0].value = 8e4
 
     m.fs.turb.initialize(outlvl=1)
-    for c in active_equalities(m):
+
+    eq_cons = activated_equalities_generator(m)
+    for c in eq_cons:
         assert(abs(c.body() - c.lower) < 1e-4)
     assert(degrees_of_freedom(m)==3) #inlet was't fixed and still shouldn't be
+
+
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
+def test_report(build_turbine):
+    m = build_turbine
+    m.fs.turb.report()

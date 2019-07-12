@@ -39,7 +39,7 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -292,7 +292,8 @@ class _IdealStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # If flash, initialize T1 and Teq
         for k in blk.keys():
-            if blk[k].config.has_phase_equilibrium:
+            if ((blk[k]._params.config.valid_phase == ('Liq', 'Vap')) or
+                    (blk[k]._params.config.valid_phase == ('Vap', 'Liq'))):
                 blk[k]._t1.value = max(blk[k].temperature.value,
                                        blk[k].temperature_bubble.value)
                 blk[k]._teq.value = min(blk[k]._t1.value,
@@ -434,14 +435,6 @@ class IdealStateBlockData(StateBlockData):
         """Callable method for Block construction."""
         super(IdealStateBlockData, self).build()
 
-        # Check for valid phase indicator and consistent flags
-        if self.config.has_phase_equilibrium and \
-                self._params.config.valid_phase in ['Vap', 'Liq']:
-            raise ConfigurationError("Inconsistent inputs. Valid phase"
-                                     " flag not set to VL for the state"
-                                     " block but has_phase_equilibrium"
-                                     " is set to True.")
-
         # Add state variables
         self.flow_mol = Var(initialize=1.0,
                             domain=NonNegativeReals,
@@ -469,21 +462,16 @@ class IdealStateBlockData(StateBlockData):
             bounds=(0, 1),
             doc='Phase mole fractions [-]')
 
-        if not self.config.has_phase_equilibrium and \
-                self._params.config.valid_phase == "Liq":
+        if self._params.config.valid_phase == "Liq":
             self._make_liq_phase_eq()
-        elif not self.config.has_phase_equilibrium and \
-                self._params.config.valid_phase == "Vap":
+        elif self._params.config.valid_phase == "Vap":
             self._make_vap_phase_eq()
-        elif (self.config.has_phase_equilibrium) or \
-                (self._params.config.valid_phase ==
-                    ('Liq', 'Vap')) or \
-                (self._params.config.valid_phase ==
-                    ('Vap', 'Liq')):
+        elif ((self._params.config.valid_phase == ('Liq', 'Vap')) or
+                (self._params.config.valid_phase == ('Vap', 'Liq'))):
             self._make_flash_eq()
         else:
-            raise BurntToast("{} found unexpected combination of valid_phases "
-                             "and has_phase_equilibrium. Please contact the "
+            raise BurntToast("{} found unexpected value for valid_phases. "
+                             "Please contact the "
                              "IDAES developers with this bug."
                              .format(self.name))
 
@@ -546,47 +534,46 @@ class IdealStateBlockData(StateBlockData):
                 Constraint(expr=1 == sum(self.mole_frac[i]
                            for i in self._params.component_list))
 
-        if self.config.has_phase_equilibrium:
-            # Definition of equilibrium temperature for smooth VLE
-            self._teq = Var(initialize=self.temperature.value,
-                            doc='Temperature for calculating '
-                                'phase equilibrium')
-            self._t1 = Var(initialize=self.temperature.value,
-                           doc='Intermediate temperature for calculating Teq')
+        # Definition of equilibrium temperature for smooth VLE
+        self._teq = Var(initialize=self.temperature.value,
+                        doc='Temperature for calculating '
+                            'phase equilibrium')
+        self._t1 = Var(initialize=self.temperature.value,
+                       doc='Intermediate temperature for calculating Teq')
 
-            self.eps_1 = Param(default=0.01,
-                               mutable=True,
-                               doc='Smoothing parameter for Teq')
-            self.eps_2 = Param(default=0.0005,
-                               mutable=True,
-                               doc='Smoothing parameter for Teq')
+        self.eps_1 = Param(default=0.01,
+                           mutable=True,
+                           doc='Smoothing parameter for Teq')
+        self.eps_2 = Param(default=0.0005,
+                           mutable=True,
+                           doc='Smoothing parameter for Teq')
 
-            # PSE paper Eqn 13
-            def rule_t1(b):
-                return b._t1 == 0.5 * \
-                    (b.temperature + b.temperature_bubble +
-                     sqrt((b.temperature - b.temperature_bubble)**2 +
-                          b.eps_1**2))
-            self._t1_constraint = Constraint(rule=rule_t1)
+        # PSE paper Eqn 13
+        def rule_t1(b):
+            return b._t1 == 0.5 * \
+                (b.temperature + b.temperature_bubble +
+                 sqrt((b.temperature - b.temperature_bubble)**2 +
+                      b.eps_1**2))
+        self._t1_constraint = Constraint(rule=rule_t1)
 
-            # PSE paper Eqn 14
-            # TODO : Add option for supercritical extension
-            def rule_teq(b):
-                return b._teq == 0.5 * (b._t1 + b.temperature_dew -
-                                        sqrt((b._t1 - b.temperature_dew)**2 +
-                                             b.eps_2**2))
-            self._teq_constraint = Constraint(rule=rule_teq)
+        # PSE paper Eqn 14
+        # TODO : Add option for supercritical extension
+        def rule_teq(b):
+            return b._teq == 0.5 * (b._t1 + b.temperature_dew -
+                                    sqrt((b._t1 - b.temperature_dew)**2 +
+                                         b.eps_2**2))
+        self._teq_constraint = Constraint(rule=rule_teq)
 
-            def rule_tr_eq(b, i):
-                return b._teq / b._params.temperature_crit[i]
-            self._tr_eq = Expression(self._params.component_list,
-                                     rule=rule_tr_eq,
-                                     doc='Component reduced temperatures [-]')
+        def rule_tr_eq(b, i):
+            return b._teq / b._params.temperature_crit[i]
+        self._tr_eq = Expression(self._params.component_list,
+                                 rule=rule_tr_eq,
+                                 doc='Component reduced temperatures [-]')
 
-            def rule_equilibrium(b, i):
-                return b.fug_vap[i] == b.fug_liq[i]
-            self.equilibrium_constraint = \
-                Constraint(self._params.component_list, rule=rule_equilibrium)
+        def rule_equilibrium(b, i):
+            return b.fug_vap[i] == b.fug_liq[i]
+        self.equilibrium_constraint = \
+            Constraint(self._params.component_list, rule=rule_equilibrium)
 
 # -----------------------------------------------------------------------------
 # Property Methods

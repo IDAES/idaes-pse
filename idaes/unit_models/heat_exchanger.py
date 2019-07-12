@@ -37,6 +37,7 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.misc import add_object_reference
 from idaes.functions import functions_lib
+from idaes.core.util.tables import create_stream_table_dataframe
 
 _log = logging.getLogger(__name__)
 
@@ -293,6 +294,16 @@ class HeaterData(UnitModelBlockData):
         # Add a convienient reference to heat duty.
         add_object_reference(self, "heat_duty", self.control_volume.heat)
 
+        if (self.config.has_pressure_change is True and
+                self.config.momentum_balance_type != 'none'):
+            add_object_reference(self, "deltaP", self.control_volume.deltaP)
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        var_dict["Heat Duty"] = self.heat_duty[time_point]
+
+        return {"vars": var_dict}
+
 
 @declare_process_block_class("HeatExchanger",
                              doc="Simple 0D heat exchanger model.")
@@ -501,3 +512,26 @@ class HeatExchangerData(UnitModelBlockData):
 
         if outlvl > 0:
             _log.info('{} Initialization Complete.'.format(self.name))
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {"HX Coefficient":
+                    self.overall_heat_transfer_coefficient[time_point]}
+        var_dict["HX Area"] = self.area
+        var_dict["Heat Duty"] = self.heat_duty[time_point]
+        if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
+            var_dict = {"Crossflow Factor": self.crossflow_factor[time_point]}
+
+        expr_dict = {}
+        expr_dict["Delta T Driving"] = self.delta_temperature[time_point]
+        expr_dict["Delta T In"] = self.delta_temperature_in[time_point]
+        expr_dict["Delta T Out"] = self.delta_temperature_out[time_point]
+
+        return {"vars": var_dict, "exprs": expr_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+                {"Side 1 Inlet": self.inlet_1,
+                 "Side 1 Outlet": self.outlet_1,
+                 "Side 2 Inlet": self.inlet_2,
+                 "Side 2 Outlet": self.outlet_2},
+                time_point=time_point)

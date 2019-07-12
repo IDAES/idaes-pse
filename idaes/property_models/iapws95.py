@@ -40,13 +40,12 @@ point.
        Ordinary Water Substance,"
        URL: http://iapws.org/relguide/visc.pdf
 """
-from __future__ import division
-
 __author__ = "John Eslick"
 
 # Import Python libraries
 import logging
 import os
+import enum
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, Param, PositiveReals,\
@@ -55,27 +54,53 @@ from pyomo.environ import Constraint, Expression, Param, PositiveReals,\
 from pyomo.environ import ExternalFunction as EF
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.core.kernel.component_set import ComponentSet
-from pyutilib.misc.config import ConfigValue
+from pyomo.common.config import ConfigValue, In
 
 # Import IDAES
 from idaes.core import declare_process_block_class, ProcessBlock, \
                        StateBlock, StateBlockData, PhysicalParameterBlock
+from idaes.core.util.math import smooth_max
 
 # Logger
 _log = logging.getLogger(__name__)
+_so = os.path.join(os.path.dirname(__file__), "iapws95_lib/iapws95_external.so")
+
+def iapws95_available():
+    """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
+    the .so extention is still used.
+    """
+    return os.path.isfile(_so)
+
+class StateVars(enum.Enum):
+    """
+    State variable set options
+    """
+    PH = 1  # Pressure-Enthalpy
+    TPX = 2 # Temperature-Pressure-Quality
+
+class PhaseType(enum.Enum):
+    """
+    Ways to present phases to the framework
+    """
+    MIX = 1 # Looks like a single phase called mixed with a vapor fraction
+    LG = 2 # Looks like two phases vapor and liquid
+    L = 3 # Assume only liquid is present
+    G = 4 # Assume only vapor is pressent
+
 
 def htpx(T, P=None, x=None):
     """
-    Conveneince function to calculate steam enthalpy from temperature and
+    Convenience function to calculate steam enthalpy from temperature and
     either pressure or vapor fraction. This function can be used for inlet
-    streams and initialization where temperature is known instread of enthalpy.
+    streams and initialization where temperature is known instead of enthalpy.
+
     Args:
         T: Temperature [K]
         P: Pressure [Pa], None if saturated steam
         x: Vapor fraction [mol vapor/mol total], None if superheated or subcooled
 
     Returns:
-        Molar enthalpy [J/mol].
+        Total molar enthalpy [J/mol].
     """
     model = ConcreteModel()
     model.prop_param = Iapws95ParameterBlock()
@@ -92,21 +117,67 @@ def htpx(T, P=None, x=None):
         return value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*(x-1) +\
             value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*x
 
+
 @declare_process_block_class("Iapws95ParameterBlock")
 class Iapws95ParameterBlockData(PhysicalParameterBlock):
+    CONFIG=PhysicalParameterBlock.CONFIG()
+
+    CONFIG.declare("phase_presentation", ConfigValue(
+        default=PhaseType.MIX,
+        domain=In(PhaseType),
+        description="Set the way phases are presented to models",
+        doc="""Set the way phases are presented to models. The MIX option
+appears to the framework to be a mixed phase containing liquid and/or vapor.
+The mixed option can simplify calculations at the unit model level since it can
+be treated as a single phase, but unit models such as flash vessels will not be
+able to treate the phases indepedently. The LG option presents as two sperate
+phases to the framework. The L or G options can be used if it is known for sure
+that only one phase is present.
+**default** - PhaseType.MIX
+**Valid values:** {
+**PhaseType.MIX** - Present a mixed phase with liquid and/or vapor,
+**PhaseType.LG** - Present a liquid and vapor phase,
+**PhaseType.L** - Assume only liquid can be present,
+**PhaseType.G** - Assume only vapor can be present}"""))
+
+    CONFIG.declare("state_vars", ConfigValue(
+        default=StateVars.PH,
+        domain=In(StateVars),
+        description="State variable set",
+        doc="""The set of state variables to use. Depending on the use, one state
+variable set or another may be better computationally. Usually pressure and
+enthalpy are the best choice because they are well behaved during a phase change.
+**default** - StateVars.PH
+**Valid values:** {
+**StateVars.PH** - Pressure-Enthalpy,
+**StateVars.TPX** - Temperature-Pressure-Quality}"""))
 
     def build(self):
         super(Iapws95ParameterBlockData, self).build()
         self.state_block_class = Iapws95StateBlock
         # Location of the *.so or *.dll file for external functions
-        self.plib = os.path.dirname(__file__)
-        self.plib = os.path.join(self.plib, "iapws95.so")
+        self.plib = _so
         self.available = os.path.isfile(self.plib)
         # Phase list
         self.private_phase_list = Set(initialize=["Vap", "Liq"])
-        self.phase_list = Set(initialize=["Mix"])
+        if self.config.phase_presentation == PhaseType.MIX:
+            self.phase_list = Set(initialize=["Mix"])
+        elif self.config.phase_presentation == PhaseType.LG:
+            self.phase_list = Set(initialize=["Vap", "Liq"])
+        elif self.config.phase_presentation == PhaseType.L:
+            self.phase_list = Set(initialize=["Liq"])
+        elif self.config.phase_presentation == PhaseType.G:
+            self.phase_list = Set(initialize=["Vap"])
+        # State var set
+        self.state_vars = self.config.state_vars
+
         # Component list - a list of component identifiers
         self.component_list = Set(initialize=['H2O'])
+
+        # List of phase equilibrium
+        self.phase_equilibrium_idx = Set(initialize=[1])
+        self.phase_equilibrium_list = {1: ["H2O", ("Vap", "Liq")]}
+
         # Parameters, these should match what's in the C code
         self.temperature_crit = Param(initialize=647.096,
             doc='Critical temperature [K]')
@@ -216,6 +287,12 @@ class Iapws95ParameterBlockData(PhysicalParameterBlock):
             (5,6):-5.93264e-4},
             doc="1st order viscosity parameters")
 
+        self.smoothing_pressure_over = Param(mutable=True, initialize=1e-4,
+            doc='Smooth max parameter (pressure over)')
+        self.smoothing_pressure_under = Param(mutable=True, initialize=1e-4,
+            doc='Smooth max parameter (pressure under)')
+
+
     @classmethod
     def define_metadata(cls, obj):
         obj.add_properties({
@@ -233,6 +310,7 @@ class Iapws95ParameterBlockData(PhysicalParameterBlock):
             'dens_mass_phase': {'method': None, 'units': 'kg/m^3'},
             'temperature_red': {'method': None, 'units': None},
             'pressure_sat': {'method': None, 'units': 'kPa'},
+            'energy_internal_mol_phase':  {'method': None, 'units': 'J/mol'},
             'enth_mol_phase': {'method': None, 'units': 'J/mol'},
             'entr_mol_phase': {'method': None, 'units': 'J/mol.K'},
             'cp_mol_phase': {'method': None, 'units': 'J/mol.K'},
@@ -244,6 +322,7 @@ class Iapws95ParameterBlockData(PhysicalParameterBlock):
             'visc_k_phase': {'method': None, 'units': 'm^2/s'},
             'phase_frac': {'method': None, 'units': None},
             'flow_mol_comp': {'method': None, 'units': 'mol/s'},
+            'energy_internal_mol':  {'method': None, 'units': 'J/mol'},
             'enth_mol': {'method': None, 'units': 'J/mol'},
             'entr_mol': {'method': None, 'units': 'J/mol.K'},
             'cp_mol': {'method': None, 'units': 'J/mol.K'},
@@ -278,50 +357,156 @@ class _StateBlock(StateBlock):
     def initialize(self, *args, **kwargs):
         flags = {}
         hold_state = kwargs.pop("hold_state", False)
+        for i, v in self.items():
+            pp = self[i].config.parameters.config.phase_presentation
+            if self[i].state_vars == StateVars.PH:
+                # hold the P-H vars
+                flags[i] = (v.flow_mol.fixed,
+                            v.enth_mol.fixed,
+                            v.pressure.fixed)
+                if hold_state:
+                    v.flow_mol.fix()
+                    v.enth_mol.fix()
+                    v.pressure.fix()
+            elif self[i].state_vars == StateVars.TPX:
+                # Hold the T-P-x vars
+                if pp in (PhaseType.MIX, PhaseType.LG):
+                    flags[i] = (v.flow_mol.fixed,
+                                v.temperature.fixed,
+                                v.pressure.fixed,
+                                v.vapor_frac.fixed)
+                    if hold_state:
+                        v.flow_mol.fix()
+                        v.temperature.fix()
+                        v.pressure.fix()
+                        v.vapor_frac.fix()
+                else:
+                    flags[i] = (v.flow_mol.fixed,
+                                v.temperature.fixed,
+                                v.pressure.fixed)
+                    if hold_state:
+                        v.flow_mol.fix()
+                        v.temperature.fix()
+                        v.pressure.fix()
+
+        # Call initialize on each data element
         for i in self:
             self[i].initialize(*args, **kwargs)
-        for i, v in self.items(): #
-            flags[i] = (v.flow_mol.fixed,
-                        v.enth_mol.fixed,
-                        v.pressure.fixed)
-            if hold_state:
-                v.flow_mol.fix()
-                v.enth_mol.fix()
-                v.pressure.fix()
         return flags
 
     def release_state(self, flags, **kwargs):
         for i, f in flags.items():
-            self._set_fixed(self[i].flow_mol, f[0])
-            self._set_fixed(self[i].enth_mol, f[1])
-            self._set_fixed(self[i].pressure, f[2])
+            pp = self[i].config.parameters.config.phase_presentation
+            if self[i].state_vars == StateVars.PH:
+                self._set_fixed(self[i].flow_mol, f[0])
+                self._set_fixed(self[i].enth_mol, f[1])
+                self._set_fixed(self[i].pressure, f[2])
+            elif self[i].state_vars == StateVars.TPX:
+                self._set_fixed(self[i].flow_mol, f[0])
+                self._set_fixed(self[i].temperature, f[1])
+                self._set_fixed(self[i].pressure, f[2])
+                if pp in (PhaseType.MIX, PhaseType.LG):
+                    self._set_fixed(self[i].vapor_frac, f[3])
 
-
-@declare_process_block_class("Iapws95StateBlock", block_class=_StateBlock, doc="""
-    This is some placeholder doc.
+@declare_process_block_class("Iapws95StateBlock", block_class=_StateBlock,
+    doc="""This is some placeholder doc.
     """)
 class Iapws95StateBlockData(StateBlockData):
     """
-    This is a property package for calcuating thermophysical properties of water
+    This is a property package for calculating thermophysical properties of water
     """
-
     def initialize(self, *args, **kwargs):
-        Fold = self.flow_mol.value
-        Hold = self.enth_mol.value
-        Pold = self.pressure.value
-        self.flow_mol.value = kwargs.get("flow_mol", Fold)
-        self.enth_mol.value = kwargs.get("enth_mol", Hold)
-        self.pressure.value = kwargs.get("presssure", Pold)
-        #
-        # This is where stuff would get initialized if there was anything to do
-        #
-        # reset the values of fixed variables so this doesn't change problem
-        if self.flow_mol.is_fixed():
-            self.flow_mol.value = Fold
-        if self.pressure.is_fixed():
-            self.pressure.value = Pold
-        if self.enth_mol.is_fixed():
-            self.enth_mol.value = Hold
+        # With this particualr property pacakage there is not need for
+        # initialization
+        pass
+
+    def _state_vars(self):
+        """ Create the state variables
+        """
+        self.flow_mol = Var(initialize=1, domain=NonNegativeReals,
+            doc="Total flow [mol/s]")
+        self.flow_mol.latex_symbol = "F"
+
+        if self.state_vars == StateVars.PH:
+            self.pressure = Var(domain=PositiveReals, initialize=1e5,
+                doc="Pressure [Pa]", bounds=(1, 1e9))
+            self.pressure.latex_symbol = "P"
+
+            self.enth_mol = Var(initialize=1000,
+                doc="Total molar enthalpy (J/mol)", bounds=(1,1e5))
+            self.enth_mol.latex_symbol = "h"
+
+            # For variables that show up in ports specify extensive and intensive
+            self.extensive_set = ComponentSet((self.flow_mol,))
+            self.intensive_set = ComponentSet((self.enth_mol, self.pressure))
+
+        elif self.state_vars == StateVars.TPX:
+            self.temperature = Var(initialize=300,
+                doc="Temperature [K]", bounds=(200,3e3))
+            self.temperature.latex_symbol = "T"
+
+            self.pressure = Var(domain=PositiveReals, initialize=1e5,
+                doc="Pressure [Pa]", bounds=(1, 1e9))
+            self.pressure.latex_symbol = "P"
+
+            self.vapor_frac = Var(initialize=0.0,
+                doc="Vapor fraction [none]")
+            self.vapor_frac.latex_symbol = "x"
+
+            # For variables that show up in ports specify extensive and intensive
+            self.extensive_set = ComponentSet((self.flow_mol,))
+            self.intensive_set = ComponentSet((self.temperature, self.pressure,
+                                               self.vapor_frac))
+
+    def _tpx_phase_eq(self):
+        # Saturation pressure
+        eps_pu = self.config.parameters.smoothing_pressure_under
+        eps_po = self.config.parameters.smoothing_pressure_over
+        priv_plist =  self.config.parameters.private_phase_list
+        plist = self.config.parameters.phase_list
+        rhoc = self.config.parameters.dens_mass_crit
+
+        P = self.pressure/1000 # expression for pressure in kPa
+        Psat = self.pressure_sat/1000.0 # expression for Psat in kPA
+        vf = self.vapor_frac
+        tau = self.tau
+
+        # Terms for determining if you are above, below, or at the Psat
+        self.P_under_sat = Expression(expr=smooth_max(0, Psat - P, eps_pu),
+            doc="pressure above Psat, 0 if liqid exists [kPa]")
+        self.P_over_sat = Expression(expr=smooth_max(0, P - Psat, eps_po),
+            doc="pressure below Psat, 0 if vapor exists [kPa]")
+
+        # Calculate liquid and vapor density.  If the phase doesn't exist,
+        # density will be calculated at the saturation or critical pressure
+        def rule_dens_mass(b,i):
+            if i=="Liq":
+                return rhoc*self.func_delta_liq(P + self.P_under_sat, tau)
+            else:
+                return rhoc*self.func_delta_vap(P - self.P_over_sat, tau)
+        self.dens_mass_phase = Expression(priv_plist, rule=rule_dens_mass)
+
+        # Reduced Density (no _mass_ identifier because mass or mol is same)
+        def rule_dens_red(b, p):
+            return self.dens_mass_phase[p]/rhoc
+        self.dens_phase_red = Expression(priv_plist,
+            rule=rule_dens_red, doc="reduced density [unitless]")
+        delta = self.dens_phase_red
+
+        # If there is only one phase fix the vapor fraction appropriatly
+        if len(plist) == 1:
+            if "Vap" in plist:
+                self.vapor_frac.fix(1.0)
+            else:
+                self.vapor_frac.fix(0.0)
+        elif not self.config.defined_state:
+            self.eq_complementarity = Constraint(
+                expr=0 == (vf*self.P_over_sat  - (1 - vf)*self.P_under_sat))
+
+        # eq_sat can activated to force the pressure to be the saturation
+        # pressure, if you use this constraint deactivate eq_complementarity
+        self.eq_sat = Constraint(expr=P/1000.0 == Psat/1000.0)
+        self.eq_sat.deactivate()
 
     def build(self, *args):
         """
@@ -329,36 +514,29 @@ class Iapws95StateBlockData(StateBlockData):
         """
         super(Iapws95StateBlockData, self).build(*args)
 
-        # parameters
+        self.state_vars = self.config.parameters.state_vars
+        # parameter aliases for convienient use later
         component_list = self.config.parameters.component_list
         phase_list = self.config.parameters.phase_list
-        private_phase_list = self.config.parameters.private_phase_list
-        temperature_crit = self.config.parameters.temperature_crit
-        pressure_crit = self.config.parameters.pressure_crit
-        dens_mass_crit = self.config.parameters.dens_mass_crit
+        phlist = self.config.parameters.private_phase_list
+        Tc = self.config.parameters.temperature_crit
+        Pc = self.config.parameters.pressure_crit
+        rhoc = self.config.parameters.dens_mass_crit
         gas_const = self.config.parameters.gas_const
+        phase_set = self.config.parameters.config.phase_presentation
+
+        #self.phase_equilibrium_idx = Set(initialize=[1])
+        self.phase_equilibrium_list = {1: ["H2O", ("Vap", "Liq")]}
+
+        mixed_phase = self.config.parameters.config.phase_presentation == \
+            PhaseType.MIX
 
         # Set if the IAPWS library is available.
         self.available = self.config.parameters.available
         if not self.available:
             _log.error("IAPWS library file not found. Was it compiled?")
 
-        # Variables
-        self.flow_mol = Var(initialize=1, domain=NonNegativeReals,
-            doc="Total flow [mol/s]")
-        self.flow_mol.latex_symbol = "F"
-
-        self.pressure = Var(domain=PositiveReals, initialize=1e5,
-            doc="Pressure [Pa]", bounds=(1, 1e9))
-        self.pressure.latex_symbol = "P"
-
-        self.enth_mol = Var(initialize=1000,
-            doc="Total molar enthalpy (J/mol)", bounds=(1,1e5))
-        self.enth_mol.latex_symbol = "h"
-
-        # For variables that show up in ports specify extensive and intensive
-        self.extensive_set = ComponentSet((self.flow_mol,))
-        self.intensive_set = ComponentSet((self.enth_mol, self.pressure))
+        self._state_vars() # create the appropriate state variables
 
         # External Functions (some of these are included only for testing)
         plib = self.config.parameters.plib
@@ -393,44 +571,47 @@ class Iapws95StateBlockData(StateBlockData):
         self.func_phir_tau2 = EF(library=plib, function="phir_tau2")
         self.func_phir_delta_tau = EF(library=plib, function="phir_delta_tau")
 
-        # Calcuations (In this case all expressions no constraints)
+        # Calculations
 
         # molecular weight
         self.mw = Expression(expr=self.config.parameters.mw,
             doc="molecular weight [kg/mol]")
         mw = self.mw
         mw.latex_symbol = "M"
-
-        self.flow_mass = Expression(expr=self.mw*self.flow_mol,
-            doc="mass flow rate [kg/s]")
-
-        self.enth_mass = Expression(expr = self.enth_mol/mw,
-            doc="Mass enthalpy (J/kg)")
-
-        # Conveneint shorter names and expressions
         P = self.pressure/1000.0 # Pressure expr [kPA] (for external func)
-        h_mass = self.enth_mass/1000 #enthalpy expr [kJ/kg] (for external func)
-        Tc = temperature_crit # critical temperature
 
-        # Temperature expression, external function takes
-        self.temperature = Expression(expr=Tc/self.func_tau(h_mass, P),
-            doc="Temperature (K)")
-        self.temperature.latex_symbol = "T"
+        if self.state_vars == StateVars.PH:
+            # if the state vars are P and H create expressions for T and x
+            h_mass = self.enth_mol/mw/1000 #enthalpy expr [kJ/kg]
+            self.temperature = Expression(
+                expr=Tc/self.func_tau(h_mass, P),
+                doc="Temperature (K)")
+            self.temperature.latex_symbol = "T"
+            if phase_set == PhaseType.MIX or phase_set == PhaseType.LG:
+                self.vapor_frac = Expression(
+                    expr=self.func_vf(h_mass, P),
+                    doc="Vapor mole fraction (mol vapor/mol total)")
+            elif phase_set == PhaseType.L:
+                self.vapor_frac = Expression(
+                    expr=0.0,
+                    doc="Vapor mole fraction (mol vapor/mol total)")
+            elif phase_set == PhaseType.G:
+                self.vapor_frac = Expression(
+                    expr=1.0,
+                    doc="Vapor mole fraction (mol vapor/mol total)")
+            self.vapor_frac.latex_symbol = "x"
+        elif self.state_vars == StateVars.TPX:
+            # Need to get enthalpy expressions in here
+            pass
 
-        self.vapor_frac = Expression(expr=self.func_vf(h_mass, P),
-            doc="Vapor mole fraction (mol vapor/mol total)")
-        self.vapor_frac.latex_symbol = "y"
-
-        # More conveneint shorter names and expressions
-        rhoc = dens_mass_crit
+        # Convenient shorter names and expressions
         T = self.temperature
         vf = self.vapor_frac
-        phlist = private_phase_list
 
         # Saturation temperature expression
         self.temperature_sat = Expression(expr=Tc/self.func_tau_sat(P),
             doc="Stauration temperature (K)")
-        self.temperature_sat.latex_symbol = "T_\{sat\}"
+        self.temperature_sat.latex_symbol = "T_{sat}"
 
         # Saturation tau (tau = Tc/T)
         self.tau_sat = Expression(expr=self.func_tau_sat(P))
@@ -447,27 +628,33 @@ class Iapws95StateBlockData(StateBlockData):
         # Saturation pressure
         self.pressure_sat = Expression(expr=1000*self.func_p_sat(tau),
             doc="Saturation pressure (Pa)")
-        self.pressure_sat.latex_symbol = "P_\{sat\}"
+        self.pressure_sat.latex_symbol = "P_{sat}"
         Psat = self.pressure_sat/1000.0 # expression for Psat in kPA
 
-        # Calculate liquid and vapor density.  If the phase doesn't exist,
-        # density will be calculated at the saturation or critical pressure
-        def rule_dens_mass(b, i):
-            if i=="Liq":
-                return rhoc*self.func_delta_liq(P, tau)
-            else:
-                return rhoc*self.func_delta_vap(P, tau)
-        self.dens_mass_phase = Expression(phlist, rule=rule_dens_mass,
-            doc="Mass density by phase (kg/m3)")
-        self.dens_mass_phase.latex_symbol = "\\rho"
+        if self.state_vars == StateVars.PH:
+            # If TPx state vars the expressions are given in _tpx_phase_eq
+            # Calculate liquid and vapor density.  If the phase doesn't exist,
+            # density will be calculated at the saturation or critical pressure
+            # depending on whether the temperature is above the critical temperature
+            # supercritical fluid is considered to be the liquid phase
+            def rule_dens_mass(b, i):
+                if i=="Liq":
+                    return rhoc*self.func_delta_liq(P, tau)
+                else:
+                    return rhoc*self.func_delta_vap(P, tau)
+            self.dens_mass_phase = Expression(phlist, rule=rule_dens_mass,
+                doc="Mass density by phase (kg/m3)")
+            self.dens_mass_phase.latex_symbol = "\\rho"
 
-        # Reduced Density (no _mass_ identifier because mass or mol is same)
-        def rule_dens_red(b, p):
-            return self.dens_mass_phase[p]/rhoc
-        self.dens_phase_red = Expression(phlist, rule=rule_dens_red,
-            doc="reduced density (unitless)")
-        self.dens_phase_red.latex_symbol = "\\delta"
+            # Reduced Density (no _mass_ identifier because mass or mol is same)
+            def rule_dens_red(b, p):
+                return self.dens_mass_phase[p]/rhoc
+            self.dens_phase_red = Expression(phlist, rule=rule_dens_red,
+                doc="reduced density (unitless)")
+        elif self.state_vars == StateVars.TPX:
+            self._tpx_phase_eq()
         delta = self.dens_phase_red # this shorter name is from IAPWS
+        self.dens_phase_red.latex_symbol = "\\delta"
 
         # Phase property expressions all converted to SI
 
@@ -484,6 +671,13 @@ class Iapws95StateBlockData(StateBlockData):
         self.dh_vap_mol = Expression(
             expr=self.enth_mol_sat_phase["Vap"] - self.enth_mol_sat_phase["Liq"],
             doc="Enthaply of vaporization at pressure and saturation (J/mol)")
+
+        # Phase Internal Energy
+        def rule_energy_internal_mol_phase(b, p):
+            return 1000*mw*self.func_u(delta[p], tau)
+        self.energy_internal_mol_phase = Expression(phlist,
+            rule=rule_energy_internal_mol_phase, doc=
+            "Phase internal energy or saturated if phase doesn't exist [J/mol]")
 
         # Phase Enthalpy
         def rule_enth_mol_phase(b, p):
@@ -571,6 +765,17 @@ class Iapws95StateBlockData(StateBlockData):
 
         # Total (mixed phase) properties
 
+        #Enthalpy
+        if self.state_vars == StateVars.TPX:
+            self.enth_mol = Expression(expr=
+                sum(self.phase_frac[p]*self.enth_mol_phase[p]
+                    for p in phlist))
+            self.enth_mol.latex_symbol = "h"
+        #Internal Energy
+        self.energy_internal_mol = Expression(expr=
+            sum(self.phase_frac[p]*self.energy_internal_mol_phase[p]
+                for p in phlist))
+        self.energy_internal_mol.latex_symbol = "u"
         #Entropy
         self.entr_mol = Expression(expr=
             sum(self.phase_frac[p]*self.entr_mol_phase[p] for p in phlist))
@@ -597,6 +802,32 @@ class Iapws95StateBlockData(StateBlockData):
         self.flow_vol = Expression(expr=self.flow_mol/self.dens_mol,
             doc="Total liquid + vapor volumetric flow (m3/s)")
 
+        self.flow_mass = Expression(expr=self.mw*self.flow_mol,
+            doc="mass flow rate [kg/s]")
+
+        self.enth_mass = Expression(expr = self.enth_mol/mw,
+            doc="Mass enthalpy (J/kg)")
+
+        # Set the state vars dictionary
+        if self.state_vars == StateVars.PH:
+            self._state_vars_dict = {
+                "flow_mol": self.flow_mol,
+                "enth_mol": self.enth_mol,
+                "pressure": self.pressure}
+        elif self.state_vars == StateVars.TPX and \
+            phase_set in (PhaseType.MIX, PhaseType.LG):
+            self._state_vars_dict = {
+                "flow_mol": self.flow_mol,
+                "temperature": self.temperature,
+                "pressure": self.pressure,
+                "vapor_frac": self.vapor_frac}
+        elif self.state_vars == StateVars.TPX and \
+            phase_set in (PhaseType.G, PhaseType.L):
+            self._state_vars_dict = {
+                "flow_mol": self.flow_mol,
+                "temperature": self.temperature,
+                "pressure": self.pressure}
+
     def get_material_flow_terms(self, p, j):
         if p == "Mix":
             return self.flow_mol
@@ -622,9 +853,16 @@ class Iapws95StateBlockData(StateBlockData):
             return self.dens_mol_phase[p]*self.enth_mol_phase[p]
 
     def define_state_vars(self):
-        return {"flow_mol": self.flow_mol,
-                "enth_mol": self.enth_mol,
-                "pressure": self.pressure}
+        return self._state_vars_dict
+
+    def define_display_vars(self):
+        return {
+            "Molar Flow (mol/s)": self.flow_mol,
+            "Mass Flow (kg/s)": self.flow_mass,
+            "T (K)": self.temperature,
+            "P (Pa)": self.pressure,
+            "Vapor Fraction": self.vapor_frac,
+            "Molar Enthalpy (J/mol)": self.enth_mol_phase}
 
     def extensive_state_vars(self):
         return self.extensive_set

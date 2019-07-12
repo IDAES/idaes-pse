@@ -15,12 +15,12 @@ endif
 LDFLAGS = -shared -lm
 LDFLAGS_EXE = -lm
 
-OBJECTS = iapws95.o iapws95_phi.o iapws95_asl_funcs.o iapws95_memo.o
+OBJECTS = iapws95_external.o iapws95_phi.o iapws95_asl_funcs.o iapws95_memo.o
 
-ALL: iapws95.so iapws95_tests
+ALL: iapws95_external.so
 
-iapws95.o: iapws95.cpp
-		$(CXX) $(CXXFLAGS) iapws95.cpp -o iapws95.o
+iapws95.o: iapws95_external.cpp
+		$(CXX) $(CXXFLAGS) iapws95.cpp -o iapws95_external.o
 
 iapws95_phi.o: iapws95_phi.cpp
 	  $(CXX) $(CXXFLAGS) iapws95_phi.cpp -o iapws95_phi.o
@@ -34,11 +34,8 @@ iapws95_asl_funcs.o: iapws95_asl_funcs.cpp
 iapws95_tests.o: iapws95_tests.cpp
 		$(CXX) $(CXXFLAGS) iapws95_tests.cpp -o iapws95_tests.o
 
-iapws95.so: $(OBJECTS)
-	  $(CXX) $(LDFLAGS) $(OBJECTS) -o iapws95.so
-
-iapws95_tests: iapws95_tests.o $(OBJECTS)
-		$(CXX) $(LDFLAGS_EXE) iapws95_tests.o $(OBJECTS) -o iapws95_tests
+iapws95_external.so: $(OBJECTS)
+	  $(CXX) $(LDFLAGS) $(OBJECTS) -o iapws95_external.so
 
 clean:
 	rm -f *.o

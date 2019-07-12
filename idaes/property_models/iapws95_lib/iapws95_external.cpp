@@ -29,7 +29,7 @@
 #include<iostream>
 
 #include"iapws95_memo.h"
-#include"iapws95.h"
+#include"iapws95_external.h"
 #include"iapws95_param.h"
 #include"iapws95_deriv_parts.h"
 
