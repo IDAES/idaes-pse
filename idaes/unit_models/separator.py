@@ -925,15 +925,13 @@ linked the mixed state and all outlet states,
                             else:
                                 return self.eps
 
-                    elif self.config.split_basis == \
-                            SplittingType.phaseFlow:
-
+                    else:
                         def e_rule(b, t, j):
-                            try:
-                                mfp = mb[t].component(
+                            mfp = mb[t].component(
                                         "{0}_phase{1}"
-                                        .format(l_name[:-5], s[-5:]))
-                            except AttributeError:
+                                        .format(l_name[:-5], l_name[-5:]))
+
+                            if mfp is None:
                                 raise AttributeError(
                                     "{} Cannot use ideal splitting with this "
                                     "property package. Package uses indexed "
@@ -967,69 +965,74 @@ linked the mixed state and all outlet states,
                                 rule=e_rule)
 
                 else:
-                    # Not a recognised state, check for indexing sets
-                    if mb[self.flowsheet().config.time.first()].component(
-                            l_name).is_indexed():
-                        # Is indexed, assume indexes match and partition
-
-                        def e_rule(b, t, k):
-                            if split_map[k] == o:
-                                try:
-                                    return mb[t].component(l_name)[k]
-                                except KeyError:
-                                    raise KeyError(
-                                        "{} Cannot use ideal splitting with"
-                                        " this property package. Package uses "
-                                        "indexed port member {} which does not"
-                                        " have suitable indexing set(s)."
-                                        .format(self.name, s))
-                            else:
-                                return self.eps
-
-                        # TODO : Reusing indexing set from first port member.
-                        # TODO : Not sure how good of an idea this is.
-                        e_obj = Expression(
-                                    self.flowsheet().config.time,
-                                    mb[self.flowsheet().config.time.first()]
-                                    .component(l_name).index_set(),
-                                    rule=e_rule)
-
-                    else:
-                        # Is not indexed, look for indexed equivalent
+                    def e_rule(b, t):
                         try:
                             if self.config.split_basis == \
                                     SplittingType.phaseFlow:
-                                def e_rule(b, t):
+                                ivar = mb[t].component(l_name+"_phase")
+                                if ivar is not None:
                                     for p in self.config.property_package.phase_list:
                                         if split_map[p] == o:
-                                            return mb[t].component(
-                                                    l_name+"_phase")[p]
-                                    # else
-                                    return self.eps
-
+                                            return ivar[p]
+                                        else:
+                                            continue
+                                else:
+                                    ivar = mb[t].component(l_name+"_phase_comp")
+                                    if ivar is not None:
+                                        for p in self.config.property_package.phase_list:
+                                            if split_map[p] == o:
+                                                return sum(
+                                                    ivar[p, j] for j in
+                                                    self.config.property_package.component_list)
+                                            else:
+                                                continue
+                                    else:
+                                        raise AttributeError
+        
                             elif self.config.split_basis == \
                                     SplittingType.componentFlow:
-                                def e_rule(b, t):
+                                ivar = mb[t].component(l_name+"_comp")
+                                if ivar is not None:
                                     for j in self.config.property_package.component_list:
                                         if split_map[j] == o:
-                                            return mb[t].component(
-                                                    l_name+"_comp")[j]
-                                    # else
-                                    return self.eps
-
+                                            return ivar[j]
+                                        else:
+                                            continue
+                                else:
+                                    ivar = mb[t].component(l_name+"_phase_comp")
+                                    if ivar is not None:
+                                        for j in self.config.property_package.component_list:
+                                            if split_map[j] == o:
+                                                return sum(
+                                                    ivar[p, j] for p in
+                                                    self.config.property_package.phase_list)
+                                            else:
+                                                continue
+                                    else:
+                                        raise AttributeError
                             elif self.config.split_basis == \
                                     SplittingType.phaseComponentFlow:
-                                def e_rule(b, t):
+                                ivar = mb[t].component(l_name+"_phase_comp")
+                                if ivar is not None:
                                     for p in self.config.property_package.phase_list:
                                         for j in self.config.property_package.component_list:
                                             if split_map[p, j] == o:
-                                                return (mb[t].component(
-                                                        l_name+"_phase_comp")
-                                                        [p, j])
-                                    # else
-                                    return self.eps
+                                                return ivar[p, j]
+                                            else:
+                                                continue
+                                else:
+                                    raise AttributeError
+                            else:
+                                # Unrecognised split tupe
+                                raise BurntToast(
+                                    "{} received unrecognised value for "
+                                    "split_basis argumnet. This should never "
+                                    "happen, so please contact the IDAES "
+                                    "developers with this bug."
+                                    .format(self.name))
 
-                        except AttributeError:
+                        except:
+                            # If cannot find equivalent var, raise exception
                             raise AttributeError(
                                 "{} Cannot use ideal splitting with this "
                                 "property package. Package uses unindexed "
