@@ -45,7 +45,7 @@ example for using water properties.
   # Add a Heater model to the flowsheet.
   model.fs.heater = Heater(default={
     "property_package": model.fs.properties,
-    "material_balance_type":MaterialBalanceType.componentTotal})
+    "material_balance_type": MaterialBalanceType.componentTotal})
 
   # Setup the heater model by fixing the inputs and heat duty
   model.fs.heater.inlet[:].enth_mol.fix(4000)
