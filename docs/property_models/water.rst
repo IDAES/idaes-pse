@@ -1,5 +1,5 @@
-Water/Steam
-===========
+Water/Steam - IAPWS95
+======================
 
 .. index::
   pair: idaes.property_models.iapws95.iapws95_py; Iapws95StateBlock

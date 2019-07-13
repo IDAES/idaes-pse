@@ -1,5 +1,5 @@
 Vapor-Liquid Equilibrium Property Models (Ideal Gas - Non-ideal Liquids)
-=========
+=========================================================================
 
 This property package supports phase equilibrium calucations with a smooth phase transition formulation that makes it amenable for equation oriented optimization. The gas phase is assumed to be ideal and for the liquid phase,
 the package supports an ideal liquid or a non-ideal liquid using an activity
