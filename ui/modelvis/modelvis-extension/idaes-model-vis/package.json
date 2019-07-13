@@ -30,11 +30,12 @@
   "dependencies": {
     "@jupyterlab/rendermime-interfaces": "^1.0.0",
     "@phosphor/widgets": "^1.5.0",
+    "@types/backbone": "^1.4.0",
+    "backbone": "^1.4.0",
+    "jointjs": "^3.0.2",
     "jquery": "^3.4.1",
     "lodash": "^4.7.11",
-    "backbone": "^1.4.0",
-    "@types/backbone": "^1.4.0",
-    "jointjs": "^3.0.2"
+    "url-loader": "^2.0.1"
   },
   "devDependencies": {
     "rimraf": "^2.6.2",

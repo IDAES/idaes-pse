@@ -10,9 +10,12 @@ import 'jquery';
 import 'lodash';
 import 'backbone';
 import {dia} from 'jointjs';
+import {shapes} from 'jointjs';
 
 import '../style/index.css';
 import '../style/joint.css';
+
+import '../style/iconmapping.css';
 
 /**
  * The default mime type for the extension.
@@ -40,11 +43,6 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     this.save_file_button.id = "save_file_button";
     this.save_file_button.innerText = "Save Graph to File";
 
-    ////this.load_file_button = document.createElement("button");
-    //this.load_file_button.id = "load_file_button";
-    //this.load_file_button.name = "load file";
-    //this.load_file_button.innerText = "Load File";
-
     this.myholder = document.createElement("div");
     this.myholder.id = "myholder";
   }
@@ -71,37 +69,45 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     var graph = new dia.Graph;
 
     console.log("before paper");
-    //var paper = new dia.Paper({
+
     new dia.Paper({
-                    el: document.getElementById('myholder'),
+                    el: this.myholder,
                     model: graph,
                     width: 1000,
                     height: 1000,
                     gridSize: 1
                 });
                 
-                //console.log(paper);
-
     console.log("after paper");
     graph.fromJSON(data);
 
+	var rect = new shapes.standard.Rectangle();
+    rect.position(100, 30);
+    rect.resize(100, 40);
+    rect.attr({
+        body: {
+            fill: 'blue'
+        },
+        label: {
+            text: 'Hello',
+            fill: 'white'
+        }
+    });
+	rect.addTo(graph);
+
+    const image = document.createElement('div');
+    image.className = 'mixer';
+
+	var testimage = new shapes.standard.Image();
+    testimage.position(100, 150);
+
+    testimage.resize(100, 100);
+    testimage.attr('image/xlinkHref', image);
+    //testimage.markup = [{"tagName": "image", "selector": "image"}];
+    testimage.addTo(graph);
+
+
     console.log("after graph load");
-    /*
-    <body>
-        <button onclick="saveFile(this)" id="save_file_button">Save Graph to File</button><br>
-            //Load Graph From File: <input type="file" id="load_file_button" name="load file"/><br>
-        A sample saved graph is available at idaes/ui/html/demo_graph.json
-        <!-- content -->
-        <div id="myholder"></div>
-
-        <!-- dependencies -->
-        <script type="module">
-              
-        
-    </script>
-
-    </body>
-    */ 
 
     function saveFile(evt: MouseEvent) {
         var jsonstring = JSON.stringify(graph.toJSON());
@@ -113,23 +119,6 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
         fakeobj.remove();
     }
 
-    /*
-    function loadFile(evt: InputEvent) {
-        // getting a hold of the file reference
-        var file = evt.target.files[0]; 
-        var reader = new FileReader();
-        reader.readAsText(file);
-
-        // here we tell the reader what to do when it's done reading...
-        reader.onload = readerEvent => {
-                  var content = readerEvent.target.result;
-                  graph.fromJSON(JSON.parse(content));
-               }
-
-    }
-    */
-
-    //this.load_file_button.addEventListener('change', loadFile, false);
     this.save_file_button.onclick = saveFile;
 
     return Promise.resolve();
@@ -137,7 +126,6 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
 
   private _mimeType: string;
   private save_file_button: HTMLButtonElement;
-  //private load_file_button: HTMLButtonElement;
   private myholder: HTMLDivElement;
 }
 
