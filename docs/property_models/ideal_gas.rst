@@ -84,6 +84,16 @@ The fugacity of the vapor and liquid phase is defined as follows:
 
 The equilibrium constraint is written as a generic constraint such that it can be extended easily for non-ideal gases and liquids. As this property package only supports an ideal gas, the fugacity coefficient (:math:`\phi_{i}`) for the vapor phase is 1 and hence the expression reduces to :math:`y_{i}P`. For the liquid phase, if the ideal option is selected then the activity coefficient (:math:`\nu_{i}`) is 1. If an activity coefficient model is selected then corresponding constraints are added to compute the activity coefficient. 
 
+Typically, the flash caluclations are computed at a given temperature, :math:`T`. However, the flash calculations become trivial if the given conditions do not fall in the two phase region. For simulation only studies, the user may know a priori the condition of the stream but when the same set of equations are used for optimization, there is a high probablity that the specifications can transcend the phase envelope and hence the flash equations included may be trivial in the single phase region (i.e. liquid or vapor only). To circumvent this problem, property packages in IDAES that support VLE will compute the flash calculations at an "equivalent" temperature :math:`T_{eq}`. The equivalent temperature is computed as follows:
+.. math:: T_{1} = max(T_{bubble}, T) 
+.. math:: T_{eq} = min(T_{1}, T_{dew})
+
+where :math:`T_[eq}` is the equilibrium temperature at which flash calculations are computed, :math:`T` is the stream temperature, :math:`T_{1}` is the intermediate temperature variable, :math:`T_{bubble}` is the bubble point temperature of mixture, and :math:`T_{dew}` is the dew point temperature of the mixture. Note that, in the above equations, approximations are used for the max and min functions as follows:
+.. math:: T_{1} = 0.5(T + T_{bubble} + \sqrt((T-T_{bubble})^2 + \epsilon_{1}^2))
+.. math:: T_{eq} = 0.5(T_{1} + T_{dew} - \sqrt((T-T_{dew})^2 + \epsilon_{2}^2))
+
+where :math:`\epsilon_1` and :math:`\epsilon_2` are smoothing parameters(mutable). The default values are 0.01 and 0.0005 respectively. It is recommended that :math:`\epsilon_1` > :math:`\epsilon_2`. Please refer to reference 4 for more details. 
+
 Additional constraints are included in the model to compute the thermodynamic properties such as component saturation pressure, enthalpy, specific heat capacity. Please note that, these constraints are added only if the variable is called for when building the model. This eliminates adding unnecessary constraints to compute properties that are not needed in the model. 
 
 The saturation or vapor pressure (``pressure_sat``) for component :math:`i` is computed using the following correlation[1]:
@@ -108,12 +118,12 @@ The mixture specific enthapies (``enthalpy_liq`` & ``enthalpy_vap``) are compute
 
 Activity Coefficient Model - NRTL
 ----------------------------------
-The activity coefficient for component :math:`i` is computed using the following equations when using the Non-Random Two Liquid model0:
+The activity coefficient for component :math:`i` is computed using the following equations when using the Non-Random Two Liquid model [3]:
 
 .. math:: log_e{\gamma_i} = \frac{\sum_j{x_j\tau_jG_{ji}}}{\sum_kx_kG_{ki}} + \sum_j\frac{x_jG_{ij}}{\sum_kx_kG_{kj}}\lbrack\tau_{ij} - \frac{\sum_mx_m\tau_{mj}G_{mj}}{\sum_kx_kG_{kj}}\rbrack
 .. math:: G_{ij}=\exp({-\alpha_{ij}\tau_{ij}})
 
-where :math:`\alpha_{ij}` and :math:`\tau_{ij}` are NRTL model specific variables that either need to be fixed for a given component set or need to be estimated from VLE data.  
+where :math:`\alpha_{ij}` is the non-randomness parameter and :math:`\tau_{ij}` is the binary interaction parameter for the NRTL model. Note that in the IDAES implementation, these are declared as variables that allows for more flexibility and the ability to use these in a parameter estimation problem. These NRTL model specific variables need to be either fixed for a given component set or need to be estimated from VLE data.  
 
 The bubble point is computed by enforcing the following condition:
 
@@ -121,10 +131,17 @@ The bubble point is computed by enforcing the following condition:
 
 Activity Coefficient Model - Wilson
 -----------------------------------
-The activity coefficient for component :math:`i` is computed using the following equations when using the Wilson model:
+The activity coefficient for component :math:`i` is computed using the following equations when using the Wilson model [3]:
 
 .. math:: log_e{\gamma_i} = \frac{\sum_j{x_j\tau_jG_{ji}}}{\sum_kx_kG_{ki}} + \sum_j\frac{x_jG_{ij}}{\sum_kx_kG_{kj}}\lbrack\tau_{ij} - \frac{\sum_mx_m\tau_{mj}G_{mj}}{\sum_kx_kG_{kj}}\rbrack
 .. math:: G_{ij}=\exp({-\alpha_{ij}\tau_{ij}})
+
+
+where :math:`\alpha_{ij}` and :math:`\tau_{ij}` are NRTL model specific variables that either need to be fixed for a given component set or need to be estimated from VLE data.  
+
+The bubble point is computed by enforcing the following condition:
+
+.. math:: \sum_i{\lbrack z_{i}p^{sat}_{i}(T_{bubble})\nu_{i}}\rbrack-P=0
 
 List of Variables
 -----------------
