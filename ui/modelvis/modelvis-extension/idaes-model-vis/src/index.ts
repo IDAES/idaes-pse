@@ -9,8 +9,10 @@ import { Widget } from '@phosphor/widgets';
 import 'jquery';
 import 'lodash';
 import 'backbone';
-import {dia} from 'jointjs';
-import {shapes} from 'jointjs';
+//import {dia} from 'jointjs';
+//import {shapes} from 'jointjs';
+//import * as standard from 'jointjs/src/shapes/standard.mjs';
+import * as joint from 'jointjs';
 
 import '../style/index.css';
 import '../style/joint.css';
@@ -66,13 +68,15 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     somelink.innerHTML = "something";
     this.myholder.appendChild(somelink);
 
-    var graph = new dia.Graph;
+    var standard = joint.shapes.standard;
+    var graph = new joint.dia.Graph([], { cellNamespace: { standard } });
 
     console.log("before paper");
 
-    new dia.Paper({
+    new joint.dia.Paper({
                     el: this.myholder,
                     model: graph,
+                    cellViewNamespace: { standard },
                     width: 1000,
                     height: 1000,
                     gridSize: 1
@@ -81,7 +85,7 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     console.log("after paper");
     graph.fromJSON(data);
 
-	var rect = new shapes.standard.Rectangle();
+	var rect = new joint.shapes.standard.Rectangle();
     rect.position(100, 30);
     rect.resize(100, 40);
     rect.attr({
@@ -95,16 +99,16 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     });
 	rect.addTo(graph);
 
-    const image = document.createElement('div');
-    image.className = 'mixer';
-
-	var testimage = new shapes.standard.Image();
-    testimage.position(100, 150);
-
-    testimage.resize(100, 100);
-    testimage.attr('image/xlinkHref', image);
-    //testimage.markup = [{"tagName": "image", "selector": "image"}];
-    testimage.addTo(graph);
+//    const image = document.createElement('div');
+//    image.className = 'mixer';
+//
+//	var testimage = new joint.shapes.standard.Image();
+//    testimage.position(100, 150);
+//
+//    testimage.resize(100, 100);
+//    testimage.attr('image/xlinkHref', image);
+//    //testimage.markup = [{"tagName": "image", "selector": "image"}];
+//    testimage.addTo(graph);
 
 
     console.log("after graph load");
