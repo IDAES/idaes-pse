@@ -19,6 +19,20 @@ __author__ = "John Eslick"
 import pyomo.environ as pyo
 import matplotlib.pyplot as plt
 
+def stitch(*args):
+    """
+    Combine time-indexed Pyomo component values from different models into one
+    combined time set.  This allows you to use multiple models to simulation
+    sections of the time domain, and plot them all together.
+    """
+    l = []
+    for v in args:
+        if isinstance(v, pyo.Set):
+            l += [t for t in v]
+        else:
+            l += [pyo.value(v[t]) for t in v]
+    return l
+
 def plot_time_dependent(time, y, ylabel, xlabel="time (s)", title="",
                         legend=None):
     """
@@ -26,7 +40,7 @@ def plot_time_dependent(time, y, ylabel, xlabel="time (s)", title="",
 
     Args:
         time (ContinuousSet): Time index set
-        y (Var, Expression, Reference, or list of): Quantity to plot
+        y (list-like of Var, Expression, Reference, or float): Quantity to plot
             indexed only by time. If you want to plot something that is not
             indexed as required, you can create a Pyomo Reference with the
             correct indexing.  You can plot multiple quntities by providing a
@@ -34,20 +48,17 @@ def plot_time_dependent(time, y, ylabel, xlabel="time (s)", title="",
         xlabel (str): X-axis label
         ylabel (str): Y-axis label
         title (str): Plot title
-        legend (list of str): Legend string for each y
+        legend (list of str): Legend string for each y,
+        float =
 
     Returns:
         None
     """
-    if isinstance(y, (tuple, list)):
-        n = len(y)
-        yn = []
-        for z in y:
-            yn.append([pyo.value(z[t]) for t in time])
-        y = yn
-    else:
-        n = 1
-        y = ([pyo.value(y[t]) for t in time],)
+    n = len(y)
+    for i, z in enumerate(y):
+        if isinstance(z, (list, tuple)):
+            continue # don't need to convert this, because already a list
+        y[i] = [pyo.value(z[t]) for t in time]
 
     for i in range(n):
         plt.plot(time, y[i])

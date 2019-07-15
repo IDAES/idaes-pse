@@ -48,7 +48,14 @@ class PIDBlockData(ProcessBlockData):
         domain=float,
         description="Output lower limit",
         doc="The lower limit for the controller output, default=0"))
-    # other options can be added, but this cvers the bare minimum
+    CONFIG.declare("calculate_initial_integral", ConfigValue(
+        default=True,
+        domain=bool,
+        description="Calculate the initial integral term value if true, "
+                    " otherwise provide a variable err_i0, which can be fixed",
+        doc="Calculate the initial integral term value if true, otherwise"
+            " provide a variable err_i0, which can be fixed, default=True"))
+    # other options can be added, but this covers the bare minimum
 
     def build(self):
         """
@@ -68,6 +75,13 @@ class PIDBlockData(ProcessBlockData):
         self.gain = pyo.Var(time_set, doc="Controller gain")
         self.time_i = pyo.Var(time_set, doc="Integral time")
         self.time_d = pyo.Var(time_set, doc="Derivative time")
+        # Make the initial derivative term a variable so you can set it. This
+        # should let you carry on from the end of another time period
+        self.err_d0 = pyo.Var(doc="Initial derivative term", initialize=0)
+        self.err_d0.fix()
+        if not self.config.calculate_initial_integral:
+            self.err_i0 = pyo.Var(doc="Initial integral term", initialize=0)
+            self.err_i0.fix()
         # Make refernces to the output and measured variables
         self.pv = pyo.Reference(self.config.pv) # No duplicate
         self.output = pyo.Reference(self.config.output) # No duplicate
@@ -93,7 +107,7 @@ class PIDBlockData(ProcessBlockData):
         @self.Expression(time_set, doc="Derivative error.")
         def err_d(b, t):
             if t == t0:
-                return 0
+                return self.err_d0
             else:
                 return (b.dterm[t] - b.dterm[time_set.prev(t)])\
                        /(t - time_set.prev(t))
@@ -101,19 +115,17 @@ class PIDBlockData(ProcessBlockData):
         # solving easier. This calculates the initial integral error to line up
         # with the initial output value, keeps the controller from initially
         # jumping.
-        @self.Expression(doc="Initial integral error")
-        def err_i0(b):
-            return b.time_i[t0]*(b.output[0] - b.gain[t0]*b.pterm[t0] -
-                                b.gain[t0]*b.time_d[t0]*b.err_d[t0])/b.gain[0]
+        if self.config.calculate_initial_integral:
+            @self.Expression(doc="Initial integral error")
+            def err_i0(b):
+                return b.time_i[t0]*(b.output[0] - b.gain[t0]*b.pterm[t0]\
+                       - b.gain[t0]*b.time_d[t0]*b.err_d[t0])/b.gain[t0]
         # integral error
         @self.Expression(time_set, doc="Integral error")
         def err_i(b, t_end):
-            if t_end == t0:
-                return b.err_i0
-            else:
-                return b.err_i0 + sum((b.iterm[t] + b.iterm[time_set.prev(t)])\
-                                      *(t - time_set.prev(t))/2.0
-                                    for t in time_set if t <= t_end and t > t0)
+            return b.err_i0 + sum((b.iterm[t] + b.iterm[time_set.prev(t)])
+                                   *(t - time_set.prev(t))/2.0
+                                  for t in time_set if t <= t_end and t > t0)
         # Calculate the unconstrainted contoller output
         @self.Expression(time_set, doc="Unconstrained contorler output")
         def unconstrained_output(b, t):
