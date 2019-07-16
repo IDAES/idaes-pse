@@ -84,24 +84,26 @@ The fugacity of the vapor and liquid phase is defined as follows:
 
 The equilibrium constraint is written as a generic constraint such that it can be extended easily for non-ideal gases and liquids. As this property package only supports an ideal gas, the fugacity coefficient (:math:`\phi_{i}`) for the vapor phase is 1 and hence the expression reduces to :math:`y_{i}P`. For the liquid phase, if the ideal option is selected then the activity coefficient (:math:`\nu_{i}`) is 1. If an activity coefficient model is selected then corresponding constraints are added to compute the activity coefficient. 
 
-Typically, the flash caluclations are computed at a given temperature, :math:`T`. However, the flash calculations become trivial if the given conditions do not fall in the two phase region. For simulation only studies, the user may know a priori the condition of the stream but when the same set of equations are used for optimization, there is a high probablity that the specifications can transcend the phase envelope and hence the flash equations included may be trivial in the single phase region (i.e. liquid or vapor only). To circumvent this problem, property packages in IDAES that support VLE will compute the flash calculations at an "equivalent" temperature :math:`T_{eq}`. The equivalent temperature is computed as follows:
+Typically, the flash calculations are computed at a given temperature, :math:`T`. However, the flash calculations become trivial if the given conditions do not fall in the two phase region. For simulation only studies, the user may know a priori the condition of the stream but when the same set of equations are used for optimization, there is a high probablity that the specifications can transcend the phase envelope and hence the flash equations included may be trivial in the single phase region (i.e. liquid or vapor only). To circumvent this problem, property packages in IDAES that support VLE will compute the flash calculations at an "equilibrium" temperature :math:`T_{eq}`. The equilibrium temperature is computed as follows:
+
 .. math:: T_{1} = max(T_{bubble}, T) 
 .. math:: T_{eq} = min(T_{1}, T_{dew})
 
-where :math:`T_[eq}` is the equilibrium temperature at which flash calculations are computed, :math:`T` is the stream temperature, :math:`T_{1}` is the intermediate temperature variable, :math:`T_{bubble}` is the bubble point temperature of mixture, and :math:`T_{dew}` is the dew point temperature of the mixture. Note that, in the above equations, approximations are used for the max and min functions as follows:
-.. math:: T_{1} = 0.5(T + T_{bubble} + \sqrt((T-T_{bubble})^2 + \epsilon_{1}^2))
-.. math:: T_{eq} = 0.5(T_{1} + T_{dew} - \sqrt((T-T_{dew})^2 + \epsilon_{2}^2))
+where :math:`T_{eq}` is the equilibrium temperature at which flash calculations are computed, :math:`T` is the stream temperature, :math:`T_{1}` is the intermediate temperature variable, :math:`T_{bubble}` is the bubble point temperature of mixture, and :math:`T_{dew}` is the dew point temperature of the mixture. Note that, in the above equations, approximations are used for the max and min functions as follows:
 
-where :math:`\epsilon_1` and :math:`\epsilon_2` are smoothing parameters(mutable). The default values are 0.01 and 0.0005 respectively. It is recommended that :math:`\epsilon_1` > :math:`\epsilon_2`. Please refer to reference 4 for more details. 
+.. math:: T_{1} = 0.5{[T + T_{bubble} + \sqrt{(T-T_{bubble})^2 + \epsilon_{1}^2}]}
+.. math:: T_{eq} = 0.5{[T_{1} + T_{dew} - \sqrt{(T-T_{dew})^2 + \epsilon_{2}^2}]}
+
+where :math:`\epsilon_1` and :math:`\epsilon_2` are smoothing parameters(mutable). The default values are 0.01 and 0.0005 respectively. It is recommended that :math:`\epsilon_1` > :math:`\epsilon_2`. Please refer to reference 4 for more details. Therefore, it can be seen that if the stream temperature is less than that of the bubble point temperature, the VLE calucalations will be computed at the bubble point. Similarly, if the stream temperature is greater than the dew point temperature, then the VLE calculations are computed at the dew point temperature. For all other conditions, the equilibrium calcualtions will be computed at the actual temperature. 
 
 Additional constraints are included in the model to compute the thermodynamic properties such as component saturation pressure, enthalpy, specific heat capacity. Please note that, these constraints are added only if the variable is called for when building the model. This eliminates adding unnecessary constraints to compute properties that are not needed in the model. 
 
 The saturation or vapor pressure (``pressure_sat``) for component :math:`i` is computed using the following correlation[1]:
 
 .. math:: \log_e\frac{P^{sat}}{P_c} = \frac{Ax+Bx^{1.5}+Cx^3+Dx^6}{1-x}
-.. math:: x=1-\frac{T}{T_c}
+.. math:: x=1-\frac{T_{eq}}{T_c}
 
-where :math:`P_c` is the critical pressure, :math:`T_c` is the critical temperature of the component and :math:`T` is the tempertaure at which the saturation pressure is computed. Please note that when using this expression, :math:`T<T_{c}` is required and when violated it results in a negative number raised to the power of a fraction. When using the smooth flash formulation, the saturation pressure is computed at the "equilibrium" temperature. This ensures that the VLE constraints are satusfied even when a single phase is detected. 
+where :math:`P_c` is the critical pressure, :math:`T_c` is the critical temperature of the component and :math:`T_{eq}` is the equilibrium temperature at which the saturation pressure is computed. Please note that when using this expression, :math:`T_{eq}<T_{c}` is required and when violated it results in a negative number raised to the power of a fraction. 
 
 The specific enthalpy (``enthalpy_comp_liq``) for component :math:`i` is computed using the following expression for the liquid phase:
 
