@@ -135,11 +135,11 @@ Activity Coefficient Model - Wilson
 -----------------------------------
 The activity coefficient for component :math:`i` is computed using the following equations when using the Wilson model [3]:
 
-.. math:: log_e{\gamma_i} = \frac{\sum_j{x_j\tau_jG_{ji}}}{\sum_kx_kG_{ki}} + \sum_j\frac{x_jG_{ij}}{\sum_kx_kG_{kj}}\lbrack\tau_{ij} - \frac{\sum_mx_m\tau_{mj}G_{mj}}{\sum_kx_kG_{kj}}\rbrack
-.. math:: G_{ij}=\exp({-\alpha_{ij}\tau_{ij}})
+.. math:: log_e{\gamma_i} = 1 - log_e{\sum_jx_jG_{ji}} - \sum_j\frac{x_jG_{ij}}{\sum_kx_kG_{kj}}
+.. math:: G_{ij}=(v_{i}/v_{j})\exp(-\tau_{ij})
 
 
-where :math:`\alpha_{ij}` and :math:`\tau_{ij}` are NRTL model specific variables that either need to be fixed for a given component set or need to be estimated from VLE data.  
+where :math:`v_{i}` is the molar volume of component :math:`i` and :math:`\tau_{ij}` is the binary interaction parameter. These are Wilson model specific variables that either need to be fixed for a given component set or need to be estimated from VLE data.   
 
 The bubble point is computed by enforcing the following condition:
 
