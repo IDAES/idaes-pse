@@ -138,7 +138,7 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
     m.fs.valve_2.valve_opening.fix(1)
     m.fs.tank.heat_duty.fix(0)
     m.fs.tank.control_volume.volume.fix(2.0)
-    m.fs.ctrl.gain.fix(-1e-6)
+    m.fs.ctrl.gain.fix(1e-6)
     m.fs.ctrl.time_i.fix(0.1)
     m.fs.ctrl.time_d.fix(0.1)
     m.fs.ctrl.setpoint.fix(3e5)

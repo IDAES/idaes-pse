@@ -88,11 +88,17 @@ class PIDBlockData(ProcessBlockData):
         # Create an expression for error from setpoint
         @self.Expression(time_set, doc="Setpoint error")
         def err(b, t):
-            return self.pv[t] - self.setpoint[t]
-        # Use references to allow the some future configuration
-        self.pterm = pyo.Reference(self.pv)
-        self.dterm = pyo.Reference(self.pv)
-        self.iterm = pyo.Reference(self.err)
+            return  self.setpoint[t] - self.pv[t]
+        # Use expressions to allow the some future configuration
+        @self.Expression(time_set)
+        def pterm(b,t):
+            return -self.pv[t]
+        @self.Expression(time_set)
+        def dterm(b,t):
+            return -self.pv[t]
+        @self.Expression(time_set)
+        def iterm(b,t):
+            return self.err[t]
         # Output limits parameter
         self.limits = pyo.Param(["l", "h"], mutable=True,
             doc="controller output limits",
