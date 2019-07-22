@@ -3,9 +3,9 @@ from pyomo.network.port import SimplePort
 from pyomo.network.arc import SimpleArc
 from collections import defaultdict
 import json
-from ui import icon_mapping
+from idaes.dmf.ui import icon_mapping
 
-class ModelSerializer:
+class FlowsheetSerializer:
     def __init__(self):
         self.unit_models = {}
         self.arcs = []
