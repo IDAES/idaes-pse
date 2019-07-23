@@ -1,7 +1,7 @@
 This is a ui component to the IDAES project. The FlowsheetSerializer module will serialize a flowsheet into a .idaes.vis file which this extension will render in JupyterLab.
 
 Install
-From the top of the git repo
+From the top of your git clone
 Follow all instructions to import and install idaes
 `conda install -c conda-forge nodejs jupyterlab`
 `cd ui/modelvis/idaes-model-vis`
