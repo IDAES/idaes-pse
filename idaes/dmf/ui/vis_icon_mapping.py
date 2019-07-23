@@ -1,4 +1,4 @@
-{
+icon_mapping = {
     "_ScalarMixer": "mixer.svg",
     "_ScalarHeater": "heater_1.svg",
     "_ScalarStoichiometricReactor": "reactor_s.svg",

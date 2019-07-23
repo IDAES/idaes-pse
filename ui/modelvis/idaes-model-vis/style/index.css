@@ -1,0 +1,24 @@
+/*
+ * Specify some variable names for local icons
+ * JupyterLab's build process will generate some static url for each
+ * eg., --idaes-mixer-icon: url(/static/lab/47e10492ad6fae9175cdad835b1efc5d.svg);
+ * These values can later be referenced like var(--idaes-mixer-icon)
+ * We can use these to replace hrefs with the appropriate static urls
+ */
+:root {
+  --idaes-compressor-2-flipped-icon: url('icons/compressor_2_flipped.svg');
+  --idaes-compressor-2-icon: url('icons/compressor_2.svg');
+  --idaes-flash-flipped-icon: url('icons/flash_flipped.svg');
+  --idaes-flash-icon: url('icons/flash.svg');
+  --idaes-heat-exchanger-3-icon: url('icons/heat_exchanger_3.svg');
+  --idaes-heater-1-flipped-icon: url('icons/heater_1_flipped.svg');
+  --idaes-heater-1-icon: url('icons/heater_1.svg');
+  --idaes-horizontal-flash-icon: url('icons/horizontal_flash.svg');
+  --idaes-mixer-flipped-icon: url('icons/mixer_flipped.svg');
+  --idaes-mixer-icon: url('icons/mixer.svg');
+  --idaes-pentagon-flipped-icon: url('icons/pentagon_flipped.svg');
+  --idaes-pentagon-icon: url('icons/pentagon.svg');
+  --idaes-reactor-s-icon: url('icons/reactor_s.svg');
+  --idaes-splitter-flipped-icon: url('icons/splitter_flipped.svg');
+  --idaes-splitter-icon: url('icons/splitter.svg');
+}
