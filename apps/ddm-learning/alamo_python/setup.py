@@ -11,7 +11,7 @@ def warn(s):
 
 
 kwargs = dict(
-    name='alamopy',
+    name='idaes-alamopy',
     packages=find_packages(),
     install_requires=[],
     extras_require={},
