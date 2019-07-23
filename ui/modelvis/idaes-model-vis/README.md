@@ -14,6 +14,7 @@ This can be run from whatever directory you wish. JupyterLab will use this as yo
 `jupyter lab`
 
 To use
+Inside of a jupyter notebook or a python file
 Create your model
 `from idaes.dmf.ui.flowsheet_serializer import FlowsheetSerializer`
 `flowsheet_serializer = FlowsheetSerializer()`
