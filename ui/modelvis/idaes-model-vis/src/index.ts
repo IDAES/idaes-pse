@@ -114,20 +114,6 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     utils.remapIcons(data, 'forDisplay');
     graph.fromJSON(data);
 
-    var rect = new joint.shapes.standard.Rectangle();
-    rect.position(100, 30);
-    rect.resize(100, 40);
-    rect.attr({
-      body: {
-        fill: 'blue'
-      },
-      label: {
-        text: 'Hello',
-        fill: 'white'
-      }
-    });
-    rect.addTo(graph);
-
     function saveFile(evt: MouseEvent) {
       let json = graph.toJSON();
       utils.remapIcons(json, 'forStorage');
