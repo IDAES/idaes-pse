@@ -523,26 +523,26 @@ class TestSaponification_crossflow(object):
         assert pytest.approx(1e-3, abs=1e-6) == \
             value(sapon.fs.unit.outlet_2.flow_vol[0])
 
-        assert pytest.approx(55388.0, 1e-3) == value(
+        assert pytest.approx(55388.0, rel=1e-3) == value(
                 sapon.fs.unit.outlet_1.conc_mol_comp[0, "H2O"])
-        assert pytest.approx(100.0, 1e-3) == value(
+        assert pytest.approx(100.0, rel=1e-3) == value(
                 sapon.fs.unit.outlet_1.conc_mol_comp[0, "NaOH"])
-        assert pytest.approx(100.0, 1e-3) == value(
+        assert pytest.approx(100.0, rel=1e-3) == value(
                 sapon.fs.unit.outlet_1.conc_mol_comp[0, "EthylAcetate"])
         assert pytest.approx(0.0, abs=1e-2) == value(
                 sapon.fs.unit.outlet_1.conc_mol_comp[0, "SodiumAcetate"])
         assert pytest.approx(0.0, abs=1e-2) == value(
                 sapon.fs.unit.outlet_1.conc_mol_comp[0, "Ethanol"])
 
-        assert pytest.approx(55388.0, 1e-3) == value(
+        assert pytest.approx(55388.0, rel=1e-3) == value(
                 sapon.fs.unit.outlet_2.conc_mol_comp[0, "H2O"])
-        assert pytest.approx(100.0, 1e-3) == value(
+        assert pytest.approx(100.0, rel=1e-3) == value(
                 sapon.fs.unit.outlet_2.conc_mol_comp[0, "NaOH"])
-        assert pytest.approx(100.0, 1e-3) == value(
+        assert pytest.approx(100.0, rel=1e-3) == value(
                 sapon.fs.unit.outlet_2.conc_mol_comp[0, "EthylAcetate"])
-        assert pytest.approx(0.0, abs=1e-2) == value(
+        assert pytest.approx(0.0, abs=1e-3) == value(
                 sapon.fs.unit.outlet_2.conc_mol_comp[0, "SodiumAcetate"])
-        assert pytest.approx(0.0, abs=1e-2) == value(
+        assert pytest.approx(0.0, abs=1e-3) == value(
                 sapon.fs.unit.outlet_2.conc_mol_comp[0, "Ethanol"])
 
         assert pytest.approx(301.3, abs=1e-1) == \
