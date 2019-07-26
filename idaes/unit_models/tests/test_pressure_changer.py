@@ -45,6 +45,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock)
+from idaes.core.util.exceptions import BalanceTypeNotSupportedError
 
 
 # -----------------------------------------------------------------------------
@@ -57,39 +58,129 @@ def test_ThermodynamicAssumption():
     assert len(ThermodynamicAssumption) == 4
 
 
-def test_config():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+class TestPressureChanger(object):
+    def test_config(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = PhysicalParameterTestBlock()
+        m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.unit = PressureChanger(default={"property_package": m.fs.properties})
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties})
 
-    # Check unit config arguments
-    assert len(m.fs.unit.config) == 10
+        # Check unit config arguments
+        assert len(m.fs.unit.config) == 10
 
-    assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
-    assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
-    assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
-    assert not m.fs.unit.config.has_phase_equilibrium
-    assert m.fs.unit.config.compressor
-    assert m.fs.unit.config.thermodynamic_assumption == \
-        ThermodynamicAssumption.isothermal
-    assert m.fs.unit.config.property_package is m.fs.properties
+        assert m.fs.unit.config.material_balance_type == \
+            MaterialBalanceType.componentPhase
+        assert m.fs.unit.config.energy_balance_type == \
+            EnergyBalanceType.enthalpyTotal
+        assert m.fs.unit.config.momentum_balance_type == \
+            MomentumBalanceType.pressureTotal
+        assert not m.fs.unit.config.has_phase_equilibrium
+        assert m.fs.unit.config.compressor
+        assert m.fs.unit.config.thermodynamic_assumption == \
+            ThermodynamicAssumption.isothermal
+        assert m.fs.unit.config.property_package is m.fs.properties
 
+    def test_dynamic_build(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": True})
 
-def test_dynamic_build():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": True})
+        m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.properties = PhysicalParameterTestBlock()
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties})
 
-    m.fs.unit = PressureChanger(default={"property_package": m.fs.properties})
+        assert hasattr(m.fs.unit, "volume")
 
-    assert hasattr(m.fs.unit, "volume")
+    def test_pump(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.pump})
+
+        assert isinstance(m.fs.unit.fluid_work_calculation, Constraint)
+
+    def test_adiabatic(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.adiabatic})
+
+        assert isinstance(m.fs.unit.adiabatic, Constraint)
+
+    def test_isentropic_comp_phase_balances(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+                "material_balance_type": MaterialBalanceType.componentPhase})
+
+        assert isinstance(m.fs.unit.isentropic_material, Constraint)
+        assert len(m.fs.unit.isentropic_material) == 4
+
+    def test_isentropic_comp_total_balances(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+                "material_balance_type": MaterialBalanceType.componentTotal})
+
+        assert isinstance(m.fs.unit.isentropic_material, Constraint)
+        assert len(m.fs.unit.isentropic_material) == 2
+
+    def test_isentropic_total_balances(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        with pytest.raises(BalanceTypeNotSupportedError):
+            m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+                "material_balance_type": MaterialBalanceType.total})
+
+    def test_isentropic_total_element_balances(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        with pytest.raises(BalanceTypeNotSupportedError):
+            m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+                "material_balance_type": MaterialBalanceType.elementTotal})
+
+    def test_isentropic_material_balances_none(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = PhysicalParameterTestBlock()
+
+        with pytest.raises(BalanceTypeNotSupportedError):
+            m.fs.unit = PressureChanger(default={
+                "property_package": m.fs.properties,
+                "thermodynamic_assumption": ThermodynamicAssumption.isentropic,
+                "material_balance_type": MaterialBalanceType.none})
 
 
 # -----------------------------------------------------------------------------
