@@ -106,7 +106,9 @@ class StateTestBlockData(StateBlockData):
         self.test_var = Var(initialize=1)
         self.pressure = Var(initialize=1e5)
         self.temperature = Var(initialize=300)
+
         self.enth_mol = Var(initialize=10000)
+
         self.gibbs_mol_phase_comp = Var(self._params.phase_list,
                                         self._params.component_list,
                                         initialize=50)
@@ -136,7 +138,8 @@ class StateTestBlockData(StateBlockData):
             return MaterialFlowBasis.other
 
     def define_state_vars(self):
-        return {"temperature": self.temperature,
+        return {"component_flow": self.flow_mol_phase_comp,
+                "temperature": self.temperature,
                 "pressure": self.pressure}
 
 
