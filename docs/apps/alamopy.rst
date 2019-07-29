@@ -158,7 +158,7 @@ To add the basis constraints to alamopy, you can use the following methods.
   addBasisConstraints([[3,1,"NMT",1]])
 
 ALAMOPY Examples
--------------
+----------------
 
 Three examples are included with ALMAOPY. These examples demonstrate different use cases, and provide a template for utilizing user-defined mechanisms.
 

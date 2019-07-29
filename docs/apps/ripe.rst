@@ -38,7 +38,7 @@ By default, one file will be generated
 * riperesults.txt - a file containing the selected reactions and parameter estimates
 
 Reaction Stiochiometry and Mechanism Specification
------------------------------------------
+--------------------------------------------------
 
 Considered reaction stiochiometries are provided through keyword arguments.
 
