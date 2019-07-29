@@ -49,6 +49,7 @@ This results in the following basis functions:
      * Trinomial functions = (x1*x2*x3), (x1*x2*x3)^2, (x1*x2*x3)^3
 
 * **ratiopower**: list of ratio powers. For example
+
 .. code-block:: python
 
   ratiopower = (1,2,3)
