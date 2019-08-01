@@ -33,9 +33,10 @@ from pyomo.network import Arc
 from idaes.unit_models.power_generation import SteamValve
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.unit_models import Heater
-from idaes.dynamic import PIDBlock, plot_time_dependent, stitch
 from idaes.property_models import iapws95
 from idaes.core.util import copy_port_values as _set_port
+from idaes.core.util.plot import stitch_dynamic
+from idaes.dynamic import PIDBlock
 
 solver_available = pyo.SolverFactory('ipopt').available()
 prop_available = iapws95.iapws95_available()
@@ -230,9 +231,9 @@ def test_pid():
     assert s2_valve == pytest.approx(
         pyo.value(m_dynamic2.fs.valve_1.valve_opening[t]), abs=5e-3)
 
-    stitch_time = stitch(m_dynamic.fs.time, m_dynamic2.fs.time)
-    stitch_valve = stitch(m_dynamic.fs.valve_1.valve_opening,
-                          m_dynamic2.fs.valve_1.valve_opening)
+    stitch_time = stitch_dynamic(m_dynamic.fs.time, m_dynamic2.fs.time)
+    stitch_valve = stitch_dynamic(m_dynamic.fs.valve_1.valve_opening,
+                                  m_dynamic2.fs.valve_1.valve_opening)
 
     # test the stitch function used to plot time dependent vairiables across
     # the two models
