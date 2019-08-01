@@ -6,9 +6,9 @@ the package supports an ideal liquid or a non-ideal liquid using an activity
 coefficient model. To compute the activity coefficient, the package currently supports the Non Random Two Liquid Model (NRTL) or the
 Wilson model. Therefore, this property package supports the following combinations for gas-liquid mixtures for VLE calculations:
 
-1. Ideal - Ideal
-2. Ideal - NRTL
-3. Ideal - Wilson
+1. Ideal (vapor) - Ideal (liquid)
+2. Ideal (vapor) - NRTL (liquid)
+3. Ideal (vapor) - Wilson (liquid)
 
 **Flow basis**: Molar
 
@@ -48,7 +48,7 @@ When instantiating the parameter block that uses this particular state block, 2 
 	</ul>
 	</body>
 
-The ``valid_phase`` argument denotes the phases a user expects for a given set of inlet conditions. For example, if the user knows with certainty that the valid phase will be only Liquid or Vapor, then it is best not include the complex flash equilibrium constraints in the model. If the user does not specify any option, then the package defaults to a 2 phase assumption meaning that the phase equilibrium will be computed.
+The ``valid_phase`` argument denotes the valid phases for a given set of inlet conditions. For example, if the user knows a priori that the it will only be a single phase (for example liquid only), then it is best not to include the complex flash equilibrium constraints in the model. If the user does not specify any option, then the package defaults to a 2 phase assumption meaning that the constraints to compute the phase equilibrium will be computed.
 
 The ``activity_coeff_model`` denotes the liquid phase assumption to be used. If the user does not specify any option, then the package defaults to asuming an ideal liquid assumption.
 
@@ -61,9 +61,9 @@ The number of degrees of freedom that need to be fixed to yield a square problem
    :header: "Property Model Type", "State variables", "Additional Variables", "Total number of variables"
    :widths: 25, 15, 10, 30
 
-   "Ideal-Ideal", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac``", "None", "3 + :math:`N_{c}`"
-   "Ideal-NRTL", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac``", "``alpha``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
-   "Ideal-Wilson", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac``", "``vol_mol_comp``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
+   "Ideal (vapor) - Ideal (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac``", "None", "3 + :math:`N_{c}`"
+   "Ideal (vapor) - NRTL (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac``", "``alpha``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
+   "Ideal (vapor) - Wilson (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac``", "``vol_mol_comp``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
 
 Please refer to reference 3 for recommended values for ``tau``.
 
@@ -100,7 +100,7 @@ Additional constraints are included in the model to compute the thermodynamic pr
 
 The saturation or vapor pressure (``pressure_sat``) for component :math:`i` is computed using the following correlation[1]:
 
-.. math:: \log_e\frac{P^{sat}}{P_c} = \frac{Ax+Bx^{1.5}+Cx^3+Dx^6}{1-x}
+.. math:: \log\frac{P^{sat}}{P_c} = \frac{Ax+Bx^{1.5}+Cx^3+Dx^6}{1-x}
 .. math:: x=1-\frac{T_{eq}}{T_c}
 
 where :math:`P_c` is the critical pressure, :math:`T_c` is the critical temperature of the component and :math:`T_{eq}` is the equilibrium temperature at which the saturation pressure is computed. Please note that when using this expression, :math:`T_{eq}<T_{c}` is required and when violated it results in a negative number raised to the power of a fraction. 
@@ -118,11 +118,13 @@ The mixture specific enthapies (``enthalpy_liq`` & ``enthalpy_vap``) are compute
 .. math:: H^{liq} =  \sum_i{h_{i}^{liq}x_{i}}
 .. math:: H^{vap} =  \sum_i{h_{i}^{vap}y_{i}}
 
+Please refer to references 1 and 2 to get parameters for different components. 
+
 Activity Coefficient Model - NRTL
 ----------------------------------
 The activity coefficient for component :math:`i` is computed using the following equations when using the Non-Random Two Liquid model [3]:
 
-.. math:: log_e{\gamma_i} = \frac{\sum_j{x_j\tau_jG_{ji}}}{\sum_kx_kG_{ki}} + \sum_j\frac{x_jG_{ij}}{\sum_kx_kG_{kj}}\lbrack\tau_{ij} - \frac{\sum_mx_m\tau_{mj}G_{mj}}{\sum_kx_kG_{kj}}\rbrack
+.. math:: \log{\gamma_i} = \frac{\sum_j{x_j\tau_jG_{ji}}}{\sum_kx_kG_{ki}} + \sum_j\frac{x_jG_{ij}}{\sum_kx_kG_{kj}}\lbrack\tau_{ij} - \frac{\sum_mx_m\tau_{mj}G_{mj}}{\sum_kx_kG_{kj}}\rbrack
 .. math:: G_{ij}=\exp({-\alpha_{ij}\tau_{ij}})
 
 where :math:`\alpha_{ij}` is the non-randomness parameter and :math:`\tau_{ij}` is the binary interaction parameter for the NRTL model. Note that in the IDAES implementation, these are declared as variables that allows for more flexibility and the ability to use these in a parameter estimation problem. These NRTL model specific variables need to be either fixed for a given component set or need to be estimated from VLE data.  
@@ -135,7 +137,7 @@ Activity Coefficient Model - Wilson
 -----------------------------------
 The activity coefficient for component :math:`i` is computed using the following equations when using the Wilson model [3]:
 
-.. math:: log_e{\gamma_i} = 1 - log_e{\sum_jx_jG_{ji}} - \sum_j\frac{x_jG_{ij}}{\sum_kx_kG_{kj}}
+.. math:: \log{\gamma_i} = 1 - \log{\sum_jx_jG_{ji}} - \sum_j\frac{x_jG_{ij}}{\sum_kx_kG_{kj}}
 .. math:: G_{ij}=(v_{i}/v_{j})\exp(-\tau_{ij})
 
 

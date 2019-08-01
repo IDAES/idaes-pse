@@ -899,19 +899,19 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def rule_hl_ig_pc(b, j):
             # 1E3 conversion factor to convert from J/kmol to J/mol
             return self.enthalpy_comp_liq[j] * 1E3 == \
-                ((self._params.CpIG['Liq', j, '5'] / 5) *
+                ((self._params.CpIG['Liq', j, 'E'] / 5) *
                     (self.temperature**5 -
                      self._params.temperature_reference**5)
-                    + (self._params.CpIG['Liq', j, '4'] / 4) *
+                    + (self._params.CpIG['Liq', j, 'D'] / 4) *
                       (self.temperature**4 -
                        self._params.temperature_reference**4)
-                    + (self._params.CpIG['Liq', j, '3'] / 3) *
+                    + (self._params.CpIG['Liq', j, 'C'] / 3) *
                       (self.temperature**3 -
                        self._params.temperature_reference**3)
-                    + (self._params.CpIG['Liq', j, '2'] / 2) *
+                    + (self._params.CpIG['Liq', j, 'B'] / 2) *
                       (self.temperature**2 -
                        self._params.temperature_reference**2)
-                    + self._params.CpIG['Liq', j, '1'] *
+                    + self._params.CpIG['Liq', j, 'A'] *
                       (self.temperature - self._params.temperature_reference))
         self.eq_hl_ig_pc = Constraint(self._params.component_list,
                                       rule=rule_hl_ig_pc)
@@ -933,19 +933,19 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         def rule_hv_ig_pc(b, j):
             return self.enthalpy_comp_vap[j] == self._params.dh_vap[j] + \
-                ((self._params.CpIG['Vap', j, '5'] / 5) *
+                ((self._params.CpIG['Vap', j, 'E'] / 5) *
                     (self.temperature**5 -
                      self._params.temperature_reference**5)
-                    + (self._params.CpIG['Vap', j, '4'] / 4) *
+                    + (self._params.CpIG['Vap', j, 'D'] / 4) *
                       (self.temperature**4 -
                        self._params.temperature_reference**4)
-                    + (self._params.CpIG['Vap', j, '3'] / 3) *
+                    + (self._params.CpIG['Vap', j, 'C'] / 3) *
                       (self.temperature**3 -
                        self._params.temperature_reference**3)
-                    + (self._params.CpIG['Vap', j, '2'] / 2) *
+                    + (self._params.CpIG['Vap', j, 'B'] / 2) *
                       (self.temperature**2 -
                        self._params.temperature_reference**2)
-                    + self._params.CpIG['Vap', j, '1'] *
+                    + self._params.CpIG['Vap', j, 'A'] *
                       (self.temperature -
                        self._params.temperature_reference))
         self.eq_hv_ig_pc = Constraint(self._params.component_list,
