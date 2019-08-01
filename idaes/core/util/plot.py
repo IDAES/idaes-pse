@@ -19,7 +19,7 @@ __author__ = "John Eslick"
 import pyomo.environ as pyo
 import matplotlib.pyplot as plt
 
-def stitch(*args):
+def stitch_dynamic(*args):
     """
     Combine time-indexed Pyomo component values from different models into one
     combined time set. This allows you to use multiple models to simulate
