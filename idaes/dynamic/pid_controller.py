@@ -65,7 +65,11 @@ class PIDBlockData(ProcessBlockData):
     #           the controller output is at a bound. This can cause trouble,
     #           and ways to deal with it should be implemented
     # TODO<jce> Implement way to better deal with the integral term for setpoint
-    #           changes (see bumpless)
+    #           changes (see bumpless).  I need to look into the more, but this
+    #           would basically use the calculation like the one already used
+    #           for the first time point to calculate integral error to keep the
+    #           controller output from suddenly jumping in response to a set
+    #           point change or transition from manual to automatic control.
     # TODO<jce> Implement the integral term using variables.  The integral
     #           expressions are nice because initialization is not required and
     #           they reduce the total number of variables, but they there is an
