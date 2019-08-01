@@ -43,12 +43,12 @@ def stitch_dynamic(*args):
 
 def plot_dynamic(time, y, ylabel, xlabel="time (s)", title=None, legend=None):
     """
-    Plot time dependent varaibles with pyplot.
+    Plot time dependent variables with pyplot.
 
     Args:
         time (ContinuousSet or list-like): Time index set
         y (list-like of list-likes of Var, Expression, Reference, or float):
-            List of quntities to plot (multiple quantities can be ploted). Each
+            List of quantities to plot (multiple quantities can be plotted). Each
             quantity in the list should be indexed only by time. If you want to
             plot something that is not indexed only by time, you can create a
             Pyomo Reference with the correct indexing.

@@ -56,6 +56,21 @@ class PIDBlockData(ProcessBlockData):
         doc="Calculate the initial integral term value if true, otherwise"
             " provide a variable err_i0, which can be fixed, default=True"))
     # other options can be added, but this covers the bare minimum
+    #
+    # TODO<jce> options for P, PI, and PD, you can currently do PI by setting
+    #           the derivative time to 0, but it would be better not to
+    #           add the derivative term at all if not needed.  PD and P are less
+    #           common, but they exist and should be supported
+    # TODO<jce> Anti-windup the integral term can keep accumulating error when
+    #           the controller output is at a bound. This can cause trouble,
+    #           and ways to deal with it should be implemented
+    # TODO<jce> Implement way to better deal with the integral term for setpoint
+    #           changes (see bumpless)
+    # TODO<jce> Implement the integral term using variables.  The integral
+    #           expressions are nice because initialization is not required and
+    #           they reduce the total number of variables, but they there is an
+    #           integral expression and each time and the later ones contain a
+    #           very large number of terms.
 
     def build(self):
         """
@@ -82,7 +97,7 @@ class PIDBlockData(ProcessBlockData):
         if not self.config.calculate_initial_integral:
             self.err_i0 = pyo.Var(doc="Initial integral term", initialize=0)
             self.err_i0.fix()
-        # Make refernces to the output and measured variables
+        # Make references to the output and measured variables
         self.pv = pyo.Reference(self.config.pv) # No duplicate
         self.output = pyo.Reference(self.config.output) # No duplicate
         # Create an expression for error from setpoint
@@ -105,11 +120,11 @@ class PIDBlockData(ProcessBlockData):
             initialize={
                 "l":self.config.lower,
                 "h":self.config.upper})
-        # Smooth min and max are used to limit output, smoothing parmeter here
+        # Smooth min and max are used to limit output, smoothing parameter here
         self.smooth_eps = pyo.Param(mutable=True, initialize=1e-4,
-            doc="Smoothing parameter for controler output limits")
+            doc="Smoothing parameter for controller output limits")
         # This is ugly, but want integral and derivative error as expressions,
-        # nice implimentation with variables is harder to initialize and solve
+        # nice implementation with variables is harder to initialize and solve
         @self.Expression(time_set, doc="Derivative error.")
         def err_d(b, t):
             if t == t0:
@@ -132,7 +147,7 @@ class PIDBlockData(ProcessBlockData):
             return b.err_i0 + sum((b.iterm[t] + b.iterm[time_set.prev(t)])
                                    *(t - time_set.prev(t))/2.0
                                   for t in time_set if t <= t_end and t > t0)
-        # Calculate the unconstrainted contoller output
+        # Calculate the unconstrainted controller output
         @self.Expression(time_set, doc="Unconstrained contorler output")
         def unconstrained_output(b, t):
             return b.gain[t]*(b.pterm[t] +

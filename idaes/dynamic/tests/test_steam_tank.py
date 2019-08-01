@@ -52,7 +52,6 @@ def _add_inlet_pressure_step(m, time=1, value=6.0e5):
     Returns:
         None
     """
-    # for your ammusement a step cahnge in inlet pressure.
     for t in m.fs.time:
         if t >= time:
             m.fs.valve_1.inlet.pressure[t].fix(value)
@@ -72,7 +71,6 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
     Returns
         (tuple): (ConcreteModel, Solver)
     """
-    # Create the empty model and flowsheet.
     if steady_state:
         fs_cfg = {"dynamic":False}
         model_name = "Steam Tank, Steady State"
@@ -180,13 +178,13 @@ def test_pid():
     # Next create a model for the 0 to 5 sec time period
     m_dynamic, solver = create_model(steady_state=False,
                                      time_set=[0,5], nfe=10, calc_integ=True)
-    # Turn on control and solve since the setpoint is deferent than the
+    # Turn on control and solve since the setpoint is different than the
     # steady-state solution, stuff happens, also pressure step at t=5
     m_dynamic.fs.ctrl.activate()
     m_dynamic.fs.valve_1.valve_opening.unfix()
     m_dynamic.fs.valve_1.valve_opening[0].fix()
     # Add a step change right at the end of the interval, to make sure we can
-    # get a contious solution across the two models
+    # get a continuous solution across the two models
     _add_inlet_pressure_step(m_dynamic, time=4.5, value=5.5e5)
     solver.solve(m_dynamic, tee=True)
     # Now create a model for the 5 to 10 second interval and set the inital
@@ -235,7 +233,7 @@ def test_pid():
     stitch_valve = stitch_dynamic(m_dynamic.fs.valve_1.valve_opening,
                                   m_dynamic2.fs.valve_1.valve_opening)
 
-    # test the stitch function used to plot time dependent vairiables across
+    # test the stitch function used to plot time dependent variables across
     # the two models
     for i, t in enumerate(m_dynamic.fs.time):
         assert t == stitch_time[i]
