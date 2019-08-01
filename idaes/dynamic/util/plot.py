@@ -22,8 +22,16 @@ import matplotlib.pyplot as plt
 def stitch(*args):
     """
     Combine time-indexed Pyomo component values from different models into one
-    combined time set.  This allows you to use multiple models to simulation
+    combined time set. This allows you to use multiple models to simulate
     sections of the time domain, and plot them all together.
+
+    Args:
+        Positional arguments (): Multiple Pyomo components indexed by time, or
+            time sets
+
+    Returns:
+        (list) with the time indexed Pyomo compoent values concatonated for
+            plotting
     """
     l = []
     for v in args:
@@ -33,38 +41,36 @@ def stitch(*args):
             l += [pyo.value(v[t]) for t in v]
     return l
 
-def plot_time_dependent(time, y, ylabel, xlabel="time (s)", title="",
-                        legend=None):
+def plot_dynamic(time, y, ylabel, xlabel="time (s)", title=None, legend=None):
     """
     Plot time dependent varaibles with pyplot.
 
     Args:
-        time (ContinuousSet): Time index set
-        y (list-like of Var, Expression, Reference, or float): Quantity to plot
-            indexed only by time. If you want to plot something that is not
-            indexed as required, you can create a Pyomo Reference with the
-            correct indexing.  You can plot multiple quntities by providing a
-            list or tuple of things to plot.
-        xlabel (str): X-axis label
-        ylabel (str): Y-axis label
-        title (str): Plot title
-        legend (list of str): Legend string for each y,
-        float =
+        time (ContinuousSet or list-like): Time index set
+        y (list-like of list-likes of Var, Expression, Reference, or float):
+            List of quntities to plot (multiple quantities can be ploted). Each
+            quantity in the list should be indexed only by time. If you want to
+            plot something that is not indexed only by time, you can create a
+            Pyomo Reference with the correct indexing.
+        ylabel (str): Y-axis label, required
+        xlabel (str): X-axis label, default = 'time (s)'
+        title (str or None): Plot title, default = None
+        legend (list-like of str or None): Legend string for each y,
+            default = None
 
     Returns:
         None
     """
-    n = len(y)
     for i, z in enumerate(y):
         if isinstance(z, (list, tuple)):
             continue # don't need to convert this, because already a list
         y[i] = [pyo.value(z[t]) for t in time]
-
-    for i in range(n):
-        plt.plot(time, y[i])
+    for q in y:
+        plt.plot(time, q)
     if legend is not None:
         plt.legend(legend)
-    plt.title(title)
+    if title is not None:
+        plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.tight_layout()
