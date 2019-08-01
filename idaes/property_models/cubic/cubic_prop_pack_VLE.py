@@ -356,8 +356,6 @@ class _CubicStateBlock(StateBlock):
                               math.log10(value(blk[k].pressure*1e-5))) -
                              blk[k]._params.antoine[j, '3']))
 
-                print(Tdew0)
-
                 err = 1
                 counter = 0
 
@@ -373,8 +371,6 @@ class _CubicStateBlock(StateBlock):
                                       blk[k]._params.antoine[j, '3'])**2 *
                                     antoine_P(blk[k], j, Tdew0))
                                     for j in blk[k]._params.component_list))
-
-                    print(Tdew0, f, df)
 
                     Tdew1 = Tdew0 - f/df
 
