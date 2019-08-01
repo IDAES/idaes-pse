@@ -635,10 +635,10 @@ class TestMixer(object):
         assert m.fs.mix.inlet_2_state[0].hold_state is True
         assert m.fs.sb[0].hold_state is False
 
-        assert m.fs.sb[0].flow_mol_phase_comp["p1", "c1"].value == 2
-        assert m.fs.sb[0].flow_mol_phase_comp["p1", "c2"].value == 2
-        assert m.fs.sb[0].flow_mol_phase_comp["p2", "c1"].value == 2
-        assert m.fs.sb[0].flow_mol_phase_comp["p2", "c2"].value == 2
+        assert m.fs.sb[0].flow_mol_phase_comp["p1", "c1"].value == 4
+        assert m.fs.sb[0].flow_mol_phase_comp["p1", "c2"].value == 4
+        assert m.fs.sb[0].flow_mol_phase_comp["p2", "c1"].value == 4
+        assert m.fs.sb[0].flow_mol_phase_comp["p2", "c2"].value == 4
 
         assert m.fs.sb[0].temperature.value == 300
 
