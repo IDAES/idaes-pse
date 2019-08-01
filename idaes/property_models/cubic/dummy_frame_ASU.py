@@ -16,28 +16,26 @@ m = ConcreteModel()
 
 m.fs = FlowsheetBlock(default={'dynamic': False})
 
-m.fs.props = ASU_PR_VLE.ASUParameterBlock(default={'valid_phase': 'Vap'})
+m.fs.props = ASU_PR_VLE.ASUParameterBlock(
+        default={'valid_phase': ('Vap', 'Liq')})
+#m.fs.props = ASU_PR_VLE.ASUParameterBlock(default={'valid_phase': 'Liq'})
 
 #m.fs.props.pprint()
 
 m.fs.state = m.fs.props.state_block_class(default={'parameters': m.fs.props})
 
 m.fs.state.flow_mol.fix(100)
-m.fs.state.mole_frac["N2"].fix(0.6)
-m.fs.state.mole_frac["O2"].fix(0.35)
+m.fs.state.mole_frac["N2"].fix(0.65)
+m.fs.state.mole_frac["O2"].fix(0.3)
 #m.fs.state.mole_frac["Ar"].fix(0.05)
-m.fs.state.temperature.fix(98.078)
-m.fs.state.pressure.fix(500000)
+m.fs.state.temperature.fix(200)
+m.fs.state.pressure.fix(101000)
 
-m.fs.state.mole_frac["Ar"] = 0.05
-
-m.fs.state.mole_frac_phase["Vap", "N2"] = 0.6
-m.fs.state.mole_frac_phase["Vap", "O2"] = 0.35
-m.fs.state.mole_frac_phase["Vap", "Ar"] = 0.05
+m.fs.state.mole_frac["Ar"].value = 0.05
 
 print(cubic_prop_pack_VLE.cubic_roots_available())
 
-m.fs.state.enth_mol_phase.display()
+m.fs.state.initialize()
 
 # Create a solver
 solver = SolverFactory('ipopt')
@@ -46,11 +44,9 @@ results = solver.solve(m, tee=True)
 # Print results
 print(results)
 
-#m.fs.state.pprint()
-m.fs.state.compress_fact_vap.display()
-m.fs.state.fug_coeff_phase.display()
-m.fs.state.fug_phase.display()
-m.fs.state.dens_mol_phase.display()
-m.fs.state.mw_phase.display()
-m.fs.state.mw.display()
-m.fs.state.enth_mol_phase.display()
+m.fs.state.flow_mol_phase.display()
+m.fs.state.mole_frac_phase.display()
+
+m.fs.state.temperature_dew.display()
+m.fs.state.temperature_bubble.display()
+m.fs.state._teq.display()

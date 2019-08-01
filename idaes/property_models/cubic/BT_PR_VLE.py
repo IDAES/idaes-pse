@@ -36,18 +36,18 @@ from idaes.property_models.cubic.cubic_prop_pack_VLE import (
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("ASUParameterBlock")
-class ASUParameterData(CubicParameterData):
+@declare_process_block_class("BTParameterBlock")
+class BTParameterData(CubicParameterData):
 
     def build(self):
         '''
         Callable method for Block construction.
         '''
-        super(ASUParameterData, self).build()
+        super(BTParameterData, self).build()
 
         self.cubic_type = CubicEoS.PR
 
-        self.component_list = Set(initialize=['N2', 'O2', 'Ar'])
+        self.component_list = Set(initialize=['benzene', 'toluene'])
 
         # List of components in each phase (optional)
         self.phase_comp = {"Liq": self.component_list,
@@ -57,17 +57,8 @@ class ASUParameterData(CubicParameterData):
         self.phase_equilibrium_idx = Set(initialize=[1, 2, 3])
 
         self.phase_equilibrium_list = \
-            {1: ["N2", ("Vap", "Liq")],
-             2: ["O2", ("Vap", "Liq")],
-             3: ["Ar", ("Vap", "Liq")]}
-
-        # List of all chemical elements that constitute the chemical species
-        self.elem = ['N', 'O', 'Ar']
-
-        # Elemental composition of all species
-        self.elem_comp = {'N2': {'N': 2, 'O': 0, 'Ar': 0},
-                          'O2': {'N': 0, 'O': 2, 'Ar': 0},
-                          'Ar': {'N': 0, 'O': 0, 'Ar': 1}}
+            {1: ["benzene", ("Vap", "Liq")],
+             2: ["toluene", ("Vap", "Liq")]}
 
         # Thermodynamic reference state
         self.pressure_ref = Param(mutable=True,
@@ -79,9 +70,8 @@ class ASUParameterData(CubicParameterData):
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        pressure_crit_data = {'N2': 3394387.5,
-                              'O2': 5045985.0,
-                              'Ar': 4873732.5}
+        pressure_crit_data = {'benzene': 48.9e5,
+                              'toluene': 41e5}
 
         self.pressure_crit = Param(
             self.component_list,
@@ -92,9 +82,8 @@ class ASUParameterData(CubicParameterData):
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        temperature_crit_data = {'N2': 126.20,
-                                 'O2': 154.58,
-                                 'Ar': 150.86}
+        temperature_crit_data = {'benzene': 562.2,
+                                 'toluene': 591.8}
 
         self.temperature_crit = Param(
             self.component_list,
@@ -104,9 +93,8 @@ class ASUParameterData(CubicParameterData):
             doc='Critical temperature [K]')
 
         # Pitzer acentricity factor (from Prop. Gases & Liquids)
-        omega_data = {'N2': 0.040,
-                      'O2': 0.021,
-                      'Ar': -0.004}
+        omega_data = {'benzene': 0.212,
+                      'toluene': 0.263}
 
         self.omega = Param(
             self.component_list,
@@ -117,9 +105,8 @@ class ASUParameterData(CubicParameterData):
 
         # Peng-Robinson binary interaction parameters
         kappa_data = {
-            ('N2', 'N2'): 0.0000, ('N2', 'O2'): -0.0119, ('N2', 'Ar'): -0.0026,
-            ('O2', 'N2'): -0.0119, ('O2', 'O2'): 0.0000, ('O2', 'Ar'): 0.0104,
-            ('Ar', 'N2'): -0.0026, ('Ar', 'O2'): 0.0104, ('Ar', 'Ar'): 0.0000}
+            ('benzene', 'benzene'): 0.0000, ('benzene', 'toluene'): 0.0000,
+            ('toluene', 'benzene'): 0.0000, ('toluene', 'toluene'): 0.0000}
 
         self.kappa = Param(
             self.component_list,
@@ -137,9 +124,8 @@ class ASUParameterData(CubicParameterData):
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        mw_comp_data = {'Ar': 0.04401,
-                        'N2': 0.028014,
-                        'O2': 0.03199806}
+        mw_comp_data = {'benzene': 78.1136E-3,
+                        'toluene': 92.1405E-3}
 
         self.mw_comp = Param(self.component_list,
                              mutable=False,
@@ -149,21 +135,16 @@ class ASUParameterData(CubicParameterData):
         # Constants for specific heat capacity, enthalpy
         # Sources: The Properties of Gases and Liquids (1987)
         #         4th edition, Chemical Engineering Series - Robert C. Reid
-        cp_ig_data = {('N2', '1'): 31.128960,
-                      ('N2', '2'): -1.356e-2,
-                      ('N2', '3'): 2.678e-5,
-                      ('N2', '4'): -1.167e-8,
-                      ('N2', '5'): 0,
-                      ('O2', '1'): 28.087192,
-                      ('O2', '2'): -3.678e-6,
-                      ('O2', '3'): 1.745e-5,
-                      ('O2', '4'): -1.064e-8,
-                      ('O2', '5'): 0,
-                      ('Ar', '1'): 20.790296,
-                      ('Ar', '2'): -3.209e-5,
-                      ('Ar', '3'): 5.163e-8,
-                      ('Ar', '4'): 0,
-                      ('Ar', '5'): 0}
+        cp_ig_data = {('benzene', '1'): -3.392E1,
+                      ('benzene', '2'): 4.739E-1,
+                      ('benzene', '3'): -3.017E-4,
+                      ('benzene', '4'): 7.130E-8,
+                      ('benzene', '5'): 0,
+                      ('toluene', '1'): -2.435E1,
+                      ('toluene', '2'): 5.125E-1,
+                      ('toluene', '3'): -2.765E-4,
+                      ('toluene', '4'): 4.911E-8,
+                      ('toluene', '5'): 0}
 
         self.cp_ig = Param(self.component_list,
                            ['1', '2', '3', '4', '5'],
@@ -173,15 +154,14 @@ class ASUParameterData(CubicParameterData):
 
         # Antoine coefficients for ideal vapour (units: bar, K)
         # This is needed for initial guesses of bubble and dew points
-        antoine_data = {('Ar', '1'): 3.29555,
-                        ('Ar', '2'): 215.240,
-                        ('Ar', '3'): -22.233,
-                        ('N2', '1'): 3.73620,
-                        ('N2', '2'): 264.651,
-                        ('N2', '3'): -6.788,
-                        ('O2', '1'): 3.95230,
-                        ('O2', '2'): 340.024,
-                        ('O2', '3'): -4.144}
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
+        antoine_data = {('benzene', '1'): 4.202,
+                        ('benzene', '2'): 1322,
+                        ('benzene', '3'): -38.56,
+                        ('toluene', '1'): 4.216,
+                        ('toluene', '2'): 1435,
+                        ('toluene', '3'): -43.33}
 
         self.antoine = Param(self.component_list,
                              ['1', '2', '3'],
