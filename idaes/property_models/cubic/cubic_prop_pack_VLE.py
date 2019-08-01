@@ -706,8 +706,17 @@ class CubicStateBlockData(StateBlockData):
                                  rule=rule_tr_eq,
                                  doc='Component reduced temperatures [-]')
 
+        def rule_fug_phase_eq(b, p, j):
+            if p == 'Vap':
+                return b._fug_vap_eq(j)
+            else:
+                return b._fug_liq_eq(j)
+        self._fug_phase_eq = Expression(self._params.phase_list,
+                                        self._params.component_list,
+                                        rule=rule_fug_phase_eq)
+
         def rule_equilibrium(b, i):
-            return b.fug_phase["Vap", i] == b.fug_phase["Liq", i]
+            return b._fug_phase_eq["Vap", i] == b._fug_phase_eq["Liq", i]
         self.equilibrium_constraint = \
             Constraint(self._params.component_list, rule=rule_equilibrium)
 
@@ -889,81 +898,6 @@ class CubicStateBlockData(StateBlockData):
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
 
-    # Property package utility functions
-    def calculate_bubble_point_temperature(self, clear_components=True):
-        """"To compute the bubble point temperature of the mixture."""
-
-        if hasattr(self, "eq_temperature_bubble"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.temperature_bubble,
-                                           self.eq_temperature_bubble)
-
-        return self.temperature_bubble.value
-
-        if clear_components is True:
-            self.del_component(self.eq_temperature_bubble)
-            self.del_component(self._p_sat_bubbleT)
-            self.del_component(self.temperature_bubble)
-
-    def calculate_dew_point_temperature(self, clear_components=True):
-        """"To compute the dew point temperature of the mixture."""
-
-        if hasattr(self, "eq_temperature_dew"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.temperature_dew,
-                                           self.eq_temperature_dew)
-
-        return self.temperature_dew.value
-
-        # Delete the var/constraint created in this method that are part of the
-        # IdealStateBlock if the user desires
-        if clear_components is True:
-            self.del_component(self.eq_temperature_dew)
-            self.del_component(self._p_sat_dewT)
-            self.del_component(self.temperature_dew)
-
-    def calculate_bubble_point_pressure(self, clear_components=True):
-        """"To compute the bubble point pressure of the mixture."""
-
-        if hasattr(self, "eq_pressure_bubble"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.pressure_bubble,
-                                           self.eq_pressure_bubble)
-
-        return self.pressure_bubble.value
-
-        # Delete the var/constraint created in this method that are part of the
-        # IdealStateBlock if the user desires
-        if clear_components is True:
-            self.del_component(self.eq_pressure_bubble)
-            self.del_component(self._p_sat_bubbleP)
-            self.del_component(self.pressure_bubble)
-
-    def calculate_dew_point_pressure(self, clear_components=True):
-        """"To compute the dew point pressure of the mixture."""
-
-        if hasattr(self, "eq_pressure_dew"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.pressure_dew,
-                                           self.eq_pressure_dew)
-
-        return self.pressure_dew.value
-
-        # Delete the var/constraint created in this method that are part of the
-        # IdealStateBlock if the user desires
-        if clear_components is True:
-            self.del_component(self.eq_pressure_dew)
-            self.del_component(self._p_sat_dewP)
-            self.del_component(self.pressure_dew)
-
 # -----------------------------------------------------------------------------
 # Bubble and Dew Points
     def _temperature_bubble(self):
@@ -1054,6 +988,9 @@ class CubicStateBlockData(StateBlockData):
 
     def _fug_liq(b, j):
         return b._fug_cubic("Liq", j)
+
+    def _fug_liq_eq(b, j):
+        return b._fug_cubic_eq("Liq", j)
 
     def _fug_coeff_liq(b, j):
         return b._fug_coeff_cubic("Liq", j)
@@ -1222,6 +1159,9 @@ class CubicStateBlockData(StateBlockData):
 
     def _fug_vap(b, j):
         return b._fug_cubic("Vap", j)
+
+    def _fug_vap_eq(b, j):
+        return b._fug_cubic_eq("Vap", j)
 
     def _fug_coeff_vap(b, j):
         return b._fug_coeff_cubic("Vap", j)
@@ -1551,16 +1491,29 @@ class CubicStateBlockData(StateBlockData):
         return b.mole_frac_phase[p, j]*b.pressure*b.fug_coeff_phase[p, j]
 
     def _fug_coeff_cubic(b, p, j):
-        return exp((b.b[j]/b.bm[p]*(b._compress_fact_eq[p]-1) *
-                    (b._B_eq[p]*b.EoS_p) -
-                    log(b._compress_fact_eq[p]-b._B_eq[p]) *
-                    (b._B_eq[p]*b.EoS_p) +
-                    b._A_eq[p]*(b.b[j]/b.bm[p] - b._delta_eq[p, j]) *
-                    log((2*b._compress_fact_eq[p] +
-                         b._B_eq[p]*(b.EoS_u + b.EoS_p)) /
-                        (2*b._compress_fact_eq[p] +
-                         b._B_eq[p]*(b.EoS_u-b.EoS_p)))) /
-                   (b._B_eq[p]*b.EoS_p))
+        return exp((b.b[j]/b.bm[p]*(b.compress_fact[p]-1) *
+                    (b.B[p]*b.EoS_p) -
+                    log(b.compress_fact[p]-b.B[p]) *
+                    (b.B[p]*b.EoS_p) +
+                    b.A[p]*(b.b[j]/b.bm[p] - b.delta[p, j]) *
+                    log((2*b.compress_fact[p] +
+                         b.B[p]*(b.EoS_u + b.EoS_p)) /
+                        (2*b.compress_fact[p] +
+                         b.B[p]*(b.EoS_u-b.EoS_p)))) /
+                   (b.B[p]*b.EoS_p))
+
+    def _fug_cubic_eq(b, p, j):
+        return (b.mole_frac_phase[p, j]*b.pressure *
+                exp((b.b[j]/b.bm[p]*(b._compress_fact_eq[p]-1) *
+                     (b._B_eq[p]*b.EoS_p) -
+                     log(b._compress_fact_eq[p]-b._B_eq[p]) *
+                     (b._B_eq[p]*b.EoS_p) +
+                     b._A_eq[p]*(b.b[j]/b.bm[p] - b._delta_eq[p, j]) *
+                     log((2*b._compress_fact_eq[p] +
+                          b._B_eq[p]*(b.EoS_u + b.EoS_p)) /
+                         (2*b._compress_fact_eq[p] +
+                          b._B_eq[p]*(b.EoS_u-b.EoS_p)))) /
+                    (b._B_eq[p]*b.EoS_p)))
 
     def _enth_mol_cubic(b, p):
         return (((b.temperature*b.dadT[p] - b.am[p]) *
