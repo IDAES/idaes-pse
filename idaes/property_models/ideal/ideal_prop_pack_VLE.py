@@ -147,8 +147,9 @@ class _IdealStateBlock(StateBlock):
         """
         Initialisation routine for property package.
         Keyword Arguments:
-            flow_mol_comp : value at which to initialize component flows
-                             (default=None)
+            flow_mol : value at which to initialize flow rate (default=None)
+            mole_frac : value at which to initialize mole fractions
+                        (default = None)
             pressure : value at which to initialize pressure (default=None)
             temperature : value at which to initialize temperature
                           (default=None)
