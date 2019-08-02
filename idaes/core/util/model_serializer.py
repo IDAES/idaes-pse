@@ -13,10 +13,6 @@
 """
 Functions for saving and loading Pyomo objects to json
 """
-# Changes the divide behavior to not do integer division
-from __future__ import division
-from __future__ import print_function
-from __future__ import absolute_import #disable implicit relative imports
 
 from pyomo.environ import *
 from pyomo.network import Port, Arc

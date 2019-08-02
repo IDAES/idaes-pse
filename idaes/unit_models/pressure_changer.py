@@ -14,7 +14,6 @@
 """
 Standard IDAES pressure changer model.
 """
-from __future__ import division
 
 # Import Python libraries
 import logging

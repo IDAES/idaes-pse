@@ -17,9 +17,6 @@ and liquids by Robert C. Reid" and "Perry's Chemical Engineers Handbook by
 Robert H. Perry". SI units.
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 

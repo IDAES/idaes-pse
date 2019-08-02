@@ -32,7 +32,6 @@ from IPython.display import display, Markdown
 
 import logging
 import re
-from six import iterkeys
 
 _log = logging.getLogger(__name__)
 
@@ -95,7 +94,7 @@ class PyomoSympyBimap(object):
             return self._add_sympy(pyomo_object)
 
     def sympyVars(self):
-        return iterkeys(self.sympy2pyomo)
+        return self.sympy2pyomo.keys()
 
     def _add_sympy(self, pyomo_object):
         parent_object = pyomo_object.parent_component()

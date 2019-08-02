@@ -15,8 +15,6 @@ Basic IDAES 1D Heat Exchanger Model.
 
 1D Single pass shell and tube HX model with 0D wall conduction model
 """
-from __future__ import division
-
 # Import Python libraries
 import math
 import logging
