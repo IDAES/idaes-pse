@@ -15,8 +15,6 @@ This module contains the base class for constructing flowsheet models in the
 IDAES modeling framework.
 """
 
-from __future__ import division, print_function
-
 import logging
 
 import pyomo.environ as pe

@@ -13,7 +13,6 @@
 """
 This module contains classes for reaction blocks and reaction parameter blocks.
 """
-from __future__ import division
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In

@@ -15,9 +15,6 @@ Property package for ideal VLE calucations for the methanol synthesis problem.
 Correlations from Turkay and Grossmann paper. See Latex files for details.
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 

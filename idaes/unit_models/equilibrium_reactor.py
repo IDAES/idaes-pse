@@ -13,7 +13,6 @@
 """
 Standard IDAES Equilibrium Reactor model.
 """
-from __future__ import division
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In

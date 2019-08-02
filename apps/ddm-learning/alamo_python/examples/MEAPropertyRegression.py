@@ -5,7 +5,7 @@
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
 # University Research Corporation, et al. All rights reserved.
-# 
+#
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
@@ -13,7 +13,7 @@
 """
 	Property regression models
 
-	Ability to use DMF csv files to regress important parameters 
+	Ability to use DMF csv files to regress important parameters
 	for literature based models and ALAMO models.
 
 	Tracking property metadata and new model metadata
@@ -23,7 +23,6 @@
 	Author: Marissa Engle
 """
 # Local Imports
-from __future__ import division
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 # import idaes_dmf.propdb.types as prop_types # older version
@@ -89,8 +88,8 @@ class PropertyModel(object):
 		self.alamo_model.set_name(almFile);
 		self.table = propdata.PropertyTable(data=data, metadata=metadata)
 		self.data = self.table.data
-		
-		#adds data resource 
+
+		#adds data resource
 		# TODO: add if it doesn't exist
 		self.create_dmf_DataResource(data, metadata,desc);
 		# d.add(rsrc)
@@ -147,7 +146,7 @@ class PropertyModel(object):
 	def get_residuals(self):
 		residuals = None;
 		return residuals;
-		
+
 	def plot_residuals(self):
 		# def plot_residual(flowsheet, idaes_model_object_name, x_name,
                   # y_name, plot_title='Some default title',
@@ -156,7 +155,7 @@ class PropertyModel(object):
 
 		residuals = self.model.get_residuals();
 		ALAMO_residuals = self.alamo_model.get_residuals();
-		
+
 		visPlot.plot_residual(None, self, 'X_label', 'residuals', "Residuals", "ResidualPlot");
 
 	def build_model(self, model):
@@ -215,14 +214,14 @@ class ALAMOModel(object):
 
 		if 'almopt' in kwargs:
 			results=alamopy.doalamo(xdata,zdata, xlabels=xlabels,  zlabels='e', almname=self.almname, almopt=kwargs.get("almopt"), monomialpower='1 2 3', multi3power='1 2 3', multi2power='1 2 3', savescratch=1, expandoutput=1); #logfcns=1, expfcns=1, ratiopower='1 2 ', multi3power='1 2', multi2power='1 2 '
-		else:	
+		else:
 			results=alamopy.doalamo(xdata,zdata, almname=self.almname, monomialpower='1 2 3', multi3power='1 2 3', multi2power='1 2 3', savescratch=1, expandoutput=1); #logfcns=1, expfcns=1, ratiopower='1 2 ', multi3power='1 2', multi2power='1 2 '
 
 		print "Model function: %s" % results['model'];
 		print "Sum of squared error = %s" % results['ssr']
 		print "R^2 = %s" % results['R2'];
 		res = alamopy.almconfidence(results, xdata, zdata);
-		print "Confidence Interval =%s" % results['conf_inv'] 
+		print "Confidence Interval =%s" % results['conf_inv']
 		alamopy.almplot(res)
 		print results['model'].replace("^","**")
 		alm_model = results['model']
@@ -264,7 +263,7 @@ class SteamPropertyPackage(PropertyPackage):
 		print "Enthalpy Model"
 		Enthalpy = EnthalpyModel(self.data1, self.metadata1, self.textFile, "Enthalpy", "spirax enthalpy");
 
-class EnthalpyModel(PropertyModel):	
+class EnthalpyModel(PropertyModel):
 
     def __init__(self, data, metadata, outputFile, almtrace, desc):
     	PropertyModel.__init__(self,data, metadata, outputFile, almtrace, desc);
@@ -405,7 +404,7 @@ class DensityModel(PropertyModel):
 		textfile.write("\tmw = PhysPropParams.mw\n")
 		textfile.write("\tr = self.wt_frac[\"MEA\"]\n\n");
 		expr = "sum(y[i]*mw[i]/(a[i]*T**2 + b[i]*T + c[i]) for i in y.keys()) + y['MEA']*y['H2O']*Vst)"
-		textfile.write("\tself.var_or_expr(name=\"V_liq\", doc=\"Liquid molar volume\", expr=%s)\n\n" %expr)	
+		textfile.write("\tself.var_or_expr(name=\"V_liq\", doc=\"Liquid molar volume\", expr=%s)\n\n" %expr)
 
 	def data_sets(self):
 		self.I = np.asarray(range(self.data.num_rows));
@@ -584,10 +583,10 @@ class SurfaceTensionModel(PropertyModel):
 		textfile.write("\t# Pure component surface tension for MEA and H2O\n")
 		textfile.write("\t# (Asprion 2005)\n");
 		textfile.write("\t(T, P, y) = self.deref_tpy()\n")
-		textfile.write("\tC = {'MEA':(0.09945, 1.067,  0,      0    ),\n")   
+		textfile.write("\tC = {'MEA':(0.09945, 1.067,  0,      0    ),\n")
 		textfile.write("\t'H2O':(0.18548, 2.717, -3.554, 2.047)}\n\n");
 
-		textfile.write("\t# Parameters for CO2 surface tension\n") 
+		textfile.write("\t# Parameters for CO2 surface tension\n")
 		textfile.write("\tS = {'CO2':(-5.987, 3.7699, -0.43164, 0.018155, -0.01207, 0.002119)}\n");
 		textfile.write("\tF = {")
 		for v in model.component_objects(Var, active = True):
@@ -614,7 +613,7 @@ class SurfaceTensionModel(PropertyModel):
 
 	def data_sets(self):
 		self.I = np.asarray(range(self.data.num_rows));
-		
+
 		self.Temp = dict(zip(self.I,self.data.get_column('T').values));
 		self.alpha = dict(zip(self.I,self.data.get_column('CO2 Loading').values));
 		self.rstar = dict(zip(self.I,self.data.get_column('r').values));
@@ -752,11 +751,11 @@ class SurfaceTensionModel(PropertyModel):
 		textfile.write("\t# ALAMO Model\n")
 		textfile.write("\t# Pure component surface tension for MEA and H2O\n")
 		textfile.write("\t# (Asprion 2005)\n");
-		textfile.write("\t(T, P, y) = self.deref_tpy()\n")	
-		textfile.write("\tC = {'MEA':(0.09945, 1.067,  0,      0    ),\n")   
+		textfile.write("\t(T, P, y) = self.deref_tpy()\n")
+		textfile.write("\tC = {'MEA':(0.09945, 1.067,  0,      0    ),\n")
 		textfile.write("\t'H2O':(0.18548, 2.717, -3.554, 2.047)}\n\n");
 
-		textfile.write("\t# Parameters for CO2 surface tension\n") 
+		textfile.write("\t# Parameters for CO2 surface tension\n")
 		textfile.write("\tS = {'CO2':(-5.987, 3.7699, -0.43164, 0.018155, -0.01207, 0.002119)}\n");
 		textfile.write("\tF = {")
 		# for v in model.component_objects(['T','y[\'MEA\']','y[\'CO2\']', 'sigma_i[\'H2O\']', 'sigma_i[\'MEA\']', 'sigma_i[\'CO2\']'], active = True):
@@ -838,7 +837,7 @@ class ViscosityModel(PropertyModel):
 	def data_sets(self):
 		self.I = np.asarray(range(self.data.num_rows));
 		W_mea_vals = [v*100 for v in self.data.get_column('r').values]
-		self.W_mea = dict(zip(self.I, W_mea_vals)); 
+		self.W_mea = dict(zip(self.I, W_mea_vals));
 		self.Temp = dict(zip(self.I,self.data.get_column('T').values));
 		self.alpha = dict(zip(self.I,self.data.get_column('CO2 Loading').values));
 
@@ -864,14 +863,14 @@ class ViscosityModel(PropertyModel):
 		model.d = Var(domain=Reals, initialize = 0)
 		model.e = Var(domain=Reals, initialize = 0)
 		model.f = Var(domain=Reals, initialize = 0)
-		model.g = Var(domain=Reals, initialize = 0)	
+		model.g = Var(domain=Reals, initialize = 0)
 
 	def objective(self, model):
 
 		def obj_expression(model):
 				expr = 0;
 				for i in model.I:
-					u_H2O = 1.002*10**((1.3272*(293.15 - model.T[i] - 0.001053*(model.T[i]-293.15)**2))/(model.T[i]-168.15)) 
+					u_H2O = 1.002*10**((1.3272*(293.15 - model.T[i] - 0.001053*(model.T[i]-293.15)**2))/(model.T[i]-168.15))
 					expr+= (model.u_sln[i] - u_H2O*exp((((model.a*model.W_mea[i]+model.b)*model.T[i] + model.c*model.W_mea[i] + model.d)*(model.alpha[i]*(model.e*model.W_mea[i] + model.f*model.T[i] + model.g) + 1)* model.W_mea[i])/(model.T[i]**2)))**2
 				return expr
 
@@ -891,7 +890,7 @@ class ViscosityModel(PropertyModel):
 		xdata.append(W_mea_vals)
 
 		u_H2O = [1.002*10**((1.3272*(293.15 - t - 0.001053*(t-293.15)**2))/(t-168.15)) for t in self.data.get_column('T').values]
-		# xdata.append(u_H2O)			
+		# xdata.append(u_H2O)
 
 		self.alamo_model.xdata = np.transpose(xdata)
 		self.alamo_model.enumerate_datasets(3, ['T','a','W'], self.alamo_model.xdata)
@@ -967,4 +966,3 @@ MEAPropertyPackage()
 	# 		return expr;
 
 	# 	model.OBJ = Objective(rule=obj_expression)
-

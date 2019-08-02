@@ -41,9 +41,6 @@ References:
    functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 

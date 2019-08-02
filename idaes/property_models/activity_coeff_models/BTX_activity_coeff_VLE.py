@@ -18,9 +18,6 @@ these parameters are declared as variables here to allow for use in a parameter
 estimation problem if the VLE data is available.
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 

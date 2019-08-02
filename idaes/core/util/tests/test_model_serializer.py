@@ -13,7 +13,6 @@
 """
 Test for functions to save/load Pyomo model state to a dict or json
 """
-from __future__ import division
 
 import unittest
 import os
