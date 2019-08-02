@@ -332,7 +332,12 @@ class _CubicStateBlock(StateBlock):
                             (Tbub0 + blk[k]._params.antoine[j, '3'])**2
                             for j in blk[k]._params.component_list))
 
-                    Tbub1 = Tbub0 - f/df
+                    if f/df > 20:
+                        Tbub1 = Tbub0 - 20
+                    elif f/df < -20:
+                        Tbub1 = Tbub0 + 20
+                    else:
+                        Tbub1 = Tbub0 - f/df
 
                     err = abs(Tbub1 - Tbub0)
                     Tbub0 = Tbub1
@@ -373,7 +378,12 @@ class _CubicStateBlock(StateBlock):
                                     antoine_P(blk[k], j, Tdew0))
                                     for j in blk[k]._params.component_list))
 
-                    Tdew1 = Tdew0 - f/df
+                    if f/df > 20:
+                        Tdew1 = Tdew0 - 20
+                    elif f/df < -20:
+                        Tdew1 = Tdew0 + 20
+                    else:
+                        Tdew1 = Tdew0 - f/df
 
                     err = abs(Tdew1 - Tdew0)
                     Tdew0 = Tdew1
@@ -711,17 +721,11 @@ class CubicStateBlockData(StateBlockData):
                                  rule=rule_tr_eq,
                                  doc='Component reduced temperatures [-]')
 
-        def rule_fug_phase_eq(b, p, j):
-            if p == 'Vap':
-                return b._fug_vap_eq(j)
-            else:
-                return b._fug_liq_eq(j)
-        self._fug_phase_eq = Expression(self._params.phase_list,
-                                        self._params.component_list,
-                                        rule=rule_fug_phase_eq)
-
         def rule_equilibrium(b, i):
-            return b._fug_phase_eq["Vap", i] == b._fug_phase_eq["Liq", i]
+            return (log(b._fug_cubic_eq("Vap", i)) +
+                    log(b.mole_frac_phase["Vap", i]) ==
+                    log(b._fug_cubic_eq("Liq", i)) +
+                    log(b.mole_frac_phase["Liq", i]))
         self.equilibrium_constraint = \
             Constraint(self._params.component_list, rule=rule_equilibrium)
 
@@ -1020,9 +1024,6 @@ class CubicStateBlockData(StateBlockData):
     def _fug_liq(b, j):
         return b._fug_cubic("Liq", j)
 
-    def _fug_liq_eq(b, j):
-        return b._fug_cubic_eq("Liq", j)
-
     def _fug_coeff_liq(b, j):
         return b._fug_coeff_cubic("Liq", j)
 
@@ -1182,9 +1183,6 @@ class CubicStateBlockData(StateBlockData):
 
     def _fug_vap(b, j):
         return b._fug_cubic("Vap", j)
-
-    def _fug_vap_eq(b, j):
-        return b._fug_cubic_eq("Vap", j)
 
     def _fug_coeff_vap(b, j):
         return b._fug_coeff_cubic("Vap", j)
@@ -1518,8 +1516,7 @@ class CubicStateBlockData(StateBlockData):
                    (b.B[p]*b.EoS_p))
 
     def _fug_cubic_eq(b, p, j):
-        return (b.mole_frac_phase[p, j]*b.pressure *
-                exp((b.b[j]/b.bm[p]*(b._compress_fact_eq[p]-1) *
+        return exp((b.b[j]/b.bm[p]*(b._compress_fact_eq[p]-1) *
                      (b._B_eq[p]*b.EoS_p) -
                      log(b._compress_fact_eq[p]-b._B_eq[p]) *
                      (b._B_eq[p]*b.EoS_p) +
@@ -1528,7 +1525,7 @@ class CubicStateBlockData(StateBlockData):
                           b._B_eq[p]*(b.EoS_u + b.EoS_p)) /
                          (2*b._compress_fact_eq[p] +
                           b._B_eq[p]*(b.EoS_u-b.EoS_p)))) /
-                    (b._B_eq[p]*b.EoS_p)))
+                    (b._B_eq[p]*b.EoS_p))
 
     def _enth_mol_cubic(b, p):
         return (((b.temperature*b.dadT[p] - b.am[p]) *
