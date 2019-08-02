@@ -185,9 +185,6 @@ see reaction package for documentation.}"""))
 
         # Add performance equations
         add_object_reference(self,
-                             "rate_reaction_idx_ref",
-                             self.config.reaction_package.rate_reaction_idx)
-        add_object_reference(self,
                              "rate_reaction_extent",
                              self.control_volume.rate_reaction_extent)
 
@@ -201,7 +198,7 @@ see reaction package for documentation.}"""))
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
-        for r in self.rate_reaction_idx_ref:
+        for r in self.config.reaction_package.rate_reaction_idx:
             var_dict[f"Reaction Extent [{r}]"] = \
                 self.rate_reaction_extent[time_point, r]
         if hasattr(self, "heat_duty"):
