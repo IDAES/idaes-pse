@@ -14,9 +14,6 @@
 Property package for the hydrodealkylation of toluene to form benzene
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 

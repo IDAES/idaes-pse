@@ -13,9 +13,6 @@
 """
 General purpose mixer block for IDAES models
 """
-from __future__ import absolute_import  # disable implicit relative imports
-from __future__ import division, print_function
-
 import logging
 from enum import Enum
 

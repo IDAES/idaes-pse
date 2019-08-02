@@ -49,6 +49,7 @@ kwargs = dict(
         "sympy",
         "tinydb",
         "toml",
+        "networkx",
     ],
     entry_points="""
     [console_scripts]
@@ -66,10 +67,8 @@ kwargs = dict(
             "jsonschema",
             "jupyter_contrib_nbextensions",
             "mock",
-            "networkx",
             "pytest-cov",
             "python-coveralls",
-            "six",
             "snowballstemmer==1.2.1",
             "sphinx-rtd-theme>=0.1.9",
             "sphinxcontrib-napoleon>=0.5.0",
@@ -77,8 +76,8 @@ kwargs = dict(
         ]
     },
     package_data={
-        # If any package contains *.template, *.json files, *.dll files, or
-        # *.so file, include them:
+        # If any package contains *.template, *.json, *.dll, or *.so file,
+        # include them:
         "": ["*.template", "*.json", "*.dll", "*.so", "*.svg"]
     },
     author="IDAES Team",

@@ -14,8 +14,6 @@
 Demonstration and test flowsheet for a dynamic flowsheet.
 
 """
-from __future__ import division
-from __future__ import print_function
 
 import matplotlib.pyplot as plt
 
@@ -121,7 +119,7 @@ def main():
                            nfe=50,
                            wrt=m.fs.time,
                            scheme="BACKWARD")
-    
+
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # Set inlet and operating conditions, and some initial conditions.

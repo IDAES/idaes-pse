@@ -15,9 +15,6 @@ Example property package for the combustion of methane in air using
 Gibbs energy minimisation.
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 
