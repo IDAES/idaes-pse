@@ -136,10 +136,12 @@ conditions, and thus corresponding constraints  should be included,
                                      'units': 'J/mol'},
              'enth_mol_phase': {'method': '_enth_mol_phase',
                                 'units': 'J/mol'},
+             'enth_mol': {'method': '_enth_mol', 'units': 'J/mol'},
              'entr_mol_phase_comp': {'method': '_entr_mol_phase_comp',
                                      'units': 'J/mol'},
              'entr_mol_phase': {'method': '_entr_mol_phase',
                                 'units': 'J/mol'},
+             'entr_mol': {'method': '_entr_mol', 'units': 'J/mol.K'},
              'fug_phase': {'method': '_fug_phase', 'units': 'Pa'},
              'fug_coeff_phase': {'method': '_fug_coeff_phase', 'units': '-'},
              'gibbs_mol_phase': {'method': '_gibbs_mol_phase',
@@ -566,7 +568,7 @@ class CubicStateBlockData(StateBlockData):
                             domain=NonNegativeReals,
                             doc='Component molar flowrate [mol/s]')
         self.mole_frac = Var(self._params.component_list,
-                             bounds=(0, 1),
+                             bounds=(0, None),
                              initialize=1 / len(self._params.component_list),
                              doc='Mixture mole fractions [-]')
         self.pressure = Var(initialize=101325,
@@ -586,7 +588,7 @@ class CubicStateBlockData(StateBlockData):
             self._params.phase_list,
             self._params.component_list,
             initialize=1 / len(self._params.component_list),
-            bounds=(0, 1),
+            bounds=(0, None),
             doc='Phase mole fractions [-]')
 
         if self._params.config.valid_phase == "Liq":
@@ -791,6 +793,25 @@ class CubicStateBlockData(StateBlockData):
 #            self._params.component_list,
 #            rule=rule_entr_mol_phase_comp)
 #
+    def _enth_mol(self):
+        self.enth_mol = Var(
+            doc='Mixture molar specific enthalpies [J/mol]')
+
+        def rule_enth_mol(b):
+            return b.enth_mol*b.flow_mol == sum(
+                    b.flow_mol_phase[p]*b.enth_mol_phase[p]
+                    for p in b._params.phase_list)
+        self.eq_enth_mol = Constraint(rule=rule_enth_mol)
+
+    def _entr_mol(self):
+        self.entr_mol = Var(
+            doc='Mixture molar specific entropies [J/mol.K]')
+
+        def rule_entr_mol(b):
+            return b.entr_mol*b.flow_mol == sum(
+                    b.flow_mol_phase[p]*b.entr_mol_phase[p]
+                    for p in b._params.phase_list)
+        self.eq_entr_mol = Constraint(rule=rule_entr_mol)
 
     def _entr_mol_phase(self):
         self.entr_mol_phase = Var(
@@ -907,6 +928,7 @@ class CubicStateBlockData(StateBlockData):
         self._mole_frac_tbub = Var(
                 self._params.component_list,
                 initialize=1/len(self._params.component_list),
+                bounds=(0, None),
                 doc="Vapor mole fractions at bubble point")
 
         self._sum_mole_frac_tbub = Constraint(
@@ -925,6 +947,7 @@ class CubicStateBlockData(StateBlockData):
         self._mole_frac_tdew = Var(
                 self._params.component_list,
                 initialize=1/len(self._params.component_list),
+                bounds=(0, None),
                 doc="Liquid mole fractions at dew point")
 
         self._sum_mole_frac_tdew = Constraint(
@@ -944,7 +967,7 @@ class CubicStateBlockData(StateBlockData):
         self._mole_frac_pbub = Var(
                 self._params.component_list,
                 initialize=1/len(self._params.component_list),
-                bounds=(0, 1),
+                bounds=(0, None),
                 doc="Vapor mole fractions at bubble point")
 
         self._sum_mole_frac_pbub = Constraint(
@@ -964,6 +987,7 @@ class CubicStateBlockData(StateBlockData):
         self._mole_frac_pdew = Var(
                 self._params.component_list,
                 initialize=1/len(self._params.component_list),
+                bounds=(0, None),
                 doc="Liquid mole fractions at dew point")
 
         self._sum_mole_frac_pdew = Constraint(
