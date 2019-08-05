@@ -952,6 +952,79 @@ class ActivityCoeffStateBlockData(StateBlockData):
                   (self.temperature -
                    self._params.temperature_reference))
 
+    def _entr_mol_phase(self):
+        self.entr_mol_phase = Var(
+            self._params.phase_list,
+            doc='Phase molar specific enthropies [J/mol.K]')
+
+        def rule_entr_mol_phase(self, p):
+            return self.entr_mol_phase[p] == sum(
+                self.entr_mol_phase_comp[p, i] *
+                self.mole_frac_phase[p, i]
+                for i in self._params.component_list)
+        self.eq_entr_mol_phase = Constraint(self._params.phase_list,
+                                            rule=rule_entr_mol_phase)
+
+    def _entr_mol_phase_comp(self):
+        self.entr_mol_phase_comp = Var(
+            self._params.phase_list,
+            self._params.component_list,
+            doc='Phase-component molar specific entropies [J/mol.K]')
+
+        def rule_entr_mol_phase_comp(self, p, j):
+            if p == 'Vap':
+                return self._entr_mol_comp_vap(j)
+            else:
+                return self._entr_mol_comp_liq(j)
+        self.eq_entr_mol_phase_comp = Constraint(
+            self._params.phase_list,
+            self._params.component_list,
+            rule=rule_entr_mol_phase_comp)
+
+    def _entr_mol_comp_liq(self, j):
+        return self.entr_mol_phase_comp['Liq', j] * 1E3 == (
+            ((self._params.cp_ig['Liq', j, '5'] / 4) *
+                (self.temperature**4 - self._params.temperature_ref**4)
+                + (self._params.cp_ig['Liq', j, '4'] / 3) *
+                  (self.temperature**3 - self._params.temperature_ref**3)
+                + (self._params.cp_ig['Liq', j, '3'] / 2) *
+                  (self.temperature**2 - self._params.temperature_ref**2)
+                + self._params.cp_ig['Liq', j, '2'] *
+                  (self.temperature - self._params.temperature_ref)
+                + self._params.cp_ig['Liq', j, '1'] *
+             log(self.temperature / self._params.temperature_ref)))
+
+    def _ds_vap(self):
+        # entropy of vaporization = dh_Vap/T_boil
+        # TODO : something more rigorous would be nice
+        self.ds_vap = Var(self._params.component_list,
+                          initialize=86,
+                          doc="Entropy of vaporization [J/mol.K]")
+
+        def rule_ds_vap(b, j):
+            return b._params.dh_vap[j] == (b.ds_vap[j] *
+                                           b._params.temperature_boil[j])
+        self.eq_ds_vap = Constraint(self._params.component_list,
+                                    rule=rule_ds_vap)
+
+    def _entr_mol_comp_vap(self, j):
+        # component molar entropy of vapor phase
+        return self.entr_mol_phase_comp['Vap', j] == (
+            self.ds_vap[j] +
+            ((self._params.cp_ig['Vap', j, '5'] / 4) *
+             (self.temperature**4 - self._params.temperature_ref**4)
+             + (self._params.cp_ig['Vap', j, '4'] / 3) *
+             (self.temperature**3 - self._params.temperature_ref**3)
+             + (self._params.cp_ig['Vap', j, '3'] / 2) *
+               (self.temperature**2 - self._params.temperature_ref**2)
+                + self._params.cp_ig['Vap', j, '2'] *
+               (self.temperature - self._params.temperature_ref)
+                + self._params.cp_ig['Vap', j, '1'] *
+                log(self.temperature / self._params.temperature_ref)) -
+            self._params.gas_const * log(self.mole_frac_phase['Vap', j] *
+                                         self.pressure /
+                                         self._params.pressure_ref))
+
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
         if (p == "Vap") and (j in self._params.component_list):
@@ -1015,7 +1088,6 @@ class ActivityCoeffStateBlockData(StateBlockData):
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
 
-
     # Property package utility functions
     def calculate_bubble_point_temperature(self, clear_components=True):
         """"To compute the bubble point temperature of the mixture."""
@@ -1053,43 +1125,43 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.del_component(self._p_sat_dewT)
             self.del_component(self.temperature_dew)
 
-    def calculate_bubble_point_pressure(self, clear_components=True):
-        """"To compute the bubble point pressure of the mixture."""
-
-        if hasattr(self, "eq_pressure_bubble"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.pressure_bubble,
-                                           self.eq_pressure_bubble)
-
-        return self.pressure_bubble.value
-
-        # Delete the var/constraint created in this method that are part of the
-        # IdealStateBlock if the user desires
-        if clear_components is True:
-            self.del_component(self.eq_pressure_bubble)
-            self.del_component(self._p_sat_bubbleP)
-            self.del_component(self.pressure_bubble)
-
-    def calculate_dew_point_pressure(self, clear_components=True):
-        """"To compute the dew point pressure of the mixture."""
-
-        if hasattr(self, "eq_pressure_dew"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.pressure_dew,
-                                           self.eq_pressure_dew)
-
-        return self.pressure_dew.value
-
-        # Delete the var/constraint created in this method that are part of the
-        # IdealStateBlock if the user desires
-        if clear_components is True:
-            self.del_component(self.eq_pressure_dew)
-            self.del_component(self._p_sat_dewP)
-            self.del_component(self.pressure_dew)
+    # def calculate_bubble_point_pressure(self, clear_components=True):
+    #     """"To compute the bubble point pressure of the mixture."""
+    #
+    #     if hasattr(self, "eq_pressure_bubble"):
+    #         # Do not delete components if the block already has the components
+    #         clear_components = False
+    #
+    #     calculate_variable_from_constraint(self.pressure_bubble,
+    #                                        self.eq_pressure_bubble)
+    #
+    #     return self.pressure_bubble.value
+    #
+    #     # Delete the var/constraint created in this method that are part of the
+    #     # IdealStateBlock if the user desires
+    #     if clear_components is True:
+    #         self.del_component(self.eq_pressure_bubble)
+    #         self.del_component(self._p_sat_bubbleP)
+    #         self.del_component(self.pressure_bubble)
+    #
+    # def calculate_dew_point_pressure(self, clear_components=True):
+    #     """"To compute the dew point pressure of the mixture."""
+    #
+    #     if hasattr(self, "eq_pressure_dew"):
+    #         # Do not delete components if the block already has the components
+    #         clear_components = False
+    #
+    #     calculate_variable_from_constraint(self.pressure_dew,
+    #                                        self.eq_pressure_dew)
+    #
+    #     return self.pressure_dew.value
+    #
+    #     # Delete the var/constraint created in this method that are part of the
+    #     # IdealStateBlock if the user desires
+    #     if clear_components is True:
+    #         self.del_component(self.eq_pressure_dew)
+    #         self.del_component(self._p_sat_dewP)
+    #         self.del_component(self.pressure_dew)
 
 # -----------------------------------------------------------------------------
 # Bubble and Dew Points
