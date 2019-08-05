@@ -23,18 +23,20 @@ def main():
     m.fs.props_ideal = BTX_ideal_VLE.BTXParameterBlock(
             default={'valid_phase': ('Vap', 'Liq')})
 
-    m.fs.state = m.fs.props.state_block_class(default={'parameters': m.fs.props})
+    m.fs.state = m.fs.props.state_block_class(default={'parameters': m.fs.props,
+                                                       'defined_state': True})
     #m.fs.ideal = m.fs.props_ideal.state_block_class(
     #        default={'parameters': m.fs.props_ideal})
 
     F = 100
-    x_benzene = 0.999
+    x_benzene = 0.9
     T = 368
     P = 101325
 
     # -----------------------------------------------------------------------------
     m.fs.state.flow_mol.fix(F)
     m.fs.state.mole_frac["benzene"].fix(x_benzene)
+    m.fs.state.mole_frac["toluene"].fix(1-x_benzene)
     m.fs.state.temperature.fix(T)
     m.fs.state.pressure.fix(P)
 
@@ -44,12 +46,12 @@ def main():
     #m.fs.ideal.pressure.fix(P)
 
     # -----------------------------------------------------------------------------
-#    m.fs.state.enth_mol
-#    m.fs.state.entr_mol
+    m.fs.state.enth_mol
+    m.fs.state.entr_mol
 
     #m.fs.ideal.enth_mol_phase_comp
 
-    m.fs.state.mole_frac["toluene"].value = 1 - value(m.fs.state.mole_frac["benzene"])
+#    m.fs.state.mole_frac["toluene"].value = 1 - value(m.fs.state.mole_frac["benzene"])
     #m.fs.ideal.mole_frac["toluene"].value = 1 - value(m.fs.ideal.mole_frac["benzene"])
 
     m.fs.state.initialize(outlvl=5)

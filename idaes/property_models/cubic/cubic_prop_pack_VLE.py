@@ -426,9 +426,30 @@ class _CubicStateBlock(StateBlock):
                             blk[k].mole_frac[j]*blk[k].pressure_bubble /
                             antoine_P(blk[k], j, blk[k].temperature))
 
+        # Solve bubble and dew point constraints
+        for k in blk.keys():
+            for c in blk[k].component_objects(Constraint):
+                # Deactivate all property constraints
+                if c.local_name not in ("eq_pressure_dew",
+                                        "eq_pressure_bubble",
+                                        "eq_temperature_dew",
+                                        "eq_temperature_bubble",
+                                        "_sum_mole_frac_tbub",
+                                        "_sum_mole_frac_tdew",
+                                        "_sum_mole_frac_pbub",
+                                        "_sum_mole_frac_pdew"):
+                    c.deactivate()
+
+        results = solve_indexed_blocks(opt, [blk], tee=stee)
+
         if outlvl > 0:
-            _log.info("Dew and bubble points initialization for "
-                      "{} completed".format(blk.name))
+            if results.solver.termination_condition \
+                    == TerminationCondition.optimal:
+                _log.info("Dew and bubble points initialization for "
+                          "{} completed".format(blk.name))
+            else:
+                _log.warning("Dew and bubble points initialization for "
+                             "{} failed".format(blk.name))
 
         # ---------------------------------------------------------------------
         # If flash, initialize T1 and Teq
@@ -446,7 +467,7 @@ class _CubicStateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
-        # TODO : This will need ot be generalised more when we move to a
+        # TODO : This will need to be generalised more when we move to a
         # modular implementation
         for k in blk.keys():
             if blk[k]._params.config.valid_phase == "Liq":
@@ -466,44 +487,65 @@ class _CubicStateBlock(StateBlock):
                         blk[k].mole_frac[j].value
 
             else:
-                # Seems to work best with default values for phase flows
-                for j in blk[k]._params.component_list:
-                    blk[k].mole_frac_phase['Vap', j].value = \
-                        blk[k].mole_frac[j].value
-                    blk[k].mole_frac_phase['Liq', j].value = \
-                        blk[k].mole_frac[j].value
+                if blk[k].temperature.value > blk[k].temperature_dew.value:
+                    # Pure vapour
+                    blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
+                    blk[k].flow_mol_phase["Vap"].value = \
+                        1e-5*blk[k].flow_mol.value
+
+                    for j in blk[k]._params.component_list:
+                        blk[k].mole_frac_phase['Vap', j].value = \
+                            blk[k].mole_frac[j].value
+                        blk[k].mole_frac_phase['Liq', j].value = \
+                            blk[k]._mole_frac_tdew[j].value
+                elif blk[k].temperature.value < \
+                        blk[k].temperature_bubble.value:
+                    # Pure liquid
+                    blk[k].flow_mol_phase["Vap"].value = \
+                        1e-5*blk[k].flow_mol.value
+                    blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
+
+                    for j in blk[k]._params.component_list:
+                        blk[k].mole_frac_phase['Vap', j].value = \
+                            blk[k]._mole_frac_tbub[j].value
+                        blk[k].mole_frac_phase['Liq', j].value = \
+                            blk[k].mole_frac[j].value
+                else:
+                    # Two-phase
+                    # TODO : Try to find some better guesses than this
+                    blk[k].flow_mol_phase["Vap"].value = \
+                        0.5*blk[k].flow_mol.value
+                    blk[k].flow_mol_phase["Vap"].value = \
+                        0.5*blk[k].flow_mol.value
+
+                    for j in blk[k]._params.component_list:
+                        blk[k].mole_frac_phase['Vap', j].value = \
+                            blk[k].mole_frac[j].value
+                        blk[k].mole_frac_phase['Liq', j].value = \
+                            blk[k].mole_frac[j].value
 
         # ---------------------------------------------------------------------
         # Solve phase equilibrium constraints
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
-                # Deactivate all property constraints
-                if c.local_name not in ("total_flow_balance",
-                                        "component_flow_balances",
-                                        "equilibrium_constraint",
-                                        "sum_mole_frac",
-                                        "_t1_constraint",
-                                        "_teq_constraint",
-                                        "eq_pressure_dew",
-                                        "eq_pressure_bubble",
-                                        "eq_temperature_dew",
-                                        "eq_temperature_bubble",
-                                        "eq_pressure_sat",
-                                        "_sum_mole_frac_tbub",
-                                        "_sum_mole_frac_tdew",
-                                        "_sum_mole_frac_pbub",
-                                        "_sum_mole_frac_pdew"):
-                    c.deactivate()
+                # Activate equilibrium constraints
+                if c.local_name in ("total_flow_balance",
+                                    "component_flow_balances",
+                                    "equilibrium_constraint",
+                                    "sum_mole_frac",
+                                    "_t1_constraint",
+                                    "_teq_constraint"):
+                    c.activate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
 
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
-                _log.info("Phase state initialization for "
+                _log.info("Phase equilibrium initialization for "
                           "{} completed".format(blk.name))
             else:
-                _log.warning("Phase state initialization for "
+                _log.warning("Phase equilibrium initialization for "
                              "{} failed".format(blk.name))
 
         # ---------------------------------------------------------------------
@@ -600,7 +642,7 @@ class CubicStateBlockData(StateBlockData):
         self.mole_frac_phase = Var(
             self._params.phase_list,
             self._params.component_list,
-            initialize=1 / len(self._params.component_list),
+            initialize=1/len(self._params.component_list),
             bounds=(0, None),
             doc='Phase mole fractions [-]')
 
@@ -663,9 +705,9 @@ class CubicStateBlockData(StateBlockData):
         self.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
-            return b.flow_mol * b.mole_frac[i] == \
-                b.flow_mol_phase['Liq'] * b.mole_frac_phase['Liq', i] + \
-                b.flow_mol_phase['Vap'] * b.mole_frac_phase['Vap', i]
+            return b.flow_mol*b.mole_frac[i] == \
+                b.flow_mol_phase['Liq']*b.mole_frac_phase['Liq', i] + \
+                b.flow_mol_phase['Vap']*b.mole_frac_phase['Vap', i]
         self.component_flow_balances = Constraint(self._params.component_list,
                                                   rule=rule_comp_mass_balance)
 

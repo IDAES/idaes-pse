@@ -15,7 +15,7 @@ from idaes.core import FlowsheetBlock
 from idaes.property_models.cubic import BT_PR_VLE
 from idaes.property_models.ideal import BTX_ideal_VLE
 
-from pyomo.environ import ConcreteModel, Objective, Param, SolverFactory, value
+from pyomo.environ import ConcreteModel, Objective, SolverFactory
 
 
 def test_P_sweep():
@@ -29,33 +29,28 @@ def test_P_sweep():
             default={'valid_phase': ('Vap', 'Liq')})
 
     m.fs.state = m.fs.props.state_block_class(
-            default={'parameters': m.fs.props})
+            default={'parameters': m.fs.props,
+                     'defined_state': True})
 
-    P_dict = {5e4: 300, 1e5: 314, 2e5: 340, 5e5: 380, 8e5: 406, 1e6: 418}
+    m.fs.obj = Objective(expr=(m.fs.state.temperature - 510)**2)
 
-    m.fs.T_obj = Param(initialize=300, mutable=True)
-    m.fs.obj = Objective(expr=(m.fs.state.temperature - m.fs.T_obj)**2)
-
-    for P, T in P_dict.items():
+    for logP in range(8, 13, 1):
         m.fs.obj.deactivate()
 
         m.fs.state.flow_mol.fix(100)
         m.fs.state.mole_frac["benzene"].fix(0.5)
+        m.fs.state.mole_frac["toluene"].fix(0.5)
         m.fs.state.temperature.fix(300)
-        m.fs.state.pressure.fix(P)
-
-        m.fs.state.mole_frac["toluene"].value = (
-                1 - value(m.fs.state.mole_frac["benzene"]))
+        m.fs.state.pressure.fix(10**(0.5*logP))
 
         m.fs.state.initialize(outlvl=0)
 
         m.fs.state.temperature.unfix()
         m.fs.obj.activate()
-        m.fs.T_obj.value = T + 110
 
         solver = SolverFactory('ipopt')
         solver.solve(m, tee=True)
 
-        print(P, T)
+        print(10**(0.5*logP))
 
         assert m.fs.state.flow_mol_phase["Liq"].value <= 1e-5
