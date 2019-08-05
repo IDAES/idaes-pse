@@ -135,14 +135,10 @@ conditions, and thus corresponding constraints  should be included,
              'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
              'mole_frac_phase': {'method': '_mole_frac_phase',
                                  'units': 'no unit'},
-             'enthalpy_comp_liq': {'method': '_enthalpy_comp_liq',
-                                   'units': 'J/mol'},
-             'enthalpy_comp_vap': {'method': '_enthalpy_comp_vap',
-                                   'units': 'J/mol'},
-             'enthalpy_liq': {'method': '_enthalpy_liq',
-                              'units': 'J/mol'},
-             'enthalpy_vap': {'method': '_enthalpy_vap',
-                              'units': 'J/mol'},
+             'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp',
+                                     'units': 'J/mol'},
+             'enth_mol_phase': {'method': '_enth_mol_phase',
+                                'units': 'J/mol'},
              'temperature_bubble': {'method': '_temperature_bubble',
                                     'units': 'K'},
              'temperature_dew': {'method': '_temperature_dew',
@@ -296,11 +292,11 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk[k].eq_sum_mol_frac.deactivate()
                 blk[k].eq_phase_equilibrium.deactivate()
                 try:
-                    blk[k].eq_h_liq.deactivate()
+                    blk[k].eq_enth_mol_phase['Liq'].deactivate()
                 except AttributeError:
                     pass
                 try:
-                    blk[k].eq_h_vap.deactivate()
+                    blk[k].eq_enth_mol_phase['Vap'].deactivate()
                 except AttributeError:
                     pass
 
@@ -316,7 +312,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Liq":
                 try:
-                    blk[k].eq_h_liq.deactivate()
+                    blk[k].eq_enth_mol_phase['Liq'].deactivate()
                 except AttributeError:
                     pass
 
@@ -324,7 +320,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Vap":
                 try:
-                    blk[k].eq_h_vap.deactivate()
+                    blk[k].eq_enth_mol_phase['Vap'].deactivate()
                 except AttributeError:
                     pass
         # First solve for the active constraints remaining
@@ -413,13 +409,13 @@ class _ActivityCoeffStateBlock(StateBlock):
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Liq":
                 try:
-                    blk[k].eq_h_liq.activate()
+                    blk[k].eq_enth_mol_phase['Liq'].activate()
                 except AttributeError:
                     pass
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Vap":
                 try:
-                    blk[k].eq_h_vap.activate()
+                    blk[k].eq_enth_mol_phase['Vap'].activate()
                 except AttributeError:
                     pass
             if (blk[k].config.has_phase_equilibrium) or \
@@ -428,11 +424,11 @@ class _ActivityCoeffStateBlock(StateBlock):
                     (blk[k].config.parameters.config.valid_phase ==
                         ('Vap', 'Liq')):
                 try:
-                    blk[k].eq_h_liq.activate()
+                    blk[k].eq_enth_mol_phase['Liq'].activate()
                 except AttributeError:
                     pass
                 try:
-                    blk[k].eq_h_vap.activate()
+                    blk[k].eq_enth_mol_phase['Vap'].activate()
                 except AttributeError:
                     pass
 
@@ -888,75 +884,73 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.del_component(self.density_mol_calculation)
             raise
 
-    def _enthalpy_comp_liq(self):
+    def _enth_mol_phase(self):
+        self.enth_mol_phase = Var(
+            self._params.phase_list,
+            doc='Phase molar specific enthalpies [J/mol]')
+
+        def rule_enth_mol_phase(b, p):
+            return b.enth_mol_phase[p] == sum(
+                b.enth_mol_phase_comp[p, i] *
+                b.mole_frac_phase[p, i]
+                for i in b._params.component_list)
+        self.eq_enth_mol_phase = Constraint(self._params.phase_list,
+                                            rule=rule_enth_mol_phase)
+
+    def _enth_mol_phase_comp(self):
+        self.enth_mol_phase_comp = Var(self._params.phase_list,
+                                       self._params.component_list,
+                                       doc="Phase-component molar specific "
+                                           "enthalpies [J/mol]")
+
+        def rule_enth_mol_phase_comp(b, p, j):
+            if p == 'Vap':
+                return b._enth_mol_comp_vap(j)
+            else:
+                return b._enth_mol_comp_liq(j)
+        self.eq_enth_mol_phase_comp = Constraint(
+            self._params.phase_list,
+            self._params.component_list,
+            rule=rule_enth_mol_phase_comp)
+
+    def _enth_mol_comp_liq(self, j):
         # Liquid phase comp enthalpy (J/mol)
-        self.enthalpy_comp_liq = Var(self._params.component_list,
-                                     initialize=10000)
+        # 1E3 conversion factor to convert from J/kmol to J/mol
+        return self.enth_mol_phase_comp['Liq', j] * 1E3 == \
+            ((self._params.CpIG['Liq', j, 'E'] / 5) *
+                (self.temperature**5 -
+                 self._params.temperature_reference**5)
+                + (self._params.CpIG['Liq', j, 'D'] / 4) *
+                  (self.temperature**4 -
+                   self._params.temperature_reference**4)
+                + (self._params.CpIG['Liq', j, 'C'] / 3) *
+                  (self.temperature**3 -
+                   self._params.temperature_reference**3)
+                + (self._params.CpIG['Liq', j, 'B'] / 2) *
+                  (self.temperature**2 -
+                   self._params.temperature_reference**2)
+                + self._params.CpIG['Liq', j, 'A'] *
+                  (self.temperature - self._params.temperature_reference))
 
-        def rule_hl_ig_pc(b, j):
-            # 1E3 conversion factor to convert from J/kmol to J/mol
-            return self.enthalpy_comp_liq[j] * 1E3 == \
-                ((self._params.CpIG['Liq', j, 'E'] / 5) *
-                    (self.temperature**5 -
-                     self._params.temperature_reference**5)
-                    + (self._params.CpIG['Liq', j, 'D'] / 4) *
-                      (self.temperature**4 -
-                       self._params.temperature_reference**4)
-                    + (self._params.CpIG['Liq', j, 'C'] / 3) *
-                      (self.temperature**3 -
-                       self._params.temperature_reference**3)
-                    + (self._params.CpIG['Liq', j, 'B'] / 2) *
-                      (self.temperature**2 -
-                       self._params.temperature_reference**2)
-                    + self._params.CpIG['Liq', j, 'A'] *
-                      (self.temperature - self._params.temperature_reference))
-        self.eq_hl_ig_pc = Constraint(self._params.component_list,
-                                      rule=rule_hl_ig_pc)
-
-    def _enthalpy_liq(self):
-        # Liquid phase enthalpy (J/mol)
-        self.enthalpy_liq = Var(initialize=10000)
-
-        def rule_hliq(self):
-            return self.enthalpy_liq == \
-                sum(self.enthalpy_comp_liq[i] * self.mole_frac_phase['Liq', i]
-                    for i in self._params.component_list)
-        self.eq_h_liq = Constraint(rule=rule_hliq)
-
-    def _enthalpy_comp_vap(self):
+    def _enth_mol_comp_vap(self, j):
         # Vapor phase component enthalpy (J/mol)
-        self.enthalpy_comp_vap = Var(self._params.component_list,
-                                     initialize=40000)
 
-        def rule_hv_ig_pc(b, j):
-            return self.enthalpy_comp_vap[j] == self._params.dh_vap[j] + \
-                ((self._params.CpIG['Vap', j, 'E'] / 5) *
-                    (self.temperature**5 -
-                     self._params.temperature_reference**5)
-                    + (self._params.CpIG['Vap', j, 'D'] / 4) *
-                      (self.temperature**4 -
-                       self._params.temperature_reference**4)
-                    + (self._params.CpIG['Vap', j, 'C'] / 3) *
-                      (self.temperature**3 -
-                       self._params.temperature_reference**3)
-                    + (self._params.CpIG['Vap', j, 'B'] / 2) *
-                      (self.temperature**2 -
-                       self._params.temperature_reference**2)
-                    + self._params.CpIG['Vap', j, 'A'] *
-                      (self.temperature -
-                       self._params.temperature_reference))
-        self.eq_hv_ig_pc = Constraint(self._params.component_list,
-                                      rule=rule_hv_ig_pc)
-
-    def _enthalpy_vap(self):
-        # Vapor phase total enthalpy (J/mol)
-        self.enthalpy_vap = Var(initialize=10000)
-
-        def rule_hvap(self):
-            return self.enthalpy_vap == \
-                sum(self.enthalpy_comp_vap[i] * self.mole_frac_phase['Vap', i]
-                    for i in self._params.component_list)
-        self.eq_h_vap = Constraint(rule=rule_hvap)
+        return self.enth_mol_phase_comp['Vap', j] == self._params.dh_vap[j] + \
+            ((self._params.CpIG['Vap', j, 'E'] / 5) *
+                (self.temperature**5 -
+                 self._params.temperature_reference**5)
+                + (self._params.CpIG['Vap', j, 'D'] / 4) *
+                  (self.temperature**4 -
+                   self._params.temperature_reference**4)
+                + (self._params.CpIG['Vap', j, 'C'] / 3) *
+                  (self.temperature**3 -
+                   self._params.temperature_reference**3)
+                + (self._params.CpIG['Vap', j, 'B'] / 2) *
+                  (self.temperature**2 -
+                   self._params.temperature_reference**2)
+                + self._params.CpIG['Vap', j, 'A'] *
+                  (self.temperature -
+                   self._params.temperature_reference))
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
@@ -970,9 +964,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
         if p == "Vap":
-            return self.flow_mol_phase['Vap'] * self.enthalpy_vap
+            return self.flow_mol_phase['Vap'] * self.enth_mol_phase['Vap']
         elif p == "Liq":
-            return self.flow_mol_phase['Liq'] * self.enthalpy_liq
+            return self.flow_mol_phase['Liq'] * self.enth_mol_phase['Liq']
 
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
@@ -990,9 +984,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
         if p == "Liq":
-            return self.density_mol[p] * self.enthalpy_liq
+            return self.density_mol[p] * self.enth_mol_phase['Liq']
         elif p == "Vap":
-            return self.density_mol[p] * self.enthalpy_vap
+            return self.density_mol[p] * self.enth_mol_phase['Vap']
 
     def get_material_flow_basis(self):
         """Declare material flow basis."""
