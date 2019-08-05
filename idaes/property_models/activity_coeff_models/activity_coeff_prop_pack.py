@@ -299,7 +299,14 @@ class _ActivityCoeffStateBlock(StateBlock):
                     blk[k].eq_enth_mol_phase['Vap'].deactivate()
                 except AttributeError:
                     pass
-
+                try:
+                    blk[k].eq_entr_mol_phase['Liq'].deactivate()
+                except AttributeError:
+                    pass
+                try:
+                    blk[k].eq_entr_mol_phase['Vap'].deactivate()
+                except AttributeError:
+                    pass
                 # Deactivate activity coefficient constraints
                 if blk[k].config.parameters.config.activity_coeff_model \
                         != "Ideal":
@@ -315,12 +322,19 @@ class _ActivityCoeffStateBlock(StateBlock):
                     blk[k].eq_enth_mol_phase['Liq'].deactivate()
                 except AttributeError:
                     pass
-
-            # Deactivate liquid phase specific constraints
+                try:
+                    blk[k].eq_entr_mol_phase['Liq'].deactivate()
+                except AttributeError:
+                    pass
+            # Deactivate vapor phase specific constraints
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Vap":
                 try:
                     blk[k].eq_enth_mol_phase['Vap'].deactivate()
+                except AttributeError:
+                    pass
+                try:
+                    blk[k].eq_entr_mol_phase['Vap'].deactivate()
                 except AttributeError:
                     pass
         # First solve for the active constraints remaining
@@ -412,10 +426,18 @@ class _ActivityCoeffStateBlock(StateBlock):
                     blk[k].eq_enth_mol_phase['Liq'].activate()
                 except AttributeError:
                     pass
+                try:
+                    blk[k].eq_entr_mol_phase['Liq'].activate()
+                except AttributeError:
+                    pass
             if not blk[k].config.has_phase_equilibrium and \
                     blk[k].config.parameters.config.valid_phase == "Vap":
                 try:
                     blk[k].eq_enth_mol_phase['Vap'].activate()
+                except AttributeError:
+                    pass
+                try:
+                    blk[k].eq_entr_mol_phase['Vap'].activate()
                 except AttributeError:
                     pass
             if (blk[k].config.has_phase_equilibrium) or \
@@ -429,6 +451,14 @@ class _ActivityCoeffStateBlock(StateBlock):
                     pass
                 try:
                     blk[k].eq_enth_mol_phase['Vap'].activate()
+                except AttributeError:
+                    pass
+                try:
+                    blk[k].eq_entr_mol_phase['Liq'].activate()
+                except AttributeError:
+                    pass
+                try:
+                    blk[k].eq_entr_mol_phase['Vap'].activate()
                 except AttributeError:
                     pass
 
