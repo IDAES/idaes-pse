@@ -28,7 +28,7 @@ def main():
     #        default={'parameters': m.fs.props_ideal})
 
     F = 100
-    x_benzene = 0.6
+    x_benzene = 0.999
     T = 368
     P = 101325
 
@@ -44,8 +44,8 @@ def main():
     #m.fs.ideal.pressure.fix(P)
 
     # -----------------------------------------------------------------------------
-    m.fs.state.enth_mol
-    m.fs.state.entr_mol
+#    m.fs.state.enth_mol
+#    m.fs.state.entr_mol
 
     #m.fs.ideal.enth_mol_phase_comp
 
@@ -80,12 +80,12 @@ def main():
     #for j in m.fs.props.component_list:
     #    print(j, value(m.fs.state._enth_mol_comp_ig(j)))
 
-    print()
-    print("ideal")
+#    print()
+#    print("ideal")
     #for j in m.fs.props.component_list:
     #    print(j, value(m.fs.ideal.enth_mol_phase_comp["Vap", j] - m.fs.ideal.dh_vap[j]))
-    m.fs.ideal.flow_mol_phase.display()
-    m.fs.ideal.mole_frac_phase.display()
+#    m.fs.ideal.flow_mol_phase.display()
+#    m.fs.ideal.mole_frac_phase.display()
 
 
 if __name__ == "__main__":

@@ -722,10 +722,8 @@ class CubicStateBlockData(StateBlockData):
                                  doc='Component reduced temperatures [-]')
 
         def rule_equilibrium(b, i):
-            return (log(b._fug_cubic_eq("Vap", i)) +
-                    log(b.mole_frac_phase["Vap", i]) ==
-                    log(b._fug_cubic_eq("Liq", i)) +
-                    log(b.mole_frac_phase["Liq", i]))
+            return (b._log_equilibrium_cubic("Vap", i) ==
+                    b._log_equilibrium_cubic("Liq", i))
         self.equilibrium_constraint = \
             Constraint(self._params.component_list, rule=rule_equilibrium)
 
@@ -1515,17 +1513,17 @@ class CubicStateBlockData(StateBlockData):
                          b.B[p]*(b.EoS_u-b.EoS_p)))) /
                    (b.B[p]*b.EoS_p))
 
-    def _fug_cubic_eq(b, p, j):
-        return exp((b.b[j]/b.bm[p]*(b._compress_fact_eq[p]-1) *
-                     (b._B_eq[p]*b.EoS_p) -
-                     log(b._compress_fact_eq[p]-b._B_eq[p]) *
-                     (b._B_eq[p]*b.EoS_p) +
-                     b._A_eq[p]*(b.b[j]/b.bm[p] - b._delta_eq[p, j]) *
-                     log((2*b._compress_fact_eq[p] +
-                          b._B_eq[p]*(b.EoS_u + b.EoS_p)) /
-                         (2*b._compress_fact_eq[p] +
-                          b._B_eq[p]*(b.EoS_u-b.EoS_p)))) /
-                    (b._B_eq[p]*b.EoS_p))
+    def _log_equilibrium_cubic(b, p, j):
+        return ((b.b[j]/b.bm[p]*(b._compress_fact_eq[p]-1) *
+                 (b._B_eq[p]*b.EoS_p) -
+                 log(b._compress_fact_eq[p]-b._B_eq[p]) *
+                 (b._B_eq[p]*b.EoS_p) +
+                 b._A_eq[p]*(b.b[j]/b.bm[p] - b._delta_eq[p, j]) *
+                 log((2*b._compress_fact_eq[p] +
+                      b._B_eq[p]*(b.EoS_u + b.EoS_p)) /
+                     (2*b._compress_fact_eq[p] +
+                      b._B_eq[p]*(b.EoS_u-b.EoS_p)))) /
+                (b._B_eq[p]*b.EoS_p) + log(b.mole_frac_phase[p, j]))
 
     def _enth_mol_cubic(b, p):
         return (((b.temperature*b.dadT[p] - b.am[p]) *
