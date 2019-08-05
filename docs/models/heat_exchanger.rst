@@ -116,7 +116,7 @@ Callbacks
 
 A selection of functions for constructing the ``delta_temperature`` variable or
 expression are provided in the ``idaes.unit_models.heat_exchanger`` module.
-The user may also provide their own function. These callbacks should add take
+The user may also provide their own function. These callbacks should all take
 one argument (the HeatExchanger block). With the block argument, the function
 can add any additional variables, constraints, and expressions needed.  The only
 requirement is that either a variable or expression called ``delta_temperature``
