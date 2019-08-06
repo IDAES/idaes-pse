@@ -65,7 +65,7 @@ def _make_heat_exchanger_config(config):
     _make_heater_config_block(config.side_2)
     config.declare("delta_temperature_callback", ConfigValue(
         default=delta_temperature_lmtd_callback,
-        description="Rule for equation for temperature difference"))
+        description="Callback for for temperature difference calculations"))
     config.declare("flow_pattern", ConfigValue(
         default=HeatExchangerFlowPattern.countercurrent,
         domain=In(HeatExchangerFlowPattern),
@@ -80,9 +80,9 @@ countercurrent temperature difference.}"""))
 
 def delta_temperature_lmtd_callback(b):
     """
-    This is a rule for a temperaure difference expression to calculate
+    This is a callback for a temperaure difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using log-mean temperature
-    difference (LMTD).  It can be supplied to "delta_temperature_rule"
+    difference (LMTD).  It can be supplied to "delta_temperature_callback"
     HeatExchanger configuration option.
     """
     dT1 = b.delta_temperature_in
@@ -93,10 +93,10 @@ def delta_temperature_lmtd_callback(b):
 
 def delta_temperature_amtd_callback(b):
     """
-    This is a rule for a temperaure difference expression to calculate
+    This is a callback for a temperaure difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using arithmetic-mean
     temperature difference (AMTD).  It can be supplied to
-    "delta_temperature_rule" HeatExchanger configuration option.
+    "delta_temperature_callback" HeatExchanger configuration option.
     """
     dT1 = b.delta_temperature_in
     dT2 = b.delta_temperature_out
@@ -106,12 +106,12 @@ def delta_temperature_amtd_callback(b):
 
 def delta_temperature_underwood_callback(b):
     """
-    This is a rule for a temperaure difference expression to calculate
+    This is a callback for a temperaure difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using log-mean temperature
     difference (LMTD) approximation given by Underwood (1970).  It can be
-    supplied to "delta_temperature_rule" HeatExchanger configuration option.
+    supplied to "delta_temperature_callback" HeatExchanger configuration option.
     This uses a cube root function that works with negative numbers returning
-    the real negative root.  This function should always evaluate successfully.
+    the real negative root. This should always evaluate successfully.
     """
     # external function that ruturns the real root, for the cuberoot of negitive
     # numbers, so it will return without error for positive and negitive dT.
