@@ -284,8 +284,6 @@ class _ActivityCoeffStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialization sequence: Deactivating certain constraints
         # for 1st solve
-
-        # Get the list of constraints active in the model
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
                 if c.local_name in ["eq_total",
