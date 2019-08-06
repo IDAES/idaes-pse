@@ -13,19 +13,19 @@
 
 from idaes.core import FlowsheetBlock
 from idaes.property_models.cubic import BT_PR_VLE
-from idaes.property_models.ideal import BTX_ideal_VLE
 
-from pyomo.environ import ConcreteModel, Objective, SolverFactory
+from pyomo.environ import (ConcreteModel,
+                           Objective,
+                           SolverFactory,
+                           TerminationCondition)
 
 
-def test_P_sweep():
+def test_T_sweep():
     m = ConcreteModel()
 
     m.fs = FlowsheetBlock(default={'dynamic': False})
 
     m.fs.props = BT_PR_VLE.BTParameterBlock(
-            default={'valid_phase': ('Vap', 'Liq')})
-    m.fs.props_ideal = BTX_ideal_VLE.BTXParameterBlock(
             default={'valid_phase': ('Vap', 'Liq')})
 
     m.fs.state = m.fs.props.state_block_class(
@@ -49,8 +49,44 @@ def test_P_sweep():
         m.fs.obj.activate()
 
         solver = SolverFactory('ipopt')
-        solver.solve(m, tee=True)
+        results = solver.solve(m, tee=True)
 
-        print(10**(0.5*logP))
-
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
         assert m.fs.state.flow_mol_phase["Liq"].value <= 1e-5
+
+
+def test_P_sweep():
+    m = ConcreteModel()
+
+    m.fs = FlowsheetBlock(default={'dynamic': False})
+
+    m.fs.props = BT_PR_VLE.BTParameterBlock(
+            default={'valid_phase': ('Vap', 'Liq')})
+
+    m.fs.state = m.fs.props.state_block_class(
+            default={'parameters': m.fs.props,
+                     'defined_state': True})
+
+    for T in range(370, 500, 25):
+        m.fs.state.flow_mol.fix(100)
+        m.fs.state.mole_frac["benzene"].fix(0.5)
+        m.fs.state.mole_frac["toluene"].fix(0.5)
+        m.fs.state.temperature.fix(T)
+        m.fs.state.pressure.fix(1e5)
+
+        m.fs.state.initialize(outlvl=0)
+
+        solver = SolverFactory('ipopt')
+        results = solver.solve(m)
+
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+
+        while m.fs.state.pressure.value <= 1e6:
+            m.fs.state.pressure.value = m.fs.state.pressure.value + 1e5
+            solver = SolverFactory('ipopt')
+            results = solver.solve(m)
+            assert results.solver.termination_condition == \
+                TerminationCondition.optimal
+            print(T, m.fs.state.pressure.value)

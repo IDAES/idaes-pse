@@ -29,9 +29,9 @@ def main():
     #        default={'parameters': m.fs.props_ideal})
 
     F = 100
-    x_benzene = 0.9
-    T = 368
-    P = 101325
+    x_benzene = 0.5
+    T = 370
+    P = 1e5
 
     # -----------------------------------------------------------------------------
     m.fs.state.flow_mol.fix(F)
@@ -69,8 +69,8 @@ def main():
     print("Cubic")
     m.fs.state.flow_mol_phase.display()
     m.fs.state.mole_frac_phase.display()
-    #m.fs.state.enth_mol.display()
-    #m.fs.state.enth_mol_phase.display()
+    m.fs.state.enth_mol.display()
+    m.fs.state.enth_mol_phase.display()
     #m.fs.state.temperature.display()
 
     m.fs.state.temperature_dew.display()
