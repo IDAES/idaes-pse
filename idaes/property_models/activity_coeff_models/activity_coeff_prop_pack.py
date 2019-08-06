@@ -284,64 +284,28 @@ class _ActivityCoeffStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialization sequence: Deactivating certain constraints
         # for 1st solve
+
+        # Get the list of constraints active in the model
         for k in blk.keys():
+            for c in blk[k].component_objects(Constraint):
+                if c.local_name in ["eq_total",
+                                    "eq_comp",
+                                    "eq_sum_mol_frac",
+                                    "eq_phase_equilibrium",
+                                    "eq_enth_mol_phase",
+                                    "eq_entr_mol_phase",
+                                    "eq_Gij_coeff",
+                                    "eq_A",
+                                    "eq_B",
+                                    "eq_activity_coeff"]:
+                    c.deactivate()
 
-            blk[k].eq_total.deactivate()
-            blk[k].eq_comp.deactivate()
-            if (blk[k].config.has_phase_equilibrium) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Liq', 'Vap')) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Vap', 'Liq')):
-                blk[k].eq_sum_mol_frac.deactivate()
-                blk[k].eq_phase_equilibrium.deactivate()
-                try:
-                    blk[k].eq_enth_mol_phase['Liq'].deactivate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_enth_mol_phase['Vap'].deactivate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_entr_mol_phase['Liq'].deactivate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_entr_mol_phase['Vap'].deactivate()
-                except AttributeError:
-                    pass
-                # Deactivate activity coefficient constraints
-                if blk[k].config.parameters.config.activity_coeff_model \
-                        != "Ideal":
-                    blk[k].eq_Gij_coeff.deactivate()
-                    blk[k].eq_A.deactivate()
-                    blk[k].eq_B.deactivate()
-                    blk[k].eq_activity_coeff.deactivate()
-
-            # Deactivate liquid phase specific constraints
-            if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "Liq":
-                try:
-                    blk[k].eq_enth_mol_phase['Liq'].deactivate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_entr_mol_phase['Liq'].deactivate()
-                except AttributeError:
-                    pass
-            # Deactivate vapor phase specific constraints
-            if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "Vap":
-                try:
-                    blk[k].eq_enth_mol_phase['Vap'].deactivate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_entr_mol_phase['Vap'].deactivate()
-                except AttributeError:
-                    pass
-        # First solve for the active constraints remaining
+        # First solve for the active constraints that remain (p_sat, T_bubble,
+        # T_dew). Valid only for a 2 phase block. If single phase,
+        # no constraints are active.
+        # NOTE: "k" is the last value from the previous for loop
+        # only for the purpose of having a valid index. The assumption
+        # here is that for all values of "k", the attribute exists.
         if (blk[k].config.has_phase_equilibrium) or \
                 (blk[k].config.parameters.config.valid_phase ==
                     ('Liq', 'Vap')) or \
@@ -365,19 +329,16 @@ class _ActivityCoeffStateBlock(StateBlock):
 
         # Continue initialization sequence and activate select constraints
         for k in blk.keys():
-            blk[k].eq_total.activate()
-            blk[k].eq_comp.activate()
-            if (blk[k].config.has_phase_equilibrium) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Liq', 'Vap')) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Vap', 'Liq')):
-                blk[k].eq_phase_equilibrium.activate()
-                if blk[k].config.parameters.config.activity_coeff_model \
-                        != "Ideal":
-                    # assume ideal and solve
-                    blk[k].activity_coeff_comp.fix(1)
-                blk[k].eq_sum_mol_frac.activate()
+            for c in blk[k].component_objects(Constraint):
+                if c.local_name in ["eq_total",
+                                    "eq_comp",
+                                    "eq_sum_mol_frac",
+                                    "eq_phase_equilibrium"]:
+                    c.activate()
+            if blk[k].config.parameters.config.activity_coeff_model \
+                    != "Ideal":
+                # assume ideal and solve
+                blk[k].activity_coeff_comp.fix(1)
 
         # Second solve for the active constraints
         results = solve_indexed_blocks(opt, [blk], tee=stee)
@@ -392,79 +353,46 @@ class _ActivityCoeffStateBlock(StateBlock):
                              "{} failed".format(blk.name))
 
         # Activate activity coefficient specific constraints
-        if blk[k].config.parameters.config.activity_coeff_model \
-                != "Ideal":
-            for k in blk.keys():
-                blk[k].eq_Gij_coeff.activate()
-                blk[k].eq_A.activate()
-                blk[k].eq_B.activate()
+        for k in blk.keys():
+            if blk[k].config.parameters.config.activity_coeff_model \
+                    != "Ideal":
+                for c in blk[k].component_objects(Constraint):
+                    if c.local_name in ["eq_Gij_coeff",
+                                        "eq_A",
+                                        "eq_B"]:
+                        c.activate()
 
-            results = solve_indexed_blocks(opt, [blk], tee=stee)
-            if outlvl > 0:
-                if results.solver.termination_condition \
-                        == TerminationCondition.optimal:
-                    _log.info("Initialisation step 3 for "
-                              "{} completed".format(blk.name))
-                else:
-                    _log.warning("Initialisation step 3 for "
-                                 "{} failed".format(blk.name))
+        results = solve_indexed_blocks(opt, [blk], tee=stee)
+        if outlvl > 0:
+            if results.solver.termination_condition \
+                    == TerminationCondition.optimal:
+                _log.info("Initialisation step 3 for "
+                          "{} completed".format(blk.name))
+            else:
+                _log.warning("Initialisation step 3 for "
+                             "{} failed".format(blk.name))
 
-            for k in blk.keys():
+        for k in blk.keys():
+            if blk[k].config.parameters.config.activity_coeff_model \
+                    != "Ideal":
                 blk[k].eq_activity_coeff.activate()
                 blk[k].activity_coeff_comp.unfix()
 
-            results = solve_indexed_blocks(opt, [blk], tee=stee)
-            if outlvl > 0:
-                if results.solver.termination_condition \
-                        == TerminationCondition.optimal:
-                    _log.info("Initialisation step 4 for "
-                              "{} completed".format(blk.name))
-                else:
-                    _log.warning("Initialisation step 4 for "
-                                 "{} failed".format(blk.name))
+        results = solve_indexed_blocks(opt, [blk], tee=stee)
+        if outlvl > 0:
+            if results.solver.termination_condition \
+                    == TerminationCondition.optimal:
+                _log.info("Initialisation step 4 for "
+                          "{} completed".format(blk.name))
+            else:
+                _log.warning("Initialisation step 4 for "
+                             "{} failed".format(blk.name))
 
         for k in blk.keys():
-            if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "Liq":
-                try:
-                    blk[k].eq_enth_mol_phase['Liq'].activate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_entr_mol_phase['Liq'].activate()
-                except AttributeError:
-                    pass
-            if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "Vap":
-                try:
-                    blk[k].eq_enth_mol_phase['Vap'].activate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_entr_mol_phase['Vap'].activate()
-                except AttributeError:
-                    pass
-            if (blk[k].config.has_phase_equilibrium) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Liq', 'Vap')) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Vap', 'Liq')):
-                try:
-                    blk[k].eq_enth_mol_phase['Liq'].activate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_enth_mol_phase['Vap'].activate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_entr_mol_phase['Liq'].activate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_entr_mol_phase['Vap'].activate()
-                except AttributeError:
-                    pass
+            for c in blk[k].component_objects(Constraint):
+                if c.local_name in ["eq_enth_mol_phase",
+                                    "eq_entr_mol_phase"]:
+                    c.activate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
         if outlvl > 0:
@@ -967,8 +895,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
                   (self.temperature - self._params.temperature_reference))
 
     def _enth_mol_comp_vap(self, j):
-        # Vapor phase component enthalpy (J/mol)
 
+        # Vapor phase component enthalpy (J/mol)
         return self.enth_mol_phase_comp['Vap', j] == self._params.dh_vap[j] + \
             ((self._params.CpIG['Vap', j, 'E'] / 5) *
                 (self.temperature**5 -
@@ -1016,6 +944,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
             rule=rule_entr_mol_phase_comp)
 
     def _entr_mol_comp_liq(self, j):
+
+        # Liquid phase comp entropy (J/mol.K)
+        # 1E3 conversion factor to convert from J/kmol.K to J/mol.K
         return self.entr_mol_phase_comp['Liq', j] * 1E3 == (
             ((self._params.cp_ig['Liq', j, '5'] / 4) *
                 (self.temperature**4 - self._params.temperature_ref**4)
@@ -1121,81 +1052,6 @@ class ActivityCoeffStateBlockData(StateBlockData):
             _log.error('{} Pressure set below lower bound.'.format(blk.name))
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
-
-    # Property package utility functions
-    def calculate_bubble_point_temperature(self, clear_components=True):
-        """"To compute the bubble point temperature of the mixture."""
-
-        if hasattr(self, "eq_temperature_bubble"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.temperature_bubble,
-                                           self.eq_temperature_bubble)
-
-        return self.temperature_bubble.value
-
-        if clear_components is True:
-            self.del_component(self.eq_temperature_bubble)
-            self.del_component(self._p_sat_bubbleT)
-            self.del_component(self.temperature_bubble)
-
-    def calculate_dew_point_temperature(self, clear_components=True):
-        """"To compute the dew point temperature of the mixture."""
-
-        if hasattr(self, "eq_temperature_dew"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.temperature_dew,
-                                           self.eq_temperature_dew)
-
-        return self.temperature_dew.value
-
-        # Delete the var/constraint created in this method that are part of the
-        # IdealStateBlock if the user desires
-        if clear_components is True:
-            self.del_component(self.eq_temperature_dew)
-            self.del_component(self._p_sat_dewT)
-            self.del_component(self.temperature_dew)
-
-    # def calculate_bubble_point_pressure(self, clear_components=True):
-    #     """"To compute the bubble point pressure of the mixture."""
-    #
-    #     if hasattr(self, "eq_pressure_bubble"):
-    #         # Do not delete components if the block already has the components
-    #         clear_components = False
-    #
-    #     calculate_variable_from_constraint(self.pressure_bubble,
-    #                                        self.eq_pressure_bubble)
-    #
-    #     return self.pressure_bubble.value
-    #
-    #     # Delete the var/constraint created in this method that are part of the
-    #     # IdealStateBlock if the user desires
-    #     if clear_components is True:
-    #         self.del_component(self.eq_pressure_bubble)
-    #         self.del_component(self._p_sat_bubbleP)
-    #         self.del_component(self.pressure_bubble)
-    #
-    # def calculate_dew_point_pressure(self, clear_components=True):
-    #     """"To compute the dew point pressure of the mixture."""
-    #
-    #     if hasattr(self, "eq_pressure_dew"):
-    #         # Do not delete components if the block already has the components
-    #         clear_components = False
-    #
-    #     calculate_variable_from_constraint(self.pressure_dew,
-    #                                        self.eq_pressure_dew)
-    #
-    #     return self.pressure_dew.value
-    #
-    #     # Delete the var/constraint created in this method that are part of the
-    #     # IdealStateBlock if the user desires
-    #     if clear_components is True:
-    #         self.del_component(self.eq_pressure_dew)
-    #         self.del_component(self._p_sat_dewP)
-    #         self.del_component(self.pressure_dew)
 
 # -----------------------------------------------------------------------------
 # Bubble and Dew Points
