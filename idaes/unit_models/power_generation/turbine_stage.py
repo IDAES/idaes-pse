@@ -19,8 +19,6 @@ Liese, (2014). "Modeling of a Steam Turbine Including Partial Arc Admission
     for Use in a Process Simulation Software Environment." Journal of Engineering
     for Gas Turbines and Power. v136.
 """
-from __future__ import division
-
 __Author__ = "John Eslick"
 
 import logging

@@ -10,8 +10,12 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from pyomo.core.base.symbolic import (_prod, _sum, _functionMap, _operatorMap,
-                                      _pyomo_operator_map, _functionMap)
+try:
+    from pyomo.core.expr.sympy_tools import (
+        _prod, _sum, _functionMap, _operatorMap, _pyomo_operator_map)
+except ImportError:
+    from pyomo.core.base.symbolic import (
+        _prod, _sum, _functionMap, _operatorMap, _pyomo_operator_map)
 
 from pyomo.environ import ExternalFunction, Var, Expression, value
 from pyomo.core.base.constraint import _ConstraintData, Constraint
@@ -28,7 +32,6 @@ from IPython.display import display, Markdown
 
 import logging
 import re
-from six import iterkeys
 
 _log = logging.getLogger(__name__)
 
@@ -91,7 +94,7 @@ class PyomoSympyBimap(object):
             return self._add_sympy(pyomo_object)
 
     def sympyVars(self):
-        return iterkeys(self.sympy2pyomo)
+        return self.sympy2pyomo.keys()
 
     def _add_sympy(self, pyomo_object):
         parent_object = pyomo_object.parent_component()

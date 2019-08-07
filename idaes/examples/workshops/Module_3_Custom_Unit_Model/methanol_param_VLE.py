@@ -16,9 +16,6 @@ problem from Turkay & Grossmann. The parameters and correlations are from the
 paper.
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 

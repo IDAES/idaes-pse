@@ -25,7 +25,6 @@ from typing import Generator
 
 # third-party
 import pendulum
-import six
 from traitlets import HasTraits, default, observe
 from traitlets import Unicode
 import yaml
@@ -134,7 +133,7 @@ class DMFConfig(object):
         except Exception as err:
             raise ValueError(err)
         if y:
-            for k, v in six.iteritems(y):
+            for k, v in y.items():
                 if k in self._keys:
                     self.c[k] = v
 

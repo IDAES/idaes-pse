@@ -13,9 +13,6 @@
 """
 Base for IDAES process model objects.
 """
-from __future__ import absolute_import  # disable implicit relative imports
-from __future__ import division  # No integer division
-from __future__ import print_function  # Python 3 style print
 
 import sys
 import logging

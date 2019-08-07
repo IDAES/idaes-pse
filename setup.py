@@ -4,7 +4,6 @@ Institute for the Design of Advanced Energy Systems
 """
 from pathlib import Path
 import os
-import re
 import sys
 from setuptools import setup, find_packages
 
@@ -69,6 +68,7 @@ kwargs = dict(
         "sympy",
         "tinydb",
         "toml",
+        "networkx",
     ],
     entry_points={"console_scripts": ["dmf = idaes.dmf.cli:base_command"]},
     extras_require={
@@ -85,7 +85,6 @@ kwargs = dict(
             "mock",
             "pytest-cov",
             "python-coveralls",
-            "six",
             "snowballstemmer==1.2.1",
             "sphinx-rtd-theme>=0.1.9",
             "sphinxcontrib-napoleon>=0.5.0",
