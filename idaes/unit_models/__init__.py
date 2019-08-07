@@ -14,3 +14,4 @@ from .feed import Feed
 from .product import Product
 from .feed_flash import FeedFlash
 from .statejunction import StateJunction
+from .translator import Translator
