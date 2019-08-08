@@ -78,12 +78,23 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     this._mimeType = options.mimeType;
     this.addClass(CLASS_NAME);
 
-    this.save_file_button = document.createElement("button");
-    this.save_file_button.id = "save_file_button";
-    this.save_file_button.innerText = "Save Graph to File";
-
     this.myholder = document.createElement("div");
     this.myholder.id = "myholder";
+
+    // We need to create the graph and paper in the constructor
+    // If you try to create them in renderModel (which is called everytime the user
+    // opens an .idaes.vis file or changes tabs) then you get icons that do not drop
+    // when the mouseup event is emitted
+    var standard = joint.shapes.standard;
+    this.graph = new joint.dia.Graph([], { cellNamespace: { standard } });
+    this.paper = new joint.dia.Paper({
+      el: this.myholder,
+      model: this.graph,
+      cellViewNamespace: { standard },
+      width: 1000,
+      height: 1000,
+      gridSize: 1,
+    });
   }
 
   /**
@@ -93,7 +104,6 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
 
     let data = model.data[this._mimeType] as JSONObject;
     //this.node.textContent = JSON.stringify(data);
-    this.node.appendChild(this.save_file_button);
     this.node.appendChild(this.myholder);
 
     // var somelink = document.createElement('a');
@@ -101,35 +111,22 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     // somelink.innerHTML = "something";
     // this.myholder.appendChild(somelink);
 
-    var standard = joint.shapes.standard;
-    var graph = new joint.dia.Graph([], { cellNamespace: { standard } });
-    new joint.dia.Paper({
-      el: this.myholder,
-      model: graph,
-      cellViewNamespace: { standard },
-      width: 1000,
-      height: 1000,
-      gridSize: 1,
-    });
     utils.remapIcons(data, 'forDisplay');
-    graph.fromJSON(data);
+    this.graph.fromJSON(data);
 
-    function saveFile(evt: MouseEvent) {
-      let json = graph.toJSON();
-      utils.remapIcons(json, 'forStorage');
-      var data = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(json));
-      var fakeobj = document.createElement('a');
-      fakeobj.href = "data:" + data;
-      fakeobj.download = 'serialized_graph.idaes.vis';
-      fakeobj.click();
-      fakeobj.remove();
-    }
-    this.save_file_button.onclick = saveFile;
+    // When the mouse leaves the paper save the data and layout.
+    // This makes the layout persist when switching tabs and reopening the file
+    this.paper.on('paper:mouseleave', evt => {
+      let json_data = JSON.stringify(this.graph.toJSON())
+      let newData = {'application/vnd.idaes.model': json_data };
+      model.setData({ data: newData });
+    });
   }
 
   private _mimeType: string;
-  private save_file_button: HTMLButtonElement;
   private myholder: HTMLDivElement;
+  private paper: joint.dia.Paper;
+  private graph: joint.dia.Graph;
 }
 
 /**
