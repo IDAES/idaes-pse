@@ -46,7 +46,6 @@ Example::
         # do the work of the class.
 
 """
-import six
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
@@ -173,7 +172,7 @@ class PropertyClassMetadata(object):
         Returns:
             None
         """
-        for k, v in six.iteritems(p):
+        for k, v in p.items():
             if not isinstance(v, PropertyMetadata):
                 v = PropertyMetadata(name=k, **v)
             self._properties[k] = v
@@ -192,7 +191,7 @@ class PropertyClassMetadata(object):
         """
         # Using the same PropertyMetadata class as for units, but 'method'
         # will always be none
-        for k, v in six.iteritems(p):
+        for k, v in p.items():
             if not isinstance(v, PropertyMetadata):
                 v = PropertyMetadata(name=k, units=v)
             self._required_properties[k] = v

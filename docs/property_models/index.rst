@@ -4,7 +4,7 @@ Property Model Library
 .. toctree::
     :maxdepth: 1
 
-    cubic_eos
-    ideal_gas
+    ceos
+    activity_coefficient
     water
     

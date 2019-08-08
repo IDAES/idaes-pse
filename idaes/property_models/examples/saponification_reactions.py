@@ -15,9 +15,6 @@ Example property package for the saponification of Ethyl Acetate with NaOH
 Assumes dilute solutions with properties of H2O.
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 

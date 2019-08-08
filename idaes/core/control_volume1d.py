@@ -14,8 +14,6 @@
 Base class for control volumes
 """
 
-from __future__ import division
-
 # Import Python libraries
 import copy
 import logging

@@ -14,8 +14,6 @@
 Demonstration and test flowsheet for a dynamic flowsheet.
 
 """
-from __future__ import division
-from __future__ import print_function
 
 # Import Pyomo libraries
 from pyomo.environ import ConcreteModel, SolverFactory, TransformationFactory
