@@ -114,12 +114,16 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     utils.remapIcons(data, 'forDisplay');
     this.graph.fromJSON(data);
 
+    // We need to remove the mouseleave events from the paper or every time that renderModel is called
+    // it will create a new event listener causing the file to be saved multiple times
+    this.paper.off('paper:mouseleave');
     // When the mouse leaves the paper save the data and layout.
     // This makes the layout persist when switching tabs and reopening the file
     this.paper.on('paper:mouseleave', evt => {
       let json_data = JSON.stringify(this.graph.toJSON())
       let newData = {'application/vnd.idaes.model': json_data };
       model.setData({ data: newData });
+      console.log("leave paper");
     });
   }
 
