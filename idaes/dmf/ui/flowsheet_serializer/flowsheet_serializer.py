@@ -1,9 +1,16 @@
+import json
+import os
+
 from idaes.core import UnitModelBlockData
 from pyomo.network.port import SimplePort
 from pyomo.network.arc import SimpleArc
 from collections import defaultdict
-import json
 from idaes.dmf.ui import icon_mapping
+
+
+class FileBaseNameExistsError(Exception):
+    pass
+
 
 class FlowsheetSerializer:
     def __init__(self):
@@ -11,7 +18,22 @@ class FlowsheetSerializer:
         self.arcs = []
         self.ports = {}
 
-    def save(self, flowsheet, file_base_name):
+    def save(self, flowsheet, file_base_name, overwrite=False):
+        """
+        Serializes the flowsheet and saves it to a file that can be read by the idaes-model-vis 
+        jupyter lab extension.
+        :param flowsheet: The flowsheet to save. Usually fetched from the model.
+        :param file_base_name: The file prefix to the .idaes.vis file produced. The file is created/saved
+        in the directory that you ran from Jupyter Lab.
+        :param overwrite: Boolean to overwrite an existing file_base_name.idaes.vis.
+        If True, the existing file with the same file_base_name will be overwritten. This will cause you to lose
+        any saved layout. 
+        If False and there is an existing file with that file_base_name, you will get an error 
+        message stating that you cannot save a file to the file_base_name (and therefore overwriting the saved 
+        layout). If there is not an existing file with that file_base_name then it saves as normal.
+        Defaults to False.
+        :return: None
+        """
         for component in flowsheet.component_objects(descend_into=False):
             # TODO try using component_objects(ctype=X)
             if isinstance(component, UnitModelBlockData):
@@ -53,13 +75,13 @@ class FlowsheetSerializer:
 
 
         vis_file_name = file_base_name + '.idaes.vis'
-        try:
-            with open(vis_file_name, 'r') as oldfile:
-                outjson = json.load(oldfile)
-                print('loading existing saved vis file')
-        except FileNotFoundError:
+        if os.path.isfile(vis_file_name) and overwrite == False:
+            msg = (f"{vis_file_name} already exists. If you wish to overwrite this file call save() with overwrite=True. "
+                   "WARNING: If you overwrite the file, you will lose your saved layout.")
+            raise FileBaseNameExistsError(msg)
+        else:
             outjson = {}
-            print('creating new vis file')
+            print(f"Creating {vis_file_name}")
             #outjson['joint_enc'] = []
 
         #outjson['model']['cells'] = []
