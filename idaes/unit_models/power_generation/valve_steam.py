@@ -15,9 +15,6 @@ This provides valve models for steam and liquid water.  These are for
 steam cycle control valves and the turbine throttle valves.
 """
 
-
-from __future__ import division
-
 __Author__ = "John Eslick"
 
 import logging

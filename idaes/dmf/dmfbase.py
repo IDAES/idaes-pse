@@ -25,7 +25,6 @@ from typing import Generator
 
 # third-party
 import pendulum
-import six
 from traitlets import HasTraits, default, observe
 from traitlets import Unicode
 import yaml
@@ -134,7 +133,7 @@ class DMFConfig(object):
         except Exception as err:
             raise ValueError(err)
         if y:
-            for k, v in six.iteritems(y):
+            for k, v in y.items():
                 if k in self._keys:
                     self.c[k] = v
 
@@ -682,3 +681,33 @@ def get_propertydb_table(rsrc):
     from idaes.dmf import propdata
 
     return propdata.PropertyTable.load(rsrc.datafiles[0].fullpath)
+
+# 1. scalar string or number (int, float): Match resources that
+#            have this exact value for the given attribute.
+#         2. special scalars "@<value>":
+#
+#                 - "@true"/"@false": boolean (bare True/False will test existence)
+#
+#         3. date, as datetime.datetime or pendulum.Pendulum instance: Match
+#            resources that have this exact date for the given attribute.
+#         4. list: Match resources that have a list value for this attribute,
+#            and for which any of the values in the provided list are in the
+#            resource's corresponding value. If a '!' is appended to the key
+#            name, then this will be interpreted as a directive to only match
+#            resources for which *all* values in the provided list are present.
+#         5. dict: This is an inequality, with one or more key/value pairs.
+#            The key is the type of inequality and the value is the numeric
+#            value for that range. All keys begin with '$'. The possible
+#            inequalities are:
+#
+#                 - "$lt": Less than (<)
+#                 - "$le": Less than or equal (<=)
+#                 - "$gt": Greater than (>)
+#                 - "$ge": Greater than or equal (>=)
+#                 - "$ne": Not equal to (!=)
+#
+#         6. Boolean True means does the field exist, and False means
+#            does it *not* exist.
+#         7. Regular expression, string "~<expr>" and `re_flags`
+#            for flags (understood: re.IGNORECASE)
+

@@ -13,8 +13,6 @@
 """
 Generic template for a translator block.
 """
-from __future__ import division
-
 import logging
 
 # Import Pyomo libraries

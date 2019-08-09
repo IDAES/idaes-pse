@@ -65,8 +65,7 @@ import json
 import logging
 import numpy as np
 import sys
-# third-party
-import six
+from io import StringIO
 # pyomo
 import pyutilib.services
 from pyutilib.misc import capture_output
@@ -286,7 +285,7 @@ def _set_model_parameters_from_sample(model, inputs, sample_point):
     -------
        N/A
     """
-    for k, v in six.iteritems(sample_point):
+    for k, v in sample_point.items():
         if k == '_name':
             # because parallel task manager does not handle dictionaries,
             # we add an _name entry to the sample point dictionary
@@ -363,7 +362,7 @@ def write_sample_file(eval_spec,
     samples = OrderedDict()
     for i in range(n_points):
         sample = samples['Sample-{}'.format(i+1)] = OrderedDict()
-        for k, v in six.iteritems(eval_spec.inputs):
+        for k, v in eval_spec.inputs.items():
             s = np.random.normal(loc=v['mean'], scale=v['std'])
             if s > v['upper']:
                 s = v['upper']
@@ -438,7 +437,7 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
     # ToDo: fix and test parallel task manager with dictionaries and change
     # this
     samples_list = list()
-    for k, v in six.iteritems(samples):
+    for k, v in samples.items():
         v['_name'] = k
         samples_list.append(v)
     n_samples = len(samples_list)
@@ -456,7 +455,7 @@ def run_convergence_evaluation(sample_file_dict, conv_eval):
 
         # capture the output
         # ToDo: make this an option and turn off for single sample execution
-        output_buffer = six.StringIO()
+        output_buffer = StringIO()
         with LoggingIntercept(output_buffer, 'idaes', logging.ERROR):
             with capture_output():  # as str_out:
                 model = conv_eval.get_initialized_model()
@@ -551,7 +550,7 @@ def print_convergence_statistics(inputs, results, s):
     print('%20s %10s %10s %10s %10s' % ('Parameter', 'Min', 'Mean',
                                         'StdDev', 'Max'))
     print('-'*64)
-    for k, v in six.iteritems(inputs):
+    for k, v in inputs.items():
         values = [results[i]['sample_point'][k] for i in range(len(results))]
         print('%20s %10g %10g %10g %10g' % (k, np.min(values),
                                             float(np.mean(values)),
@@ -626,7 +625,7 @@ def print_convergence_statistics(inputs, results, s):
             msg = 'high iteration count; long runtime'
 
         print(c['name'], ':', msg)
-        for k, v in six.iteritems(c['sample_point']):
+        for k, v in c['sample_point'].items():
             if k == '_name':
                 # we need this because the parallel task manager does not
                 # handle dicts  and we add _name to identify the sample name
@@ -654,7 +653,7 @@ def save_results_to_dmf(dmf, inputs, results, stats):
     """
     d = {}  # data
     x = {}
-    for k, v in six.iteritems(inputs):
+    for k, v in inputs.items():
         values = [results[i]['sample_point'][k] for i in range(len(results))]
         x[k] = {
             'min': float(np.min(values)),
@@ -722,7 +721,7 @@ def save_results_to_dmf(dmf, inputs, results, stats):
         case = {'messages': msg}
         if is_outlier:
             outliers = {}
-            for k, v in six.iteritems(r['sample_point']):
+            for k, v in r['sample_point'].items():
                 if k == '_name':
                     # we need this because the parallel task manager does not
                     # handle dicts and we add _name to identify the sample name

@@ -13,8 +13,6 @@
 """
 Standard IDAES Feed block.
 """
-from __future__ import division
-
 import logging
 
 # Import Pyomo libraries

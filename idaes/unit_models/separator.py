@@ -13,8 +13,6 @@
 """
 General purpose separator block for IDAES models
 """
-from __future__ import absolute_import  # disable implicit relative imports
-from __future__ import division, print_function
 
 import logging
 from enum import Enum
@@ -988,7 +986,7 @@ linked the mixed state and all outlet states,
                                                 continue
                                     else:
                                         raise AttributeError
-        
+
                             elif self.config.split_basis == \
                                     SplittingType.componentFlow:
                                 ivar = mb[t].component(l_name+"_comp")
