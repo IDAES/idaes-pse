@@ -32,7 +32,8 @@ from idaes.core import (FlowsheetBlock,
 from idaes.unit_models.pressure_changer import (PressureChanger,
                                                 ThermodynamicAssumption)
 
-from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
+from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
 from idaes.property_models import iapws95
 from idaes.property_models.examples.saponification_thermo import \
     SaponificationParameterBlock
