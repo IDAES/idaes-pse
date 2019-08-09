@@ -19,7 +19,7 @@ Note: This is an attempt a ~100% test coverage of a module.
 import json
 import logging
 import os
-from six import StringIO
+from io import StringIO
 import sys
 
 # third-party

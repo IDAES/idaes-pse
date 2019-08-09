@@ -13,8 +13,6 @@
 """
 Standard IDAES flash model.
 """
-from __future__ import division
-
 # Import Python libraries
 import logging
 from pandas import DataFrame

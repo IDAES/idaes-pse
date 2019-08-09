@@ -11,24 +11,18 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Ideal property package with VLE calucations. Correlations to compute
-Cp_comp, h_comp and vapor pressure are obtained from "The properties of gases
-and liquids by Robert C. Reid" and "Perry's Chemical Engineers Handbook by
-Robert H. Perry". SI units.
+Example ideal parameter block for the VLE calucations for a
+Benzene-Toluene-o-Xylene system.
 """
-
-# Chages the divide behavior to not do integer division
-from __future__ import division
 
 # Import Python libraries
 import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, exp, Set, Param, sqrt, log10
+    value, Var, Set, Param, sqrt, log10
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -38,63 +32,258 @@ from idaes.core import (declare_process_block_class,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.exceptions import BurntToast, ConfigurationError
-from idaes.ui.report import degrees_of_freedom
-
-# Some more inforation about this module
-__author__ = "Jaffer Ghouse"
-__version__ = "0.0.2"
-
+from idaes.core.util.model_statistics import degrees_of_freedom, \
+                                             number_unfixed_variables
+from idaes.core.util.misc import extract_data
 
 # Set up logger
 _log = logging.getLogger(__name__)
 
 
-class IdealParameterData(PhysicalParameterBlock):
-    """
-    Property Parameter Block Class
-    Contains parameters and indexing sets associated with properties for
-    BTX system.
-    """
-    # Config block for the _IdealStateBlock
+@declare_process_block_class("HDAParameterBlock")
+class HDAParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
-
-    CONFIG.declare("valid_phase", ConfigValue(
-        default=('Vap', 'Liq'),
-        domain=In(['Liq', 'Vap', ('Vap', 'Liq'), ('Liq', 'Vap')]),
-        description="Flag indicating the valid phase",
-        doc="""Flag indicating the valid phase for a given set of
-conditions, and thus corresponding constraints  should be included,
-**default** - ('Vap', 'Liq').
-**Valid values:** {
-**'Liq'** - Liquid only,
-**'Vap'** - Vapor only,
-**('Vap', 'Liq')** - Vapor-liquid equilibrium,
-**('Liq', 'Vap')** - Vapor-liquid equilibrium,}"""))
 
     def build(self):
         '''
         Callable method for Block construction.
         '''
-        super(IdealParameterData, self).build()
+        super(HDAParameterData, self).build()
 
         self.state_block_class = IdealStateBlock
 
-        # List of valid phases in property package
-        if self.config.valid_phase == ('Liq', 'Vap') or \
-                self.config.valid_phase == ('Vap', 'Liq'):
-            self.phase_list = Set(initialize=['Liq', 'Vap'],
-                                  ordered=True)
-        elif self.config.valid_phase == 'Liq':
-            self.phase_list = Set(initialize=['Liq'])
-        else:
-            self.phase_list = Set(initialize=['Vap'])
+        self.component_list = Set(initialize=['benzene',
+                                              'toluene',
+                                              'hydrogen',
+                                              'methane'])
+
+        self.phase_list = Set(initialize=['Liq', 'Vap'],
+                              ordered=True)
+
+        # List of components in each phase (optional)
+        self.phase_comp = {"Liq": self.component_list,
+                           "Vap": self.component_list}
+
+        # List of phase equilibrium index
+        self.phase_equilibrium_idx = Set(initialize=[1, 2, 3, 4, 5])
+
+        self.phase_equilibrium_list = \
+            {1: ["benzene", ("Vap", "Liq")],
+             2: ["toluene", ("Vap", "Liq")],
+             3: ["hydrogen", ("Vap", "Liq")],
+             4: ["methane", ("Vap", "Liq")],
+             5: ["diphenyl", ("Vap", "Liq")]}
+
+        # Thermodynamic reference state
+        self.pressure_ref = Param(mutable=True,
+                                  default=101325,
+                                  doc='Reference pressure [Pa]')
+        self.temperature_ref = Param(mutable=True,
+                                     default=298.15,
+                                     doc='Reference temperature [K]')
+
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
+        pressure_crit_data = {'benzene': 48.9e5,
+                              'toluene': 41e5,
+                              'hydrogen': 12.9e5,
+                              'methane': 46e5,
+                              'diphenyl': 38.5e5
+                              }
+
+        self.pressure_crit = Param(
+            self.component_list,
+            within=NonNegativeReals,
+            mutable=False,
+            initialize=extract_data(pressure_crit_data),
+            doc='Critical pressure [Pa]')
+
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
+        temperature_crit_data = {'benzene': 562.2,
+                                 'toluene': 591.8,
+                                 'hydrogen': 33.0,
+                                 'methane': 190.4,
+                                 'diphenyl': 789
+                                 }
+
+        self.temperature_crit = Param(
+            self.component_list,
+            within=NonNegativeReals,
+            mutable=False,
+            initialize=extract_data(temperature_crit_data),
+            doc='Critical temperature [K]')
+
+        # Gas Constant
+        self.gas_const = Param(within=NonNegativeReals,
+                               mutable=False,
+                               default=8.314,
+                               doc='Gas Constant [J/mol.K]')
+
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
+        mw_comp_data = {'benzene': 78.1136E-3,
+                        'toluene': 92.1405E-3,
+                        'hydrogen': 2.016e-3,
+                        'methane': 16.043e-3,
+                        'diphenyl': 154.212e-4}
+
+        self.mw_comp = Param(self.component_list,
+                             mutable=False,
+                             initialize=extract_data(mw_comp_data),
+                             doc="molecular weight Kg/mol")
+
+        # Constants for liquid densities
+        # Source: Perry's Chemical Engineers Handbook
+        #         - Robert H. Perry (Cp_liq)
+        dens_liq_data = {('benzene', '1'): 1.0162,
+                         ('benzene', '2'): 0.2655,
+                         ('benzene', '3'): 562.16,
+                         ('benzene', '4'): 0.28212,
+                         ('toluene', '1'): 0.8488,
+                         ('toluene', '2'): 0.26655,
+                         ('toluene', '3'): 591.8,
+                         ('toluene', '4'): 0.2878,
+                         ('hydrogen', '1'): 5.414,
+                         ('hydrogen', '2'): 0.34893,
+                         ('hydrogen', '3'): 33.19,
+                         ('hydrogen', '4'): 0.2706,
+                         ('methane', '1'): 2.9214,
+                         ('methane', '2'): 0.28976,
+                         ('methane', '3'): 190.56,
+                         ('methane', '4'): 0.28881,
+                         ('diphenyl', '1'): 0.5039,
+                         ('diphenyl', '2'): 0.25273,
+                         ('diphenyl', '3'): 789.26,
+                         ('diphenyl', '4'): 0.281}
+
+        self.dens_liq_params = Param(
+                self.component_list,
+                ['1', '2', '3', '4'],
+                mutable=False,
+                initialize=extract_data(dens_liq_data),
+                doc="Parameters to compute liquid densities")
+
+        # Boiling point at standard pressure
+        # Source: Perry's Chemical Engineers Handbook
+        #         - Robert H. Perry (Cp_liq)
+        bp_data = {('benzene'): 353.25,
+                   ('toluene'): 383.95,
+                   ('hydrogen'): 20.45,
+                   ('methane'): 111.75,
+                   ('diphenyl'): 528.05}
+
+        self.temperature_boil = Param(
+                self.component_list,
+                mutable=False,
+                initialize=extract_data(bp_data),
+                doc="Pure component boiling points at standard pressure [K]")
+
+        # Constants for specific heat capacity, enthalpy
+        # Sources: The Properties of Gases and Liquids (1987)
+        #         4th edition, Chemical Engineering Series - Robert C. Reid
+        #         Perry's Chemical Engineers Handbook
+        #         - Robert H. Perry (Cp_liq)
+        cp_ig_data = {('Liq', 'benzene', '1'): 1.29E5,
+                      ('Liq', 'benzene', '2'): -1.7E2,
+                      ('Liq', 'benzene', '3'): 6.48E-1,
+                      ('Liq', 'benzene', '4'): 0,
+                      ('Liq', 'benzene', '5'): 0,
+                      ('Vap', 'benzene', '1'): -3.392E1,
+                      ('Vap', 'benzene', '2'): 4.739E-1,
+                      ('Vap', 'benzene', '3'): -3.017E-4,
+                      ('Vap', 'benzene', '4'): 7.130E-8,
+                      ('Vap', 'benzene', '5'): 0,
+                      ('Liq', 'toluene', '1'): 1.40E5,
+                      ('Liq', 'toluene', '2'): -1.52E2,
+                      ('Liq', 'toluene', '3'): 6.95E-1,
+                      ('Liq', 'toluene', '4'): 0,
+                      ('Liq', 'toluene', '5'): 0,
+                      ('Vap', 'toluene', '1'): -2.435E1,
+                      ('Vap', 'toluene', '2'): 5.125E-1,
+                      ('Vap', 'toluene', '3'): -2.765E-4,
+                      ('Vap', 'toluene', '4'): 4.911E-8,
+                      ('Vap', 'toluene', '5'): 0,
+                      ('Liq', 'hydrogen', '1'): 0,  # 6.6653e1,
+                      ('Liq', 'hydrogen', '2'): 0,  # 6.7659e3,
+                      ('Liq', 'hydrogen', '3'): 0,  # -1.2363e2,
+                      ('Liq', 'hydrogen', '4'): 0,  # 4.7827e2, # Eqn 2
+                      ('Liq', 'hydrogen', '5'): 0,
+                      ('Vap', 'hydrogen', '1'): 2.714e1,
+                      ('Vap', 'hydrogen', '2'): 9.274e-3,
+                      ('Vap', 'hydrogen', '3'): -1.381e-5,
+                      ('Vap', 'hydrogen', '4'): 7.645e-9,
+                      ('Vap', 'hydrogen', '5'): 0,
+                      ('Liq', 'methane', '1'): 0,  # 6.5708e1,
+                      ('Liq', 'methane', '2'): 0,  # 3.8883e4,
+                      ('Liq', 'methane', '3'): 0,  # -2.5795e2,
+                      ('Liq', 'methane', '4'): 0,  # 6.1407e2, # Eqn 2
+                      ('Liq', 'methane', '5'): 0,
+                      ('Vap', 'methane', '1'): 1.925e1,
+                      ('Vap', 'methane', '2'): 5.213e-2,
+                      ('Vap', 'methane', '3'): 1.197e-5,
+                      ('Vap', 'methane', '4'): -1.132e-8,
+                      ('Vap', 'methane', '5'): 0,
+                      ('Liq', 'diphenyl', '1'): 1.2177e5,
+                      ('Liq', 'diphenyl', '2'): 4.2930e2,
+                      ('Liq', 'diphenyl', '3'): 0,
+                      ('Liq', 'diphenyl', '4'): 0,
+                      ('Liq', 'diphenyl', '5'): 0,
+                      ('Vap', 'diphenyl', '1'): -9.707e1,
+                      ('Vap', 'diphenyl', '2'): 1.106e0,
+                      ('Vap', 'diphenyl', '3'): -8.855e-4,
+                      ('Vap', 'diphenyl', '4'): 2.790e-7,
+                      ('Vap', 'diphenyl', '5'): 0}
+
+        self.cp_ig = Param(self.phase_list, self.component_list,
+                           ['1', '2', '3', '4', '5'],
+                           mutable=False,
+                           initialize=extract_data(cp_ig_data),
+                           doc="parameters to compute Cp_comp")
+
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
+        # fitted to Antoine form
+        # H2, Methane from NIST webbook
+        pressure_sat_coeff_data = {('benzene', 'A'): 4.202,
+                                   ('benzene', 'B'): 1322,
+                                   ('benzene', 'C'): -38.56,
+                                   ('toluene', 'A'): 4.216,
+                                   ('toluene', 'B'): 1435,
+                                   ('toluene', 'C'): -43.33,
+                                   ('hydrogen', 'A'): 3.543,
+                                   ('hydrogen', 'B'): 99.40,
+                                   ('hydrogen', 'C'): 7.726,
+                                   ('methane', 'A'): 3.990,
+                                   ('methane', 'B'): 443.0,
+                                   ('methane', 'C'): -0.49,
+                                   ('diphenyl', 'A'): 4.345,
+                                   ('diphenyl', 'B'): 1988,
+                                   ('diphenyl', 'C'): -70.82}
+
+        self.pressure_sat_coeff = Param(
+            self.component_list,
+            ['A', 'B', 'C'],
+            mutable=False,
+            initialize=extract_data(pressure_sat_coeff_data),
+            doc="parameters to compute Cp_comp")
+
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
+        dh_vap = {'benzene': 3.387e4, 'toluene': 3.8262e4,
+                  'hydrogen': 0, 'methane': 0, "diphenyl": 6.271e4}
+
+        self.dh_vap = Param(self.component_list,
+                            mutable=False,
+                            initialize=extract_data(dh_vap),
+                            doc="heat of vaporization")
 
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
         obj.add_properties(
             {'flow_mol': {'method': None, 'units': 'mol/s'},
+             'flow_mol_phase_comp': {'method': None, 'units': 'mol/s'},
              'mole_frac': {'method': None, 'units': 'none'},
              'temperature': {'method': None, 'units': 'K'},
              'pressure': {'method': None, 'units': 'Pa'},
@@ -140,15 +329,15 @@ class _IdealStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, flow_mol=None, mole_frac=None,
+    def initialize(blk, flow_mol_phase_comp=None,
                    temperature=None, pressure=None, state_vars_fixed=False,
                    hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialisation routine for property package.
         Keyword Arguments:
-            flow_mol_comp : value at which to initialize component flows
-                             (default=None)
+            flow_mol_phase_comp : value at which to initialize phase-component
+                                flows (default=None)
             pressure : value at which to initialize pressure (default=None)
             temperature : value at which to initialize temperature
                           (default=None)
@@ -185,39 +374,25 @@ class _IdealStateBlock(StateBlock):
 
         _log.info('Starting {} initialisation'.format(blk.name))
 
-        # Deactivate the constraints specific for outlet block i.e.
-        # when defined state is False
-        for k in blk.keys():
-            if blk[k].config.defined_state is False:
-                blk[k].sum_mole_frac_out.deactivate()
-
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
             Fflag = {}
-            Xflag = {}
             Pflag = {}
             Tflag = {}
 
             for k in blk.keys():
-                if blk[k].flow_mol.fixed is True:
-                    Fflag[k] = True
-                else:
-                    Fflag[k] = False
-                    if flow_mol is None:
-                        blk[k].flow_mol.fix(1.0)
-                    else:
-                        blk[k].flow_mol.fix(flow_mol)
-
-                for j in blk[k]._params.component_list:
-                    if blk[k].mole_frac[j].fixed is True:
-                        Xflag[k, j] = True
-                    else:
-                        Xflag[k, j] = False
-                        if mole_frac is None:
-                            blk[k].mole_frac[j].fix(1 / len(blk[k].
-                                                    _params.component_list))
+                for p in blk[k]._params.phase_list:
+                    for j in blk[k]._params.component_list:
+                        if blk[k].flow_mol_phase_comp[p, j].fixed is True:
+                            Fflag[k, p, j] = True
                         else:
-                            blk[k].mole_frac[j].fix(mole_frac[j])
+                            Fflag[k, p, j] = False
+                            if flow_mol_phase_comp is None:
+                                blk[k].flow_mol_phase_comp[p, j].fix(
+                                    1 / len(blk[k]._params.component_list))
+                            else:
+                                blk[k].flow_mol_phase_comp[p, j].fix(
+                                    flow_mol_phase_comp[p, j])
 
                 if blk[k].pressure.fixed is True:
                     Pflag[k] = True
@@ -237,10 +412,9 @@ class _IdealStateBlock(StateBlock):
                     else:
                         blk[k].temperature.fix(temperature)
 
-            # ---------------------------------------------------------------------
+            # -----------------------------------------------------------------
             # If input block, return flags, else release state
             flags = {"Fflag": Fflag,
-                     "Xflag": Xflag,
                      "Pflag": Pflag,
                      "Tflag": Tflag}
 
@@ -268,18 +442,9 @@ class _IdealStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
         for k in blk.keys():
-            if hasattr(blk[k], "eq_temperature_bubble"):
-                calculate_variable_from_constraint(
-                        blk[k].temperature_bubble,
-                        blk[k].eq_temperature_bubble)
-
             if hasattr(blk[k], "eq_temperature_dew"):
                 calculate_variable_from_constraint(blk[k].temperature_dew,
                                                    blk[k].eq_temperature_dew)
-
-            if hasattr(blk[k], "eq_pressure_bubble"):
-                calculate_variable_from_constraint(blk[k].pressure_bubble,
-                                                   blk[k].eq_pressure_bubble)
 
             if hasattr(blk[k], "eq_pressure_dew"):
                 calculate_variable_from_constraint(blk[k].pressure_dew,
@@ -292,7 +457,8 @@ class _IdealStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # If flash, initialize T1 and Teq
         for k in blk.keys():
-            if blk[k].config.has_phase_equilibrium:
+            if (blk[k].config.has_phase_equilibrium and
+                    not blk[k].config.defined_state):
                 blk[k]._t1.value = max(blk[k].temperature.value,
                                        blk[k].temperature_bubble.value)
                 blk[k]._teq.value = min(blk[k]._t1.value,
@@ -307,73 +473,28 @@ class _IdealStateBlock(StateBlock):
         # TODO : This will need ot be generalised more when we move to a
         # modular implementation
         for k in blk.keys():
-            if blk[k]._params.config.valid_phase == "Liq":
-                blk[k].flow_mol_phase['Liq'].value = \
-                    blk[k].flow_mol.value
+            # Deactivate equilibrium constraints, as state is fixed
+            if hasattr(blk[k], 'equilibrium_constraint'):
+                blk[k].equilibrium_constraint.deactivate()
 
-                for j in blk[k]._params.component_list:
-                    blk[k].mole_frac_phase['Liq', j].value = \
-                        blk[k].mole_frac[j].value
-
-            elif blk[k]._params.config.valid_phase == "Vap":
-                blk[k].flow_mol_phase['Vap'].value = \
-                    blk[k].flow_mol.value
-
-                for j in blk[k]._params.component_list:
-                    blk[k].mole_frac_phase['Vap', j].value = \
-                        blk[k].mole_frac[j].value
-
-            else:
-                # Seems to work best with default values for phase flows
-                for j in blk[k]._params.component_list:
-                    blk[k].mole_frac_phase['Vap', j].value = \
-                        blk[k].mole_frac[j].value
-                    blk[k].mole_frac_phase['Liq', j].value = \
-                        blk[k].mole_frac[j].value
-
-                    calculate_variable_from_constraint(
-                            blk[k].pressure_sat[j],
-                            blk[k].eq_pressure_sat[j])
-
-        # ---------------------------------------------------------------------
-        # Solve phase equilibrium constraints
+        free_vars = 0
         for k in blk.keys():
-            for c in blk[k].component_objects(Constraint):
-                # Deactivate all property constraints
-                if c.local_name not in ("total_flow_balance",
-                                        "component_flow_balances",
-                                        "equilibrium_constraint",
-                                        "sum_mole_frac",
-                                        "_t1_constraint",
-                                        "_teq_constraint",
-                                        "eq_pressure_dew",
-                                        "eq_pressure_bubble",
-                                        "eq_temperature_dew",
-                                        "eq_temperature_bubble",
-                                        "eq_pressure_sat"):
-                    c.deactivate()
+            free_vars += number_unfixed_variables(blk[k])
+        if free_vars > 0:
+            try:
+                results = solve_indexed_blocks(opt, [blk], tee=stee)
+            except:
+                results = None
+        else:
+            results = None
 
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
+        for k in blk.keys():
+            # Reactivate equilibrium constraints
+            if hasattr(blk[k], 'equilibrium_constraint'):
+                blk[k].equilibrium_constraint.activate()
 
         if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Phase state initialization for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Phase state initialization for "
-                             "{} failed".format(blk.name))
-
-        # ---------------------------------------------------------------------
-        # Initialize other properties
-        for k in blk.keys():
-            for c in blk[k].component_objects(Constraint):
-                # Activate all constraints except sum_mole_frac_out
-                if c.local_name not in ("sum_mole_frac_out"):
-                    c.activate()
-
-        if outlvl > 0:
-            if results.solver.termination_condition \
+            if results is None or results.solver.termination_condition \
                     == TerminationCondition.optimal:
                 _log.info("Property initialization for "
                           "{} completed".format(blk.name))
@@ -383,10 +504,6 @@ class _IdealStateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # Return state to initial conditions
-        for k in blk.keys():
-            if (blk[k].config.defined_state is False):
-                blk[k].sum_mole_frac_out.activate()
-
         if state_vars_fixed is False:
             if hold_state is True:
                 return flags
@@ -411,11 +528,10 @@ class _IdealStateBlock(StateBlock):
 
         # Unfix state variables
         for k in blk.keys():
-            if flags['Fflag'][k] is False:
-                blk[k].flow_mol.unfix()
-            for j in blk[k]._params.component_list:
-                if flags['Xflag'][k, j] is False:
-                    blk[k].mole_frac[j].unfix()
+            for p in blk[k]._params.phase_list:
+                for j in blk[k]._params.component_list:
+                    if flags['Fflag'][k, p, j] is False:
+                        blk[k].flow_mol_phase_comp[p, j].unfix()
             if flags['Pflag'][k] is False:
                 blk[k].pressure.unfix()
             if flags['Tflag'][k] is False:
@@ -424,6 +540,7 @@ class _IdealStateBlock(StateBlock):
         if outlvl > 0:
             if outlvl > 0:
                 _log.info('{} states released.'.format(blk.name))
+
 
 @declare_process_block_class("IdealStateBlock",
                              block_class=_IdealStateBlock)
@@ -434,123 +551,63 @@ class IdealStateBlockData(StateBlockData):
         """Callable method for Block construction."""
         super(IdealStateBlockData, self).build()
 
-        # Check for valid phase indicator and consistent flags
-        if self.config.has_phase_equilibrium and \
-                self._params.config.valid_phase in ['Vap', 'Liq']:
-            raise ConfigurationError("Inconsistent inputs. Valid phase"
-                                     " flag not set to VL for the state"
-                                     " block but has_phase_equilibrium"
-                                     " is set to True.")
-
         # Add state variables
-        self.flow_mol = Var(initialize=1.0,
-                            domain=NonNegativeReals,
-                            doc='Component molar flowrate [mol/s]')
-        self.mole_frac = Var(self._params.component_list,
-                             bounds=(0, 1),
-                             initialize=1 / len(self._params.component_list),
-                             doc='Mixture mole fractions [-]')
+        self.flow_mol_phase_comp = Var(
+                self._params.phase_list,
+                self._params.component_list,
+                initialize=0.5,
+                bounds=(1e-8, 100),
+                doc='Phase-component molar flow rates [mol/s]')
+
         self.pressure = Var(initialize=101325,
+                            bounds=(101325, 400000),
                             domain=NonNegativeReals,
                             doc='State pressure [Pa]')
         self.temperature = Var(initialize=298.15,
+                               bounds=(298.15, 1000),
                                domain=NonNegativeReals,
                                doc='State temperature [K]')
 
         # Add supporting variables
-        self.flow_mol_phase = Var(self._params.phase_list,
-                                  initialize=0.5,
-                                  doc='Phase molar flow rates [mol/s]')
+        def flow_mol_phase(b, p):
+            return sum(b.flow_mol_phase_comp[p, j]
+                       for j in b._params.component_list)
+        self.flow_mol_phase = Expression(self._params.phase_list,
+                                         rule=flow_mol_phase,
+                                         doc='Phase molar flow rates [mol/s]')
 
-        self.mole_frac_phase = Var(
-            self._params.phase_list,
-            self._params.component_list,
-            initialize=1 / len(self._params.component_list),
-            bounds=(0, 1),
-            doc='Phase mole fractions [-]')
+        def flow_mol(b):
+            return sum(b.flow_mol_phase_comp[p, j]
+                       for j in b._params.component_list
+                       for p in b._params.phase_list)
+        self.flow_mol = Expression(rule=flow_mol,
+                                   doc='Total molar flowrate [mol/s]')
 
-        if not self.config.has_phase_equilibrium and \
-                self._params.config.valid_phase == "Liq":
-            self._make_liq_phase_eq()
-        elif not self.config.has_phase_equilibrium and \
-                self._params.config.valid_phase == "Vap":
-            self._make_vap_phase_eq()
-        elif (self.config.has_phase_equilibrium) or \
-                (self._params.config.valid_phase ==
-                    ('Liq', 'Vap')) or \
-                (self._params.config.valid_phase ==
-                    ('Vap', 'Liq')):
-            self._make_flash_eq()
-        else:
-            raise BurntToast("{} found unexpected combination of valid_phases "
-                             "and has_phase_equilibrium. Please contact the "
-                             "IDAES developers with this bug."
-                             .format(self.name))
+        def mole_frac_phase(b, p, j):
+            return b.flow_mol_phase_comp[p, j]/b.flow_mol_phase[p]
+        self.mole_frac_phase = Expression(
+                self._params.phase_list,
+                self._params.component_list,
+                rule=mole_frac_phase,
+                doc='Phase mole fractions [-]')
 
-    def _make_liq_phase_eq(self):
-        def rule_total_mass_balance(b):
-            return b.flow_mol_phase['Liq'] == b.flow_mol
-        self.total_flow_balance = Constraint(rule=rule_total_mass_balance)
+        def mole_frac(b, j):
+            return (sum(b.flow_mol_phase_comp[p, j]
+                        for p in b._params.phase_list) / b.flow_mol)
+        self.mole_frac = Expression(self._params.component_list,
+                                    rule=mole_frac,
+                                    doc='Mixture mole fractions [-]')
 
-        def rule_comp_mass_balance(b, i):
-            return b.mole_frac[i] == b.mole_frac_phase['Liq', i]
-        self.component_flow_balances = Constraint(self._params.component_list,
-                                                  rule=rule_comp_mass_balance)
+        # Reaction Stoichiometry
+        add_object_reference(self, "phase_equilibrium_list_ref",
+                             self._params.phase_equilibrium_list)
 
-        if self.config.defined_state is False:
-            # applied at outlet only
-            self.sum_mole_frac_out = Constraint(
-                expr=1 == sum(self.mole_frac[i]
-                              for i in self._params.component_list))
-
-    def _make_vap_phase_eq(self):
-        def rule_total_mass_balance(b):
-            return b.flow_mol_phase['Vap'] == b.flow_mol
-        self.total_flow_balance = Constraint(rule=rule_total_mass_balance)
-
-        def rule_comp_mass_balance(b, i):
-            return b.mole_frac[i] == b.mole_frac_phase['Vap', i]
-        self.component_flow_balances = Constraint(self._params.component_list,
-                                                  rule=rule_comp_mass_balance)
-
-        if self.config.defined_state is False:
-            # applied at outlet only
-            self.sum_mole_frac_out = \
-                Constraint(expr=1 == sum(self.mole_frac[i]
-                           for i in self._params.component_list))
-
-    def _make_flash_eq(self):
-
-        def rule_total_mass_balance(b):
-            return b.flow_mol_phase['Liq'] + \
-                b.flow_mol_phase['Vap'] == b.flow_mol
-        self.total_flow_balance = Constraint(rule=rule_total_mass_balance)
-
-        def rule_comp_mass_balance(b, i):
-            return b.flow_mol * b.mole_frac[i] == \
-                b.flow_mol_phase['Liq'] * b.mole_frac_phase['Liq', i] + \
-                b.flow_mol_phase['Vap'] * b.mole_frac_phase['Vap', i]
-        self.component_flow_balances = Constraint(self._params.component_list,
-                                                  rule=rule_comp_mass_balance)
-
-        def rule_mole_frac(b):
-            return sum(b.mole_frac_phase['Liq', i]
-                       for i in b._params.component_list) -\
-                sum(b.mole_frac_phase['Vap', i]
-                    for i in b._params.component_list) == 0
-        self.sum_mole_frac = Constraint(rule=rule_mole_frac)
-
-        if self.config.defined_state is False:
-            # applied at outlet only
-            self.sum_mole_frac_out = \
-                Constraint(expr=1 == sum(self.mole_frac[i]
-                           for i in self._params.component_list))
-
-        if self.config.has_phase_equilibrium:
+        if (self.config.has_phase_equilibrium and
+                self.config.defined_state is False):
             # Definition of equilibrium temperature for smooth VLE
-            self._teq = Var(initialize=self.temperature.value,
-                            doc='Temperature for calculating '
-                                'phase equilibrium')
+            self._teq = Var(
+                    initialize=self.temperature.value,
+                    doc='Temperature for calculating phase equilibrium')
             self._t1 = Var(initialize=self.temperature.value,
                            doc='Intermediate temperature for calculating Teq')
 
@@ -563,35 +620,37 @@ class IdealStateBlockData(StateBlockData):
 
             # PSE paper Eqn 13
             def rule_t1(b):
-                return b._t1 == 0.5 * \
-                    (b.temperature + b.temperature_bubble +
-                     sqrt((b.temperature - b.temperature_bubble)**2 +
-                          b.eps_1**2))
+                return b._t1 == 0.5*(
+                        b.temperature + b.temperature_bubble +
+                        sqrt((b.temperature-b.temperature_bubble)**2 +
+                             b.eps_1**2))
             self._t1_constraint = Constraint(rule=rule_t1)
 
             # PSE paper Eqn 14
             # TODO : Add option for supercritical extension
             def rule_teq(b):
-                return b._teq == 0.5 * (b._t1 + b.temperature_dew -
-                                        sqrt((b._t1 - b.temperature_dew)**2 +
-                                             b.eps_2**2))
+                return b._teq == 0.5*(b._t1 + b.temperature_dew -
+                                      sqrt((b._t1-b.temperature_dew)**2 +
+                                           b.eps_2**2))
             self._teq_constraint = Constraint(rule=rule_teq)
 
             def rule_tr_eq(b, i):
                 return b._teq / b._params.temperature_crit[i]
-            self._tr_eq = Expression(self._params.component_list,
-                                     rule=rule_tr_eq,
-                                     doc='Component reduced temperatures [-]')
+            self._tr_eq = Expression(
+                    self._params.component_list,
+                    rule=rule_tr_eq,
+                    doc='Component reduced temperatures [-]')
 
             def rule_equilibrium(b, i):
                 return b.fug_vap[i] == b.fug_liq[i]
-            self.equilibrium_constraint = \
-                Constraint(self._params.component_list, rule=rule_equilibrium)
+            self.equilibrium_constraint = Constraint(
+                    self._params.component_list, rule=rule_equilibrium)
 
 # -----------------------------------------------------------------------------
 # Property Methods
     def _dens_mol_phase(self):
         self.dens_mol_phase = Var(self._params.phase_list,
+                                  initialize=1.0,
                                   doc="Molar density [mol/m^3]")
 
         def rule_dens_mol_phase(b, p):
@@ -603,10 +662,11 @@ class IdealStateBlockData(StateBlockData):
                                             rule=rule_dens_mol_phase)
 
     def _enth_mol_phase_comp(self):
-        self.enth_mol_phase_comp = Var(self._params.phase_list,
-                                       self._params.component_list,
-                                       doc="Phase-component molar specific "
-                                           "enthalpies [J/mol]")
+        self.enth_mol_phase_comp = Var(
+                self._params.phase_list,
+                self._params.component_list,
+                initialize=7e5,
+                doc='Phase-component molar specific enthalpies [J/mol]')
 
         def rule_enth_mol_phase_comp(b, p, j):
             if p == 'Vap':
@@ -614,28 +674,29 @@ class IdealStateBlockData(StateBlockData):
             else:
                 return b._enth_mol_comp_liq(j)
         self.eq_enth_mol_phase_comp = Constraint(
-            self._params.phase_list,
-            self._params.component_list,
-            rule=rule_enth_mol_phase_comp)
+                self._params.phase_list,
+                self._params.component_list,
+                rule=rule_enth_mol_phase_comp)
 
     def _enth_mol_phase(self):
         self.enth_mol_phase = Var(
-            self._params.phase_list,
-            doc='Phase molar specific enthalpies [J/mol]')
+                self._params.phase_list,
+                initialize=7e5,
+                doc='Phase molar specific enthalpies [J/mol]')
 
         def rule_enth_mol_phase(b, p):
             return b.enth_mol_phase[p] == sum(
-                b.enth_mol_phase_comp[p, i] *
-                b.mole_frac_phase[p, i]
-                for i in b._params.component_list)
+                    b.enth_mol_phase_comp[p, i] *
+                    b.mole_frac_phase[p, i]
+                    for i in b._params.component_list)
         self.eq_enth_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_enth_mol_phase)
 
     def _entr_mol_phase_comp(self):
         self.entr_mol_phase_comp = Var(
-            self._params.phase_list,
-            self._params.component_list,
-            doc='Phase-component molar specific entropies [J/mol.K]')
+                self._params.phase_list,
+                self._params.component_list,
+                doc='Phase-component molar specific entropies [J/mol.K]')
 
         def rule_entr_mol_phase_comp(b, p, j):
             if p == 'Vap':
@@ -643,20 +704,20 @@ class IdealStateBlockData(StateBlockData):
             else:
                 return b._entr_mol_comp_liq(j)
         self.eq_entr_mol_phase_comp = Constraint(
-            self._params.phase_list,
-            self._params.component_list,
-            rule=rule_entr_mol_phase_comp)
+                self._params.phase_list,
+                self._params.component_list,
+                rule=rule_entr_mol_phase_comp)
 
     def _entr_mol_phase(self):
         self.entr_mol_phase = Var(
-            self._params.phase_list,
-            doc='Phase molar specific enthropies [J/mol.K]')
+                self._params.phase_list,
+                doc='Phase molar specific enthropies [J/mol.K]')
 
         def rule_entr_mol_phase(b, p):
             return b.entr_mol_phase[p] == sum(
-                b.entr_mol_phase_comp[p, i] *
-                b.mole_frac_phase[p, i]
-                for i in b._params.component_list)
+                    b.entr_mol_phase_comp[p, i] *
+                    b.mole_frac_phase[p, i]
+                    for i in b._params.component_list)
         self.eq_entr_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_entr_mol_phase)
 
@@ -665,7 +726,7 @@ class IdealStateBlockData(StateBlockData):
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
         if j in self._params.component_list:
-            return self.flow_mol_phase[p] * self.mole_frac_phase[p, j]
+            return self.flow_mol_phase_comp[p, j]
         else:
             return 0
 
@@ -689,26 +750,9 @@ class IdealStateBlockData(StateBlockData):
 
     def define_state_vars(self):
         """Define state vars."""
-        return {"flow_mol": self.flow_mol,
-                "mole_frac": self.mole_frac,
+        return {"flow_mol_phase_comp": self.flow_mol_phase_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure}
-
-    def model_check(blk):
-        """Model checks for property block."""
-        # Check temperature bounds
-        if value(blk.temperature) < blk.temperature.lb:
-            _log.error('{} Temperature set below lower bound.'
-                       .format(blk.name))
-        if value(blk.temperature) > blk.temperature.ub:
-            _log.error('{} Temperature set above upper bound.'
-                       .format(blk.name))
-
-        # Check pressure bounds
-        if value(blk.pressure) < blk.pressure.lb:
-            _log.error('{} Pressure set below lower bound.'.format(blk.name))
-        if value(blk.pressure) > blk.pressure.ub:
-            _log.error('{} Pressure set above upper bound.'.format(blk.name))
 
     # Property package utility functions
     def calculate_bubble_point_temperature(self, clear_components=True):
@@ -795,31 +839,8 @@ class IdealStateBlockData(StateBlockData):
 # Phi_L_i and Phi_V_i make calls to submethods which add shadow compositions
 # as needed
     def _temperature_bubble(self):
-        self.temperature_bubble = Var(initialize=298.15,
-                                      doc="Bubble point temperature (K)")
-
-        def rule_psat_bubble(b, j):
-            return 1e5*10**(b._params.pressure_sat_coeff[j, 'A'] -
-                            b._params.pressure_sat_coeff[j, 'B'] /
-                            (b.temperature_bubble +
-                             b._params.pressure_sat_coeff[j, 'C']))
-        try:
-            # Try to build expression
-            self._p_sat_bubbleT = Expression(self._params.component_list,
-                                             rule=rule_psat_bubble)
-
-            def rule_temp_bubble(b):
-                return sum(b._p_sat_bubbleT[i] * b.mole_frac[i]
-                           for i in b._params.component_list) - \
-                    b.pressure == 0
-            self.eq_temperature_bubble = Constraint(rule=rule_temp_bubble)
-
-        except AttributeError:
-            # If expression fails, clean up so that DAE can try again later
-            # Deleting only var/expression as expression construction will fail
-            # first; if it passes then constraint construction will not fail.
-            self.del_component(self.temperature_bubble)
-            self.del_component(self._p_sat_bubbleT)
+        self.temperature_bubble = Param(initialize=33.0,
+                                        doc="Bubble point temperature (K)")
 
     def _temperature_dew(self):
 
@@ -840,7 +861,7 @@ class IdealStateBlockData(StateBlockData):
             def rule_temp_dew(b):
                 return b.pressure * sum(b.mole_frac[i] /
                                         b._p_sat_dewT[i]
-                                        for i in b._params.component_list) \
+                                        for i in ['toluene', 'benzene']) \
                     - 1 == 0
             self.eq_temperature_dew = Constraint(rule=rule_temp_dew)
         except AttributeError:
@@ -851,31 +872,8 @@ class IdealStateBlockData(StateBlockData):
             self.del_component(self._p_sat_dewT)
 
     def _pressure_bubble(self):
-        self.pressure_bubble = Var(initialize=298.15,
-                                   doc="Bubble point pressure (Pa)")
-
-        def rule_psat_bubble(b, j):
-            return 1e5*10**(b._params.pressure_sat_coeff[j, 'A'] -
-                            b._params.pressure_sat_coeff[j, 'B'] /
-                            (b.temperature +
-                             b._params.pressure_sat_coeff[j, 'C']))
-
-        try:
-            # Try to build expression
-            self._p_sat_bubbleP = Expression(self._params.component_list,
-                                             rule=rule_psat_bubble)
-
-            def rule_pressure_bubble(b):
-                return sum(b._p_sat_bubbleP[i] * b.mole_frac[i]
-                           for i in b._params.component_list) \
-                    - b.pressure_bubble == 0
-            self.eq_pressure_bubble = Constraint(rule=rule_pressure_bubble)
-        except AttributeError:
-            # If expression fails, clean up so that DAE can try again later
-            # Deleting only var/expression as expression construction will fail
-            # first; if it passes then constraint construction will not fail.
-            self.del_component(self.pressure_bubble)
-            self.del_component(self._p_sat_bubbleP)
+        self.pressure_bubble = Param(initialize=1e8,
+                                     doc="Bubble point pressure (Pa)")
 
     def _pressure_dew(self):
         self.pressure_dew = Var(initialize=298.15,
@@ -895,7 +893,7 @@ class IdealStateBlockData(StateBlockData):
             def rule_pressure_dew(b):
                 return b.pressure_dew * \
                     sum(b.mole_frac[i] / b._p_sat_dewP[i]
-                        for i in b._params.component_list) \
+                        for i in ['toluene', 'benzene']) \
                     - 1 == 0
             self.eq_pressure_dew = Constraint(rule=rule_pressure_dew)
         except AttributeError:
@@ -908,18 +906,21 @@ class IdealStateBlockData(StateBlockData):
 # -----------------------------------------------------------------------------
 # Liquid phase properties
     def _dens_mol_liq(b):
-        return b.dens_mol_phase['Liq'] == 1e3 * sum(
-            b.mole_frac_phase['Liq', j] *
-            b._params.dens_liq_params[j, '1'] /
-            b._params.dens_liq_params[j, '2'] **
-            (1 + (1 - b.temperature /
-                  b._params.dens_liq_params[j, '3']) **
-             b._params.dens_liq_params[j, '4'])
-            for j in b._params.component_list)
+        return b.dens_mol_phase['Liq'] == 1e3*sum(
+                b.mole_frac_phase['Liq', j] *
+                b._params.dens_liq_params[j, '1'] /
+                b._params.dens_liq_params[j, '2'] **
+                (1 + (1-b.temperature /
+                      b._params.dens_liq_params[j, '3']) **
+                 b._params.dens_liq_params[j, '4'])
+                for j in ['benzene', 'toluene'])                                # TODO: Need to include diphenyl here later
 
     def _fug_liq(self):
         def fug_liq_rule(b, i):
-            return b.pressure_sat[i] * b.mole_frac_phase['Liq', i]
+            if i in ['hydrogen', 'methane']:
+                return b.mole_frac_phase['Liq', i]
+            else:
+                return b.pressure_sat[i] * b.mole_frac_phase['Liq', i]
         self.fug_liq = Expression(self._params.component_list,
                                   rule=fug_liq_rule)
 
@@ -938,32 +939,32 @@ class IdealStateBlockData(StateBlockData):
 
     def _enth_mol_comp_liq(b, j):
         return b.enth_mol_phase_comp['Liq', j] * 1E3 == \
-            ((b._params.cp_ig['Liq', j, '5'] / 5) *
-                (b.temperature**5 - b._params.temperature_ref**5)
-                + (b._params.cp_ig['Liq', j, '4'] / 4) *
-                  (b.temperature**4 - b._params.temperature_ref**4)
-                + (b._params.cp_ig['Liq', j, '3'] / 3) *
-                  (b.temperature**3 - b._params.temperature_ref**3)
-                + (b._params.cp_ig['Liq', j, '2'] / 2) *
-                  (b.temperature**2 - b._params.temperature_ref**2)
-                + b._params.cp_ig['Liq', j, '1'] *
-                  (b.temperature - b._params.temperature_ref))
+                ((b._params.cp_ig['Liq', j, '5'] / 5) *
+                    (b.temperature**5 - b._params.temperature_ref**5)
+                    + (b._params.cp_ig['Liq', j, '4'] / 4) *
+                      (b.temperature**4 - b._params.temperature_ref**4)
+                    + (b._params.cp_ig['Liq', j, '3'] / 3) *
+                      (b.temperature**3 - b._params.temperature_ref**3)
+                    + (b._params.cp_ig['Liq', j, '2'] / 2) *
+                      (b.temperature**2 - b._params.temperature_ref**2)
+                    + b._params.cp_ig['Liq', j, '1'] *
+                      (b.temperature - b._params.temperature_ref))
 
     def _entr_mol_comp_liq(b, j):
         return b.entr_mol_phase_comp['Liq', j] * 1E3 == (
-            ((b._params.cp_ig['Liq', j, '5'] / 4) *
-                (b.temperature**4 - b._params.temperature_ref**4)
-                + (b._params.cp_ig['Liq', j, '4'] / 3) *
-                  (b.temperature**3 - b._params.temperature_ref**3)
-                + (b._params.cp_ig['Liq', j, '3'] / 2) *
-                  (b.temperature**2 - b._params.temperature_ref**2)
-                + b._params.cp_ig['Liq', j, '2'] *
-                  (b.temperature - b._params.temperature_ref)
-                + b._params.cp_ig['Liq', j, '1'] *
-                  log(b.temperature / b._params.temperature_ref)) -
-            b._params.gas_const *
-            log(b.mole_frac_phase['Liq', j] * b.pressure /
-                b._params.pressure_ref))
+                ((b._params.cp_ig['Liq', j, '5'] / 4) *
+                    (b.temperature**4 - b._params.temperature_ref**4)
+                    + (b._params.cp_ig['Liq', j, '4'] / 3) *
+                      (b.temperature**3 - b._params.temperature_ref**3)
+                    + (b._params.cp_ig['Liq', j, '3'] / 2) *
+                      (b.temperature**2 - b._params.temperature_ref**2)
+                    + b._params.cp_ig['Liq', j, '2'] *
+                      (b.temperature - b._params.temperature_ref)
+                    + b._params.cp_ig['Liq', j, '1'] *
+                      log(b.temperature / b._params.temperature_ref)) -
+                b._params.gas_const *
+                log(b.mole_frac_phase['Liq', j]*b.pressure /
+                    b._params.pressure_ref))
 
 # -----------------------------------------------------------------------------
 # Vapour phase properties
@@ -974,14 +975,17 @@ class IdealStateBlockData(StateBlockData):
 
     def _fug_vap(self):
         def fug_vap_rule(b, i):
-            return b.mole_frac_phase['Vap', i] * b.pressure
+            if i in ['hydrogen', 'methane']:
+                return 1e-6
+            else:
+                return b.mole_frac_phase['Vap', i] * b.pressure
         self.fug_vap = Expression(self._params.component_list,
                                   rule=fug_vap_rule)
 
     def _dh_vap(self):
-
         # heat of vaporization
-        add_object_reference(self, "dh_vap", self._params.dh_vap)
+        add_object_reference(self, "dh_vap",
+                             self._params.dh_vap)
 
     def _ds_vap(self):
         # entropy of vaporization = dh_Vap/T_boil
@@ -998,28 +1002,30 @@ class IdealStateBlockData(StateBlockData):
 
     def _enth_mol_comp_vap(b, j):
         return b.enth_mol_phase_comp['Vap', j] == b.dh_vap[j] + \
-            ((b._params.cp_ig['Vap', j, '5'] / 5) *
-             (b.temperature**5 - b._params.temperature_ref**5)
-             + (b._params.cp_ig['Vap', j, '4'] / 4) *
-               (b.temperature**4 - b._params.temperature_ref**4)
-             + (b._params.cp_ig['Vap', j, '3'] / 3) *
-               (b.temperature**3 - b._params.temperature_ref**3)
-             + (b._params.cp_ig['Vap', j, '2'] / 2) *
-               (b.temperature**2 - b._params.temperature_ref**2)
-             + b._params.cp_ig['Vap', j, '1'] *
-               (b.temperature - b._params.temperature_ref))
+                ((b._params.cp_ig['Vap', j, '5'] / 5) *
+                    (b.temperature**5 - b._params.temperature_ref**5)
+                    + (b._params.cp_ig['Vap', j, '4'] / 4) *
+                      (b.temperature**4 - b._params.temperature_ref**4)
+                    + (b._params.cp_ig['Vap', j, '3'] / 3) *
+                      (b.temperature**3 - b._params.temperature_ref**3)
+                    + (b._params.cp_ig['Vap', j, '2'] / 2) *
+                      (b.temperature**2 - b._params.temperature_ref**2)
+                    + b._params.cp_ig['Vap', j, '1'] *
+                      (b.temperature - b._params.temperature_ref))
 
     def _entr_mol_comp_vap(b, j):
         return b.entr_mol_phase_comp['Vap', j] == (
-            b.ds_vap[j] + ((b._params.cp_ig['Vap', j, '5'] / 4) *
-                           (b.temperature**4 - b._params.temperature_ref**4)
-                           + (b._params.cp_ig['Vap', j, '4'] / 3) *
-                           (b.temperature**3 - b._params.temperature_ref**3)
-                           + (b._params.cp_ig['Vap', j, '3'] / 2) *
-                           (b.temperature**2 - b._params.temperature_ref**2)
-                           + b._params.cp_ig['Vap', j, '2'] *
-                           (b.temperature - b._params.temperature_ref)
-                           + b._params.cp_ig['Vap', j, '1'] *
-                           log(b.temperature / b._params.temperature_ref)) -
-            b._params.gas_const * log(b.mole_frac_phase['Vap', j] * b.pressure /
-                                      b._params.pressure_ref))
+                b.ds_vap[j] +
+                ((b._params.cp_ig['Vap', j, '5'] / 4) *
+                    (b.temperature**4 - b._params.temperature_ref**4)
+                    + (b._params.cp_ig['Vap', j, '4'] / 3) *
+                      (b.temperature**3 - b._params.temperature_ref**3)
+                    + (b._params.cp_ig['Vap', j, '3'] / 2) *
+                      (b.temperature**2 - b._params.temperature_ref**2)
+                    + b._params.cp_ig['Vap', j, '2'] *
+                      (b.temperature - b._params.temperature_ref)
+                    + b._params.cp_ig['Vap', j, '1'] *
+                      log(b.temperature / b._params.temperature_ref)) -
+                b._params.gas_const *
+                log(b.mole_frac_phase['Vap', j]*b.pressure /
+                    b._params.pressure_ref))

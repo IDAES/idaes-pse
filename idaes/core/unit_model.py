@@ -13,8 +13,6 @@
 """
 Base class for unit models
 """
-from __future__ import absolute_import  # disable implicit relative imports
-from __future__ import division, print_function
 
 import logging
 

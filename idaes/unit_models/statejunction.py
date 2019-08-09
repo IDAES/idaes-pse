@@ -13,7 +13,6 @@
 """
 Standard IDAES StateJunction model.
 """
-from __future__ import division
 import logging
 
 # Import Pyomo libraries

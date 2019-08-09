@@ -13,7 +13,6 @@
 """
 Standard IDAES Feed block with phase equilibrium.
 """
-from __future__ import division
 from enum import Enum
 
 # Import Pyomo libraries

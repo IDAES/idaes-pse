@@ -14,8 +14,6 @@
 Demonstration of HDA flowsheet with optimization.
 
 """
-from __future__ import division
-from __future__ import print_function
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
@@ -33,8 +31,8 @@ from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import FlowsheetBlock
 
 # Import Unit Model Modules
-import hda_ideal_VLE as thermo_props
-import hda_reaction as reaction_props
+from . import hda_ideal_VLE as thermo_props
+from . import hda_reaction as reaction_props
 
 # Import Unit Model Modules
 from idaes.unit_models import (PressureChanger,

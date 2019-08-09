@@ -34,7 +34,8 @@ from idaes.unit_models.heat_exchanger import (delta_temperature_lmtd_callback,
                                               HeatExchanger,
                                               HeatExchangerFlowPattern)
 
-from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
+from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
 from idaes.property_models import iapws95
 from idaes.property_models.examples.saponification_thermo import \
     SaponificationParameterBlock
@@ -62,8 +63,8 @@ def test_config():
     m.fs.properties = PhysicalParameterTestBlock()
 
     m.fs.unit = HeatExchanger(default={
-            "side_1": {"property_package": m.fs.properties},
-            "side_2": {"property_package": m.fs.properties}})
+        "side_1": {"property_package": m.fs.properties},
+        "side_2": {"property_package": m.fs.properties}})
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 6

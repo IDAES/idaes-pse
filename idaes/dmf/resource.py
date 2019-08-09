@@ -15,6 +15,7 @@ Resource representaitons.
 """
 # stdlib
 import abc
+import argparse
 from collections import namedtuple
 from datetime import datetime
 import getpass
@@ -26,17 +27,18 @@ import os
 import pathlib
 import pprint
 import re
+import sys
 import uuid
 
 # third-party
 import jsonschema
 import pendulum
-import six
+import yaml
 
 # local
 from .util import datetime_timestamp
 
-__author__ = 'Dan Gunter'
+__author__ = "Dan Gunter"
 
 _log = logging.getLogger(__name__)
 
@@ -66,24 +68,24 @@ class ProgLangExt:
 
 
 #: Constants for relation predicates
-PR_DERIVED = 'derived'  # derivedFrom
-PR_CONTAINS = 'contains'
-PR_USES = 'uses'
-PR_VERSION = 'version'
+PR_DERIVED = "derived"  # derivedFrom
+PR_CONTAINS = "contains"
+PR_USES = "uses"
+PR_VERSION = "version"
 RELATION_PREDICATES = {PR_DERIVED, PR_CONTAINS, PR_USES, PR_VERSION}
 
 
-TY_EXPERIMENT = 'experiment'  #: Resource type for experiments
-TY_TABULAR = 'tabular_data'  #: Resource type for tabular data
-TY_PROPERTY = 'propertydb'  #: Resource type for property data
-TY_FLOWSHEET = 'flowsheet'  #: Resource type for a process flowsheet
-TY_NOTEBOOK = 'notebook'  #: Resource type for a Jupyter Notebook
-TY_CODE = 'code'  #: Resource type for source code
-TY_SURRMOD = 'surrogate_model'  #: Resource type for a surrogate model
-TY_DATA = 'data'  #: Resource type for generic data
-TY_JSON = 'json'  #: Resource type for JSON data
-TY_OTHER = 'other'  #: Resource type for unspecified type of resource
-TY_RESOURCE_JSON = 'resource_json'  #: Resource type for a JSON serialized resource
+TY_EXPERIMENT = "experiment"  #: Resource type for experiments
+TY_TABULAR = "tabular_data"  #: Resource type for tabular data
+TY_PROPERTY = "propertydb"  #: Resource type for property data
+TY_FLOWSHEET = "flowsheet"  #: Resource type for a process flowsheet
+TY_NOTEBOOK = "notebook"  #: Resource type for a Jupyter Notebook
+TY_CODE = "code"  #: Resource type for source code
+TY_SURRMOD = "surrogate_model"  #: Resource type for a surrogate model
+TY_DATA = "data"  #: Resource type for generic data
+TY_JSON = "json"  #: Resource type for JSON data
+TY_OTHER = "other"  #: Resource type for unspecified type of resource
+TY_RESOURCE_JSON = "resource_json"  #: Resource type for a JSON serialized resource
 
 #: Constants for resource 'types'
 RESOURCE_TYPES = {
@@ -101,11 +103,11 @@ RESOURCE_TYPES = {
 }
 
 # Constants for fields in stored relations
-RR_PRED = 'predicate'
-RR_SUBJ = 'subject'
-RR_OBJ = 'object'
-RR_ID = 'identifier'
-RR_ROLE = 'role'
+RR_PRED = "predicate"
+RR_SUBJ = "subject"
+RR_OBJ = "object"
+RR_ID = "identifier"
+RR_ROLE = "role"
 
 RESOURCE_SCHEMA = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -259,9 +261,9 @@ class Resource(object):
     """Core object for the Data Management Framework.
     """
 
-    ID_FIELD = 'id_'  #: Identifier field name constant
+    ID_FIELD = "id_"  #: Identifier field name constant
     ID_LENGTH = 32  #: Full-length of identifier
-    TYPE_FIELD = 'type'  #: Resource type field name constant
+    TYPE_FIELD = "type"  #: Resource type field name constant
 
     def __init__(self, value: dict = None, type_: str = None):
         self._set_defaults()
@@ -280,49 +282,49 @@ class Resource(object):
             {
                 self.ID_FIELD: identifier_str(),
                 self.TYPE_FIELD: TY_OTHER,
-                'aliases': [],
-                'codes': [],
-                'collaborators': [],
-                'created': now,
-                'modified': now,
-                'creator': {'name': getpass.getuser()},
-                'data': {},
-                'datafiles': [],
-                'datafiles_dir': '',
-                'desc': '',
-                'relations': [],
-                'sources': [],
-                'tags': [],
-                'version_info': {'created': now, 'version': (0, 0, 0), 'name': ''},
+                "aliases": [],
+                "codes": [],
+                "collaborators": [],
+                "created": now,
+                "modified": now,
+                "creator": {"name": getpass.getuser()},
+                "data": {},
+                "datafiles": [],
+                "datafiles_dir": "",
+                "desc": "",
+                "relations": [],
+                "sources": [],
+                "tags": [],
+                "version_info": {"created": now, "version": (0, 0, 0), "name": ""},
             }
         )
 
     def _massage_values(self):
         try:
             # convert dates
-            for item in self.v['sources']:
-                if not isinstance(item['date'], float):
-                    item['date'] = date_float(item['date'])
-            if not isinstance(self.v['created'], float):
-                self.v['created'] = date_float(self.v['created'])
-            if not isinstance(self.v['modified'], float):
-                self.v['modified'] = date_float(self.v['modified'])
-            if not isinstance(self.v['version_info']['created'], float):
-                self.v['version_info']['created'] = date_float(
-                    self.v['version_info']['created']
+            for item in self.v["sources"]:
+                if not isinstance(item["date"], float):
+                    item["date"] = date_float(item["date"])
+            if not isinstance(self.v["created"], float):
+                self.v["created"] = date_float(self.v["created"])
+            if not isinstance(self.v["modified"], float):
+                self.v["modified"] = date_float(self.v["modified"])
+            if not isinstance(self.v["version_info"]["created"], float):
+                self.v["version_info"]["created"] = date_float(
+                    self.v["version_info"]["created"]
                 )
             # convert versions
-            if not isinstance(self.v['version_info']['version'], list):
-                self.v['version_info']['version'] = version_list(
-                    self.v['version_info']['version']
+            if not isinstance(self.v["version_info"]["version"], list):
+                self.v["version_info"]["version"] = version_list(
+                    self.v["version_info"]["version"]
                 )
-            for i, code in enumerate(self.v['codes']):
-                if 'version' in code:
-                    if not isinstance(code['version'], list):
-                        code['version'] = version_list(code['version'])
-                        self.v['codes'][i] = code
+            for i, code in enumerate(self.v["codes"]):
+                if "version" in code:
+                    if not isinstance(code["version"], list):
+                        code["version"] = version_list(code["version"])
+                        self.v["codes"][i] = code
         except (TypeError, ValueError, KeyError) as err:
-            raise ValueError('While converting resource values: {}'.format(err))
+            raise ValueError("While converting resource values: {}".format(err))
         self.v.set_clean()
 
     def validate(self):
@@ -342,7 +344,7 @@ class Resource(object):
     @classmethod
     def from_file(
         cls, path: str, as_type: str = None, strict: bool = True, do_copy: bool = True
-    ) -> 'Resource':
+    ) -> "Resource":
         """Import resource from a file.
 
         Args:
@@ -403,14 +405,14 @@ class Resource(object):
     @classmethod
     def _get_resource_importer(
         cls, type_: str, path: pathlib.Path, parsed=None, **kwargs
-    ) -> 'ResourceImporter':
+    ) -> "ResourceImporter":
         E = cls.LoadResourceError  # alias for exception raised
         if type_ == TY_NOTEBOOK:
             try:
                 nb = json.load(open(str(path)))
             except (UnicodeDecodeError, JSONDecodeError):
                 raise E(TY_NOTEBOOK, "not valid JSON")
-            for key in 'cells', 'metadata', 'nbformat':
+            for key in "cells", "metadata", "nbformat":
                 if key not in nb:
                     raise E(TY_NOTEBOOK, f"missing key: {key}")
             return JupyterNotebookImporter(path, **kwargs)
@@ -452,15 +454,15 @@ class Resource(object):
     def data(self):
         """Get JSON data for this resource.
         """
-        return self.v['data']
+        return self.v["data"]
 
     @data.setter
     def data(self, value):
         """Set JSON data for this resource.
         """
-        self.v['data'] = value
+        self.v["data"] = value
 
-    def get_datafiles(self, mode='r'):
+    def get_datafiles(self, mode="r"):
         """Generate readable file objects for 'datafiles' in resource.
 
         Args:
@@ -468,12 +470,12 @@ class Resource(object):
         Returns:
             generator: Generates ``file`` objects.
         """
-        dfdir = self.v['datafiles_dir']
-        for datafile in self.v['datafiles']:
+        dfdir = self.v["datafiles_dir"]
+        for datafile in self.v["datafiles"]:
             if not dfdir:
-                path = datafile['path']
+                path = datafile["path"]
             else:
-                path = os.path.join(dfdir, datafile['path'])
+                path = os.path.join(dfdir, datafile["path"])
             fp = open(path, mode=mode)
             yield fp
 
@@ -488,7 +490,7 @@ class Resource(object):
 
 
 #: Provide attribute access to an RDF subject, predicate, object triple
-Triple = namedtuple('Triple', 'subject predicate object')
+Triple = namedtuple("Triple", "subject predicate object")
 
 
 def create_relation(rel):
@@ -516,7 +518,7 @@ def create_relation(rel):
     if rel.predicate not in RELATION_PREDICATES:
         raise ValueError(
             'Bad predicate: "{}" not in: {}'.format(
-                rel.predicate, ', '.join(list(RELATION_PREDICATES))
+                rel.predicate, ", ".join(list(RELATION_PREDICATES))
             )
         )
     rel_d = {
@@ -524,18 +526,18 @@ def create_relation(rel):
         RR_ID: rel.object.v[Resource.ID_FIELD],
         RR_ROLE: RR_SUBJ,
     }
-    if rel_d in rel.subject.v['relations']:
-        raise ValueError('Duplicate relation for subject: {}'.format(rel))
-    rel.subject.v['relations'].append(rel_d)
+    if rel_d in rel.subject.v["relations"]:
+        raise ValueError("Duplicate relation for subject: {}".format(rel))
+    rel.subject.v["relations"].append(rel_d)
     rel_d = {
         RR_PRED: rel.predicate,
         RR_ID: rel.subject.v[Resource.ID_FIELD],
         RR_ROLE: RR_OBJ,
     }
     # note: hard for this to happen unless the relation was added manually
-    if rel_d in rel.object.v['relations']:
-        raise ValueError('Duplicate relation for object: {}'.format(rel))
-    rel.object.v['relations'].append(rel_d)
+    if rel_d in rel.object.v["relations"]:
+        raise ValueError("Duplicate relation for object: {}".format(rel))
+    rel.object.v["relations"].append(rel_d)
 
 
 def create_relation_args(*args):
@@ -582,7 +584,7 @@ def date_float(value):
             dt = datetime(*value)
         except TypeError as err:
             bad_date(err)
-    elif isinstance(value, six.string_types):
+    elif isinstance(value, str):
         try:
             dt = pendulum.parse(value)
         except pendulum.exceptions.ParserError as err:
@@ -613,7 +615,7 @@ def version_list(value):
 
     A leading dash or underscore in the trailing non-numeric characters
     is removed.
-    
+
     Some examples of valid inputs and how they translate to 4-part versions:
 
     .. testsetup:: version_list
@@ -645,7 +647,7 @@ def version_list(value):
         ...         version_list(bad_input)
         ...     except ValueError:
         ...         print(f"failed: {bad_input}")
-        ... 
+        ...
         failed: rc3
         failed: 1.a.1.
         failed: 1.12.13.x
@@ -662,7 +664,7 @@ def version_list(value):
     if isinstance(value, list) or isinstance(value, tuple):
         ver = value
     elif isinstance(value, str):
-        ver = value.split('.', 2)
+        ver = value.split(".", 2)
     elif isinstance(value, int):
         ver = (value, 0, 0)
     else:
@@ -678,12 +680,12 @@ def version_list(value):
             bad_version(value)
     # last version number
     s = ver[-1]
-    extra = ''
+    extra = ""
     if isinstance(s, int):
         verlist.append(s if len(verlist) < 3 else str(s))
-    elif isinstance(s, six.string_types):
+    elif isinstance(s, str):
         if s:
-            m = re.match('([0-9]+)?(.*)', s)
+            m = re.match("([0-9]+)?(.*)", s)
             if m.group(1) is not None:
                 verlist.append(int(m.group(1)))
             extra = m.group(2)
@@ -695,19 +697,19 @@ def version_list(value):
     # pad with zeros, and add non-numeric ID
     while len(verlist) < 3:
         verlist.append(0)
-    if extra and extra[0] == '.':
+    if extra and extra[0] == ".":
         # cannot start extra version with '.'
         bad_version(value)
-    if extra and extra[0] in ('-', '_'):
+    if extra and extra[0] in ("-", "_"):
         extra = extra[1:]
     verlist.append(extra)
     return verlist
 
 
 def format_version(values):
-    s = '{}.{}.{}'.format(*values[:3])
+    s = "{}.{}.{}".format(*values[:3])
     if len(values) > 3 and values[3]:
-        s += '-{}'.format(values[3])
+        s += "-{}".format(values[3])
     return s
 
 
@@ -743,9 +745,9 @@ def identifier_str(value=None, allow_prefix=False):
     """
     # regular expression for identifier: hex string len=32
     if allow_prefix:
-        id_expr = '[0-9a-f]{1,32}'
+        id_expr = "[0-9a-f]{1,32}"
     else:
-        id_expr = '[0-9a-f]{32}'
+        id_expr = "[0-9a-f]{32}"
     if value is None:
         value = uuid.uuid4().hex
     elif not re.match(id_expr, value):
@@ -794,7 +796,7 @@ class ResourceImporter(abc.ABC):
 
     def _hash_file(self, path):
         blksz, h = 1 << 16, hashlib.sha1()
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             blk = f.read(blksz)
             while blk:
                 h.update(blk)
@@ -906,3 +908,37 @@ DummyValueValidator = add_dummy_values(jsonschema.Draft4Validator)
 DUMMY_RESOURCE = {}
 DummyValueValidator(RESOURCE_SCHEMA).validate(DUMMY_RESOURCE)
 # print("@@ dummy resource:\n{}".format(DUMMY_RESOURCE))
+
+
+def schema_as_yaml():
+    """Export resource schema as YAML suitable for embedding into, e.g.,
+       an OpenAPI spec.
+    """
+    return yaml.dump(RESOURCE_SCHEMA)
+
+
+#
+# Things to do if run as a script
+#
+
+
+if __name__ == "__main__":
+    # parse command line
+    ap = argparse.ArgumentParser()
+    actions = {
+        "json_schema": "print resource schema as JSON",
+        "yaml_schema": "print resource schema as YAML",
+    }
+    ap.add_argument(
+        "action", help="Action when run as a script", choices=list(actions.keys())
+    )
+    args = ap.parse_args()
+    # take appropriate action
+    if args.action == "json_schema":
+        json.dump(RESOURCE_SCHEMA, sys.stdout, indent=2)
+    elif args.action == "yaml_schema":
+        print(schema_as_yaml())
+    else:
+        print("nothing to do")
+    # exit
+    sys.exit(0)

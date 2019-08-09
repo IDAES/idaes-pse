@@ -13,7 +13,6 @@
 """
 Standard IDAES CSTR model.
 """
-from __future__ import division
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In

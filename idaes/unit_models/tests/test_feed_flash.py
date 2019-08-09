@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.unit_models.feed_flash import FeedFlash, FlashType
 from idaes.property_models import iapws95
-from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
+from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
@@ -60,13 +61,16 @@ def test_config():
 
 
 # -----------------------------------------------------------------------------
-class TestBTX(object):
+class TestBTXIdeal(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock()
+        m.fs.properties = BTXParameterBlock(default={"valid_phase":
+                                                     ('Liq', 'Vap'),
+                                                     "activity_coeff_model":
+                                                     "Ideal"})
 
         m.fs.unit = FeedFlash(default={"property_package": m.fs.properties})
 
@@ -143,7 +147,7 @@ class TestBTX(object):
                 value(btx.fs.unit.outlet.temperature[0]))
         assert (pytest.approx(1.0, abs=1e-2) ==
                 value(btx.fs.unit.outlet.flow_mol[0]))
-        assert (pytest.approx(0.355, abs=1e-3) ==
+        assert (pytest.approx(0.396, abs=1e-3) ==
                 value(btx.fs.unit.control_volume.
                       properties_out[0].flow_mol_phase["Vap"]))
 

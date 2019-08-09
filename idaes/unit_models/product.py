@@ -13,7 +13,6 @@
 """
 Standard IDAES Product block.
 """
-from __future__ import division
 
 import logging
 

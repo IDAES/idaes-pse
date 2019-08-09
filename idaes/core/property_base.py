@@ -13,7 +13,6 @@
 """
 This module contains classes for property blocks and property parameter blocks.
 """
-from __future__ import division
 
 import sys
 

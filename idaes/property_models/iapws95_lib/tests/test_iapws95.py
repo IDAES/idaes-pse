@@ -10,7 +10,6 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-from __future__ import division, print_function, absolute_import
 
 import pytest
 from pyomo.environ import *
