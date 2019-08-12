@@ -33,3 +33,4 @@ m.fs = FlowsheetBlock(default={"dynamic": False})
 m.fs.properties = BTXParameterBlock()
 m.fs.unit = C1(default={"property_package": m.fs.properties,
                         "condenser_type": CondenserType.totalCondenser})
+m.fs.unit.reflux_ratio.fix(0.25)

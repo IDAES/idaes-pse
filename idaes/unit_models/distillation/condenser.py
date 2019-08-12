@@ -22,7 +22,7 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
-from pyomo.environ import Reference
+from pyomo.environ import Reference, Expression, Var
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -161,8 +161,6 @@ see property package for documentation.}"""))
 
         self._add_condenser_ports()
 
-        # self._add_splitter()
-
     def _add_condenser_ports(self):
 
         # Add Ports for the condenser
@@ -175,43 +173,51 @@ see property package for documentation.}"""))
         self.distillate = Port(noruleinit=True, doc="Reflux stream that is"
                                " returned to the top tray.")
 
+        # Add codnenser specific variables
+        self.reflux_ratio = Var(initialize=0.5, doc="reflux ratio for "
+                                "the condenser")
+
         # Get dict of Port members and names
         member_list = self.control_volume.\
             properties_out[0].define_port_members()
 
         for k in member_list:
-            if not member_list[k].is_indexed():
-                var = self.control_volume.properties_out[:].\
-                    component(member_list[k].local_name)
+            if "flow" not in k:
+                if not member_list[k].is_indexed():
+                    var = self.control_volume.properties_out[:].\
+                        component(member_list[k].local_name)
+                else:
+                    var = self.control_volume.properties_out[:].\
+                        component(member_list[k].local_name)[...]
+
+                # add the reference and variable name to the reflux port
+                self.reflux.add(Reference(var), k)
+                # add the reference and variable name to the distillate port
+                self.distillate.add(Reference(var), k)
             else:
-                var = self.control_volume.properties_out[:].\
-                    component(member_list[k].local_name)[...]
+                if not member_list[k].is_indexed():
+                    def rule_reflux_flow(self, t):
+                        return self.control_volume.properties_out[t].\
+                            component(member_list[k].local_name) * \
+                            (self.reflux_ratio / (1 + self.reflux_ratio))
+                    self.e_reflux_flow = Expression(self.flowsheet().time,
+                                                    rule=rule_reflux_flow)
+                    self.reflux.add(self.e_reflux_flow, k)
 
-            self.reflux.add(Reference(var), k)
+                    def rule_distillate_flow(self, t):
+                        return self.control_volume.properties_out[t].\
+                            component(member_list[k].local_name) / \
+                            (1 + self.reflux_ratio)
+                    self.e_distillate_flow = Expression(
+                        self.flowsheet().time, rule=rule_distillate_flow)
+                    self.distillate.add(self.e_distillate_flow, k)
+                else:
+                    index_set = member_list[k].index_set()
 
-        self.reflux.display()
-        import sys
-        sys.exit()
-
-    # # Create References for port members
-    # for s in member_list:
-    #     if not member_list[s].is_indexed():
-    #         slicer = block[:].component(member_list[s].local_name)
-    #     else:
-    #         slicer = block[:].component(member_list[s].local_name)[...]
-    #
-    #     r = Reference(slicer)
-    #     setattr(blk, "_"+name+"_"+s+"_ref", r)
-    #
-    #     # Add Reference to Port
-    #     p.add(r, s)
-
-    # Add references
-    # Reference to the heat duty
-    # add_object_reference(self, "heat_duty",
-    #                      self.condenser_control_volume.heat)
-    # # Reference to pressure drop
-    # if (self.config.has_pressure_change is True and
-    #         self.config.momentum_balance_type != 'none'):
-    #     add_object_reference(self, "deltaP",
-    #                          self.condenser_control_volume.deltaP)
+                    def rule_flow(self, t, *args):
+                        return self.control_volume.properties_out[t, ...].\
+                            component(member_list[k].local_name)[...] / \
+                            (1 + self.reflux_ratio)
+                    self.e_flow = Expression((self.flowsheet().time, index_set),
+                                             rule=rule_flow)
+                    self.reflux.add(self.e_flow, k)
