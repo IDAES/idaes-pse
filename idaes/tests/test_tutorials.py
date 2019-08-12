@@ -17,13 +17,14 @@ Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import SolverFactory
+from pyomo.common.fileutils import this_file_dir
 from pyomo.opt import SolverStatus, TerminationCondition
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import file to be tested
-from os.path import abspath, dirname, join
+from os.path import join
 from pyutilib.misc import import_file
-example = join(dirname(abspath(__file__)), '..', '..', 'examples', 'tutorials')
+example = join(this_file_dir(), '..', '..', 'examples', 'tutorials')
 
 
 # See if ipopt is available and set up solver

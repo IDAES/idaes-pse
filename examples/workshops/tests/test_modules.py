@@ -18,9 +18,9 @@ Author: Jaffer Ghouse
 import os
 import nbformat
 from nbconvert.preprocessors import ExecutePreprocessor
+from pyomo.common.fileutils import this_file_dir
 
-path = os.path.dirname(__file__)
-
+path = this_file_dir()
 
 # Method to run a specific jupyter notebook
 def run_notebook(notebook_name):
