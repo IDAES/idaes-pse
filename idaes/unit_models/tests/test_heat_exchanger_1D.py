@@ -26,7 +26,8 @@ from idaes.unit_models.heat_exchanger_1D import HeatExchanger1D as HX1D
 from idaes.unit_models.heat_exchanger_1D import WallConductionType
 from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
 
-from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
+from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
 from idaes.property_models import iapws95
 from idaes.property_models.examples.saponification_thermo import (
     SaponificationParameterBlock)

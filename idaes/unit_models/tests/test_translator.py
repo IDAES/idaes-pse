@@ -19,10 +19,10 @@ import pytest
 from pyomo.environ import ConcreteModel, SolverFactory
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.translator import Translator
-from idaes.property_models.ideal.BTX_ideal_VLE import (
-                        BTXParameterBlock)
+from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
 from idaes.property_models.examples.saponification_thermo import (
-                        SaponificationParameterBlock)
+    SaponificationParameterBlock)
 
 
 # -----------------------------------------------------------------------------

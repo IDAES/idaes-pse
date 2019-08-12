@@ -135,14 +135,14 @@ conditions, and thus corresponding constraints  should be included,
              'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
              'mole_frac_phase': {'method': '_mole_frac_phase',
                                  'units': 'no unit'},
-             'enthalpy_comp_liq': {'method': '_enthalpy_comp_liq',
-                                   'units': 'J/mol'},
-             'enthalpy_comp_vap': {'method': '_enthalpy_comp_vap',
-                                   'units': 'J/mol'},
-             'enthalpy_liq': {'method': '_enthalpy_liq',
-                              'units': 'J/mol'},
-             'enthalpy_vap': {'method': '_enthalpy_vap',
-                              'units': 'J/mol'},
+             'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp',
+                                     'units': 'J/mol'},
+             'enth_mol_phase': {'method': '_enth_mol_phase',
+                                'units': 'J/mol'},
+             'entr_mol_phase_comp': {'method': '_entr_mol_phase_comp',
+                                     'units': 'J/mol'},
+             'entr_mol_phase': {'method': '_entr_mol_phase',
+                                'units': 'J/mol'},
              'temperature_bubble': {'method': '_temperature_bubble',
                                     'units': 'K'},
              'temperature_dew': {'method': '_temperature_dew',
@@ -285,49 +285,25 @@ class _ActivityCoeffStateBlock(StateBlock):
         # Initialization sequence: Deactivating certain constraints
         # for 1st solve
         for k in blk.keys():
+            for c in blk[k].component_objects(Constraint):
+                if c.local_name in ["eq_total",
+                                    "eq_comp",
+                                    "eq_sum_mol_frac",
+                                    "eq_phase_equilibrium",
+                                    "eq_enth_mol_phase",
+                                    "eq_entr_mol_phase",
+                                    "eq_Gij_coeff",
+                                    "eq_A",
+                                    "eq_B",
+                                    "eq_activity_coeff"]:
+                    c.deactivate()
 
-            blk[k].eq_total.deactivate()
-            blk[k].eq_comp.deactivate()
-            if (blk[k].config.has_phase_equilibrium) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Liq', 'Vap')) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Vap', 'Liq')):
-                blk[k].eq_sum_mol_frac.deactivate()
-                blk[k].eq_phase_equilibrium.deactivate()
-                try:
-                    blk[k].eq_h_liq.deactivate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_h_vap.deactivate()
-                except AttributeError:
-                    pass
-
-                # Deactivate activity coefficient constraints
-                if blk[k].config.parameters.config.activity_coeff_model \
-                        != "Ideal":
-                    blk[k].eq_Gij_coeff.deactivate()
-                    blk[k].eq_A.deactivate()
-                    blk[k].eq_B.deactivate()
-                    blk[k].eq_activity_coeff.deactivate()
-
-            # Deactivate liquid phase specific constraints
-            if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "Liq":
-                try:
-                    blk[k].eq_h_liq.deactivate()
-                except AttributeError:
-                    pass
-
-            # Deactivate liquid phase specific constraints
-            if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "Vap":
-                try:
-                    blk[k].eq_h_vap.deactivate()
-                except AttributeError:
-                    pass
-        # First solve for the active constraints remaining
+        # First solve for the active constraints that remain (p_sat, T_bubble,
+        # T_dew). Valid only for a 2 phase block. If single phase,
+        # no constraints are active.
+        # NOTE: "k" is the last value from the previous for loop
+        # only for the purpose of having a valid index. The assumption
+        # here is that for all values of "k", the attribute exists.
         if (blk[k].config.has_phase_equilibrium) or \
                 (blk[k].config.parameters.config.valid_phase ==
                     ('Liq', 'Vap')) or \
@@ -351,19 +327,16 @@ class _ActivityCoeffStateBlock(StateBlock):
 
         # Continue initialization sequence and activate select constraints
         for k in blk.keys():
-            blk[k].eq_total.activate()
-            blk[k].eq_comp.activate()
-            if (blk[k].config.has_phase_equilibrium) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Liq', 'Vap')) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Vap', 'Liq')):
-                blk[k].eq_phase_equilibrium.activate()
-                if blk[k].config.parameters.config.activity_coeff_model \
-                        != "Ideal":
-                    # assume ideal and solve
-                    blk[k].activity_coeff_comp.fix(1)
-                blk[k].eq_sum_mol_frac.activate()
+            for c in blk[k].component_objects(Constraint):
+                if c.local_name in ["eq_total",
+                                    "eq_comp",
+                                    "eq_sum_mol_frac",
+                                    "eq_phase_equilibrium"]:
+                    c.activate()
+            if blk[k].config.parameters.config.activity_coeff_model \
+                    != "Ideal":
+                # assume ideal and solve
+                blk[k].activity_coeff_comp.fix(1)
 
         # Second solve for the active constraints
         results = solve_indexed_blocks(opt, [blk], tee=stee)
@@ -378,63 +351,46 @@ class _ActivityCoeffStateBlock(StateBlock):
                              "{} failed".format(blk.name))
 
         # Activate activity coefficient specific constraints
-        if blk[k].config.parameters.config.activity_coeff_model \
-                != "Ideal":
-            for k in blk.keys():
-                blk[k].eq_Gij_coeff.activate()
-                blk[k].eq_A.activate()
-                blk[k].eq_B.activate()
+        for k in blk.keys():
+            if blk[k].config.parameters.config.activity_coeff_model \
+                    != "Ideal":
+                for c in blk[k].component_objects(Constraint):
+                    if c.local_name in ["eq_Gij_coeff",
+                                        "eq_A",
+                                        "eq_B"]:
+                        c.activate()
 
-            results = solve_indexed_blocks(opt, [blk], tee=stee)
-            if outlvl > 0:
-                if results.solver.termination_condition \
-                        == TerminationCondition.optimal:
-                    _log.info("Initialisation step 3 for "
-                              "{} completed".format(blk.name))
-                else:
-                    _log.warning("Initialisation step 3 for "
-                                 "{} failed".format(blk.name))
+        results = solve_indexed_blocks(opt, [blk], tee=stee)
+        if outlvl > 0:
+            if results.solver.termination_condition \
+                    == TerminationCondition.optimal:
+                _log.info("Initialisation step 3 for "
+                          "{} completed".format(blk.name))
+            else:
+                _log.warning("Initialisation step 3 for "
+                             "{} failed".format(blk.name))
 
-            for k in blk.keys():
+        for k in blk.keys():
+            if blk[k].config.parameters.config.activity_coeff_model \
+                    != "Ideal":
                 blk[k].eq_activity_coeff.activate()
                 blk[k].activity_coeff_comp.unfix()
 
-            results = solve_indexed_blocks(opt, [blk], tee=stee)
-            if outlvl > 0:
-                if results.solver.termination_condition \
-                        == TerminationCondition.optimal:
-                    _log.info("Initialisation step 4 for "
-                              "{} completed".format(blk.name))
-                else:
-                    _log.warning("Initialisation step 4 for "
-                                 "{} failed".format(blk.name))
+        results = solve_indexed_blocks(opt, [blk], tee=stee)
+        if outlvl > 0:
+            if results.solver.termination_condition \
+                    == TerminationCondition.optimal:
+                _log.info("Initialisation step 4 for "
+                          "{} completed".format(blk.name))
+            else:
+                _log.warning("Initialisation step 4 for "
+                             "{} failed".format(blk.name))
 
         for k in blk.keys():
-            if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "Liq":
-                try:
-                    blk[k].eq_h_liq.activate()
-                except AttributeError:
-                    pass
-            if not blk[k].config.has_phase_equilibrium and \
-                    blk[k].config.parameters.config.valid_phase == "Vap":
-                try:
-                    blk[k].eq_h_vap.activate()
-                except AttributeError:
-                    pass
-            if (blk[k].config.has_phase_equilibrium) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Liq', 'Vap')) or \
-                    (blk[k].config.parameters.config.valid_phase ==
-                        ('Vap', 'Liq')):
-                try:
-                    blk[k].eq_h_liq.activate()
-                except AttributeError:
-                    pass
-                try:
-                    blk[k].eq_h_vap.activate()
-                except AttributeError:
-                    pass
+            for c in blk[k].component_objects(Constraint):
+                if c.local_name in ["eq_enth_mol_phase",
+                                    "eq_entr_mol_phase"]:
+                    c.activate()
 
         results = solve_indexed_blocks(opt, [blk], tee=stee)
         if outlvl > 0:
@@ -888,75 +844,149 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.del_component(self.density_mol_calculation)
             raise
 
-    def _enthalpy_comp_liq(self):
+    def _enth_mol_phase(self):
+        self.enth_mol_phase = Var(
+            self._params.phase_list,
+            doc='Phase molar specific enthalpies [J/mol]')
+
+        def rule_enth_mol_phase(b, p):
+            return b.enth_mol_phase[p] == sum(
+                b.enth_mol_phase_comp[p, i] *
+                b.mole_frac_phase[p, i]
+                for i in b._params.component_list)
+        self.eq_enth_mol_phase = Constraint(self._params.phase_list,
+                                            rule=rule_enth_mol_phase)
+
+    def _enth_mol_phase_comp(self):
+        self.enth_mol_phase_comp = Var(self._params.phase_list,
+                                       self._params.component_list,
+                                       doc="Phase-component molar specific "
+                                           "enthalpies [J/mol]")
+
+        def rule_enth_mol_phase_comp(b, p, j):
+            if p == 'Vap':
+                return b._enth_mol_comp_vap(j)
+            else:
+                return b._enth_mol_comp_liq(j)
+        self.eq_enth_mol_phase_comp = Constraint(
+            self._params.phase_list,
+            self._params.component_list,
+            rule=rule_enth_mol_phase_comp)
+
+    def _enth_mol_comp_liq(self, j):
         # Liquid phase comp enthalpy (J/mol)
-        self.enthalpy_comp_liq = Var(self._params.component_list,
-                                     initialize=10000)
+        # 1E3 conversion factor to convert from J/kmol to J/mol
+        return self.enth_mol_phase_comp['Liq', j] * 1E3 == \
+            ((self._params.CpIG['Liq', j, 'E'] / 5) *
+                (self.temperature**5 -
+                 self._params.temperature_reference**5)
+                + (self._params.CpIG['Liq', j, 'D'] / 4) *
+                  (self.temperature**4 -
+                   self._params.temperature_reference**4)
+                + (self._params.CpIG['Liq', j, 'C'] / 3) *
+                  (self.temperature**3 -
+                   self._params.temperature_reference**3)
+                + (self._params.CpIG['Liq', j, 'B'] / 2) *
+                  (self.temperature**2 -
+                   self._params.temperature_reference**2)
+                + self._params.CpIG['Liq', j, 'A'] *
+                  (self.temperature - self._params.temperature_reference))
 
-        def rule_hl_ig_pc(b, j):
-            # 1E3 conversion factor to convert from J/kmol to J/mol
-            return self.enthalpy_comp_liq[j] * 1E3 == \
-                ((self._params.CpIG['Liq', j, 'E'] / 5) *
-                    (self.temperature**5 -
-                     self._params.temperature_reference**5)
-                    + (self._params.CpIG['Liq', j, 'D'] / 4) *
-                      (self.temperature**4 -
-                       self._params.temperature_reference**4)
-                    + (self._params.CpIG['Liq', j, 'C'] / 3) *
-                      (self.temperature**3 -
-                       self._params.temperature_reference**3)
-                    + (self._params.CpIG['Liq', j, 'B'] / 2) *
-                      (self.temperature**2 -
-                       self._params.temperature_reference**2)
-                    + self._params.CpIG['Liq', j, 'A'] *
-                      (self.temperature - self._params.temperature_reference))
-        self.eq_hl_ig_pc = Constraint(self._params.component_list,
-                                      rule=rule_hl_ig_pc)
+    def _enth_mol_comp_vap(self, j):
 
-    def _enthalpy_liq(self):
-        # Liquid phase enthalpy (J/mol)
-        self.enthalpy_liq = Var(initialize=10000)
-
-        def rule_hliq(self):
-            return self.enthalpy_liq == \
-                sum(self.enthalpy_comp_liq[i] * self.mole_frac_phase['Liq', i]
-                    for i in self._params.component_list)
-        self.eq_h_liq = Constraint(rule=rule_hliq)
-
-    def _enthalpy_comp_vap(self):
         # Vapor phase component enthalpy (J/mol)
-        self.enthalpy_comp_vap = Var(self._params.component_list,
-                                     initialize=40000)
+        return self.enth_mol_phase_comp['Vap', j] == self._params.dh_vap[j] + \
+            ((self._params.CpIG['Vap', j, 'E'] / 5) *
+                (self.temperature**5 -
+                 self._params.temperature_reference**5)
+                + (self._params.CpIG['Vap', j, 'D'] / 4) *
+                  (self.temperature**4 -
+                   self._params.temperature_reference**4)
+                + (self._params.CpIG['Vap', j, 'C'] / 3) *
+                  (self.temperature**3 -
+                   self._params.temperature_reference**3)
+                + (self._params.CpIG['Vap', j, 'B'] / 2) *
+                  (self.temperature**2 -
+                   self._params.temperature_reference**2)
+                + self._params.CpIG['Vap', j, 'A'] *
+                  (self.temperature -
+                   self._params.temperature_reference))
 
-        def rule_hv_ig_pc(b, j):
-            return self.enthalpy_comp_vap[j] == self._params.dh_vap[j] + \
-                ((self._params.CpIG['Vap', j, 'E'] / 5) *
-                    (self.temperature**5 -
-                     self._params.temperature_reference**5)
-                    + (self._params.CpIG['Vap', j, 'D'] / 4) *
-                      (self.temperature**4 -
-                       self._params.temperature_reference**4)
-                    + (self._params.CpIG['Vap', j, 'C'] / 3) *
-                      (self.temperature**3 -
-                       self._params.temperature_reference**3)
-                    + (self._params.CpIG['Vap', j, 'B'] / 2) *
-                      (self.temperature**2 -
-                       self._params.temperature_reference**2)
-                    + self._params.CpIG['Vap', j, 'A'] *
-                      (self.temperature -
-                       self._params.temperature_reference))
-        self.eq_hv_ig_pc = Constraint(self._params.component_list,
-                                      rule=rule_hv_ig_pc)
+    def _entr_mol_phase(self):
+        self.entr_mol_phase = Var(
+            self._params.phase_list,
+            doc='Phase molar specific enthropies [J/mol.K]')
 
-    def _enthalpy_vap(self):
-        # Vapor phase total enthalpy (J/mol)
-        self.enthalpy_vap = Var(initialize=10000)
+        def rule_entr_mol_phase(self, p):
+            return self.entr_mol_phase[p] == sum(
+                self.entr_mol_phase_comp[p, i] *
+                self.mole_frac_phase[p, i]
+                for i in self._params.component_list)
+        self.eq_entr_mol_phase = Constraint(self._params.phase_list,
+                                            rule=rule_entr_mol_phase)
 
-        def rule_hvap(self):
-            return self.enthalpy_vap == \
-                sum(self.enthalpy_comp_vap[i] * self.mole_frac_phase['Vap', i]
-                    for i in self._params.component_list)
-        self.eq_h_vap = Constraint(rule=rule_hvap)
+    def _entr_mol_phase_comp(self):
+        self.entr_mol_phase_comp = Var(
+            self._params.phase_list,
+            self._params.component_list,
+            doc='Phase-component molar specific entropies [J/mol.K]')
+
+        def rule_entr_mol_phase_comp(self, p, j):
+            if p == 'Vap':
+                return self._entr_mol_comp_vap(j)
+            else:
+                return self._entr_mol_comp_liq(j)
+        self.eq_entr_mol_phase_comp = Constraint(
+            self._params.phase_list,
+            self._params.component_list,
+            rule=rule_entr_mol_phase_comp)
+
+    def _entr_mol_comp_liq(self, j):
+
+        # Liquid phase comp entropy (J/mol.K)
+        # 1E3 conversion factor to convert from J/kmol.K to J/mol.K
+        return self.entr_mol_phase_comp['Liq', j] * 1E3 == (
+            ((self._params.cp_ig['Liq', j, '5'] / 4) *
+                (self.temperature**4 - self._params.temperature_ref**4)
+                + (self._params.cp_ig['Liq', j, '4'] / 3) *
+                  (self.temperature**3 - self._params.temperature_ref**3)
+                + (self._params.cp_ig['Liq', j, '3'] / 2) *
+                  (self.temperature**2 - self._params.temperature_ref**2)
+                + self._params.cp_ig['Liq', j, '2'] *
+                  (self.temperature - self._params.temperature_ref)
+                + self._params.cp_ig['Liq', j, '1'] *
+             log(self.temperature / self._params.temperature_ref)))
+
+    def _ds_vap(self):
+        # entropy of vaporization = dh_Vap/T_boil
+        # TODO : something more rigorous would be nice
+        self.ds_vap = Var(self._params.component_list,
+                          initialize=86,
+                          doc="Entropy of vaporization [J/mol.K]")
+
+        def rule_ds_vap(b, j):
+            return b._params.dh_vap[j] == (b.ds_vap[j] *
+                                           b._params.temperature_boil[j])
+        self.eq_ds_vap = Constraint(self._params.component_list,
+                                    rule=rule_ds_vap)
+
+    def _entr_mol_comp_vap(self, j):
+        # component molar entropy of vapor phase
+        return self.entr_mol_phase_comp['Vap', j] == (
+            self.ds_vap[j] +
+            ((self._params.cp_ig['Vap', j, '5'] / 4) *
+             (self.temperature**4 - self._params.temperature_ref**4)
+             + (self._params.cp_ig['Vap', j, '4'] / 3) *
+             (self.temperature**3 - self._params.temperature_ref**3)
+             + (self._params.cp_ig['Vap', j, '3'] / 2) *
+               (self.temperature**2 - self._params.temperature_ref**2)
+                + self._params.cp_ig['Vap', j, '2'] *
+               (self.temperature - self._params.temperature_ref)
+                + self._params.cp_ig['Vap', j, '1'] *
+                log(self.temperature / self._params.temperature_ref)) -
+            self._params.gas_const * log(self.mole_frac_phase['Vap', j] *
+                                         self.pressure /
+                                         self._params.pressure_ref))
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
@@ -970,9 +1000,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
         if p == "Vap":
-            return self.flow_mol_phase['Vap'] * self.enthalpy_vap
+            return self.flow_mol_phase['Vap'] * self.enth_mol_phase['Vap']
         elif p == "Liq":
-            return self.flow_mol_phase['Liq'] * self.enthalpy_liq
+            return self.flow_mol_phase['Liq'] * self.enth_mol_phase['Liq']
 
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
@@ -990,9 +1020,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
         if p == "Liq":
-            return self.density_mol[p] * self.enthalpy_liq
+            return self.density_mol[p] * self.enth_mol_phase['Liq']
         elif p == "Vap":
-            return self.density_mol[p] * self.enthalpy_vap
+            return self.density_mol[p] * self.enth_mol_phase['Vap']
 
     def get_material_flow_basis(self):
         """Declare material flow basis."""
@@ -1020,82 +1050,6 @@ class ActivityCoeffStateBlockData(StateBlockData):
             _log.error('{} Pressure set below lower bound.'.format(blk.name))
         if value(blk.pressure) > blk.pressure.ub:
             _log.error('{} Pressure set above upper bound.'.format(blk.name))
-
-
-    # Property package utility functions
-    def calculate_bubble_point_temperature(self, clear_components=True):
-        """"To compute the bubble point temperature of the mixture."""
-
-        if hasattr(self, "eq_temperature_bubble"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.temperature_bubble,
-                                           self.eq_temperature_bubble)
-
-        return self.temperature_bubble.value
-
-        if clear_components is True:
-            self.del_component(self.eq_temperature_bubble)
-            self.del_component(self._p_sat_bubbleT)
-            self.del_component(self.temperature_bubble)
-
-    def calculate_dew_point_temperature(self, clear_components=True):
-        """"To compute the dew point temperature of the mixture."""
-
-        if hasattr(self, "eq_temperature_dew"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.temperature_dew,
-                                           self.eq_temperature_dew)
-
-        return self.temperature_dew.value
-
-        # Delete the var/constraint created in this method that are part of the
-        # IdealStateBlock if the user desires
-        if clear_components is True:
-            self.del_component(self.eq_temperature_dew)
-            self.del_component(self._p_sat_dewT)
-            self.del_component(self.temperature_dew)
-
-    def calculate_bubble_point_pressure(self, clear_components=True):
-        """"To compute the bubble point pressure of the mixture."""
-
-        if hasattr(self, "eq_pressure_bubble"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.pressure_bubble,
-                                           self.eq_pressure_bubble)
-
-        return self.pressure_bubble.value
-
-        # Delete the var/constraint created in this method that are part of the
-        # IdealStateBlock if the user desires
-        if clear_components is True:
-            self.del_component(self.eq_pressure_bubble)
-            self.del_component(self._p_sat_bubbleP)
-            self.del_component(self.pressure_bubble)
-
-    def calculate_dew_point_pressure(self, clear_components=True):
-        """"To compute the dew point pressure of the mixture."""
-
-        if hasattr(self, "eq_pressure_dew"):
-            # Do not delete components if the block already has the components
-            clear_components = False
-
-        calculate_variable_from_constraint(self.pressure_dew,
-                                           self.eq_pressure_dew)
-
-        return self.pressure_dew.value
-
-        # Delete the var/constraint created in this method that are part of the
-        # IdealStateBlock if the user desires
-        if clear_components is True:
-            self.del_component(self.eq_pressure_dew)
-            self.del_component(self._p_sat_dewP)
-            self.del_component(self.pressure_dew)
 
 # -----------------------------------------------------------------------------
 # Bubble and Dew Points
