@@ -13,8 +13,6 @@
 """
 Standard IDAES Gibbs reactor model.
 """
-from __future__ import division
-
 # Import Pyomo libraries
 from pyomo.environ import Reals, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In

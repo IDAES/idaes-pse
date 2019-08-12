@@ -31,7 +31,6 @@ import uuid
 # third-party
 import jsonschema
 import pendulum
-import six
 
 # local
 from .util import datetime_timestamp
@@ -582,7 +581,7 @@ def date_float(value):
             dt = datetime(*value)
         except TypeError as err:
             bad_date(err)
-    elif isinstance(value, six.string_types):
+    elif isinstance(value, str):
         try:
             dt = pendulum.parse(value)
         except pendulum.exceptions.ParserError as err:
@@ -613,7 +612,7 @@ def version_list(value):
 
     A leading dash or underscore in the trailing non-numeric characters
     is removed.
-    
+
     Some examples of valid inputs and how they translate to 4-part versions:
 
     .. testsetup:: version_list
@@ -645,7 +644,7 @@ def version_list(value):
         ...         version_list(bad_input)
         ...     except ValueError:
         ...         print(f"failed: {bad_input}")
-        ... 
+        ...
         failed: rc3
         failed: 1.a.1.
         failed: 1.12.13.x
@@ -681,7 +680,7 @@ def version_list(value):
     extra = ''
     if isinstance(s, int):
         verlist.append(s if len(verlist) < 3 else str(s))
-    elif isinstance(s, six.string_types):
+    elif isinstance(s, str):
         if s:
             m = re.match('([0-9]+)?(.*)', s)
             if m.group(1) is not None:

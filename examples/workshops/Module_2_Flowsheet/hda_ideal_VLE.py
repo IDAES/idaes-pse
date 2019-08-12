@@ -14,8 +14,6 @@
 Example ideal parameter block for the VLE calucations for a
 Benzene-Toluene-o-Xylene system.
 """
-# Chages the divide behavior to not do integer division
-from __future__ import division
 
 # Import Python libraries
 import logging

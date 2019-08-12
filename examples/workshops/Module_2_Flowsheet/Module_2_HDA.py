@@ -14,8 +14,6 @@
 Demonstration of HDA flowsheet with optimization.
 
 """
-from __future__ import division
-from __future__ import print_function
 
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
