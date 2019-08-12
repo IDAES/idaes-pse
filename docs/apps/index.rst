@@ -26,8 +26,8 @@ The Data Driven Machine Language (ddm-learning) repository contains regression t
 Contributing
 ------------
 
-**By contributing to this repository, you are agreeing to all the terms set out
-in the LICENSE.txt and COPYRIGHT.txt files in this directory.**
+By contributing to this software you are agreeing to all the terms laid out in the :ref:`idaes-license` and :ref:`idaes-copyright`.
+
 
 
 
