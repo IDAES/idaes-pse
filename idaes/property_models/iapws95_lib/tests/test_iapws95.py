@@ -13,6 +13,7 @@
 
 import pytest
 from pyomo.environ import *
+from pyomo.common.fileutils import this_file_dir
 from pyomo.opt import SolverFactory
 from idaes.property_models import iapws95
 import csv
@@ -25,8 +26,7 @@ prop_available = iapws95.iapws95_available()
 
 
 def read_data(fname, col):
-    dfile = os.path.dirname(__file__)
-    dfile = os.path.join(dfile, fname)
+    dfile = os.path.join(this_file_dir(), fname)
     cond = []  # Tuple (T [K],P [Pa], data) pressure in file is MPa
     with open(dfile, 'r') as csvfile:
         dat = csv.reader(csvfile, delimiter='\t', quotechar='"')
