@@ -27,8 +27,3 @@ Contributing
 ------------
 
 By contributing to this software you are agreeing to all the terms laid out in the :ref:`idaes-license` and :ref:`idaes-copyright`.
-
-
-
-
-
