@@ -19,24 +19,14 @@ Author: Andrew Lee
 # third-party
 import pytest
 from pyomo.environ import SolverFactory
-from pyomo.common.fileutils import this_file_dir
 from pyomo.opt import SolverStatus, TerminationCondition
 # package
 from idaes.core.util.model_statistics import degrees_of_freedom
-<<<<<<< HEAD
-
-# Import file to be tested
-from os.path import join
-from pyutilib.misc import import_file
-example = join(this_file_dir(), '..', '..', 'examples', 'tutorials')
-
-=======
 from idaes.examples.tutorials import (
     Tutorial_1_Basic_Flowsheets,
     Tutorial_2_Basic_Flowsheet_Optimization,
     Tutorial_3_Dynamic_Flowsheets,
 )
->>>>>>> 4964d34b0ffb934c960cc951a5d054b5e45fcb61
 
 # See if ipopt is available and set up solver
 if not SolverFactory("ipopt").available():
