@@ -28,10 +28,12 @@ import pathlib
 import pprint
 import re
 import sys
+from typing import List
 import uuid
 
 # third-party
 import jsonschema
+import pandas
 import pendulum
 import yaml
 
@@ -360,7 +362,16 @@ class Resource(object):
         """
         path = pathlib.Path(path)
         if as_type:
-            parsed = None
+            if as_type == TY_RESOURCE_JSON:  # make sure resources validate
+                try:
+                    parsed = json.load(path.open())
+                    jsonschema.Draft4Validator(RESOURCE_SCHEMA).validate(parsed)
+                except (UnicodeDecodeError, JSONDecodeError):
+                    raise ValueError("Resource is not well-formed JSON")
+                except jsonschema.ValidationError as err:
+                    raise ValueError(f"Resource does not match schema: {err}")
+            else:
+                parsed = None
         else:
             as_type, parsed = cls._infer_resource_type(path, strict)
         importer = cls._get_resource_importer(
@@ -377,7 +388,7 @@ class Resource(object):
             if path.suffix == ".py":
                 return TY_CODE, None
             if path.suffix == ".json":
-                max_bytes = 1e6
+                max_bytes = 1e6 # arbitrary limit
                 # over max_bytes? generic
                 file_size = path.stat().st_size
                 if file_size > max_bytes:
@@ -757,6 +768,76 @@ def identifier_str(value=None, allow_prefix=False):
         )
     return value
 
+
+class TidyUnitData:
+    """Handle "tidy data" with per-column units.
+
+    This can be used to convert from a simple dictionary/json
+    representation like this::
+
+            {
+              "variables": ["compound", "pressure"],
+              "units": [null|None, "Pa"],
+              "observations": [
+                ["benzene", 4890000.0],
+                ...etc..
+              ]
+            }
+
+    into a pandas DataFrame. A convenience method is provided for returning
+    the data in a format easily dealt with when creating unit block parameters.
+    Note that the keys in the preceding dictionary match the names of the
+    parameters in the constructor (so you can pass this directly in as '**arg').
+
+    Attributes:
+        units (list): Units for each column, None where no units are defined
+        table (pandas.DataFrame): The observation data
+    """
+    def __init__(self, data: dict = None, variables: List = None, units: List = None,
+                 observations: List = None):
+        """Constructor.
+
+        Args:
+            data: Optional, data dict (overrides variables/units/observations)
+            variables: List of variables (table header)
+            units: List of units, or None, same length as `variables`
+            observations: Rows of the body of the table
+        Raises:
+            ValueError: For bad `data` (missing keys, not dict, etc.), or mismatches
+                        in lengths of various pieces.
+        """
+        if data:
+            try:
+                variables, units, observations = (data['variables'], data['units'],
+                                                  data['observations'])
+            except (KeyError, TypeError) as err:
+                raise ValueError("Bad value for `data` param: {err}")
+        n = len(variables)
+        if n == 0:
+            self.df, self.units = pandas.DataFrame(), ()
+            return
+        if len(units) != n:
+            raise ValueError(f"Length of units {len(units)} "
+                             f"must match length of header ({n})")
+        self.units = units
+        self.table = pandas.DataFrame(data=observations, columns=variables)
+
+    @property
+    def param_data(self) -> dict:
+        """Data in a form easily consumed by unit block params.
+
+        The dictionary returned is like ``{ (key1, key2, ..): value }``,
+        where the keys are values from all columns except the last,
+        and the value is the last column.
+        """
+        d = {}
+        for row in self.table.itertuples():
+            key = tuple(row[1:-1])
+            if len(key) == 1:
+                key = key[0]
+            value = row[-1]
+            d[key] = value
+        return d
 
 #
 # Import Resource of varying types from file
