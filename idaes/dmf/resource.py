@@ -810,8 +810,10 @@ class TidyUnitData:
             try:
                 variables, units, observations = (data['variables'], data['units'],
                                                   data['observations'])
-            except (KeyError, TypeError) as err:
-                raise ValueError("Bad value for `data` param: {err}")
+            except KeyError as err:
+                raise ValueError(f"Missing expected key in `data` param: {err}")
+            except TypeError as err:
+                raise ValueError(f"Bad value for `data` param: {err}")
         n = len(variables)
         if n == 0:
             self.df, self.units = pandas.DataFrame(), ()
