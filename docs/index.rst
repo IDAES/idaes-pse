@@ -49,6 +49,7 @@ Contents
     property_models/index
     vis/index
     dmf/index
+    apps/index	      
     version
     tutorials
     developer/index
