@@ -35,7 +35,7 @@ from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Import sub-model libraries
-import state_methods
+import idaes.property_models.core.generic.state_methods as state_methods
 
 
 # Set up logger
