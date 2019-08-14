@@ -22,7 +22,7 @@ from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # -----------------------------------------------------------------------------
 # Create a flowsheet for test
