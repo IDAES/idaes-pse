@@ -733,4 +733,3 @@ def get_propertydb_table(rsrc):
 #            does it *not* exist.
 #         7. Regular expression, string "~<expr>" and `re_flags`
 #            for flags (understood: re.IGNORECASE)
-
