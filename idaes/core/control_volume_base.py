@@ -41,6 +41,7 @@ _log = logging.getLogger(__name__)
 
 # Enumerate options for material balances
 class MaterialBalanceType(Enum):
+    useDefault = -1
     none = 0
     componentPhase = 1
     componentTotal = 2
@@ -50,6 +51,7 @@ class MaterialBalanceType(Enum):
 
 # Enumerate options for energy balances
 class EnergyBalanceType(Enum):
+    useDefault = -1
     none = 0
     enthalpyPhase = 1
     enthalpyTotal = 2
@@ -59,6 +61,7 @@ class EnergyBalanceType(Enum):
 
 # Enumerate options for momentum balances
 class MomentumBalanceType(Enum):
+    useDefault = -1
     none = 0
     pressureTotal = 1
     pressurePhase = 2
@@ -398,6 +401,20 @@ have a config block which derives from CONFIG_Base,
         Returns:
             Constraint objects constructed by sub-method
         """
+        # Check if balance_type is useDefault, and get default if necessary
+        if balance_type == MaterialBalanceType.useDefault:
+            try:
+                balance_type = \
+                    self.config.property_package.default_material_balance_type
+            except AttributeError:
+                raise ConfigurationError(
+                        "{} property package has not implemented a "
+                        "default_material_balance_type, thus cannot use "
+                        "MaterialBalanceType.useDefault when constructing "
+                        "material balances. Please contact the developer of "
+                        "your property package to implement the necessary "
+                        "default attributes.".format(self.name))
+
         if balance_type == MaterialBalanceType.none:
             mb = None
         elif balance_type == MaterialBalanceType.componentPhase:
@@ -439,6 +456,20 @@ have a config block which derives from CONFIG_Base,
         Returns:
             Constraint objects constructed by sub-method
         """
+        # Check if balance_type is useDefault, and get default if necessary
+        if balance_type == EnergyBalanceType.useDefault:
+            try:
+                balance_type = \
+                    self.config.property_package.default_energy_balance_type
+            except AttributeError:
+                raise ConfigurationError(
+                        "{} property package has not implemented a "
+                        "default_energy_balance_type, thus cannot use "
+                        "EnergyBalanceType.useDefault when constructing "
+                        "energy balances. Please contact the developer of "
+                        "your property package to implement the necessary "
+                        "default attributes.".format(self.name))
+
         if balance_type == EnergyBalanceType.none:
             eb = None
         elif balance_type == EnergyBalanceType.enthalpyTotal:
@@ -476,6 +507,20 @@ have a config block which derives from CONFIG_Base,
         Returns:
             Constraint objects constructed by sub-method
         """
+        # Check if balance_type is useDefault, and get default if necessary
+        if balance_type == MomentumBalanceType.useDefault:
+            try:
+                balance_type = \
+                    self.config.property_package.default_momentum_balance_type
+            except AttributeError:
+                raise ConfigurationError(
+                        "{} property package has not implemented a "
+                        "default_momentum_balance_type, thus cannot use "
+                        "MomentumBalanceType.useDefault when constructing "
+                        "momentum balances. Please contact the developer of "
+                        "your property package to implement the necessary "
+                        "default attributes.".format(self.name))
+
         if balance_type == MomentumBalanceType.none:
             mb = None
         elif balance_type == MomentumBalanceType.pressureTotal:
