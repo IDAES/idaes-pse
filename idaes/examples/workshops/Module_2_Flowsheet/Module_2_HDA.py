@@ -44,7 +44,7 @@ from idaes.unit_models import (PressureChanger,
 
 from idaes.unit_models.pressure_changer import ThermodynamicAssumption
 
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 
 def main():

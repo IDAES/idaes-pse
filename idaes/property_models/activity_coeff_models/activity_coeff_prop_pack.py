@@ -59,7 +59,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
