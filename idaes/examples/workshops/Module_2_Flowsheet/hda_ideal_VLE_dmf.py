@@ -88,6 +88,7 @@ class HDAParameterData(PhysicalParameterBlock):
             dframe = TidyUnitData(r.data)
         except ValueError as err:
             raise ValueError(f"While extracting data for {name}: {err}")
+        print(f"@@ {name} param data: {dframe.param_data}")
         return extract_data(dframe.param_data)
 
     def build(self):
