@@ -28,7 +28,10 @@ from pyomo.opt import SolverFactory, TerminationCondition
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -56,6 +59,10 @@ class PhysicalParameterData(PhysicalParameterBlock):
         super(PhysicalParameterData, self).build()
 
         self.state_block_class = MethaneCombustionStateBlock
+
+        self.default_material_balance_type = MaterialBalanceType.elementTotal
+        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
+        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
 
         # List of valid phases in property package
         self.phase_list = Set(initialize=['Vap'])

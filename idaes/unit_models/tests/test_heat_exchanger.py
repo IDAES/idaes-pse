@@ -81,11 +81,11 @@ def test_config():
     # Check side_1 config
     assert len(m.fs.unit.config.side_1) == 7
     assert m.fs.unit.config.side_1.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.side_1.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.side_1.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
+        MomentumBalanceType.useDefault
     assert not m.fs.unit.config.side_1.has_phase_equilibrium
     assert not m.fs.unit.config.side_1.has_pressure_change
     assert m.fs.unit.config.side_1.property_package is m.fs.properties
@@ -93,11 +93,11 @@ def test_config():
     # Check side_2 config
     assert len(m.fs.unit.config.side_2) == 7
     assert m.fs.unit.config.side_2.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.side_2.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.side_2.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
+        MomentumBalanceType.useDefault
     assert not m.fs.unit.config.side_2.has_phase_equilibrium
     assert not m.fs.unit.config.side_2.has_pressure_change
     assert m.fs.unit.config.side_2.property_package is m.fs.properties

@@ -74,11 +74,11 @@ def test_config():
     assert m.fs.unit.config.shell_side.dynamic == useDefault
     assert not m.fs.unit.config.shell_side.has_holdup
     assert m.fs.unit.config.shell_side.material_balance_type == \
-        MaterialBalanceType.componentTotal
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.shell_side.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.shell_side.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
+        MomentumBalanceType.useDefault
     assert not m.fs.unit.config.shell_side.has_pressure_change
     assert not m.fs.unit.config.shell_side.has_phase_equilibrium
     assert m.fs.unit.config.shell_side.transformation_method == \
@@ -90,11 +90,11 @@ def test_config():
     assert m.fs.unit.config.tube_side.dynamic == useDefault
     assert not m.fs.unit.config.tube_side.has_holdup
     assert m.fs.unit.config.tube_side.material_balance_type == \
-        MaterialBalanceType.componentTotal
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.tube_side.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.tube_side.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
+        MomentumBalanceType.useDefault
     assert not m.fs.unit.config.tube_side.has_pressure_change
     assert not m.fs.unit.config.tube_side.has_phase_equilibrium
     assert m.fs.unit.config.tube_side.transformation_method == \

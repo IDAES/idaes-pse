@@ -56,11 +56,11 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
+        MomentumBalanceType.useDefault
     assert m.fs.unit.config.ideal_separation
     assert m.fs.unit.config.has_heat_transfer
     assert m.fs.unit.config.has_pressure_change
@@ -110,8 +110,8 @@ class TestBTXIdeal(object):
         assert hasattr(btx.fs.unit, "heat_duty")
         assert hasattr(btx.fs.unit, "deltaP")
 
-        assert number_variables(btx) == 50
-        assert number_total_constraints(btx) == 43
+        assert number_variables(btx) == 48
+        assert number_total_constraints(btx) == 41
         assert number_unused_variables(btx) == 0
 
     def test_dof(self, btx):
@@ -236,8 +236,8 @@ class TestIAPWS(object):
         assert hasattr(iapws.fs.unit, "heat_duty")
         assert hasattr(iapws.fs.unit, "deltaP")
 
-        assert number_variables(iapws) == 21
-        assert number_total_constraints(iapws) == 16
+        assert number_variables(iapws) == 18
+        assert number_total_constraints(iapws) == 13
         assert number_unused_variables(iapws) == 0
 
     def test_dof(self, iapws):

@@ -25,7 +25,8 @@ import logging
 from pyomo.environ import Param, NonNegativeReals, Set
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class
+from idaes.core import declare_process_block_class, MaterialBalanceType, \
+                       EnergyBalanceType, MomentumBalanceType
 from idaes.core.util.misc import extract_data
 
 from idaes.property_models.activity_coeff_models.activity_coeff_prop_pack \
@@ -48,6 +49,11 @@ class BTXParameterData(ActivityCoeffParameterData):
         Callable method for Block construction.
         '''
         super(BTXParameterData, self).build()
+
+        # Set default balance type options
+        self.default_material_balance_type = MaterialBalanceType.componentTotal
+        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
+        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
 
         self.component_list_master = Set(initialize=['benzene',
                                                      'toluene',

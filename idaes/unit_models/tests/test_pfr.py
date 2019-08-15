@@ -65,11 +65,11 @@ def test_config():
     assert len(m.fs.unit.config) == 19
 
     assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.pressureTotal
+        MomentumBalanceType.useDefault
     assert not m.fs.unit.config.has_heat_transfer
     assert not m.fs.unit.config.has_pressure_change
     assert not m.fs.unit.config.has_equilibrium_reactions

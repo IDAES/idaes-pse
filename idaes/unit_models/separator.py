@@ -150,13 +150,14 @@ fraction indexed by time, outlet and components),
 **SplittingType.phaseComponentFlow** - split based on phase-component flows (
 split fraction indexed by both time, outlet, phase and components).}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed. Only
-used if ideal_separation = False.
-**default** - MaterialBalanceType.componentPhase.
+        doc="""Indicates what type of mass balance should be constructed,
+**default** - MaterialBalanceType.useDefault.
 **Valid values:** {
+**MaterialBalanceType.useDefault - refer to property package for default
+balance type
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
 **MaterialBalanceType.componentTotal** - use total component balances,
@@ -492,8 +493,12 @@ linked the mixed state and all outlet states,
             elif self.config.split_basis == SplittingType.phaseComponentFlow:
                 return self.split_fraction[t, o, p, j]
 
-        if self.config.material_balance_type == \
-                MaterialBalanceType.componentPhase:
+        mb_type = self.config.material_balance_type
+        if mb_type == MaterialBalanceType.useDefault:
+            mb_type = \
+                self.config.property_package.default_material_balance_type
+
+        if mb_type == MaterialBalanceType.componentPhase:
             if self.config.has_phase_equilibrium is True:
                 # Get units from property package
                 units = {}
@@ -553,8 +558,7 @@ linked the mixed state and all outlet states,
                         mixed_block[t].get_material_flow_terms(p, j) ==
                         o_block[t].get_material_flow_terms(p, j) -
                         phase_equilibrium_term(b, t, o, p, j))
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.componentTotal:
+        elif mb_type == MaterialBalanceType.componentTotal:
             @self.Constraint(self.flowsheet().config.time,
                              self.outlet_idx,
                              self.config.property_package.component_list,
@@ -566,8 +570,7 @@ linked the mixed state and all outlet states,
                             in b.config.property_package.phase_list) ==
                         sum(o_block[t].get_material_flow_terms(p, j) for p in
                             b.config.property_package.phase_list))
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.total:
+        elif mb_type == MaterialBalanceType.total:
             @self.Constraint(self.flowsheet().config.time,
                              self.outlet_idx,
                              doc="Material splitting equations")
@@ -581,12 +584,10 @@ linked the mixed state and all outlet states,
                     sum(sum(o_block[t].get_material_flow_terms(p, j) for j
                             in b.config.property_package.component_list)
                         for p in b.config.property_package.phase_list))
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.elementTotal:
+        elif mb_type == MaterialBalanceType.elementTotal:
             raise ConfigurationError("{} Separators do not support elemental "
                                      "material balances.".format(self.name))
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.none:
+        elif mb_type == MaterialBalanceType.none:
             pass
         else:
             raise BurntToast("{} Separator received unrecognised value for "

@@ -28,7 +28,10 @@ from idaes.core import (declare_process_block_class,
                         ReactionParameterBlock,
                         ReactionBlockBase,
                         ReactionBlockDataBase,
-                        MaterialFlowBasis)
+                        MaterialFlowBasis,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 
 
 def get_default_solver():
@@ -52,6 +55,11 @@ def get_default_solver():
 class _PhysicalParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_PhysicalParameterBlock, self).build()
+
+        # Set default balance type options
+        self.default_material_balance_type = MaterialBalanceType.componentPhase
+        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
+        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
 
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"])

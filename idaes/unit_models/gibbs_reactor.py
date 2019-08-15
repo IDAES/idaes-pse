@@ -58,24 +58,28 @@ False."""))
         doc="""Gibbs reactors do not have defined volume, thus this must be
 False."""))
     CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
+        default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyTotal.
+**default** - EnergyBalanceType.useDefault.
 **Valid values:** {
+**EnergyBalanceType.useDefault - refer to property package for default
+balance type
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
     CONFIG.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.pressureTotal,
+        default=MomentumBalanceType.useDefault,
         domain=In(MomentumBalanceType),
         description="Momentum balance construction flag",
         doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.pressureTotal.
+**default** - MomentumBalanceType.useDefault.
 **Valid values:** {
+**MomentumBalanceType.useDefault - refer to property package for default
+balance type
 **MomentumBalanceType.none** - exclude momentum balances,
 **MomentumBalanceType.pressureTotal** - single pressure balance for material,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,

@@ -24,7 +24,8 @@ from pyomo.environ import Param, NonNegativeReals, Set
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, PhysicalParameterBlock
+from idaes.core import declare_process_block_class, PhysicalParameterBlock, \
+            MaterialBalanceType, EnergyBalanceType, MomentumBalanceType
 
 from .methanol_state_block_VLE import IdealStateBlock
 
@@ -73,6 +74,10 @@ class PhysicalParameterData(PhysicalParameterBlock):
         super(PhysicalParameterData, self).build()
 
         self.state_block_class = IdealStateBlock
+        
+        self.default_material_balance_type = MaterialBalanceType.componentTotal
+        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
+        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
 
         # List of valid phases in property package
         # List of valid phases in property package

@@ -20,7 +20,7 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, Set, Param, sqrt, log10
+    Var, Set, Param, sqrt, log10
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -29,7 +29,10 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import degrees_of_freedom, \
@@ -51,6 +54,10 @@ class HDAParameterData(PhysicalParameterBlock):
         super(HDAParameterData, self).build()
 
         self.state_block_class = IdealStateBlock
+        
+        self.default_material_balance_type = MaterialBalanceType.componentPhase
+        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
+        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
 
         self.component_list = Set(initialize=['benzene',
                                               'toluene',

@@ -34,7 +34,10 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Some more inforation about this module
@@ -61,6 +64,11 @@ class PhysicalParameterData(PhysicalParameterBlock):
         super(PhysicalParameterData, self).build()
 
         self.state_block_class = SaponificationStateBlock
+
+        # Set default balance type options
+        self.default_material_balance_type = MaterialBalanceType.componentTotal
+        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
+        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
 
         # List of valid phases in property package
         self.phase_list = Set(initialize=['Liq'])

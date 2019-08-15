@@ -129,13 +129,14 @@ provided,
 **int** - number of inlets to create (will be named with sequential integers
 from 1 to num_inlets).}"""))
     CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
-        doc="""Indicates what type of mass balance should be constructed. Only
-used if ideal_separation = False.
-**default** - MaterialBalanceType.componentPhase.
+        doc="""Indicates what type of mass balance should be constructed,
+**default** - MaterialBalanceType.useDefault.
 **Valid values:** {
+**MaterialBalanceType.useDefault - refer to property package for default
+balance type
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
 **MaterialBalanceType.componentTotal** - use total component balances,
@@ -233,9 +234,15 @@ linked to all inlet states and the mixed state,
         else:
             mixed_block = self.get_mixed_state_block()
 
-        if self.config.material_balance_type != MaterialBalanceType.none:
+        mb_type = self.config.material_balance_type
+        if mb_type == MaterialBalanceType.useDefault:
+            mb_type = \
+                self.config.property_package.default_material_balance_type
+
+        if mb_type != MaterialBalanceType.none:
             self.add_material_mixing_equations(inlet_blocks=inlet_blocks,
-                                               mixed_block=mixed_block)
+                                               mixed_block=mixed_block,
+                                               mb_type=mb_type)
         else:
             raise BurntToast("{} received unrecognised value for "
                              "material_mixing_type argument. This "
@@ -389,15 +396,17 @@ linked to all inlet states and the mixed state,
 
         return self.config.mixed_state_block
 
-    def add_material_mixing_equations(self, inlet_blocks, mixed_block):
+    def add_material_mixing_equations(self,
+                                      inlet_blocks,
+                                      mixed_block,
+                                      mb_type):
         """
         Add material mixing equations.
         """
         # Get phase component list(s)
         phase_component_list = self._get_phase_comp_list()
 
-        if self.config.material_balance_type == \
-                MaterialBalanceType.componentPhase:
+        if mb_type == MaterialBalanceType.componentPhase:
             # Create equilibrium generation term and constraints if required
             if self.config.has_phase_equilibrium is True:
                 # Get units from property package
@@ -463,8 +472,7 @@ linked to all inlet states and the mixed state,
                 else:
                     return Constraint.Skip
 
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.componentTotal:
+        elif mb_type == MaterialBalanceType.componentTotal:
             # Write phase-component balances
             @self.Constraint(self.flowsheet().config.time,
                              self.config.property_package.component_list,
@@ -476,8 +484,7 @@ linked to all inlet states and the mixed state,
                     mixed_block[t].get_material_flow_terms(p, j)
                     for p in b.config.property_package.phase_list)
 
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.total:
+        elif mb_type == MaterialBalanceType.total:
             # Write phase-component balances
             @self.Constraint(self.flowsheet().config.time,
                              doc="Material mixing equations")
@@ -488,12 +495,10 @@ linked to all inlet states and the mixed state,
                     mixed_block[t].get_material_flow_terms(p, j)
                     for j in b.config.property_package.component_list)
                     for p in b.config.property_package.phase_list)
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.elementTotal:
+        elif mb_type == MaterialBalanceType.elementTotal:
             raise ConfigurationError("{} Mixers do not support elemental "
                                      "material balances.".format(self.name))
-        elif self.config.material_balance_type == \
-                MaterialBalanceType.none:
+        elif mb_type == MaterialBalanceType.none:
             pass
         else:
             raise BurntToast("{} Mixer received unrecognised value for "
