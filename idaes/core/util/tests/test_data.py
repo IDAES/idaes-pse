@@ -71,7 +71,7 @@ def test_map_data():
 def test_unit_coversion():
     # spot test some unit conversions and features
     #da.unit_convert(x, frm, to=None, system=None, unit_string_map={},
-    #                 ignore_units=[], guage_pressures={}, atm=1.0):
+    #                 ignore_units=[], gauge_pressures={}, atm=1.0):
 
     p_atm = np.array([1,2,3])
     p_psi, unit = da.unit_convert(p_atm, "atm", "psi")

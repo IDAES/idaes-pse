@@ -120,7 +120,7 @@ _unit_strings = {
     "MVARS":"MVAR",
 }
 
-_guage_pressures = {
+_gauge_pressures = {
     "psig":"psi",
 }
 
@@ -137,7 +137,7 @@ _ignore_units = [
 ]
 
 def unit_convert(x, frm, to=None, system=None, unit_string_map={},
-                 ignore_units=[], guage_pressures={}, atm=1.0):
+                 ignore_units=[], gauge_pressures={}, atm=1.0):
     """Convert the quntity x to a different set of units. X can be a numpy array
     or pandas series. The from unit can is translated into a string that pint
     can recognize by first looking in unit_string_map then looking in
@@ -154,9 +154,9 @@ def unit_convert(x, frm, to=None, system=None, unit_string_map={},
             corresponding strings that pint can recognize.  This only applies to
             the from string.
         ignore_units (list, or tuple): units to not convert
-        guage_pressures (dict): keys are units strings to be considered guage
+        gauge_pressures (dict): keys are units strings to be considered gauge
             pressures and the values are corresponding absolute pressure units
-        atm (float, numpy.array, pandas.series): pressure in atm to add to guage
+        atm (float, numpy.array, pandas.series): pressure in atm to add to gauge
             pressure to convert it to absolute pressure.  The default is 1.
     Returns:
         (tuple): quantity and unit string
@@ -166,14 +166,14 @@ def unit_convert(x, frm, to=None, system=None, unit_string_map={},
         frm = unit_string_map[frm]
     elif frm in _unit_strings:
         frm = _unit_strings[frm]
-    # Now check for guage pressure
-    guage = False
-    if frm in guage_pressures:
-        guage = True
-        frm = guage_pressures[frm]
-    elif frm in _guage_pressures:
-        guage = True
-        frm = _guage_pressures[frm]
+    # Now check for gauge pressure
+    gauge = False
+    if frm in gauge_pressures:
+        gauge = True
+        frm = gauge_pressures[frm]
+    elif frm in _gauge_pressures:
+        gauge = True
+        frm = _gauge_pressures[frm]
     q = ureg.Quantity
     if (frm in _ignore_units) or (frm in ignore_units):
         return (x, frm)
@@ -188,7 +188,7 @@ def unit_convert(x, frm, to=None, system=None, unit_string_map={},
         y = q(x, ureg.parse_expression(frm)).to_base_units()
     else:
         y = q(x, ureg.parse_expression(frm)).to(to)
-    if guage:
+    if gauge:
         # convert gauge pressure to absolute
         y = y + atm*ureg.parse_expression("atm")
     return (y.magnitude, str(y.units))
