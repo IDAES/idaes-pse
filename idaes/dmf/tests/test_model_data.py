@@ -76,50 +76,52 @@ def test_unit_coversion():
     p_atm = np.array([1, 2, 3])
     p_psi, unit = da.unit_convert(p_atm, "atm", "psi")
 
-    assert (p_psi[0], pytest.approx(14.7, rel=1e-2))
+    assert p_psi[0] == pytest.approx(14.7, rel=1e-2)
+    assert p_psi[1] == pytest.approx(14.7 * 2, rel=1e-2)
+    assert p_psi[2] == pytest.approx(14.7 * 3, rel=1e-2)
     assert unit == "pound_force_per_square_inch"
 
     # ppb is on the list of units to ignore, and not attmpt to convert
-    p_atm, unit = da.unit_convert(p_atm, "ppb", "psi")
-    assert (p_atm[0], pytest.approx(1, rel=1e-2))
+    p, unit = da.unit_convert(p_atm, "ppb", "psi")
+    assert (p[0], pytest.approx(1, rel=1e-2))
     assert unit == "ppb"
 
     # psig is on the list of gauge pressures.
-    p_psi, unit = da.unit_convert(p_psi, "psig", "atm")
+    p, unit = da.unit_convert(p_psi, "psig", "atm")
 
-    assert (p_psi[0], pytest.approx(2, rel=1e-1))
-    assert (p_psi[0], pytest.approx(3, rel=1e-1))
-    assert (p_psi[0], pytest.approx(4, rel=1e-1))
+    assert p[0] == pytest.approx(2, rel=1e-1)
+    assert p[1] == pytest.approx(3, rel=1e-1)
+    assert p[2] == pytest.approx(4, rel=1e-1)
 
     # check the general system of units conversion
     p_pa, unit = da.unit_convert(p_psi, "psi", system="mks")
 
-    assert (p_pa[0], pytest.approx(101325, rel=1e-1))
+    assert p_pa[0] == pytest.approx(101325, rel=1e-1)
     assert unit == "kilogram / meter / second ** 2"  # AKA Pa
 
     # Test for unit conversion of gauge pressue with different atmosperic
     # pressure values
     p, unit = da.unit_convert(p_psi, "psig", "atm", atm=np.array([1, 1.1, 1.2]))
 
-    assert (p[0], pytest.approx(2, rel=1e-1))
-    assert (p[0], pytest.approx(3.1, rel=1e-1))
-    assert (p[0], pytest.approx(4.2, rel=1e-1))
+    assert p[0] == pytest.approx(2, rel=1e-1)
+    assert p[1] == pytest.approx(3.1, rel=1e-1)
+    assert p[2] == pytest.approx(4.2, rel=1e-1)
 
     # Agin but make sure it works with a scalar to
     p, unit = da.unit_convert(p_psi, "psig", "atm", atm=1.2)
 
-    assert (p[0], pytest.approx(2.2, rel=1e-1))
-    assert (p[0], pytest.approx(3.2, rel=1e-1))
-    assert (p[0], pytest.approx(4.2, rel=1e-1))
+    assert p[0] == pytest.approx(2.2, rel=1e-1)
+    assert p[1] == pytest.approx(3.2, rel=1e-1)
+    assert p[2] == pytest.approx(4.2, rel=1e-1)
 
     # test custom unit string mapping
     p, unit = da.unit_convert(
         p_psi, "MYPRESSURE", "atm", unit_string_map={"MYPRESSURE": "psi"}
     )
 
-    assert (p_psi[0], pytest.approx(1, rel=1e-1))
-    assert (p_psi[0], pytest.approx(2, rel=1e-1))
-    assert (p_psi[0], pytest.approx(3, rel=1e-1))
+    assert p[0] == pytest.approx(1, rel=1e-1)
+    assert p[1] == pytest.approx(2, rel=1e-1)
+    assert p[2] == pytest.approx(3, rel=1e-1)
 
     # Test that a unit that doesn't exisit remains unchanged
     with warnings.catch_warnings(record=True) as w:
@@ -132,5 +134,5 @@ def test_unit_coversion():
             " is not defined. No conversion."
         )
 
-    assert (p_psi[0], pytest.approx(14.7, rel=1e-1))
+    assert p_psi[0] == pytest.approx(14.7, rel=1e-1)
     assert unit == "MYPRESSURE"
