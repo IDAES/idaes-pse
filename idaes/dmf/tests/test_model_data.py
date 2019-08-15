@@ -21,7 +21,7 @@ import pyomo.environ as pyo
 
 from pyomo.common.fileutils import this_file_dir
 
-import idaes.core.util.model_data as da
+import idaes.dmf.model_data as da
 
 _data_dir = os.path.join(this_file_dir(), "data_files")
 
