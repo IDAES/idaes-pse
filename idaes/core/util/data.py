@@ -26,12 +26,14 @@ import pint
 import pyomo.environ as pyo
 import warnings
 
+
 def _strip(tag):
     """
     Tag renaming function to remove whitespace, depending on the csv format
     column heading items can pick up some extra whitespace when read into Pandas
     """
     return tag.strip()
+
 
 _log = logging.getLogger(__file__)
 
@@ -40,89 +42,135 @@ _log = logging.getLogger(__file__)
 # more in the future.
 _unit_strings = {
     # Pressure
-    "PSI":"psi", "PSIA":"psi", "psia":"psi",
-    "PSIG":"psig",
-    "INWC":"in water", "IN WC":"in water", "IN/WC":"in water",
-    '" H2O':"in water",
-    "INHG":"in hg", "IN HG":"in hg", "IN/HG":"in hg", "HGA":"in hg",
-    "IN HGA":"in hg",
+    "PSI": "psi",
+    "PSIA": "psi",
+    "psia": "psi",
+    "PSIG": "psig",
+    "INWC": "in water",
+    "IN WC": "in water",
+    "IN/WC": "in water",
+    '" H2O': "in water",
+    "INHG": "in hg",
+    "IN HG": "in hg",
+    "IN/HG": "in hg",
+    "HGA": "in hg",
+    "IN HGA": "in hg",
     # Fraction
-    "PCT":"percent", "pct":"percent", "PERCT":"percent",
-    "PERCT.":"percent", "PCNT":"percent",
-    "PPM":"ppm", "PPB":"ppb",
-    "% OPEN":"percent open",
-    "% CLSD":"percent closed", "% CLOSED":"percent closed",
+    "PCT": "percent",
+    "pct": "percent",
+    "PERCT": "percent",
+    "PERCT.": "percent",
+    "PCNT": "percent",
+    "PPM": "ppm",
+    "PPB": "ppb",
+    "% OPEN": "percent open",
+    "% CLSD": "percent closed",
+    "% CLOSED": "percent closed",
     # Length
-    "IN":"in", "INS":"in", "INCHES":"in", "Inches":"in",
-    "FT":"ft", "FEET":"ft", "FOOT":"ft", "Feet":"ft",
-    "MILS":"minch",
+    "IN": "in",
+    "INS": "in",
+    "INCHES": "in",
+    "Inches": "in",
+    "FT": "ft",
+    "FEET": "ft",
+    "FOOT": "ft",
+    "Feet": "ft",
+    "MILS": "minch",
     # Speed
-    "MPH":"mile/hr",
-    "IPS":"in/s",
+    "MPH": "mile/hr",
+    "IPS": "in/s",
     # Volume
-    "KGAL":"kgal",
+    "KGAL": "kgal",
     # Vol Flow
-    "GPM":"gal/min", "gpm":"gal/min",
-    "CFM": "ft^3/min", "KCFM": "ft^3/mmin",
-    "SCFM": "ft^3/min", "KSCFM":"ft^3/mmin", # be careful with this one
-                                             # I don't know how to indicate its
-                                             # a volumetric flow at standard
-                                             # conditions
+    "GPM": "gal/min",
+    "gpm": "gal/min",
+    "CFM": "ft^3/min",
+    "KCFM": "ft^3/mmin",
+    "SCFM": "ft^3/min",
+    "KSCFM": "ft^3/mmin",  # be careful with this one
+    # I don't know how to indicate its
+    # a volumetric flow at standard
+    # conditions
     # Angle
-    "DEG":"deg",
+    "DEG": "deg",
     # Angular Speed
-    "RPM":"rpm",
+    "RPM": "rpm",
     # Fequency
-    "HZ":"hz",
+    "HZ": "hz",
     # Temperature
-    "DEG F":"degF", "Deg F":"degF", "deg F":"degF",
-    "DEG C":"degC", "Deg C":"degC", "deg C":"degC",
-    "DEGF":"degF", "DegF":"degF",
-    "DEGC":"degC", "DegC":"degC",
+    "DEG F": "degF",
+    "Deg F": "degF",
+    "deg F": "degF",
+    "DEG C": "degC",
+    "Deg C": "degC",
+    "deg C": "degC",
+    "DEGF": "degF",
+    "DegF": "degF",
+    "DEGC": "degC",
+    "DegC": "degC",
     # Temperature Difference
-    "DELTA DEG F":"delta_degF", "DETLA Deg F":"delta_degF",
-    "DETLA deg F":"delta_degF", "DETLA DEG C":"delta_degC",
-    "DETLA Deg C":"delta_degC", "DELTA deg C":"delta_degC",
-    "DELTA DEGF":"delta_degF", "DELTA DegF":"delta_degF",
-    "DELTA degF":"delta_degF", "DELTA DEGC":"delta_degC",
-    "DELTA DegC":"delta_degC", "DELTA degC":"delta_degC",
-    "Delta DEG F":"delta_degF", "Delta Deg F":"delta_degF",
-    "Delta deg F":"delta_degF", "Delta DEG C":"delta_degC",
-    "Delta Deg C":"delta_degC", "Delta deg C":"delta_degC",
-    "Delta DEGF":"delta_degF", "Delta DegF":"delta_degF",
-    "Delta degF":"delta_degF", "Delta DEGC":"delta_degC",
-    "Delta DegC":"delta_degC", "Delta degC":"delta_degC",
-    "delta DEG F":"delta_degF", "delta Deg F":"delta_degF",
-    "delta deg F":"delta_degF", "delta DEG C":"delta_degC",
-    "delta Deg C":"delta_degC", "delta deg C":"delta_degC",
-    "delta DEGF":"delta_degF", "delta DegF":"delta_degF",
-    "delta degF":"delta_degF", "delta DEGC":"delta_degC",
-    "delta DegC":"delta_degC", "delta degC":"delta_degC",
+    "DELTA DEG F": "delta_degF",
+    "DETLA Deg F": "delta_degF",
+    "DETLA deg F": "delta_degF",
+    "DETLA DEG C": "delta_degC",
+    "DETLA Deg C": "delta_degC",
+    "DELTA deg C": "delta_degC",
+    "DELTA DEGF": "delta_degF",
+    "DELTA DegF": "delta_degF",
+    "DELTA degF": "delta_degF",
+    "DELTA DEGC": "delta_degC",
+    "DELTA DegC": "delta_degC",
+    "DELTA degC": "delta_degC",
+    "Delta DEG F": "delta_degF",
+    "Delta Deg F": "delta_degF",
+    "Delta deg F": "delta_degF",
+    "Delta DEG C": "delta_degC",
+    "Delta Deg C": "delta_degC",
+    "Delta deg C": "delta_degC",
+    "Delta DEGF": "delta_degF",
+    "Delta DegF": "delta_degF",
+    "Delta degF": "delta_degF",
+    "Delta DEGC": "delta_degC",
+    "Delta DegC": "delta_degC",
+    "Delta degC": "delta_degC",
+    "delta DEG F": "delta_degF",
+    "delta Deg F": "delta_degF",
+    "delta deg F": "delta_degF",
+    "delta DEG C": "delta_degC",
+    "delta Deg C": "delta_degC",
+    "delta deg C": "delta_degC",
+    "delta DEGF": "delta_degF",
+    "delta DegF": "delta_degF",
+    "delta degF": "delta_degF",
+    "delta DEGC": "delta_degC",
+    "delta DegC": "delta_degC",
+    "delta degC": "delta_degC",
     # Energy
-    "MBTU":"kbtu",
+    "MBTU": "kbtu",
     # Mass
-    "MLB":"klb",
-    "K LB":"klb",
-    "K LBS":"klb",
-    "lb.":"lb",
+    "MLB": "klb",
+    "K LB": "klb",
+    "K LBS": "klb",
+    "lb.": "lb",
     # Mass flow
-    "TPH":"ton/hr",
-    "tph":"ton/hr",
-    "KLB/HR":"klb/hr",
-    "KPPH":"klb/hr",
+    "TPH": "ton/hr",
+    "tph": "ton/hr",
+    "KLB/HR": "klb/hr",
+    "KPPH": "klb/hr",
     # Current
-    "AMP":"amp", "AMPS":"amp", "Amps":"amp", "Amp":"amp",
-    "AMP AC":"amp",
-    #pH
-    "PH":"pH",
+    "AMP": "amp",
+    "AMPS": "amp",
+    "Amps": "amp",
+    "Amp": "amp",
+    "AMP AC": "amp",
+    # pH
+    "PH": "pH",
     # VARS (volt-amp reactive)
-    "VARS":"VAR",
-    "MVARS":"MVAR",
+    "VARS": "VAR",
+    "MVARS": "MVAR",
 }
 
-_gauge_pressures = {
-    "psig":"psi",
-}
+_gauge_pressures = {"psig": "psi"}
 
 _ignore_units = [
     "percent",
@@ -136,8 +184,17 @@ _ignore_units = [
     "percent closed",
 ]
 
-def unit_convert(x, frm, to=None, system=None, unit_string_map={},
-                 ignore_units=[], gauge_pressures={}, atm=1.0):
+
+def unit_convert(
+    x,
+    frm,
+    to=None,
+    system=None,
+    unit_string_map={},
+    ignore_units=[],
+    gauge_pressures={},
+    atm=1.0,
+):
     """Convert the quntity x to a different set of units. X can be a numpy array
     or pandas series. The from unit can is translated into a string that pint
     can recognize by first looking in unit_string_map then looking in
@@ -181,8 +238,11 @@ def unit_convert(x, frm, to=None, system=None, unit_string_map={},
         try:
             ureg.parse_expression(frm)
         except pint.errors.UndefinedUnitError:
-            warnings.warn("In unit conversion, from unit '{}' is not defined."
-                " No conversion.".format(frm), UserWarning)
+            warnings.warn(
+                "In unit conversion, from unit '{}' is not defined."
+                " No conversion.".format(frm),
+                UserWarning,
+            )
             return (x, frm)
     if to is None:
         y = q(x, ureg.parse_expression(frm)).to_base_units()
@@ -190,11 +250,13 @@ def unit_convert(x, frm, to=None, system=None, unit_string_map={},
         y = q(x, ureg.parse_expression(frm)).to(to)
     if gauge:
         # convert gauge pressure to absolute
-        y = y + atm*ureg.parse_expression("atm")
+        y = y + atm * ureg.parse_expression("atm")
     return (y.magnitude, str(y.units))
 
-def read_data(csv_file, csv_file_metadata, model=None, rename_mapper=None,
-              unit_system=None):
+
+def read_data(
+    csv_file, csv_file_metadata, model=None, rename_mapper=None, unit_system=None
+):
     """
     Read CSV data into a Pandas DataFrame.
 
@@ -225,33 +287,37 @@ def read_data(csv_file, csv_file_metadata, model=None, rename_mapper=None,
     df = pd.read_csv(csv_file, parse_dates=True, index_col=0)
     # Drop empty columns
     df.drop(df.columns[df.columns.str.contains("Unnamed")], axis=1, inplace=True)
-    df.rename(mapper=_strip, axis='columns', inplace=True)
+    df.rename(mapper=_strip, axis="columns", inplace=True)
     if rename_mapper:
         # Change tag names in some systematic way with the function rename_mapper
-        df.rename(mapper=rename_mapper, axis='columns', inplace=True)
+        df.rename(mapper=rename_mapper, axis="columns", inplace=True)
     metadata = {}
     if csv_file_metadata:
-        with open(csv_file_metadata, 'r') as f:
+        with open(csv_file_metadata, "r") as f:
             reader = csv.reader(f)
             for line in reader:
                 tag = line[0].strip()
                 if rename_mapper:
                     tag = rename_mapper(tag)
                 metadata[tag] = {
-                    "reference_string":line[1].strip(),
-                    "reference":None,
-                    "description":line[2].strip(),
-                    "units":line[3].strip()}
+                    "reference_string": line[1].strip(),
+                    "reference": None,
+                    "description": line[2].strip(),
+                    "units": line[3].strip(),
+                }
     # If a model was provided, map the tags with a reference string to the model
     if model:
         for tag, md in metadata.items():
             if md["reference_string"]:
                 try:
                     md["reference"] = pyo.Reference(
-                        eval(md["reference_string"], {"m":model}))
+                        eval(md["reference_string"], {"m": model})
+                    )
                 except:
-                    warnings.warn("Tag refernce {} not found".format(
-                        md["reference_string"]), UserWarning)
+                    warnings.warn(
+                        "Tag refernce {} not found".format(md["reference_string"]),
+                        UserWarning,
+                    )
     # Drop the columns with no metadata (assuming those are columns to ignore)
     for tag in df:
         if not tag in metadata:
@@ -262,6 +328,7 @@ def read_data(csv_file, csv_file_metadata, model=None, rename_mapper=None,
     if unit_system:
         for tag in df:
             df[tag], metadata[tag]["units"] = unit_convert(
-                df[tag], metadata[tag]["units"], system=unit_system)
+                df[tag], metadata[tag]["units"], system=unit_system
+            )
 
     return df, metadata

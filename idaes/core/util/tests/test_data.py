@@ -25,11 +25,12 @@ import idaes.core.util.data as da
 
 _data_dir = os.path.join(this_file_dir(), "data_files")
 
+
 def test_map_data():
     data1 = os.path.join(_data_dir, "data1.csv")
     data1_meta = os.path.join(_data_dir, "data1_meta.csv")
     m = pyo.ConcreteModel("Data Test Model")
-    m.time = pyo.Set(initialize=[1,2,3])
+    m.time = pyo.Set(initialize=[1, 2, 3])
     m.pressure = pyo.Var(m.time, doc="pressure (Pa)", initialize=101325)
     m.temperature = pyo.Var(m.time, doc="temperature (K)", initialize=300)
     m.volume = pyo.Var(m.time, doc="volume (m^3)", initialize=10)
@@ -37,98 +38,99 @@ def test_map_data():
     def retag(tag):
         return tag.replace(".junk", "")
 
-    df, df_meta = da.read_data(data1, data1_meta, model=m, rename_mapper=retag,
-                               unit_system="mks")
+    df, df_meta = da.read_data(
+        data1, data1_meta, model=m, rename_mapper=retag, unit_system="mks"
+    )
 
     # Check for expected columns in data and meta data
-    assert("T" in df)
-    assert("P" in df)
-    assert("V" in df)
-    assert("T" in df_meta)
-    assert("P" in df_meta)
-    assert("V" in df_meta)
+    assert "T" in df
+    assert "P" in df
+    assert "V" in df
+    assert "T" in df_meta
+    assert "P" in df_meta
+    assert "V" in df_meta
 
     # Check that the unit stings updated after conversion
-    assert(df_meta["T"]["units"] == "kelvin")
+    assert df_meta["T"]["units"] == "kelvin"
     # this next unit is Pa
-    assert(df_meta["P"]["units"] == "kilogram / meter / second ** 2")
-    assert(df_meta["V"]["units"] == "meter ** 3")
+    assert df_meta["P"]["units"] == "kilogram / meter / second ** 2"
+    assert df_meta["V"]["units"] == "meter ** 3"
 
     # Check that the unit conversions are okay
-    assert(df["T"]["1901-3-3 12:00"] == pytest.approx(300, rel=1e-4))
-    assert(df["P"]["1901-3-3 12:00"] == pytest.approx(200000, rel=1e-4))
-    assert(df["V"]["1901-3-3 12:00"] == pytest.approx(5.187286689, rel=1e-4))
+    assert df["T"]["1901-3-3 12:00"] == pytest.approx(300, rel=1e-4)
+    assert df["P"]["1901-3-3 12:00"] == pytest.approx(200000, rel=1e-4)
+    assert df["V"]["1901-3-3 12:00"] == pytest.approx(5.187286689, rel=1e-4)
 
     # Check the mapping of the tags to the model (the 1 key is the time indexed
     # from the model, because the reference is for a time-indexed variable)
-    assert(pyo.value(df_meta["T"]["reference"][1]) ==
-        pytest.approx(300, rel=1e-4))
-    assert(pyo.value(df_meta["P"]["reference"][1]) ==
-        pytest.approx(101325, rel=1e-4))
-    assert(pyo.value(df_meta["V"]["reference"][1]) ==
-        pytest.approx(10, rel=1e-4))
+    assert pyo.value(df_meta["T"]["reference"][1]) == pytest.approx(300, rel=1e-4)
+    assert pyo.value(df_meta["P"]["reference"][1]) == pytest.approx(101325, rel=1e-4)
+    assert pyo.value(df_meta["V"]["reference"][1]) == pytest.approx(10, rel=1e-4)
+
 
 def test_unit_coversion():
     # spot test some unit conversions and features
-    #da.unit_convert(x, frm, to=None, system=None, unit_string_map={},
+    # da.unit_convert(x, frm, to=None, system=None, unit_string_map={},
     #                 ignore_units=[], gauge_pressures={}, atm=1.0):
 
-    p_atm = np.array([1,2,3])
+    p_atm = np.array([1, 2, 3])
     p_psi, unit = da.unit_convert(p_atm, "atm", "psi")
 
-    assert(p_psi[0], pytest.approx(14.7, rel=1e-2))
-    assert(unit == "pound_force_per_square_inch")
+    assert (p_psi[0], pytest.approx(14.7, rel=1e-2))
+    assert unit == "pound_force_per_square_inch"
 
     # ppb is on the list of units to ignore, and not attmpt to convert
     p_atm, unit = da.unit_convert(p_atm, "ppb", "psi")
-    assert(p_atm[0], pytest.approx(1, rel=1e-2))
-    assert(unit == "ppb")
+    assert (p_atm[0], pytest.approx(1, rel=1e-2))
+    assert unit == "ppb"
 
     # psig is on the list of gauge pressures.
     p_psi, unit = da.unit_convert(p_psi, "psig", "atm")
 
-    assert(p_psi[0], pytest.approx(2, rel=1e-1))
-    assert(p_psi[0], pytest.approx(3, rel=1e-1))
-    assert(p_psi[0], pytest.approx(4, rel=1e-1))
+    assert (p_psi[0], pytest.approx(2, rel=1e-1))
+    assert (p_psi[0], pytest.approx(3, rel=1e-1))
+    assert (p_psi[0], pytest.approx(4, rel=1e-1))
 
     # check the general system of units conversion
     p_pa, unit = da.unit_convert(p_psi, "psi", system="mks")
 
-    assert(p_pa[0], pytest.approx(101325, rel=1e-1))
-    assert(unit == "kilogram / meter / second ** 2") # AKA Pa
+    assert (p_pa[0], pytest.approx(101325, rel=1e-1))
+    assert unit == "kilogram / meter / second ** 2"  # AKA Pa
 
     # Test for unit conversion of gauge pressue with different atmosperic
     # pressure values
-    p, unit = da.unit_convert(p_psi, "psig", "atm",
-                                  atm=np.array([1, 1.1, 1.2]))
+    p, unit = da.unit_convert(p_psi, "psig", "atm", atm=np.array([1, 1.1, 1.2]))
 
-    assert(p[0], pytest.approx(2, rel=1e-1))
-    assert(p[0], pytest.approx(3.1, rel=1e-1))
-    assert(p[0], pytest.approx(4.2, rel=1e-1))
+    assert (p[0], pytest.approx(2, rel=1e-1))
+    assert (p[0], pytest.approx(3.1, rel=1e-1))
+    assert (p[0], pytest.approx(4.2, rel=1e-1))
 
     # Agin but make sure it works with a scalar to
     p, unit = da.unit_convert(p_psi, "psig", "atm", atm=1.2)
 
-    assert(p[0], pytest.approx(2.2, rel=1e-1))
-    assert(p[0], pytest.approx(3.2, rel=1e-1))
-    assert(p[0], pytest.approx(4.2, rel=1e-1))
+    assert (p[0], pytest.approx(2.2, rel=1e-1))
+    assert (p[0], pytest.approx(3.2, rel=1e-1))
+    assert (p[0], pytest.approx(4.2, rel=1e-1))
 
     # test custom unit string mapping
-    p, unit = da.unit_convert(p_psi, "MYPRESSURE", "atm",
-        unit_string_map={"MYPRESSURE":"psi"})
+    p, unit = da.unit_convert(
+        p_psi, "MYPRESSURE", "atm", unit_string_map={"MYPRESSURE": "psi"}
+    )
 
-    assert(p_psi[0], pytest.approx(1, rel=1e-1))
-    assert(p_psi[0], pytest.approx(2, rel=1e-1))
-    assert(p_psi[0], pytest.approx(3, rel=1e-1))
+    assert (p_psi[0], pytest.approx(1, rel=1e-1))
+    assert (p_psi[0], pytest.approx(2, rel=1e-1))
+    assert (p_psi[0], pytest.approx(3, rel=1e-1))
 
     # Test that a unit that doesn't exisit remains unchanged
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         p, unit = da.unit_convert(p_psi, "MYPRESSURE", "atm")
-        assert(len(w) == 1)
-        assert(issubclass(w[-1].category, UserWarning))
-        assert(str(w[-1].message)=="In unit conversion, from unit 'MYPRESSURE'"
-            " is not defined. No conversion.")
+        assert len(w) == 1
+        assert issubclass(w[-1].category, UserWarning)
+        assert (
+            str(w[-1].message) == "In unit conversion, from unit 'MYPRESSURE'"
+            " is not defined. No conversion."
+        )
 
-    assert(p_psi[0], pytest.approx(14.7, rel=1e-1))
-    assert(unit == "MYPRESSURE")
+    assert (p_psi[0], pytest.approx(14.7, rel=1e-1))
+    assert unit == "MYPRESSURE"
