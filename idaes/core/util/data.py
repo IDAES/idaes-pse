@@ -200,7 +200,13 @@ def read_data(csv_file, csv_file_metadata, model=None, rename_mapper=None,
 
     The data should be in a form where the first row contains column headings
     where each column is labeled with a data tag, and the first column contains
-    data point labels or time stamps.
+    data point labels or time stamps. The metadata should be in a csv file where
+    the first column is the tag name, the second column is the model refernce (
+    which can be empty), the third column is the tag description, and the fourth
+    column is the unit of measure string. Any additional information can be
+    added to columns after the fourth colum and will be ignored. The units of
+    measure should be something that is recoginzed by pint, or in the ailiases
+    defind in this file. Any tags not listed in the metadata will be dropped.
 
     Args:
         csv_file (str): Path of file to read
@@ -212,7 +218,8 @@ def read_data(csv_file, csv_file_metadata, model=None, rename_mapper=None,
     Returns:
         (DataFrame): A Pandas data frame with tags in columns and rows indexed
             by time.
-        (dict): Column metadata, units of measure and description
+        (dict): Column metadata, units of measure, description, and model
+            mapping information.
     """
     # read file
     df = pd.read_csv(csv_file, parse_dates=True, index_col=0)
@@ -245,13 +252,9 @@ def read_data(csv_file, csv_file_metadata, model=None, rename_mapper=None,
                 except:
                     warnings.warn("Tag refernce {} not found".format(
                         md["reference_string"]), UserWarning)
-    print(metadata)
-    print(df)
     # Drop the columns with no metadata (assuming those are columns to ignore)
     for tag in df:
         if not tag in metadata:
-            print("dropping '{}'".format(tag))
-            print(metadata[tag])
             df.drop(tag, axis=1, inplace=True)
 
     # If unit_system is specified bulk convert everything to that system of units
