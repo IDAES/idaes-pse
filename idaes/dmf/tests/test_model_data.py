@@ -50,7 +50,7 @@ def test_map_data():
     assert "P" in df_meta
     assert "V" in df_meta
 
-    # Check that the unit stings updated after conversion
+    # Check that the unit strings updated after conversion
     assert df_meta["T"]["units"] == "kelvin"
     # this next unit is Pa
     assert df_meta["P"]["units"] == "kilogram / meter / second ** 2"
@@ -81,7 +81,7 @@ def test_unit_coversion():
     assert p_psi[2] == pytest.approx(14.7 * 3, rel=1e-2)
     assert unit == "pound_force_per_square_inch"
 
-    # ppb is on the list of units to ignore, and not attmpt to convert
+    # ppb is on the list of units to ignore, and not attempt to convert
     p, unit = da.unit_convert(p_atm, "ppb", "psi")
     assert (p[0], pytest.approx(1, rel=1e-2))
     assert unit == "ppb"
@@ -107,7 +107,7 @@ def test_unit_coversion():
     assert p[1] == pytest.approx(3.1, rel=1e-1)
     assert p[2] == pytest.approx(4.2, rel=1e-1)
 
-    # Agin but make sure it works with a scalar to
+    # Again but make sure it works with a scalar to
     p, unit = da.unit_convert(p_psi, "psig", "atm", atm=1.2)
 
     assert p[0] == pytest.approx(2.2, rel=1e-1)
@@ -123,7 +123,7 @@ def test_unit_coversion():
     assert p[1] == pytest.approx(2, rel=1e-1)
     assert p[2] == pytest.approx(3, rel=1e-1)
 
-    # Test that a unit that doesn't exisit remains unchanged
+    # Test that a unit that doesn't exist remains unchanged
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         p, unit = da.unit_convert(p_psi, "MYPRESSURE", "atm")

@@ -195,7 +195,7 @@ def unit_convert(
     gauge_pressures={},
     atm=1.0,
 ):
-    """Convert the quntity x to a different set of units. X can be a numpy array
+    """Convert the quantity x to a different set of units. X can be a numpy array
     or pandas series. The from unit can is translated into a string that pint
     can recognize by first looking in unit_string_map then looking in
     know aliases defined in this file. If it is neither place it will be given
@@ -203,7 +203,7 @@ def unit_convert(
     in with the original provided units.
 
     Args:
-        x (float, numpy.array, pandas.series): quntity to convert
+        x (float, numpy.array, pandas.series): quantity to convert
         frm (str): original unit string
         to (str): new unit string, or specify "system"
         system (str): unit system to covert to, or specify "to"
@@ -263,12 +263,12 @@ def read_data(
     The data should be in a form where the first row contains column headings
     where each column is labeled with a data tag, and the first column contains
     data point labels or time stamps. The metadata should be in a csv file where
-    the first column is the tag name, the second column is the model refernce (
+    the first column is the tag name, the second column is the model reference (
     which can be empty), the third column is the tag description, and the fourth
     column is the unit of measure string. Any additional information can be
-    added to columns after the fourth colum and will be ignored. The units of
-    measure should be something that is recoginzed by pint, or in the ailiases
-    defind in this file. Any tags not listed in the metadata will be dropped.
+    added to columns after the fourth column and will be ignored. The units of
+    measure should be something that is recognized by pint, or in the aliases
+    defined in this file. Any tags not listed in the metadata will be dropped.
 
     Args:
         csv_file (str): Path of file to read
@@ -315,7 +315,7 @@ def read_data(
                     )
                 except:
                     warnings.warn(
-                        "Tag refernce {} not found".format(md["reference_string"]),
+                        "Tag reference {} not found".format(md["reference_string"]),
                         UserWarning,
                     )
     # Drop the columns with no metadata (assuming those are columns to ignore)
