@@ -196,7 +196,7 @@ def unit_convert(
     atm=1.0,
 ):
     """Convert the quantity x to a different set of units. X can be a numpy array
-    or pandas series. The from unit can is translated into a string that pint
+    or pandas series. The from unit is translated into a string that pint
     can recognize by first looking in unit_string_map then looking in
     know aliases defined in this file. If it is neither place it will be given
     to pint as-is. This translation of the unit is done so that data can be read
