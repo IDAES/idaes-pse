@@ -36,7 +36,7 @@ def _strip(tag):
 _log = logging.getLogger(__file__)
 
 # Some common unit string conversions, these are ones we've come across that
-# are not handeled by pint. We can orginize and refince known unit strings
+# are not handled by pint. We can organize and refine known unit strings
 # more in the future.
 _unit_strings = {
     # Pressure
