@@ -24,7 +24,7 @@ import pandas as pd
 import pint
 
 import pyomo.environ as pyo
-
+import warnings
 
 def _strip(tag):
     """
@@ -181,8 +181,8 @@ def unit_convert(x, frm, to=None, system=None, unit_string_map={},
         try:
             ureg.parse_expression(frm)
         except pint.errors.UndefinedUnitError:
-            _log.warning("In unit conversion, from unit '{}' is not defined."
-                " No conversion.".format(frm))
+            warnings.warn("In unit conversion, from unit '{}' is not defined."
+                " No conversion.".format(frm), UserWarning)
             return (x, frm)
     if to is None:
         y = q(x, ureg.parse_expression(frm)).to_base_units()
@@ -243,8 +243,8 @@ def read_data(csv_file, csv_file_metadata, model=None, rename_mapper=None,
                     md["reference"] = pyo.Reference(
                         eval(md["reference_string"], {"m":model}))
                 except:
-                    _log.exception("Tag refernce {} not found".format(
-                        md["reference_string"]))
+                    warnings.warn("Tag refernce {} not found".format(
+                        md["reference_string"]), UserWarning)
     print(metadata)
     print(df)
     # Drop the columns with no metadata (assuming those are columns to ignore)
