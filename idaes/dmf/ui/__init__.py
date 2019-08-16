@@ -1,1 +1,2 @@
 from .vis_icon_mapping import icon_mapping
+from .vis_link_position_mapping import link_position_mapping

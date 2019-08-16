@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 import os
 
@@ -5,7 +6,7 @@ from idaes.core import UnitModelBlockData
 from pyomo.network.port import SimplePort
 from pyomo.network.arc import SimpleArc
 from collections import defaultdict
-from idaes.dmf.ui import icon_mapping
+from idaes.dmf.ui import icon_mapping, link_position_mapping
 
 
 class FileBaseNameExistsError(Exception):
@@ -46,18 +47,12 @@ class FlowsheetSerializer:
             elif isinstance(component, SimpleArc): 
                self.arcs.append(component)
             
-        edges = {}
+        edges = defaultdict(list)
         orphaned_ports = set(self.ports.keys())
         for arc in self.arcs:
-            edges[(self.ports[arc.source], self.ports[arc.dest])] = arc
+            edges[self.ports[arc.source]].append(self.ports[arc.dest])
             orphaned_ports.discard(arc.source)
             orphaned_ports.discard(arc.dest)
-
-
-        labeled_edges = defaultdict(list)
-
-        for (source, dest) in edges:
-            labeled_edges[source.getname()].append(dest.getname())
             
             # saved for later
 #        for port in orphaned_ports:
@@ -93,15 +88,15 @@ class FlowsheetSerializer:
             entry = {}
             entry['type'] = 'standard.Image'
             # for now, just tile the positions diagonally
-            entry['position'] = {'x': x_pos, 'y': y_pos} # TODO
+            entry['position'] = {'x': x_pos, 'y': y_pos} # TODO Make the default positioning better
             x_pos += 100
             y_pos += 50
-            entry['size'] = {"width": 100, "height": 100} # TODO
+            entry['size'] = {"width": 50, "height": 50} # TODO Set the width and height depending on the icon rather than default
             entry['angle'] = 0
             entry['id'] = unit_attrs['name']
             entry['z'] = 1,
             entry['attrs'] = {
-                    'image': {'xlinkHref': icon_mapping[unit_attrs['type']]},
+                    'image': {'xlinkHref': icon_mapping[unit_attrs['type']]["icon"]},
                     #'label': {'text':""},
                     'root': {'title': 'joint.shapes.standard.Image'}
                     } # TODO, pending image displaying solution
@@ -109,21 +104,35 @@ class FlowsheetSerializer:
             outjson['cells'].append(entry)
 
         id_counter = 0
-        for source, dests in labeled_edges.items():
+        for source, dests in edges.items():
             for dest in dests:
+                if "vapor_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]] and self.unit_models[dest]["type"] != "_ScalarFlash":
+                    # TODO Deal with output being on top and on bottom of the flash. This will include figuring out how to denote different outlet types
+                    # Need to deal with multiple input/output offsets
+                    source_anchor = link_position_mapping[self.unit_models[source]["type"]]["vapor_outlet_anchor"]
+                elif "liquid_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]] and self.unit_models[dest]["type"] == "_ScalarFlash":
+                    source_anchor = link_position_mapping[self.unit_models[source]["type"]]["liquid_outlet_anchor"]
+                else:
+                    source_anchor = link_position_mapping[self.unit_models[source]["type"]]["outlet_anchors"]
+                    #if "dy" not in source_anchor["args"]:
+                        #source_anchor["args"]["dy"] = link_position_mapping[self.unit_models[source]["type"]]["outlet_anchors"]["args"]["dy"] = str(100/(len(dests) + 1)) + "%"
+
+                print(self.unit_models[source]["type"])
+                print(source_anchor)
+                print(self.unit_models[dest]["type"])
+                print(link_position_mapping[self.unit_models[dest]["type"]]["inlet_anchors"])
                 entry = {
                         'type': 'standard.Link',
-                        'source': {'id': source},
-                        'target': {'id': dest},
+                        'source': {"anchor": source_anchor, 'id': source.getname()},
+                        'target': {"anchor": link_position_mapping[self.unit_models[dest]["type"]]["inlet_anchors"], 'id': dest.getname()},
+                        "router": {"name": "orthogonal", "padding": 10},
+                        "connector": {"name": "jumpover", 'attrs': {'line': {'stroke': '#6FB1E1'}}},
                         'id': id_counter,# TODO
                         'z': 2,
                         #'labels': [], # sic
-                        'attrs': {'line': {'stroke': '#6FB1E1'}}
                         }
                 outjson['cells'].append(entry)
                 id_counter += 1
-
-
 
         # TODO handle also reading preexisting file first; is there an elegant way?
         with open(vis_file_name, 'w') as outfile:
