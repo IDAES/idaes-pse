@@ -22,15 +22,39 @@ from pyomo.common.config import ConfigBlock
 
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType, useDefault)
-from idaes.unit_models.distillation import Condenser as C1
+from idaes.unit_models.distillation import Condenser
 from idaes.unit_models.distillation.condenser import CondenserType
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
-
+from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.testing import get_default_solver
 
 m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
-m.fs.properties = BTXParameterBlock()
-m.fs.unit = C1(default={"property_package": m.fs.properties,
-                        "condenser_type": CondenserType.totalCondenser})
-m.fs.unit.reflux_ratio.fix(0.25)
+m.fs.properties = BTXParameterBlock(default={"valid_phase":
+                                             ('Liq', 'Vap'),
+                                             "activity_coeff_model":
+                                             "Ideal"})
+m.fs.C101 = Condenser(default={"property_package": m.fs.properties,
+                      "condenser_type": CondenserType.totalCondenser})
+
+# Fix the condenser variables
+m.fs.C101.reflux_ratio.fix(1)
+m.fs.C101.deltaP.fix(0)
+
+# Fix the inputs (typically this will be the outlet vapor from the top tray)
+m.fs.C101.inlet.flow_mol.fix(1)
+m.fs.C101.inlet.temperature.fix(368)
+m.fs.C101.inlet.pressure.fix(101325)
+m.fs.C101.inlet.mole_frac[0, "benzene"].fix(0.5)
+m.fs.C101.inlet.mole_frac[0, "toluene"].fix(0.5)
+
+print("The degrees of freedom is ", degrees_of_freedom(m))
+
+
+solver = get_default_solver()
+m.fs.C101.initialize(solver=solver, outlvl=2)
+
+m.fs.C101.reflux.display()
+m.fs.C101.distillate.display()
+m.fs.C101.heat_duty.display()

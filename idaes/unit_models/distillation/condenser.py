@@ -22,7 +22,8 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
-from pyomo.environ import Reference, Expression, Var
+from pyomo.environ import Reference, Expression, Var, Constraint, \
+    TerminationCondition
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -159,9 +160,23 @@ see property package for documentation.}"""))
             balance_type=self.config.momentum_balance_type,
             has_pressure_change=self.config.has_pressure_change)
 
-        self._add_condenser_ports()
+        self._make_ports()
 
-    def _add_condenser_ports(self):
+        # Set condition for total condenser (T_cond = T_bubble) (Option 1)
+        if self.config.condenser_type == CondenserType.totalCondenser:
+            def rule_total_cond(self, t):
+                return self.control_volume.properties_out[t].temperature == \
+                    self.control_volume.properties_out[t].temperature_bubble
+            self.eq_total_cond_spec = Constraint(self.flowsheet().time,
+                                                 rule=rule_total_cond)
+
+        # Add object reference to variables of the control volume
+        # Reference to the heat duty
+        add_object_reference(self, "heat_duty", self.control_volume.heat)
+        # Reference to the pressure drop
+        add_object_reference(self, "deltaP", self.control_volume.deltaP)
+
+    def _make_ports(self):
 
         # Add Ports for the condenser
         # Inlet port (the vapor from the top tray)
@@ -173,15 +188,21 @@ see property package for documentation.}"""))
         self.distillate = Port(noruleinit=True, doc="Reflux stream that is"
                                " returned to the top tray.")
 
+        if self.config.condenser_type == CondenserType.partialCondenser:
+            self.vapor_outlet = Port(noruleinit=True,
+                                     doc="Vapor outlet port from a "
+                                     "partial condenser")
         # Add codnenser specific variables
-        self.reflux_ratio = Var(initialize=0.5, doc="reflux ratio for "
+        self.reflux_ratio = Var(initialize=1, doc="reflux ratio for "
                                 "the condenser")
 
         # Get dict of Port members and names
         member_list = self.control_volume.\
             properties_out[0].define_port_members()
 
+        # Create references and populate the reflux, distillate ports
         for k in member_list:
+            # Create references and populate the intensive variables
             if "flow" not in k:
                 if not member_list[k].is_indexed():
                     var = self.control_volume.properties_out[:].\
@@ -192,10 +213,15 @@ see property package for documentation.}"""))
 
                 # add the reference and variable name to the reflux port
                 self.reflux.add(Reference(var), k)
+
                 # add the reference and variable name to the distillate port
                 self.distillate.add(Reference(var), k)
             else:
+                # Create references and populate the extensive variables
+                # This is for vars that are not indexed
                 if not member_list[k].is_indexed():
+                    # Expression for reflux flow and relation to the
+                    # reflux_ratio variable
                     def rule_reflux_flow(self, t):
                         return self.control_volume.properties_out[t].\
                             component(member_list[k].local_name) * \
@@ -204,6 +230,8 @@ see property package for documentation.}"""))
                                                     rule=rule_reflux_flow)
                     self.reflux.add(self.e_reflux_flow, k)
 
+                    # Expression for distillate flow and relation to the
+                    # reflux_ratio variable
                     def rule_distillate_flow(self, t):
                         return self.control_volume.properties_out[t].\
                             component(member_list[k].local_name) / \
@@ -212,12 +240,54 @@ see property package for documentation.}"""))
                         self.flowsheet().time, rule=rule_distillate_flow)
                     self.distillate.add(self.e_distillate_flow, k)
                 else:
+                    # Create references and populate the extensive variables
+                    # This is for vars that are indexed
                     index_set = member_list[k].index_set()
 
-                    def rule_flow(self, t, *args):
-                        return self.control_volume.properties_out[t, ...].\
-                            component(member_list[k].local_name)[...] / \
+                    def rule_reflux_flow(self, t, *args):
+                        return self.control_volume.properties_out[t].\
+                            component(member_list[k].local_name)[args] * \
+                            (self.reflux_ratio / (1 + self.reflux_ratio))
+                    self.e_reflux_flow = Expression(
+                        (self.flowsheet().time, index_set),
+                        rule=rule_reflux_flow)
+                    self.reflux.add(self.e_reflux_flow, k)
+
+                    # Create references and populate the extensive variables
+                    # This is for vars that are indexed
+                    index_set = member_list[k].index_set()
+
+                    def rule_distillate_flow(self, t, *args):
+                        return self.control_volume.properties_out[t].\
+                            component(member_list[k].local_name)[args] / \
                             (1 + self.reflux_ratio)
-                    self.e_flow = Expression((self.flowsheet().time, index_set),
-                                             rule=rule_flow)
-                    self.reflux.add(self.e_flow, k)
+                    self.e_distillate_flow = Expression(
+                        (self.flowsheet().time, index_set),
+                        rule=rule_distillate_flow)
+                    self.distillate.add(self.e_distillate_flow, k)
+
+    def initialize(self, solver=None, outlvl=None):
+
+        # TODO: Fix the inlets to the condenser to the vapor flow from
+        # the top tray or take it as an argument to this method. 
+        if self.config.condenser_type == CondenserType.totalCondenser:
+            self.eq_total_cond_spec.deactivate()
+
+        # Initialize the inlet and outlet state blocks
+        self.control_volume.initialize(outlvl=outlvl)
+
+        # Activate the total condenser spec
+        if self.config.condenser_type == CondenserType.totalCondenser:
+            self.eq_total_cond_spec.activate()
+
+        if solver is not None:
+            if outlvl > 2:
+                tee = True
+            else:
+                tee = False
+
+            solver_output = solver.solve(self, tee=tee)
+            if solver_output.solver.termination_condition == \
+                    TerminationCondition.optimal:
+                _log.info('{} Condenser initialization complete.'
+                          .format(self.name))
