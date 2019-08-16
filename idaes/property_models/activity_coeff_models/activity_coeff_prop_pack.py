@@ -1017,7 +1017,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
             else:
                 return 0
 
-    def get_enthalpy_density_terms(self, p):
+    def get_energy_density_terms(self, p):
         """Create enthalpy density terms."""
         if p == "Liq":
             return self.density_mol[p] * self.enth_mol_phase['Liq']

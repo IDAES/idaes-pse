@@ -703,7 +703,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
     def get_material_density_terms(b, p, j):
         return b.dens_mol_phase[p]*b.mole_frac[j]
 
-    def get_enthalpy_density_terms(b, p):
+    def get_energy_density_terms(b, p):
         return b.dens_mol_phase[p]*b.enth_mol
 
     def define_state_vars(b):

@@ -1480,7 +1480,7 @@ argument)."""))
             def enthalpy_holdup_calculation(b, t, x, p):
                 return b.enthalpy_holdup[t, x, p] == (
                     b._area_func(t, x) * self.phase_fraction[t, x, p] *
-                    b.properties[t, x].get_enthalpy_density_terms(p))
+                    b.properties[t, x].get_energy_density_terms(p))
 
         return self.enthalpy_balances
 

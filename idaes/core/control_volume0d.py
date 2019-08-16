@@ -1231,7 +1231,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def enthalpy_holdup_calculation(b, t, p):
                 return b.enthalpy_holdup[t, p] == (
                             b.volume[t]*self.phase_fraction[t, p] *
-                            b.properties_out[t].get_enthalpy_density_terms(p))
+                            b.properties_out[t].get_energy_density_terms(p))
 
         return self.enthalpy_balances
 

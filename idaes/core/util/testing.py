@@ -123,7 +123,7 @@ class StateTestBlockData(StateBlockData):
     def get_enthalpy_flow_terms(b, p):
         return b.test_var
 
-    def get_enthalpy_density_terms(b, p):
+    def get_energy_density_terms(b, p):
         return b.test_var
 
     def model_check(self):
