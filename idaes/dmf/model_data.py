@@ -293,7 +293,7 @@ def read_data(
             pressure to use to convert gauge pressure to absolute if a string is
             supplied the corresponding data tag is assumed to be ambient pressure
         ambient_pressure_unit (str): Optional ambient pressure unit, should be a
-            unit regognized by pint.
+            unit recognized by pint.
 
     Returns:
         (DataFrame): A Pandas data frame with tags in columns and rows indexed
