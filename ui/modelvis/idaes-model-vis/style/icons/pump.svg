@@ -9,13 +9,13 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="16.007303mm"
-   height="21.285501mm"
-   viewBox="0 0 56.71879 75.421067"
+   width="9.4358654mm"
+   height="10.349783mm"
+   viewBox="0 0 33.434165 36.672458"
    id="svg2"
    version="1.1"
    inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
-   sodipodi:docname="heater_1.svg"
+   sodipodi:docname="pump.svg"
    inkscape:export-filename="/home/alee/Reports/Pictures/unit_icons.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
@@ -546,6 +546,51 @@
          d="M 0,0 5,-5 -12.5,0 5,5 Z"
          id="path4958-2" />
     </marker>
+    <marker
+       inkscape:stockid="Arrow2Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Mend-6-7-74-9"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4327-9-5-1-4"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.625;stroke-linejoin:round;stroke-opacity:1"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="scale(-0.6)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Mend-6-7-74-9-5"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4327-9-5-1-4-2"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.625;stroke-linejoin:round;stroke-opacity:1"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="scale(-0.6)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow2Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow2Mend-6-7-74-9-7"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4327-9-5-1-4-0"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.625;stroke-linejoin:round;stroke-opacity:1"
+         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
+         transform="scale(-0.6)" />
+    </marker>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -554,18 +599,18 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.8"
-     inkscape:cx="-118.21177"
-     inkscape:cy="0.34540115"
+     inkscape:zoom="2.649572"
+     inkscape:cx="28.404602"
+     inkscape:cy="-20.143337"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      showguides="true"
      objecttolerance="20"
-     inkscape:window-width="1920"
-     inkscape:window-height="1027"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:window-width="2560"
+     inkscape:window-height="1348"
+     inkscape:window-x="-12"
+     inkscape:window-y="-12"
      inkscape:window-maximized="1"
      fit-margin-top="0"
      fit-margin-left="0"
@@ -574,11 +619,10 @@
     <inkscape:grid
        type="xygrid"
        id="grid3336"
-       originx="-37.078936"
-       originy="0.42105973"
-       spacingx="9.3750001"
-       spacingy="9.3750001"
-       snapvisiblegridlinesonly="true" />
+       originx="77.654576"
+       originy="-82.734371"
+       spacingx="0.93749991"
+       spacingy="0.93749991" />
   </sodipodi:namedview>
   <metadata
      id="metadata7">
@@ -596,21 +640,18 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-242.70548,-805.52274)">
-    <ellipse
-       style="visibility:visible;fill:none;stroke:#000000;stroke-width:3.28125;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       id="path4179"
-       cx="271.06488"
-       cy="852.58441"
-       rx="26.718771"
-       ry="26.718769"
-       visibility="visible" />
+     transform="translate(-382.05577,-472.28469)">
+    <circle
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#000000;stroke-width:3.03259921;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path11005"
+       cx="398.44473"
+       cy="487.38861"
+       r="13.587621" />
     <path
-       style="visibility:visible;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.93749994;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 252.50155,805.52274 v 56.25 l 18.75,-18.75 18.75,18.75 v -56.25"
-       id="path4181"
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.28124952;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 389.39786,497.94152 -4.6875,9.37499 28.12499,1e-5 -4.6875,-9.375"
+       id="path11007"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc"
-       visibility="visible" />
+       sodipodi:nodetypes="cccc" />
   </g>
 </svg>

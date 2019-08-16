@@ -1,8 +1,0 @@
-icon_mapping = {
-    "_ScalarMixer": "mixer.svg",
-    "_ScalarHeater": "heater_1.svg",
-    "_ScalarStoichiometricReactor": "reactor_s.svg",
-    "_ScalarFlash": "flash.svg",
-    "_ScalarSeparator": "splitter.svg",
-    "_ScalarPressureChanger": "compressor_2.svg"
-}

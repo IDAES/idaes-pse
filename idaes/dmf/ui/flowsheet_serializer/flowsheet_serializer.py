@@ -34,11 +34,21 @@ class FlowsheetSerializer:
         layout). If there is not an existing file with that file_base_name then it saves as normal.
         Defaults to False.
         :return: None
+
+        Usage example:
+        '''
+            m = ConcreteModel()
+            m.fs = FlowsheetBlock(...)
+            ...
+            serializer = FlowsheetSerializer()
+            serializer.save(m.fs, 'output_file')
+        '''
         """
         for component in flowsheet.component_objects(descend_into=False):
             # TODO try using component_objects(ctype=X)
             if isinstance(component, UnitModelBlockData):
-                self.unit_models[component] = {"name": component.getname(), "type": type(component).__name__}
+                #self.unit_models[component] = {"name": component.getname(), "type": type(component).__name__}
+                self.unit_models[component] = {"name": component.getname(), "type": component._orig_module.split('.')[-1]}
                 
                 for subcomponent in component.component_objects(descend_into=False):
                     if isinstance(subcomponent, SimplePort):
@@ -56,10 +66,10 @@ class FlowsheetSerializer:
             
             # saved for later
 #        for port in orphaned_ports:
-#            labeled_edges["Orphaned"].append(self.ports[port].getname())
+#            named_edges["Orphaned"].append(self.ports[port].getname())
 #        edges_filename = file_base_name + 'edges.json'
 #        with open(edges_filename, 'w') as outfile:  
-#            json.dump(labeled_edges, outfile)
+#            json.dump(named_edges, outfile)
 #            
 #        named_components = {}
 #        for comp in self.unit_models.values():
@@ -96,8 +106,8 @@ class FlowsheetSerializer:
             entry['id'] = unit_attrs['name']
             entry['z'] = 1,
             entry['attrs'] = {
-                    'image': {'xlinkHref': icon_mapping[unit_attrs['type']]["icon"]},
-                    #'label': {'text':""},
+                    'image': {'xlinkHref': icon_mapping[unit_attrs['type']]},
+                    'label': {'text': unit_attrs['name']},
                     'root': {'title': 'joint.shapes.standard.Image'}
                     } # TODO, pending image displaying solution
             #outjson['model']['cells'].append(entry)
