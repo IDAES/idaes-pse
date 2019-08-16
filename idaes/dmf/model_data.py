@@ -21,6 +21,7 @@ __author__ = "John Eslick"
 import logging
 import csv
 import pandas as pd
+import numpy as np
 import pint
 
 import pyomo.environ as pyo
@@ -170,7 +171,7 @@ _unit_strings = {
     "MVARS": "MVAR",
 }
 
-_gauge_pressures = {"psig": "psi"}
+_gauge_pressures = {"psig": "psi", "in water gauge": "in water", "in hg gauge": "in hg"}
 
 _ignore_units = [
     "percent",
@@ -193,7 +194,8 @@ def unit_convert(
     unit_string_map={},
     ignore_units=[],
     gauge_pressures={},
-    atm=1.0,
+    ambient_pressure=1.0,
+    ambient_pressure_unit="atm",
 ):
     """Convert the quantity x to a different set of units. X can be a numpy array
     or pandas series. The from unit is translated into a string that pint
@@ -213,8 +215,12 @@ def unit_convert(
         ignore_units (list, or tuple): units to not convert
         gauge_pressures (dict): keys are units strings to be considered gauge
             pressures and the values are corresponding absolute pressure units
-        atm (float, numpy.array, pandas.series): pressure in atm to add to gauge
-            pressure to convert it to absolute pressure.  The default is 1.
+        ambient_pressure (float, numpy.array, pandas.series): pressure to add
+            to gauge pressure to convert it to absolute pressure. The default
+            is 1. The unit is atm by default, but can be changed with the
+            ambient_pressure_unit argument.
+        ambient_pressure_unit (str): Unit for ambient pressure, default is atm,
+            and should be a unit recognized by pint
     Returns:
         (tuple): quantity and unit string
     """
@@ -250,12 +256,19 @@ def unit_convert(
         y = q(x, ureg.parse_expression(frm)).to(to)
     if gauge:
         # convert gauge pressure to absolute
-        y = y + atm * ureg.parse_expression("atm")
+        y = y + ambient_pressure * ureg.parse_expression(ambient_pressure_unit)
+    print(y)
     return (y.magnitude, str(y.units))
 
 
 def read_data(
-    csv_file, csv_file_metadata, model=None, rename_mapper=None, unit_system=None
+    csv_file,
+    csv_file_metadata,
+    model=None,
+    rename_mapper=None,
+    unit_system=None,
+    ambient_pressure=1.0,
+    ambient_pressure_unit="atm",
 ):
     """
     Read CSV data into a Pandas DataFrame.
@@ -276,6 +289,11 @@ def read_data(
         model (ConcreteModel): Optional model to map tags to
         rename_mapper (function): Optional function to rename tags
         unit_system (str): Optional system of units to atempt convert to
+        ambient_pressure (float, numpy.array, pandas.series, str): Optional
+            pressure to use to convert gauge pressure to absolute if a string is
+            supplied the corresponding data tag is assumed to be ambient pressure
+        ambient_pressure_unit (str): Optional ambient pressure unit, should be a
+            unit regognized by pint.
 
     Returns:
         (DataFrame): A Pandas data frame with tags in columns and rows indexed
@@ -323,12 +341,27 @@ def read_data(
         if not tag in metadata:
             df.drop(tag, axis=1, inplace=True)
 
+    # Check if a data tag was specified to use as ambient pressure in conversion
+    # of gauge pressures.  If so, get the numbers and replace the tag string
+    if isinstance(ambient_pressure, str):
+        try:
+            ambient_pressure = np.array(df[ambient_pressure])
+        except KeyError:
+            _log.exception(
+                "Tag '{}' does not exist for ambient pressure".format(ambient_pressure)
+            )
+            raise
+
     # If unit_system is specified bulk convert everything to that system of units
     # also update the meta data
     if unit_system:
         for tag in df:
             df[tag], metadata[tag]["units"] = unit_convert(
-                df[tag], metadata[tag]["units"], system=unit_system
+                df[tag],
+                metadata[tag]["units"],
+                system=unit_system,
+                ambient_pressure=ambient_pressure,
+                ambient_pressure_unit=ambient_pressure_unit,
             )
 
     return df, metadata

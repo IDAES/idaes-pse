@@ -68,6 +68,32 @@ def test_map_data():
     assert pyo.value(df_meta["V"]["reference"][1]) == pytest.approx(10, rel=1e-4)
 
 
+def test_map_data_use_ambient_pressure():
+    data1 = os.path.join(_data_dir, "data1.csv")
+    data1_meta = os.path.join(_data_dir, "data1_meta.csv")
+    m = pyo.ConcreteModel("Data Test Model")
+    m.time = pyo.Set(initialize=[1, 2, 3])
+    m.pressure = pyo.Var(m.time, doc="pressure (Pa)", initialize=101325)
+    m.temperature = pyo.Var(m.time, doc="temperature (K)", initialize=300)
+    m.volume = pyo.Var(m.time, doc="volume (m^3)", initialize=10)
+
+    def retag(tag):
+        return tag.replace(".junk", "")
+
+    df, df_meta = da.read_data(
+        data1,
+        data1_meta,
+        model=m,
+        rename_mapper=retag,
+        unit_system="mks",
+        ambient_pressure="Pamb",
+        ambient_pressure_unit="psi",
+    )
+
+    # Check that the unit conversions are okay
+    assert df["P"]["1901-3-3 12:00"] == pytest.approx(195886, rel=1e-4)
+
+
 def test_unit_coversion():
     # spot test some unit conversions and features
     # da.unit_convert(x, frm, to=None, system=None, unit_string_map={},
@@ -101,14 +127,16 @@ def test_unit_coversion():
 
     # Test for unit conversion of gauge pressue with different atmosperic
     # pressure values
-    p, unit = da.unit_convert(p_psi, "psig", "atm", atm=np.array([1, 1.1, 1.2]))
+    p, unit = da.unit_convert(
+        p_psi, "psig", "atm", ambient_pressure=np.array([1, 1.1, 1.2])
+    )
 
     assert p[0] == pytest.approx(2, rel=1e-1)
     assert p[1] == pytest.approx(3.1, rel=1e-1)
     assert p[2] == pytest.approx(4.2, rel=1e-1)
 
     # Again but make sure it works with a scalar to
-    p, unit = da.unit_convert(p_psi, "psig", "atm", atm=1.2)
+    p, unit = da.unit_convert(p_psi, "psig", "atm", ambient_pressure=1.2)
 
     assert p[0] == pytest.approx(2.2, rel=1e-1)
     assert p[1] == pytest.approx(3.2, rel=1e-1)
