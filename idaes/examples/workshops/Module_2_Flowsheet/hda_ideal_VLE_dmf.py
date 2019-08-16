@@ -51,7 +51,7 @@ from idaes.core.util.model_statistics import (
 )
 from idaes.core.util.misc import extract_data
 from idaes.dmf import DMF
-from idaes.dmf.resource import TidyUnitData
+from idaes.dmf.resource import Resource, TidyUnitData
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -64,8 +64,7 @@ _dmf = DMF(os.path.dirname(__file__))
 class HDAParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
-    @staticmethod
-    def _get_param(name: str):
+    def _get_param(self, name: str):
         """Helper method to convert data stored in a DMF resource into a Pyomo rule.
 
         The intermediate form, :class:`TidyUnitData`, is constructed from the data
@@ -80,6 +79,11 @@ class HDAParameterData(PhysicalParameterBlock):
         Raises:
             KeyError: Resource not found
             ValueError: Data in resource is missing or malformed
+
+        Side-effects:
+            For future reference, the resource itself is stored in an instance dict
+            called `self._property_data` where the keys are the parameter names and
+            the values are instances of :class:`idaes.dmf.resource.Resource`.
         """
         r = _dmf.find_one(name=name)
         if not hasattr(r, "data"):
@@ -88,14 +92,19 @@ class HDAParameterData(PhysicalParameterBlock):
             dframe = TidyUnitData(r.data)
         except ValueError as err:
             raise ValueError(f"While extracting data for {name}: {err}")
-        print(f"@@ {name} param data: {dframe.param_data}")
+        self._property_resources[name] = r
         return extract_data(dframe.param_data)
+
+    def get_property_resource(self, name: str) -> Resource:
+        return self._property_resources[name]
 
     def build(self):
         """
         Callable method for Block construction.
         """
         super(HDAParameterData, self).build()
+
+        self._property_resources = {}  # see _get_param(), get_property_resource()
 
         self.state_block_class = IdealStateBlock
 

@@ -76,6 +76,12 @@ def test_module_2():
 
 
 @pytest.mark.nocircleci()
+def test_module_2_dmf():
+    assert run_notebook(
+        module_path(Module_2_Flowsheet), "Module_2_Flowsheet_DMF_Solution.ipynb"
+    )
+
+@pytest.mark.nocircleci()
 def test_module_3():
     assert run_notebook(
         module_path(Module_3_Custom_Unit_Model), "Module_3_Exercise_1_Solution.ipynb"

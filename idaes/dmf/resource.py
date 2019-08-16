@@ -493,6 +493,16 @@ class Resource(object):
     def _repr_text_(self):
         return pprint.pformat(self.v, indent=2)
 
+    def formatted_source(self) -> str:
+        result = []
+        for src in self.v['sources']:
+            s = f"{src['source']}"
+            if src['isbn']:
+                s += f" ISBN: {src['isbn']}"
+            if src['date']:
+                s += f" Date: {src['date']}"
+            result.append(s)
+        return "\n".join(result)
 
 #
 # Function(s) to help creating [two-way] relations
