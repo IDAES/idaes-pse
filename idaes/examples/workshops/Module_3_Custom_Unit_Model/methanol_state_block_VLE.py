@@ -438,7 +438,10 @@ class StateBlockData(StateBlockData):
         if p == "Liq":
             return self.density_mol[p] * self._params.Cp
         elif p == "Vap":
-            return self.density_mol[p] * self._params.Cp
+            return self.density_mol[p] * (
+                    self._params.Cp -
+                    self._params.gas_const*(self.temperature -
+                                            self._params.temeprautre_ref))
 
     def define_state_vars(self):
         """Define state vars."""
