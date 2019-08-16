@@ -95,13 +95,16 @@ class FlowsheetSerializer:
         y_pos = 50
 
         for component, unit_attrs in self.unit_models.items():
+            print(unit_attrs['type'])
+            print(unit_attrs)
+            print(component)
             entry = {}
             entry['type'] = 'standard.Image'
             # for now, just tile the positions diagonally
             entry['position'] = {'x': x_pos, 'y': y_pos} # TODO Make the default positioning better
             x_pos += 100
             y_pos += 50
-            entry['size'] = {"width": 50, "height": 50} # TODO Set the width and height depending on the icon rather than default
+            entry['size'] = {"width": 100, "height": 100} # TODO Set the width and height depending on the icon rather than default
             entry['angle'] = 0
             entry['id'] = unit_attrs['name']
             entry['z'] = 1,
@@ -116,11 +119,11 @@ class FlowsheetSerializer:
         id_counter = 0
         for source, dests in edges.items():
             for dest in dests:
-                if "vapor_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]] and self.unit_models[dest]["type"] != "_ScalarFlash":
+                if "vapor_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]] and self.unit_models[dest]["type"] != "flash":
                     # TODO Deal with output being on top and on bottom of the flash. This will include figuring out how to denote different outlet types
                     # Need to deal with multiple input/output offsets
                     source_anchor = link_position_mapping[self.unit_models[source]["type"]]["vapor_outlet_anchor"]
-                elif "liquid_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]] and self.unit_models[dest]["type"] == "_ScalarFlash":
+                elif "liquid_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]] and self.unit_models[dest]["type"] == "flash":
                     source_anchor = link_position_mapping[self.unit_models[source]["type"]]["liquid_outlet_anchor"]
                 else:
                     source_anchor = link_position_mapping[self.unit_models[source]["type"]]["outlet_anchors"]
