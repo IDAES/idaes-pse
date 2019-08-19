@@ -36,7 +36,11 @@ in the LICENSE.txt and COPYRIGHT.txt files in this directory.**
 
 ## Quickstart
 
-To install with `pip`:  **COMING SOON**
+To install with `pip`:
+
+```bash
+pip install idaes_pse
+```
 
 To install with Anaconda's `conda`: **coming soon**
 
