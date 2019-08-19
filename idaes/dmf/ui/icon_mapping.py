@@ -7,6 +7,7 @@ icon_mapping = {
     "stoichiometric_reactor": "reactor_s.svg",
     "flash": "flash.svg",
     "mixer": "mixer.svg",
+    "separator": "splitter.svg",
     "feed": "feed.svg",
     "feed_flash": "feed.svg",
     "product": "product.svg",
