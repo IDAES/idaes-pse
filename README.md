@@ -34,6 +34,12 @@ Note that Python 3.5 is *not* supported.
 **By contributing to this repository, you are agreeing to all the terms set out
 in the LICENSE.txt and COPYRIGHT.txt files in this directory.**
 
+## Quickstart
+
+To install with `pip`:  **COMING SOON**
+
+To install with Anaconda's `conda`: **coming soon**
+
 ## Getting Started
 For installation instructions, please refer to the [online documentation](https://idaes-pse.readthedocs.io/en/stable/).
 
