@@ -67,15 +67,23 @@ $ pytest  # Please note some tests may be skipped based on solver availability.
 If there are errors, or you are having trouble, you can use our [issue tracker on Github](https://github.com/IDAES/idaes/issues) to look for other users experiencing similar problems, or to report a new bug.
 
 
-## Running a notebook
+## Running a Jupyter notebook
 
-There are example [Jupyter](https://jupyter.org) notebook(s) in the `examples/` directory. To access them, you should start up a notebook server using the following command.
+There are example [Jupyter](https://jupyter.org) notebook(s) in the `examples/` 
+directory. To access them, you should start up a Jupyter Lab notebook server using the
+following command.
 
 ```
-jupyter notebook
+jupyter lab
 ```
 
-This should start up a notebook server and then pop up a tab or window in your default web browser showing the available notebooks. For more information on how to use Jupyter, see the "Help" menu in the Notebook window itself, and the extensive documentation on the [Jupyter website](https://jupyter.org). For more details on the examples, please refer to the [online documentation](https://idaes-pse.readthedocs.io/en/latest/). 
+This should start up a server and then pop up a tab or window in your default 
+web browser showing the Jupyter UI. On the left hand side you can browse to 
+available notebooks (files ending in ".ipynb"). For more information on how to 
+use Jupyter Lab, see the "Help" menu k window itself, and the extensive documentation 
+on the [Jupyter website](https://jupyter.org).
+For more details on the examples, please refer to the 
+[online documentation](https://idaes-pse.readthedocs.io/en/latest/). 
 
 ## Contacts and more information
 
