@@ -1,1 +1,3 @@
-../COPYRIGHT.md
+.. _idaes-copyright:
+
+.. include:: ../COPYRIGHT.md
