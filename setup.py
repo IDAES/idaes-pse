@@ -69,6 +69,7 @@ kwargs = dict(
         "tinydb",
         "toml",
         "networkx",
+        "pint",
     ],
     entry_points={"console_scripts": ["dmf = idaes.dmf.cli:base_command"]},
     extras_require={
