@@ -10,8 +10,10 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
+
+
 def writethis(*arg):
-    #This function is used to write to the terminal
+    # This function is used to write to the terminal
     import sys
     for pnt in arg:
         if isinstance(pnt, str):

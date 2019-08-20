@@ -39,30 +39,31 @@ data['pargs']['opts'] = list(
     ['modeler', 'solvemip', 'linfcns', 'expfcns', 'logfcns', 'sinfcns',
      'cosfcns', 'sampler', 'maxiter', 'tolmaxerror', 'tolesterror', 'sigma',
      'builder', 'linearerror', 'regularizer', 'deltaterm', 'maxterms',
-     'convpen', 'constant','cvxbic'])
+     'convpen', 'constant', 'cvxbic', 'screener', 'ncvf'])
 data['pargs']['lstopts'] = list(
     ['multi2power', 'multi3power', 'ratiopower', 'monomialpower', 'zisint',
      'xmin', 'xmax'])
 data['pargs']['stropts'] = list(
     ['simulator', 'almname', 'tracefname', 'almopt', 'gamssolver'])
-data['pargs']['set4'] = list(['xmin', 'xmax','zmin','zmax'])
+data['pargs']['set4'] = list(['xmin', 'xmax', 'zmin', 'zmax'])
 
 # The debug dictionary is used to track options utilized by the wrapper
 # Some of these, such as file paths, could be changed before installing
 debug['pargs'] = list(
     ['savescratch', 'savetrace', 'showalm', 'hardset', 'outkeys',
-     'expandoutput', 'cvfun','almpath','gamspath',
-     'hardset','simwrap', 'loo', 'lmo', 'mock'])
+     'expandoutput', 'cvfun', 'almpath', 'gamspath',
+     'hardset', 'simwrap', 'loo', 'lmo', 'mock', 'saveopt', 'savegams', 'savepyfcn'])
+debug['savepyfcn'] = True
 debug['cvfun'] = False
 debug['savescratch'] = False
 debug['savetrace'] = False
 debug['showalm'] = False
 debug['temp'] = 0
 # expandoutput includes statistics other than the base model
-debug['expandoutput'] = True # Returns additional information in alamopy call
-debug['hardset'] = False # Force alamo to return a 1-term model
-debug['simwrap'] = False # utilize alamopy.simwrapper 
-debug['outkeys'] = False # return dictionary with output keys
+debug['expandoutput'] = True  # Returns additional information in alamopy call
+debug['hardset'] = False  # Force alamo to return a 1-term model
+debug['simwrap'] = False  # utilize alamopy.simwrapper 
+debug['outkeys'] = False  # return dictionary with output keys
 
 # initialize options and flags not availible to user
 debug['validation'] = False
@@ -71,13 +72,14 @@ debug['traindata'] = True
 
 # assess uncertainty of surrogate model
 debug['loo'] = False
-debug['lmo'] = 0
+debug['lmo'] = -1
 debug['mock'] = False
-
+debug['saveopt'] = False  # MENGLE for custom constraints/functions
+debug['savegams'] = False
 
 # Initialize trace and .alm names
 data['stropts']['tracefname'] = 'trace.trc'
 data['stropts']['almname'] = 'temp.alm'
-data['opts']['cvxbic'] = 1
-#data['almopts']['solvemip'] = 0
-#data['almopts']['sampler'] = 1
+# data['opts']['cvxbic'] = 1
+# data['almopts']['solvemip'] = 0
+# data['almopts']['sampler'] = 1
