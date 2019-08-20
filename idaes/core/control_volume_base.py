@@ -30,7 +30,6 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     is_reaction_parameter_block)
 from idaes.core.util.exceptions import (BurntToast,
                                         ConfigurationError,
-                                        DynamicError,
                                         PropertyNotSupportedError)
 
 __author__ = "Andrew Lee"
@@ -373,7 +372,7 @@ have a config block which derives from CONFIG_Base,
                 .format(self.name))
 
     def add_material_balances(self,
-                              balance_type=MaterialBalanceType.componentPhase,
+                              balance_type=MaterialBalanceType.useDefault,
                               **kwargs):
         """
         General method for adding material balances to a control volume.
@@ -434,7 +433,7 @@ have a config block which derives from CONFIG_Base,
         return mb
 
     def add_energy_balances(self,
-                            balance_type=EnergyBalanceType.enthalpyTotal,
+                            balance_type=EnergyBalanceType.useDefault,
                             **kwargs):
         """
         General method for adding energy balances to a control volume.
@@ -489,7 +488,7 @@ have a config block which derives from CONFIG_Base,
         return eb
 
     def add_momentum_balances(self,
-                              balance_type=MomentumBalanceType.pressureTotal,
+                              balance_type=MomentumBalanceType.useDefault,
                               **kwargs):
         """
         General method for adding momentum balances to a control volume.
