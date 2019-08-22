@@ -15,7 +15,7 @@ __author__ = "Dan Gunter"
 
 
 def notebook_path(dirname):
-    return str((pathlib.Path("..") / dirname).absolute())
+    return str((pathlib.Path(__file__).parent / ".." / dirname))
 
 
 def test_module_2():
