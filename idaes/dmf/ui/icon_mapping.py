@@ -10,6 +10,7 @@ icon_mapping = {
     "feed": "feed.svg",
     "feed_flash": "feed.svg",
     "product": "product.svg",
+    "separator": "mixer.svg", # The icons for mixer and separator are the same but the input direction and output directions are opposite
     # TODO multiple-option icons below
     "heater": "heater_2.svg",
     "pressure_changer": "compressor.svg",
