@@ -27,7 +27,7 @@ from alamopy.multos import deletefile
 def doalamo(xdata, zdata, **kwargs):
     print("Warning: doalamo is deprecated, \
         please use alamopy.doalamo.alamo(xdata, zdata, **kwargs)")
-    alamo(xdata, zdata, **kwargs)
+    return alamo(xdata, zdata, **kwargs)
 
 
 def alamo(xdata, zdata, **kwargs):
