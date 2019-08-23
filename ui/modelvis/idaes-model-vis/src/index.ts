@@ -148,7 +148,6 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
       let json_data = JSON.stringify(this.graph.toJSON())
       let newData = {'application/vnd.idaes.model': json_data };
       model.setData({ data: newData });
-      console.log("leave paper");
     });
   }
 

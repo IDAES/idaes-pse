@@ -95,45 +95,28 @@ class FlowsheetSerializer:
         y_pos = 50
 
         for component, unit_attrs in self.unit_models.items():
-            print(unit_attrs['type'])
-            print(unit_attrs)
-            print(component)
-            entry = {}
-            entry['type'] = 'standard.Image'
-            # for now, just tile the positions diagonally
-            entry['position'] = {'x': x_pos, 'y': y_pos} # TODO Make the default positioning better
-            x_pos += 100
+            self.create_image_json(unit_attrs, outjson, x_pos, y_pos)
+            x_pos += 50
             y_pos += 50
-            entry['size'] = {"width": 100, "height": 100} # TODO Set the width and height depending on the icon rather than default
-            entry['angle'] = 0
-            entry['id'] = unit_attrs['name']
-            entry['z'] = 1,
-            entry['attrs'] = {
-                    'image': {'xlinkHref': icon_mapping[unit_attrs['type']]},
-                    'label': {'text': unit_attrs['name']},
-                    'root': {'title': 'joint.shapes.standard.Image'}
-                    } # TODO, pending image displaying solution
-            #outjson['model']['cells'].append(entry)
-            outjson['cells'].append(entry)
 
         id_counter = 0
         for source, dests in edges.items():
             for dest in dests:
-                if "vapor_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]] and self.unit_models[dest]["type"] != "flash":
-                    # TODO Deal with output being on top and on bottom of the flash. This will include figuring out how to denote different outlet types
-                    # Need to deal with multiple input/output offsets
-                    source_anchor = link_position_mapping[self.unit_models[source]["type"]]["vapor_outlet_anchor"]
-                elif "liquid_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]] and self.unit_models[dest]["type"] == "flash":
-                    source_anchor = link_position_mapping[self.unit_models[source]["type"]]["liquid_outlet_anchor"]
+                if hasattr(source, "vap_outlet"):
+                    # TODO Figure out how to denote different outlet types. Need to deal with multiple input/output offsets
+                    for arc in self.arcs:
+                        if self.ports[arc.dest] == dest and arc.source == source.vap_outlet:
+                            source_anchor = link_position_mapping[self.unit_models[source]["type"]]["top_outlet_anchor"]
+                        elif self.ports[arc.dest] == dest and arc.source == source.liq_outlet:
+                            source_anchor = link_position_mapping[self.unit_models[source]["type"]]["bottom_outlet_anchor"]
+
+                elif "top_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]]:
+                    source_anchor = link_position_mapping[self.unit_models[source]["type"]]["top_outlet_anchor"]
                 else:
                     source_anchor = link_position_mapping[self.unit_models[source]["type"]]["outlet_anchors"]
-                    #if "dy" not in source_anchor["args"]:
-                        #source_anchor["args"]["dy"] = link_position_mapping[self.unit_models[source]["type"]]["outlet_anchors"]["args"]["dy"] = str(100/(len(dests) + 1)) + "%"
+                    # TODO figure out offsets when mutiple things come from/into the same side:
+                    # source_anchor["args"]["dy"] = str(100/(len(dests) + 1)) + "%"
 
-                print(self.unit_models[source]["type"])
-                print(source_anchor)
-                print(self.unit_models[dest]["type"])
-                print(link_position_mapping[self.unit_models[dest]["type"]]["inlet_anchors"])
                 entry = {
                         'type': 'standard.Link',
                         'source': {"anchor": source_anchor, 'id': source.getname()},
@@ -147,6 +130,85 @@ class FlowsheetSerializer:
                 outjson['cells'].append(entry)
                 id_counter += 1
 
+        num_open_inlets = 0
+        for orphan_port in orphaned_ports:
+            unit_model_name = ""
+            try:
+                if num_open_inlets <= 0:
+                    num_open_inlets = len(self.ports[orphan_port].create_inlet_list()) - len(edges[self.ports[orphan_port]])
+            except AttributeError:
+                num_open_inlets = 0
+
+            if num_open_inlets > 0:
+                icon_type = "feed"
+            else:
+                icon_type = "product"
+
+            entry = {}
+            entry['type'] = 'standard.Image'
+            # for now, just tile the positions diagonally
+            entry['position'] = {'x': x_pos, 'y': y_pos} # TODO Make the default positioning better
+            x_pos += 50
+            y_pos += 50
+            entry['size'] = {"width": 50, "height": 50} # TODO Set the width and height depending on the icon rather than default
+            entry['angle'] = 0
+            entry['id'] = "inlet" + str(id_counter)
+            entry['z'] = 1,
+            entry['attrs'] = {
+                    'image': {'xlinkHref': icon_mapping[icon_type]},
+                    #'label': {'text': "inlet" + str(id_counter)},
+                    'root': {'title': 'joint.shapes.standard.Image'}
+                    } # TODO, pending image displaying solution
+            #outjson['model']['cells'].append(entry)
+            outjson['cells'].append(entry)
+
+            source_anchor = link_position_mapping[icon_type]["outlet_anchors"]
+            dest_anchor = link_position_mapping[self.unit_models[self.ports[orphan_port]]["type"]]["inlet_anchors"]
+
+            if icon_type == "feed":
+                source_anchor = link_position_mapping[icon_type]["outlet_anchors"]
+                dest_anchor = link_position_mapping[self.unit_models[self.ports[orphan_port]]["type"]]["inlet_anchors"]
+                source_id = "inlet" + str(id_counter)
+                dest_id = self.ports[orphan_port].getname()
+            else:
+                source_anchor = link_position_mapping[self.unit_models[self.ports[orphan_port]]["type"]]["inlet_anchors"]
+                dest_anchor = link_position_mapping[icon_type]["outlet_anchors"]
+                source_id = self.ports[orphan_port].getname()
+                dest_id = "inlet" + str(id_counter)
+
+            entry = {
+                    'type': 'standard.Link',
+                    'source': {"anchor": source_anchor, 'id': source_id},
+                    'target': {"anchor": dest_anchor, 'id': dest_id},
+                    "router": {"name": "orthogonal", "padding": 10},
+                    "connector": {"name": "jumpover", 'attrs': {'line': {'stroke': '#6FB1E1'}}},
+                    'id': id_counter,# TODO
+                    'z': 2,
+                    #'labels': [],
+                    }
+            outjson['cells'].append(entry)
+
+            id_counter += 1
+            num_open_inlets -= 1
+
         # TODO handle also reading preexisting file first; is there an elegant way?
         with open(vis_file_name, 'w') as outfile:
             json.dump(outjson, outfile)
+
+
+    def create_image_json(self, unit_attrs, outjson, x_pos, y_pos):
+        entry = {}
+        entry['type'] = 'standard.Image'
+        # for now, just tile the positions diagonally
+        entry['position'] = {'x': x_pos, 'y': y_pos} # TODO Make the default positioning better
+        entry['size'] = {"width": 50, "height": 50} # TODO Set the width and height depending on the icon rather than default
+        entry['angle'] = 0
+        entry['id'] = unit_attrs['name']
+        entry['z'] = 1,
+        entry['attrs'] = {
+                'image': {'xlinkHref': icon_mapping[unit_attrs['type']]},
+                'label': {'text': unit_attrs['name']},
+                'root': {'title': 'joint.shapes.standard.Image'}
+                } # TODO, pending image displaying solution
+        #outjson['model']['cells'].append(entry)
+        outjson['cells'].append(entry)

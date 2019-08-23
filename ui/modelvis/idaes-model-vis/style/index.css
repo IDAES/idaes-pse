@@ -6,18 +6,17 @@
  * We can use these to replace hrefs with the appropriate static urls
  */
 :root {
-  --idaes-compressor-2-flipped-icon: url('icons/compressor_2_flipped.svg');
-  --idaes-compressor-2-icon: url('icons/compressor_2.svg');
-  --idaes-flash-flipped-icon: url('icons/flash_flipped.svg');
+  --idaes-compressor-icon: url('icons/compressor.svg');
   --idaes-flash-icon: url('icons/flash.svg');
   --idaes-heat-exchanger-3-icon: url('icons/heat_exchanger_3.svg');
   --idaes-heater-1-flipped-icon: url('icons/heater_1_flipped.svg');
   --idaes-heater-1-icon: url('icons/heater_1.svg');
+  --idaes-heater-2-icon: url('icons/heater_2.svg');
   --idaes-horizontal-flash-icon: url('icons/horizontal_flash.svg');
   --idaes-mixer-flipped-icon: url('icons/mixer_flipped.svg');
   --idaes-mixer-icon: url('icons/mixer.svg');
-  --idaes-pentagon-flipped-icon: url('icons/pentagon_flipped.svg');
-  --idaes-pentagon-icon: url('icons/pentagon.svg');
+  --idaes-product-icon: url('icons/product.svg');
+  --idaes-feed-icon: url('icons/feed.svg');
   --idaes-reactor-s-icon: url('icons/reactor_s.svg');
   --idaes-splitter-flipped-icon: url('icons/splitter_flipped.svg');
   --idaes-splitter-icon: url('icons/splitter.svg');
