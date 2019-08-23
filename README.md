@@ -84,7 +84,7 @@ jupyter lab
 This should start up a server and then pop up a tab or window in your default 
 web browser showing the Jupyter UI. On the left hand side you can browse to 
 available notebooks (files ending in ".ipynb"). For more information on how to 
-use Jupyter Lab, see the "Help" menu k window itself, and the extensive documentation 
+use Jupyter Lab, use the built-in *Help* menu and the extensive documentation 
 on the [Jupyter website](https://jupyter.org).
 For more details on the examples, please refer to the 
 [online documentation](https://idaes-pse.readthedocs.io/en/latest/). 
