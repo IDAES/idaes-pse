@@ -1,5 +1,4 @@
 
-# TODO: multi-icon mappings
 icon_mapping = {
     "cstr": "reactor_c.svg",
     "flash": "flash.svg",
@@ -23,7 +22,7 @@ icon_mapping = {
     }
 
 
-
+# TODO handle multi-icon mappings
 #    "Heater": {"cooler.svg", "heater_1.svg", "heater_2.svg"},
 #    "PressureChanger": {"compressor.svg", "expander.svg", "pump.svg", "fan.svg"}, # compressor and expander variations are identical when arrows are not present
 #    "HeatExchanger": {"heat_exchanger_1.svg", "heat_exchanger_3.svg"}, # 1/2 and 3/4 are identical when arrows not present
@@ -33,9 +32,7 @@ icon_mapping = {
 #
 
 
-#
+# TODO need images, but the models don't exist yet
 #    "StateJunction": "junction.svg", # small black circle "node"
 #    "Translator": "translator.svg", # circle with a T in it
-#
-#
 #    "Valve": {"valve_1.svg", "valve_2.svg", "valve_3.svg"}

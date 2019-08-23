@@ -94,7 +94,32 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
       width: 1000,
       height: 1000,
       gridSize: 1,
+      interactive: true
     });
+    this.paper.on("cell:mouseover", function(cellView, evt) {
+      if (cellView.model.isLink()) {
+        var verticesTool = new joint.linkTools.Vertices({
+          focusOpacity: 0.5,
+          redundancyRemoval: true,
+          snapRadius: 20,
+          vertexAdding: true,
+        });
+        var segmentsTool = new joint.linkTools.Segments();
+
+        var toolsView = new joint.dia.ToolsView({
+          tools: [
+            verticesTool, segmentsTool
+          ]
+        });
+        cellView.addTools(toolsView)
+        cellView.showTools()
+      }
+    })
+    this.paper.on("cell:mouseout", function(cellView, evt) {
+      if (cellView.model.isLink()) {
+        cellView.hideTools()
+      }
+    })
   }
 
   /**
@@ -123,7 +148,6 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
       let json_data = JSON.stringify(this.graph.toJSON())
       let newData = {'application/vnd.idaes.model': json_data };
       model.setData({ data: newData });
-      console.log("leave paper");
     });
   }
 

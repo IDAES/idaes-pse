@@ -9,12 +9,12 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="37.228081mm"
-   height="21.219357mm"
-   viewBox="0 0 131.91052 75.186695"
+   width="16.007303mm"
+   height="21.285501mm"
+   viewBox="0 0 56.71879 75.421067"
    id="svg2"
    version="1.1"
-   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
    sodipodi:docname="heater_1.svg"
    inkscape:export-filename="/home/alee/Reports/Pictures/unit_icons.png"
    inkscape:export-xdpi="90"
@@ -555,17 +555,17 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.8"
-     inkscape:cx="-29.160907"
-     inkscape:cy="19.08744"
+     inkscape:cx="-118.21177"
+     inkscape:cy="0.34540115"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      showguides="true"
      objecttolerance="20"
      inkscape:window-width="1920"
-     inkscape:window-height="981"
-     inkscape:window-x="0"
-     inkscape:window-y="28"
+     inkscape:window-height="1027"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
      inkscape:window-maximized="1"
      fit-margin-top="0"
      fit-margin-left="0"
@@ -574,8 +574,8 @@
     <inkscape:grid
        type="xygrid"
        id="grid3336"
-       originx="0"
-       originy="0.18668867"
+       originx="-37.078936"
+       originy="0.42105973"
        spacingx="9.3750001"
        spacingy="9.3750001"
        snapvisiblegridlinesonly="true" />
@@ -588,7 +588,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -596,29 +596,21 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-205.62655,-805.52274)">
+     transform="translate(-242.70548,-805.52274)">
     <ellipse
-       style="fill:none;stroke:#000000;stroke-width:3.28124992;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="visibility:visible;fill:none;stroke:#000000;stroke-width:3.28125;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path4179"
        cx="271.06488"
        cy="852.58441"
        rx="26.718771"
-       ry="26.718769" />
+       ry="26.718769"
+       visibility="visible" />
     <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.93749994;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="visibility:visible;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.93749994;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 252.50155,805.52274 v 56.25 l 18.75,-18.75 18.75,18.75 v -56.25"
        id="path4181"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.875;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Mend-6-7-0)"
-       d="m 205.62655,852.39774 h 35.32582 v 0"
-       id="path4294-66-8-0"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.875;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Mend-6-7-7)"
-       d="m 299.37655,852.39773 h 35.32582 v 0"
-       id="path4294-66-8-7"
-       inkscape:connector-curvature="0" />
+       sodipodi:nodetypes="ccccc"
+       visibility="visible" />
   </g>
 </svg>

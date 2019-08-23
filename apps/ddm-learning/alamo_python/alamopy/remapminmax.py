@@ -10,19 +10,20 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
-def remapminmax(x,xmax,xmin):
-    import numpy as np
+
+
+def remapminmax(x, xmax, xmin):
     import numpy as np
     try:
-        ndata,ninputs=np.shape(x)
-        y=np.ones([ndata,ninputs])
-    except:
+        ndata, ninputs = np.shape(x)
+        y = np.ones([ndata, ninputs])
+    except Exception:
         ndata = np.size(x)
         ninputs = 1
-        y=np.ones([ndata])
+        y = np.ones([ndata])
     if ninputs > 1:
         for j in range(ninputs):
-            y[:,j] = (xmax[j]-xmin[j])*(x[:,j]+1)/(2.0) + xmin[j]
+            y[:, j] = (xmax[j] - xmin[j]) * (x[:, j] + 1) / (2.0) + xmin[j]
     else:
-        y = (xmax-xmin)*(x+1)/(2.0) + xmin
+        y = (xmax - xmin) * (x + 1) / (2.0) + xmin
     return y

@@ -12,6 +12,7 @@
 ##############################################################################
 
 from pyomo.environ import *
+from pyomo.common.fileutils import this_file_dir
 from pyomo.core.base.external import AMPLExternalFunction
 from pyomo.opt import SolverFactory
 from idaes.property_models import iapws95
@@ -31,8 +32,7 @@ def between(y, x1, x2):
 @pytest.mark.iapws
 class TestIAPWS95(unittest.TestCase):
     def read_data(self, fname, col):
-        dfile = os.path.dirname(__file__)
-        dfile = os.path.join(dfile, fname)
+        dfile = os.path.join(this_file_dir(), fname)
         cond = [] # Tuple (T [K],P [Pa], data) pressure in file is MPa
         with open(dfile, 'r') as csvfile:
            dat = csv.reader(csvfile, delimiter='\t', quotechar='"')
