@@ -11,58 +11,87 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import re
+
+
 def almpywriter(data):
     # This funciton writes the file
     # - <almname>alm.py
     #    y=<fname>.f(X)
-    #preliminary formating to get the model ready to write
-    model = data['results']['model'].split('=')[1]
-    model = model+' '
-    tlist = ('sin','cos','log','exp')
-    for tok in tlist:
-        model = model.replace(tok,'np.'+tok)
-    model = model.replace('^','**')
+    # handle the multiple output
+    if data['opts']['noutputs'] > 1:
+        for output_name, mod_res in data['results']['model'].items():
+            almpywriter_help(data, mod_res, output_name)
+    else:
+        almpywriter_help(data, data['results']['model'], data['labs']['savezlabels'][0])
 
-    with open(data['stropts']['almname'].split('.')[0]+'alm.py', 'w') as r:
+
+def almpywriter_help(data, mod_res, output_name):
+    # This funciton writes the file
+    # - <almname>alm.py
+    #    y=<fname>.f(X)
+    # preliminary formating to get the model ready to write
+    model = mod_res.split('=')[1]
+    model = model + ' '
+    tlist = ('sin', 'cos', 'log', 'exp')
+    for tok in tlist:
+        model = model.replace(tok, 'np.' + tok)
+    model = model.replace('^', '**')
+
+    with open(output_name + '.py', 'w') as r:
+        r.write('import numpy as np\n')
         r.write('def f(*X):\n')
         i = 0
         for lab in data['labs']['savexlabels']:
-            r.write('    '+lab+'= X['+str(i)+']\n')
-            i=i+1
-        r.write('    return '+model+'\n')
+            r.write('    ' + lab + '= X[' + str(i) + ']\n')
+            i = i + 1
+        r.write('    return ' + model + '\n')
 
 
 def almcvwriter(data):
     # This funciton writes the file
+    # - <almname>alm.py
+    #    y=<fname>.f(X)
+    # handle the multiple output
+    if data['opts']['noutputs'] > 1:
+        for output_name, mod_res in data['results']['model'].items():
+            almcvwriter_help(data, mod_res, output_name)
+    else:
+        almcvwriter_help(data, data['results']['model'], data['labs']['savezlabels'][0])
+
+
+def almcvwriter_help(data, mod_res, output_name):
+    # This funciton writes the file
     # - <almname>cv.py
     #    y=<fname>.f(X,params)
-    model = data['results']['model'].split('=')[1]
-    model = model+' '
-    tlist = ('sin','cos','log','exp')
+    # print data['results']['model']
+    model = mod_res.split('=')[1]
+    model = model + ' '
+    tlist = ('sin', 'cos', 'log', 'exp')
     for tok in tlist:
-        model = model.replace(tok,'np.'+tok)
-    model = model.replace('^','**')
+        model = model.replace(tok, 'np.' + tok)
+    model = model.replace('^', '**')
 
     # remove numerical values of coefficients
-    model = re.sub("(?:.\w)?([0-9]+\.[0-9]+)",'b',model)
-    model = re.sub("[E]{1}.\d{3}",'',model)
-    model = model.replace('-','+')
+    model = re.sub(r"(?:.\w)?([0-9]+\.[0-9]+)", 'b', model)
+    model = re.sub(r"[E]{1}.\d{3}", '', model)
+    model = model.replace('-', '+')
 
     tind = 0
     tstr = ''
     while 'b' in model:
-        model = model.replace('b','B['+str(tind)+']',1)
-        tstr=tstr+',B'+str(tind)
-        tind=tind+1
-    with open(data['stropts']['almname'].split('.')[0]+'cv.py', 'w') as r:
-        line = 'def f(X,B):\n'
+        model = model.replace('b', 'B[' + str(tind) + ']', 1)
+        tstr = tstr + ',B' + str(tind)
+        tind = tind + 1
+    with open(data['stropts']['almname'].split('.')[0] + 'cv.py', 'w') as r:
+        line = 'def f(X, B):\n'
         r.write(line)
         r.write('    import numpy as np\n')
         i = 0
         for lab in data['labs']['savexlabels']:
-            r.write('    '+lab+'= X['+str(i)+']\n')
-            i=i+1
-        r.write('    return '+model+'\n')
+            r.write('    ' + lab + '= X[' + str(i) + ']\n')
+            i = i + 1
+        r.write('    return ' + model + '\n')
+
 
 def wrapwriter(sim):
     import os
@@ -70,11 +99,11 @@ def wrapwriter(sim):
     # This subroutine writes a temporary python file that is used
     # to wrap python-based function that lack ALAMO's input/output.txt I/O
     name = 'simwrapper'
-    name = name+'.py'
-    with open(name,'w') as r:
+    name = name + '.py'
+    with open(name, 'w') as r:
         r.write("#!/usr/bin/python\n")
         r.write("def main():\n")
-        r.write("    import "+inspect.getmodule(sim).__name__+"\n")
+        r.write("    import " + inspect.getmodule(sim).__name__ + "\n")
         r.write("    infile = 'input.txt'\n")
         r.write("    outfile = 'output.txt'\n")
         r.write("    fin = open(infile, 'r')\n")
@@ -89,9 +118,10 @@ def wrapwriter(sim):
         r.write("        x = [0]*(ninputs+1)\n")
         r.write("        for k in range(0,ninputs):\n")
         r.write("            x[k] = float(newlist[k])\n")
-#        r.write("        x[ninputs] = "+sim.__name__+"(x[:-1])\n")
-        r.write("        x[ninputs] = "+inspect.getmodule(sim).__name__+'.'+sim.__name__+"(*x[:-1])\n")
-#        r.write("        x[ninputs] = "+str(sim)+"(x[:-1])\n")
+        # r.write("        x[ninputs] = "+sim.__name__+"(x[:-1])\n")
+        r.write("        x[ninputs] = " + inspect.getmodule(sim).__name__ 
+                + '.' + sim.__name__ + "(*x[:-1])\n")
+        # r.write("        x[ninputs] = "+str(sim)+"(x[:-1])\n")
         r.write("        for k in range(0, len(x)):\n")
         r.write("            fout.write(str(x[k]) + ' ')\n")
         r.write("        fout.write(' \\n')\n")

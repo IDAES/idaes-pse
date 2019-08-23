@@ -13,6 +13,9 @@
 """
 Errors
 """
+from alamopy import writethis
+
+
 def almerror(code):
     # reports errors encountered
 

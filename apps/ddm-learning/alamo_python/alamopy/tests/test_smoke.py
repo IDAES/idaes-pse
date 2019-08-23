@@ -16,5 +16,20 @@ Smoke tests, to make sure things are working at all.
 
 
 def test_doalamo_import():
-    from alamopy import doalamo
+    from alamopy import alamo
+
+
+def test_hasalamo():
+	import alamopy 
+	from alamopy import doalamo
+	has_alamo_flag = alamopy.multos.has_alamo()
+	if has_alamo_flag:
+		alamopy.debug['has_alamo'] = True
+	else:
+		alamopy.debug['has_alamo'] = False
+
+	version = alamopy.get_alamo_version()
+	print("ALAMO Version: %s"% version)
+
+
 

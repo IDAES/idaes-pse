@@ -11,7 +11,9 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import sys
-def checkoptions(kwargs,sharedata,debug):
+
+
+def checkoptions(kwargs, sharedata, debug):
     # This subroutine checks kwargs for ripe-specific parameters
     # the subroutine checks for valid arguments, but only a subset
     # are check to initialize sharedata
@@ -23,40 +25,49 @@ def checkoptions(kwargs,sharedata,debug):
     # sharedata  - Originally defined in shared.py
     #    this dictionary contains information pertaining to RIPE's function
 
-    inkeys = kwargs.keys()
+    inkeys = list(kwargs)  # kwargs.keys() python 2
     for key in inkeys:
-        if key not in sharedata['kwargsin']+sharedata['ivars']:
-            sys.exit('Keyword argument '+key+' is not recognized. Consult the documnetation for appropriate arguments')
-        elif key == 'minlp_path' or key == 'alamo_path':
+        if key not in sharedata["kwargsin"] + sharedata["ivars"]:
+            sys.exit(
+                "Keyword argument "
+                + key
+                + " is not recognized. Consult the documnetation for appropriate arguments"
+            )
+        elif key == "minlp_path" or key == "alamo_path":
             sharedata[key] = kwargs[key]
-        elif key == 'keepfiles':
+        elif key == "keepfiles":
             sharedata[key] = kwargs[key]
-        elif key == 'showpyomo':
+        elif key == "showpyomo":
             sharedata[key] = kwargs[key]
-        elif key == 'Tref' or key == 'Tr' or key == 'tr' or key == 'tref':
-            sharedata['Tref'] = kwargs[key]
-            sharedata['Tr'] = kwargs[key]
-        elif key == 'return_model':
+        elif key == "Tref" or key == "Tr" or key == "tr" or key == "tref":
+            sharedata["Tref"] = kwargs[key]
+            sharedata["Tr"] = kwargs[key]
+        elif key == "return_model":
             sharedata[key] = kwargs[key]
-        elif key == 'mechanisms' or key == 'mech' or key == 'mechs':
-            kwargs['mech'] = kwargs[key]
-        elif key == 'stoichiometry' or key == 'stoich' or key == 'stoichs':
-            kwargs['stoich'] = kwargs[key]
-        elif key == 'hide_output':
+        elif key == "mechanisms" or key == "mech" or key == "mechs":
+            kwargs["mech"] = kwargs[key]
+        elif key == "stoichiometry" or key == "stoich" or key == "stoichs":
+            kwargs["stoich"] = kwargs[key]
+        elif key == "hide_output":
             sharedata[key] = kwargs[key]
-        elif key == 'deltaterm':
+        elif key == "deltaterm":
             sharedata[key] = kwargs[key]
-        elif key == 'zscale':
+        elif key == "zscale":
             sharedata[key] = kwargs[key]
-        elif key == 'ascale':
+        elif key == "ascale":
             sharedata[key] = kwargs[key]
-        elif key == 'onemechper':
+        elif key == "onemechper":
             sharedata[key] = kwargs[key]
-        elif key == 'expand_output':
+        elif key == "expand_output":
             sharedata[key] = kwargs[key]
-        elif key == 'time' or key == 't':
-            kwargs['t'] = kwargs[key]
-        elif key == 'Temp' or key == 'Temperature' or key == 'temp' or key == 'temperature':
-            kwargs['T'] = kwargs[key]
+        elif key == "time" or key == "t":
+            kwargs["t"] = kwargs[key]
+        elif (
+            key == "Temp"
+            or key == "Temperature"
+            or key == "temp"
+            or key == "temperature"
+        ):
+            kwargs["T"] = kwargs[key]
 
     return sharedata, kwargs
