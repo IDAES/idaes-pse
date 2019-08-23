@@ -237,7 +237,7 @@ def getmechs(kwargs):
     for i in range(len(mechanisms)):
         # replace token 'all' with range(stoich)
         # Additionally, either element in mechanisms (may) not be list erroniously
-        if not isinstance(mechanisms[i][0], (type([]), range)):   # ENGLE check
+        if not isinstance(mechanisms[i][0], (type([]), range)): 
             mechanisms[i][0] = [mechanisms[i][0]]
         if mechanisms[i][0][0] == "all":
             mechanisms[i][0] = range(nstoich)

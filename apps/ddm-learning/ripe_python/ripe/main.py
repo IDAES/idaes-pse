@@ -172,7 +172,7 @@ def ripemodel(data, **kwargs):
             ccon_list = range(1, 1 + np.min([nh, ns, int(n - 1)]))
         bic = []
         # Overwriting results variable here
-        d_results = dict.fromkeys([0] + list(ccon_list))  # ENGLE CHEAT
+        d_results = dict.fromkeys([0] + list(ccon_list)) 
         sys.stdout.write(
             "   ---- Calculating null values for model selection ----    \n"
         )
