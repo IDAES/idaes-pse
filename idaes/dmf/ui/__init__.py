@@ -1,1 +1,1 @@
-from .vis_icon_mapping import icon_mapping
+from .icon_mapping import icon_mapping
