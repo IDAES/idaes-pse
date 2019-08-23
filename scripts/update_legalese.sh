@@ -24,10 +24,12 @@ esac
 
 rdir=$(realpath $(dirname $0)/.. )
 
-printf "Modifying legalese in files below $rdir\n"
-
 cmd="$(dirname $0)/annotate_source ${flag_dry} ${flag_rm}"
 
-$cmd $rdir/idaes "*.py" "~__init__.py"
-# $cmd $rdir/bin "*"
-# $cmd $rdir/examples "*.py"
+for subdir in idaes apps
+do
+    path="${rdir}/${subdir}"
+    printf "Modifying files below $path ...\n"
+    $cmd "$path" "*.py" "~__init__.py"
+    printf "DONE\n"
+done
