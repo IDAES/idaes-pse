@@ -52,6 +52,7 @@ from pyomo.environ import Constraint, Expression, Param, PositiveReals,\
                           RangeSet, Reals, Set, value, Var, NonNegativeReals,\
                           exp, sqrt, log, tanh, ConcreteModel
 from pyomo.environ import ExternalFunction as EF
+from pyomo.common.fileutils import this_file_dir
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.core.kernel.component_set import ComponentSet
 from pyomo.common.config import ConfigValue, In
@@ -63,7 +64,7 @@ from idaes.core.util.math import smooth_max
 
 # Logger
 _log = logging.getLogger(__name__)
-_so = os.path.join(os.path.dirname(__file__), "iapws95_lib/iapws95_external.so")
+_so = os.path.join(this_file_dir(), "iapws95_lib/iapws95_external.so")
 
 def iapws95_available():
     """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows

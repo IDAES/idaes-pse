@@ -26,7 +26,7 @@ from pyomo.common.config import ConfigValue, In
 # Import IDAES cores
 from idaes.core import declare_process_block_class, PhysicalParameterBlock
 
-from .methanol_state_block_VLE import _IdealStateBlock
+from .methanol_state_block_VLE import IdealStateBlock
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -72,7 +72,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         '''
         super(PhysicalParameterData, self).build()
 
-        self.state_block_class = _IdealStateBlock
+        self.state_block_class = IdealStateBlock
 
         # List of valid phases in property package
         # List of valid phases in property package
