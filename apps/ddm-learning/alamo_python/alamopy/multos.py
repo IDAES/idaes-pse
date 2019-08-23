@@ -11,47 +11,61 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 # These subroutines ensure compatibility across linux and windows operating systems
+
+
 import os
 import platform
 
+
 def deletefile(*fname):
     tos = platform.platform()
+    currentDirectory = os.getcwd()
     if 'Windows' in tos:
         for name in fname:
-            os.system("del "+name)
+            os.system("del %s/" % currentDirectory + name)
     else:
         for name in fname:
-            os.system("rm "+name)
+            os.system("rm %s/" % currentDirectory + name)
+
 
 def movefile(*fname):
     tos = platform.platform()
     if 'Windows' in tos:
         for name in fname:
-            os.system("move "+name)
+            os.system("move " + name)
     else:
         for name in fname:
-            os.system("mv "+name)
+            os.system("mv " + name)
 
-def copyfile(outf,inf):
+
+def copyfile(outf, inf):
     tos = platform.platform()
     if 'Windows' in tos:
-        os.system("copy "+inf+' '+outf)
+        os.system("copy " + inf + ' ' + outf)
     else:
-        os.system("cp "+inf+' '+outf)
+        os.system("cp " + inf + ' ' + outf)
 
 
-def catfile(outf,*fname):
+def catfile(outf, *fname):
     tos = platform.platform()
     if 'Windows' in tos:
         ostr = ''
         for name in fname:
-            ostr += "echo "+name+' >> '+outf+' & '
+            ostr += "echo " + name + ' >> ' + outf + ' & '
         ostr = ostr[:-3]
         os.system(ostr)
     else:
         ostr = 'cat '
         for name in fname:
-            ostr += name+' '
-        ostr+='> '+outf
+            ostr += name + ' '
+        ostr += '> ' + outf
         os.system(ostr)
 
+
+def has_alamo():  # Tested on Linux, not on Windows
+    # tos = platform.platform()
+
+    for path in os.environ["PATH"].split(os.pathsep):
+        exe_file = os.path.join(path, 'alamo')
+        if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
+            return exe_file
