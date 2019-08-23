@@ -9,7 +9,7 @@ link_position_mapping = {
     "feed": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "outlet_anchors":{"name":"right","args":{"rotate":"false","padding":0}}},
     "feed_flash": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "outlet_anchors":{"name":"right","args":{"rotate":"false","padding":0}}},
     "product": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "outlet_anchors":{"name":"right","args":{"rotate":"false","padding":0}}},
-    "separator": {"inlet_anchors":{"name":"right","args":{"rotate":"false","padding":0}}, "outlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}},
+    "separator": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "outlet_anchors":{"name":"right","args":{"rotate":"false","padding":0}}},
     "heater": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "outlet_anchors":{"name":"right","args":{"rotate":"false","padding":0}}},
     "pressure_changer": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "outlet_anchors":{"name":"right","args":{"rotate":"false","padding":0}}},
     "heat_exchanger": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "outlet_anchors":{"name":"right","args":{"rotate":"false","padding":0}}},
