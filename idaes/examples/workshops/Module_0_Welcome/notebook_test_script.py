@@ -9,7 +9,7 @@
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
-##############################################################################s
+##############################################################################
 """
 Script to test functionality of key components for use in workshops.
 
