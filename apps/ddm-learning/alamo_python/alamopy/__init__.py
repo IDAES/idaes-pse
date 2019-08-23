@@ -1,8 +1,19 @@
-__all__ = ['doalamo', 'writethis', 'almwriter', 'almconfidence', 'almpickle',
-           'postpickle', 'almunpickle', 'almerror', 'almplot', 'almpywriter', 'allcard',
-           'mapminmax', 'remapminmax', 'almcvwriter','wrapwriter']
+__all__ = ['alamo', 'doalamo', 'getlabels', 'makelabs', 'addCustomFunctions', 
+           'addCustomConstraints', 'addBasisGroups', 'addBasisGroup', 
+           'addBasisConstraints', 'addBasisConstraint',
+           'get_alamo_version', 'writethis', 'almwriter', 
+           'almconfidence', 'almpickle', 'postpickle', 'almunpickle',
+           'almerror', 'AlamoError', 'AlamoInputError',
+           'almpywriter', 'almcvwriter', 'wrapwriter',
+           'almplot', 'mapminmax', 'remapminmax', 
+           'data', 'debug', 'deletefile', 'movefile', 'catfile', 
+           'copyfile', 'has_alamo', 'allcard', 'almlsq',
+           'almlsqjac', 'almfeatmat',
+           'ackley', 'branin', 'sixcamel', 'col']
 
-from .doalamo import doalamo, getlabels, makelabs
+from .doalamo import alamo, doalamo, getlabels, makelabs, addCustomFunctions, \
+    addCustomConstraints, addBasisGroups, addBasisGroup, addBasisConstraints, \
+    addBasisConstraint, get_alamo_version
 from .allcard import allcard, almlsq, almlsqjac, almfeatmat
 from .writethis import writethis
 from .almwriter import almwriter
@@ -14,8 +25,8 @@ from .mapminmax import mapminmax
 from .remapminmax import remapminmax
 from .shared import data, debug
 from .almplot import almplot
-from .multos import deletefile, movefile, catfile, copyfile
+from .multos import deletefile, movefile, catfile, copyfile, has_alamo
+from .examples import sixcamel, ackley, branin
 
 # Initializes all values to be used in the .alm file
 import collections as col
-

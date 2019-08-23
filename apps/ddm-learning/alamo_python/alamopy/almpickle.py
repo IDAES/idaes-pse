@@ -10,7 +10,9 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
-def almpickle(data,vargs):
+
+
+def almpickle(data, vargs):
     import pickle
     import sys
     # remove lambda function from results dictionary
@@ -23,37 +25,43 @@ def almpickle(data,vargs):
         fname = 'alamo.pick'
         dopick = True
 
-    if (type(data) != type(list())):
+    if (not isinstance(data, list)):
         if ('f(model)' in data.keys()):
             data['f(model)'] = ()
         else:
             sys.stdout.write('Results dictionary does not contain lambda function')
 
     if (dopick):
-        pickle.dump( data , open( fname, "wb"))
+        pickle.dump(data, open(fname, "wb"))
 
 
 def postpickle(data):
     # Recompile lambda function from model string and labels
-    import sympy
+    # import sympy
     from sympy.parsing.sympy_parser import parse_expr
     from sympy import symbols, lambdify
 
-    if (type(data['model']) == type({})):
-        data['f(model)']={}
+    if (isinstance(data['model'], type({}))):
+        data['f(model)'] = {}
         for olab in data['zlabels']:
-            data['f(model)'][olab]=lambdify([symbols(data['xlabels'])], parse_expr(data['model'].split('=')[1].replace('^','**')), "numpy")
+            model_str = data['model'].split('=')[1].replace('^', '**')
+            data['f(model)'][olab] = lambdify([symbols(data['xlabels'])], 
+                                              parse_expr(model_str), "numpy")
     else:
-        data['f(model)']=lambdify([symbols(data['xlabels'])], parse_expr(data['model'].split('=')[1].replace('^','**')), "numpy")
+        model_str = data['model'].split('=')[1].replace('^', '**')
+        data['f(model)'] = lambdify([symbols(data['xlabels'])],
+                                    parse_expr(model_str), "numpy")
 
     return data
+
 
 def almunpickle(fname):
     # unpickle and relambdify
     import alamopy
-    from alamopy import postpickle
+    # from alamopy import postpickle
     import pickle
-    res = pickle.load(open(fname,'rb'))
+
+    res = pickle.load(open(fname, 'rb'))
     if ('f(model)' in res[0].keys()):
         res = alamopy.postpickle(res)
     return res
