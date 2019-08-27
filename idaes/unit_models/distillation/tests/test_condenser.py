@@ -35,26 +35,60 @@ m.fs.properties = BTXParameterBlock(default={"valid_phase":
                                              ('Liq', 'Vap'),
                                              "activity_coeff_model":
                                              "Ideal"})
-m.fs.C101 = Condenser(default={"property_package": m.fs.properties,
-                      "condenser_type": CondenserType.totalCondenser})
 
-# Fix the condenser variables
-m.fs.C101.reflux_ratio.fix(1)
-m.fs.C101.deltaP.fix(0)
+###############################################################################
+# total condenser
+m.fs.C101_total = Condenser(default={"property_package": m.fs.properties,
+                                     "condenser_type": CondenserType.totalCondenser})
+
+# Fix the partial condenser variables
+m.fs.C101_total.reflux_ratio.fix(0.5)
+m.fs.C101_total.deltaP.fix(0)
 
 # Fix the inputs (typically this will be the outlet vapor from the top tray)
-m.fs.C101.inlet.flow_mol.fix(1)
-m.fs.C101.inlet.temperature.fix(368)
-m.fs.C101.inlet.pressure.fix(101325)
-m.fs.C101.inlet.mole_frac[0, "benzene"].fix(0.5)
-m.fs.C101.inlet.mole_frac[0, "toluene"].fix(0.5)
+m.fs.C101_total.inlet.flow_mol.fix(1)
+m.fs.C101_total.inlet.temperature.fix(368)
+m.fs.C101_total.inlet.pressure.fix(101325)
+m.fs.C101_total.inlet.mole_frac[0, "benzene"].fix(0.5)
+m.fs.C101_total.inlet.mole_frac[0, "toluene"].fix(0.5)
 
+print("-----------------------------------------------------------------------")
+print("Total Condenser")
 print("The degrees of freedom is ", degrees_of_freedom(m))
 
 
 solver = get_default_solver()
-m.fs.C101.initialize(solver=solver, outlvl=2)
+m.fs.C101_total.initialize(solver=solver, outlvl=2)
 
-m.fs.C101.reflux.display()
-m.fs.C101.distillate.display()
-m.fs.C101.heat_duty.display()
+m.fs.C101_total.reflux.display()
+m.fs.C101_total.distillate.display()
+m.fs.C101_total.heat_duty.display()
+
+print("-----------------------------------------------------------------------")
+
+###############################################################################
+# Partial Condenser
+m.fs.C101_partial = Condenser(default={"property_package": m.fs.properties,
+                              "condenser_type": CondenserType.partialCondenser})
+
+# Fix the partial condenser variables
+m.fs.C101_partial.reflux_ratio.fix(0.5)
+m.fs.C101_partial.deltaP.fix(0)
+m.fs.C101_partial.vapor_outlet.temperature.fix(367.5)
+
+# Fix the inputs (typically this will be the outlet vapor from the top tray)
+m.fs.C101_partial.inlet.flow_mol.fix(1)
+m.fs.C101_partial.inlet.temperature.fix(368)
+m.fs.C101_partial.inlet.pressure.fix(101325)
+m.fs.C101_partial.inlet.mole_frac[0, "benzene"].fix(0.5)
+m.fs.C101_partial.inlet.mole_frac[0, "toluene"].fix(0.5)
+
+print("Partial Condenser")
+print("The degrees of freedom is ", degrees_of_freedom(m))
+
+m.fs.C101_partial.initialize(solver=solver, outlvl=2)
+
+m.fs.C101_partial.reflux.display()
+m.fs.C101_partial.distillate.display()
+m.fs.C101_partial.vapor_outlet.display()
+m.fs.C101_partial.heat_duty.display()

@@ -162,13 +162,19 @@ see property package for documentation.}"""))
 
         self._make_ports()
 
-        # Set condition for total condenser (T_cond = T_bubble) (Option 1)
         if self.config.condenser_type == CondenserType.totalCondenser:
+
+            self._make_splits_total_condenser()
+
+            # Set condition for total condenser (T_cond = T_bubble) (Option 1)
+
             def rule_total_cond(self, t):
                 return self.control_volume.properties_out[t].temperature == \
                     self.control_volume.properties_out[t].temperature_bubble
             self.eq_total_cond_spec = Constraint(self.flowsheet().time,
                                                  rule=rule_total_cond)
+        else:
+            self._make_splits_partial_condenser()
 
         # Add object reference to variables of the control volume
         # Reference to the heat duty
@@ -196,80 +202,191 @@ see property package for documentation.}"""))
         self.reflux_ratio = Var(initialize=1, doc="reflux ratio for "
                                 "the condenser")
 
+    def _make_splits_total_condenser(self):
         # Get dict of Port members and names
         member_list = self.control_volume.\
             properties_out[0].define_port_members()
 
-        # Create references and populate the reflux, distillate ports
-        for k in member_list:
-            # Create references and populate the intensive variables
-            if "flow" not in k:
-                if not member_list[k].is_indexed():
-                    var = self.control_volume.properties_out[:].\
-                        component(member_list[k].local_name)
-                else:
-                    var = self.control_volume.properties_out[:].\
-                        component(member_list[k].local_name)[...]
+        if self.config.condenser_type == CondenserType.totalCondenser:
+            # Create references and populate the reflux, distillate ports
+            for k in member_list:
+                # Create references and populate the intensive variables
+                if "flow" not in k:
+                    if not member_list[k].is_indexed():
+                        var = self.control_volume.properties_out[:].\
+                            component(member_list[k].local_name)
+                    else:
+                        var = self.control_volume.properties_out[:].\
+                            component(member_list[k].local_name)[...]
 
-                # add the reference and variable name to the reflux port
-                self.reflux.add(Reference(var), k)
+                    # add the reference and variable name to the reflux port
+                    self.reflux.add(Reference(var), k)
 
-                # add the reference and variable name to the distillate port
-                self.distillate.add(Reference(var), k)
-            else:
-                # Create references and populate the extensive variables
-                # This is for vars that are not indexed
-                if not member_list[k].is_indexed():
-                    # Expression for reflux flow and relation to the
-                    # reflux_ratio variable
-                    def rule_reflux_flow(self, t):
-                        return self.control_volume.properties_out[t].\
-                            component(member_list[k].local_name) * \
-                            (self.reflux_ratio / (1 + self.reflux_ratio))
-                    self.e_reflux_flow = Expression(self.flowsheet().time,
-                                                    rule=rule_reflux_flow)
-                    self.reflux.add(self.e_reflux_flow, k)
-
-                    # Expression for distillate flow and relation to the
-                    # reflux_ratio variable
-                    def rule_distillate_flow(self, t):
-                        return self.control_volume.properties_out[t].\
-                            component(member_list[k].local_name) / \
-                            (1 + self.reflux_ratio)
-                    self.e_distillate_flow = Expression(
-                        self.flowsheet().time, rule=rule_distillate_flow)
-                    self.distillate.add(self.e_distillate_flow, k)
+                    # add the reference and variable name to the distillate port
+                    self.distillate.add(Reference(var), k)
                 else:
                     # Create references and populate the extensive variables
-                    # This is for vars that are indexed
+                    # This is for vars that are not indexed
+                    if not member_list[k].is_indexed():
+                        # Expression for reflux flow and relation to the
+                        # reflux_ratio variable
+                        def rule_reflux_flow(self, t):
+                            return self.control_volume.properties_out[t].\
+                                component(member_list[k].local_name) * \
+                                (self.reflux_ratio / (1 + self.reflux_ratio))
+                        self.e_reflux_flow = Expression(self.flowsheet().time,
+                                                        rule=rule_reflux_flow)
+                        self.reflux.add(self.e_reflux_flow, k)
+
+                        # Expression for distillate flow and relation to the
+                        # reflux_ratio variable
+                        def rule_distillate_flow(self, t):
+                            return self.control_volume.properties_out[t].\
+                                component(member_list[k].local_name) / \
+                                (1 + self.reflux_ratio)
+                        self.e_distillate_flow = Expression(
+                            self.flowsheet().time, rule=rule_distillate_flow)
+                        self.distillate.add(self.e_distillate_flow, k)
+                    else:
+                        # Create references and populate the extensive variables
+                        # This is for vars that are indexed
+                        index_set = member_list[k].index_set()
+
+                        def rule_reflux_flow(self, t, *args):
+                            return self.control_volume.properties_out[t].\
+                                component(member_list[k].local_name)[args] * \
+                                (self.reflux_ratio / (1 + self.reflux_ratio))
+                        self.e_reflux_flow = Expression(
+                            (self.flowsheet().time, index_set),
+                            rule=rule_reflux_flow)
+                        self.reflux.add(self.e_reflux_flow, k)
+
+                        # Create references and populate the extensive variables
+                        # This is for vars that are indexed
+                        index_set = member_list[k].index_set()
+
+                        def rule_distillate_flow(self, t, *args):
+                            return self.control_volume.properties_out[t].\
+                                component(member_list[k].local_name)[args] / \
+                                (1 + self.reflux_ratio)
+                        self.e_distillate_flow = Expression(
+                            (self.flowsheet().time, index_set),
+                            rule=rule_distillate_flow)
+                        self.distillate.add(self.e_distillate_flow, k)
+
+    def _make_splits_partial_condenser(self):
+        # Get dict of Port members and names
+        member_list = self.control_volume.\
+            properties_out[0].define_port_members()
+        if self.config.condenser_type == CondenserType.partialCondenser:
+            # Create references and populate the reflux, distillate ports
+            for k in member_list:
+                # Create references and populate the intensive variables
+                if "flow" not in k and "frac" not in k and "enth" not in k:
+                    if not member_list[k].is_indexed():
+                        var = self.control_volume.properties_out[:].\
+                            component(member_list[k].local_name)
+                    else:
+                        var = self.control_volume.properties_out[:].\
+                            component(member_list[k].local_name)[...]
+
+                    # add the reference and variable name to the reflux port
+                    self.reflux.add(Reference(var), k)
+
+                    # add the reference and variable name to the distillate port
+                    self.distillate.add(Reference(var), k)
+
+                    # add the reference and variable name to the
+                    # vapor outlet port
+                    self.vapor_outlet.add(Reference(var), k)
+                elif "mass_frac" in k or "mole_frac" in k:
+                    # Mole/mass frac is indexed
                     index_set = member_list[k].index_set()
 
-                    def rule_reflux_flow(self, t, *args):
-                        return self.control_volume.properties_out[t].\
-                            component(member_list[k].local_name)[args] * \
-                            (self.reflux_ratio / (1 + self.reflux_ratio))
-                    self.e_reflux_flow = Expression(
-                        (self.flowsheet().time, index_set),
-                        rule=rule_reflux_flow)
-                    self.reflux.add(self.e_reflux_flow, k)
+                    # if state var is not mole/mass frac by phase
+                    if "phase" not in k:
+                        local_name = str(member_list[k].local_name) + \
+                            "_phase"
 
-                    # Create references and populate the extensive variables
-                    # This is for vars that are indexed
-                    index_set = member_list[k].index_set()
+                        def rule_liq_frac(self, t, i):
+                            return self.control_volume.properties_out[t].\
+                                component(local_name)["Liq", i]
+                        self.e_liq_frac = Expression(
+                            self.flowsheet().time, index_set,
+                            rule=rule_liq_frac)
 
-                    def rule_distillate_flow(self, t, *args):
-                        return self.control_volume.properties_out[t].\
-                            component(member_list[k].local_name)[args] / \
-                            (1 + self.reflux_ratio)
-                    self.e_distillate_flow = Expression(
-                        (self.flowsheet().time, index_set),
-                        rule=rule_distillate_flow)
-                    self.distillate.add(self.e_distillate_flow, k)
+                        def rule_vap_frac(self, t, i):
+                            return self.control_volume.properties_out[t].\
+                                component(local_name)["Vap", i]
+                        self.e_vap_frac = Expression(
+                            self.flowsheet().time, index_set,
+                            rule=rule_vap_frac)
+
+                        # add the reference and variable name to the reflux port
+                        self.reflux.add(self.e_liq_frac, k)
+
+                        # add the reference and variable name to the
+                        # distillate port
+                        self.distillate.add(self.e_liq_frac, k)
+
+                        # add the reference and variable name to the
+                        # distillate port
+                        self.vapor_outlet.add(self.e_vap_frac, k)
+                    else:
+
+                        var = self.control_volume.properties_out[:].\
+                            component(member_list[k].local_name)[...]
+
+                        # add the reference and variable name to the reflux port
+                        self.reflux.add(Reference(var), k)
+
+                        # add the reference and variable name to the distillate port
+                        self.distillate.add(Reference(var), k)
+                elif "flow" in k:
+                    if "comp" not in k or "phase" not in k:
+
+                        # if state var is not mole/mass frac by phase
+                        local_name = str(member_list[k].local_name) + \
+                            "_phase"
+
+                        def rule_vap_flow(self, t):
+                            return self.control_volume.properties_out[t].\
+                                component(local_name)["Vap"]
+                        self.e_vap_flow = Expression(
+                            self.flowsheet().time,
+                            rule=rule_vap_flow)
+
+                        def rule_reflux_flow(self, t):
+                            return self.control_volume.properties_out[t].\
+                                component(local_name)["Liq"] * \
+                                (self.reflux_ratio / (1 + self.reflux_ratio))
+                        self.e_reflux_flow = Expression(
+                            self.flowsheet().time,
+                            rule=rule_reflux_flow)
+
+                        def rule_distillate_flow(self, t):
+                            return self.control_volume.properties_out[t].\
+                                component(local_name)["Liq"] / \
+                                (1 + self.reflux_ratio)
+                        self.e_distillate_flow = Expression(
+                            self.flowsheet().time,
+                            rule=rule_distillate_flow)
+
+                        # add the reference and variable name to the reflux port
+                        self.reflux.add(self.e_reflux_flow, k)
+
+                        # add the reference and variable name to the
+                        # distillate port
+                        self.distillate.add(self.e_distillate_flow, k)
+
+                        # add the reference and variable name to the
+                        # distillate port
+                        self.vapor_outlet.add(self.e_vap_flow, k)
 
     def initialize(self, solver=None, outlvl=None):
 
         # TODO: Fix the inlets to the condenser to the vapor flow from
-        # the top tray or take it as an argument to this method. 
+        # the top tray or take it as an argument to this method.
         if self.config.condenser_type == CondenserType.totalCondenser:
             self.eq_total_cond_spec.deactivate()
 
@@ -289,5 +406,5 @@ see property package for documentation.}"""))
             solver_output = solver.solve(self, tee=tee)
             if solver_output.solver.termination_condition == \
                     TerminationCondition.optimal:
-                _log.info('{} Condenser initialization complete.'
+                _log.info('{} Condenser Initialisation Complete.'
                           .format(self.name))
