@@ -23,7 +23,7 @@ def get_version():
 NAME = "idaes-pse"
 VERSION = get_version()
 README = open("README.md").read()
-README = README[README.find("#"):]  # ignore everything before title
+README = README[README.find("#") :]  # ignore everything before title
 
 
 def rglob(path, glob):
@@ -33,19 +33,38 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
+alamopy_dir = Path("apps") / "ddm-learning" / "alamo_python" / "alamopy"
+ripe_dir = Path("apps") / "ddm-learning" / "ripe_python" / "ripe"
+
+
+def find_all_packages():
+    test_patterns = ["*.tests", "*.tests.*", "tests.*", "tests"]
+
+    def fp(path, prefix):
+        return [prefix + "." + x for x in find_packages(path, exclude=test_patterns)]
+
+    return (
+        ["idaes"]
+        + fp("idaes", "idaes")
+        + fp(alamopy_dir, "alamopy")
+        + fp(ripe_dir, "ripe")
+    )
+
+
 kwargs = dict(
+    zip_safe=False,
     name=NAME,
     version=VERSION,
-    packages=find_packages(),
-    #    + find_packages("apps/ddm-learning/alamo_python")
-    #    + find_packages("apps/ddm-learning/ripe_python"),
-    package_dir={},
-    #        "alamopy": "apps/ddm-learning/alamo_python/alamopy",
-    #        "ripe": "apps/ddm-learning/ripe_python/ripe",
-    #    },
+    packages=find_all_packages(),
+    package_dir={
+        "idaes": "idaes",
+        "alamopy": alamopy_dir,
+        "ripe": ripe_dir,
+    },
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
+        # idaes core / dmf
         "backports.shutil_get_terminal_size",
         "bokeh==0.12.9",
         "bunch",
@@ -60,6 +79,7 @@ kwargs = dict(
         "networkx",
         "pandas",
         "pendulum==1.4.4",
+        "pint",
         "psutil",
         "pyomo",
         "pytest",
@@ -68,8 +88,9 @@ kwargs = dict(
         "sympy",
         "tinydb",
         "toml",
-        "networkx",
-        "pint",
+        # alamopy
+        # ripe
+        "rbfopt",
     ],
     entry_points={"console_scripts": ["dmf = idaes.dmf.cli:base_command"]},
     extras_require={
