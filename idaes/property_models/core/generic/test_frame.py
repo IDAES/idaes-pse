@@ -36,6 +36,8 @@ def main():
     m.fs.state.entr_mol.display()
     m.fs.state.gibbs_mol.display()
 
+    m.fs.state.initialize()
+
 #    m.fs.state.pprint()
 #    print(m.fs.state.define_state_vars())
 #    print(m.fs.state.get_material_flow_terms("Vap", "benzene"))
