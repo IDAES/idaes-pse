@@ -302,7 +302,7 @@ should be constructed in this state block,
                                   ' get_energy_flow_terms method. Please '
                                   'contact the property package developer.')
 
-    def get_enthalpy_density_terms(self, *args, **kwargs):
+    def get_energy_density_terms(self, *args, **kwargs):
         """
         Method which returns a valid expression for enthalpy density to use in
         the energy balances.
