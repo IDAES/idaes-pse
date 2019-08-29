@@ -3,11 +3,11 @@ import json
 import os
 
 from idaes.core import UnitModelBlockData
-from pyomo.network.port import SimplePort
-from pyomo.network.arc import SimpleArc
-from collections import defaultdict
 from idaes.dmf.ui import icon_mapping, link_position_mapping
 
+from pyomo.environ import Block
+from pyomo.network.port import SimplePort
+from pyomo.network.arc import SimpleArc
 
 class FileBaseNameExistsError(Exception):
     pass
@@ -47,7 +47,6 @@ class FlowsheetSerializer:
         for component in flowsheet.component_objects(descend_into=False):
             # TODO try using component_objects(ctype=X)
             if isinstance(component, UnitModelBlockData):
-                #self.unit_models[component] = {"name": component.getname(), "type": type(component).__name__}
                 self.unit_models[component] = {"name": component.getname(), "type": component._orig_module.split('.')[-1]}
                 
                 for subcomponent in component.component_objects(descend_into=False):
@@ -63,21 +62,6 @@ class FlowsheetSerializer:
             edges[self.ports[arc.source]].append(self.ports[arc.dest])
             orphaned_ports.discard(arc.source)
             orphaned_ports.discard(arc.dest)
-            
-            # saved for later
-#        for port in orphaned_ports:
-#            named_edges["Orphaned"].append(self.ports[port].getname())
-#        edges_filename = file_base_name + 'edges.json'
-#        with open(edges_filename, 'w') as outfile:  
-#            json.dump(named_edges, outfile)
-#            
-#        named_components = {}
-#        for comp in self.unit_models.values():
-#            named_components[comp["name"]]= {"type": comp["type"]}
-#        nodes_filename = file_base_name + 'nodes.json'
-#        with open(nodes_filename, 'w') as outfile:  
-#            json.dump(named_components, outfile)
-
 
         vis_file_name = file_base_name + '.idaes.vis'
         if os.path.isfile(vis_file_name) and overwrite == False:
@@ -87,15 +71,16 @@ class FlowsheetSerializer:
         else:
             outjson = {}
             print(f"Creating {vis_file_name}")
-            #outjson['joint_enc'] = []
 
-        #outjson['model']['cells'] = []
         outjson['cells'] = []
         x_pos = 50
         y_pos = 50
 
         for component, unit_attrs in self.unit_models.items():
-            self.create_image_json(unit_attrs, outjson, x_pos, y_pos)
+            print(type(unit_attrs['name']))
+            print(unit_attrs['name'])
+            self.create_image_json(outjson, x_pos, y_pos, unit_attrs['name'], 
+                icon_mapping[unit_attrs['type']], unit_attrs['name'], unit_attrs['type'])
             x_pos += 50
             y_pos += 50
 
@@ -117,17 +102,9 @@ class FlowsheetSerializer:
                     # TODO figure out offsets when mutiple things come from/into the same side:
                     # source_anchor["args"]["dy"] = str(100/(len(dests) + 1)) + "%"
 
-                entry = {
-                        'type': 'standard.Link',
-                        'source': {"anchor": source_anchor, 'id': source.getname()},
-                        'target': {"anchor": link_position_mapping[self.unit_models[dest]["type"]]["inlet_anchors"], 'id': dest.getname()},
-                        "router": {"name": "orthogonal", "padding": 10},
-                        "connector": {"name": "jumpover", 'attrs': {'line': {'stroke': '#6FB1E1'}}},
-                        'id': id_counter,# TODO
-                        'z': 2,
-                        #'labels': [], # sic
-                        }
-                outjson['cells'].append(entry)
+                dest_anchor = link_position_mapping[self.unit_models[dest]["type"]]["inlet_anchors"]
+
+                self.create_link_json(outjson, source_anchor, dest_anchor, source.getname(), dest.getname(), id_counter)
                 id_counter += 1
 
         num_open_inlets = 0
@@ -144,23 +121,9 @@ class FlowsheetSerializer:
             else:
                 icon_type = "product"
 
-            entry = {}
-            entry['type'] = 'standard.Image'
-            # for now, just tile the positions diagonally
-            entry['position'] = {'x': x_pos, 'y': y_pos} # TODO Make the default positioning better
+            self.create_image_json(outjson, x_pos, y_pos, "inlet" + str(id_counter), icon_mapping[icon_type], "", icon_type)
             x_pos += 50
             y_pos += 50
-            entry['size'] = {"width": 50, "height": 50} # TODO Set the width and height depending on the icon rather than default
-            entry['angle'] = 0
-            entry['id'] = "inlet" + str(id_counter)
-            entry['z'] = 1,
-            entry['attrs'] = {
-                    'image': {'xlinkHref': icon_mapping[icon_type]},
-                    #'label': {'text': "inlet" + str(id_counter)},
-                    'root': {'title': 'joint.shapes.standard.Image'}
-                    } # TODO, pending image displaying solution
-            #outjson['model']['cells'].append(entry)
-            outjson['cells'].append(entry)
 
             source_anchor = link_position_mapping[icon_type]["outlet_anchors"]
             dest_anchor = link_position_mapping[self.unit_models[self.ports[orphan_port]]["type"]]["inlet_anchors"]
@@ -176,17 +139,7 @@ class FlowsheetSerializer:
                 source_id = self.ports[orphan_port].getname()
                 dest_id = "inlet" + str(id_counter)
 
-            entry = {
-                    'type': 'standard.Link',
-                    'source': {"anchor": source_anchor, 'id': source_id},
-                    'target': {"anchor": dest_anchor, 'id': dest_id},
-                    "router": {"name": "orthogonal", "padding": 10},
-                    "connector": {"name": "jumpover", 'attrs': {'line': {'stroke': '#6FB1E1'}}},
-                    'id': id_counter,# TODO
-                    'z': 2,
-                    #'labels': [],
-                    }
-            outjson['cells'].append(entry)
+            self.create_link_json(outjson, source_anchor, dest_anchor, source_id, dest_id, id_counter)
 
             id_counter += 1
             num_open_inlets -= 1
@@ -196,19 +149,34 @@ class FlowsheetSerializer:
             json.dump(outjson, outfile)
 
 
-    def create_image_json(self, unit_attrs, outjson, x_pos, y_pos):
+    def create_image_json(self, outjson, x_pos, y_pos, id, image, label, title):
         entry = {}
         entry['type'] = 'standard.Image'
         # for now, just tile the positions diagonally
         entry['position'] = {'x': x_pos, 'y': y_pos} # TODO Make the default positioning better
         entry['size'] = {"width": 50, "height": 50} # TODO Set the width and height depending on the icon rather than default
         entry['angle'] = 0
-        entry['id'] = unit_attrs['name']
+        entry['id'] = id
         entry['z'] = 1,
         entry['attrs'] = {
-                'image': {'xlinkHref': icon_mapping[unit_attrs['type']]},
-                'label': {'text': unit_attrs['name']},
-                'root': {'title': 'joint.shapes.standard.Image'}
-                } # TODO, pending image displaying solution
+                'image': {'xlinkHref': image},
+                'label': {'text': label},
+                'root': {'title': title}
+                }
         #outjson['model']['cells'].append(entry)
+        outjson['cells'].append(entry)
+
+
+    def create_link_json(self, outjson, source_anchor, dest_anchor, source_id, dest_id, link_id):
+        entry = {
+                'type': 'standard.Link',
+                'source': {"anchor": source_anchor, 'id': source_id},
+                'target': {"anchor": dest_anchor, 'id': dest_id},
+                "router": {"name": "orthogonal", "padding": 10},
+                "connector": {"name": "jumpover", 'attrs': {'line': {'stroke': '#6FB1E1'}}},
+                'id': link_id,
+                'z': 2,
+                #'labels': [],
+                }
+        print(entry)
         outjson['cells'].append(entry)
