@@ -4,8 +4,8 @@ shared-dev: &shared-dev
   working_directory: ~/repo
   steps:
     - checkout
-    - run: sudo pip install pip==18.0.0
-    - run: sudo pip install -r requirements-dev.txt
+    - run: pip install pip==18.0.0
+    - run: pip install -r requirements-dev.txt
     - run: pyomo --version
     - run: cd docs && make all
     - run: pytest -c pytest-dev.ini docs idaes -m "not nocircleci"
@@ -16,8 +16,8 @@ shared: &shared
   working_directory: ~/repo
   steps:
     - checkout
-    - run: sudo pip install pip==18.0.0
-    - run: sudo pip install -r requirements.txt
+    - run: pip install pip==18.0.0
+    - run: pip install -r requirements.txt
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
