@@ -18,6 +18,8 @@ class FlowsheetSerializer:
         self.unit_models = {}
         self.arcs = []
         self.ports = {}
+        self.edges = defaultdict(list)
+        self.orphaned_ports = {}
 
     def save(self, flowsheet, file_base_name, overwrite=False):
         """
@@ -44,48 +46,34 @@ class FlowsheetSerializer:
             serializer.save(m.fs, 'output_file')
         '''
         """
-        for component in flowsheet.component_objects(descend_into=False):
-            # TODO try using component_objects(ctype=X)
-            if isinstance(component, UnitModelBlockData):
-                self.unit_models[component] = {"name": component.getname(), "type": component._orig_module.split('.')[-1]}
-                
-                for subcomponent in component.component_objects(descend_into=False):
-                    if isinstance(subcomponent, SimplePort):
-                       self.ports[subcomponent] = component
-                        
-            elif isinstance(component, SimpleArc): 
-               self.arcs.append(component)
-            
-        edges = defaultdict(list)
-        orphaned_ports = set(self.ports.keys())
-        for arc in self.arcs:
-            edges[self.ports[arc.source]].append(self.ports[arc.dest])
-            orphaned_ports.discard(arc.source)
-            orphaned_ports.discard(arc.dest)
-
         vis_file_name = file_base_name + '.idaes.vis'
         if os.path.isfile(vis_file_name) and overwrite == False:
             msg = (f"{vis_file_name} already exists. If you wish to overwrite this file call save() with overwrite=True. "
                    "WARNING: If you overwrite the file, you will lose your saved layout.")
             raise FileBaseNameExistsError(msg)
         else:
-            outjson = {}
             print(f"Creating {vis_file_name}")
 
-        outjson['cells'] = []
+        self._serialize_flowsheet(flowsheet)
+        out_json = self._construct_output_json()
+
+        with open(vis_file_name, 'w') as out_file:
+            json.dump(out_json, out_file)
+
+    def _construct_output_json(self):
+        out_json = {}
+        out_json['cells'] = []
         x_pos = 50
         y_pos = 50
 
         for component, unit_attrs in self.unit_models.items():
-            print(type(unit_attrs['name']))
-            print(unit_attrs['name'])
-            self.create_image_json(outjson, x_pos, y_pos, unit_attrs['name'], 
+            self._create_image_json(out_json, x_pos, y_pos, unit_attrs['name'], 
                 icon_mapping[unit_attrs['type']], unit_attrs['name'], unit_attrs['type'])
             x_pos += 50
             y_pos += 50
 
         id_counter = 0
-        for source, dests in edges.items():
+        for source, dests in self.edges.items():
             for dest in dests:
                 if hasattr(source, "vap_outlet"):
                     # TODO Figure out how to denote different outlet types. Need to deal with multiple input/output offsets
@@ -104,15 +92,15 @@ class FlowsheetSerializer:
 
                 dest_anchor = link_position_mapping[self.unit_models[dest]["type"]]["inlet_anchors"]
 
-                self.create_link_json(outjson, source_anchor, dest_anchor, source.getname(), dest.getname(), id_counter)
+                self._create_link_json(out_json, source_anchor, dest_anchor, source.getname(), dest.getname(), id_counter)
                 id_counter += 1
 
         num_open_inlets = 0
-        for orphan_port in orphaned_ports:
+        for orphan_port in self.orphaned_ports:
             unit_model_name = ""
             try:
                 if num_open_inlets <= 0:
-                    num_open_inlets = len(self.ports[orphan_port].create_inlet_list()) - len(edges[self.ports[orphan_port]])
+                    num_open_inlets = len(self.ports[orphan_port].create_inlet_list()) - len(self.edges[self.ports[orphan_port]])
             except AttributeError:
                 num_open_inlets = 0
 
@@ -121,7 +109,7 @@ class FlowsheetSerializer:
             else:
                 icon_type = "product"
 
-            self.create_image_json(outjson, x_pos, y_pos, "inlet" + str(id_counter), icon_mapping[icon_type], "", icon_type)
+            self._create_image_json(out_json, x_pos, y_pos, "inlet" + str(id_counter), icon_mapping[icon_type], "", icon_type)
             x_pos += 50
             y_pos += 50
 
@@ -139,17 +127,34 @@ class FlowsheetSerializer:
                 source_id = self.ports[orphan_port].getname()
                 dest_id = "inlet" + str(id_counter)
 
-            self.create_link_json(outjson, source_anchor, dest_anchor, source_id, dest_id, id_counter)
+            self._create_link_json(out_json, source_anchor, dest_anchor, source_id, dest_id, id_counter)
 
             id_counter += 1
             num_open_inlets -= 1
 
-        # TODO handle also reading preexisting file first; is there an elegant way?
-        with open(vis_file_name, 'w') as outfile:
-            json.dump(outjson, outfile)
+        return out_json
 
+    def _serialize_flowsheet(self, flowsheet):
+        for component in flowsheet.component_objects(descend_into=False):
+            # TODO try using component_objects(ctype=X)
+            if isinstance(component, UnitModelBlockData):
+                self.unit_models[component] = {"name": component.getname(), "type": component._orig_module.split('.')[-1]}
+                
+                for subcomponent in component.component_objects(descend_into=False):
+                    if isinstance(subcomponent, SimplePort):
+                       self.ports[subcomponent] = component
+                        
+            elif isinstance(component, SimpleArc): 
+               self.arcs.append(component)
+            
+        self.edges = defaultdict(list)
+        self.orphaned_ports = set(self.ports.keys())
+        for arc in self.arcs:
+            self.edges[self.ports[arc.source]].append(self.ports[arc.dest])
+            self.orphaned_ports.discard(arc.source)
+            self.orphaned_ports.discard(arc.dest)
 
-    def create_image_json(self, outjson, x_pos, y_pos, id, image, label, title):
+    def _create_image_json(self, out_json, x_pos, y_pos, id, image, label, title):
         entry = {}
         entry['type'] = 'standard.Image'
         # for now, just tile the positions diagonally
@@ -163,11 +168,10 @@ class FlowsheetSerializer:
                 'label': {'text': label},
                 'root': {'title': title}
                 }
-        #outjson['model']['cells'].append(entry)
-        outjson['cells'].append(entry)
+        #out_json['model']['cells'].append(entry)
+        out_json['cells'].append(entry)
 
-
-    def create_link_json(self, outjson, source_anchor, dest_anchor, source_id, dest_id, link_id):
+    def _create_link_json(self, out_json, source_anchor, dest_anchor, source_id, dest_id, link_id):
         entry = {
                 'type': 'standard.Link',
                 'source': {"anchor": source_anchor, 'id': source_id},
@@ -178,5 +182,4 @@ class FlowsheetSerializer:
                 'z': 2,
                 #'labels': [],
                 }
-        print(entry)
-        outjson['cells'].append(entry)
+        out_json['cells'].append(entry)
