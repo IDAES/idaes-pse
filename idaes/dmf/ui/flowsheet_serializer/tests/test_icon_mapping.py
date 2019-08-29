@@ -8,18 +8,20 @@ from idaes.dmf.ui import icon_mapping
     [("cstr", "reactor_c.svg"),
     ("equilibrium_reactor", "reactor_e.svg"),
     ("gibbs_reactor", "reactor_g.svg"),
-    ("pfr", "reactor_pfr.svg"),
+    ("plug_flow_reactor", "reactor_pfr.svg"),
     ("stoichiometric_reactor", "reactor_s.svg"),
     ("flash", "flash.svg"),
     ("mixer", "mixer.svg"),
     ("feed", "feed.svg"),
     ("feed_flash", "feed.svg"),
     ("product", "product.svg"),
-    ("separator", "mixer.svg"), 
+    ("separator", "splitter.svg"), 
     ("heater", "heater_2.svg"),
     ("pressure_changer", "compressor.svg"),
     ("heat_exchanger", "heat_exchanger_1.svg"),
-    ("heat_exchanger1d", "heat_exchanger_1.svg"), #  same as HeadExchanger
+    ("heat_exchanger_1D", "heat_exchanger_1.svg"),
+    ("statejunction", "NONE"),
+    ("translator", "NONE"),
     ("packed_column", "packed_column_1.svg"),
     ("tray_column", "tray_column_1.svg")]
 )
