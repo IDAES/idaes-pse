@@ -142,6 +142,7 @@ Heat Capacity (const. V)        cv
 Heat Capacity Ratio             heat_capacity_ratio
 Helmholtz Energy                energy_helmholtz
 Henry's Constant                henry
+Internal Energy                 energy_internal
 Mass Fraction                   mass_frac
 Material Flow                   flow
 Molecular Weight                mw

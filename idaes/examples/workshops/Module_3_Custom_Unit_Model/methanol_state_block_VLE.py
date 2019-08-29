@@ -436,9 +436,11 @@ class StateBlockData(StateBlockData):
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
         if p == "Liq":
-            return self.density_mol[p] * self._params.Cp
+            return self.density_mol[p] * self._params.Cp * self.temperature
         elif p == "Vap":
-            return self.density_mol[p] * self._params.Cp
+            return (self.density_mol[p] * (
+                    self._params.Cp - self._params.gas_const) *
+                    self.temperature)
 
     def define_state_vars(self):
         """Define state vars."""
