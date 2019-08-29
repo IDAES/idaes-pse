@@ -85,7 +85,7 @@ def test_config():
     assert m.fs.unit.config.side_1.energy_balance_type == \
         EnergyBalanceType.useDefault
     assert m.fs.unit.config.side_1.momentum_balance_type == \
-        MomentumBalanceType.useDefault
+        MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.side_1.has_phase_equilibrium
     assert not m.fs.unit.config.side_1.has_pressure_change
     assert m.fs.unit.config.side_1.property_package is m.fs.properties
@@ -97,7 +97,7 @@ def test_config():
     assert m.fs.unit.config.side_2.energy_balance_type == \
         EnergyBalanceType.useDefault
     assert m.fs.unit.config.side_2.momentum_balance_type == \
-        MomentumBalanceType.useDefault
+        MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.side_2.has_phase_equilibrium
     assert not m.fs.unit.config.side_2.has_pressure_change
     assert m.fs.unit.config.side_2.property_package is m.fs.properties

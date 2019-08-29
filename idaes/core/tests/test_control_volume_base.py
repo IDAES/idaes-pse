@@ -50,7 +50,7 @@ def test_energy_balance_type():
 
 
 def test_momentum_balance_type():
-    assert len(MomentumBalanceType) == 6
+    assert len(MomentumBalanceType) == 5
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
@@ -480,9 +480,6 @@ def test_add_momentum_balances():
     for t in MomentumBalanceType:
         if t == MomentumBalanceType.none:
             assert m.cv.add_momentum_balances(t) is None
-        elif t == MomentumBalanceType.useDefault:
-            with pytest.raises(ConfigurationError):
-                m.cv.add_momentum_balances(t)
         else:
             with pytest.raises(NotImplementedError):
                 m.cv.add_momentum_balances(t)

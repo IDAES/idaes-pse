@@ -442,6 +442,12 @@ class StateBlockData(StateBlockData):
                     self._params.Cp - self._params.gas_const) *
                     self.temperature)
 
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
+
     def define_state_vars(self):
         """Define state vars."""
         return {"flow_mol": self.flow_mol,

@@ -71,14 +71,12 @@ balance type
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
     CONFIG.declare("momentum_balance_type", ConfigValue(
-        default=MomentumBalanceType.useDefault,
+        default=MomentumBalanceType.pressureTotal,
         domain=In(MomentumBalanceType),
         description="Momentum balance construction flag",
         doc="""Indicates what type of momentum balance should be constructed,
-**default** - MomentumBalanceType.useDefault.
+**default** - MomentumBalanceType.pressureTotal.
 **Valid values:** {
-**MomentumBalanceType.useDefault - refer to property package for default
-balance type
 **MomentumBalanceType.none** - exclude momentum balances,
 **MomentumBalanceType.pressureTotal** - single pressure balance for material,
 **MomentumBalanceType.pressurePhase** - pressure balances for each phase,

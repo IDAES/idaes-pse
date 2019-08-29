@@ -495,8 +495,9 @@ linked the mixed state and all outlet states,
 
         mb_type = self.config.material_balance_type
         if mb_type == MaterialBalanceType.useDefault:
+            t_ref = self.flowsheet().time.first()
             mb_type = \
-                self.config.property_package.default_material_balance_type
+                mixed_block[t_ref].default_material_balance_type()
 
         if mb_type == MaterialBalanceType.componentPhase:
             if self.config.has_phase_equilibrium is True:

@@ -74,10 +74,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
         super(PhysicalParameterData, self).build()
 
         self.state_block_class = IdealStateBlock
-        
-        self.default_material_balance_type = MaterialBalanceType.componentTotal
-        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
-        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
 
         # List of valid phases in property package
         # List of valid phases in property package

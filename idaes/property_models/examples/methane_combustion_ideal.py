@@ -60,10 +60,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         self.state_block_class = MethaneCombustionStateBlock
 
-        self.default_material_balance_type = MaterialBalanceType.elementTotal
-        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
-        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
-
         # List of valid phases in property package
         self.phase_list = Set(initialize=['Vap'])
 
@@ -769,6 +765,12 @@ class MethaneCombustionStateBlockData(StateBlockData):
 
     def get_energy_density_terms(b, p):
         return b.dens_mol_phase[p]*b.energy_internal_mol
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.elementTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(b):
         return {"flow_mol_comp": b.flow_mol_comp,

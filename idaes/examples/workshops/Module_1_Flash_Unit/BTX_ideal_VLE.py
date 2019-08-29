@@ -46,10 +46,6 @@ class BTXParameterData(IdealParameterData):
         '''
         super(BTXParameterData, self).build()
 
-        self.default_material_balance_type = MaterialBalanceType.componentTotal
-        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
-        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
-
         self.component_list_master = Set(initialize=['benzene',
                                                      'toluene',
                                                      'o-xylene'])

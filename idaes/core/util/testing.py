@@ -56,11 +56,6 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
     def build(self):
         super(_PhysicalParameterBlock, self).build()
 
-        # Set default balance type options
-        self.default_material_balance_type = MaterialBalanceType.componentPhase
-        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
-        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
-
         self.phase_list = Set(initialize=["p1", "p2"])
         self.component_list = Set(initialize=["c1", "c2"])
         self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
@@ -74,6 +69,7 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
+        self.default_balance_switch = 1
 
         self.state_block_class = TestStateBlock
 
@@ -144,6 +140,18 @@ class StateTestBlockData(StateBlockData):
             return MaterialFlowBasis.mass
         else:
             return MaterialFlowBasis.other
+
+    def default_material_balance_type(self):
+        if self._params.default_balance_switch == 1:
+            return MaterialBalanceType.componentPhase
+        else:
+            raise NotImplementedError
+
+    def default_energy_balance_type(self):
+        if self._params.default_balance_switch == 1:
+            return EnergyBalanceType.enthalpyTotal
+        else:
+            raise NotImplementedError
 
     def define_state_vars(self):
         return {"component_flow": self.flow_mol_phase_comp,

@@ -60,7 +60,7 @@ def test_config():
     assert m.fs.unit.config.energy_balance_type == \
         EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
-        MomentumBalanceType.useDefault
+        MomentumBalanceType.pressureTotal
     assert m.fs.unit.config.ideal_separation
     assert m.fs.unit.config.has_heat_transfer
     assert m.fs.unit.config.has_pressure_change

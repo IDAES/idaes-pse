@@ -65,11 +65,6 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
         self.state_block_class = SaponificationStateBlock
 
-        # Set default balance type options
-        self.default_material_balance_type = MaterialBalanceType.componentTotal
-        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
-        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
-
         # List of valid phases in property package
         self.phase_list = Set(initialize=['Liq'])
 
@@ -331,6 +326,12 @@ class SaponificationStateBlockData(StateBlockData):
     def get_energy_density_terms(b, p):
         return b._params.dens_mol*b._params.cp_mol*(
                 b.temperature - b._params.temperature_ref)
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentPhase
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(b):
         return {"flow_vol": b.flow_vol,

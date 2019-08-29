@@ -54,10 +54,6 @@ class HDAParameterData(PhysicalParameterBlock):
         super(HDAParameterData, self).build()
 
         self.state_block_class = IdealStateBlock
-        
-        self.default_material_balance_type = MaterialBalanceType.componentPhase
-        self.default_energy_balance_type = EnergyBalanceType.enthalpyTotal
-        self.default_momentum_balance_type = MomentumBalanceType.pressureTotal
 
         self.component_list = Set(initialize=['benzene',
                                               'toluene',
@@ -791,6 +787,12 @@ class IdealStateBlockData(StateBlockData):
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
         return self.dens_mol_phase[p] * self.energy_internal_mol_phase[p]
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentPhase
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar

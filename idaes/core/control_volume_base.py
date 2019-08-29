@@ -60,7 +60,6 @@ class EnergyBalanceType(Enum):
 
 # Enumerate options for momentum balances
 class MomentumBalanceType(Enum):
-    useDefault = -1
     none = 0
     pressureTotal = 1
     pressurePhase = 2
@@ -403,9 +402,9 @@ have a config block which derives from CONFIG_Base,
         # Check if balance_type is useDefault, and get default if necessary
         if balance_type == MaterialBalanceType.useDefault:
             try:
-                balance_type = \
-                    self.config.property_package.default_material_balance_type
-            except AttributeError:
+                blk = self._get_representative_property_block()
+                balance_type = blk.default_material_balance_type()
+            except NotImplementedError:
                 raise ConfigurationError(
                         "{} property package has not implemented a "
                         "default_material_balance_type, thus cannot use "
@@ -458,9 +457,9 @@ have a config block which derives from CONFIG_Base,
         # Check if balance_type is useDefault, and get default if necessary
         if balance_type == EnergyBalanceType.useDefault:
             try:
-                balance_type = \
-                    self.config.property_package.default_energy_balance_type
-            except AttributeError:
+                blk = self._get_representative_property_block()
+                balance_type = blk.default_energy_balance_type()
+            except NotImplementedError:
                 raise ConfigurationError(
                         "{} property package has not implemented a "
                         "default_energy_balance_type, thus cannot use "
@@ -488,7 +487,7 @@ have a config block which derives from CONFIG_Base,
         return eb
 
     def add_momentum_balances(self,
-                              balance_type=MomentumBalanceType.useDefault,
+                              balance_type=MomentumBalanceType.pressureTotal,
                               **kwargs):
         """
         General method for adding momentum balances to a control volume.
@@ -497,7 +496,8 @@ have a config block which derives from CONFIG_Base,
 
         Args:
             balance_type (MomentumBalanceType): Enum indicating which type of
-                momentum balance should be constructed.
+                momentum balance should be constructed. Default =
+                MomentumBalanceType.pressureTotal.
             has_pressure_change (bool): whether default generation terms for
                 pressure change should be included in momentum balances
             custom_term (Expression): a Pyomo Expression representing custom
@@ -506,20 +506,6 @@ have a config block which derives from CONFIG_Base,
         Returns:
             Constraint objects constructed by sub-method
         """
-        # Check if balance_type is useDefault, and get default if necessary
-        if balance_type == MomentumBalanceType.useDefault:
-            try:
-                balance_type = \
-                    self.config.property_package.default_momentum_balance_type
-            except AttributeError:
-                raise ConfigurationError(
-                        "{} property package has not implemented a "
-                        "default_momentum_balance_type, thus cannot use "
-                        "MomentumBalanceType.useDefault when constructing "
-                        "momentum balances. Please contact the developer of "
-                        "your property package to implement the necessary "
-                        "default attributes.".format(self.name))
-
         if balance_type == MomentumBalanceType.none:
             mb = None
         elif balance_type == MomentumBalanceType.pressureTotal:
@@ -815,3 +801,25 @@ have a config block which derives from CONFIG_Base,
                             "molecular weight (mw), which is required for "
                             "using property and reaction packages with "
                             "different bases.".format(b.name))
+
+    def _get_representative_property_block(self):
+        try:
+            t_ref = self.flowsheet().time.first()
+        except AttributeError:
+            raise ConfigurationError(
+                    "{} control volume does not appear to be part of a "
+                    "flowsheet (could not find a time attribute)."
+                    .format(self.name))
+
+        try:
+            rep_blk = self.properties_out[t_ref]
+        except AttributeError:
+            try:
+                d_ref = self.length_domain.first()
+                rep_blk = self.properties[t_ref, d_ref]
+            except AttributeError:
+                raise BurntToast("{} Something went wrong when trying to find "
+                                 "a representative StateBlock. Please contact "
+                                 "the IDAES developers with this bug."
+                                 .format(self.name))
+        return rep_blk

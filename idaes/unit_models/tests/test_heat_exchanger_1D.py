@@ -78,7 +78,7 @@ def test_config():
     assert m.fs.unit.config.shell_side.energy_balance_type == \
         EnergyBalanceType.useDefault
     assert m.fs.unit.config.shell_side.momentum_balance_type == \
-        MomentumBalanceType.useDefault
+        MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.shell_side.has_pressure_change
     assert not m.fs.unit.config.shell_side.has_phase_equilibrium
     assert m.fs.unit.config.shell_side.transformation_method == \
@@ -94,7 +94,7 @@ def test_config():
     assert m.fs.unit.config.tube_side.energy_balance_type == \
         EnergyBalanceType.useDefault
     assert m.fs.unit.config.tube_side.momentum_balance_type == \
-        MomentumBalanceType.useDefault
+        MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.tube_side.has_pressure_change
     assert not m.fs.unit.config.tube_side.has_phase_equilibrium
     assert m.fs.unit.config.tube_side.transformation_method == \
