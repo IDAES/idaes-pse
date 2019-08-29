@@ -300,6 +300,12 @@ class HDAParameterData(PhysicalParameterBlock):
              'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
              'mole_frac_phase': {'method': '_mole_frac_phase',
                                  'units': 'no unit'},
+             'energy_internal_mol_phase_comp': {
+                     'method': '_energy_internal_mol_phase_comp',
+                     'units': 'J/mol'},
+             'energy_internal_mol_phase': {
+                     'method': '_enenrgy_internal_mol_phase',
+                     'units': 'J/mol'},
              'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp',
                                      'units': 'J/mol'},
              'enth_mol_phase': {'method': '_enth_mol_phase',
@@ -668,6 +674,40 @@ class IdealStateBlockData(StateBlockData):
         self.eq_dens_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_dens_mol_phase)
 
+    def _energy_internal_mol_phase_comp(self):
+        self.energy_internal_mol_phase_comp = Var(
+                self._params.phase_list,
+                self._params.component_list,
+                doc="Phase-component molar specific internal energies [J/mol]")
+
+        def rule_energy_internal_mol_phase_comp(b, p, j):
+            if p == 'Vap':
+                return b.energy_internal_mol_phase_comp[p, j] == \
+                        b.enth_mol_phase_comp[p, j] - \
+                        b._params.gas_const*(b.temperature -
+                                             b._params.temeprature_ref)
+            else:
+                return b.energy_internal_mol_phase_comp[p, j] == \
+                        b.enth_mol_phase_comp[p, j]
+        self.eq_energy_internal_mol_phase_comp = Constraint(
+            self._params.phase_list,
+            self._params.component_list,
+            rule=rule_energy_internal_mol_phase_comp)
+
+    def _energy_internal_mol_phase(self):
+        self.energy_internal_mol_phase = Var(
+            self._params.phase_list,
+            doc='Phase molar specific internal energies [J/mol]')
+
+        def rule_energy_internal_mol_phase(b, p):
+            return b.energy_internal_mol_phase[p] == sum(
+                b.energy_internal_mol_phase_comp[p, i] *
+                b.mole_frac_phase[p, i]
+                for i in b._params.component_list)
+        self.eq_energy_internal_mol_phase = Constraint(
+                self._params.phase_list,
+                rule=rule_energy_internal_mol_phase)
+
     def _enth_mol_phase_comp(self):
         self.enth_mol_phase_comp = Var(
                 self._params.phase_list,
@@ -750,7 +790,7 @@ class IdealStateBlockData(StateBlockData):
 
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
-        return self.dens_mol_phase[p] * self.enth_mol_phase[p]
+        return self.dens_mol_phase[p] * self.energy_internal_mol_phase[p]
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar

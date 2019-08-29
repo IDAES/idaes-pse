@@ -328,7 +328,7 @@ class SaponificationStateBlockData(StateBlockData):
     def get_material_density_terms(b, p, j):
         return b.conc_mol_comp[j]
 
-    def get_enthalpy_density_terms(b, p):
+    def get_energy_density_terms(b, p):
         return b._params.dens_mol*b._params.cp_mol*(
                 b.temperature - b._params.temperature_ref)
 

@@ -135,7 +135,7 @@ def test_StateBlock_NotImplementedErrors():
     with pytest.raises(NotImplementedError):
         m.p.get_enthalpy_flow_terms()
     with pytest.raises(NotImplementedError):
-        m.p.get_enthalpy_density_terms()
+        m.p.get_energy_density_terms()
     with pytest.raises(NotImplementedError):
         m.p.get_energy_diffusion_terms()
     with pytest.raises(NotImplementedError):

@@ -484,7 +484,7 @@ def test_add_material_balances_default_fail():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    del(m.fs.pp.default_material_balance_type)
+    m.fs.pp.default_balance_switch = 2
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_material_balances(MaterialBalanceType.useDefault)
@@ -1628,7 +1628,7 @@ def test_add_energy_balances_default_fail():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    del(m.fs.pp.default_energy_balance_type)
+    m.fs.pp.default_balance_switch = 2
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_energy_balances(EnergyBalanceType.useDefault)
@@ -1884,44 +1884,6 @@ def test_add_total_energy_balances():
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_total_energy_balances()
-
-
-# -----------------------------------------------------------------------------
-# Test add_momentum_balances default
-def test_add_momentum_balances_default_fail():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
-    del(m.fs.pp.default_momentum_balance_type)
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_momentum_balances(EnergyBalanceType.useDefault)
-
-
-def test_add_momentum_balances_default():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume0DBlock(default={"property_package": m.fs.pp,
-                                            "reaction_package": m.fs.rp})
-
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
-    eb = m.fs.cv.add_momentum_balances(MomentumBalanceType.useDefault)
-
-    assert isinstance(eb, Constraint)
-    assert len(eb) == 1
 
 
 # -----------------------------------------------------------------------------

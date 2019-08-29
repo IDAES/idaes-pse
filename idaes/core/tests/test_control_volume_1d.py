@@ -888,7 +888,7 @@ def test_add_material_balances_default_fail():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    del(m.fs.pp.default_material_balance_type)
+    m.fs.pp.default_balance_switch = 2
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_material_balances(MaterialBalanceType.useDefault)
@@ -2378,7 +2378,7 @@ def test_add_energy_balances_default_fail():
     m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
     m.fs.cv.add_reaction_blocks(has_equilibrium=False)
 
-    del(m.fs.pp.default_energy_balance_type)
+    m.fs.pp.default_balance_switch = 2
 
     with pytest.raises(ConfigurationError):
         m.fs.cv.add_energy_balances(EnergyBalanceType.useDefault)
@@ -2740,62 +2740,6 @@ def test_add_total_energy_balances():
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_total_energy_balances()
-
-
-# -----------------------------------------------------------------------------
-# Test add_momentum_balances default
-def test_add_momentum_balances_default_fail():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume1DBlock(default={
-                "property_package": m.fs.pp,
-                "reaction_package": m.fs.rp,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
-                "finite_elements": 10})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
-    del(m.fs.pp.default_momentum_balance_type)
-
-    with pytest.raises(ConfigurationError):
-        m.fs.cv.add_momentum_balances(MomentumBalanceType.useDefault)
-
-
-def test_add_momentum_balances_default():
-    m = ConcreteModel()
-    m.fs = Flowsheet(default={"dynamic": False})
-    m.fs.pp = PhysicalParameterTestBlock()
-    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
-
-    m.fs.cv = ControlVolume1DBlock(default={
-                "property_package": m.fs.pp,
-                "reaction_package": m.fs.rp,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
-                "finite_elements": 10})
-
-    m.fs.cv.add_geometry()
-    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
-    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
-
-    mb = m.fs.cv.add_momentum_balances(MomentumBalanceType.useDefault)
-
-    assert isinstance(mb, Constraint)
-    assert len(mb) == 1
-    assert isinstance(m.fs.cv.pressure, Var)
-    assert isinstance(m.fs.cv.pressure_linking_constraint, Constraint)
-    assert isinstance(m.fs.cv.pressure_dx, DerivativeVar)
-
-    with pytest.raises(KeyError):
-        assert m.fs.cv.pressure_balance[0, 0]
-    assert type(m.fs.cv.pressure_balance[0, 1]) is \
-        _GeneralConstraintData
 
 
 # -----------------------------------------------------------------------------
