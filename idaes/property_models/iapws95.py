@@ -847,11 +847,11 @@ class Iapws95StateBlockData(StateBlockData):
         else:
             return self.dens_mol_phase[p]
 
-    def get_enthalpy_density_terms(self, p):
+    def get_energy_density_terms(self, p):
         if p == "Mix":
-            return self.dens_mol*self.enth_mol
+            return self.dens_mol*self.energy_internal_mol
         else:
-            return self.dens_mol_phase[p]*self.enth_mol_phase[p]
+            return self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]
 
     def define_state_vars(self):
         return self._state_vars_dict
