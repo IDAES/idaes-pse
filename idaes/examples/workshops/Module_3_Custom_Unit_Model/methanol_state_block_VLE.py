@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -436,9 +436,11 @@ class StateBlockData(StateBlockData):
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
         if p == "Liq":
-            return self.density_mol[p] * self._params.Cp
+            return self.density_mol[p] * self._params.Cp * self.temperature
         elif p == "Vap":
-            return self.density_mol[p] * self._params.Cp
+            return (self.density_mol[p] * (
+                    self._params.Cp - self._params.gas_const) *
+                    self.temperature)
 
     def define_state_vars(self):
         """Define state vars."""

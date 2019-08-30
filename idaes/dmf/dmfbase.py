@@ -457,7 +457,7 @@ class DMF(workspace.Workspace, HasTraits):
         else:
             return self._postproc_resource(item)
 
-    def find(self, filter_dict=None, id_only=False, re_flags=0):
+    def find(self, filter_dict=None, name=None, id_only=False, re_flags=0):
         """Find and return resources matching the filter.
 
         The filter syntax is a subset of the MongoDB filter syntax.
@@ -497,6 +497,8 @@ class DMF(workspace.Workspace, HasTraits):
 
         Args:
             filter_dict (dict): Search filter.
+            name (str): If present, add {'aliases': [<name>]} to filter_dict. This
+                        is syntactic sugar for a common case.
             id_only (bool): If true, return only the identifier of each
                 resource; otherwise a Resource object is returned.
             re_flags (int): Flags for regex filters
@@ -504,12 +506,33 @@ class DMF(workspace.Workspace, HasTraits):
         Returns:
             (list of int|Resource) Depending on the value of `id_only`.
         """
+        if name is not None:
+            if filter_dict is None:
+                filter_dict = {'aliases': [name]}
+            elif 'aliases' in filter_dict:
+                filter_dict['aliases'].append(name)
+            else:
+                filter_dict['aliases'] = [name]
+        elif filter_dict is None:
+            filter_dict = {}
+        elif not hasattr(filter_dict, 'items'):
+            raise TypeError("Parameter 'filter_dict' must be a dictionary, not a "
+                            f"{type(filter_dict)}")
         return (
             self._postproc_resource(r)
             for r in self._db.find(
                 filter_dict=filter_dict, id_only=id_only, flags=re_flags
             )
         )
+
+    def find_one(self, *args, **kwargs):
+        results = self.find(*args, **kwargs)
+        if results is None:
+            return results
+        result_list = list(results)
+        if len(result_list) == 0:
+            return []
+        return result_list[0]
 
     def find_by_id(self, identifier: str, id_only=False) -> Generator:
         """Find resources by their identifier or identifier prefix.
@@ -710,4 +733,3 @@ def get_propertydb_table(rsrc):
 #            does it *not* exist.
 #         7. Regular expression, string "~<expr>" and `re_flags`
 #            for flags (understood: re.IGNORECASE)
-

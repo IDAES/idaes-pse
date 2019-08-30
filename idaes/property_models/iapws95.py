@@ -52,6 +52,7 @@ from pyomo.environ import Constraint, Expression, Param, PositiveReals,\
                           RangeSet, Reals, Set, value, Var, NonNegativeReals,\
                           exp, sqrt, log, tanh, ConcreteModel
 from pyomo.environ import ExternalFunction as EF
+from pyomo.common.fileutils import this_file_dir
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.core.kernel.component_set import ComponentSet
 from pyomo.common.config import ConfigValue, In
@@ -63,7 +64,7 @@ from idaes.core.util.math import smooth_max
 
 # Logger
 _log = logging.getLogger(__name__)
-_so = os.path.join(os.path.dirname(__file__), "iapws95_lib/iapws95_external.so")
+_so = os.path.join(this_file_dir(), "iapws95_lib/iapws95_external.so")
 
 def iapws95_available():
     """Make sure the compiled IAPWS-95 functions are available. Yes, in Windows
@@ -846,11 +847,11 @@ class Iapws95StateBlockData(StateBlockData):
         else:
             return self.dens_mol_phase[p]
 
-    def get_enthalpy_density_terms(self, p):
+    def get_energy_density_terms(self, p):
         if p == "Mix":
-            return self.dens_mol*self.enth_mol
+            return self.dens_mol*self.energy_internal_mol
         else:
-            return self.dens_mol_phase[p]*self.enth_mol_phase[p]
+            return self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]
 
     def define_state_vars(self):
         return self._state_vars_dict
