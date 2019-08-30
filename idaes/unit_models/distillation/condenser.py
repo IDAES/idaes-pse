@@ -39,6 +39,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import PropertyPackageError
 
 _log = logging.getLogger(__name__)
 
@@ -364,7 +365,8 @@ see property package for documentation.}"""))
                         # the state block. Expects to find the var
                         # flow_mol_phase or flow_mass_phase in the state block.
 
-                        # Check if it is not indexed by component list
+                        # Check if it is not indexed by component list and this
+                        # is total flow
                         if not member_list[k].is_indexed():
                             # if state var is not flow_mol/flow_mass
                             # by phase
@@ -398,7 +400,7 @@ see property package for documentation.}"""))
                                 rule=rule_distillate_flow)
 
                         else:
-                            # when it is flow and indexed by component list
+                            # when it is flow comp indexed by component list
                             str_split = \
                                 str(member_list[k].local_name).split("_")
                             if len(str_split) == 3 and str_split[-1] == "comp":
@@ -445,7 +447,85 @@ see property package for documentation.}"""))
                         # distillate port
                         self.vapor_outlet.add(self.e_vap_flow, k)
                 elif "enth" in k:
-                    raise Exception("Doesn't support enth as state var")
+                    if "phase" not in k:
+                        # assumes total mixture enthalpy (enth_mol or enth_mass)
+                        if not member_list[k].is_indexed():
+                            # if state var is not enth_mol/enth_mass
+                            # by phase, add _phase string to extract the right
+                            # value from the state block
+                            local_name = str(member_list[k].local_name) + \
+                                "_phase"
+                        else:
+                            raise PropertyPackageError(
+                                "Expected an unindexed variable.")
+
+                        # Rule for vap enthalpy. Setting the enthalpy to the
+                        # enth_mol_phase['Vap'] value from the state block
+                        def rule_vap_enth(self, t):
+                            return self.control_volume.properties_out[t].\
+                                component(local_name)["Vap"]
+                        self.e_vap_enth = Expression(
+                            self.flowsheet().time,
+                            rule=rule_vap_enth)
+
+                        # Rule to link the liq enthalpy to the reflux.
+                        # Setting the enthalpy to the
+                        # enth_mol_phase['Liq'] value from the state block
+                        def rule_reflux_enth(self, t):
+                            return self.control_volume.properties_out[t].\
+                                component(local_name)["Liq"]
+                        self.e_reflux_enth = Expression(
+                            self.flowsheet().time,
+                            rule=rule_reflux_enth)
+
+                        # Rule to link the liq flow to the distillate.
+                        # Setting the enthalpy to the
+                        # enth_mol_phase['Liq'] value from the state block
+                        def rule_distillate_enth(self, t):
+                            return self.control_volume.properties_out[t].\
+                                component(local_name)["Liq"]
+                        self.e_distillate_enth = Expression(
+                            self.flowsheet().time,
+                            rule=rule_distillate_enth)
+
+                        # add the reference and variable name to the reflux port
+                        self.reflux.add(self.e_reflux_enth, k)
+
+                        # add the reference and variable name to the
+                        # distillate port
+                        self.distillate.add(self.e_distillate_enth, k)
+
+                        # add the reference and variable name to the
+                        # distillate port
+                        self.vapor_outlet.add(self.e_vap_enth, k)
+                    elif "phase" in k:
+                        # assumes enth_mol_phase or enth_mass_phase.
+                        # This is an intensive property, you create a direct
+                        # reference irrespective of the reflux, distillate and
+                        # vap_outlet
+
+                        # Rule for vap flow
+                        if not member_list[k].is_indexed():
+                            var = self.control_volume.properties_out[:].\
+                                component(member_list[k].local_name)
+                        else:
+                            var = self.control_volume.properties_out[:].\
+                                component(member_list[k].local_name)[...]
+
+                        # add the reference and variable name to the reflux port
+                        self.reflux.add(Reference(var), k)
+
+                        # add the reference and variable name to the distillate port
+                        self.distillate.add(Reference(var), k)
+
+                        # add the reference and variable name to the
+                        # vapor outlet port
+                        self.vapor_outlet.add(Reference(var), k)
+                    else:
+                        raise Exception(
+                            "Unrecognized enthalpy state variable. "
+                            "Only total mixture enthalpy or enthalpy by "
+                            "phase are supported.")
 
     def initialize(self, solver=None, outlvl=None):
 
