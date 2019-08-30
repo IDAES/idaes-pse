@@ -15,14 +15,23 @@ Tests for Python code style.
 """
 import logging
 import os
+from pathlib import Path
 import subprocess
 
 _log = logging.getLogger(__name__)
 
-# we want to look at everything:
-# DIRS = ['idaes']
-# but for now we only do this:
-DIRS = ["idaes/dmf"]
+
+# The most stylish dirs in the project
+DIRS = [
+    str(p)
+    for p in (
+        Path("idaes/dmf"),
+        Path("apps/ddm-learning/alamo_python/alamopy"),
+        Path("apps/ddm-learning/ripe_python/ripe"),
+    )
+]
+
+
 STYLE_CHECK_CMD = "flake8"
 
 
