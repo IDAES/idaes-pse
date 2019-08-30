@@ -20,7 +20,7 @@ def test_doalamo_import():
     from alamopy import alamo
 
 
-@pytest.mark.skipif()
+@pytest.mark.nocircleci()
 def test_hasalamo():
     import alamopy 
     from alamopy import doalamo

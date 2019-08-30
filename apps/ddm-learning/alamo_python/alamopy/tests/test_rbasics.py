@@ -21,7 +21,7 @@ import numpy as np
 import alamopy.examples as examples
 
 
-@pytest.mark.skip()
+@pytest.mark.nocircleci()
 def test_basic():
     has_alamo_flag = alamopy.multos.has_alamo()
 
