@@ -13,49 +13,87 @@
 """
 Smoke tests, to make sure things are working at all.
 """
+import pytest
+import subprocess
 from alamopy import doalamo, almconfidence, almplot, wrapwriter
 from alamopy.multos import deletefile
 import numpy as np
-import examples
-
-def test_basic(**kwargs):
-
-	x = [[ 0.17361977, -0.44326123], [-0.30192964,  0.68955226],[-1.98112458, -0.75686176],[0.68299634,  0.65170551],[-1.45317364,  0.15018666],[ 1.56528782, -0.58159576] ,[-1.25868712, -0.78324622],[-1.12121003,  0.95724757] ,[ 1.2467326,  -0.65611797],[ 1.26489899, -0.45185251]] 
-	z = [-0.58978634828943055, -0.85834512885363479, 4.0241154669754113, 0.91057814668811488, 1.9147616212616931, 0.29103827202206878, 2.4290896722960778, 0.99199475534877579, 0.59688699266830847, 1.167850366995701]
-	xival = [[5,5], [2,2]]
-	zival = [5,2]
-
-	doalamo(x, z) #, xval=xival, zval=zival, mock=True)    
-	doalamo(x, z, mock=True, xlabels=["T", "V"], zlabels= ["P"])
-	doalamo(x, z, xval=xival, zval=zival, mock=True, lmo=5)
+from . import examples
 
 
-	ndata=10
-	x = np.random.uniform([-2,-1],[2,1],(ndata,2))
-	z = [0]*ndata
-	# specify simulator as examples.sixcamel
-	sim = examples.sixcamel
-	for i in range(ndata):
-	    z[i]=sim(x[i][0],x[i][1])
+@pytest.mark.skipif()
+def test_basic():
+    if bad_alamo:
+        return
+    x = [
+        [0.17361977, -0.44326123],
+        [-0.30192964, 0.68955226],
+        [-1.98112458, -0.75686176],
+        [0.68299634, 0.65170551],
+        [-1.45317364, 0.15018666],
+        [1.56528782, -0.58159576],
+        [-1.25868712, -0.78324622],
+        [-1.12121003, 0.95724757],
+        [1.2467326, -0.65611797],
+        [1.26489899, -0.45185251],
+    ]
+    z = [
+        -0.58978634828943055,
+        -0.85834512885363479,
+        4.0241154669754113,
+        0.91057814668811488,
+        1.9147616212616931,
+        0.29103827202206878,
+        2.4290896722960778,
+        0.99199475534877579,
+        0.59688699266830847,
+        1.167850366995701,
+    ]
+    xival = [[5, 5], [2, 2]]
+    zival = [5, 2]
 
-	# Use alamopy's python function wrapper to avoid using ALAMO's I/O format
-	almsim = wrapwriter(sim)
-	# Call alamo through the alamopy wrapper
-	res = doalamo(x,z,almname='cam6',monomialpower=(1,2,3,4,5,6), multi2power=(1,2), simulator=almsim, expandoutput=True,maxiter=20, mock=True)#,cvfun=True)
-	conf_inv = almconfidence(res)
+    doalamo(x, z)  # , xval=xival, zval=zival, mock=True)
+    doalamo(x, z, mock=True, xlabels=["T", "V"], zlabels=["P"])
+    doalamo(x, z, xval=xival, zval=zival, mock=True, lmo=5)
 
-	res = doalamo(x, z, xval = xival, zval = zival) #, expandoutput=True) #, mock=True, loo=True) #, xval=xival, zval=zival, mock=True, loo=True)    
+    ndata = 10
+    x = np.random.uniform([-2, -1], [2, 1], (ndata, 2))
+    z = [0] * ndata
+    # specify simulator as examples.sixcamel
+    sim = examples.sixcamel
+    for i in range(ndata):
+        z[i] = sim(x[i][0], x[i][1])
 
-	conf_inv = almconfidence(res)
-	print('Model: {}'.format(res['model']))
-	print('Confidence Intervals : {}'.format(conf_inv['conf_inv']))
-	almplot(res)
+    # Use alamopy's python function wrapper to avoid using ALAMO's I/O format
+    almsim = wrapwriter(sim)
+    # Call alamo through the alamopy wrapper
+    res = doalamo(
+        x,
+        z,
+        almname="cam6",
+        monomialpower=(1, 2, 3, 4, 5, 6),
+        multi2power=(1, 2),
+        simulator=almsim,
+        expandoutput=True,
+        maxiter=20,
+        mock=True,
+    )  # ,cvfun=True)
+    conf_inv = almconfidence(res)
 
-	try:
-		deletefile("logscratch")
-		deletfile("../cam6")
-		deletefile("../cam6alm.py")
-	except:
-		pass
+    res = doalamo(
+        x, z, xval=xival, zval=zival
+    )  # , expandoutput=True) #, mock=True, loo=True) #, xval=xival, zval=zival,
+    # mock=True, loo=True)
 
-test_basic()
+    conf_inv = almconfidence(res)
+    print("Model: {}".format(res["model"]))
+    print("Confidence Intervals : {}".format(conf_inv["conf_inv"]))
+    almplot(res)
+
+    try:
+        deletefile("logscratch")
+        deletefile("../cam6")
+        deletefile("../cam6alm.py")
+    except:
+        pass
+

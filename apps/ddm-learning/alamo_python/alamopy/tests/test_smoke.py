@@ -13,23 +13,23 @@
 """
 Smoke tests, to make sure things are working at all.
 """
+import pytest
 
 
 def test_doalamo_import():
     from alamopy import alamo
 
 
+@pytest.mark.skipif()
 def test_hasalamo():
-	import alamopy 
-	from alamopy import doalamo
-	has_alamo_flag = alamopy.multos.has_alamo()
-	if has_alamo_flag:
-		alamopy.debug['has_alamo'] = True
-	else:
-		alamopy.debug['has_alamo'] = False
+    import alamopy 
+    from alamopy import doalamo
+    has_alamo_flag = alamopy.multos.has_alamo()
+    if has_alamo_flag:
+        alamopy.debug['has_alamo'] = True
+    else:
+        alamopy.debug['has_alamo'] = False
 
-	version = alamopy.get_alamo_version()
-	print("ALAMO Version: %s"% version)
-
-
+    version = alamopy.get_alamo_version()
+    print("ALAMO Version: %s"% version)
 
