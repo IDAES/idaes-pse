@@ -22,8 +22,7 @@ import logging
 from pyomo.environ import Param, NonNegativeReals, Set
 
 # Import IDAES cores
-from idaes.core import declare_process_block_class, MaterialBalanceType, \
-                       EnergyBalanceType, MomentumBalanceType
+from idaes.core import declare_process_block_class
 from idaes.core.util.misc import extract_data
 
 from .ideal_prop_pack_VLE import IdealParameterData
