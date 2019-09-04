@@ -120,6 +120,9 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
         cellView.hideTools()
       }
     })
+    this.paper.on("element:contextmenu", function(cellView, evt) {
+      cellView.model.rotate(90)
+    })
   }
 
   /**
