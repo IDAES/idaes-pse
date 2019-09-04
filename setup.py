@@ -33,16 +33,15 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-top_dir = Path(__file__).parent
-alamopy_dir = top_dir / "apps" / "ddm-learning" / "alamo_python"
-ripe_dir = top_dir / "apps" / "ddm-learning" / "ripe_python"
+alamopy_dir = Path(".") / "apps" / "ddm-learning" / "alamo_python"
+ripe_dir = Path(".") / "apps" / "ddm-learning" / "ripe_python"
 
 
 def find_all_packages():
     test_patterns = ["*.tests", "*.tests.*", "tests.*", "tests"]
     result = []
-    for pkgdir in (top_dir, alamopy_dir, ripe_dir):
-        result.extend(find_packages(pkgdir))
+    for pkgdir in (".", alamopy_dir, ripe_dir):
+        result.extend(find_packages(str(pkgdir)))
     return result
 
 
