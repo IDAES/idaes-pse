@@ -13,8 +13,6 @@
 """
 Standard IDAES Feed block.
 """
-from __future__ import division
-
 import logging
 
 # Import Pyomo libraries
@@ -26,6 +24,7 @@ from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Andrew Lee"
 
@@ -142,3 +141,8 @@ see property package for documentation.}"""))
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete.'.format(blk.name))
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+                {"Outlet": self.outlet},
+                time_point=time_point)

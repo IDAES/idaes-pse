@@ -13,7 +13,6 @@
 """
 This module contains classes for reaction blocks and reaction parameter blocks.
 """
-from __future__ import division
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -40,7 +39,7 @@ __all__ = ['ReactionBlockData',
 
 
 class ReactionParameterBlock(ProcessBlockData,
-                            property_meta.HasPropertyClassMetadata):
+                             property_meta.HasPropertyClassMetadata):
     """
         This is the base class for reaction parameter blocks. These are blocks
         that contain a set of parameters associated with a specific reaction
@@ -153,6 +152,12 @@ class ReactionBlockBase(ProcessBlock):
                                   ' initialize method. Please contact '
                                   'the reaction package developer'
                                   .format(self.name))
+
+    def report(self, index=(0), true_state=False,
+               dof=False, ostream=None, prefix=""):
+        raise NotImplementedError(
+                """The current Reaction Package has not implemented a report
+                method. Please contact the package developer about this.""")
 
 
 class ReactionBlockDataBase(ProcessBlockData):

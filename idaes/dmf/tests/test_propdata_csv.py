@@ -15,16 +15,23 @@ Test CSV merging for property data
 """
 # stdlib
 import logging
+import sys
+from io import StringIO
+
 # third-party
 import pytest
-from six import StringIO
+
 # local
 from idaes.dmf.propdata import AddedCSVColumnError
 from idaes.dmf.propdata import PropertyData as PropData
+
 # for testing
 from .util import init_logging
 
-__author__ = 'Dan Gunter <dkgunter@lbl.gov>'
+__author__ = "Dan Gunter <dkgunter@lbl.gov>"
+
+if sys.platform.startswith("win"):
+    pytest.skip("skipping DMF tests on Windows", allow_module_level=True)
 
 init_logging()
 _log = logging.getLogger(__name__)
@@ -34,46 +41,47 @@ _log = logging.getLogger(__name__)
 # ------------------
 
 test_data = {
-    'main': 'Num,State (units 1),Typeof1 Error,Prop (units 2),Typeof2 Error\n'
-            '1, 1.0, 0, 100.0, 0.1\n'
-            '2, 2.0, 0, 200.0, 0.2\n'
-            '3, 3.0, 0, 300.0, 0.3\n',
-    'same': ['Num,State (units 1),Typeof1 Error,Prop (units 2),Typeof2 Error\n'
-             '4, 4.0, 0, 400.0, 0.4\n'
-             '5, 5.0, 0, 500.0, 0.5\n',
-             'Num,State (units 1),Typeof1 Error,Prop (units 2),Typeof2 Error\n'
-             '6, 6.0, 0, 600.0, 0.6\n'
-             '7, 7.0, 0, 700.0, 0.7\n'],
-    'missing': 'Num,State (units 1),Typeof1 Error\n'
-            '4, 4.0, 0\n'
-            '5, 5.0, 0\n',
-    'extra': 'Num,State (units 1),Typeof1 Error,Prop (units 2),Typeof2 Error,'
-             'PropB (units B2), Typeof3 Error\n'
-            '4, 4.0, 0, 400.0, 0.3, -400.0, -0.4\n'
-            '5, 5.0, 0, 500.0, 0.5, -500.0, -0.5\n',
-    'diff': 'Num,HELLO (units 1),Typeof1 Error,WORLD (units 2),Typeof2 Error\n'
-            '4, 4.0, 0, 400.0, 0.4\n'
-            '5, 5.0, 0, 500.0, 0.5\n',
-    'alt':  'Num,State (units 1),Typeof1 Error,PropB (units 2),Typeof1B Error\n'
-            '4, 4.0, 0, 400.0, 0.4\n'
-            '5, 5.0, 0, 500.0, 0.5\n',
-    'more1': 'Num,State (units 1),Typeof1 Error,Prop (units 2),Typeof2 Error,'
-             'PropB (units 2),Typeof1B Error\n'
-             '4, 4.0, 0, 400.0, 0.4, -400.0, -0.4\n'
-             '5, 5.0, 0, 500.0, 0.5, -500.0, -0.5\n',
-    'more2': 'Num,State (units 1),Typeof1 Error,'
-             'PropB (units 2),Typeof1B Error,'
-             'PropC (units 2),Typeof2B Error,'
-             'PropD (units 2),Typeof3B Error\n'
-             '6, 6.0, 0, -600.0, 0.6, 60.0, 0.6, -60.0, -0.6\n'
-             '7, 7.0, 0, -700.0, 0.7, 70.0, 0.7, -70.0, -0.7\n',
+    "main": "Num,State (units 1),Typeof1 Error,Prop (units 2),Typeof2 Error\n"
+    "1, 1.0, 0, 100.0, 0.1\n"
+    "2, 2.0, 0, 200.0, 0.2\n"
+    "3, 3.0, 0, 300.0, 0.3\n",
+    "same": [
+        "Num,State (units 1),Typeof1 Error,Prop (units 2),Typeof2 Error\n"
+        "4, 4.0, 0, 400.0, 0.4\n"
+        "5, 5.0, 0, 500.0, 0.5\n",
+        "Num,State (units 1),Typeof1 Error,Prop (units 2),Typeof2 Error\n"
+        "6, 6.0, 0, 600.0, 0.6\n"
+        "7, 7.0, 0, 700.0, 0.7\n",
+    ],
+    "missing": "Num,State (units 1),Typeof1 Error\n" "4, 4.0, 0\n" "5, 5.0, 0\n",
+    "extra": "Num,State (units 1),Typeof1 Error,Prop (units 2),Typeof2 Error,"
+    "PropB (units B2), Typeof3 Error\n"
+    "4, 4.0, 0, 400.0, 0.3, -400.0, -0.4\n"
+    "5, 5.0, 0, 500.0, 0.5, -500.0, -0.5\n",
+    "diff": "Num,HELLO (units 1),Typeof1 Error,WORLD (units 2),Typeof2 Error\n"
+    "4, 4.0, 0, 400.0, 0.4\n"
+    "5, 5.0, 0, 500.0, 0.5\n",
+    "alt": "Num,State (units 1),Typeof1 Error,PropB (units 2),Typeof1B Error\n"
+    "4, 4.0, 0, 400.0, 0.4\n"
+    "5, 5.0, 0, 500.0, 0.5\n",
+    "more1": "Num,State (units 1),Typeof1 Error,Prop (units 2),Typeof2 Error,"
+    "PropB (units 2),Typeof1B Error\n"
+    "4, 4.0, 0, 400.0, 0.4, -400.0, -0.4\n"
+    "5, 5.0, 0, 500.0, 0.5, -500.0, -0.5\n",
+    "more2": "Num,State (units 1),Typeof1 Error,"
+    "PropB (units 2),Typeof1B Error,"
+    "PropC (units 2),Typeof2B Error,"
+    "PropD (units 2),Typeof3B Error\n"
+    "6, 6.0, 0, -600.0, 0.6, 60.0, 0.6, -60.0, -0.6\n"
+    "7, 7.0, 0, -700.0, 0.7, 70.0, 0.7, -70.0, -0.7\n",
 }
 
 
 @pytest.fixture
 def pd():
     # create main propertydata obj
-    return PropData.from_csv(StringIO(test_data['main']), 1)
+    return PropData.from_csv(StringIO(test_data["main"]), 1)
+
 
 # -----
 # Tests
@@ -81,7 +89,7 @@ def pd():
 
 
 def test_same(pd):
-    for chunk in test_data['same']:
+    for chunk in test_data["same"]:
         n = pd.num_rows  # previous length
 
         # add the new data
@@ -92,77 +100,72 @@ def test_same(pd):
 
         # Check that values match
         df = pd.values_dataframe()
-        print('@@ got dataframe:\n{}'.format(df))
+        print("@@ got dataframe:\n{}".format(df))
         for name in pd.names():
             pd_values = list(df[name])[n:]  # get new values
-            multp = 1.0 if name == 'State' else 100.0
+            multp = 1.0 if name == "State" else 100.0
             for i, value in enumerate(pd_values):
                 assert value == multp * (i + n + 1)
 
 
 def test_extra_strict(pd):
     with pytest.raises(AddedCSVColumnError) as einfo:
-        pd.add_csv(StringIO(test_data['extra']), strict=True)
-    print('Extra columns gave expected error:\n(MSG) {}'
-          .format(einfo.value))
+        pd.add_csv(StringIO(test_data["extra"]), strict=True)
+    print("Extra columns gave expected error:\n(MSG) {}".format(einfo.value))
 
 
 def test_extra(pd):
-    pd.add_csv(StringIO(test_data['extra']))
-    assert 'PropB' in pd.names()
+    pd.add_csv(StringIO(test_data["extra"]))
+    assert "PropB" in pd.names()
 
 
 def test_missing_strict(pd):
     with pytest.raises(AddedCSVColumnError) as einfo:
-        pd.add_csv(StringIO(test_data['missing']), strict=True)
-    print('Missing columns gave expected error:\n(MSG) {}'
-          .format(einfo.value))
+        pd.add_csv(StringIO(test_data["missing"]), strict=True)
+    print("Missing columns gave expected error:\n(MSG) {}".format(einfo.value))
 
 
 def test_missing(pd):
-    n = pd.add_csv(StringIO(test_data['missing']))
-    assert n == 0, 'Adding no new columns should have returned 0'
+    n = pd.add_csv(StringIO(test_data["missing"]))
+    assert n == 0, "Adding no new columns should have returned 0"
 
 
 def test_different_strict(pd):
     with pytest.raises(AddedCSVColumnError) as einfo:
-        pd.add_csv(StringIO(test_data['diff']), strict=True)
-    print('Different columns gave expected error:\n(MSG) {}'
-          .format(einfo.value))
+        pd.add_csv(StringIO(test_data["diff"]), strict=True)
+    print("Different columns gave expected error:\n(MSG) {}".format(einfo.value))
 
 
 def test_different(pd):
     with pytest.raises(AddedCSVColumnError) as einfo:
-        pd.add_csv(StringIO(test_data['diff']))
-    print('Different columns gave expected error:\n(MSG) {}'
-          .format(einfo.value))
+        pd.add_csv(StringIO(test_data["diff"]))
+    print("Different columns gave expected error:\n(MSG) {}".format(einfo.value))
 
 
 def test_alt_strict(pd):
     with pytest.raises(AddedCSVColumnError) as einfo:
-        pd.add_csv(StringIO(test_data['alt']), strict=True)
-    print('Different columns gave expected error:\n(MSG) {}'
-          .format(einfo.value))
+        pd.add_csv(StringIO(test_data["alt"]), strict=True)
+    print("Different columns gave expected error:\n(MSG) {}".format(einfo.value))
 
 
 def test_alt(pd):
-    assert 'PropB' not in pd.names()
-    n = pd.add_csv(StringIO(test_data['alt']))
-    assert n == 2, 'Should have returned 2 rows added'
-    assert 'PropB' in pd.names()
+    assert "PropB" not in pd.names()
+    n = pd.add_csv(StringIO(test_data["alt"]))
+    assert n == 2, "Should have returned 2 rows added"
+    assert "PropB" in pd.names()
 
 
 def test_more(pd):
-    assert 'PropB' not in pd.names()
+    assert "PropB" not in pd.names()
     pd_rows = pd.num_rows
-    n = pd.add_csv(StringIO(test_data['more1']))
-    assert n == 2, 'Should have returned 2 rows added'
+    n = pd.add_csv(StringIO(test_data["more1"]))
+    assert n == 2, "Should have returned 2 rows added"
     assert pd.num_rows == pd_rows + 2
-    assert 'PropB' in pd.names()
-    assert 'PropC' not in pd.names()
-    n = pd.add_csv(StringIO(test_data['more2']))
-    assert n == 2, 'Should have returned 2 rows added'
+    assert "PropB" in pd.names()
+    assert "PropC" not in pd.names()
+    n = pd.add_csv(StringIO(test_data["more2"]))
+    assert n == 2, "Should have returned 2 rows added"
     assert pd.num_rows == pd_rows + 4
-    for ltr in 'C', 'D':
-        label = 'Prop' + ltr
+    for ltr in "C", "D":
+        label = "Prop" + ltr
         assert label in pd.names()

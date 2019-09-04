@@ -16,11 +16,30 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import subprocess
 import sys
 
 # For importing from idaes.<modules..>
 sys.path.insert(0, os.path.abspath('..'))
 import idaes.ver
+
+# If running on readthedocs, then run `make apidoc tutorials` to at least
+# generate static versions of the tutorial notebooks.
+if os.environ.get('READTHEDOCS', None):
+    sys.stdout.write('Running `make apidoc tutorials`\n')
+    sys.stdout.flush()
+    try:
+        ret = subprocess.call('make apidoc tutorials', shell=True)
+        if ret < 0:
+            sys.stderr.write(f'make failed: {ret}\n')
+            sys.stderr.flush()
+        else:
+            sys.stdout.write('Done with `make apidoc tutorials`\n')
+            sys.stdout.flush()
+    except OSError as ose:
+        sys.stderr.write(f'make execution failed: {ose}\n')
+        sys.stderr.flush()
+
 
 # For Read the Docs theme
 import sphinx_rtd_theme
@@ -369,3 +388,4 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
+

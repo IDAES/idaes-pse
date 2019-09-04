@@ -15,12 +15,11 @@ This module contains the base class for constructing flowsheet models in the
 IDAES modeling framework.
 """
 
-from __future__ import division, print_function
-
 import logging
 
 import pyomo.environ as pe
 from pyomo.dae import ContinuousSet
+from pyomo.network import Arc
 from pyomo.common.config import ConfigValue, In
 
 from idaes.core import (ProcessBlockData, declare_process_block_class,
@@ -28,7 +27,8 @@ from idaes.core import (ProcessBlockData, declare_process_block_class,
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_time_domain,
                                     list_of_floats)
-from idaes.core.util.exceptions import ConfigurationError, DynamicError
+from idaes.core.util.exceptions import DynamicError
+from idaes.core.util.tables import create_stream_table_dataframe
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -148,6 +148,39 @@ within this flowsheet if not otherwise specified,
                                  'correct this, add a model_check method to '
                                  'the associated unit model class'
                                  .format(o.name))
+
+    def stream_table(self, true_state=False, time_point=0, orient='columns'):
+        """
+        Method to generate a stream table by iterating over all Arcs in the
+        flowsheet.
+
+        Args:
+            true_state : whether the state variables (True) or display
+                         variables (False, default) from the StateBlocks should
+                         be used in the stream table.
+            time_point : point in the time domain at which to create stream
+                         table (default = 0)
+            orient : whether stream should be shown by columns ("columns") or
+                     rows ("index")
+
+        Returns:
+            A pandas dataframe containing stream table information
+        """
+        dict_arcs = {}
+
+        for a in self.component_objects(ctype=Arc, descend_into=False):
+            dict_arcs[a.local_name] = a
+
+        return create_stream_table_dataframe(dict_arcs,
+                                             time_point=time_point,
+                                             orient=orient,
+                                             true_state=true_state)
+
+    def _get_stream_table_contents(self, time_point=0):
+        """
+        Calls stream_table method and returns result
+        """
+        return self.stream_table(time_point)
 
     def _setup_dynamics(self):
         # Look for parent flowsheet

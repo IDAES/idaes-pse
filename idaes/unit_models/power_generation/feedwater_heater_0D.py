@@ -33,11 +33,12 @@ from pyomo.environ import SolverFactory, TransformationFactory, Var, value
 from pyomo.opt import TerminationCondition
 from pyomo.network import Arc
 
-from idaes.core import declare_process_block_class, UnitModelBlockData
+from idaes.core import (declare_process_block_class, UnitModelBlockData,
+                        MaterialBalanceType)
 from idaes.unit_models.heat_exchanger import HeatExchangerData
 from idaes.unit_models import Mixer, MomentumMixingType, HeatExchanger
 from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
 from idaes.core.util.config import is_physical_parameter_block
 
@@ -190,6 +191,7 @@ class FWH0DData(UnitModelBlockData):
                 "property_package":config.property_package,
                 "property_package_args":config.property_package_args,
                 "momentum_mixing_type":MomentumMixingType.none,
+                "material_balance_type":MaterialBalanceType.componentTotal,
                 "inlet_list":["steam", "drain"]}
             self.drain_mix = Mixer(default=mix_cfg)
             @self.drain_mix.Constraint(self.drain_mix.flowsheet().config.time)

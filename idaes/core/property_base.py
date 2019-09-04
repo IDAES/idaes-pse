@@ -13,10 +13,15 @@
 """
 This module contains classes for property blocks and property parameter blocks.
 """
-from __future__ import division
+
+import sys
 
 # Import Pyomo libraries
+from pyomo.environ import value
+from pyomo.core.base.var import _VarData
+from pyomo.core.base.expression import _ExpressionData
 from pyomo.common.config import ConfigBlock, ConfigValue, In
+from pyomo.core.base.misc import tabular_writer
 
 # Import IDAES cores
 from idaes.core.process_block import ProcessBlock
@@ -28,6 +33,10 @@ from idaes.core.util.exceptions import (BurntToast,
                                         PropertyNotSupportedError,
                                         PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              number_variables,
+                                              number_activated_constraints,
+                                              number_activated_blocks)
 
 # Some more information about this module
 __author__ = "Andrew Lee, John Eslick"
@@ -38,7 +47,7 @@ __all__ = ['StateBlockData',
 
 
 class PhysicalParameterBlock(ProcessBlockData,
-                            property_meta.HasPropertyClassMetadata):
+                             property_meta.HasPropertyClassMetadata):
     """
         This is the base class for thermophysical parameter blocks. These are
         blocks that contain a set of parameters associated with a specific
@@ -88,6 +97,100 @@ class StateBlock(ProcessBlock):
                                   ' initialize method. Please contact '
                                   'the property package developer'
                                   .format(self.name))
+
+    def report(self, index=(0), true_state=False,
+               dof=False, ostream=None, prefix=""):
+        """
+        Default report method for StateBlocks. Returns a Block report populated
+        with either the display or state variables defined in the
+        StateBlockData class.
+
+        Args:
+            index : tuple of Block indices indicating which point in time (and
+                    space if applicable) to report state at.
+            true_state : whether to report the display variables (False
+                    default) or the actual state variables (True)
+            dof : whether to show local degrees of freedom in the report
+                    (default=False)
+            ostream : output stream to write report to
+            prefix : string to append to the beginning of all output lines
+
+        Returns:
+            Printed output to ostream
+        """
+
+        if ostream is None:
+            ostream = sys.stdout
+
+        # Get DoF and model stats
+        if dof:
+            dof_stat = degrees_of_freedom(self[index])
+            nv = number_variables(self[index])
+            nc = number_activated_constraints(self[index])
+            nb = number_activated_blocks(self[index])
+
+        # Create stream table
+        if true_state:
+            disp_dict = self[index].define_state_vars()
+        else:
+            disp_dict = self[index].define_display_vars()
+
+        stream_attributes = {}
+
+        for k in disp_dict:
+            for i in disp_dict[k]:
+                if i is None:
+                    stream_attributes[k] = disp_dict[k][i]
+                else:
+                    stream_attributes[k+" "+i] = disp_dict[k][i]
+
+        # Write output
+        max_str_length = 84
+        tab = " "*4
+        ostream.write("\n"+"="*max_str_length+"\n")
+
+        lead_str = f"{prefix}State : {self.name}"
+        trail_str = f"Index: {index}"
+        mid_str = " "*(max_str_length-len(lead_str)-len(trail_str))
+        ostream.write(lead_str+mid_str+trail_str)
+
+        if dof:
+            ostream.write("\n"+"="*max_str_length+"\n")
+            ostream.write(f"{prefix}{tab}Local Degrees of Freedom: {dof_stat}")
+            ostream.write('\n')
+            ostream.write(f"{prefix}{tab}Total Variables: {nv}{tab}"
+                          f"Activated Constraints: {nc}{tab}"
+                          f"Activated Blocks: {nb}")
+
+        ostream.write("\n"+"-"*max_str_length+"\n")
+        ostream.write(f"{prefix}{tab}State Report")
+
+        if any(isinstance(v, _VarData) for k, v in stream_attributes.items()):
+            ostream.write("\n"*2)
+            ostream.write(f"{prefix}{tab}Variables: \n\n")
+            tabular_writer(
+                    ostream,
+                    prefix+tab,
+                    ((k, v) for k, v in stream_attributes.items()
+                        if isinstance(v, _VarData)),
+                    ("Value", "Fixed", "Bounds"),
+                    lambda k, v: ["{:#.5g}".format(value(v)),
+                                  v.fixed,
+                                  v.bounds])
+
+        if any(isinstance(v, _ExpressionData) for
+               k, v in stream_attributes.items()):
+            ostream.write("\n"*2)
+            ostream.write(f"{prefix}{tab}Expressions: \n\n")
+            tabular_writer(
+                    ostream,
+                    prefix+tab,
+                    ((k, v) for k, v in stream_attributes.items()
+                        if isinstance(v, _ExpressionData)),
+                    ("Value",),
+                    lambda k, v: ["{:#.5g}".format(value(v))])
+
+        ostream.write("\n"+"="*max_str_length+"\n")
 
 
 class StateBlockData(ProcessBlockData):
@@ -149,8 +252,16 @@ should be constructed in this state block,
 
     def define_port_members(self):
         """
-        Method used to specific components to populate Ports with. Defaults to
+        Method used to specify components to populate Ports with. Defaults to
         define_state_vars, and developers should overload as required.
+        """
+        return self.define_state_vars()
+
+    def define_display_vars(self):
+        """
+        Method used to specify components to use to generate stream tables and
+        other outputs. Defaults to define_state_vars, and developers should
+        overload as required.
         """
         return self.define_state_vars()
 
@@ -191,7 +302,7 @@ should be constructed in this state block,
                                   ' get_energy_flow_terms method. Please '
                                   'contact the property package developer.')
 
-    def get_enthalpy_density_terms(self, *args, **kwargs):
+    def get_energy_density_terms(self, *args, **kwargs):
         """
         Method which returns a valid expression for enthalpy density to use in
         the energy balances.

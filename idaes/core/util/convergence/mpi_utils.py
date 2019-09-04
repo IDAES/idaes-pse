@@ -18,7 +18,7 @@ friendlier interface to MPI (through mpi4py). They help
 allocate local tasks/data from global tasks/data and gather
 global data (from all processors).
 
-Although general, this module was only implemented to 
+Although general, this module was only implemented to
 work with the convergence evaluation framework. More work
 is needed to make this appropriate for general use.
 """
@@ -59,11 +59,11 @@ class MPIInterface:
     @property
     def comm(self):
         return self._comm
-    
+
     @property
     def rank(self):
         return self._rank
-    
+
     @property
     def size(self):
         return self._size
@@ -119,7 +119,7 @@ class ParallelTaskManager:
             local_data = OrderedDict()
             assert (len(global_data) == self._n_total_tasks)
             idx = 0
-            for k,v in six.iteritems(global_data):
+            for k,v in global_data.items():
                 if idx in self._local_map:
                     local_data[k] = v
                 idx += idx

@@ -13,24 +13,27 @@
 """
 Base for IDAES process model objects.
 """
-from __future__ import absolute_import  # disable implicit relative imports
-from __future__ import division  # No integer division
-from __future__ import print_function  # Python 3 style print
 
+import sys
 import logging
+import textwrap
 
 from pyomo.core.base.block import _BlockData
-from pyomo.environ import Block
+from pyomo.core.base.misc import tabular_writer
+from pyomo.environ import Block, value
 from pyomo.gdp import Disjunct
 from pyomo.common.config import ConfigBlock
 from pyutilib.enum import Enum
 
 from idaes.core.process_block import declare_process_block_class
-from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError,
+from idaes.core.util.exceptions import (ConfigurationError,
                                         DynamicError,
                                         PropertyPackageError)
-from idaes.core.util.misc import add_object_reference
+from idaes.core.util.tables import stream_table_dataframe_to_string
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              number_variables,
+                                              number_activated_constraints,
+                                              number_activated_blocks)
 
 
 # Some more inforation about this module
@@ -217,6 +220,108 @@ class ProcessBlockData(_BlockData):
                         obj.flowsheet().config.time.first(), ...].unfix()
             except AttributeError:
                 pass
+
+    def report(self, time_point=0, dof=False, ostream=None, prefix=""):
+
+        time_point = float(time_point)
+
+        if ostream is None:
+            ostream = sys.stdout
+
+        # Get DoF and model stats
+        if dof:
+            dof_stat = degrees_of_freedom(self)
+            nv = number_variables(self)
+            nc = number_activated_constraints(self)
+            nb = number_activated_blocks(self)
+
+        # Get components to report in performance section
+        performance = self._get_performance_contents(time_point=time_point)
+
+        # Get stream table
+        stream_table = self._get_stream_table_contents(time_point=time_point)
+
+        # Set model type output
+        if hasattr(self, "is_flowsheet") and self.is_flowsheet:
+            model_type = "Flowsheet"
+        else:
+            model_type = "Unit"
+
+        # Write output
+        max_str_length = 84
+        tab = " "*4
+        ostream.write("\n"+"="*max_str_length+"\n")
+
+        lead_str = f"{prefix}{model_type} : {self.name}"
+        trail_str = f"Time: {time_point}"
+        mid_str = " "*(max_str_length-len(lead_str)-len(trail_str))
+        ostream.write(lead_str+mid_str+trail_str)
+
+        if dof:
+            ostream.write("\n"+"="*max_str_length+"\n")
+            ostream.write(f"{prefix}{tab}Local Degrees of Freedom: {dof_stat}")
+            ostream.write('\n')
+            ostream.write(f"{prefix}{tab}Total Variables: {nv}{tab}"
+                          f"Activated Constraints: {nc}{tab}"
+                          f"Activated Blocks: {nb}")
+
+        if performance is not None:
+            ostream.write("\n"+"-"*max_str_length+"\n")
+            ostream.write(f"{prefix}{tab}Unit Performance")
+            ostream.write("\n"*2)
+            if "vars" in performance.keys() and len(performance["vars"]) > 0:
+                ostream.write(f"{prefix}{tab}Variables: \n\n")
+
+                tabular_writer(
+                        ostream,
+                        prefix+tab,
+                        ((k, v) for k, v in performance["vars"].items()),
+                        ("Value", "Fixed", "Bounds"),
+                        lambda k, v: [
+                                "{:#.5g}".format(value(v)),
+                                v.fixed,
+                                v.bounds])
+
+            if "exprs" in performance.keys() and len(performance["exprs"]) > 0:
+                ostream.write("\n")
+                ostream.write(f"{prefix}{tab}Expressions: \n\n")
+
+                tabular_writer(
+                        ostream,
+                        prefix+tab,
+                        ((k, v) for k, v in performance["exprs"].items()),
+                        ("Value",),
+                        lambda k, v: [
+                                "{:#.5g}".format(value(v))])
+
+            if ("params" in performance.keys() and
+                    len(performance["params"]) > 0):
+                ostream.write("\n")
+                ostream.write(f"{prefix}{tab}Parameters: \n\n")
+
+                tabular_writer(
+                        ostream,
+                        prefix+tab,
+                        ((k, v) for k, v in performance["params"].items()),
+                        ("Value", "Mutable"),
+                        lambda k, v: [value(v),
+                                      not v.is_constant()])
+
+        if stream_table is not None:
+            ostream.write("\n"+"-"*max_str_length+"\n")
+            ostream.write(f"{prefix}{tab}Stream Table")
+            ostream.write('\n')
+            ostream.write(
+                    textwrap.indent(
+                            stream_table_dataframe_to_string(stream_table),
+                            prefix+tab))
+        ostream.write("\n"+"="*max_str_length+"\n")
+
+    def _get_performance_contents(self, time_point):
+        return None
+
+    def _get_stream_table_contents(self, time_point):
+        return None
 
     def _setup_dynamics(self):
         """

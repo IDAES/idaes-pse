@@ -27,12 +27,11 @@ from idaes.core import (declare_process_block_class, UnitModelBlockData,
                         EnergyBalanceType, MomentumBalanceType,
                         MaterialBalanceType, useDefault)
 from idaes.unit_models import (Separator, Mixer, SplittingType,
-    EnergySplittingType, MomentumMixingType)
+                               EnergySplittingType, MomentumMixingType)
 from idaes.unit_models.power_generation import (
     TurbineInletStage, TurbineStage, TurbineOutletStage, SteamValve)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util import from_json, to_json, StoreSpec
-from idaes.ui.report import degrees_of_freedom
 from idaes.core.util.misc import copy_port_values as _set_port
 from pyomo.common.config import ConfigBlock, ConfigValue, In, ConfigList
 from idaes.core.util.config import is_physical_parameter_block
@@ -63,6 +62,18 @@ calculated for the resulting mixed stream,
 **Valid values:** {
 **True** - calculate phase equilibrium in mixed stream,
 **False** - do not calculate equilibrium in mixed stream.}"""))
+    config.declare("material_balance_type", ConfigValue(
+        default=MaterialBalanceType.componentTotal,
+        domain=In(MaterialBalanceType),
+        description="Material balance construction flag",
+        doc="""Indicates what type of mass balance should be constructed,
+**default** - MaterialBalanceType.componentTotal`.
+**Valid values:** {
+**MaterialBalanceType.none** - exclude material balances,
+**MaterialBalanceType.componentPhase** - use phase component balances,
+**MaterialBalanceType.componentTotal** - use total component balances,
+**MaterialBalanceType.elementTotal** - use total element balances,
+**MaterialBalanceType.total** - use total material balance.}"""))
     config.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -167,6 +178,7 @@ class TurbineMultistageData(UnitModelBlockData):
             "dynamic":config.dynamic,
             "has_holdup":config.has_holdup,
             "has_phase_equilibrium":config.has_phase_equilibrium,
+            "material_balance_type":config.material_balance_type,
             "property_package":config.property_package,
             "property_package_args":config.property_package_args,
         }
@@ -394,7 +406,6 @@ class TurbineMultistageData(UnitModelBlockData):
             ideal_separation=False,
             num_outlets=no,
             energy_split_basis=EnergySplittingType.equal_molar_enthalpy)
-        del s_cfg["has_phase_equilibrium"]
         return s_cfg
 
     def _mix_cfg(self, unit_cfg, ni=2):
@@ -409,7 +420,6 @@ class TurbineMultistageData(UnitModelBlockData):
         m_cfg.update(
             num_inlets=ni,
             momentum_mixing_type=MomentumMixingType.minimize_and_equality)
-        del m_cfg["has_phase_equilibrium"]
         return m_cfg
 
     def throttle_cv_fix(self, value):

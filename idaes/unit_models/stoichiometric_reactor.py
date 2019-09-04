@@ -13,7 +13,6 @@
 """
 Standard IDAES STOICHIOMETRIC reactor model
 """
-from __future__ import division
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -63,8 +62,8 @@ class StoichiometricReactorData(UnitModelBlockData):
 **default** - EnergyBalanceType.enthalpyTotal.
 **Valid values:** {
 **EnergyBalanceType.none** - exclude energy balances,
-**EnergyBalanceType.enthalpyTotal** - single ethalpy balance for material,
-**EnergyBalanceType.enthalpyPhase** - ethalpy balances for each phase,
+**EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+**EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
     CONFIG.declare("momentum_balance_type", ConfigValue(
@@ -185,9 +184,6 @@ see reaction package for documentation.}"""))
 
         # Add performance equations
         add_object_reference(self,
-                             "rate_reaction_idx_ref",
-                             self.config.reaction_package.rate_reaction_idx)
-        add_object_reference(self,
                              "rate_reaction_extent",
                              self.control_volume.rate_reaction_extent)
 
@@ -198,3 +194,15 @@ see reaction package for documentation.}"""))
         if (self.config.has_pressure_change is True and
                 self.config.momentum_balance_type != 'none'):
             add_object_reference(self, "deltaP", self.control_volume.deltaP)
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        for r in self.config.reaction_package.rate_reaction_idx:
+            var_dict[f"Reaction Extent [{r}]"] = \
+                self.rate_reaction_extent[time_point, r]
+        if hasattr(self, "heat_duty"):
+            var_dict["Heat Duty"] = self.heat_duty[time_point]
+        if hasattr(self, "deltaP"):
+            var_dict["Pressure Change"] = self.deltaP[time_point]
+
+        return {"vars": var_dict}

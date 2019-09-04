@@ -25,7 +25,6 @@ from typing import Generator
 
 # third-party
 import pendulum
-import six
 from traitlets import HasTraits, default, observe
 from traitlets import Unicode
 import yaml
@@ -35,7 +34,7 @@ from . import errors
 from . import resource
 from . import resourcedb
 from . import workspace
-from .util import mkdir_p
+from .util import mkdir_p, yaml_load
 
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
@@ -130,11 +129,11 @@ class DMFConfig(object):
 
     def _parse(self, fp):
         try:
-            y = yaml.load(fp)
+            y = yaml_load(fp)
         except Exception as err:
             raise ValueError(err)
         if y:
-            for k, v in six.iteritems(y):
+            for k, v in y.items():
                 if k in self._keys:
                     self.c[k] = v
 
@@ -458,7 +457,7 @@ class DMF(workspace.Workspace, HasTraits):
         else:
             return self._postproc_resource(item)
 
-    def find(self, filter_dict=None, id_only=False, re_flags=0):
+    def find(self, filter_dict=None, name=None, id_only=False, re_flags=0):
         """Find and return resources matching the filter.
 
         The filter syntax is a subset of the MongoDB filter syntax.
@@ -498,6 +497,8 @@ class DMF(workspace.Workspace, HasTraits):
 
         Args:
             filter_dict (dict): Search filter.
+            name (str): If present, add {'aliases': [<name>]} to filter_dict. This
+                        is syntactic sugar for a common case.
             id_only (bool): If true, return only the identifier of each
                 resource; otherwise a Resource object is returned.
             re_flags (int): Flags for regex filters
@@ -505,12 +506,33 @@ class DMF(workspace.Workspace, HasTraits):
         Returns:
             (list of int|Resource) Depending on the value of `id_only`.
         """
+        if name is not None:
+            if filter_dict is None:
+                filter_dict = {'aliases': [name]}
+            elif 'aliases' in filter_dict:
+                filter_dict['aliases'].append(name)
+            else:
+                filter_dict['aliases'] = [name]
+        elif filter_dict is None:
+            filter_dict = {}
+        elif not hasattr(filter_dict, 'items'):
+            raise TypeError("Parameter 'filter_dict' must be a dictionary, not a "
+                            f"{type(filter_dict)}")
         return (
             self._postproc_resource(r)
             for r in self._db.find(
                 filter_dict=filter_dict, id_only=id_only, flags=re_flags
             )
         )
+
+    def find_one(self, *args, **kwargs):
+        results = self.find(*args, **kwargs)
+        if results is None:
+            return results
+        result_list = list(results)
+        if len(result_list) == 0:
+            return []
+        return result_list[0]
 
     def find_by_id(self, identifier: str, id_only=False) -> Generator:
         """Find resources by their identifier or identifier prefix.
@@ -682,3 +704,32 @@ def get_propertydb_table(rsrc):
     from idaes.dmf import propdata
 
     return propdata.PropertyTable.load(rsrc.datafiles[0].fullpath)
+
+# 1. scalar string or number (int, float): Match resources that
+#            have this exact value for the given attribute.
+#         2. special scalars "@<value>":
+#
+#                 - "@true"/"@false": boolean (bare True/False will test existence)
+#
+#         3. date, as datetime.datetime or pendulum.Pendulum instance: Match
+#            resources that have this exact date for the given attribute.
+#         4. list: Match resources that have a list value for this attribute,
+#            and for which any of the values in the provided list are in the
+#            resource's corresponding value. If a '!' is appended to the key
+#            name, then this will be interpreted as a directive to only match
+#            resources for which *all* values in the provided list are present.
+#         5. dict: This is an inequality, with one or more key/value pairs.
+#            The key is the type of inequality and the value is the numeric
+#            value for that range. All keys begin with '$'. The possible
+#            inequalities are:
+#
+#                 - "$lt": Less than (<)
+#                 - "$le": Less than or equal (<=)
+#                 - "$gt": Greater than (>)
+#                 - "$ge": Greater than or equal (>=)
+#                 - "$ne": Not equal to (!=)
+#
+#         6. Boolean True means does the field exist, and False means
+#            does it *not* exist.
+#         7. Regular expression, string "~<expr>" and `re_flags`
+#            for flags (understood: re.IGNORECASE)

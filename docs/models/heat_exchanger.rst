@@ -2,9 +2,9 @@ HeatExchanger (0D)
 ==================
 
 .. index::
-  pair: idaes.unit_models.heat_exchanger;HeatExchanger
+   pair: idaes.unit_models.heat_exchanger;HeatExchanger
 
-.. module:: idaes.unit_models.heat_exchanger
+.. currentmodule:: idaes.unit_models.heat_exchanger
 
 The HeatExchanger model can be imported from :code:`idaes.unit_models`,
 while additional rules and utility functions can be imported from
@@ -21,17 +21,17 @@ override the default temperature difference calculation.
   import pyomo.environ as pe # Pyomo environment
   from idaes.core import FlowsheetBlock, StateBlock
   from idaes.unit_models import HeatExchanger
-  from idaes.unit_models.heat_exchanger import delta_temperature_amtd_rule
-  from idaes.property_models import iapws95_ph
+  from idaes.unit_models.heat_exchanger import delta_temperature_amtd_callback
+  from idaes.property_models import iapws95
 
   # Create an empty flowsheet and steam property parameter block.
   model = pe.ConcreteModel()
   model.fs = FlowsheetBlock(default={"dynamic": False})
-  model.fs.properties = iapws95_ph.Iapws95ParameterBlock()
+  model.fs.properties = iapws95.Iapws95ParameterBlock()
 
   # Add a Heater model to the flowsheet.
   model.fs.heat_exchanger = HeatExchanger(default={
-          "delta_temperature_rule":delta_temperature_amtd_rule,
+          "delta_temperature_callback":delta_temperature_amtd_callback,
           "side_1":{"property_package": model.fs.properties},
           "side_2":{"property_package": model.fs.properties}})
 
@@ -70,9 +70,6 @@ The ``HeatExchanger`` has two inlet ports inlet_1 (inlet for side_1) and inlet_2
 (outlet for side_2), and two outlet ports inlet ports inlet_1 (outlet for side_1)
 and outlet_2 (outlet for side_2).
 
-If the :math:`\Delta T` calculation method requires one side to be hotter than
-the other, side_1 is assumed to be the hot side.
-
 Variables
 ---------
 
@@ -85,6 +82,7 @@ heat_transfer_coefficient   :math:`U`          t           Heat transfer coeffic
 delta_temperature           :math:`\Delta T`   t           Temperature difference for heat transfer calculations defaults to LMTD
 =========================== ================== =========== ======================================================================
 
+Note: ``delta_temperature`` may be either a variable or expression depending on the callback used.
 
 Constraints
 -----------
@@ -102,52 +100,36 @@ Heat transfer from side_1 to side_2:
 Temperature difference is an expression:
 
 .. math::
-  \Delta T = \frac{\Delta T_1 - \Delta T_2}{\log_e \Delta T_1 - \log_e \Delta T_2}
+  \Delta T = \frac{\Delta T_1 - \Delta T_2}{\log_e\left(\frac{\Delta T_1}{\Delta T_2}\right)}
 
 The heat transfer coefficient is a variable with no associated constraints by default.
 
-HeatExchanger Class
--------------------
 
 .. autoclass:: HeatExchanger
-  :members:
-
-HeatExchangerData Class
------------------------
+   :members:
 
 .. autoclass:: HeatExchangerData
-  :members:
+   :members:
 
-Rules
------
+Callbacks
+---------
 
-A selection of functions for Pyomo rules are provided in the
-``idaes.unit_models.heat_exchanger`` module, which provide options for different
-calculation methods. Users can also provide their own rule functions. See the
-source code for the rules below for examples.
+A selection of functions for constructing the ``delta_temperature`` variable or
+expression are provided in the ``idaes.unit_models.heat_exchanger`` module.
+The user may also provide their own function. These callbacks should all take
+one argument (the HeatExchanger block). With the block argument, the function
+can add any additional variables, constraints, and expressions needed.  The only
+requirement is that either a variable or expression called ``delta_temperature``
+must be added to the block.
 
-Rules for the ``delta_temperature_rule`` Option
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Defined Callbacks for the ``delta_temperature_callback`` Option
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-These rules provide expressions for the temperature difference used in the
+These callbacks provide expressions for the temperature difference used in the
 heat transfer equations.
 
-.. autofunction:: delta_temperature_lmtd_rule
+.. autofunction:: delta_temperature_lmtd_callback
 
-.. autofunction:: delta_temperature_amtd_rule
+.. autofunction:: delta_temperature_amtd_callback
 
-
-Rules for the ``heat_transfer_rule`` Option
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These rules provide constraints for the heat transfer rate.
-
-.. autofunction:: _heat_transfer_rule
-
-
-Rules for the ``heat_transfer_coefficient_rule`` Option
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-There are currently no rules provided for heat transfer coefficient calculation.
-When the rule is set to `None`, ``heat_transfer_coefficient`` is a fixed Var.
-User provided heat transfer coefficient rules should return a constraint.
+.. autofunction:: delta_temperature_underwood_callback

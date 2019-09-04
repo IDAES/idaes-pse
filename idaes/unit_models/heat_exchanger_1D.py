@@ -15,8 +15,6 @@ Basic IDAES 1D Heat Exchanger Model.
 
 1D Single pass shell and tube HX model with 0D wall conduction model
 """
-from __future__ import division
-
 # Import Python libraries
 import math
 import logging
@@ -40,6 +38,7 @@ from idaes.unit_models.heat_exchanger import HeatExchangerFlowPattern
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Jaffer Ghouse"
 
@@ -100,8 +99,8 @@ Must be True if dynamic = True,
 **default** - EnergyBalanceType.enthalpyTotal.
 **Valid values:** {
 **EnergyBalanceType.none** - exclude energy balances,
-**EnergyBalanceType.enthalpyTotal** - single ethalpy balance for material,
-**EnergyBalanceType.enthalpyPhase** - ethalpy balances for each phase,
+**EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
+**EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
 **EnergyBalanceType.energyTotal** - single energy balance for material,
 **EnergyBalanceType.energyPhase** - energy balances for each phase.}"""))
     _SideTemplate.declare("momentum_balance_type", ConfigValue(
@@ -132,7 +131,7 @@ constructed,
         description="Phase equilibrium term construction flag",
         doc="""Argument to enable phase equilibrium on the shell side.
 - True - include phase equilibrium term
-- False - do not include phase equilinrium term"""))
+- False - do not include phase equilibrium term"""))
     _SideTemplate.declare("property_package", ConfigValue(
         default=None,
         domain=is_physical_parameter_block,
@@ -187,6 +186,7 @@ discretizing length domain (default=3)"""))
         description="Flow configuration of heat exchanger",
         doc="""Flow configuration of heat exchanger
 - HeatExchangerFlowPattern.cocurrent: shell and tube flows from 0 to 1
+(default)
 - HeatExchangerFlowPattern.countercurrent: shell side flows from 0 to 1
 tube side flows from 1 to 0"""))
     CONFIG.declare("has_wall_conduction", ConfigValue(
@@ -194,7 +194,7 @@ tube side flows from 1 to 0"""))
         domain=In(WallConductionType),
         description="Conduction model for tube wall",
         doc="""Argument to enable type of wall heat conduction model.
-- WallConductionType.zero_dimensional - 0D wall model,
+- WallConductionType.zero_dimensional - 0D wall model (default),
 - WallConductionType.one_dimensional - 1D wall model along the thickness of the
 tube,
 - WallConductionType.two_dimensional - 2D wall model along the lenghth and
@@ -577,3 +577,24 @@ thickness of the tube"""))
 
         if outlvl > 0:
             _log.info('{} Initialisation Complete.'.format(blk.name))
+
+    def _get_performance_contents(self, time_point=0):
+        var_dict = {}
+        var_dict["Shell Area"] = self.shell.area
+        var_dict["Shell Diameter"] = self.d_shell
+        var_dict["Shell Length"] = self.shell.length
+        var_dict["Tube Area"] = self.tube.area
+        var_dict["Tube Outer Diameter"] = self.d_tube_outer
+        var_dict["Tube Inner Diameter"] = self.d_tube_inner
+        var_dict["Tube Length"] = self.tube.length
+        var_dict["Number of Tubes"] = self.N_tubes
+
+        return {"vars": var_dict}
+
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+                {"Shell Inlet": self.shell_inlet,
+                 "Shell Outlet": self.shell_outlet,
+                 "Tube Inlet": self.tube_inlet,
+                 "Tube Outlet": self.tube_outlet},
+                time_point=time_point)

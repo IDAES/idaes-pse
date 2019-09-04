@@ -103,7 +103,7 @@ class StateTestBlockData(StateBlockData):
     def get_enthalpy_flow_terms(b, p):
         return b.test_var
 
-    def get_enthalpy_density_terms(b, p):
+    def get_energy_density_terms(b, p):
         return b.test_var
 
     def define_state_vars(b):
@@ -3026,3 +3026,25 @@ def test_initialize():
         for x in m.fs.cv.length_domain:
             assert m.fs.cv.properties[t, x].init_test is True
             assert m.fs.cv.reactions[t, x].init_test is True
+
+
+def test_report():
+    # Test that calling report method on a 1D control volume returns a
+    # NotImplementedError to inform the user that we don't support reports
+    # on 1D models yet. This is because it is difficult to concisely report
+    # distributed data.
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+    m.fs.pp.del_component(m.fs.pp.phase_equilibrium_idx)
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    with pytest.raises(NotImplementedError):
+        m.fs.cv.report()

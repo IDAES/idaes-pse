@@ -13,7 +13,7 @@
 """
 Standard IDAES Feed block with phase equilibrium.
 """
-from __future__ import division
+from enum import Enum
 
 # Import Pyomo libraries
 from pyomo.environ import Reference
@@ -26,9 +26,16 @@ from idaes.core import (ControlVolume0DBlock,
                         MomentumBalanceType,
                         UnitModelBlockData,
                         useDefault)
-from idaes.core.util.config import (is_physical_parameter_block)
+from idaes.core.util.config import is_physical_parameter_block
+from idaes.core.util.tables import create_stream_table_dataframe
 
 __author__ = "Andrew Lee"
+
+
+# Enumerate options for material balances
+class FlashType(Enum):
+    isothermal = 1
+    isenthalpic = 2
 
 
 @declare_process_block_class("FeedFlash")
@@ -60,6 +67,15 @@ False."""))
 **MaterialBalanceType.componentTotal** - use total component balances,
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
+    CONFIG.declare("flash_type", ConfigValue(
+        default=FlashType.isothermal,
+        domain=In(FlashType),
+        description="Type of flash to perform",
+        doc="""Indicates what type of flash operation should be used.
+**default** - FlashType.isothermal.
+**Valid values:** {
+**FlashType.isothermal** - specify temperature,
+**FlashType.isenthalpic** - specify enthalpy.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -108,11 +124,21 @@ see property package for documentation.}"""))
             has_phase_equilibrium=True)
 
         # Add isothermal constraint
-        @self.Constraint(self.flowsheet().config.time,
-                         doc="Isothermal constraint")
-        def isothermal(b, t):
-            return (b.control_volume.properties_in[t].temperature ==
-                    b.control_volume.properties_out[t].temperature)
+        if self.config.flash_type == FlashType.isothermal:
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Isothermal constraint")
+            def isothermal(b, t):
+                return (b.control_volume.properties_in[t].temperature ==
+                        b.control_volume.properties_out[t].temperature)
+        elif self.config.flash_type == FlashType.isenthalpic:
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Isothermal constraint")
+            def isenthalpic(b, t):
+                cv = b.control_volume
+                return (sum(cv.properties_in[t].get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) ==
+                        sum(cv.properties_out[t].get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list))
 
         self.control_volume.add_momentum_balances(
             balance_type=MomentumBalanceType.pressureTotal)
@@ -124,7 +150,7 @@ see property package for documentation.}"""))
             l_name = s_vars[s].local_name
             if s_vars[s].is_indexed():
                 slicer = (
-                self.control_volume.properties_in[:].component(l_name)[...])
+                    self.control_volume.properties_in[:].component(l_name)[...])
             else:
                 slicer = self.control_volume.properties_in[:].component(l_name)
 
@@ -134,3 +160,7 @@ see property package for documentation.}"""))
         # Add Ports
         self.add_outlet_port()
 
+    def _get_stream_table_contents(self, time_point=0):
+        return create_stream_table_dataframe(
+                {"Outlet": self.outlet},
+                time_point=time_point)

@@ -13,15 +13,15 @@
 """
 General purpose separator block for IDAES models
 """
-from __future__ import absolute_import  # disable implicit relative imports
-from __future__ import division, print_function
 
 import logging
 from enum import Enum
+from pandas import DataFrame
 
 from pyomo.environ import (Constraint,
                            Expression,
                            Param,
+                           Reals,
                            Reference,
                            Set,
                            SolverFactory,
@@ -33,12 +33,16 @@ from pyomo.common.config import ConfigBlock, ConfigValue, In
 
 from idaes.core import (declare_process_block_class,
                         UnitModelBlockData,
-                        useDefault)
+                        useDefault,
+                        MaterialBalanceType)
 from idaes.core.util.config import (is_physical_parameter_block,
                                     is_state_block,
                                     list_of_strings)
 from idaes.core.util.exceptions import (BurntToast,
-                                        ConfigurationError)
+                                        ConfigurationError,
+                                        PropertyNotSupportedError)
+from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.core.util.misc import add_object_reference
 
 __author__ = "Andrew Lee"
 
@@ -58,6 +62,7 @@ class SplittingType(Enum):
 class EnergySplittingType(Enum):
     equal_temperature = 1
     equal_molar_enthalpy = 2
+    enthalpy_split = 3
 
 
 @declare_process_block_class("Separator")
@@ -144,6 +149,29 @@ indexed by time, outlet and phase),
 fraction indexed by time, outlet and components),
 **SplittingType.phaseComponentFlow** - split based on phase-component flows (
 split fraction indexed by both time, outlet, phase and components).}"""))
+    CONFIG.declare("material_balance_type", ConfigValue(
+        default=MaterialBalanceType.componentPhase,
+        domain=In(MaterialBalanceType),
+        description="Material balance construction flag",
+        doc="""Indicates what type of mass balance should be constructed. Only
+used if ideal_separation = False.
+**default** - MaterialBalanceType.componentPhase.
+**Valid values:** {
+**MaterialBalanceType.none** - exclude material balances,
+**MaterialBalanceType.componentPhase** - use phase component balances,
+**MaterialBalanceType.componentTotal** - use total component balances,
+**MaterialBalanceType.elementTotal** - use total element balances,
+**MaterialBalanceType.total** - use total material balance.}"""))
+    CONFIG.declare("has_phase_equilibrium", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Calculate phase equilibrium in mixed stream",
+        doc="""Argument indicating whether phase equilibrium should be
+calculated for the resulting mixed stream,
+**default** - False.
+**Valid values:** {
+**True** - calculate phase equilibrium in mixed stream,
+**False** - do not calculate equilibrium in mixed stream.}"""))
     CONFIG.declare("energy_split_basis", ConfigValue(
         default=EnergySplittingType.equal_temperature,
         domain=EnergySplittingType,
@@ -154,18 +182,21 @@ not used for when ideal_separation == True.
 **Valid values:** {
 **EnergySplittingType.equal_temperature** - outlet temperatures equal inlet
 **EnergySplittingType.equal_molar_enthalpy** - oulet molar enthalpies equal
-inlet}"""))
+inlet,
+**EnergySplittingType.enthalpy_split** - apply split fractions to enthalpy
+flows. Does not work with component or phase-component splitting.}"""))
     CONFIG.declare("ideal_separation", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Ideal splitting flag",
         doc="""Argument indicating whether ideal splitting should be used.
 Ideal splitting assumes perfect spearation of material, and attempts to
 avoid duplication of StateBlocks by directly partitioning outlet flows to
 ports,
-**default** - True.
+**default** - False.
 **Valid values:** {
-**True** - use ideal splitting methods,
+**True** - use ideal splitting methods. Cannot be combined with
+has_phase_equilibrium = True,
 **False** - use explicit splitting equations with split fractions.}"""))
     CONFIG.declare("ideal_split_map", ConfigValue(
         domain=dict,
@@ -214,6 +245,8 @@ linked the mixed state and all outlet states,
         # Call super.build()
         super(SeparatorData, self).build()
 
+        self._validate_config_arguments()
+
         # Call setup methods from ControlVolumeBlockData
         self._get_property_package()
         self._get_indexing_sets()
@@ -248,6 +281,14 @@ linked the mixed state and all outlet states,
             # Construct outlet port objects
             self.add_outlet_port_objects(outlet_list, outlet_blocks)
 
+    def _validate_config_arguments(self):
+        if self.config.has_phase_equilibrium and self.config.ideal_separation:
+            raise ConfigurationError(
+                    """{} recieved arguments has_phase_equilibrium = True and
+                    ideal_separation = True. These arguments are incompatible
+                    with each other, and you should choose one or the other."""
+                    .format(self.name))
+
     def create_outlet_list(self):
         """
         Create list of outlet stream names based on config arguments.
@@ -263,7 +304,7 @@ linked the mixed state and all outlet states,
                         "{} Separator provided with both outlet_list and "
                         "num_outlets arguments, which were not consistent ("
                         "length of outlet_list was not equal to num_outlets). "
-                        "PLease check your arguments for consistency, and "
+                        "Please check your arguments for consistency, and "
                         "note that it is only necessry to provide one of "
                         "these arguments.".format(self.name))
         elif (self.config.outlet_list is None and
@@ -451,16 +492,107 @@ linked the mixed state and all outlet states,
             elif self.config.split_basis == SplittingType.phaseComponentFlow:
                 return self.split_fraction[t, o, p, j]
 
-        @self.Constraint(self.flowsheet().config.time,
-                         self.outlet_idx,
-                         self.config.property_package.phase_list,
-                         self.config.property_package.component_list,
-                         doc="Material splitting equations")
-        def material_splitting_eqn(b, t, o, p, j):
-            o_block = getattr(self, o+"_state")
-            return (sf(t, o, p, j) *
-                    mixed_block[t].get_material_flow_terms(p, j) ==
-                    o_block[t].get_material_flow_terms(p, j))
+        if self.config.material_balance_type == \
+                MaterialBalanceType.componentPhase:
+            if self.config.has_phase_equilibrium is True:
+                # Get units from property package
+                units = {}
+                for u in ['holdup', 'time']:
+                    try:
+                        units[u] = (self.config.property_package
+                                    .get_metadata().default_units[u])
+                    except KeyError:
+                        units[u] = '-'
+
+                try:
+                    self.phase_equilibrium_generation = Var(
+                            self.flowsheet().config.time,
+                            self.outlet_idx,
+                            self.config.property_package.phase_equilibrium_idx,
+                            domain=Reals,
+                            doc="Amount of generation in unit by phase "
+                                "equilibria [{}/{}]"
+                                .format(units['holdup'], units['time']))
+                except AttributeError:
+                    raise PropertyNotSupportedError(
+                        "{} Property package does not contain a list of phase "
+                        "equilibrium reactions (phase_equilibrium_idx), thus "
+                        "does not support phase equilibrium."
+                        .format(self.name))
+
+            # Define terms to use in mixing equation
+            def phase_equilibrium_term(b, t, o, p, j):
+                if self.config.has_phase_equilibrium:
+                    sd = {}
+                    sblock = mixed_block[t]
+                    for r in b.config.property_package.phase_equilibrium_idx:
+                        if sblock._params.phase_equilibrium_list[r][0] == j:
+                            if sblock._params.phase_equilibrium_list[r][1][0] == p:
+                                sd[r] = 1
+                            elif sblock._params.phase_equilibrium_list[r][1][1] == p:
+                                sd[r] = -1
+                            else:
+                                sd[r] = 0
+                        else:
+                            sd[r] = 0
+
+                    return sum(b.phase_equilibrium_generation[t, o, r]*sd[r]
+                               for r in
+                               b.config.property_package.phase_equilibrium_idx)
+                else:
+                    return 0
+
+            @self.Constraint(self.flowsheet().config.time,
+                             self.outlet_idx,
+                             self.config.property_package.phase_list,
+                             self.config.property_package.component_list,
+                             doc="Material splitting equations")
+            def material_splitting_eqn(b, t, o, p, j):
+                o_block = getattr(self, o+"_state")
+                return (sf(t, o, p, j) *
+                        mixed_block[t].get_material_flow_terms(p, j) ==
+                        o_block[t].get_material_flow_terms(p, j) -
+                        phase_equilibrium_term(b, t, o, p, j))
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.componentTotal:
+            @self.Constraint(self.flowsheet().config.time,
+                             self.outlet_idx,
+                             self.config.property_package.component_list,
+                             doc="Material splitting equations")
+            def material_splitting_eqn(b, t, o, j):
+                o_block = getattr(self, o+"_state")
+                return (sum(sf(t, o, p, j) *
+                            mixed_block[t].get_material_flow_terms(p, j) for p
+                            in b.config.property_package.phase_list) ==
+                        sum(o_block[t].get_material_flow_terms(p, j) for p in
+                            b.config.property_package.phase_list))
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.total:
+            @self.Constraint(self.flowsheet().config.time,
+                             self.outlet_idx,
+                             doc="Material splitting equations")
+            def material_splitting_eqn(b, t, o):
+                o_block = getattr(self, o+"_state")
+                return (
+                    sum(sum(sf(t, o, p, j) *
+                            mixed_block[t].get_material_flow_terms(p, j) for j
+                            in b.config.property_package.component_list)
+                        for p in b.config.property_package.phase_list) ==
+                    sum(sum(o_block[t].get_material_flow_terms(p, j) for j
+                            in b.config.property_package.component_list)
+                        for p in b.config.property_package.phase_list))
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.elementTotal:
+            raise ConfigurationError("{} Separators do not support elemental "
+                                     "material balances.".format(self.name))
+        elif self.config.material_balance_type == \
+                MaterialBalanceType.none:
+            pass
+        else:
+            raise BurntToast("{} Separator received unrecognised value for "
+                             "material_balance_type. This should not happen, "
+                             "please report this bug to the IDAES developers."
+                             .format(self.name))
 
     def add_energy_splitting_constraints(self, mixed_block):
         """
@@ -483,6 +615,37 @@ linked the mixed state and all outlet states,
             def molar_enthalpy_equality_eqn(b, t, o):
                 o_block = getattr(self, o+"_state")
                 return mixed_block[t].enth_mol == o_block[t].enth_mol
+        elif self.config.energy_split_basis == \
+                EnergySplittingType.enthalpy_split:
+            # Validate split fraction type
+            if (self.config.split_basis == SplittingType.phaseComponentFlow or
+                    self.config.split_basis == SplittingType.componentFlow):
+                raise ConfigurationError(
+                        "{} Cannot use energy_split_basis == enthalpy_split "
+                        "with split_basis == component or phaseComponent."
+                        .format(self.name))
+
+            def sf(t, o, p):
+                if self.config.split_basis == SplittingType.totalFlow:
+                    return self.split_fraction[t, o]
+                elif self.config.split_basis == SplittingType.phaseFlow:
+                    return self.split_fraction[t, o, p]
+
+            @self.Constraint(self.flowsheet().config.time,
+                             self.outlet_idx,
+                             doc="Molar enthalpy splitting constraint")
+            def molar_enthalpy_splitting_eqn(b, t, o):
+                o_block = getattr(self, o+"_state")
+                return (sum(mixed_block[t].get_enthalpy_flow_terms(p) *
+                            sf(t, o, p)
+                            for p in b.config.property_package.phase_list) ==
+                        sum(o_block[t].get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list))
+        else:
+            raise BurntToast("{} received unrecognised value for "
+                             "energy_split_basis. This should never happen, so"
+                             " please contact the IDAES developers with this "
+                             "bug.".format(self.name))
 
     def add_momentum_splitting_constraints(self, mixed_block):
         """
@@ -616,7 +779,7 @@ linked the mixed state and all outlet states,
                                         "developers.".format(self.name))
 
                             if s_check == o:
-                                return mb[t].component(l_name)[p, j]
+                                return 1
                             else:
                                 return self.eps
 
@@ -631,15 +794,24 @@ linked the mixed state and all outlet states,
                                     SplittingType.componentFlow:
                             def e_rule(b, t, j):
                                 if split_map[j] == o:
-                                    return mb[t].component(l_name)[j]
+                                    return 1
+                                # else:
+                                return self.eps
+
+                        elif self.config.split_basis == \
+                                    SplittingType.phaseComponentFlow:
+                            def e_rule(b, t, j):
+                                if any(split_map[p, j] == o for p in
+                                       self.config.property_package.phase_list):
+                                    return 1
                                 # else:
                                 return self.eps
 
                         else:
                             def e_rule(b, t, j):
-                                try:
-                                    mfp = mb[t].component(l_name+"_phase")
-                                except AttributeError:
+                                mfp = mb[t].component(l_name+"_phase")
+
+                                if mfp is None:
                                     raise AttributeError(
                                         "{} Cannot use ideal splitting with "
                                         "this property package. Package uses "
@@ -653,9 +825,6 @@ linked the mixed state and all outlet states,
                                     if self.config.split_basis == \
                                             SplittingType.phaseFlow:
                                         s_check = split_map[p]
-                                    elif self.config.split_basis == \
-                                            SplittingType.phaseComponentFlow:
-                                        s_check = split_map[p, j]
                                     else:
                                         raise BurntToast(
                                             "{} This should not happen. Please"
@@ -711,9 +880,9 @@ linked the mixed state and all outlet states,
 
                     else:
                         def e_rule(b, t, p):
-                            try:
-                                mfp = mb[t].component(l_name+"_comp")
-                            except AttributeError:
+                            mfp = mb[t].component(l_name+"_comp")
+
+                            if mfp is None:
                                 raise AttributeError(
                                     "{} Cannot use ideal splitting with this "
                                     "property package. Package uses indexed "
@@ -754,15 +923,13 @@ linked the mixed state and all outlet states,
                             else:
                                 return self.eps
 
-                    elif self.config.split_basis == \
-                            SplittingType.phaseFlow:
-
+                    else:
                         def e_rule(b, t, j):
-                            try:
-                                mfp = mb[t].component(
+                            mfp = mb[t].component(
                                         "{0}_phase{1}"
-                                        .format(l_name[:-5], s[-5:]))
-                            except AttributeError:
+                                        .format(l_name[:-5], l_name[-5:]))
+
+                            if mfp is None:
                                 raise AttributeError(
                                     "{} Cannot use ideal splitting with this "
                                     "property package. Package uses indexed "
@@ -796,69 +963,74 @@ linked the mixed state and all outlet states,
                                 rule=e_rule)
 
                 else:
-                    # Not a recognised state, check for indexing sets
-                    if mb[self.flowsheet().config.time.first()].component(
-                            l_name).is_indexed():
-                        # Is indexed, assume indexes match and partition
-
-                        def e_rule(b, t, k):
-                            if split_map[k] == o:
-                                try:
-                                    return mb[t].component(l_name)[k]
-                                except KeyError:
-                                    raise KeyError(
-                                        "{} Cannot use ideal splitting with"
-                                        " this property package. Package uses "
-                                        "indexed port member {} which does not"
-                                        " have suitable indexing set(s)."
-                                        .format(self.name, s))
-                            else:
-                                return self.eps
-
-                        # TODO : Reusing indexing set from first port member.
-                        # TODO : Not sure how good of an idea this is.
-                        e_obj = Expression(
-                                    self.flowsheet().config.time,
-                                    mb[self.flowsheet().config.time.first()]
-                                    .component(l_name).index_set(),
-                                    rule=e_rule)
-
-                    else:
-                        # Is not indexed, look for indexed equivalent
+                    def e_rule(b, t):
                         try:
                             if self.config.split_basis == \
                                     SplittingType.phaseFlow:
-                                def e_rule(b, t):
+                                ivar = mb[t].component(l_name+"_phase")
+                                if ivar is not None:
                                     for p in self.config.property_package.phase_list:
                                         if split_map[p] == o:
-                                            return mb[t].component(
-                                                    l_name+"_phase")[p]
-                                    # else
-                                    return self.eps
+                                            return ivar[p]
+                                        else:
+                                            continue
+                                else:
+                                    ivar = mb[t].component(l_name+"_phase_comp")
+                                    if ivar is not None:
+                                        for p in self.config.property_package.phase_list:
+                                            if split_map[p] == o:
+                                                return sum(
+                                                    ivar[p, j] for j in
+                                                    self.config.property_package.component_list)
+                                            else:
+                                                continue
+                                    else:
+                                        raise AttributeError
 
                             elif self.config.split_basis == \
                                     SplittingType.componentFlow:
-                                def e_rule(b, t):
+                                ivar = mb[t].component(l_name+"_comp")
+                                if ivar is not None:
                                     for j in self.config.property_package.component_list:
                                         if split_map[j] == o:
-                                            return mb[t].component(
-                                                    l_name+"_comp")[j]
-                                    # else
-                                    return self.eps
-
+                                            return ivar[j]
+                                        else:
+                                            continue
+                                else:
+                                    ivar = mb[t].component(l_name+"_phase_comp")
+                                    if ivar is not None:
+                                        for j in self.config.property_package.component_list:
+                                            if split_map[j] == o:
+                                                return sum(
+                                                    ivar[p, j] for p in
+                                                    self.config.property_package.phase_list)
+                                            else:
+                                                continue
+                                    else:
+                                        raise AttributeError
                             elif self.config.split_basis == \
                                     SplittingType.phaseComponentFlow:
-                                def e_rule(b, t):
+                                ivar = mb[t].component(l_name+"_phase_comp")
+                                if ivar is not None:
                                     for p in self.config.property_package.phase_list:
                                         for j in self.config.property_package.component_list:
                                             if split_map[p, j] == o:
-                                                return (mb[t].component(
-                                                        l_name+"_phase_comp")
-                                                        [p, j])
-                                    # else
-                                    return self.eps
+                                                return ivar[p, j]
+                                            else:
+                                                continue
+                                else:
+                                    raise AttributeError
+                            else:
+                                # Unrecognised split tupe
+                                raise BurntToast(
+                                    "{} received unrecognised value for "
+                                    "split_basis argumnet. This should never "
+                                    "happen, so please contact the IDAES "
+                                    "developers with this bug."
+                                    .format(self.name))
 
-                        except AttributeError:
+                        except:
+                            # If cannot find equivalent var, raise exception
                             raise AttributeError(
                                 "{} Cannot use ideal splitting with this "
                                 "property package. Package uses unindexed "
@@ -1047,3 +1219,52 @@ linked the mixed state and all outlet states,
             mblock = blk.config.mixed_state_block
 
         mblock.release_state(flags, outlvl=outlvl-1)
+
+    def _get_performance_contents(self, time_point=0):
+        if hasattr(self, "split_fraction"):
+            for k in self.split_fraction.keys():
+                if k[0] == time_point:
+                    var_dict = {f"Split Fraction [{str(k[1:])}]":
+                                self.split_fraction[k]}
+            return {"vars": var_dict}
+        else:
+            return {}
+
+    def _get_stream_table_contents(self, time_point=0):
+        outlet_list = self.create_outlet_list()
+
+        if not self.config.ideal_separation:
+            io_dict = {}
+            if self.config.mixed_state_block is None:
+                io_dict["Inlet"] = self.mixed_state
+            else:
+                io_dict["Inlet"] = self.config.mixed_state_block
+
+                for o in outlet_list:
+                    io_dict[o] = getattr(self, o+"_state")
+            return create_stream_table_dataframe(
+                    io_dict,
+                    time_point=time_point)
+
+        else:
+            stream_attributes = {}
+
+            for n in outlet_list+["inlet"]:
+                port_obj = getattr(self, n)
+
+                stream_attributes[n] = {}
+
+                for k in port_obj.vars:
+                    for i in port_obj.vars[k]:
+                        if isinstance(i, float):
+                            stream_attributes[n][k] = value(
+                                port_obj.vars[k][time_point])
+                        else:
+                            if len(i) == 2:
+                                kname = str(i[1])
+                            else:
+                                kname = str(i[1:])
+                            stream_attributes[n][k+" "+kname] = \
+                                value(port_obj.vars[k][time_point, i[1:]])
+
+            return DataFrame.from_dict(stream_attributes, orient="columns")

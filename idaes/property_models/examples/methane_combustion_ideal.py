@@ -15,9 +15,6 @@ Example property package for the combustion of methane in air using
 Gibbs energy minimisation.
 """
 
-# Chages the divide behavior to not do integer division
-from __future__ import division
-
 # Import Python libraries
 import logging
 
@@ -33,7 +30,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Andrew Lee, Jinliang Ma"
@@ -206,6 +203,11 @@ class PhysicalParameterData(PhysicalParameterBlock):
                                 'units': 'J/mol.K'},
                 'dens_mol_phase': {'method': '_dens_mol_phase',
                                    'units': 'mol/m^3'},
+                'energy_internal_mol': {'method': '_energy_internal_mol',
+                                        'units': 'J/mol'},
+                'energy_internal_mol_phase_comp': {
+                        'method': '_energy_internal_mol_phase_comp',
+                        'units': 'J/mol'},
                 'enth_mol': {'method': '_enth_mol', 'units': 'J/mol'},
                 'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp',
                                         'units': 'J/mol'},
@@ -543,6 +545,58 @@ class MethaneCombustionStateBlockData(StateBlockData):
             self.del_component(self.mixture_heat_capacity_eqn)
             raise
 
+    def _energy_internal_mol_phase_comp(self):
+        # Pure component vapour internal energies
+        self.energy_internal_mol_phase_comp = Var(
+                self._params.phase_list,
+                self._params.component_list,
+                domain=Reals,
+                initialize=1.0,
+                doc="Pure component internal energies [J/mol]")
+
+        def pure_comp_int_energy(b, j):
+            return b.energy_internal_mol_phase_comp["Vap", j] == (1e3*(
+                    b._params.cp_params[j, 1]*(b.temperature*1e-3) +
+                    b._params.cp_params[j, 2]*(b.temperature*1e-3)**2/2 +
+                    b._params.cp_params[j, 3]*(b.temperature*1e-3)**3/3 +
+                    b._params.cp_params[j, 4]*(b.temperature*1e-3)**4/4 -
+                    b._params.cp_params[j, 5]/(b.temperature*1e-3) +
+                    b._params.cp_params[j, 6] -
+                    b._params.cp_params[j, 8]) -
+                    b._params.cp_params[j, 9] +
+                    b._params.enth_mol_form[j] -
+                    b._params.gas_const*(b.temperature -
+                                         b._params.temperature_ref))
+        try:
+            # Try to build constraint
+            self.internal_energy_shomate_eqn = Constraint(
+                    self._params.component_list,
+                    rule=pure_comp_int_energy)
+        except AttributeError:
+            # If constraint fails, clean up so that DAE can try again later
+            self.del_component(self.energy_internal_phase_mol_comp)
+            self.del_component(self.internal_energy_shomate_eqn)
+            raise
+
+    def _energy_internal_mol(self):
+        # Mixture molar internal energy
+        self.energy_internal_mol = Var(
+                domain=Reals,
+                initialize=0.0,
+                doc='Mixture specific internal energy [J/mol]')
+        try:
+            # Try to build constraint
+            self.mixture_energy_internal_eqn = Constraint(expr=(
+                        self.energy_internal_mol == sum(
+                                self.mole_frac[j] *
+                                self.energy_internal_mol_phase_comp["Vap", j]
+                                for j in self._params.component_list)))
+        except AttributeError:
+            # If constraint fails, clean up so that DAE can try again later
+            self.del_component(self.energy_internal_mol)
+            self.del_component(self.mixture_energy_internal_eqn)
+            raise
+
     def _enth_mol_phase_comp(self):
         # Pure component vapour enthalpies
         self.enth_mol_phase_comp = Var(
@@ -569,7 +623,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
                                                    rule=pure_comp_enthalpy)
         except AttributeError:
             # If constraint fails, clean up so that DAE can try again later
-            self.del_component(self.enth_mol_comp)
+            self.del_component(self.enth_mol_phase_comp)
             self.del_component(self.enthalpy_shomate_eqn)
             raise
 
@@ -706,8 +760,8 @@ class MethaneCombustionStateBlockData(StateBlockData):
     def get_material_density_terms(b, p, j):
         return b.dens_mol_phase[p]*b.mole_frac[j]
 
-    def get_enthalpy_density_terms(b, p):
-        return b.dens_mol_phase[p]*b.enth_mol
+    def get_energy_density_terms(b, p):
+        return b.dens_mol_phase[p]*b.energy_internal_mol
 
     def define_state_vars(b):
         return {"flow_mol_comp": b.flow_mol_comp,

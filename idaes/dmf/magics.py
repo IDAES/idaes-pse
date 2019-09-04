@@ -22,7 +22,6 @@ import webbrowser
 import pendulum
 from IPython.core.magic import Magics, magics_class, line_magic
 from IPython.display import display_markdown
-import six
 # local
 from . import dmfbase, errors, help, workspace
 
@@ -244,7 +243,7 @@ class DmfMagicsImpl(object):
             raise DMFMagicError('Topics not supported')
         # configuration info
         text_lines = ['## Configuration']
-        for key, value in six.iteritems(self._dmf.meta):
+        for key, value in self._dmf.meta.items():
             hdr = '  * {}'.format(key)
             if isinstance(value, list):
                 text_lines.append('{}:'.format(hdr))
@@ -252,7 +251,7 @@ class DmfMagicsImpl(object):
                     text_lines.append('    - {}'.format(v))
             elif isinstance(value, dict):
                 text_lines.append('{}:'.format(hdr))
-                for k2, v2 in six.iteritems(value):
+                for k2, v2 in value.items():
                     text_lines.append('    - {}: {}'.format(k2, v2))
             else:
                 text_lines.append('{}: {}'.format(hdr, value))

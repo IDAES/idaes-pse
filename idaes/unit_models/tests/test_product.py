@@ -16,74 +16,277 @@ Authors: Andrew Lee
 """
 
 import pytest
-from pyomo.environ import ConcreteModel, SolverFactory
+from pyomo.environ import (ConcreteModel,
+                           TerminationCondition,
+                           SolverStatus,
+                           value)
 from idaes.core import FlowsheetBlock
 from idaes.unit_models.product import Product
-from idaes.property_models.examples.saponification_thermo import (
-                        SaponificationParameterBlock)
-from idaes.ui.report import degrees_of_freedom
+
+from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
+from idaes.property_models import iapws95
+from idaes.property_models.examples.saponification_thermo import \
+    SaponificationParameterBlock
+
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              number_variables,
+                                              number_total_constraints,
+                                              fixed_variables_set,
+                                              activated_constraints_set,
+                                              number_unused_variables)
+from idaes.core.util.testing import (get_default_solver,
+                                     PhysicalParameterTestBlock)
 
 
 # -----------------------------------------------------------------------------
-# See if ipopt is available and set up solver
-if SolverFactory('ipopt').available():
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
-                      'mu_init': 1e-8,
-                      'bound_push': 1e-8}
-else:
-    solver = None
+# Get default solver for testing
+solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
-def test_build():
+def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = SaponificationParameterBlock()
+    m.fs.properties = PhysicalParameterTestBlock()
 
-    m.fs.prod = Product(default={"property_package": m.fs.properties})
+    m.fs.unit = Product(default={"property_package": m.fs.properties})
 
-    assert hasattr(m.fs.prod, "flow_vol")
-    assert hasattr(m.fs.prod, "conc_mol_comp")
-    assert hasattr(m.fs.prod, "temperature")
-    assert hasattr(m.fs.prod, "pressure")
+    # Check unit config arguments
+    assert len(m.fs.unit.config) == 4
 
-    assert hasattr(m.fs.prod, "inlet")
-    assert len(m.fs.prod.inlet.vars) == 4
-    assert hasattr(m.fs.prod.inlet, "flow_vol")
-    assert hasattr(m.fs.prod.inlet, "conc_mol_comp")
-    assert hasattr(m.fs.prod.inlet, "temperature")
-    assert hasattr(m.fs.prod.inlet, "pressure")
+    assert not m.fs.unit.config.dynamic
+    assert not m.fs.unit.config.has_holdup
+    assert m.fs.unit.config.property_package is m.fs.properties
 
 
-@pytest.mark.skipif(solver is None, reason="Solver not available")
-def test_initialize():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+# -----------------------------------------------------------------------------
+class TestSaponification(object):
+    @pytest.fixture(scope="class")
+    def sapon(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
 
-    m.fs.properties = SaponificationParameterBlock()
+        m.fs.properties = SaponificationParameterBlock()
 
-    m.fs.prod = Product(default={"property_package": m.fs.properties})
+        m.fs.unit = Product(default={"property_package": m.fs.properties})
 
-    m.fs.prod.flow_vol.fix(1.0e-03)
-    m.fs.prod.conc_mol_comp[0, "H2O"].fix(55388.0)
-    m.fs.prod.conc_mol_comp[0, "NaOH"].fix(100.0)
-    m.fs.prod.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
-    m.fs.prod.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
-    m.fs.prod.conc_mol_comp[0, "Ethanol"].fix(0.0)
+        return m
 
-    m.fs.prod.temperature.fix(303.15)
-    m.fs.prod.pressure.fix(101325.0)
+    @pytest.mark.build
+    def test_build(self, sapon):
 
-    assert degrees_of_freedom(m) == 0
+        assert hasattr(sapon.fs.unit, "inlet")
+        assert len(sapon.fs.unit.inlet.vars) == 4
+        assert hasattr(sapon.fs.unit.inlet, "flow_vol")
+        assert hasattr(sapon.fs.unit.inlet, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit.inlet, "temperature")
+        assert hasattr(sapon.fs.unit.inlet, "pressure")
 
-    m.fs.prod.initialize(outlvl=5,
-                         optarg={'tol': 1e-6})
+        assert hasattr(sapon.fs.unit, "flow_vol")
+        assert hasattr(sapon.fs.unit, "conc_mol_comp")
+        assert hasattr(sapon.fs.unit, "temperature")
+        assert hasattr(sapon.fs.unit, "pressure")
 
-    assert m.fs.prod.inlet.flow_vol[0].value== 1.0e-03
-    assert m.fs.prod.inlet.conc_mol_comp[0, "H2O"].value == 55388.0
-    assert m.fs.prod.inlet.conc_mol_comp[0, "NaOH"].value == 100.0
-    assert m.fs.prod.inlet.conc_mol_comp[0, "EthylAcetate"].value == 100.0
-    assert m.fs.prod.inlet.conc_mol_comp[0, "SodiumAcetate"].value == 0.0
-    assert m.fs.prod.inlet.conc_mol_comp[0, "Ethanol"].value == 0.0
+        assert number_variables(sapon) == 8
+        assert number_total_constraints(sapon) == 0
+        assert number_unused_variables(sapon) == 8
+
+    def test_dof(self, sapon):
+        sapon.fs.unit.flow_vol.fix(1.0e-03)
+        sapon.fs.unit.conc_mol_comp[0, "H2O"].fix(55388.0)
+        sapon.fs.unit.conc_mol_comp[0, "NaOH"].fix(100.0)
+        sapon.fs.unit.conc_mol_comp[0, "EthylAcetate"].fix(100.0)
+        sapon.fs.unit.conc_mol_comp[0, "SodiumAcetate"].fix(0.0)
+        sapon.fs.unit.conc_mol_comp[0, "Ethanol"].fix(0.0)
+
+        sapon.fs.unit.temperature.fix(303.15)
+        sapon.fs.unit.pressure.fix(101325.0)
+
+        assert degrees_of_freedom(sapon) == 0
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialize(self, sapon):
+        orig_fixed_vars = fixed_variables_set(sapon)
+        orig_act_consts = activated_constraints_set(sapon)
+
+        sapon.fs.unit.initialize(optarg={'tol': 1e-6})
+
+        assert degrees_of_freedom(sapon) == 0
+
+        fin_fixed_vars = fixed_variables_set(sapon)
+        fin_act_consts = activated_constraints_set(sapon)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    # No solve tests, as Product block has nothing to solve
+
+    @pytest.mark.ui
+    def test_report(self, sapon):
+        sapon.fs.unit.report()
+
+
+# -----------------------------------------------------------------------------
+class TestBTX(object):
+    @pytest.fixture(scope="class")
+    def btx(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = BTXParameterBlock(default={"valid_phase": 'Liq'})
+
+        m.fs.unit = Product(default={"property_package": m.fs.properties})
+
+        return m
+
+    @pytest.mark.build
+    def test_build(self, btx):
+        assert hasattr(btx.fs.unit, "inlet")
+        assert len(btx.fs.unit.inlet.vars) == 4
+        assert hasattr(btx.fs.unit.inlet, "flow_mol")
+        assert hasattr(btx.fs.unit.inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet, "temperature")
+        assert hasattr(btx.fs.unit.inlet, "pressure")
+
+        assert hasattr(btx.fs.unit, "flow_mol")
+        assert hasattr(btx.fs.unit, "mole_frac")
+        assert hasattr(btx.fs.unit, "temperature")
+        assert hasattr(btx.fs.unit, "pressure")
+
+        assert number_variables(btx) == 8
+        assert number_total_constraints(btx) == 3
+        assert number_unused_variables(btx) == 2
+
+    def test_dof(self, btx):
+        btx.fs.unit.flow_mol[0].fix(5)  # mol/s
+        btx.fs.unit.temperature[0].fix(365)  # K
+        btx.fs.unit.pressure[0].fix(101325)  # Pa
+        btx.fs.unit.mole_frac[0, "benzene"].fix(0.5)
+        btx.fs.unit.mole_frac[0, "toluene"].fix(0.5)
+
+        assert degrees_of_freedom(btx) == 0
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialize(self, btx):
+        orig_fixed_vars = fixed_variables_set(btx)
+        orig_act_consts = activated_constraints_set(btx)
+
+        btx.fs.unit.initialize(optarg={'tol': 1e-6})
+
+        assert degrees_of_freedom(btx) == 0
+
+        fin_fixed_vars = fixed_variables_set(btx)
+        fin_act_consts = activated_constraints_set(btx)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, btx):
+        results = solver.solve(btx)
+
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, btx):
+        assert (pytest.approx(5, abs=1e-3) ==
+                value(btx.fs.unit.properties[0].flow_mol_phase["Liq"]))
+        assert (pytest.approx(0.5, abs=1e-3) ==
+                value(btx.fs.unit.properties[0].mole_frac_phase["Liq",
+                                                                "benzene"]))
+        assert (pytest.approx(0.5, abs=1e-3) ==
+                value(btx.fs.unit.properties[0].mole_frac_phase["Liq",
+                                                                "toluene"]))
+
+    @pytest.mark.ui
+    def test_report(self, btx):
+        btx.fs.unit.report()
+
+
+# -----------------------------------------------------------------------------
+@pytest.mark.iapws
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+class TestIAPWS(object):
+    @pytest.fixture(scope="class")
+    def iapws(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+        m.fs.unit = Product(default={"property_package": m.fs.properties})
+
+        return m
+
+    @pytest.mark.build
+    def test_build(self, iapws):
+        assert len(iapws.fs.unit.inlet.vars) == 3
+        assert hasattr(iapws.fs.unit.inlet, "flow_mol")
+        assert hasattr(iapws.fs.unit.inlet, "enth_mol")
+        assert hasattr(iapws.fs.unit.inlet, "pressure")
+
+        assert hasattr(iapws.fs.unit, "flow_mol")
+        assert hasattr(iapws.fs.unit, "enth_mol")
+        assert hasattr(iapws.fs.unit, "pressure")
+
+        assert number_variables(iapws) == 3
+        assert number_total_constraints(iapws) == 0
+        assert number_unused_variables(iapws) == 3
+
+    def test_dof(self, iapws):
+        iapws.fs.unit.flow_mol[0].fix(100)
+        iapws.fs.unit.enth_mol[0].fix(4000)
+        iapws.fs.unit.pressure[0].fix(101325)
+
+        assert degrees_of_freedom(iapws) == 0
+
+    @pytest.mark.initialization
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_initialize(self, iapws):
+        orig_fixed_vars = fixed_variables_set(iapws)
+        orig_act_consts = activated_constraints_set(iapws)
+
+        iapws.fs.unit.initialize(optarg={'tol': 1e-6})
+
+        assert degrees_of_freedom(iapws) == 0
+
+        fin_fixed_vars = fixed_variables_set(iapws)
+        fin_act_consts = activated_constraints_set(iapws)
+
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
+
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
+
+    # No solve as there is nothing to solve for
+
+    @pytest.mark.ui
+    def test_report(self, iapws):
+        iapws.fs.unit.report()

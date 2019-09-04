@@ -14,8 +14,6 @@
 Base class for control volumes
 """
 
-from __future__ import division
-
 # Import Python libraries
 import logging
 from enum import Enum
@@ -419,7 +417,7 @@ have a config block which derives from CONFIG_Base,
         return mb
 
     def add_energy_balances(self,
-                            balance_type=EnergyBalanceType.enthalpyPhase,
+                            balance_type=EnergyBalanceType.enthalpyTotal,
                             **kwargs):
         """
         General method for adding energy balances to a control volume.
