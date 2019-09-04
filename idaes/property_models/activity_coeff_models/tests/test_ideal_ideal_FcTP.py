@@ -29,9 +29,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # See if ipopt is available and set up solver
 if SolverFactory('ipopt').available():
     solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6,
-                      'mu_init': 1e-8,
-                      'bound_push': 1e-8}
+    solver.options = {'tol': 1e-6, 'mu_init': 1e-8, 'bound_push': 1e-8}
 else:
     solver = None
 # -----------------------------------------------------------------------------
@@ -44,9 +42,9 @@ m.fs.properties_ideal_vl_FcTP = BTXParameterBlock(
     default={"valid_phase": ('Liq', 'Vap'),
              "activity_coeff_model": "Ideal",
              "state_vars": "FcTP"})
-m.fs.state_block_ideal_vl_FcTP = m.fs.properties_ideal_vl_FcTP.state_block_class(
-    default={"parameters": m.fs.properties_ideal_vl_FcTP,
-             "defined_state": True})
+m.fs.state_block_ideal_vl_FcTP = m.fs.properties_ideal_vl_FcTP.\
+    state_block_class(default={"parameters": m.fs.properties_ideal_vl_FcTP,
+                               "defined_state": True})
 
 # # liquid only (ideal)
 # m.fs.properties_ideal_l = BTXParameterBlock(default={"valid_phase":
