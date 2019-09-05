@@ -227,7 +227,6 @@ class _ActivityCoeffStateBlock(StateBlock):
                 blk[k].eq_mol_frac_out.deactivate()
 
         # Fix state variables if not already fixed
-
         if state_vars_fixed is False:
             if blk[k]._params.config.state_vars == "FTPz":
                 Fflag = {}
@@ -235,27 +234,66 @@ class _ActivityCoeffStateBlock(StateBlock):
                 Pflag = {}
                 Tflag = {}
 
-            for k in blk.keys():
-
-                if blk[k].flow_mol.fixed is True:
-                    Fflag[k] = True
-                else:
-                    Fflag[k] = False
-                    if state_args is None:
-                        blk[k].flow_mol.fix(1.0)
+                for k in blk.keys():
+                    if blk[k].flow_mol.fixed is True:
+                        Fflag[k] = True
                     else:
-                        blk[k].flow_mol.fix(state_args["flow_mol"])
-
-                for j in blk[k]._params.component_list:
-                    if blk[k].mole_frac[j].fixed is True:
-                        Xflag[k, j] = True
-                    else:
-                        Xflag[k, j] = False
+                        Fflag[k] = False
                         if state_args is None:
-                            blk[k].mole_frac[j].fix(1 / len(blk[k].
-                                                    _params.component_list))
+                            blk[k].flow_mol.fix(1.0)
                         else:
-                            blk[k].mole_frac[j].fix(state_args["mole_frac"][j])
+                            blk[k].flow_mol.fix(state_args["flow_mol"])
+
+                    for j in blk[k]._params.component_list:
+                        if blk[k].mole_frac[j].fixed is True:
+                            Xflag[k, j] = True
+                        else:
+                            Xflag[k, j] = False
+                            if state_args is None:
+                                blk[k].mole_frac[j].fix(1 / len(blk[k].
+                                                        _params.component_list))
+                            else:
+                                blk[k].mole_frac[j].fix(state_args["mole_frac"][j])
+
+                    if blk[k].pressure.fixed is True:
+                        Pflag[k] = True
+                    else:
+                        Pflag[k] = False
+                        if state_args is None:
+                            blk[k].pressure.fix(101325.0)
+                        else:
+                            blk[k].pressure.fix(state_args["pressure"])
+
+                    if blk[k].temperature.fixed is True:
+                        Tflag[k] = True
+                    else:
+                        Tflag[k] = False
+                        if state_args is None:
+                            blk[k].temperature.fix(300)
+                        else:
+                            blk[k].temperature.fix(state_args["temperature"])
+                flags = {"Fflag": Fflag,
+                         "Xflag": Xflag,
+                         "Pflag": Pflag,
+                         "Tflag": Tflag}
+            elif blk[k]._params.config.state_vars == "FcTP":
+                Fcflag = {}
+                Pflag = {}
+                Tflag = {}
+
+                # Fix state variables if not already fixed
+                for k in blk.keys():
+                    for j in blk[k]._params.component_list:
+                        if blk[k].flow_mol_comp[j].fixed is True:
+                            Fcflag[k, j] = True
+                        else:
+                            Fcflag[k, j] = False
+                            if state_args is None:
+                                blk[k].flow_mol_comp[j].\
+                                    fix(1 / len(blk[k]._params.component_list))
+                            else:
+                                blk[k].flow_mol_comp[j].\
+                                    fix(state_args["flow_mol_comp"][j])
 
                     if blk[k].pressure.fixed is True:
                         Pflag[k] = True
@@ -275,63 +313,15 @@ class _ActivityCoeffStateBlock(StateBlock):
                         else:
                             blk[k].temperature.fix(state_args["temperature"])
 
-
-
-        # Fix state variables if not already fixed
-        # for k in blk.keys():
-        #     if blk[k]._params.config.state_vars == "FcTP":
-        #         for k in blk.keys():
-        #             for j in blk[k]._params.component_list:
-        #                 if blk[k].flow_mol_comp[j].fixed is True:
-        #                     Fcflag[k, j] = True
-        #                 else:
-        #                     Fcflag[k, j] = False
-        #                     if state_args is None:
-        #                         blk[k].flow_mol_comp[j].\
-        #                             fix(1 / len(blk[k]._params.component_list))
-        #                     else:
-        #                         blk[k].flow_mol_comp[j].\
-        #                             fix(state_args["flow_mol_comp"][j])
-        #
-        #             if blk[k].pressure.fixed is True:
-        #                 Pflag[k] = True
-        #             else:
-        #                 Pflag[k] = False
-        #                 if state_args is None:
-        #                     blk[k].pressure.fix(101325.0)
-        #                 else:
-        #                     blk[k].pressure.fix(state_args["pressure"])
-        #
-        #             if blk[k].temperature.fixed is True:
-        #                 Tflag[k] = True
-        #             else:
-        #                 Tflag[k] = False
-        #                 if state_args is None:
-        #                     blk[k].temperature.fix(300)
-        #                 else:
-        #                     blk[k].temperature.fix(state_args["temperature"])
-
-        # ---------------------------------------------------------------------
-        # If input block, return flags, else release state
-
-        if blk[k]._params.config.state_vars == "FTPz":
-            # ---------------------------------------------------------------------
-            # If input block, return flags, else release state
-            flags = {"Fflag": Fflag,
-                     "Xflag": Xflag,
-                     "Pflag": Pflag,
-                     "Tflag": Tflag}
-        # else:
-        #     flags = {"Fcflag": Fcflag,
-        #              "Pflag": Pflag,
-        #              "Tflag": Tflag}
-        # else:
-        #     for k in blk.keys():
-        #         if degrees_of_freedom(blk[k]) != 0:
-        #             raise Exception("State vars fixed but degrees of freedom "
-        #                             "for state block is not zero during "
-        #                             "initialization.")
-
+                flags = {"Fcflag": Fcflag,
+                         "Pflag": Pflag,
+                         "Tflag": Tflag}
+            else:
+                for k in blk.keys():
+                    if degrees_of_freedom(blk[k]) != 0:
+                        raise Exception("State vars fixed but degrees of "
+                                        "freedom for state block is not "
+                                        "zero during initialization.")
         # Set solver options
         if outlvl > 1:
             stee = True
@@ -468,7 +458,8 @@ class _ActivityCoeffStateBlock(StateBlock):
                              "{} failed".format(blk.name))
 
         for k in blk.keys():
-            if (blk[k].config.defined_state is False):
+            if (blk[k].config.defined_state is False) and \
+                    (blk[k]._params.config.state_vars == "FTPz"):
                 blk[k].eq_mol_frac_out.activate()
 
         if state_vars_fixed is False:
@@ -495,26 +486,25 @@ class _ActivityCoeffStateBlock(StateBlock):
             return
 
         # Unfix state variables
-
-            for k in blk.keys():
-                if blk._params.config.state_vars == "FTPz":
-                    if flags["Fflag"][k] is False:
-                        blk[k].flow_mol.unfix()
-                    for j in blk[k]._params.component_list:
-                        if flags["Xflag"][k, j] is False:
-                            blk[k].mole_frac[j].unfix()
-                    if flags["Pflag"][k] is False:
-                        blk[k].pressure.unfix()
-                    if flags["Tflag"][k] is False:
-                        blk[k].temperature.unfix()
-                else:
-                    for j in blk[k]._params.component_list:
-                        if flags["Fcflag"][k, j] is False:
-                            blk[k].flow_mol_comp[j].unfix()
-                    if flags["Pflag"][k] is False:
-                        blk[k].pressure.unfix()
-                    if flags["Tflag"][k] is False:
-                        blk[k].temperature.unfix()
+        for k in blk.keys():
+            if blk[k]._params.config.state_vars == "FTPz":
+                if flags["Fflag"][k] is False:
+                    blk[k].flow_mol.unfix()
+                for j in blk[k]._params.component_list:
+                    if flags["Xflag"][k, j] is False:
+                        blk[k].mole_frac[j].unfix()
+                if flags["Pflag"][k] is False:
+                    blk[k].pressure.unfix()
+                if flags["Tflag"][k] is False:
+                    blk[k].temperature.unfix()
+            else:
+                for j in blk[k]._params.component_list:
+                    if flags["Fcflag"][k, j] is False:
+                        blk[k].flow_mol_comp[j].unfix()
+                if flags["Pflag"][k] is False:
+                    blk[k].pressure.unfix()
+                if flags["Tflag"][k] is False:
+                    blk[k].temperature.unfix()
 
         if outlvl > 0:
             if outlvl > 0:
@@ -1176,18 +1166,36 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
         if (p == "Vap") and (j in self._params.component_list):
-            return self.flow_mol_phase["Vap"] * self.mole_frac_phase["Vap", j]
+            if self._params.config.state_vars == "FTPz":
+                return self.flow_mol_phase["Vap"] * \
+                    self.mole_frac_phase["Vap", j]
+            else:
+                return self.flow_mol_phase_comp["Vap", j]
         elif (p == "Liq") and (j in self._params.component_list):
-            return self.flow_mol_phase["Liq"] * self.mole_frac_phase["Liq", j]
+            if self._params.config.state_vars == "FTPz":
+                return self.flow_mol_phase["Liq"] * \
+                    self.mole_frac_phase["Liq", j]
+            else:
+                return self.flow_mol_phase_comp["Liq", j]
         else:
             return 0
 
     def get_enthalpy_flow_terms(self, p):
         """Create enthalpy flow terms."""
         if p == "Vap":
-            return self.flow_mol_phase["Vap"] * self.enth_mol_phase["Vap"]
+            if self._params.config.state_vars == "FTPz":
+                return self.flow_mol_phase["Vap"] * self.enth_mol_phase["Vap"]
+            else:
+                return sum(self.flow_mol_phase_comp["Vap", j]
+                           for j in self._params.component_list) * \
+                    self.enth_mol_phase["Vap"]
         elif p == "Liq":
-            return self.flow_mol_phase["Liq"] * self.enth_mol_phase["Liq"]
+            if self._params.config.state_vars == "FTPz":
+                return self.flow_mol_phase["Liq"] * self.enth_mol_phase["Liq"]
+            else:
+                return sum(self.flow_mol_phase_comp["Liq", j]
+                           for j in self._params.component_list) * \
+                    self.enth_mol_phase["Liq"]
 
     def get_material_density_terms(self, p, j):
         """Create material density terms."""

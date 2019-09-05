@@ -1427,7 +1427,6 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                       solver=solver,
                                       hold_state=False,
                                       state_args=state_args)
-
         try:
             blk.reactions.initialize(outlvl=outlvl-1,
                                      optarg=optarg,

@@ -1007,16 +1007,16 @@ class TestBTXIdeal(object):
                       "Vap", "toluene"]))
 
         # Also need to initialize outlet states
-        btx.fs.unit.outlet_1_state.initialize(flow_mol=1,
-                                              pressure=101325,
-                                              temperature=368,
-                                              mole_frac={"benzene": 0.5,
-                                                         "toluene": 0.5})
-        btx.fs.unit.outlet_2_state.initialize(flow_mol=1,
-                                              pressure=101325,
-                                              temperature=368,
-                                              mole_frac={"benzene": 0.5,
-                                                         "toluene": 0.5})
+        btx.fs.unit.outlet_1_state.initialize(state_args={"flow_mol": 1,
+                                              "pressure": 101325,
+                                              "temperature": 368,
+                                              "mole_frac": {"benzene": 0.5,
+                                                            "toluene": 0.5}})
+        btx.fs.unit.outlet_2_state.initialize(state_args={"flow_mol": 1,
+                                              "pressure": 101325,
+                                              "temperature": 368,
+                                              "mole_frac": {"benzene": 0.5,
+                                                            "toluene": 0.5}})
 
         assert degrees_of_freedom(btx) == 0
 
@@ -1248,7 +1248,7 @@ class _IdealParameterBlock(PhysicalParameterBlock):
                                'energy': 'J',
                                'holdup': 'mol'})
 
-    
+
 @declare_process_block_class("IdealStateBlock")
 class IdealTestBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
