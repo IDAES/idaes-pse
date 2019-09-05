@@ -34,7 +34,7 @@ from idaes.core.util.exceptions import (ConfigurationError, DynamicError,
 # -----------------------------------------------------------------------------
 # Test Enumerators for balance type options
 def test_material_balance_type():
-    assert len(MaterialBalanceType) == 5
+    assert len(MaterialBalanceType) == 6
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
@@ -42,7 +42,7 @@ def test_material_balance_type():
 
 
 def test_energy_balance_type():
-    assert len(EnergyBalanceType) == 5
+    assert len(EnergyBalanceType) == 6
 
     # Test that error is raised when given non-member
     with pytest.raises(AttributeError):
@@ -450,6 +450,9 @@ def test_add_material_balances():
     for t in MaterialBalanceType:
         if t == MaterialBalanceType.none:
             assert m.cv.add_material_balances(t) is None
+        elif t == MaterialBalanceType.useDefault:
+            with pytest.raises(ConfigurationError):
+                m.cv.add_material_balances(t)
         else:
             with pytest.raises(NotImplementedError):
                 m.cv.add_material_balances(t)
@@ -462,6 +465,9 @@ def test_add_energy_balances():
     for t in EnergyBalanceType:
         if t == EnergyBalanceType.none:
             assert m.cv.add_energy_balances(t) is None
+        elif t == EnergyBalanceType.useDefault:
+            with pytest.raises(ConfigurationError):
+                m.cv.add_energy_balances(t)
         else:
             with pytest.raises(NotImplementedError):
                 m.cv.add_energy_balances(t)
