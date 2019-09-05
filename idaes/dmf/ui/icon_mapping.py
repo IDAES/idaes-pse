@@ -1,11 +1,10 @@
-
 icon_mapping = {
     "cstr": "reactor_c.svg",
     "flash": "flash.svg",
     "gibbs_reactor": "reactor_g.svg",
     "heat_exchanger": "heat_exchanger_1.svg",
     "heater": "heater_2.svg",
-    "heat_exchanger_1D": "heat_exchanger_1.svg", #  same as HeatExchanger
+    "heat_exchanger_1D": "heat_exchanger_1.svg",  #  same as HeatExchanger
     "mixer": "mixer.svg",
     "plug_flow_reactor": "reactor_pfr.svg",
     "pressure_changer": "compressor.svg",
@@ -19,7 +18,7 @@ icon_mapping = {
     "translator": "NONE",
     "packed_column": "packed_column_1.svg",
     "tray_column": "tray_column_1.svg",
-    }
+}
 
 
 # TODO handle multi-icon mappings
