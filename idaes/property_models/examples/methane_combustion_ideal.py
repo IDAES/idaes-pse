@@ -28,7 +28,10 @@ from pyomo.opt import SolverFactory, TerminationCondition
 from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -762,6 +765,12 @@ class MethaneCombustionStateBlockData(StateBlockData):
 
     def get_energy_density_terms(b, p):
         return b.dens_mol_phase[p]*b.energy_internal_mol
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.elementTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(b):
         return {"flow_mol_comp": b.flow_mol_comp,

@@ -20,7 +20,7 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, Set, Param, sqrt, log10
+    Var, Set, Param, sqrt, log10
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -29,7 +29,10 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import degrees_of_freedom, \
@@ -784,6 +787,12 @@ class IdealStateBlockData(StateBlockData):
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
         return self.dens_mol_phase[p] * self.energy_internal_mol_phase[p]
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentPhase
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
