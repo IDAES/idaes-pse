@@ -26,7 +26,9 @@ from pyomo.opt import SolverFactory, TerminationCondition
 from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock,
-                        MaterialFlowBasis)
+                        MaterialFlowBasis,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.exceptions import ConfigurationError
 
@@ -441,6 +443,12 @@ class StateBlockData(StateBlockData):
             return (self.density_mol[p] * (
                     self._params.Cp - self._params.gas_const) *
                     self.temperature)
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(self):
         """Define state vars."""
