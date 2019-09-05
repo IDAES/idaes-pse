@@ -96,6 +96,8 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
       gridSize: 1,
       interactive: true
     });
+
+    // Adds link tools (adding vertices, moving segments) to links when your mouse over
     this.paper.on("cell:mouseover", function(cellView, evt) {
       if (cellView.model.isLink()) {
         var verticesTool = new joint.linkTools.Vertices({
@@ -115,11 +117,15 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
         cellView.showTools()
       }
     })
+
+    // Removes the link tools when you leave the link
     this.paper.on("cell:mouseout", function(cellView, evt) {
       if (cellView.model.isLink()) {
         cellView.hideTools()
       }
     })
+
+    // Icons rotate 90 degrees on right click. Replaces browser context menu
     this.paper.on("element:contextmenu", function(cellView, evt) {
       cellView.model.rotate(90)
     })
