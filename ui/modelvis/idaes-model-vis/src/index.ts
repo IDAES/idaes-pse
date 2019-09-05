@@ -78,8 +78,8 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     this._mimeType = options.mimeType;
     this.addClass(CLASS_NAME);
 
-    this.myholder = document.createElement("div");
-    this.myholder.id = "myholder";
+    this.holder = document.createElement("div");
+    this.holder.id = "holder";
 
     // We need to create the graph and paper in the constructor
     // If you try to create them in renderModel (which is called everytime the user
@@ -88,7 +88,7 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     var standard = joint.shapes.standard;
     this.graph = new joint.dia.Graph([], { cellNamespace: { standard } });
     this.paper = new joint.dia.Paper({
-      el: this.myholder,
+      el: this.holder,
       model: this.graph,
       cellViewNamespace: { standard },
       width: 1000,
@@ -137,7 +137,7 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
   async renderModel(model: IRenderMime.IMimeModel) {
 
     let data = model.data[this._mimeType] as JSONObject;
-    this.node.appendChild(this.myholder);
+    this.node.appendChild(this.holder);
 
     utils.remapIcons(data, 'forDisplay');
     this.graph.fromJSON(data);
@@ -155,7 +155,7 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
   }
 
   private _mimeType: string;
-  private myholder: HTMLDivElement;
+  private holder: HTMLDivElement;
   private paper: joint.dia.Paper;
   private graph: joint.dia.Graph;
 }
