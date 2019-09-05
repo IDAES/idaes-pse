@@ -42,6 +42,8 @@ from idaes.core import (
     PhysicalParameterBlock,
     StateBlockData,
     StateBlock,
+    MaterialBalanceType,
+    EnergyBalanceType
 )
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
@@ -733,6 +735,12 @@ class IdealStateBlockData(StateBlockData):
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
         return self.dens_mol_phase[p] * self.enth_mol_phase[p]
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
