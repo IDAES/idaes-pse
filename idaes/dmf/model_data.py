@@ -257,7 +257,6 @@ def unit_convert(
     if gauge:
         # convert gauge pressure to absolute
         y = y + ambient_pressure * ureg.parse_expression(ambient_pressure_unit)
-    print(y)
     return (y.magnitude, str(y.units))
 
 

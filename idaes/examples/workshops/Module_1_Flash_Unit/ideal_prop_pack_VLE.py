@@ -21,8 +21,8 @@ Robert H. Perry". SI units.
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, exp, Set, Param, sqrt, log10
+from pyomo.environ import Constraint, Expression, log, NonNegativeReals, \
+    value, Var, Set, Param, sqrt, log10
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.config import ConfigValue, In
@@ -32,7 +32,9 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
@@ -723,6 +725,12 @@ class IdealStateBlockData(StateBlockData):
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(self):
         """Define state vars."""
