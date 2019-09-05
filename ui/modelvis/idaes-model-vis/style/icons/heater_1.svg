@@ -9,13 +9,13 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="31.816153mm"
-   height="45.115055mm"
-   viewBox="0 0 112.73439 159.85649"
+   width="16.007303mm"
+   height="21.285501mm"
+   viewBox="0 0 56.71879 75.421067"
    id="svg2"
    version="1.1"
-   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
-   sodipodi:docname="flash.svg"
+   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
+   sodipodi:docname="heater_1.svg"
    inkscape:export-filename="/home/alee/Reports/Pictures/unit_icons.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
@@ -139,22 +139,6 @@
          d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
          style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.625;stroke-linejoin:round;stroke-opacity:1"
          id="path22289"
-         inkscape:connector-curvature="0" />
-    </marker>
-    <marker
-       inkscape:isstock="true"
-       style="overflow:visible"
-       id="marker15810"
-       refX="0"
-       refY="0"
-       orient="auto"
-       inkscape:stockid="Arrow2Mend"
-       inkscape:collect="always">
-      <path
-         transform="scale(-0.6)"
-         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
-         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.625;stroke-linejoin:round;stroke-opacity:1"
-         id="path15812"
          inkscape:connector-curvature="0" />
     </marker>
     <marker
@@ -562,22 +546,6 @@
          d="M 0,0 5,-5 -12.5,0 5,5 Z"
          id="path4958-2" />
     </marker>
-    <marker
-       inkscape:isstock="true"
-       style="overflow:visible"
-       id="marker15810-6"
-       refX="0"
-       refY="0"
-       orient="auto"
-       inkscape:stockid="Arrow2Mend"
-       inkscape:collect="always">
-      <path
-         transform="scale(-0.6)"
-         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
-         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0.625;stroke-linejoin:round;stroke-opacity:1"
-         id="path15812-99"
-         inkscape:connector-curvature="0" />
-    </marker>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -586,18 +554,18 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.8284271"
-     inkscape:cx="132.68749"
-     inkscape:cy="62.276113"
+     inkscape:zoom="2.8"
+     inkscape:cx="-118.21177"
+     inkscape:cy="0.34540115"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      showguides="true"
      objecttolerance="20"
      inkscape:window-width="1920"
-     inkscape:window-height="981"
-     inkscape:window-x="0"
-     inkscape:window-y="28"
+     inkscape:window-height="1027"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
      inkscape:window-maximized="1"
      fit-margin-top="0"
      fit-margin-left="0"
@@ -606,10 +574,11 @@
     <inkscape:grid
        type="xygrid"
        id="grid3336"
-       originx="37.499999"
-       originy="23.717022"
-       spacingx="4.6874999"
-       spacingy="4.6874999" />
+       originx="-37.078936"
+       originy="0.42105973"
+       spacingx="9.3750001"
+       spacingy="9.3750001"
+       snapvisiblegridlinesonly="true" />
   </sodipodi:namedview>
   <metadata
      id="metadata7">
@@ -627,29 +596,21 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-422.21037,-455.55204)">
+     transform="translate(-242.70548,-805.52274)">
+    <ellipse
+       style="visibility:visible;fill:none;stroke:#000000;stroke-width:3.28125;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="path4179"
+       cx="271.06488"
+       cy="852.58441"
+       rx="26.718771"
+       ry="26.718769"
+       visibility="visible" />
     <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3.28124976;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 461.11661,579.69899 c 22.91667,14.16597 46.97918,14.16597 72.18753,0 v -86.76642 c -25.29811,-17.82121 -49.17809,-15.18871 -72.18753,0 z"
-       id="path4161"
+       style="visibility:visible;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.93749994;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 252.50155,805.52274 v 56.25 l 18.75,-18.75 18.75,18.75 v -56.25"
+       id="path4181"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccccc" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.87498057;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Mend-6-7-74)"
-       d="m 422.21037,530.75402 h 34.66536 v 0"
-       id="path4294-66-8-73"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.91887379;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker15810)"
-       d="m 497.23231,479.19152 v -18.63559 h 34.57703"
-       id="path15802"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccc" />
-    <path
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.91887379;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker15810-6)"
-       d="m 497.21037,591.80593 v 18.63559 h 34.57703"
-       id="path15802-5"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccc" />
+       sodipodi:nodetypes="ccccc"
+       visibility="visible" />
   </g>
 </svg>
