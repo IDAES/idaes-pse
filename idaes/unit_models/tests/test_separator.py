@@ -64,35 +64,6 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
-def test_config():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    m.fs.properties = PhysicalParameterTestBlock()
-
-    m.fs.unit = Separator(default={"property_package": m.fs.properties})
-
-    # Check unit config arguments
-    assert len(m.fs.unit.config) == 14
-
-    assert not m.fs.unit.config.dynamic
-    assert not m.fs.unit.config.has_holdup
-    assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
-    assert m.fs.unit.config.energy_split_basis == \
-        EnergySplittingType.equal_temperature
-    assert m.fs.unit.config.outlet_list is None
-    assert m.fs.unit.config.num_outlets == 2
-    assert m.fs.unit.config.split_basis == SplittingType.totalFlow
-    assert not m.fs.unit.config.ideal_separation
-    assert m.fs.unit.config.ideal_split_map is None
-    assert m.fs.unit.config.mixed_state_block is None
-    assert m.fs.unit.config.construct_ports
-    assert not m.fs.unit.config.has_phase_equilibrium
-    assert m.fs.unit.config.property_package is m.fs.properties
-
-
-# -----------------------------------------------------------------------------
 # Mockup classes for testing
 @declare_process_block_class("SeparatorFrame")
 class SeparatorFrameData(SeparatorData):
@@ -130,7 +101,7 @@ class TestBaseConstruction(object):
         assert build.fs.sep.config.mixed_state_block is None
         assert build.fs.sep.config.construct_ports is True
         assert build.fs.sep.config.material_balance_type == \
-            MaterialBalanceType.componentPhase
+            MaterialBalanceType.useDefault
         assert build.fs.sep.config.has_phase_equilibrium is False
 
     def test_validate_config_arguments(self, build):

@@ -59,7 +59,9 @@ from pyomo.common.config import ConfigValue, In
 
 # Import IDAES
 from idaes.core import declare_process_block_class, ProcessBlock, \
-                       StateBlock, StateBlockData, PhysicalParameterBlock
+                       StateBlock, StateBlockData, PhysicalParameterBlock, \
+                       MaterialBalanceType, EnergyBalanceType, \
+                       MomentumBalanceType
 from idaes.core.util.math import smooth_max
 
 # Logger
@@ -169,6 +171,7 @@ enthalpy are the best choice because they are well behaved during a phase change
             self.phase_list = Set(initialize=["Liq"])
         elif self.config.phase_presentation == PhaseType.G:
             self.phase_list = Set(initialize=["Vap"])
+
         # State var set
         self.state_vars = self.config.state_vars
 
@@ -852,6 +855,12 @@ class Iapws95StateBlockData(StateBlockData):
             return self.dens_mol*self.energy_internal_mol
         else:
             return self.dens_mol_phase[p]*self.energy_internal_mol_phase[p]
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(self):
         return self._state_vars_dict
