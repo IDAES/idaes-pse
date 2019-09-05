@@ -25,6 +25,5 @@ from idaes.dmf.ui import icon_mapping
     ("packed_column", "packed_column_1.svg"),
     ("tray_column", "tray_column_1.svg")]
 )
-
 def test_icon_mapping(test_input, expected):
     assert icon_mapping[test_input] == expected

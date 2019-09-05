@@ -71,7 +71,8 @@ link_position_mapping = {
         "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
         "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},
     },
-    # TODO When we get to using different icons we need to figure out how to deal with mutiple inlets and outlets in different places
+    # TODO When we get to using different icons we need to figure out how
+    #  to deal with mutiple inlets and outlets in different places
     "heat_exchanger1d": {
         "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}},
         "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}},

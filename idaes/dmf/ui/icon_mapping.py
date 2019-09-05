@@ -4,7 +4,7 @@ icon_mapping = {
     "gibbs_reactor": "reactor_g.svg",
     "heat_exchanger": "heat_exchanger_1.svg",
     "heater": "heater_2.svg",
-    "heat_exchanger_1D": "heat_exchanger_1.svg",  #  same as HeatExchanger
+    "heat_exchanger_1D": "heat_exchanger_1.svg",  # same as HeatExchanger
     "mixer": "mixer.svg",
     "plug_flow_reactor": "reactor_pfr.svg",
     "pressure_changer": "compressor.svg",
@@ -23,11 +23,16 @@ icon_mapping = {
 
 # TODO handle multi-icon mappings
 #    "Heater": {"cooler.svg", "heater_1.svg", "heater_2.svg"},
-#    "PressureChanger": {"compressor.svg", "expander.svg", "pump.svg", "fan.svg"}, # compressor and expander variations are identical when arrows are not present
-#    "HeatExchanger": {"heat_exchanger_1.svg", "heat_exchanger_3.svg"}, # 1/2 and 3/4 are identical when arrows not present
-#    "HeatExchanger1D": {"heat_exchanger_1.svg", "heat_exchanger_3.svg"}, #  same as HeadExchanger
-#    "PackedColumn": {"packed_column_1.svg", "packed_column_2.svg", "packed_column_3.svg", "packed_column_4.svg"},
-#    "TrayColumn": {"tray_column_1.svg", "tray_column_2.svg", "tray_column_3.svg", "tray_column_4.svg"},
+#    "PressureChanger": {"compressor.svg", "expander.svg", "pump.svg", "fan.svg"},
+# compressor and expander variations are identical when arrows are not present
+#    "HeatExchanger": {"heat_exchanger_1.svg", "heat_exchanger_3.svg"},
+# 1/2 and 3/4 are identical when arrows not present
+#    "HeatExchanger1D": {"heat_exchanger_1.svg", "heat_exchanger_3.svg"},
+#  same as HeadExchanger
+#    "PackedColumn": {"packed_column_1.svg", "packed_column_2.svg",
+#    "packed_column_3.svg", "packed_column_4.svg"},
+#    "TrayColumn": {"tray_column_1.svg", "tray_column_2.svg", "tray_column_3.svg",
+#    "tray_column_4.svg"},
 #
 
 
