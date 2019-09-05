@@ -20,7 +20,7 @@ namespace utils {
     [key: string]: string;
   }
   const staticURLToFilepath: map = {};
-  // Takes filepath like 'icons/compressor_2_flipped.svg'
+  // Takes filepath like 'icons/compressor_2.svg'
   // Returns a CSS var that will hold the built static url for the icon
   // Eg., '--idaes-compressor-2-flipped-icon'
   // These are defined in ../style/index.css
@@ -137,13 +137,7 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
   async renderModel(model: IRenderMime.IMimeModel) {
 
     let data = model.data[this._mimeType] as JSONObject;
-    //this.node.textContent = JSON.stringify(data);
     this.node.appendChild(this.myholder);
-
-    // var somelink = document.createElement('a');
-    // somelink.href = "http://www.google.com";
-    // somelink.innerHTML = "something";
-    // this.myholder.appendChild(somelink);
 
     utils.remapIcons(data, 'forDisplay');
     this.graph.fromJSON(data);
