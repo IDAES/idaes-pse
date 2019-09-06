@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -26,7 +26,7 @@ from pyomo.common.config import ConfigValue, In
 # Import IDAES cores
 from idaes.core import declare_process_block_class, PhysicalParameterBlock
 
-from .methanol_state_block_VLE import _IdealStateBlock
+from .methanol_state_block_VLE import IdealStateBlock
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -72,7 +72,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         '''
         super(PhysicalParameterData, self).build()
 
-        self.state_block_class = _IdealStateBlock
+        self.state_block_class = IdealStateBlock
 
         # List of valid phases in property package
         # List of valid phases in property package

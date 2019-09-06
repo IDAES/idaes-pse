@@ -17,7 +17,9 @@ The ALAMO Python module facilitates easy access to ALAMO and provides additional
 Change to the `alamo_python` subdirectory and use the standard
 Python install formula:
 
-    python setup.py install
+```
+python setup.py install
+```
 
 
 ### Usage

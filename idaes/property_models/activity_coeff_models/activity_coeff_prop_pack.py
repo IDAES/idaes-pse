@@ -56,10 +56,12 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
@@ -135,6 +137,12 @@ conditions, and thus corresponding constraints  should be included,
              'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
              'mole_frac_phase': {'method': '_mole_frac_phase',
                                  'units': 'no unit'},
+             'energy_internal_mol_phase_comp': {
+                     'method': '_energy_internal_mol_phase_comp',
+                     'units': 'J/mol'},
+             'energy_internal_mol_phase': {
+                     'method': '_energy_internal_mol_phase',
+                     'units': 'J/mol'},
              'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp',
                                      'units': 'J/mol'},
              'enth_mol_phase': {'method': '_enth_mol_phase',
@@ -844,6 +852,40 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.del_component(self.density_mol_calculation)
             raise
 
+    def _energy_internal_mol_phase(self):
+        self.energy_internal_mol_phase = Var(
+            self._params.phase_list,
+            doc='Phase molar specific internal energy [J/mol]')
+
+        def rule_energy_internal_mol_phase(b, p):
+            return b.energy_internal_mol_phase[p] == sum(
+                b.energy_internal_mol_phase_comp[p, i] *
+                b.mole_frac_phase[p, i]
+                for i in b._params.component_list)
+        self.eq_energy_internal_mol_phase = Constraint(
+                self._params.phase_list,
+                rule=rule_energy_internal_mol_phase)
+
+    def _energy_internal_mol_phase_comp(self):
+        self.energy_internal_mol_phase_comp = Var(
+                self._params.phase_list,
+                self._params.component_list,
+                doc="Phase-component molar specific internal energy [J/mol]")
+
+        def rule_energy_internal_mol_phase_comp(b, p, j):
+            if p == 'Vap':
+                return b.energy_internal_mol_phase_comp[p, j] == \
+                        b.enth_mol_phase_comp[p, j] - \
+                        b._params.gas_const*(b.temperature -
+                                             b._params.temperature_ref)
+            else:
+                return b.energy_internal_mol_phase_comp[p, j] == \
+                        b.enth_mol_phase_comp[p, j]
+        self.eq_energy_internal_mol_phase_comp = Constraint(
+            self._params.phase_list,
+            self._params.component_list,
+            rule=rule_energy_internal_mol_phase_comp)
+
     def _enth_mol_phase(self):
         self.enth_mol_phase = Var(
             self._params.phase_list,
@@ -1017,12 +1059,12 @@ class ActivityCoeffStateBlockData(StateBlockData):
             else:
                 return 0
 
-    def get_enthalpy_density_terms(self, p):
+    def get_energy_density_terms(self, p):
         """Create enthalpy density terms."""
         if p == "Liq":
-            return self.density_mol[p] * self.enth_mol_phase['Liq']
+            return self.density_mol[p] * self.energy_internal_mol_phase['Liq']
         elif p == "Vap":
-            return self.density_mol[p] * self.enth_mol_phase['Vap']
+            return self.density_mol[p] * self.energy_internal_mol_phase['Vap']
 
     def get_material_flow_basis(self):
         """Declare material flow basis."""
@@ -1334,3 +1376,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
             # first; if it passes then constraint construction will not fail.
             self.del_component(self.temperature_dew)
             self.del_component(self._p_sat_dewT)
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal

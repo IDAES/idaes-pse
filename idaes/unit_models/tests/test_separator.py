@@ -64,35 +64,6 @@ solver = get_default_solver()
 
 
 # -----------------------------------------------------------------------------
-def test_config():
-    m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
-
-    m.fs.properties = PhysicalParameterTestBlock()
-
-    m.fs.unit = Separator(default={"property_package": m.fs.properties})
-
-    # Check unit config arguments
-    assert len(m.fs.unit.config) == 14
-
-    assert not m.fs.unit.config.dynamic
-    assert not m.fs.unit.config.has_holdup
-    assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
-    assert m.fs.unit.config.energy_split_basis == \
-        EnergySplittingType.equal_temperature
-    assert m.fs.unit.config.outlet_list is None
-    assert m.fs.unit.config.num_outlets == 2
-    assert m.fs.unit.config.split_basis == SplittingType.totalFlow
-    assert not m.fs.unit.config.ideal_separation
-    assert m.fs.unit.config.ideal_split_map is None
-    assert m.fs.unit.config.mixed_state_block is None
-    assert m.fs.unit.config.construct_ports
-    assert not m.fs.unit.config.has_phase_equilibrium
-    assert m.fs.unit.config.property_package is m.fs.properties
-
-
-# -----------------------------------------------------------------------------
 # Mockup classes for testing
 @declare_process_block_class("SeparatorFrame")
 class SeparatorFrameData(SeparatorData):
@@ -130,7 +101,7 @@ class TestBaseConstruction(object):
         assert build.fs.sep.config.mixed_state_block is None
         assert build.fs.sep.config.construct_ports is True
         assert build.fs.sep.config.material_balance_type == \
-            MaterialBalanceType.componentPhase
+            MaterialBalanceType.useDefault
         assert build.fs.sep.config.has_phase_equilibrium is False
 
     def test_validate_config_arguments(self, build):
@@ -1248,6 +1219,7 @@ class _IdealParameterBlock(PhysicalParameterBlock):
                                'energy': 'J',
                                'holdup': 'mol'})
 
+    
 @declare_process_block_class("IdealStateBlock")
 class IdealTestBlockData(StateBlockData):
     CONFIG = ConfigBlock(implicit=True)
@@ -1262,7 +1234,7 @@ class IdealTestBlockData(StateBlockData):
                                        self._params.component_list,
                                        initialize=2)
         self.flow_mol_phase = Var(self._params.phase_list,
-                                       initialize=2)
+                                  initialize=2)
         self.flow_mol_comp = Var(self._params.component_list,
                                  initialize=2)
         self.flow_mol = Var(initialize=2)
@@ -1359,7 +1331,7 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+                                        m.outlet_list)
 
         assert isinstance(m.fs.sep.outlet_1, Port)
         assert isinstance(m.fs.sep.outlet_2, Port)
@@ -1414,7 +1386,7 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+                                        m.outlet_list)
 
         assert isinstance(m.fs.sep.outlet_1, Port)
         assert isinstance(m.fs.sep.outlet_2, Port)
@@ -1453,7 +1425,7 @@ class TestIdealConstruction(object):
         m.fs.sep.add_mixed_state_block()
 
         m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                            m.outlet_list)
+                                        m.outlet_list)
 
         assert isinstance(m.fs.sep.outlet_1, Port)
         assert isinstance(m.fs.sep.outlet_2, Port)
@@ -1471,7 +1443,6 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_2.component_flow[0, "p2", "c2"]) == 2.0
         assert value(m.fs.sep.outlet_2.temperature[0]) == 300
         assert value(m.fs.sep.outlet_2.pressure[0]) == 1e5
-
 
     def test_ideal_w_no_ports(self):
         m = ConcreteModel()
@@ -1725,7 +1696,6 @@ class TestIdealConstruction(object):
         assert value(m.fs.sep.outlet_3.mole_frac[0, "c2"]) == 1e-8
         assert value(m.fs.sep.outlet_4.mole_frac[0, "c1"]) == 1e-8
         assert value(m.fs.sep.outlet_4.mole_frac[0, "c2"]) == 1
-
 
     def test_mole_frac_w_phase_split_no_fallback(self):
         m = ConcreteModel()
@@ -2605,7 +2575,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_4.test_var[0]) == 9000
 
-    def test_general_phase_split_fallback_fail(self):
+    def test_general_phase_comp_split_fallback_fail(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
         m.fs.pp = IdealTestBlock()
