@@ -160,7 +160,8 @@ conditions, and thus corresponding constraints  should be included,
              'pressure_dew': {'method': '_pressure_dew',
                               'units': 'Pa'},
              'fug_vap': {'method': '_fug_vap', 'units': 'Pa'},
-             'fug_liq': {'method': '_fug_liq', 'units': 'Pa'}})
+             'fug_liq': {'method': '_fug_liq', 'units': 'Pa'},
+             'ds_vap': {'method': '_ds_vap', 'units': 'J/mol.K'}})
 
         obj.add_default_units({'time': 's',
                                'length': 'm',
@@ -988,16 +989,16 @@ class ActivityCoeffStateBlockData(StateBlockData):
         # Liquid phase comp entropy (J/mol.K)
         # 1E3 conversion factor to convert from J/kmol.K to J/mol.K
         return self.entr_mol_phase_comp['Liq', j] * 1E3 == (
-            ((self._params.cp_ig['Liq', j, '5'] / 4) *
-                (self.temperature**4 - self._params.temperature_ref**4)
-                + (self._params.cp_ig['Liq', j, '4'] / 3) *
-                  (self.temperature**3 - self._params.temperature_ref**3)
-                + (self._params.cp_ig['Liq', j, '3'] / 2) *
-                  (self.temperature**2 - self._params.temperature_ref**2)
-                + self._params.cp_ig['Liq', j, '2'] *
-                  (self.temperature - self._params.temperature_ref)
-                + self._params.cp_ig['Liq', j, '1'] *
-             log(self.temperature / self._params.temperature_ref)))
+            ((self._params.CpIG['Liq', j, 'E'] / 4) *
+                (self.temperature**4 - self._params.temperature_reference**4)
+                + (self._params.CpIG['Liq', j, 'D'] / 3) *
+                  (self.temperature**3 - self._params.temperature_reference**3)
+                + (self._params.CpIG['Liq', j, 'C'] / 2) *
+                  (self.temperature**2 - self._params.temperature_reference**2)
+                + self._params.CpIG['Liq', j, 'B'] *
+                  (self.temperature - self._params.temperature_reference)
+                + self._params.CpIG['Liq', j, 'A'] *
+             log(self.temperature / self._params.temperature_reference)))
 
     def _ds_vap(self):
         # entropy of vaporization = dh_Vap/T_boil
@@ -1016,19 +1017,19 @@ class ActivityCoeffStateBlockData(StateBlockData):
         # component molar entropy of vapor phase
         return self.entr_mol_phase_comp['Vap', j] == (
             self.ds_vap[j] +
-            ((self._params.cp_ig['Vap', j, '5'] / 4) *
-             (self.temperature**4 - self._params.temperature_ref**4)
-             + (self._params.cp_ig['Vap', j, '4'] / 3) *
-             (self.temperature**3 - self._params.temperature_ref**3)
-             + (self._params.cp_ig['Vap', j, '3'] / 2) *
-               (self.temperature**2 - self._params.temperature_ref**2)
-                + self._params.cp_ig['Vap', j, '2'] *
-               (self.temperature - self._params.temperature_ref)
-                + self._params.cp_ig['Vap', j, '1'] *
-                log(self.temperature / self._params.temperature_ref)) -
+            ((self._params.CpIG['Vap', j, 'E'] / 4) *
+             (self.temperature**4 - self._params.temperature_reference**4)
+             + (self._params.CpIG['Vap', j, 'D'] / 3) *
+             (self.temperature**3 - self._params.temperature_reference**3)
+             + (self._params.CpIG['Vap', j, 'C'] / 2) *
+               (self.temperature**2 - self._params.temperature_reference**2)
+                + self._params.CpIG['Vap', j, 'B'] *
+               (self.temperature - self._params.temperature_reference)
+                + self._params.CpIG['Vap', j, 'A'] *
+                log(self.temperature / self._params.temperature_reference)) -
             self._params.gas_const * log(self.mole_frac_phase['Vap', j] *
                                          self.pressure /
-                                         self._params.pressure_ref))
+                                         self._params.pressure_reference))
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
