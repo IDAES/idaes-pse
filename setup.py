@@ -33,22 +33,16 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-alamopy_dir = Path("apps") / "ddm-learning" / "alamo_python" / "alamopy"
-ripe_dir = Path("apps") / "ddm-learning" / "ripe_python" / "ripe"
+alamopy_dir = Path(".") / "apps" / "ddm-learning" / "alamo_python"
+ripe_dir = Path(".") / "apps" / "ddm-learning" / "ripe_python"
 
 
 def find_all_packages():
     test_patterns = ["*.tests", "*.tests.*", "tests.*", "tests"]
-
-    def fp(path, prefix):
-        return [prefix + "." + x for x in find_packages(path, exclude=test_patterns)]
-
-    return (
-        ["idaes"]
-        + fp("idaes", "idaes")
-        + fp(alamopy_dir, "alamopy")
-        + fp(ripe_dir, "ripe")
-    )
+    result = []
+    for pkgdir in (".", alamopy_dir, ripe_dir):
+        result.extend(find_packages(str(pkgdir)))
+    return result
 
 
 kwargs = dict(
@@ -58,8 +52,8 @@ kwargs = dict(
     packages=find_all_packages(),
     package_dir={
         "idaes": "idaes",
-        "alamopy": alamopy_dir,
-        "ripe": ripe_dir,
+        "alamopy": str(alamopy_dir / "alamopy"),
+        "ripe": str(ripe_dir / "ripe"),
     },
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
@@ -159,5 +153,11 @@ kwargs = dict(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
 )
+
+if len(sys.argv) > 1 and sys.argv[1] == "packages":
+    print(f"alamopy dir: {alamopy_dir}")
+    print(f"ripe dir: {ripe_dir}")
+    print("\n".join(find_all_packages()))
+    sys.exit(0)
 
 setup(**kwargs)

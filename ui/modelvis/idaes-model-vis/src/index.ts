@@ -20,7 +20,7 @@ namespace utils {
     [key: string]: string;
   }
   const staticURLToFilepath: map = {};
-  // Takes filepath like 'icons/compressor_2_flipped.svg'
+  // Takes filepath like 'icons/compressor_2.svg'
   // Returns a CSS var that will hold the built static url for the icon
   // Eg., '--idaes-compressor-2-flipped-icon'
   // These are defined in ../style/index.css
@@ -78,8 +78,8 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     this._mimeType = options.mimeType;
     this.addClass(CLASS_NAME);
 
-    this.myholder = document.createElement("div");
-    this.myholder.id = "myholder";
+    this.holder = document.createElement("div");
+    this.holder.id = "holder";
 
     // We need to create the graph and paper in the constructor
     // If you try to create them in renderModel (which is called everytime the user
@@ -88,7 +88,7 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     var standard = joint.shapes.standard;
     this.graph = new joint.dia.Graph([], { cellNamespace: { standard } });
     this.paper = new joint.dia.Paper({
-      el: this.myholder,
+      el: this.holder,
       model: this.graph,
       cellViewNamespace: { standard },
       width: 1000,
@@ -96,6 +96,8 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
       gridSize: 1,
       interactive: true
     });
+
+    // Adds link tools (adding vertices, moving segments) to links when your mouse over
     this.paper.on("cell:mouseover", function(cellView, evt) {
       if (cellView.model.isLink()) {
         var verticesTool = new joint.linkTools.Vertices({
@@ -115,10 +117,17 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
         cellView.showTools()
       }
     })
+
+    // Removes the link tools when you leave the link
     this.paper.on("cell:mouseout", function(cellView, evt) {
       if (cellView.model.isLink()) {
         cellView.hideTools()
       }
+    })
+
+    // Icons rotate 90 degrees on right click. Replaces browser context menu
+    this.paper.on("element:contextmenu", function(cellView, evt) {
+      cellView.model.rotate(90)
     })
   }
 
@@ -128,13 +137,7 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
   async renderModel(model: IRenderMime.IMimeModel) {
 
     let data = model.data[this._mimeType] as JSONObject;
-    //this.node.textContent = JSON.stringify(data);
-    this.node.appendChild(this.myholder);
-
-    // var somelink = document.createElement('a');
-    // somelink.href = "http://www.google.com";
-    // somelink.innerHTML = "something";
-    // this.myholder.appendChild(somelink);
+    this.node.appendChild(this.holder);
 
     utils.remapIcons(data, 'forDisplay');
     this.graph.fromJSON(data);
@@ -152,7 +155,7 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
   }
 
   private _mimeType: string;
-  private myholder: HTMLDivElement;
+  private holder: HTMLDivElement;
   private paper: joint.dia.Paper;
   private graph: joint.dia.Graph;
 }
