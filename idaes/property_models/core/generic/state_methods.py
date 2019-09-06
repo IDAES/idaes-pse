@@ -160,40 +160,40 @@ def FPTx(b):
 
     # -------------------------------------------------------------------------
     # General Methods
-    def get_material_flow_terms(p, j):
+    def get_material_flow_terms_FPTx(p, j):
         """Create material flow terms for control volume."""
         if j in b._params.component_list:
             return b.flow_mol_phase[p] * b.mole_frac_phase[p, j]
         else:
             return 0
-    b.get_material_flow_terms = get_material_flow_terms
+    b.get_material_flow_terms = get_material_flow_terms_FPTx
 
-    def get_enthalpy_flow_terms(p):
+    def get_enthalpy_flow_terms_FPTx(p):
         """Create enthalpy flow terms."""
         return b.flow_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms
+    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FPTx
 
-    def get_material_density_terms(p, j):
+    def get_material_density_terms_FPTx(p, j):
         """Create material density terms."""
         if j in b._params.component_list:
             return b.dens_mol_phase[p] * b.mole_frac_phase[p, j]
         else:
             return 0
-    b.get_material_density_terms = get_material_density_terms
+    b.get_material_density_terms = get_material_density_terms_FPTx
 
-    def get_enthalpy_density_terms(p):
+    def get_enthalpy_density_terms_FPTx(p):
         """Create enthalpy density terms."""
         return b.dens_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_enthalpy_density_terms = get_enthalpy_density_terms
+    b.get_enthalpy_density_terms = get_enthalpy_density_terms_FPTx
 
-    def get_material_flow_basis():
+    def get_material_flow_basis_FPTx():
         return MaterialFlowBasis.molar
-    b.get_material_flow_basis = get_material_flow_basis
+    b.get_material_flow_basis = get_material_flow_basis_FPTx
 
-    def define_state_vars():
+    def define_state_vars_FPTx():
         """Define state vars."""
         return {"flow_mol": b.flow_mol,
                 "mole_frac": b.mole_frac,
                 "temperature": b.temperature,
                 "pressure": b.pressure}
-    b.define_state_vars = define_state_vars
+    b.define_state_vars = define_state_vars_FPTx

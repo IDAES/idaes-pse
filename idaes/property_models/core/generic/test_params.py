@@ -37,7 +37,7 @@ from idaes.property_models.core.pure.cp import (RPP_enth_ig,
                                                 RPP_entr_ig,
                                                 Perry_entr_liq)
 from idaes.property_models.core.pure.dens_mol import Perry_dens_liq
-from idaes.property_models.core.pure.pressure_sat import antoine
+from idaes.property_models.core.pure.pressure_sat import RPP_Psat1
 
 
 # Set up logger
@@ -70,12 +70,12 @@ class TestParameterData(GenericParameterData):
         self.config.bubble_pressure = bubble_press_ideal
         self.config.dew_pressure = dew_press_ideal
 
-        self.config.dens_mol_liq = Perry_dens_liq
-        self.config.enth_mol_liq = Perry_enth_liq
-        self.config.enth_mol_vap = RPP_enth_ig
-        self.config.entr_mol_liq = Perry_entr_liq
-        self.config.entr_mol_vap = RPP_entr_ig
-        self.config.pressure_sat = antoine
+        self.config.dens_mol_comp_liq = Perry_dens_liq
+        self.config.enth_mol_comp_liq = Perry_enth_liq
+        self.config.enth_mol_comp_vap = RPP_enth_ig
+        self.config.entr_mol_comp_liq = Perry_entr_liq
+        self.config.entr_mol_comp_vap = RPP_entr_ig
+        self.config.pressure_sat_comp = RPP_Psat1
         # ---------------------------------------------------------------------
         self.component_list = Set(initialize=['benzene', 'toluene'])
 
@@ -180,19 +180,37 @@ class TestParameterData(GenericParameterData):
 
         # Source: NIST Webbook (units are Pa, K)
         # A parameter +5 to convert from bar to Pa
-        antoine_coeff_data = {('benzene', 'A'): 9.72583,
-                              ('benzene', 'B'): 1660.652,
-                              ('benzene', 'C'): -1.461,
-                              ('toluene', 'A'): 9.07827,
-                              ('toluene', 'B'): 1343.943,
-                              ('toluene', 'C'): -53.773}
+#        antoine_coeff_data = {('benzene', 'A'): 9.72583,
+#                              ('benzene', 'B'): 1660.652,
+#                              ('benzene', 'C'): -1.461,
+#                              ('toluene', 'A'): 9.07827,
+#                              ('toluene', 'B'): 1343.943,
+#                              ('toluene', 'C'): -53.773}
+#
+#        self.antoine_coeff = Param(
+#            self.component_list,
+#            ['A', 'B', 'C'],
+#            mutable=False,
+#            initialize=antoine_coeff_data,
+#            doc="Antoine coefficients for saturation pressure")
 
-        self.antoine_coeff = Param(
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
+        pressure_sat_coeff_data = {('benzene', 'A'): -6.98273,
+                                   ('benzene', 'B'): 1.33213,
+                                   ('benzene', 'C'): -2.62863,
+                                   ('benzene', 'D'): -3.33399,
+                                   ('toluene', 'A'): -7.28607,
+                                   ('toluene', 'B'): 1.38091,
+                                   ('toluene', 'C'): -2.83433,
+                                   ('toluene', 'D'): -2.79168}
+
+        self.pressure_sat_coeff = Param(
             self.component_list,
-            ['A', 'B', 'C'],
+            ['A', 'B', 'C', 'D'],
             mutable=False,
-            initialize=antoine_coeff_data,
-            doc="Antoine coefficients for saturation pressure")
+            initialize=pressure_sat_coeff_data,
+            doc="parameters to compute Cp_comp")
 
         # Source: "Perry's Chemical Engineers Handbook by Robert H. Perry"
         # 7th Edition, pg. 2-98

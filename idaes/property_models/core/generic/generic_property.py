@@ -33,6 +33,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.exceptions import PropertyPackageError
 
 # Import sub-model libraries
 import idaes.property_models.core.generic.state_methods as state_methods
@@ -43,7 +44,18 @@ _log = logging.getLogger(__name__)
 
 
 # TODO: Need clean-up methods for all methods to work with Pyomo DAE
-# TODO: Sub-libraries for common forms of derived properties (e.g. Gibbs energy, mixture and phase properties)
+class GenericPropertyPackageError(PropertyPackageError):
+    # Error message for when a property is called for but no option provided
+    def __init__(self, block, prop):
+        self.prop = prop
+        self.block = block
+
+    def __str__(self):
+        return f"Generic Property Package instance {self.block} called for " \
+               f"property {self.prop}, but was not provided with a method " \
+               f"for this property. Please add a method for this proeprty " \
+               f"in the property parameter configuration."
+
 
 class GenericParameterData(PhysicalParameterBlock):
     """
@@ -97,27 +109,27 @@ class GenericParameterData(PhysicalParameterBlock):
         thedesired equation of state."""))
 
     # Pure component property options
-    CONFIG.declare("dens_mol_liq", ConfigValue(
+    CONFIG.declare("dens_mol_comp_liq", ConfigValue(
         description="Method to use to calculate liquid phase molar density",
         doc="""Flag indicating what method to use when calcuating liquid phase
         molar density."""))
-    CONFIG.declare("enth_mol_liq", ConfigValue(
+    CONFIG.declare("enth_mol_comp_liq", ConfigValue(
         description="Method to calculate liquid component molar enthalpies",
         doc="""Flag indicating what method to use when calculating liquid phase
         component molar enthalpies."""))
-    CONFIG.declare("enth_mol_vap", ConfigValue(
+    CONFIG.declare("enth_mol_comp_vap", ConfigValue(
         description="Method to calculate vapor component molar enthalpies",
         doc="""Flag indicating what method to use when calculating vapor phase
         component molar enthalpies."""))
-    CONFIG.declare("entr_mol_liq", ConfigValue(
+    CONFIG.declare("entr_mol_comp_liq", ConfigValue(
         description="Method to calculate liquid component molar entropies",
         doc="""Flag indicating what method to use when calculating liquid phase
         component molar entropies."""))
-    CONFIG.declare("entr_mol_vap", ConfigValue(
+    CONFIG.declare("entr_mol_comp_vap", ConfigValue(
         description="Method to calculate vapor component molar entropies",
         doc="""Flag indicating what method to use when calculating vapor phase
         component molar entropies."""))
-    CONFIG.declare("pressure_sat", ConfigValue(
+    CONFIG.declare("pressure_sat_comp", ConfigValue(
         description="Method to use to calculate saturation pressure",
         doc="""Flag indicating what method to use when calcuating saturation
         pressure. Value should be a valid Python method which takes two
@@ -643,9 +655,22 @@ class GenericStateBlockData(StateBlockData):
         super(GenericStateBlockData, self).build()
 
         # Add state vairables and assoicated methods
+        if self._params.config.state_definition is None:
+            raise PropertyPackageError(
+                    "{} Generic property package was not provided with a "
+                    "state_definition configuration argument. Please fix "
+                    "you property parameter defintion to include this "
+                    "configuration argument.")
         self._params.config.state_definition(self)
 
         # Create common components for each property package
+        if self._params.config.equation_of_state is None:
+            raise PropertyPackageError(
+                    "{} Generic property package was not provided with a "
+                    "equation_of_state configuration argument. Please fix "
+                    "you property parameter defintion to include this "
+                    "configuration argument.")
+
         for p in self._params.phase_list:
             self._params.config.equation_of_state[p].common(self)
 
@@ -657,6 +682,9 @@ class GenericStateBlockData(StateBlockData):
     # -------------------------------------------------------------------------
     # Bubble and Dew Points
     def _temperature_bubble(b):
+        if b._params.config.bubble_temperature is None:
+            raise GenericPropertyPackageError(b, "bubble_temperature")
+
         b.temperature_bubble = Var(
                 doc="Bubble point temperature",
                 bounds=(b.temperature.lb, b.temperature.ub))
@@ -670,6 +698,9 @@ class GenericStateBlockData(StateBlockData):
         b._params.config.bubble_temperature(b)
 
     def _temperature_dew(b):
+        if b._params.config.dew_temperature is None:
+            raise GenericPropertyPackageError(b, "dew_temperature")
+
         b.temperature_dew = Var(
                 doc="Dew point temperature",
                 bounds=(b.temperature.lb, b.temperature.ub))
@@ -683,6 +714,9 @@ class GenericStateBlockData(StateBlockData):
         b._params.config.dew_temperature(b)
 
     def _pressure_bubble(b):
+        if b._params.config.bubble_pressure is None:
+            raise GenericPropertyPackageError(b, "bubble_pressure")
+
         b.pressure_bubble = Var(
                 doc="Bubble point pressure",
                 bounds=(b.pressure.lb, b.pressure.ub))
@@ -696,6 +730,9 @@ class GenericStateBlockData(StateBlockData):
         b._params.config.bubble_pressure(b)
 
     def _pressure_dew(b):
+        if b._params.config.dew_pressure is None:
+            raise GenericPropertyPackageError(b, "dew_pressure")
+
         b.pressure_dew = Var(
                 doc="Dew point pressure",
                 bounds=(b.pressure.lb, b.pressure.ub))
@@ -720,7 +757,7 @@ class GenericStateBlockData(StateBlockData):
 
     def _dens_mass_phase(self):
         def rule_dens_mass_phase(b, p):
-            return b._params.config.equation_of_state[p].dens_mass(b, p)
+            return b._params.config.equation_of_state[p].dens_mass_phase(b, p)
         self.dens_mass_phase = Expression(
                 self._params.phase_list,
                 doc="Mass density of each phase",
@@ -736,7 +773,7 @@ class GenericStateBlockData(StateBlockData):
 
     def _dens_mol_phase(self):
         def rule_dens_mol_phase(b, p):
-            return b._params.config.equation_of_state[p].dens_mol(b, p)
+            return b._params.config.equation_of_state[p].dens_mol_phase(b, p)
         self.dens_mol_phase = Expression(
                 self._params.phase_list,
                 doc="Molar density of each phase",
@@ -746,24 +783,21 @@ class GenericStateBlockData(StateBlockData):
         self.enth_mol = Var(doc="Mixture molar enthalpy")
 
         def rule_enth_mol(b):
-            return b.enth_mol == sum(
-                    sum(b.mole_frac_phase[p, j] *
-                        b.enth_mol_phase_comp[p, j]
-                        for j in b._params.component_list)
-                    for p in b._params.phase_list)
+            return b.enth_mol == sum(b.enth_mol_phase[p] *
+                                     b.phase_frac[p]
+                                     for p in b._params.phase_list)
         self.eq_enth_mol_phase = Constraint(rule=rule_enth_mol)
 
     def _enth_mol_phase(self):
         def rule_enth_mol_phase(b, p):
-            return sum(b.mole_frac_phase[p, j] *
-                       b.enth_mol_phase_comp[p, j]
-                       for j in b._params.component_list)
+            return b._params.config.equation_of_state[p].enth_mol_phase(b, p)
         self.enth_mol_phase = Expression(self._params.phase_list,
                                          rule=rule_enth_mol_phase)
 
     def _enth_mol_phase_comp(self):
         def rule_enth_mol_phase_comp(b, p, j):
-            return b._params.config.equation_of_state[p].enth_mol_comp(b, p, j)
+            return b._params.config.equation_of_state[p] \
+                    .enth_mol_phase_comp(b, p, j)
         self.enth_mol_phase_comp = Expression(
             self._params.phase_list,
             self._params.component_list,
@@ -773,24 +807,21 @@ class GenericStateBlockData(StateBlockData):
         self.entr_mol = Var(doc="Mixture molar entropy")
 
         def rule_entr_mol(b):
-            return b.entr_mol == sum(
-                    sum(b.mole_frac_phase[p, j] *
-                        b.entr_mol_phase_comp[p, j]
-                        for j in b._params.component_list)
-                    for p in b._params.phase_list)
+            return b.entr_mol == sum(b.entr_mol_phase[p] *
+                                     b.phase_frac[p]
+                                     for p in b._params.phase_list)
         self.eq_entr_mol_phase = Constraint(rule=rule_entr_mol)
 
     def _entr_mol_phase(self):
         def rule_entr_mol_phase(b, p):
-            return sum(b.mole_frac_phase[p, j] *
-                       b.entr_mol_phase_comp[p, j]
-                       for j in b._params.component_list)
+            return b._params.config.equation_of_state[p].entr_mol_phase(b, p)
         self.entr_mol_phase = Expression(self._params.phase_list,
                                          rule=rule_entr_mol_phase)
 
     def _entr_mol_phase_comp(self):
         def rule_entr_mol_phase_comp(b, p, j):
-            return b._params.config.equation_of_state[p].entr_mol_comp(b, p, j)
+            return b._params.config.equation_of_state[p] \
+                    .entr_mol_phase_comp(b, p, j)
         self.entr_mol_phase_comp = Expression(
             self._params.phase_list,
             self._params.component_list,
@@ -814,27 +845,21 @@ class GenericStateBlockData(StateBlockData):
         self.gibbs_mol = Var(doc="Mixture molar Gibbs energy")
 
         def rule_gibbs_mol(b):
-            return b.gibbs_mol == sum(
-                    sum(b.mole_frac_phase[p, j] *
-                        b.gibbs_mol_phase_comp[p, j]
-                        for j in b._params.component_list)
-                    for p in b._params.phase_list)
+            return b.gibbs_mol == sum(b.gibbs_mol_phase[p] *
+                                      b.phase_frac[p]
+                                      for p in b._params.phase_list)
         self.eq_gibbs_mol_phase = Constraint(rule=rule_gibbs_mol)
 
     def _gibbs_mol_phase(self):
         def rule_gibbs_mol_phase(b, p):
-            return sum(b.mole_frac_phase[p, j] *
-                       b.gibbs_mol_phase_comp[p, j]
-                       for j in b._params.component_list)
+            return b._params.config.equation_of_state[p].gibbs_mol_phase(b, p)
         self.gibbs_mol_phase = Expression(self._params.phase_list,
                                           rule=rule_gibbs_mol_phase)
 
     def _gibbs_mol_phase_comp(self):
         def rule_gibbs_mol_phase_comp(b, p, j):
-            return (b.enth_mol_phase_comp[p, j] -
-                    (b.entr_mol_phase_comp[p, j] -
-                     b._params.config.equation_of_state[p]
-                     .entr_mol_comp_ref(b, p, j))*b.temperature)
+            return b._params.config.equation_of_state[p] \
+                    .gibbs_mol_phase_comp(b, p, j)
         self.gibbs_mol_phase_comp = Expression(
             self._params.phase_list,
             self._params.component_list,
