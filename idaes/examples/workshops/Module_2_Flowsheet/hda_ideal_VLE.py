@@ -396,7 +396,7 @@ class _IdealStateBlock(StateBlock):
                                     1 / len(blk[k]._params.component_list))
                             else:
                                 blk[k].flow_mol_phase_comp[p, j].fix(
-                                    state_args[p][j])
+                                    state_args["flow_mol_phase_comp"][p, j])
 
                 if blk[k].pressure.fixed is True:
                     Pflag[k] = True
