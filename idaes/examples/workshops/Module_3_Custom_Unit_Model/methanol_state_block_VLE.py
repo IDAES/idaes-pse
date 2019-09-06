@@ -47,19 +47,14 @@ class _IdealStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, flow_mol=None, mole_frac=None,
-                   temperature=None, pressure=None,
+    def initialize(blk, state_args=None,
                    hold_state=False, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialisation routine for property package.
 
         Keyword Arguments:
-            flow_mol_comp : value at which to initialize component flows
-                             (default=None)
-            pressure : value at which to initialize pressure (default=None)
-            temperature : value at which to initialize temperature
-                          (default=None)
+            state_args: Initial guess for state variables.
             outlvl : sets output level of initialisation routine
 
                      * 0 = no output (default)
@@ -95,39 +90,39 @@ class _IdealStateBlock(StateBlock):
                 Fflag[k] = True
             else:
                 Fflag[k] = False
-                if flow_mol is None:
+                if state_args is None:
                     blk[k].flow_mol.fix(1.0)
                 else:
-                    blk[k].flow_mol.fix(flow_mol)
+                    blk[k].flow_mol.fix(state_args["flow_mol"])
 
             for j in blk[k]._params.component_list:
                 if blk[k].mole_frac[j].fixed is True:
                     Xflag[k, j] = True
                 else:
                     Xflag[k, j] = False
-                    if mole_frac is None:
+                    if state_args is None:
                         blk[k].mole_frac[j].fix(1 / len(blk[k].
                                                 _params.component_list))
                     else:
-                        blk[k].mole_frac[j].fix(mole_frac[j])
+                        blk[k].mole_frac[j].fix(state_args["mole_frac"][j])
 
             if blk[k].pressure.fixed is True:
                 Pflag[k] = True
             else:
                 Pflag[k] = False
-                if pressure is None:
+                if state_args is None:
                     blk[k].pressure.fix(0.101325)
                 else:
-                    blk[k].pressure.fix(pressure)
+                    blk[k].pressure.fix(state_args["pressure"])
 
             if blk[k].temperature.fixed is True:
                 Tflag[k] = True
             else:
                 Tflag[k] = False
-                if temperature is None:
+                if state_args is None:
                     blk[k].temperature.fix(3.25)
                 else:
-                    blk[k].temperature.fix(temperature)
+                    blk[k].temperature.fix(state_args["temperature"])
 
         # Set solver options
         if outlvl > 1:
