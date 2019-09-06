@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.optimize import basinhopping
 import pandas as pd
+from pyomo.environ import Param, exp
 
 
 class ResultReport:
@@ -25,7 +26,7 @@ class ResultReport:
     ===================================================================================================================
     """
 
-    def __init__(self, theta, reg_param, mean, variance, cov_mat, cov_inv, ymu, y_training, r2_training, rmse_error, p):
+    def __init__(self, theta, reg_param, mean, variance, cov_mat, cov_inv, ymu, y_training, r2_training, rmse_error, p, x_data):
         self.optimal_weights = theta
         self.optimal_p = p
         self.optimal_mean = mean
@@ -37,6 +38,22 @@ class ResultReport:
         self.output_predictions = y_training
         self.training_R2 = r2_training
         self.training_rmse = rmse_error
+        self.x_data = x_data
+
+    def kriging_generate_expression(self, variable_list):
+        t1 = np.array([variable_list])
+        phi_var = []
+        for i in range(0, self.x_data.shape[0]):
+            curr_term = sum(self.optimal_weights[j] * (t1[0, j] - self.x_data[i, j]) ** self.optimal_p for j in range(0, self.x_data.shape[1]))
+            curr_term = exp(-curr_term)
+            phi_var.append(curr_term)
+        phi_var_array = np.asarray(phi_var)
+
+        phi_inv_times_y_mu = np.matmul(self.covariance_matrix_inverse, self.optimal_y_mu)
+        phi_inv_times_y_mu = phi_inv_times_y_mu.reshape(phi_inv_times_y_mu.shape[0], )
+        kriging_expr = self.optimal_mean[0,0]
+        kriging_expr += sum(w * t for w, t in zip(np.nditer(phi_inv_times_y_mu), np.nditer(phi_var_array, flags=['refs_ok']) ))
+        return kriging_expr
 
 
 class MyBounds(object):
@@ -58,8 +75,10 @@ class KrigingModel:
         # Check data types and shapes
         if isinstance(XY_data, pd.DataFrame):
             xy_data = XY_data.values
+            self.x_data_columns = list(XY_data.columns)[:-1]
         elif isinstance(XY_data, np.ndarray):
             xy_data = XY_data
+            self.x_data_columns = list(range(XY_data.shape[1] - 1))
         else:
             raise ValueError('Pandas dataframe or numpy array required for "XY_data".')
 
@@ -210,5 +229,12 @@ class KrigingModel:
         training_ss_error, rmse_error, y_training_predictions = self.error_calculation(optimal_theta, p, optimal_mean, opt_cov_inv, optimal_ymu, self.x_data, self.y_data)
         r2_training = self.r2_calculation(self.y_data, y_training_predictions)
         # Return results
-        results = ResultReport(optimal_theta, optimal_reg_param, optimal_mean, optimal_variance, optimal_cov_mat, opt_cov_inv, optimal_ymu, y_training_predictions, r2_training, rmse_error, p)
+        results = ResultReport(optimal_theta, optimal_reg_param, optimal_mean, optimal_variance, optimal_cov_mat, opt_cov_inv, optimal_ymu, y_training_predictions, r2_training, rmse_error, p, self.x_data)
         return results
+
+    def get_feature_vector(self):
+        p = Param(self.x_data_columns, mutable=True, initialize=0)
+        p.index_set().construct()
+        p.construct()
+        self.feature_list = p
+        return p

@@ -24,8 +24,15 @@ training_data = b.sample_points()
 
 # Kriging training
 aa = krg.KrigingModel(training_data)
+fv = aa.get_feature_vector()
 ab = aa.kriging_training()
 print()
+
+list_vars = []
+for i in fv.keys():
+    list_vars.append(fv[i])
+eq = ab.kriging_generate_expression(list_vars)
+print('The Kriging expression is: \n eq = ', ab.kriging_generate_expression(list_vars))
 
 # Kriging testing
 x_pred = data_scaled[:, :-1]
