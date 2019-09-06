@@ -12,8 +12,7 @@
 ##############################################################################
 """
 Tests for Ideal + Ideal Liquid (i.e. no activity coefficient) state block;
-only tests for construction as parameters need to be provided or estimated
-from VLE data to compute the activity coefficients.
+state vars tested are FcTP.
 
 Author: Jaffer Ghouse
 """
@@ -38,241 +37,249 @@ m = ConcreteModel()
 m.fs = FlowsheetBlock(default={"dynamic": False})
 
 # vapor-liquid (ideal) - FcTP
-m.fs.properties_ideal_vl_FcTP = BTXParameterBlock(
+m.fs.properties_ideal_vl = BTXParameterBlock(
     default={"valid_phase": ('Liq', 'Vap'),
              "activity_coeff_model": "Ideal",
              "state_vars": "FcTP"})
-m.fs.state_block_ideal_vl_FcTP = m.fs.properties_ideal_vl_FcTP.\
-    state_block_class(default={"parameters": m.fs.properties_ideal_vl_FcTP,
+m.fs.state_block_ideal_vl = m.fs.properties_ideal_vl.\
+    state_block_class(default={"parameters": m.fs.properties_ideal_vl,
                                "defined_state": True})
 
-# # liquid only (ideal)
-# m.fs.properties_ideal_l = BTXParameterBlock(default={"valid_phase":
-#                                                      'Liq',
-#                                                      "activity_coeff_model":
-#                                                      "Ideal"})
-# m.fs.state_block_ideal_l = m.fs.properties_ideal_l.state_block_class(
-#     default={"parameters": m.fs.properties_ideal_l,
-#              "has_phase_equilibrium": False,
-#              "defined_state": True})
+# liquid only (ideal)
+m.fs.properties_ideal_l = BTXParameterBlock(default={"valid_phase":
+                                                     'Liq',
+                                                     "activity_coeff_model":
+                                                     "Ideal",
+                                                     "state_vars":
+                                                     "FcTP"})
+m.fs.state_block_ideal_l = m.fs.properties_ideal_l.state_block_class(
+    default={"parameters": m.fs.properties_ideal_l,
+             "has_phase_equilibrium": False,
+             "defined_state": True})
 
 # vapour only (ideal)
-# m.fs.properties_ideal_v = BTXParameterBlock(default={"valid_phase":
-#                                                      'Vap',
-#                                                      "activity_coeff_model":
-#                                                      "Ideal"})
-# m.fs.state_block_ideal_v = m.fs.properties_ideal_v.state_block_class(
-#     default={"parameters": m.fs.properties_ideal_v,
-#              "has_phase_equilibrium": False,
-#              "defined_state": True})
+m.fs.properties_ideal_v = BTXParameterBlock(default={"valid_phase":
+                                                     'Vap',
+                                                     "activity_coeff_model":
+                                                     "Ideal",
+                                                     "state_vars":
+                                                     "FcTP"})
+m.fs.state_block_ideal_v = m.fs.properties_ideal_v.state_block_class(
+    default={"parameters": m.fs.properties_ideal_v,
+             "has_phase_equilibrium": False,
+             "defined_state": True})
 
 
 def test_build_inlet_state_block():
-    assert len(m.fs.properties_ideal_vl_FcTP.config) == 4
+    assert len(m.fs.properties_ideal_vl.config) == 4
 
-    assert m.fs.properties_ideal_vl_FcTP.config.valid_phase == ('Vap', 'Liq') or \
-        m.fs.properties_ideal_vl_FcTP.config.valid_phase == ('Liq', 'Vap')
-    assert len(m.fs.properties_ideal_vl_FcTP.phase_list) == 2
-    assert m.fs.properties_ideal_vl_FcTP.phase_list == ["Liq", "Vap"]
-    assert m.fs.state_block_ideal_vl_FcTP.config.defined_state
-    assert hasattr(m.fs.state_block_ideal_vl_FcTP, "eq_phase_equilibrium")
-    assert not hasattr(m.fs.state_block_ideal_vl_FcTP, "eq_activity_coeff")
-    assert not hasattr(m.fs.state_block_ideal_vl_FcTP, "eq_mol_frac_out")
+    assert m.fs.properties_ideal_vl.config.valid_phase == ('Vap', 'Liq') or \
+        m.fs.properties_ideal_vl.config.valid_phase == ('Liq', 'Vap')
+    assert len(m.fs.properties_ideal_vl.phase_list) == 2
+    assert m.fs.properties_ideal_vl.phase_list == ["Liq", "Vap"]
+    assert m.fs.state_block_ideal_vl.config.defined_state
+    assert hasattr(m.fs.state_block_ideal_vl, "eq_phase_equilibrium")
+    assert not hasattr(m.fs.state_block_ideal_vl, "eq_activity_coeff")
+    assert not hasattr(m.fs.state_block_ideal_vl, "eq_mol_frac_out")
 
     # # liquid only (ideal)
-    # assert len(m.fs.properties_ideal_l.config) == 4
-    #
-    # assert m.fs.properties_ideal_l.config.valid_phase == 'Liq'
-    # assert len(m.fs.properties_ideal_l.phase_list) == 1
-    # assert m.fs.properties_ideal_l.phase_list == ["Liq"]
-    # assert m.fs.state_block_ideal_l.config.defined_state
-    # assert not hasattr(m.fs.state_block_ideal_l, "eq_phase_equilibrium")
-    # assert not hasattr(m.fs.state_block_ideal_l, "eq_activity_coeff")
-    # assert not hasattr(m.fs.state_block_ideal_l, "eq_mol_frac_out")
-    #
-    # # vapor only (ideal)
-    # assert len(m.fs.properties_ideal_v.config) == 4
-    #
-    # assert m.fs.properties_ideal_v.config.valid_phase == 'Vap'
-    # assert len(m.fs.properties_ideal_v.phase_list) == 1
-    # assert m.fs.properties_ideal_v.phase_list == ["Vap"]
-    # assert m.fs.state_block_ideal_v.config.defined_state
-    # assert not hasattr(m.fs.state_block_ideal_v, "eq_phase_equilibrium")
-    # assert not hasattr(m.fs.state_block_ideal_v, "eq_activity_coeff")
-    # assert not hasattr(m.fs.state_block_ideal_v, "eq_mol_frac_out")
+    assert len(m.fs.properties_ideal_l.config) == 4
+
+    assert m.fs.properties_ideal_l.config.valid_phase == 'Liq'
+    assert len(m.fs.properties_ideal_l.phase_list) == 1
+    assert m.fs.properties_ideal_l.phase_list == ["Liq"]
+    assert m.fs.state_block_ideal_l.config.defined_state
+    assert not hasattr(m.fs.state_block_ideal_l, "eq_phase_equilibrium")
+    assert not hasattr(m.fs.state_block_ideal_l, "eq_activity_coeff")
+    assert not hasattr(m.fs.state_block_ideal_l, "eq_mol_frac_out")
+
+    # vapor only (ideal)
+    assert len(m.fs.properties_ideal_v.config) == 4
+
+    assert m.fs.properties_ideal_v.config.valid_phase == 'Vap'
+    assert len(m.fs.properties_ideal_v.phase_list) == 1
+    assert m.fs.properties_ideal_v.phase_list == ["Vap"]
+    assert m.fs.state_block_ideal_v.config.defined_state
+    assert not hasattr(m.fs.state_block_ideal_v, "eq_phase_equilibrium")
+    assert not hasattr(m.fs.state_block_ideal_v, "eq_activity_coeff")
+    assert not hasattr(m.fs.state_block_ideal_v, "eq_mol_frac_out")
 
 
 def test_setInputs_inlet_state_block():
 
     # vapor-liquid (ideal)
-    m.fs.state_block_ideal_vl_FcTP.flow_mol_comp["benzene"].fix(0.5)
-    m.fs.state_block_ideal_vl_FcTP.flow_mol_comp["toluene"].fix(0.5)
-    m.fs.state_block_ideal_vl_FcTP.temperature.fix(368)
-    m.fs.state_block_ideal_vl_FcTP.pressure.fix(101325)
+    m.fs.state_block_ideal_vl.flow_mol_comp["benzene"].fix(0.5)
+    m.fs.state_block_ideal_vl.flow_mol_comp["toluene"].fix(0.5)
+    m.fs.state_block_ideal_vl.temperature.fix(368)
+    m.fs.state_block_ideal_vl.pressure.fix(101325)
 
-    assert degrees_of_freedom(m.fs.state_block_ideal_vl_FcTP) == 0
+    assert degrees_of_freedom(m.fs.state_block_ideal_vl) == 0
 
     # # liquid only (ideal)
-    # m.fs.state_block_ideal_l.flow_mol.fix(1)
-    # m.fs.state_block_ideal_l.temperature.fix(368)
-    # m.fs.state_block_ideal_l.pressure.fix(101325)
-    # m.fs.state_block_ideal_l.mole_frac["benzene"].fix(0.5)
-    # m.fs.state_block_ideal_l.mole_frac["toluene"].fix(0.5)
-    #
-    # assert degrees_of_freedom(m.fs.state_block_ideal_l) == 0
-    #
-    # # vapour only (ideal)
-    # m.fs.state_block_ideal_v.flow_mol.fix(1)
-    # m.fs.state_block_ideal_v.temperature.fix(368)
-    # m.fs.state_block_ideal_v.pressure.fix(101325)
-    # m.fs.state_block_ideal_v.mole_frac["benzene"].fix(0.5)
-    # m.fs.state_block_ideal_v.mole_frac["toluene"].fix(0.5)
-    #
-    # assert degrees_of_freedom(m.fs.state_block_ideal_v) == 0
+    m.fs.state_block_ideal_l.flow_mol_comp["benzene"].fix(0.5)
+    m.fs.state_block_ideal_l.flow_mol_comp["toluene"].fix(0.5)
+    m.fs.state_block_ideal_l.temperature.fix(368)
+    m.fs.state_block_ideal_l.pressure.fix(101325)
+
+    assert degrees_of_freedom(m.fs.state_block_ideal_l) == 0
+
+    # vapour only (ideal)
+    m.fs.state_block_ideal_v.flow_mol_comp["benzene"].fix(0.5)
+    m.fs.state_block_ideal_v.flow_mol_comp["toluene"].fix(0.5)
+    m.fs.state_block_ideal_v.temperature.fix(368)
+    m.fs.state_block_ideal_v.pressure.fix(101325)
+
+    assert degrees_of_freedom(m.fs.state_block_ideal_v) == 0
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_solve():
     # vapor-liquid
-    m.fs.state_block_ideal_vl_FcTP.initialize()
-    results = solver.solve(m.fs.state_block_ideal_vl_FcTP, tee=False)
+    m.fs.state_block_ideal_vl.initialize()
+    results = solver.solve(m.fs.state_block_ideal_vl, tee=False)
 
     # Check for optimal solution
     assert results.solver.termination_condition == TerminationCondition.optimal
     assert results.solver.status == SolverStatus.ok
 
     # Check for VLE results
-    assert value(m.fs.state_block_ideal_vl_FcTP.
+    assert value(m.fs.state_block_ideal_vl.
                  flow_mol_phase_comp['Liq', 'benzene']) == \
         pytest.approx(0.2488, abs=1e-3)
-    assert value(m.fs.state_block_ideal_vl_FcTP.
+    assert value(m.fs.state_block_ideal_vl.
                  flow_mol_phase_comp['Vap', 'benzene']) == \
         pytest.approx(0.2512, abs=1e-3)
 
-    # # liquid only
-    # m.fs.state_block_ideal_l.initialize()
-    # results = solver.solve(m.fs.state_block_ideal_l, tee=False)
-    #
-    # # Check for optimal solution
-    # assert results.solver.termination_condition == TerminationCondition.optimal
-    # assert results.solver.status == SolverStatus.ok
-    #
-    # # Check for results
-    # assert value(m.fs.state_block_ideal_l.mole_frac_phase['Liq',
-    #                                                       'benzene']) == \
-    #     pytest.approx(0.5, abs=1e-3)
-    # assert value(m.fs.state_block_ideal_l.mole_frac_phase['Liq',
-    #                                                       'toluene']) == \
-    #     pytest.approx(0.5, abs=1e-3)
-    #
-    # # vapor only
-    # m.fs.state_block_ideal_v.initialize()
-    # results = solver.solve(m.fs.state_block_ideal_v, tee=False)
-    #
-    # # Check for optimal solution
-    # assert results.solver.termination_condition == TerminationCondition.optimal
-    # assert results.solver.status == SolverStatus.ok
-    #
-    # # Check for results
-    # assert value(m.fs.state_block_ideal_v.mole_frac_phase['Vap',
-    #                                                            'benzene']) == \
-    #     pytest.approx(0.5, abs=1e-3)
-    # assert value(m.fs.state_block_ideal_v.mole_frac_phase['Vap',
-    #                                                            'toluene']) == \
-    #     pytest.approx(0.5, abs=1e-3)
+    # liquid only
+    m.fs.state_block_ideal_l.initialize()
+    results = solver.solve(m.fs.state_block_ideal_l, tee=False)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    # Check for results
+    assert value(m.fs.state_block_ideal_l.flow_mol_phase_comp['Liq',
+                                                              'benzene']) == \
+        pytest.approx(0.5, abs=1e-3)
+    assert value(m.fs.state_block_ideal_l.flow_mol_phase_comp['Liq',
+                                                              'toluene']) == \
+        pytest.approx(0.5, abs=1e-3)
+
+    # vapor only
+    m.fs.state_block_ideal_v.initialize()
+    results = solver.solve(m.fs.state_block_ideal_v, tee=False)
+
+    # Check for optimal solution
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert results.solver.status == SolverStatus.ok
+
+    # Check for results
+    assert value(m.fs.state_block_ideal_v.flow_mol_phase_comp['Vap',
+                                                              'benzene']) == \
+        pytest.approx(0.5, abs=1e-3)
+    assert value(m.fs.state_block_ideal_v.flow_mol_phase_comp['Vap',
+                                                              'toluene']) == \
+        pytest.approx(0.5, abs=1e-3)
 
 
-# # Create a flowsheet object to test outlet state blocks
-# m.fs1 = FlowsheetBlock(default={"dynamic": False})
-#
-# # vapor-liquid (ideal)
-# m.fs1.properties_ideal_vl = BTXParameterBlock(default={"valid_phase":
-#                                                        ('Liq', 'Vap'),
-#                                                        "activity_coeff_model":
-#                                                        "Ideal"})
-# m.fs1.state_block_ideal_vl = m.fs1.properties_ideal_vl.state_block_class(
-#     default={"parameters": m.fs1.properties_ideal_vl,
-#              "defined_state": False})
-#
-# # liquid only (ideal)
-# m.fs1.properties_ideal_l = BTXParameterBlock(default={"valid_phase":
-#                                                       "Liq",
-#                                                       "activity_coeff_model":
-#                                                       "Ideal"})
-# m.fs1.state_block_ideal_l = m.fs1.properties_ideal_l.state_block_class(
-#     default={"parameters": m.fs1.properties_ideal_l,
-#              "has_phase_equilibrium": False,
-#              "defined_state": False})
-#
-# # vapour only (ideal)
-# m.fs1.properties_ideal_v = BTXParameterBlock(default={"valid_phase":
-#                                                       "Vap",
-#                                                       "activity_coeff_model":
-#                                                       "Ideal"})
-# m.fs1.state_block_ideal_v = m.fs1.properties_ideal_v.state_block_class(
-#     default={"parameters": m.fs1.properties_ideal_v,
-#              "has_phase_equilibrium": False,
-#              "defined_state": False})
-#
-#
-# def test_build_outlet_state_block():
-#     assert len(m.fs1.properties_ideal_vl.config) == 4
-#
-#     # vapor-liquid (ideal)
-#     assert m.fs1.properties_ideal_vl.config.valid_phase == ('Vap', 'Liq') or \
-#         m.fs1.properties_ideal_vl.config.valid_phase == ('Liq', 'Vap')
-#     assert len(m.fs1.properties_ideal_vl.phase_list) == 2
-#     assert m.fs1.properties_ideal_vl.phase_list == ["Liq", "Vap"]
-#     assert not m.fs1.state_block_ideal_vl.config.defined_state
-#     assert hasattr(m.fs1.state_block_ideal_vl, "eq_phase_equilibrium")
-#     assert not hasattr(m.fs1.state_block_ideal_vl, "eq_activity_coeff")
-#     assert hasattr(m.fs1.state_block_ideal_vl, "eq_mol_frac_out")
-#
-#     # liquid only (ideal)
-#     assert len(m.fs1.properties_ideal_l.config) == 4
-#
-#     assert m.fs1.properties_ideal_l.config.valid_phase == 'Liq'
-#     assert len(m.fs1.properties_ideal_l.phase_list) == 1
-#     assert m.fs1.properties_ideal_l.phase_list == ["Liq"]
-#     assert not m.fs1.state_block_ideal_l.config.defined_state
-#     assert not hasattr(m.fs1.state_block_ideal_l, "eq_phase_equilibrium")
-#     assert not hasattr(m.fs1.state_block_ideal_l, "eq_activity_coeff")
-#     assert hasattr(m.fs1.state_block_ideal_l, "eq_mol_frac_out")
-#
-#     # vapour only (ideal)
-#     assert len(m.fs1.properties_ideal_v.config) == 4
-#
-#     assert m.fs1.properties_ideal_v.config.valid_phase == 'Vap'
-#     assert len(m.fs1.properties_ideal_v.phase_list) == 1
-#     assert m.fs1.properties_ideal_v.phase_list == ["Vap"]
-#     assert not m.fs1.state_block_ideal_v.config.defined_state
-#     assert not hasattr(m.fs1.state_block_ideal_v, "eq_phase_equilibrium")
-#     assert not hasattr(m.fs1.state_block_ideal_v, "eq_activity_coeff")
-#     assert hasattr(m.fs1.state_block_ideal_v, "eq_mol_frac_out")
-#
-#
-# def test_setInputs_outlet_state_block():
-#
-#     # vapor-liquid (ideal)
-#     m.fs1.state_block_ideal_vl.flow_mol.fix(1)
-#     m.fs1.state_block_ideal_vl.temperature.fix(368)
-#     m.fs1.state_block_ideal_vl.pressure.fix(101325)
-#     m.fs1.state_block_ideal_vl.mole_frac["benzene"].fix(0.5)
-#
-#     assert degrees_of_freedom(m.fs1.state_block_ideal_vl) == 0
-#
-#     # liquid only (ideal)
-#     m.fs1.state_block_ideal_l.flow_mol.fix(1)
-#     m.fs1.state_block_ideal_l.temperature.fix(368)
-#     m.fs1.state_block_ideal_l.pressure.fix(101325)
-#     m.fs1.state_block_ideal_l.mole_frac["benzene"].fix(0.5)
-#
-#     assert degrees_of_freedom(m.fs1.state_block_ideal_l) == 0
-#
-#     # vapour only (ideal)
-#     m.fs1.state_block_ideal_v.flow_mol.fix(1)
-#     m.fs1.state_block_ideal_v.temperature.fix(368)
-#     m.fs1.state_block_ideal_v.pressure.fix(101325)
-#     m.fs1.state_block_ideal_v.mole_frac["benzene"].fix(0.5)
-#
-#     assert degrees_of_freedom(m.fs1.state_block_ideal_v) == 0
+# Create a flowsheet object to test outlet state blocks
+m.fs1 = FlowsheetBlock(default={"dynamic": False})
+
+# vapor-liquid (ideal)
+m.fs1.properties_ideal_vl = BTXParameterBlock(default={"valid_phase":
+                                                       ('Liq', 'Vap'),
+                                                       "activity_coeff_model":
+                                                       "Ideal",
+                                                       "state_vars":
+                                                       "FcTP"})
+m.fs1.state_block_ideal_vl = m.fs1.properties_ideal_vl.state_block_class(
+    default={"parameters": m.fs1.properties_ideal_vl,
+             "defined_state": False})
+
+# liquid only (ideal)
+m.fs1.properties_ideal_l = BTXParameterBlock(default={"valid_phase":
+                                                      "Liq",
+                                                      "activity_coeff_model":
+                                                      "Ideal",
+                                                      "state_vars":
+                                                      "FcTP"})
+m.fs1.state_block_ideal_l = m.fs1.properties_ideal_l.state_block_class(
+    default={"parameters": m.fs1.properties_ideal_l,
+             "has_phase_equilibrium": False,
+             "defined_state": False})
+
+# vapour only (ideal)
+m.fs1.properties_ideal_v = BTXParameterBlock(default={"valid_phase":
+                                                      "Vap",
+                                                      "activity_coeff_model":
+                                                      "Ideal",
+                                                      "state_vars":
+                                                      "FcTP"})
+m.fs1.state_block_ideal_v = m.fs1.properties_ideal_v.state_block_class(
+    default={"parameters": m.fs1.properties_ideal_v,
+             "has_phase_equilibrium": False,
+             "defined_state": False})
+
+
+def test_build_outlet_state_block():
+    assert len(m.fs1.properties_ideal_vl.config) == 4
+
+    # vapor-liquid (ideal)
+    assert m.fs1.properties_ideal_vl.config.valid_phase == ('Vap', 'Liq') or \
+        m.fs1.properties_ideal_vl.config.valid_phase == ('Liq', 'Vap')
+    assert len(m.fs1.properties_ideal_vl.phase_list) == 2
+    assert m.fs1.properties_ideal_vl.phase_list == ["Liq", "Vap"]
+    assert not m.fs1.state_block_ideal_vl.config.defined_state
+    assert hasattr(m.fs1.state_block_ideal_vl, "eq_phase_equilibrium")
+    assert not hasattr(m.fs1.state_block_ideal_vl, "eq_activity_coeff")
+    assert not hasattr(m.fs1.state_block_ideal_vl, "eq_mol_frac_out")
+
+    # liquid only (ideal)
+    assert len(m.fs1.properties_ideal_l.config) == 4
+
+    assert m.fs1.properties_ideal_l.config.valid_phase == 'Liq'
+    assert len(m.fs1.properties_ideal_l.phase_list) == 1
+    assert m.fs1.properties_ideal_l.phase_list == ["Liq"]
+    assert not m.fs1.state_block_ideal_l.config.defined_state
+    assert not hasattr(m.fs1.state_block_ideal_l, "eq_phase_equilibrium")
+    assert not hasattr(m.fs1.state_block_ideal_l, "eq_activity_coeff")
+    assert not hasattr(m.fs1.state_block_ideal_l, "eq_mol_frac_out")
+
+    # vapour only (ideal)
+    assert len(m.fs1.properties_ideal_v.config) == 4
+
+    assert m.fs1.properties_ideal_v.config.valid_phase == 'Vap'
+    assert len(m.fs1.properties_ideal_v.phase_list) == 1
+    assert m.fs1.properties_ideal_v.phase_list == ["Vap"]
+    assert not m.fs1.state_block_ideal_v.config.defined_state
+    assert not hasattr(m.fs1.state_block_ideal_v, "eq_phase_equilibrium")
+    assert not hasattr(m.fs1.state_block_ideal_v, "eq_activity_coeff")
+    assert not hasattr(m.fs1.state_block_ideal_v, "eq_mol_frac_out")
+
+
+def test_setInputs_outlet_state_block():
+
+    # vapor-liquid (ideal)
+    m.fs1.state_block_ideal_vl.flow_mol_comp["benzene"].fix(0.5)
+    m.fs1.state_block_ideal_vl.flow_mol_comp["toluene"].fix(0.5)
+    m.fs1.state_block_ideal_vl.temperature.fix(368)
+    m.fs1.state_block_ideal_vl.pressure.fix(101325)
+
+    assert degrees_of_freedom(m.fs1.state_block_ideal_vl) == 0
+
+    # liquid only (ideal)
+    m.fs1.state_block_ideal_l.flow_mol_comp["benzene"].fix(0.5)
+    m.fs1.state_block_ideal_l.flow_mol_comp["toluene"].fix(0.5)
+    m.fs1.state_block_ideal_l.temperature.fix(368)
+    m.fs1.state_block_ideal_l.pressure.fix(101325)
+
+    assert degrees_of_freedom(m.fs1.state_block_ideal_l) == 0
+
+    # vapour only (ideal)
+    m.fs1.state_block_ideal_v.flow_mol_comp["benzene"].fix(0.5)
+    m.fs1.state_block_ideal_v.flow_mol_comp["toluene"].fix(0.5)
+    m.fs1.state_block_ideal_v.temperature.fix(368)
+    m.fs1.state_block_ideal_v.pressure.fix(101325)
+
+    assert degrees_of_freedom(m.fs1.state_block_ideal_v) == 0

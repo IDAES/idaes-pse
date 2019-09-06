@@ -345,6 +345,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             for c in blk[k].component_objects(Constraint):
                 if c.local_name in ["eq_total",
                                     "eq_comp",
+                                    "eq_mole_frac"
                                     "eq_sum_mol_frac",
                                     "eq_phase_equilibrium",
                                     "eq_enth_mol_phase",
