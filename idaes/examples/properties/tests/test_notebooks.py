@@ -21,4 +21,4 @@ def notebook_path(dirname):
 @pytest.mark.nocircleci() 
 def test_module_2():
     assert run_notebook(
-        notebook_path("Workshop_Module_2"), "Module_2_Flowsheet_DMF_Solution.ipynb"
+        notebook_path("Workshop_Module_2"), "Module_2_Flowsheet_DMF_Solution.ipynb")
