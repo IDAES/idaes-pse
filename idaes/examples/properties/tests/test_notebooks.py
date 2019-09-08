@@ -7,7 +7,7 @@ Generally, anything that requires a full optimization should be decorated with
 # stdlib
 import pathlib
 # third party
-# import pytest
+import pytest
 # package
 from idaes.util.testutil import run_notebook
 
