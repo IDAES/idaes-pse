@@ -17,4 +17,5 @@ link_position_mapping = {
     "heat_exchanger1d": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "outlet_anchors":{"name":"right","args":{"rotate":"false","padding":0}}},
     "packed_column": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "top_outlet_anchor":{"name":"top","args":{"rotate":"false","padding":0}}, "bottom_outlet_anchor":{"name":"bottom","args":{"rotate":"false","padding":0}}},
     "tray_column": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "top_outlet_anchor":{"name":"top","args":{"rotate":"false","padding":0}}, "bottom_outlet_anchor":{"name":"bottom","args":{"rotate":"false","padding":0}}},
+    "default": {"inlet_anchors":{"name":"left","args":{"rotate":"false","padding":0}}, "outlet_anchors":{"name":"right","args":{"rotate":"false","padding":0}}}
 }

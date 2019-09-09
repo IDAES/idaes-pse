@@ -67,70 +67,90 @@ class FlowsheetSerializer:
         y_pos = 50
 
         for component, unit_attrs in self.unit_models.items():
-            self._create_image_json(out_json, x_pos, y_pos, unit_attrs['name'], 
-                icon_mapping[unit_attrs['type']], unit_attrs['name'], unit_attrs['type'])
+            try:
+                self._create_image_json(out_json, x_pos, y_pos, unit_attrs['name'], 
+                    icon_mapping[unit_attrs['type']], unit_attrs['name'], unit_attrs['type'])
+            except KeyError:
+                 self._create_image_json(out_json, x_pos, y_pos, unit_attrs['name'], 
+                    "default", unit_attrs['name'], unit_attrs['type'])
             x_pos += 50
             y_pos += 50
 
         id_counter = 0
         for source, dests in self.edges.items():
             for dest in dests:
-                if hasattr(source, "vap_outlet"):
-                    # TODO Figure out how to denote different outlet types. Need to deal with multiple input/output offsets
-                    for arc in self.arcs:
-                        if self.ports[arc.dest] == dest and arc.source == source.vap_outlet:
-                            source_anchor = link_position_mapping[self.unit_models[source]["type"]]["top_outlet_anchor"]
-                        elif self.ports[arc.dest] == dest and arc.source == source.liq_outlet:
-                            source_anchor = link_position_mapping[self.unit_models[source]["type"]]["bottom_outlet_anchor"]
+                try:
+                    if hasattr(source, "vap_outlet"):
+                        # TODO Figure out how to denote different outlet types. Need to deal with multiple input/output offsets
+                        for arc in self.arcs:
+                            if self.ports[arc.dest] == dest and arc.source == source.vap_outlet:
+                                source_anchor = link_position_mapping[self.unit_models[source]["type"]]["top_outlet_anchor"]
+                            elif self.ports[arc.dest] == dest and arc.source == source.liq_outlet:
+                                source_anchor = link_position_mapping[self.unit_models[source]["type"]]["bottom_outlet_anchor"]
 
-                elif "top_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]]:
-                    source_anchor = link_position_mapping[self.unit_models[source]["type"]]["top_outlet_anchor"]
-                else:
-                    source_anchor = link_position_mapping[self.unit_models[source]["type"]]["outlet_anchors"]
+                    elif "top_outlet_anchor" in link_position_mapping[self.unit_models[source]["type"]]:
+                        source_anchor = link_position_mapping[self.unit_models[source]["type"]]["top_outlet_anchor"]
+                    else:
+                            source_anchor = link_position_mapping[self.unit_models[source]["type"]]["outlet_anchors"]
+                except KeyError:
+                    source_anchor = link_position_mapping["default"]["outlet_anchors"]
                     # TODO figure out offsets when mutiple things come from/into the same side:
                     # source_anchor["args"]["dy"] = str(100/(len(dests) + 1)) + "%"
-
-                dest_anchor = link_position_mapping[self.unit_models[dest]["type"]]["inlet_anchors"]
+                try:
+                    dest_anchor = link_position_mapping[self.unit_models[dest]["type"]]["inlet_anchors"]
+                except KeyError:
+                    dest_anchor = link_position_mapping["default"]["inlet_anchors"]
 
                 self._create_link_json(out_json, source_anchor, dest_anchor, source.getname(), dest.getname(), id_counter)
                 id_counter += 1
 
-        num_open_inlets = 0
-        for orphan_port in self.orphaned_ports:
-            unit_model_name = ""
-            try:
-                if num_open_inlets <= 0:
-                    num_open_inlets = len(self.ports[orphan_port].create_inlet_list()) - len(self.edges[self.ports[orphan_port]])
-            except AttributeError:
-                num_open_inlets = 0
+        # TODO: We need a better way to define the inlets and outlets of the flowsheet rather than just assuming the orphaned ports 
+        # are inlets and outlets. For now we are commenting out the orphaned port stuff.
 
-            if num_open_inlets > 0:
-                icon_type = "feed"
-            else:
-                icon_type = "product"
+        # num_open_inlets = 0
+        # for orphan_port in self.orphaned_ports:
+        #     unit_model_name = ""
+        #     try:
+        #         if num_open_inlets <= 0:
+        #             num_open_inlets = len(self.ports[orphan_port].create_inlet_list()) - len(self.edges[self.ports[orphan_port]])
+        #     except AttributeError:
+        #         num_open_inlets = 0
 
-            self._create_image_json(out_json, x_pos, y_pos, "inlet" + str(id_counter), icon_mapping[icon_type], "", icon_type)
-            x_pos += 50
-            y_pos += 50
+        #     if num_open_inlets > 0:
+        #         icon_type = "feed"
+        #     else:
+        #         icon_type = "product"
 
-            source_anchor = link_position_mapping[icon_type]["outlet_anchors"]
-            dest_anchor = link_position_mapping[self.unit_models[self.ports[orphan_port]]["type"]]["inlet_anchors"]
+        #     self._create_image_json(out_json, x_pos, y_pos, "inlet" + str(id_counter), icon_mapping[icon_type], "", icon_type)
+        #     x_pos += 50
+        #     y_pos += 50
 
-            if icon_type == "feed":
-                source_anchor = link_position_mapping[icon_type]["outlet_anchors"]
-                dest_anchor = link_position_mapping[self.unit_models[self.ports[orphan_port]]["type"]]["inlet_anchors"]
-                source_id = "inlet" + str(id_counter)
-                dest_id = self.ports[orphan_port].getname()
-            else:
-                source_anchor = link_position_mapping[self.unit_models[self.ports[orphan_port]]["type"]]["inlet_anchors"]
-                dest_anchor = link_position_mapping[icon_type]["outlet_anchors"]
-                source_id = self.ports[orphan_port].getname()
-                dest_id = "inlet" + str(id_counter)
+        #     try:
+        #         dest_anchor = link_position_mapping[self.unit_models[self.ports[orphan_port]]["type"]]["inlet_anchors"]
+        #     except KeyError:
+        #         dest_anchor = link_position_mapping["default"]["inlet_anchors"]
 
-            self._create_link_json(out_json, source_anchor, dest_anchor, source_id, dest_id, id_counter)
+        #     if icon_type == "feed":
+        #         source_anchor = link_position_mapping[icon_type]["outlet_anchors"]
+        #         try:
+        #             dest_anchor = link_position_mapping[self.unit_models[self.ports[orphan_port]]["type"]]["inlet_anchors"]
+        #         except KeyError:
+        #             dest_anchor = link_position_mapping["default"]["inlet_anchors"]
+        #         source_id = "inlet" + str(id_counter)
+        #         dest_id = self.ports[orphan_port].getname()
+        #     else:
+        #         try:
+        #             source_anchor = link_position_mapping[self.unit_models[self.ports[orphan_port]]["type"]]["inlet_anchors"]
+        #         except KeyError:
+        #             source_anchor = link_position_mapping["default"]["inlet_anchors"]
+        #         dest_anchor = link_position_mapping[icon_type]["outlet_anchors"]
+        #         source_id = self.ports[orphan_port].getname()
+        #         dest_id = "inlet" + str(id_counter)
 
-            id_counter += 1
-            num_open_inlets -= 1
+        #     self._create_link_json(out_json, source_anchor, dest_anchor, source_id, dest_id, id_counter)
+
+        #     id_counter += 1
+        #     num_open_inlets -= 1
 
         return out_json
 
@@ -140,12 +160,12 @@ class FlowsheetSerializer:
             if isinstance(component, UnitModelBlockData):
                 self.unit_models[component] = {"name": component.getname(), "type": component._orig_module.split('.')[-1]}
                 
-                for subcomponent in component.component_objects(descend_into=False):
+                for subcomponent in component.component_objects(descend_into=True):
                     if isinstance(subcomponent, SimplePort):
-                       self.ports[subcomponent] = component
+                        self.ports[subcomponent] = component
                         
             elif isinstance(component, SimpleArc): 
-               self.arcs.append(component)
+                self.arcs.append(component)
             
         self.edges = defaultdict(list)
         self.orphaned_ports = set(self.ports.keys())
