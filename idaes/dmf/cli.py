@@ -1274,6 +1274,7 @@ class _NameField(_LsField):
 # Mapping from the field name to an instance of a subclass
 # of _Field that can extract sortable and formatted values.
 
+
 _show_fields = {
     "id": _IdField(resource.Resource.ID_FIELD),
     "type": _IdentityField("type"),

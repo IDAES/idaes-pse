@@ -34,7 +34,10 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Some more inforation about this module
@@ -323,6 +326,12 @@ class SaponificationStateBlockData(StateBlockData):
     def get_energy_density_terms(b, p):
         return b._params.dens_mol*b._params.cp_mol*(
                 b.temperature - b._params.temperature_ref)
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentPhase
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(b):
         return {"flow_vol": b.flow_vol,
