@@ -89,7 +89,8 @@ class FlowsheetSerializer:
                 )
             except KeyError:
                 self.create_image_json(out_json, x_pos, y_pos, unit_attrs["name"], 
-                                       "default", unit_attrs["name"], unit_attrs["type"])
+                                       "default", unit_attrs["name"], 
+                                       unit_attrs["type"])
 
             x_pos += 50
             y_pos += 50
@@ -128,7 +129,7 @@ class FlowsheetSerializer:
                         # source_anchor["args"]["dy"] = str(100/(len(dests) + 1)) + "%"
 
                     dest_anchor = \
-                        link_position_mapping[self.unit_models[dest]["type"]] \
+                        link_position_mapping[self.unit_models[dest]["type"]]\
                         ["inlet_anchors"]
                 except KeyError:
                     source_anchor = link_position_mapping["default"]["outlet_anchors"]
@@ -137,7 +138,7 @@ class FlowsheetSerializer:
                     # source_anchor["args"]["dy"] = str(100/(len(dests) + 1)) + "%"
                 try:
                     dest_anchor = \
-                        link_position_mapping[self.unit_models[dest]["type"]] \
+                        link_position_mapping[self.unit_models[dest]["type"]]\
                         ["inlet_anchors"]
                 except KeyError:
                     dest_anchor = link_position_mapping["default"]["inlet_anchors"]
