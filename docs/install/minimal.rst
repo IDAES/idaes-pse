@@ -50,62 +50,57 @@ Generic minimal install with IPOPT/MUMPS
 Once you have Conda installed, the remaining steps, performed in either the
 Anaconda Powershell (Prompt) or a Linux terminal, are the same.
 
-**Isolate the IDAES installation (from other Python packages)**
-
-1. Create an environment with Python = 3.6 or above::
-
-    conda create -n myenv "python>=3.6"
-
-2. Activate the environment you created::
-
-    conda activate myenv
+If you are familiar with Python/Conda environments, you will probably
+want to create a new environment for your IDAES installation before
+starting. If you do not know what that means, don't worry, this is
+an optional step.
 
 **Install a git client**
 
-3. Install the git client::
+1. Install the git client::
 
     conda install -c anaconda git
 
 **Install IPOPT**
 
-4. Install IPOPT from "conda-forge"::
+2. Install IPOPT from "conda-forge"::
 
     conda install -c conda-forge ipopt
 
-5. Check if the installation worked by checking for the ipopt version::
+3. Check if the installation worked by checking for the ipopt version::
 
     ipopt -v
 
 **Download IDAES source code and install required packages**
 
-6. Go to the idaes-pse releases page, https://github.com/IDAES/idaes-pse/releases/, and
+4. Go to the idaes-pse releases page, https://github.com/IDAES/idaes-pse/releases/, and
    look at the most recent release. Under the
    section labeled "Assets" there will be a zip file. Download that file and
    extract the contents in any location of your choice.
-7. In the Linux terminal or Anaconda Powershell, navigate to the folder you created
+5. In the Linux terminal or Anaconda Powershell, navigate to the folder you created
    in the previous step.
-8. Install the packages required for IDAES using the following command::
+6. Install the packages required for IDAES using the following command::
 
     pip install -r requirements.txt
 
 **Install IDAES**
 
-9. In the folder where the idaes source code was downloaded, run the *setup.py* file::
+7. In the folder where the idaes source code was downloaded, run the *setup.py* file::
 
     python setup.py develop
 
-10. Run tests on unit models::
+8. Run tests on unit models::
 
      pytest idaes/unit_models
 
-11. You should see the tests run and all should pass to ensure the installation worked.
+9. You should see the tests run and all should pass to ensure the installation worked.
     You can report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
     (Please try to be specific about the command and the offending output.)
-12. Launch the Jupyter Notebook
+10. Launch the Jupyter Notebook
 
     a. Navigate to `examples` and run Jupyter notebook::
 
-            cd examples
+            cd idaes/examples
             jupyter notebook
 
     b. Open a web browser to the URL that is printed from the previous command.
