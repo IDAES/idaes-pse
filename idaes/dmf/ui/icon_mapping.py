@@ -18,7 +18,7 @@ icon_mapping = {
     "translator": "NONE",
     "packed_column": "packed_column_1.svg",
     "tray_column": "tray_column_1.svg",
-    "default": "defalt.svg"
+    "default": "default.svg"
 }
 
 
