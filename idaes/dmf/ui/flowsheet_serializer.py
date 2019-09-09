@@ -128,18 +128,15 @@ class FlowsheetSerializer:
                         #  from/into the same side:
                         # source_anchor["args"]["dy"] = str(100/(len(dests) + 1)) + "%"
 
-                    dest_anchor = \
-                        link_position_mapping\
-                        [self.unit_models[dest]["type"]]["inlet_anchors"]
                 except KeyError:
                     source_anchor = link_position_mapping["default"]["outlet_anchors"]
                     # TODO figure out offsets when mutiple things come from/into the 
                     # same side:
                     # source_anchor["args"]["dy"] = str(100/(len(dests) + 1)) + "%"
                 try:
+                    unit_type = self.unit_models[dest]["type"]
                     dest_anchor = \
-                        link_position_mapping\
-                        [self.unit_models[dest]["type"]]["inlet_anchors"]
+                        link_position_mapping[unit_type]["inlet_anchors"]
                 except KeyError:
                     dest_anchor = link_position_mapping["default"]["inlet_anchors"]
 
