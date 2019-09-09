@@ -1,4 +1,5 @@
 import pytest
+from operator import itemgetter
 
 import idaes.dmf.ui.tests.resources.hda_ideal_VLE as thermo_props
 import idaes.dmf.ui.tests.resources.hda_reaction as reaction_props
@@ -28,8 +29,6 @@ from idaes.unit_models import (Flash,
 from idaes.unit_models.pressure_changer import ThermodynamicAssumption
 
 
-# We expect this test to fail until we figure out how to test this
-@pytest.mark.xfail
 def test_serialize_flowsheet():
     # Construct the model from idaes/examples/workshops/Module_2_Flowsheet/Module_2_Flowsheet_Solution.ipynb
     m = ConcreteModel()
@@ -76,53 +75,69 @@ def test_serialize_flowsheet():
     m.fs.s10 = Arc(source=m.fs.F101.liq_outlet, destination=m.fs.F102.inlet)
   
     fss = FlowsheetSerializer()
-    unit_models, ports, edges = fss.serialize_flowsheet(m.fs)
+    fss.serialize_flowsheet(m.fs)
+
+    unit_models = fss.get_unit_models()
+    unit_model_names_types = []
+    for unit_model in unit_models:
+        unit_model_names_types.append(unit_models[unit_model])
+
+    unit_models_names_type_truth = [{'name': 'M101', 'type': 'mixer'}, 
+                                    {'name': 'H101', 'type': 'heater'}, 
+                                    {'name': 'R101', 'type': 'stoichiometric_reactor'}, 
+                                    {'name': 'F101', 'type': 'flash'}, 
+                                    {'name': 'S101', 'type': 'separator'}, 
+                                    {'name': 'C101', 'type': 'pressure_changer'}, 
+                                    {'name': 'F102', 'type': 'flash'}]
   
-    # Figure out how to test this because the output of fss.serialize_flowsheet has memory locations
-    assert unit_models == {"<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>": {"name": "M101", "type": "mixer"}, 
-                           "<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>": {"name": "H101", "type": "heater"}, 
-                           "<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>": {"name": "R101", "type": "stoichiometric_reactor"}, 
-                           "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>": {"name": "F101", "type": "flash"}, 
-                           "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>": {"name": "S101", "type": "separator"}, 
-                           "<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>": {"name": "C101", "type": "pressure_changer"}, 
-                           "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>": {"name": "F102", "type": "flash"}
-                           }
+    set_result = set(tuple(sorted(d.items())) for d in unit_model_names_types)
+    set_truth = set(tuple(sorted(d.items())) for d in unit_models_names_type_truth)    
+    difference = list(set_truth.symmetric_difference(set_result))
+
+    assert len(difference) == 0
   
-    assert ports == {"<pyomo.network.port.SimplePort object at 0x7fe8d0d79278>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0d792e8>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0d79358>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0d793c8>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0d797b8>": "<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0d79828>": "<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0d79a58>": "<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0d79ac8>": "<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0d79eb8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41128>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41198>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0d79f98>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41048>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e410b8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41278>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41588>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e415f8>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41828>": "<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41898>": "<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41c88>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41eb8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41f28>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41e48>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41dd8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
-                     "<pyomo.network.port.SimplePort object at 0x7fe8d0e41d68>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>"
-                     }
-    assert edges == {"<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>": ["<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>"], 
-                     "<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>": ["<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>"], 
-                     "<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>": ["<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>"], 
-                     "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>": 
-                     ["<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>", 
-                     "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>"], 
-                     "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>": ["<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>"], 
-                     "<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>": ["<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>"]
-                     }
+    # TODO Figure out how to test ports. Maybe find out if we can find the parent component for the port?
+    # ports = fss.get_ports()
+    # assert ports == {"<pyomo.network.port.SimplePort object at 0x7fe8d0d79278>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d792e8>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79358>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d793c8>": "<idaes.core.process_block._ScalarMixer object at 0x7fe8d0d60360>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d797b8>": "<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79828>": "<idaes.core.process_block._ScalarHeater object at 0x7fe8d0db74c8>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79a58>": "<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79ac8>": "<idaes.core.process_block._ScalarStoichiometricReactor object at 0x7fe8d0de2ab0>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79eb8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41128>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41198>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0d79f98>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41048>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e410b8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8d0e0fdc8>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41278>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41588>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e415f8>": "<idaes.core.process_block._ScalarSeparator object at 0x7fe8d0e45708>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41828>": "<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41898>": "<idaes.core.process_block._ScalarPressureChanger object at 0x7fe8d0e686c0>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41c88>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41eb8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41f28>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41e48>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41dd8>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>", 
+    #                  "<pyomo.network.port.SimplePort object at 0x7fe8d0e41d68>": "<idaes.core.process_block._ScalarFlash object at 0x7fe8e1405cf0>"
+    #                  }
+
+    named_edges_results = {}
+    edges = fss.get_edges()
+    for edge in edges:
+        named_edges_results[edge.getname()] = [x.getname() for x in edges[edge]]
+
+    named_edges_truth = {'M101': ['H101'], 
+                         'H101': ['R101'], 
+                         'R101': ['F101'], 
+                         'F101': ['S101', 'F102'], 
+                         'S101': ['C101'], 
+                         'C101': ['M101']}
+
+    assert named_edges_results == named_edges_truth
 
 
 def test_create_image_json():

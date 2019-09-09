@@ -221,9 +221,6 @@ class FlowsheetSerializer:
             # self.orphaned_ports.discard(arc.source)
             # self.orphaned_ports.discard(arc.dest)
 
-        # Returning for testing purposes
-        return self.unit_models, self.ports, self.edges
-
     def create_image_json(self, out_json, x_pos, y_pos, id, image, label, title):
         entry = {}
         entry["type"] = "standard.Image"
@@ -257,3 +254,12 @@ class FlowsheetSerializer:
             # "labels": [],
         }
         out_json["cells"].append(entry)
+
+    def get_unit_models(self):
+        return self.unit_models
+
+    def get_ports(self):
+        return self.ports
+
+    def get_edges(self):
+        return self.edges
