@@ -61,7 +61,7 @@ m.fs.state_block_NRTL_v = m.fs.properties_NRTL_v.state_block_class(
 
 
 def test_build_inlet_state_block():
-    assert len(m.fs.properties_NRTL_vl.config) == 3
+    assert len(m.fs.properties_NRTL_vl.config) == 4
 
     # vapor-liquid (NRTL)
     assert m.fs.properties_NRTL_vl.config.valid_phase == ('Vap', 'Liq') or \
@@ -74,7 +74,7 @@ def test_build_inlet_state_block():
     assert not hasattr(m.fs.state_block_NRTL_vl, "eq_mol_frac_out")
 
     # liquid only (NRTL)
-    assert len(m.fs.properties_NRTL_l.config) == 3
+    assert len(m.fs.properties_NRTL_l.config) == 4
 
     assert m.fs.properties_NRTL_l.config.valid_phase == 'Liq'
     assert len(m.fs.properties_NRTL_l.phase_list) == 1
@@ -85,7 +85,7 @@ def test_build_inlet_state_block():
     assert not hasattr(m.fs.state_block_NRTL_l, "eq_mol_frac_out")
 
     # vapor only (NRTL)
-    assert len(m.fs.properties_NRTL_v.config) == 3
+    assert len(m.fs.properties_NRTL_v.config) == 4
 
     assert m.fs.properties_NRTL_v.config.valid_phase == 'Vap'
     assert len(m.fs.properties_NRTL_v.phase_list) == 1
@@ -166,7 +166,7 @@ m.fs1.state_block_NRTL_v = m.fs1.properties_NRTL_v.state_block_class(
 
 
 def test_build_outlet_state_block():
-    assert len(m.fs.properties_NRTL_vl.config) == 3
+    assert len(m.fs.properties_NRTL_vl.config) == 4
 
     # vapor-liquid (NRTL)
     assert m.fs1.properties_NRTL_vl.config.valid_phase == ('Vap', 'Liq') or \
@@ -179,7 +179,7 @@ def test_build_outlet_state_block():
     assert hasattr(m.fs1.state_block_NRTL_vl, "eq_mol_frac_out")
 
     # liquid only (NRTL)
-    assert len(m.fs1.properties_NRTL_l.config) == 3
+    assert len(m.fs1.properties_NRTL_l.config) == 4
 
     assert m.fs1.properties_NRTL_l.config.valid_phase == 'Liq'
     assert len(m.fs1.properties_NRTL_l.phase_list) == 1
@@ -190,7 +190,7 @@ def test_build_outlet_state_block():
     assert hasattr(m.fs1.state_block_NRTL_l, "eq_mol_frac_out")
 
     # vapour only (NRTL)
-    assert len(m.fs1.properties_NRTL_v.config) == 3
+    assert len(m.fs1.properties_NRTL_v.config) == 4
 
     assert m.fs1.properties_NRTL_v.config.valid_phase == 'Vap'
     assert len(m.fs1.properties_NRTL_v.phase_list) == 1

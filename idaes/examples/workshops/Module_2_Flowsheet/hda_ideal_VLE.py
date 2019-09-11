@@ -20,7 +20,7 @@ import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, Set, Param, sqrt, log10
+    Var, Set, Param, sqrt, log10
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
@@ -29,7 +29,10 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import degrees_of_freedom, \
@@ -335,18 +338,13 @@ class _IdealStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, flow_mol_phase_comp=None,
-                   temperature=None, pressure=None, state_vars_fixed=False,
+    def initialize(blk, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialisation routine for property package.
         Keyword Arguments:
-            flow_mol_phase_comp : value at which to initialize phase-component
-                                flows (default=None)
-            pressure : value at which to initialize pressure (default=None)
-            temperature : value at which to initialize temperature
-                          (default=None)
+            state_args: Initial guess for the state variables.
             outlvl : sets output level of initialisation routine
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
@@ -393,30 +391,30 @@ class _IdealStateBlock(StateBlock):
                             Fflag[k, p, j] = True
                         else:
                             Fflag[k, p, j] = False
-                            if flow_mol_phase_comp is None:
+                            if state_args is None:
                                 blk[k].flow_mol_phase_comp[p, j].fix(
                                     1 / len(blk[k]._params.component_list))
                             else:
                                 blk[k].flow_mol_phase_comp[p, j].fix(
-                                    flow_mol_phase_comp[p, j])
+                                    state_args["flow_mol_phase_comp"][p, j])
 
                 if blk[k].pressure.fixed is True:
                     Pflag[k] = True
                 else:
                     Pflag[k] = False
-                    if pressure is None:
+                    if state_args is None:
                         blk[k].pressure.fix(101325.0)
                     else:
-                        blk[k].pressure.fix(pressure)
+                        blk[k].pressure.fix(state_args["pressure"])
 
                 if blk[k].temperature.fixed is True:
                     Tflag[k] = True
                 else:
                     Tflag[k] = False
-                    if temperature is None:
+                    if state_args is None:
                         blk[k].temperature.fix(325)
                     else:
-                        blk[k].temperature.fix(temperature)
+                        blk[k].temperature.fix(state_args["temperature"])
 
             # -----------------------------------------------------------------
             # If input block, return flags, else release state
@@ -784,6 +782,12 @@ class IdealStateBlockData(StateBlockData):
     def get_enthalpy_density_terms(self, p):
         """Create enthalpy density terms."""
         return self.dens_mol_phase[p] * self.energy_internal_mol_phase[p]
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentPhase
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar

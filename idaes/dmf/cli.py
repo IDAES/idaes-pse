@@ -532,7 +532,7 @@ def register(
     "--sort",
     "-S",
     "sort_by",
-    type=click.Choice(["id", "type", "desc", "created", "modified", "version"]),
+    type=click.Choice(["id", "type", "desc", "created", "modified", "version", "name"]),
     multiple=True,
     help="Sort by given field; if repeated, combine to make a compound sort key",
 )
@@ -1261,8 +1261,19 @@ class _VersionField(_LsField):
         return resource.format_version(self.value)
 
 
+class _NameField(_LsField):
+    def __init__(self):
+        super().__init__("aliases")
+        self.value = []
+
+    def __str__(self):
+        if len(self.value) == 0:
+            return ""
+        return self.value[0]
+
 # Mapping from the field name to an instance of a subclass
 # of _Field that can extract sortable and formatted values.
+
 
 _show_fields = {
     "id": _IdField(resource.Resource.ID_FIELD),
@@ -1274,6 +1285,7 @@ _show_fields = {
     "files": _FilesField("datafiles"),
     "codes": _CodesField("codes"),
     "version": _VersionField(("version_info", "version")),
+    "name": _NameField()
 }
 
 

@@ -55,24 +55,28 @@ class PressureChangerData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
 
     CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
-**default** - MaterialBalanceType.componentPhase.
+**default** - MaterialBalanceType.useDefault.
 **Valid values:** {
+**MaterialBalanceType.useDefault - refer to property package for default
+balance type
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
 **MaterialBalanceType.componentTotal** - use total component balances,
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
+        default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyTotal.
+**default** - EnergyBalanceType.useDefault.
 **Valid values:** {
+**EnergyBalanceType.useDefault - refer to property package for default
+balance type
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
@@ -343,7 +347,13 @@ see property package for documentation.}"""))
                 b.sfp*b.ratioP[t]*b.control_volume.properties_out[t].pressure
 
         # This assumes isentropic composition is the same as outlet
-        if self.config.material_balance_type == \
+        mb_type = self.config.material_balance_type
+        if mb_type == MaterialBalanceType.useDefault:
+            mb_type = \
+                self.control_volume._get_representative_property_block() \
+                .default_material_balance_type()
+
+        if mb_type == \
                 MaterialBalanceType.componentPhase:
             @self.Constraint(self.flowsheet().config.time,
                              self.config.property_package.phase_list,
@@ -354,7 +364,7 @@ see property package for documentation.}"""))
                     b.properties_isentropic[t].get_material_flow_terms(p, j) ==
                     b.control_volume.properties_out[t]
                     .get_material_flow_terms(p, j))
-        elif self.config.material_balance_type == \
+        elif mb_type == \
                 MaterialBalanceType.componentTotal:
             @self.Constraint(self.flowsheet().config.time,
                              self.config.property_package.component_list,
@@ -366,7 +376,7 @@ see property package for documentation.}"""))
                     sum(b.control_volume.properties_out[t]
                         .get_material_flow_terms(p, j)
                         for p in self.config.property_package.phase_list))
-        elif self.config.material_balance_type == \
+        elif mb_type == \
                 MaterialBalanceType.total:
             @self.Constraint(self.flowsheet().config.time,
                              doc="Material flows for isentropic properties")
@@ -379,12 +389,12 @@ see property package for documentation.}"""))
                         .get_material_flow_terms(p, j)
                         for j in self.config.property_package.component_list)
                         for p in self.config.property_package.phase_list))
-        elif self.config.material_balance_type == \
+        elif mb_type == \
                 MaterialBalanceType.elementTotal:
             raise BalanceTypeNotSupportedError(
                     "{} PressureChanger does not support element balances."
                     .format(self.name))
-        elif self.config.material_balance_type == \
+        elif mb_type == \
                 MaterialBalanceType.none:
             raise BalanceTypeNotSupportedError(
                     "{} PressureChanger does not support material_balance_type"
@@ -498,7 +508,7 @@ see property package for documentation.}"""))
         except AttributeError:
             pass
 
-    def initialize(blk, state_args={}, routine=None, outlvl=0,
+    def initialize(blk, state_args=None, routine=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         General wrapper for pressure changer initialisation routines
@@ -580,7 +590,7 @@ see property package for documentation.}"""))
         blk.control_volume.properties_in.initialize(outlvl=outlvl-1,
                                                     optarg=optarg,
                                                     solver=solver,
-                                                    **state_args)
+                                                    state_args=state_args)
 
         if outlvl > 0:
             logger.info('{} Initialisation Step 1 Complete.'.format(blk.name))

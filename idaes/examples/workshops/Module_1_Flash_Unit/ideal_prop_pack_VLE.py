@@ -21,8 +21,8 @@ Robert H. Perry". SI units.
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
-    value, Var, exp, Set, Param, sqrt, log10
+from pyomo.environ import Constraint, Expression, log, NonNegativeReals, \
+    value, Var, Set, Param, sqrt, log10
 from pyomo.opt import SolverFactory, TerminationCondition
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.config import ConfigValue, In
@@ -32,7 +32,9 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import BurntToast, ConfigurationError
@@ -143,18 +145,13 @@ class _IdealStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, flow_mol=None, mole_frac=None,
-                   temperature=None, pressure=None, state_vars_fixed=False,
+    def initialize(blk, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialisation routine for property package.
         Keyword Arguments:
-            flow_mol_comp : value at which to initialize component flows
-                             (default=None)
-            pressure : value at which to initialize pressure (default=None)
-            temperature : value at which to initialize temperature
-                          (default=None)
+            state_args= Initial guesses for the state variables
             outlvl : sets output level of initialisation routine
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
@@ -206,39 +203,39 @@ class _IdealStateBlock(StateBlock):
                     Fflag[k] = True
                 else:
                     Fflag[k] = False
-                    if flow_mol is None:
+                    if state_args is None:
                         blk[k].flow_mol.fix(1.0)
                     else:
-                        blk[k].flow_mol.fix(flow_mol)
+                        blk[k].flow_mol.fix(state_args["flow_mol"])
 
                 for j in blk[k]._params.component_list:
                     if blk[k].mole_frac[j].fixed is True:
                         Xflag[k, j] = True
                     else:
                         Xflag[k, j] = False
-                        if mole_frac is None:
+                        if state_args is None:
                             blk[k].mole_frac[j].fix(1 / len(blk[k].
                                                     _params.component_list))
                         else:
-                            blk[k].mole_frac[j].fix(mole_frac[j])
+                            blk[k].mole_frac[j].fix(state_args["mole_frac"][j])
 
                 if blk[k].pressure.fixed is True:
                     Pflag[k] = True
                 else:
                     Pflag[k] = False
-                    if pressure is None:
+                    if state_args is None:
                         blk[k].pressure.fix(101325.0)
                     else:
-                        blk[k].pressure.fix(pressure)
+                        blk[k].pressure.fix(state_args["pressure"])
 
                 if blk[k].temperature.fixed is True:
                     Tflag[k] = True
                 else:
                     Tflag[k] = False
-                    if temperature is None:
+                    if state_args is None:
                         blk[k].temperature.fix(325)
                     else:
-                        blk[k].temperature.fix(temperature)
+                        blk[k].temperature.fix(state_args["temperature"])
 
             # ---------------------------------------------------------------------
             # If input block, return flags, else release state
@@ -723,6 +720,12 @@ class IdealStateBlockData(StateBlockData):
 
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(self):
         """Define state vars."""

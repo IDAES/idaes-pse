@@ -2,9 +2,9 @@ Water/Steam - IAPWS95
 ======================
 
 .. index::
-  pair: idaes.property_models.iapws95.iapws95_py; Iapws95StateBlock
+  pair: idaes.property_models.iapws95; Iapws95StateBlock
 
-.. module:: idaes.property_models.iapws95.iapws95_py
+.. module:: idaes.property_models.iapws95
 
 Accurate and thermodynamically consistent steam properties are provided for the
 IDAES framework by implementing the International Association for the Properties
