@@ -52,7 +52,9 @@ Anaconda Powershell (Prompt) or a Linux terminal, are the same.
 
 If you are familiar with Python/Conda environments, you will probably
 want to create a new environment for your IDAES installation before
-starting. If you do not know what that means, don't worry, this is
+starting to install Python and/or Conda packages,
+*e.g.*, ``conda create -n <env>`` then ``conda activate <env>``.
+If you are not familiar with these commands, don't worry, this is
 an optional step.
 
 **Install a git client**
