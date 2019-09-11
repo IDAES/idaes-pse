@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for Heat Exchanger 1D unit model.
+Tests for Condenser unit model.
 
 Author: Jaffer Ghouse
 """
@@ -36,8 +36,9 @@ m.fs.properties = BTXParameterBlock(default={"valid_phase":
                                              "activity_coeff_model":
                                              "Ideal"})
 
+
 ###############################################################################
-# total condenser
+# total condenser with FTPz
 m.fs.C101_total = Condenser(default={"property_package": m.fs.properties,
                                      "condenser_type": CondenserType.totalCondenser})
 
@@ -67,7 +68,7 @@ m.fs.C101_total.heat_duty.display()
 print("-----------------------------------------------------------------------")
 
 ###############################################################################
-# Partial Condenser
+# Partial Condenser with FTPz
 m.fs.C101_partial = Condenser(default={"property_package": m.fs.properties,
                               "condenser_type": CondenserType.partialCondenser})
 
