@@ -96,14 +96,20 @@ Please refer to reference 3 for recommended values for ``tau``.
 VLE Model with Smooth Phase Transition
 --------------------------------------
 
-The flash equations consists of the total mass balance, component balances and the equilibrium condition. 
+The flash equations consists of the following equations depending on the choice of state variables selected by the user. 
+
+If the state variables are total flow, mole fraction, temperature, and pressure, then the following constraints are implemented:
 
 .. math:: F^{in} = F^{liq} + F^{vap}
 .. math:: z_{i}^{in}F^{in} = x_{i}^{liq}F^{liq} + y_{i}^{vap}F^{vap}
+
+If the state variables are component flow rates, temperature, and pressure, then the following constraints are implemented:
+
+.. math:: F^{in}_{i} = F^{liq}_{i} + F^{vap}_{i}
+
+The equilibrium condition, the fugacity of the vapor and liquid phase are defined as follows:
+
 .. math:: f_{i}^{vap} = f_{i}^{liq}
-
-The fugacity of the vapor and liquid phase is defined as follows:
-
 .. math:: f_{i}^{vap} = y_{i}\phi_{i}P
 .. math:: f_{i}^{liq} = x_{i}p^{sat}_{i}\nu_{i}
 
