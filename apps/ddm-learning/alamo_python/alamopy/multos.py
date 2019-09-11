@@ -64,12 +64,6 @@ def catfile(outf, *fname):
 
 
 def has_alamo():  # Tested on Linux, not on Windows
-    # tos = platform.platform()
-
-    # for path in os.environ["PATH"].split(os.pathsep):
-    #     exe_file = os.path.join(path, 'alamo')
-    #     if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
-    #         return exe_file
     try:
         s = subprocess.check_output(["alamo"])
         if b"Licensing error" in s: 
