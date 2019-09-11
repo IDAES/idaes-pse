@@ -74,7 +74,7 @@ The ``valid_phase`` argument denotes the valid phases for a given set of inlet c
 
 The ``activity_coeff_model`` denotes the liquid phase assumption to be used. If the user does not specify any option, then the package defaults to asuming an ideal liquid assumption.
 
-The ``state_vars`` denotes the preffered set of state variables to be used. If the user does not specify any option, then the package defaults to using the total flow, mixture mole fraction, temperature and pressure as the state variables.
+The ``state_vars`` denotes the preferred set of state variables to be used. If the user does not specify any option, then the package defaults to using the total flow, mixture mole fraction, temperature and pressure as the state variables.
 
 
 
