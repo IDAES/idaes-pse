@@ -235,18 +235,26 @@ class _StateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-    def initialize(blk, flow_mol_comp=None, temperature=None, pressure=None,
-                   hold_state=False, outlvl=0, state_vars_fixed=False,
-                   solver='ipopt', optarg={'tol': 1e-8}):
+    def initialize(blk, state_args=None, hold_state=False, outlvl=0,
+                   state_vars_fixed=False, solver='ipopt',
+                   optarg={'tol': 1e-8}):
         '''
         Initialisation routine for property package.
 
         Keyword Arguments:
-            flow_mol_comp : value at which to initialize component flows
-                             (default=None)
-            pressure : value at which to initialize pressure (default=None)
-            temperature : value at which to initialize temperature
-                          (default=None)
+            state_args : Dictionary with initial guesses for the state vars
+                         chosen. Note that if this method is triggered
+                         through the control volume, and if initial guesses
+                         were not provied at the unit model level, the
+                         control volume passes the inlet values as initial
+                         guess.The keys for the state_args dictionary are:
+
+                         flow_mol_comp : value at which to initialize component
+                                         flows (default=None)
+                         pressure : value at which to initialize pressure
+                                    (default=None)
+                         temperature : value at which to initialize temperature
+                                      (default=None)
             outlvl : sets output level of initialisation routine
 
                      * 0 = no output (default)
@@ -291,28 +299,28 @@ class _StateBlock(StateBlock):
                         Fcflag[k, j] = True
                     else:
                         Fcflag[k, j] = False
-                        if flow_mol_comp is None:
+                        if state_args is None:
                             blk[k].flow_mol_comp[j].fix(1.0)
                         else:
-                            blk[k].flow_mol_comp[j].fix(flow_mol_comp[j])
+                            blk[k].flow_mol_comp[j].fix(state_args["flow_mol_comp"][j])
 
                 if blk[k].pressure.fixed is True:
                     Pflag[k] = True
                 else:
                     Pflag[k] = False
-                    if pressure is None:
+                    if state_args is None:
                         blk[k].pressure.fix(101325.0)
                     else:
-                        blk[k].pressure.fix(pressure)
+                        blk[k].pressure.fix(state_args["pressure"])
 
                 if blk[k].temperature.fixed is True:
                     Tflag[k] = True
                 else:
                     Tflag[k] = False
-                    if temperature is None:
+                    if state_args is None:
                         blk[k].temperature.fix(1500.0)
                     else:
-                        blk[k].temperature.fix(temperature)
+                        blk[k].temperature.fix(state_args["temperature"])
 
                 for j in blk[k]._params.component_list:
                     blk[k].mole_frac[j] = \
