@@ -195,11 +195,21 @@ class _ActivityCoeffStateBlock(StateBlock):
         """
         Initialisation routine for property package.
         Keyword Arguments:
-            state_args : Initial guesses for the state vars chosen. Note that
-                         if this method is triggered through the control volume,
-                         and if initial guesses were not provied at the unit
-                         model level, the control volume passes the inlet values
-                         as initial guess.
+            state_args : Dictionary with initial guesses for the state vars
+                         chosen. Note that if this method is triggered
+                         through the control volume, and if initial guesses
+                         were not provied at the unit model level, the
+                         control volume passes the inlet values as initial
+                         guess.
+
+                         If FTPz are chosen as state_vars, then keys for
+                         the state_args dictionary are:
+                         flow_mol, temperature, pressure and mole_frac
+
+                         If FcTP are chose as the state_vars, then keys for
+                         the state_args dictionary are:
+                         flow_mol_comp, temperature, pressure.
+
             outlvl : sets output level of initialisation routine
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
@@ -244,7 +254,12 @@ class _ActivityCoeffStateBlock(StateBlock):
                         if state_args is None:
                             blk[k].flow_mol.fix(1.0)
                         else:
-                            blk[k].flow_mol.fix(state_args["flow_mol"])
+                            try:
+                                blk[k].flow_mol.fix(state_args["flow_mol"])
+                            except KeyError:
+                                raise Exception("Please check the key values "
+                                                "provided for the initial "
+                                                "guess")
 
                     for j in blk[k]._params.component_list:
                         if blk[k].mole_frac[j].fixed is True:
@@ -255,7 +270,13 @@ class _ActivityCoeffStateBlock(StateBlock):
                                 blk[k].mole_frac[j].fix(1 / len(blk[k].
                                                         _params.component_list))
                             else:
-                                blk[k].mole_frac[j].fix(state_args["mole_frac"][j])
+                                try:
+                                    blk[k].mole_frac[j].\
+                                        fix(state_args["mole_frac"][j])
+                                except KeyError:
+                                    raise Exception("Please check the key "
+                                                    "values provided for the "
+                                                    "initial guess")
 
                     if blk[k].pressure.fixed is True:
                         Pflag[k] = True
@@ -264,7 +285,12 @@ class _ActivityCoeffStateBlock(StateBlock):
                         if state_args is None:
                             blk[k].pressure.fix(101325.0)
                         else:
-                            blk[k].pressure.fix(state_args["pressure"])
+                            try:
+                                blk[k].pressure.fix(state_args["pressure"])
+                            except KeyError:
+                                raise Exception("Please check the key "
+                                                "values provided for the "
+                                                "initial guess")
 
                     if blk[k].temperature.fixed is True:
                         Tflag[k] = True
@@ -273,7 +299,13 @@ class _ActivityCoeffStateBlock(StateBlock):
                         if state_args is None:
                             blk[k].temperature.fix(300)
                         else:
-                            blk[k].temperature.fix(state_args["temperature"])
+                            try:
+                                blk[k].temperature.\
+                                    fix(state_args["temperature"])
+                            except KeyError:
+                                raise Exception("Please check the key "
+                                                "values provided for the "
+                                                "initial guess")
                 flags = {"Fflag": Fflag,
                          "Xflag": Xflag,
                          "Pflag": Pflag,
@@ -294,8 +326,13 @@ class _ActivityCoeffStateBlock(StateBlock):
                                 blk[k].flow_mol_comp[j].\
                                     fix(1 / len(blk[k]._params.component_list))
                             else:
-                                blk[k].flow_mol_comp[j].\
-                                    fix(state_args["flow_mol_comp"][j])
+                                try:
+                                    blk[k].flow_mol_comp[j].\
+                                        fix(state_args["flow_mol_comp"][j])
+                                except KeyError:
+                                    raise Exception("Please check the key "
+                                                    "values provided for the "
+                                                    "initial guess")
 
                     if blk[k].pressure.fixed is True:
                         Pflag[k] = True
@@ -304,7 +341,12 @@ class _ActivityCoeffStateBlock(StateBlock):
                         if state_args is None:
                             blk[k].pressure.fix(101325.0)
                         else:
-                            blk[k].pressure.fix(state_args["pressure"])
+                            try:
+                                blk[k].pressure.fix(state_args["pressure"])
+                            except KeyError:
+                                raise Exception("Please check the key "
+                                                "values provided for the "
+                                                "initial guess")
 
                     if blk[k].temperature.fixed is True:
                         Tflag[k] = True
@@ -313,7 +355,13 @@ class _ActivityCoeffStateBlock(StateBlock):
                         if state_args is None:
                             blk[k].temperature.fix(300)
                         else:
-                            blk[k].temperature.fix(state_args["temperature"])
+                            try:
+                                blk[k].temperature.\
+                                    fix(state_args["temperature"])
+                            except KeyError:
+                                raise Exception("Please check the key "
+                                                "values provided for the "
+                                                "initial guess")
 
                 flags = {"Fcflag": Fcflag,
                          "Pflag": Pflag,
