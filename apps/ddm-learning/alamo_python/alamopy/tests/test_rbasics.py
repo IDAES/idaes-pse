@@ -30,14 +30,7 @@ def test_basic():
     xival = [[5,5], [2,2]]
     zival = [5,2]
 
-    if not has_alamo_flag:
-        alamo(x, z, savepyfcn=False) #, xval=xival, zval=zival, mock=True)  
-
-    # alamo(x, z, xlabels=["T", "V"], zlabels= ["P"], savepyfcn=False)
-
-    #doalamo(x, z, xval=xival, zval=zival, lmo=3, savepyfcn=False)
-
-    else:
+    if has_alamo_flag:
         ndata=10
         x = np.random.uniform([-2,-1],[2,1],(ndata,2))
         z = [0]*ndata
