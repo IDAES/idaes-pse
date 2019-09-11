@@ -54,7 +54,19 @@ class _IdealStateBlock(StateBlock):
         Initialisation routine for property package.
 
         Keyword Arguments:
-            state_args: Initial guess for state variables.
+            state_args : Dictionary with initial guesses for the state vars
+                         chosen. Note that if this method is triggered
+                         through the control volume, and if initial guesses
+                         were not provied at the unit model level, the
+                         control volume passes the inlet values as initial
+                         guess.The keys for the state_args dictionary are:
+
+                         flow_mol : value at which to initialize component
+                                    flows
+                         pressure : value at which to initialize pressure
+                         temperature : value at which to initialize temperature
+                         mole_frac: value at which to initialize the component
+                                    mixture mole fraction
             outlvl : sets output level of initialisation routine
 
                      * 0 = no output (default)

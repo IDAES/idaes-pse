@@ -36,7 +36,7 @@ SI units.
 References:
 
 1. "The properties of gases and liquids by Robert C. Reid"
-2. "Perry"s Chemical Engineers Handbook by Robert H. Perry".
+2. "Perry's Chemical Engineers Handbook by Robert H. Perry".
 3. H. Renon and J.M. Prausnitz, "Local compositions in thermodynamic excess
    functions for liquid mixtures.", AIChE Journal Vol. 14, No.1, 1968.
 """
