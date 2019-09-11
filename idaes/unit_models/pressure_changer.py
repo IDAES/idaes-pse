@@ -508,7 +508,7 @@ see property package for documentation.}"""))
         except AttributeError:
             pass
 
-    def initialize(blk, state_args={}, routine=None, outlvl=0,
+    def initialize(blk, state_args=None, routine=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         General wrapper for pressure changer initialisation routines
@@ -590,7 +590,7 @@ see property package for documentation.}"""))
         blk.control_volume.properties_in.initialize(outlvl=outlvl-1,
                                                     optarg=optarg,
                                                     solver=solver,
-                                                    **state_args)
+                                                    state_args=state_args)
 
         if outlvl > 0:
             logger.info('{} Initialisation Step 1 Complete.'.format(blk.name))
