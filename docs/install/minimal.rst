@@ -12,12 +12,17 @@ the next sections if this is not sufficient for your needs.
 
 .. _MUMPS: http://mumps.enseeiht.fr/
 
+.. note:: Miniconda is a product from `Anaconda <https://anaconda.com>`_ that contains
+       their package manager, "Conda". This is the package manager we
+       will use here for setting up the software development environment
+       and installing IDAES dependencies.
+
 .. _min_install_windows:
 
 Minimal install with IPOPT/MUMPS for Windows
 --------------------------------------------
 
-**Install Miniconda** [2]_
+**Install Miniconda**
 
 1. Download: https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
 2. Install anaconda from the downloaded file in (1).
@@ -29,17 +34,24 @@ Minimal install with IPOPT/MUMPS for Windows
 Minimal install with IPOPT/MUMPS for Linux
 ------------------------------------------
 
-**Install  Miniconda** [2]_
+**Install  Miniconda**
 
 1. Download: https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 2. For the next steps, open a terminal window
 3. Run the script you downloaded in (1).
 4. Follow the :ref:`min_install_generic` instructions.
 
-.. [2] Miniconda is a product from `Anaconda <https://anaconda.com>`_ that contains
-       their package manager, "Conda" (and not much else). This is the package manager we
-       will use here for setting up the software development environment
-       and installing IDAES' software (package) dependencies.
+.. _min_install_osx:
+
+Minimal install with IPOPT/MUMPS for Mac/OSX
+--------------------------------------------
+
+**Install  Miniconda**
+
+1. Download: https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+2. For the next steps, open a terminal window
+3. Run the script you downloaded in (1).
+4. Follow the :ref:`min_install_generic` instructions.
 
 
 .. _min_install_generic:
