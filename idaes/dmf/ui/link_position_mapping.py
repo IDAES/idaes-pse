@@ -93,4 +93,8 @@ link_position_mapping = {
             "args": {"rotate": "false", "padding": 0},
         },
     },
+    "default": {
+        "inlet_anchors": {"name": "left", "args": {"rotate": "false", "padding": 0}}, 
+        "outlet_anchors": {"name": "right", "args": {"rotate": "false", "padding": 0}}
+    }
 }
