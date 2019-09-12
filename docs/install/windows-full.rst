@@ -132,26 +132,25 @@ If the compile finishes without errors you can proceed to installing IDAES.
 
 Install IDAES
 -------------
-
 1. Open the Anaconda Command prompt
-2. Create an ``idaes`` environment and activate it (optional)::
 
-    conda create -n idaes "python>=3.6" pip
-    conda activate idaes
+If you are familiar with Python/Conda environments, you will probably
+want to create a new environment for your IDAES installation before
+starting to install Python and/or Conda packages,
+*e.g.*, ``conda create -n <env>`` then ``conda activate <env>``.
+If you are not familiar with these commands, don't worry, this is
+an optional step.
 
-.. note::
-  If you are using a version of conda older than 4.4 the command on Windows to
-  activate a conda environment (for example idaes) is ``activate idaes``.
 
-3. Install requirements::
+2. Install requirements::
 
     pip install -r requirements.txt
 
-4. Install IDAES::
+3. Install IDAES::
 
     python setup.py develop
 
-5. (Optional) Install IPOPT::
+4. (Optional) Install IPOPT::
 
     conda install -c conda-forge ipopt
 
@@ -165,7 +164,7 @@ Building Documentation
 
 Most users do not need to build this documentation, but if necessary you can.  The instructions here use ``make`` from the MSYS2 installed above.
 
-  1. Open the Anaconda Command prompt, and activate the IDAES environment
+  1. Open the Anaconda Command prompt (optional: activate the IDAES environment)
   2. Go to the IDAES directory
   3. Go to the docs subdirectory
   4. Add the MSYS2 bin directory to your path temporarily.

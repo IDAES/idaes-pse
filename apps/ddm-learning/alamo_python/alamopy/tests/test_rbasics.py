@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes".
 ##############################################################################
 """
-Smoke tests, to make sure things are working at all.
+Alamopy tests with sixhumpcamel examples
 """
 import pytest
 import alamopy
@@ -20,25 +20,12 @@ from alamopy.multos import deletefile
 import numpy as np
 import alamopy.examples as examples
 
+has_alamo_flag = alamopy.multos.has_alamo()
 
-@pytest.mark.nocircleci()
+@pytest.mark.skipif(not has_alamo_flag, reason="alamo executable not found")
 def test_basic():
-    has_alamo_flag = alamopy.multos.has_alamo()
 
-
-    x = [[ 0.17361977, -0.44326123], [-0.30192964,  0.68955226], [-1.98112458, -0.75686176],[0.68299634,  0.65170551],[-1.45317364,  0.15018666],[ 1.56528782, -0.58159576] ,[-1.25868712, -0.78324622],[-1.12121003,  0.95724757] ,[ 1.2467326,  -0.65611797],[ 1.26489899, -0.45185251]] 
-    z = [-0.58978634828943055, -0.85834512885363479, 4.0241154669754113, 0.91057814668811488, 1.9147616212616931, 0.29103827202206878, 2.4290896722960778, 0.99199475534877579, 0.59688699266830847, 1.167850366995701]
-    xival = [[5,5], [2,2]]
-    zival = [5,2]
-
-    if not has_alamo_flag:
-        alamo(x, z, savepyfcn=False) #, xval=xival, zval=zival, mock=True)  
-
-    # alamo(x, z, xlabels=["T", "V"], zlabels= ["P"], savepyfcn=False)
-
-    #doalamo(x, z, xval=xival, zval=zival, lmo=3, savepyfcn=False)
-
-    else:
+    if has_alamo_flag:
         ndata=10
         x = np.random.uniform([-2,-1],[2,1],(ndata,2))
         z = [0]*ndata

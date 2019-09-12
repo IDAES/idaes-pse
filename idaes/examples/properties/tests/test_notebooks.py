@@ -7,7 +7,7 @@ Generally, anything that requires a full optimization should be decorated with
 # stdlib
 import pathlib
 # third party
-# import pytest
+import pytest
 # package
 from idaes.util.testutil import run_notebook
 from . import save_config_yaml, restore_file
@@ -19,8 +19,10 @@ def notebook_path(dirname):
     return str((pathlib.Path(__file__).parent / ".." / dirname))
 
 
+@pytest.mark.nocircleci() 
 def test_module_2():
     nbpath = notebook_path("Workshop_Module_2")
     filename, copy_filename = save_config_yaml(nbpath)
-    assert run_notebook(nbpath, "Module_2_Flowsheet_DMF_Solution.ipynb")
+    assert run_notebook(
+        notebook_path("Workshop_Module_2"), "Module_2_Flowsheet_DMF_Solution.ipynb")
     restore_file(copy_filename, filename)
