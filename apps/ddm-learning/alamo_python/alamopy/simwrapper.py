@@ -1,6 +1,4 @@
 #!/usr/bin/python
-
-
 def main():
     import alamopy.examples
     infile = 'input.txt'

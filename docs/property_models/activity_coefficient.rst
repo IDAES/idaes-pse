@@ -16,6 +16,10 @@ Wilson model. Therefore, this property package supports the following combinatio
 
 **State Variables**: 
 
+The state block supports the following two sets of state variables:
+
+Option 1 - "FTPz":
+
 .. raw:: html
 	<head>
    	</head>
@@ -28,6 +32,23 @@ Wilson model. Therefore, this property package supports the following combinatio
 	<li>Mole fraction of the mixture - <code> <font color="red"> mole_frac</font></code> 
 	</ul>
 	</body>
+
+Option 2 - "FcTP":
+
+.. raw:: html
+	<head>
+   	</head>
+	
+   	<body>
+      	<ul>
+ 	<li>Component molar flow rate (mol/s) - <code> <font color="red"> flow_mol_comp </font> </code>
+ 	<li>Temperature (K) - <code> <font color="red"> temperature </font> </code>
+	<li>Presure (Pa) - <code> <font color="red"> pressure</font></code>
+	</ul>
+	</body>
+
+
+The user can specify the choice of state variables while instantiating the parameter block. See the Inputs section for more details. 
 
 Support for other combinations of state variables will be made available in the future.
 
@@ -45,12 +66,16 @@ When instantiating the parameter block that uses this particular state block, 2 
       	<ul>
  	<li><code> <font color="red"> valid_phase </font> </code> - <font color="green">"Liq"</font>  or <font color="green">"Vap"</font> or <font color="green">("Liq", "Vap") </font> or <font color="green">("Vap", "Liq") </font> </li></li>
  	<li><code> <font color="red"> activity_coeff_model </font> </code> - <font color="green">"Ideal"</font> or <font color="green">"NRTL"</font> or <font color="green">"Wilson" </font></li>
+	<li><code> <font color="red"> state_vars </font> </code> - <font color="green">"FTPz"</font> or <font color="green">"FcTP"</font> </li>
 	</ul>
 	</body>
 
 The ``valid_phase`` argument denotes the valid phases for a given set of inlet conditions. For example, if the user knows a priori that the it will only be a single phase (for example liquid only), then it is best not to include the complex flash equilibrium constraints in the model. If the user does not specify any option, then the package defaults to a 2 phase assumption meaning that the constraints to compute the phase equilibrium will be computed.
 
 The ``activity_coeff_model`` denotes the liquid phase assumption to be used. If the user does not specify any option, then the package defaults to asuming an ideal liquid assumption.
+
+The ``state_vars`` denotes the preferred set of state variables to be used. If the user does not specify any option, then the package defaults to using the total flow, mixture mole fraction, temperature and pressure as the state variables.
+
 
 
 Degrees of Freedom
@@ -71,14 +96,20 @@ Please refer to reference 3 for recommended values for ``tau``.
 VLE Model with Smooth Phase Transition
 --------------------------------------
 
-The flash equations consists of the total mass balance, component balances and the equilibrium condition. 
+The flash equations consists of the following equations depending on the choice of state variables selected by the user. 
+
+If the state variables are total flow, mole fraction, temperature, and pressure, then the following constraints are implemented:
 
 .. math:: F^{in} = F^{liq} + F^{vap}
 .. math:: z_{i}^{in}F^{in} = x_{i}^{liq}F^{liq} + y_{i}^{vap}F^{vap}
+
+If the state variables are component flow rates, temperature, and pressure, then the following constraints are implemented:
+
+.. math:: F^{in}_{i} = F^{liq}_{i} + F^{vap}_{i}
+
+The equilibrium condition, the fugacity of the vapor and liquid phase are defined as follows:
+
 .. math:: f_{i}^{vap} = f_{i}^{liq}
-
-The fugacity of the vapor and liquid phase is defined as follows:
-
 .. math:: f_{i}^{vap} = y_{i}\phi_{i}P
 .. math:: f_{i}^{liq} = x_{i}p^{sat}_{i}\nu_{i}
 
