@@ -72,6 +72,5 @@ def has_alamo():  # Tested on Linux, not on Windows
             _alamo_ok = True
     except subprocess.CalledProcessError:
         _alamo_ok = False
-    if _alamo_ok is None:
-        _alamo_ok = False
+
     return _alamo_ok
