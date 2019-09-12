@@ -10,6 +10,7 @@ import pathlib
 import pytest
 # package
 from idaes.util.testutil import run_notebook
+from . import save_config_yaml, restore_file
 
 __author__ = "Dan Gunter"
 
@@ -20,5 +21,8 @@ def notebook_path(dirname):
 
 @pytest.mark.nocircleci() 
 def test_module_2():
+    nbpath = notebook_path("Workshop_Module_2")
+    filename, copy_filename = save_config_yaml(nbpath)
     assert run_notebook(
         notebook_path("Workshop_Module_2"), "Module_2_Flowsheet_DMF_Solution.ipynb")
+    restore_file(copy_filename, filename)
