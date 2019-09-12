@@ -29,6 +29,7 @@ from idaes.core.util.config import (is_physical_parameter_block,
                                     list_of_floats)
 from idaes.core.util.exceptions import DynamicError
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.dmf.ui.flowsheet_serializer import FlowsheetSerializer
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -175,6 +176,27 @@ within this flowsheet if not otherwise specified,
                                              time_point=time_point,
                                              orient=orient,
                                              true_state=true_state)
+
+    def serialize(self, file_base_name, overwrite=False):
+        """
+        Serializes the flowsheet and saves it to a file that can be read by the
+        idaes-model-vis  jupyter lab extension.
+
+        :param file_base_name: The file prefix to the .idaes.vis file produced.
+        The file is created/saved
+        in the directory that you ran from Jupyter Lab.
+        :param overwrite: Boolean to overwrite an existing file_base_name.idaes.vis.
+        If True, the existing file with the same file_base_name will be overwritten.
+        This will cause you to lose any saved layout. 
+        If False and there is an existing file with that file_base_name, you will get
+        an error message stating that you cannot save a file to the file_base_name
+        (and therefore overwriting the saved layout). If there is not an existing 
+        file with that file_base_name then it saves as normal.
+        Defaults to False.
+        :return: None
+        """
+        serializer = FlowsheetSerializer()
+        serializer.serialize(self, file_base_name, overwrite)
 
     def _get_stream_table_contents(self, time_point=0):
         """
