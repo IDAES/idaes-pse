@@ -257,25 +257,25 @@ see property package for documentation.}"""))
                         # This is for vars that are indexed
                         index_set = member_list[k].index_set()
 
-                        def rule_reflux_flow(self, t, *args):
+                        def rule_reflux_flow(self, t, i):
                             return self.control_volume.properties_out[t].\
-                                component(member_list[k].local_name)[args] * \
+                                component(member_list[k].local_name)[i] * \
                                 (self.reflux_ratio / (1 + self.reflux_ratio))
-                        self.e_reflux_flow = Expression(
-                            (self.flowsheet().time, index_set),
-                            rule=rule_reflux_flow)
+                        self.e_reflux_flow = Expression(self.flowsheet().time,
+                                                        index_set,
+                                                        rule=rule_reflux_flow)
                         self.reflux.add(self.e_reflux_flow, k)
 
                         # Create references and populate the extensive variables
                         # This is for vars that are indexed
                         index_set = member_list[k].index_set()
 
-                        def rule_distillate_flow(self, t, *args):
+                        def rule_distillate_flow(self, t, i):
                             return self.control_volume.properties_out[t].\
-                                component(member_list[k].local_name)[args] / \
+                                component(member_list[k].local_name)[i] / \
                                 (1 + self.reflux_ratio)
                         self.e_distillate_flow = Expression(
-                            (self.flowsheet().time, index_set),
+                            self.flowsheet().time, index_set,
                             rule=rule_distillate_flow)
                         self.distillate.add(self.e_distillate_flow, k)
 
