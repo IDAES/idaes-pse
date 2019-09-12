@@ -23,7 +23,7 @@ class FlowsheetSerializer:
         self.edges = defaultdict(list)
         self.orphaned_ports = {}
 
-    def save(self, flowsheet, file_base_name, overwrite=False):
+    def serialize(self, flowsheet, file_base_name, overwrite=False):
         """
         Serializes the flowsheet and saves it to a file that can be read by the
         idaes-model-vis  jupyter lab extension.
