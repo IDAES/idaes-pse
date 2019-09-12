@@ -6,7 +6,7 @@
  * We can use these to replace hrefs with the appropriate static urls
  */
 :root {
-  --idaes-reactor_c-icon: url('icons/reactor_c.svg');
+  --idaes-reactor-c-icon: url('icons/reactor_c.svg');
   --idaes-flash-icon: url('icons/flash.svg');
   --idaes-reactor-g-icon: url('icons/reactor_g.svg');
   --idaes-heat-exchanger-1-icon: url('icons/heat_exchanger_1.svg');
@@ -21,6 +21,7 @@
   --idaes-product-icon: url('icons/product.svg');
   --idaes-packed-column-1-icon: url('icons/packed_column_1.svg');
   --idaes-tray-column-1-icon: url('icons/tray_column_1.svg');
+  --idaes-default-icon: url('icons/default.svg');
 }
 
 /* currently out of scope/unused
@@ -28,3 +29,9 @@
   --idaes-heater-1-icon: url('icons/heater_1.svg');
   --idaes-horizontal-flash-icon: url('icons/horizontal_flash.svg');
  */
+
+.mimerenderer-idaes-model {
+  width: "100%";
+  height: "100%";
+  overflow: auto;
+}
