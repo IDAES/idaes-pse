@@ -191,6 +191,7 @@ List of Variables
    "``mole_frac_phase``", "Mole fraction indexed by phase and component", "None"
    "``pressure_sat``", "Saturation or vapor pressure indexed by component", "Pa"
    "``density_mol_phase``", "Molar density indexed by phase", "mol/m3"
+   "``ds_vap``", "Molar entropy of vaporization", "J/mol.K" 
    "``enthalpy_comp_liq``", "Liquid molar enthalpy indexed by component", "J/mol"
    "``enthalpy_comp_vap``", "Vapor molar enthalpy indexed by component", "J/mol"
    "``enthalpy_liq``", "Liquid phase enthalpy", "J/mol"
