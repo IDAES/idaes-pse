@@ -34,7 +34,10 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 # Some more inforation about this module
@@ -113,19 +116,26 @@ class _StateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-    def initialize(blk, flow_vol=None, temperature=None, pressure=None,
-                   conc_mol_comp=None, state_vars_fixed=False,
+    def initialize(blk, state_args=None, state_vars_fixed=False,
                    hold_state=False, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-8}):
         '''
         Initialisation routine for property package.
 
         Keyword Arguments:
-            flow_mol_comp : value at which to initialize component flows
-                             (default=None)
-            pressure : value at which to initialize pressure (default=None)
-            temperature : value at which to initialize temperature
-                          (default=None)
+        state_args : Dictionary with initial guesses for the state vars
+                     chosen. Note that if this method is triggered
+                     through the control volume, and if initial guesses
+                     were not provied at the unit model level, the
+                     control volume passes the inlet values as initial
+                     guess.The keys for the state_args dictionary are:
+
+                     flow_mol_comp : value at which to initialize component
+                                     flows (default=None)
+                     pressure : value at which to initialize pressure
+                                (default=None)
+                     temperature : value at which to initialize temperature
+                                  (default=None)
             outlvl : sets output level of initialisation routine
 
                      * 0 = no output (default)
@@ -177,41 +187,41 @@ class _StateBlock(StateBlock):
                     Fflag[k] = True
                 else:
                     Fflag[k] = False
-                    if flow_vol is None:
+                    if state_args is None:
                         blk[k].flow_vol.fix(1.0)
                     else:
-                        blk[k].flow_vol.fix(flow_vol)
+                        blk[k].flow_vol.fix(state_args["flow_vol"])
 
                 for j in blk[k]._params.component_list:
                     if blk[k].conc_mol_comp[j].fixed is True:
                         Cflag[k, j] = True
                     else:
                         Cflag[k, j] = False
-                        if conc_mol_comp is None:
+                        if state_args is None:
                             if j == "H2O":
                                 blk[k].conc_mol_comp[j].fix(55388.0)
                             else:
                                 blk[k].conc_mol_comp[j].fix(100.0)
                         else:
-                            blk[k].conc_mol_comp[j].fix(conc_mol_comp[j])
+                            blk[k].conc_mol_comp[j].fix(state_args["conc_mol_comp"][j])
 
                 if blk[k].pressure.fixed is True:
                     Pflag[k] = True
                 else:
                     Pflag[k] = False
-                    if pressure is None:
+                    if state_args is None:
                         blk[k].pressure.fix(101325.0)
                     else:
-                        blk[k].pressure.fix(pressure)
+                        blk[k].pressure.fix(state_args["pressure"])
 
                 if blk[k].temperature.fixed is True:
                     Tflag[k] = True
                 else:
                     Tflag[k] = False
-                    if temperature is None:
+                    if state_args is None:
                         blk[k].temperature.fix(298.15)
                     else:
-                        blk[k].temperature.fix(temperature)
+                        blk[k].temperature.fix(state_args["temperature"])
 
             # If input block, return flags, else release state
             flags = {"Fflag": Fflag, "Pflag": Pflag,
@@ -323,6 +333,12 @@ class SaponificationStateBlockData(StateBlockData):
     def get_energy_density_terms(b, p):
         return b._params.dens_mol*b._params.cp_mol*(
                 b.temperature - b._params.temperature_ref)
+
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentPhase
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(b):
         return {"flow_vol": b.flow_vol,
