@@ -142,12 +142,26 @@ The specific enthalpy (``enthalpy_comp_liq``) for component :math:`i` is compute
 
 The specific enthalpy (``enthalpy_comp_vap``) for component :math:`i` is computed using the following expression for the vapor phase:
 
-.. math:: h_{i}^{vap} = \Delta H_{vap,298.15} + \int_{298.15}^{T}(A+BT+CT^2+DT^3+ET^4)dT
+.. math:: h_{i}^{vap} = \Delta h_{vap,298.15,i} + \int_{298.15}^{T}(A+BT+CT^2+DT^3+ET^4)dT
 
 The mixture specific enthapies (``enthalpy_liq`` & ``enthalpy_vap``) are computed using the following expressions for the liquid and vapor phase respectively:
 
 .. math:: H^{liq} =  \sum_i{h_{i}^{liq}x_{i}}
 .. math:: H^{vap} =  \sum_i{h_{i}^{vap}y_{i}}
+
+Similarly, specific entropies are calcuated as follows. The specific entropy (``entropy_comp_liq``) for component :math:`i` is computed using the following expression for the liquid phase:
+
+.. math:: s_{i}^{liq} =  \int_{298.15}^{T}(A/T+B+CT+DT^2+ET^3)dT
+
+The specific entropy (``entropy_comp_vap``) for component :math:`i` is computed using the following expression for the vapor phase:
+
+.. math:: s_{i}^{vap} = \Delta s_{vap,298.15,i} + \int_{298.15}^{T}(A/T+B+CT+DT^2+ET^3)dT
+
+where:
+
+.. math:: \Delta s_{vap,298.15, i} = \frac{\Delta h_{vap,298.15, i}}{T_{boil, i}}
+
+Here :math:`T_{boil, i}` is the boiling point of component :math:`i` at the reference pressure.
 
 Please refer to references 1 and 2 to get parameters for different components. 
 
@@ -196,6 +210,10 @@ List of Variables
    "``enthalpy_comp_vap``", "Vapor molar enthalpy indexed by component", "J/mol"
    "``enthalpy_liq``", "Liquid phase enthalpy", "J/mol"
    "``enthalpy_vap``", "Vapor phase enthalpy", "J/mol"
+   "``entropy_comp_liq``", "Liquid molar entropy indexed by component", "J/mol"
+   "``entropy_comp_vap``", "Vapor molar entropy indexed by component", "J/mol"
+   "``entrolpy_liq``", "Liquid phase entropy", "J/mol"
+   "``entropy_vap``", "Vapor phase entropy", "J/mol"
    "``temperature_bubble``", "Bubble point temperature", "K"
    "``temperature_dew``", "Dew point temperature", "K"
    "``_temperature_equilibrium``", "Temperature at which the VLE is calculated", "K"
