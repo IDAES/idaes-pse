@@ -69,7 +69,8 @@ Usage Tips
    dragging the link vertex that appears. Double-click the vertex to remove it.
 
  - The layout of the graph can be saved into the serialized file by using JupyterLab's
-   ``File->Save`` menu item. Autosaving can also be configured by using JupyterLab's
+   ``File->Save`` menu item (or the equivalent hotkey Ctrl+s/Command+s). 
+   Autosaving can also be configured by using JupyterLab's
    ``Settings->Advanced Settings Editor`` option under ``Document Manager``.
 
 
