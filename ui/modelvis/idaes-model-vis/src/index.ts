@@ -13,7 +13,7 @@ const MIME_TYPE = 'application/vnd.idaes.model';
 /**
  * The class name added to the extension.
  */
-const CLASS_NAME = 'mimerenderer-mimerenderer-idaes-model';
+const CLASS_NAME = 'mimerenderer-idaes-model';
 
 namespace utils {
   type map = {
@@ -79,21 +79,24 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     this.addClass(CLASS_NAME);
 
     this.holder = document.createElement("div");
-    this.holder.id = "holder";
+    this.holder.id = "mimerenderer-idaes-model";
 
     // We need to create the graph and paper in the constructor
     // If you try to create them in renderModel (which is called everytime the user
     // opens an .idaes.vis file or changes tabs) then you get icons that do not drop
     // when the mouseup event is emitted
     var standard = joint.shapes.standard;
+    var width = 10000;
+    var height = 10000;
+    var gridSize = 1;
     this.graph = new joint.dia.Graph([], { cellNamespace: { standard } });
     this.paper = new joint.dia.Paper({
       el: this.holder,
       model: this.graph,
       cellViewNamespace: { standard },
-      width: 1000,
-      height: 1000,
-      gridSize: 1,
+      width: width,
+      height: height,
+      gridSize: gridSize,
       interactive: true
     });
 
@@ -129,6 +132,26 @@ export class OutputWidget extends Widget implements IRenderMime.IRenderer {
     this.paper.on("element:contextmenu", function(cellView, evt) {
       cellView.model.rotate(90)
     })
+
+    // Constrain the elements to the paper
+    this.paper.on('cell:pointermove', function (cellView, evt, x, y) {
+
+      var bbox = cellView.getBBox();
+      var constrained = false;
+
+      var constrainedX = x;
+
+      if (bbox.x <= 0) { constrainedX = x + gridSize; constrained = true }
+      if (bbox.x + bbox.width >= width) { constrainedX = x - gridSize; constrained = true }
+
+      var constrainedY = y;
+
+      if (bbox.y <= 0) {  constrainedY = y + gridSize; constrained = true }
+      if (bbox.y + bbox.height >= height) { constrainedY = y - gridSize; constrained = true }
+
+      //if you fire the event all the time you get a stack overflow
+      if (constrained) { cellView.pointermove(evt, constrainedX, constrainedY) }
+    });
   }
 
   /**
