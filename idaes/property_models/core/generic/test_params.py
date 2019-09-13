@@ -32,13 +32,8 @@ from idaes.property_models.core.generic.bubble_dew import (bubble_temp_ideal,
                                                            bubble_press_ideal,
                                                            dew_press_ideal)
 
-from idaes.property_models.core.pure.cp import (RPP_enth_ig,
-                                                Perry_enth_liq,
-                                                RPP_entr_ig,
-                                                Perry_entr_liq)
-from idaes.property_models.core.pure.dens_mol import Perry_dens_liq
-from idaes.property_models.core.pure.pressure_sat import RPP_Psat1
-
+import idaes.property_models.core.pure.Perrys as Perrys
+import idaes.property_models.core.pure.RPP as RPP
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -70,12 +65,12 @@ class TestParameterData(GenericParameterData):
         self.config.bubble_pressure = bubble_press_ideal
         self.config.dew_pressure = dew_press_ideal
 
-        self.config.dens_mol_comp_liq = Perry_dens_liq
-        self.config.enth_mol_comp_liq = Perry_enth_liq
-        self.config.enth_mol_comp_vap = RPP_enth_ig
-        self.config.entr_mol_comp_liq = Perry_entr_liq
-        self.config.entr_mol_comp_vap = RPP_entr_ig
-        self.config.pressure_sat_comp = RPP_Psat1
+        self.config.dens_mol_comp_liq = Perrys.Perry_dens_liq
+        self.config.enth_mol_comp_liq = Perrys.Perry_enth_liq
+        self.config.enth_mol_comp_vap = RPP.RPP_enth_ig
+        self.config.entr_mol_comp_liq = Perrys.Perry_entr_liq
+        self.config.entr_mol_comp_vap = RPP.RPP_entr_ig
+        self.config.pressure_sat_comp = RPP.RPP_Psat1
         # ---------------------------------------------------------------------
         self.component_list = Set(initialize=['benzene', 'toluene'])
 

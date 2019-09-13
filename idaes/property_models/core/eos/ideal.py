@@ -33,7 +33,7 @@ def dens_mol_phase(b, p):
     elif p == "Liq":
         if b._params.config.dens_mol_comp_liq is None:
             raise GenericPropertyPackageError(b, "dens_mol_comp_liq")
-        return sum(b.mole_frac_phase[p, j] *
+        return sum(b.mole_frac_phase_comp[p, j] *
                    b._params.config.dens_mol_comp_liq_comp(b, b.temperature, j)
                    for j in b._params.component_list)
     else:
@@ -44,7 +44,7 @@ def dens_mol_phase(b, p):
 
 
 def enth_mol_phase(b, p):
-    return sum(b.mole_frac_phase[p, j]*b.enth_mol_phase_comp[p, j]
+    return sum(b.mole_frac_phase_comp[p, j]*b.enth_mol_phase_comp[p, j]
                for j in b._params.component_list)
 
 
@@ -66,7 +66,7 @@ def enth_mol_phase_comp(b, p, j):
 
 
 def entr_mol_phase(b, p):
-    return sum(b.mole_frac_phase[p, j]*b.entr_mol_phase_comp[p, j]
+    return sum(b.mole_frac_phase_comp[p, j]*b.entr_mol_phase_comp[p, j]
                for j in b._params.component_list)
 
 
@@ -110,11 +110,11 @@ def entr_mol_phase_comp_ref(b, p, j):
 
 def fugacity(b, p, j):
     if p == "Vap":
-        return b.mole_frac_phase[p, j]*b.pressure
+        return b.mole_frac_phase_comp[p, j]*b.pressure
     elif p == "Liq":
         if b._params.config.pressure_sat_comp is None:
             raise GenericPropertyPackageError(b, "pressure_sat_comp")
-        return b.mole_frac_phase[p, j] * \
+        return b.mole_frac_phase_comp[p, j] * \
                b._params.config.pressure_sat_comp(b, b.temperature, j)
     else:
         raise PropertyNotSupportedError(
@@ -128,7 +128,7 @@ def fug_coeff(b, p, j):
 
 
 def gibbs_mol_phase(b, p):
-    return sum(b.mole_frac_phase[p, j]*b.gibbs_mol_phase_comp[p, j]
+    return sum(b.mole_frac_phase_comp[p, j]*b.gibbs_mol_phase_comp[p, j]
                for j in b._params.component_list)
 
 

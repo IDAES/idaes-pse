@@ -150,8 +150,8 @@ class GenericParameterData(PhysicalParameterBlock):
         # created by state var methods
         obj.add_properties(
             {'flow_mol': {'method': None, 'units': 'mol/s'},
-             'mole_frac': {'method': None, 'units': 'none'},
-             'mole_frac_phase': {'method': None, 'units': 'none'},
+             'mole_frac_comp': {'method': None, 'units': 'none'},
+             'mole_frac_phase_comp': {'method': None, 'units': 'none'},
              'phase_frac': {'method': None, 'units': 'none'},
              'temperature': {'method': None, 'units': 'K'},
              'pressure': {'method': None, 'units': 'Pa'},
@@ -202,7 +202,7 @@ class _GenericStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, flow_mol=None, mole_frac=None,
+    def initialize(blk, flow_mol=None, mole_frac_comp=None,
                    temperature=None, pressure=None, state_vars_fixed=False,
                    hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
@@ -210,7 +210,7 @@ class _GenericStateBlock(StateBlock):
         Initialisation routine for property package.
         Keyword Arguments:
             flow_mol : value at which to initialize molar flow (default=None)
-            mole_frac : dict of values to use when initializing mole fractions
+            mole_frac_comp : dict of values to use when initializing mole fractions
                         (default = None)
             pressure : value at which to initialize pressure (default=None)
             temperature : value at which to initialize temperature
@@ -272,15 +272,15 @@ class _GenericStateBlock(StateBlock):
                         blk[k].flow_mol.fix(flow_mol)
 
                 for j in blk[k]._params.component_list:
-                    if blk[k].mole_frac[j].fixed is True:
+                    if blk[k].mole_frac_comp[j].fixed is True:
                         Xflag[k, j] = True
                     else:
                         Xflag[k, j] = False
-                        if mole_frac is None:
-                            blk[k].mole_frac[j].fix(1 / len(blk[k].
+                        if mole_frac_comp is None:
+                            blk[k].mole_frac_comp[j].fix(1 / len(blk[k].
                                                     _params.component_list))
                         else:
-                            blk[k].mole_frac[j].fix(mole_frac[j])
+                            blk[k].mole_frac_comp[j].fix(mole_frac_comp[j])
 
                 if blk[k].pressure.fixed is True:
                     Pflag[k] = True
@@ -342,7 +342,7 @@ class _GenericStateBlock(StateBlock):
                 Tbub0 = 0
                 for j in blk[k]._params.component_list:
                     Tbub0 += value(
-                            blk[k].mole_frac[j] *
+                            blk[k].mole_frac_comp[j] *
                             (blk[k]._params.antoine_coeff[j, 'B'] /
                              (blk[k]._params.antoine_coeff[j, 'A'] -
                               math.log10(value(blk[k].pressure*1e-5))) -
@@ -355,11 +355,11 @@ class _GenericStateBlock(StateBlock):
                 # Tolerance does not need to be too small, and limit iterations
                 while err > 1e-2 and counter < 100:
                     f = value(sum(antoine_P(blk[k], j, Tbub0) *
-                                  blk[k].mole_frac[j]
+                                  blk[k].mole_frac_comp[j]
                                   for j in blk[k]._params.component_list) -
                               blk[k].pressure)
                     df = value(sum(
-                            blk[k].mole_frac[j] *
+                            blk[k].mole_frac_comp[j] *
                             blk[k]._params.antoine_coeff[j, 'B'] *
                             math.log(10)*antoine_P(blk[k], j, Tbub0) /
                             (Tbub0 + blk[k]._params.antoine_coeff[j, 'C'])**2
@@ -381,7 +381,7 @@ class _GenericStateBlock(StateBlock):
 
                 for j in blk[k]._params.component_list:
                     blk[k]._mole_frac_tbub[j].value = value(
-                            blk[k].mole_frac[j]*blk[k].pressure /
+                            blk[k].mole_frac_comp[j]*blk[k].pressure /
                             antoine_P(blk[k], j, Tbub0))
 
         # Dew temperature initialization
@@ -390,7 +390,7 @@ class _GenericStateBlock(StateBlock):
                 Tdew0 = 0
                 for j in blk[k]._params.component_list:
                     Tdew0 += value(
-                            blk[k].mole_frac[j] *
+                            blk[k].mole_frac_comp[j] *
                             (blk[k]._params.antoine_coeff[j, 'B'] /
                              (blk[k]._params.antoine_coeff[j, 'A'] -
                               math.log10(value(blk[k].pressure*1e-5))) -
@@ -403,11 +403,11 @@ class _GenericStateBlock(StateBlock):
                 # Tolerance does not need to be too small, and limit iterations
                 while err > 1e-2 and counter < 100:
                     f = value(blk[k].pressure *
-                              sum(blk[k].mole_frac[j] /
+                              sum(blk[k].mole_frac_comp[j] /
                                   antoine_P(blk[k], j, Tdew0)
                                   for j in blk[k]._params.component_list) - 1)
                     df = -value(blk[k].pressure*math.log(10) *
-                                sum(blk[k].mole_frac[j] *
+                                sum(blk[k].mole_frac_comp[j] *
                                     blk[k]._params.antoine_coeff[j, 'B'] /
                                     ((Tdew0 +
                                       blk[k]._params.antoine_coeff[j, 'C'])**2 *
@@ -430,20 +430,20 @@ class _GenericStateBlock(StateBlock):
 
                 for j in blk[k]._params.component_list:
                     blk[k]._mole_frac_tdew[j].value = value(
-                            blk[k].mole_frac[j]*blk[k].pressure /
+                            blk[k].mole_frac_comp[j]*blk[k].pressure /
                             antoine_P(blk[k], j, Tdew0))
 
         # Bubble pressure initialization
         for k in blk.keys():
             if hasattr(blk[k], "_mole_frac_pbub"):
                 blk[k].pressure_bubble.value = value(
-                        sum(blk[k].mole_frac[j] *
+                        sum(blk[k].mole_frac_comp[j] *
                             antoine_P(blk[k], j, blk[k].temperature)
                             for j in blk[k]._params.component_list))
 
                 for j in blk[k]._params.component_list:
                     blk[k]._mole_frac_pbub[j].value = value(
-                            blk[k].mole_frac[j] *
+                            blk[k].mole_frac_comp[j] *
                             antoine_P(blk[k], j, blk[k].temperature) /
                             blk[k].pressure_bubble)
 
@@ -454,13 +454,13 @@ class _GenericStateBlock(StateBlock):
         for k in blk.keys():
             if hasattr(blk[k], "_mole_frac_pdew"):
                 blk[k].pressure_dew.value = value(
-                        sum(1/(blk[k].mole_frac[j] /
+                        sum(1/(blk[k].mole_frac_comp[j] /
                                antoine_P(blk[k], j, blk[k].temperature))
                             for j in blk[k]._params.component_list))
 
                 for j in blk[k]._params.component_list:
                     blk[k]._mole_frac_pdew[j].value = value(
-                            blk[k].mole_frac[j]*blk[k].pressure_bubble /
+                            blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
                             antoine_P(blk[k], j, blk[k].temperature))
 
         # Solve bubble and dew point constraints
@@ -511,16 +511,16 @@ class _GenericStateBlock(StateBlock):
 #                    blk[k].flow_mol.value
 #
 #                for j in blk[k]._params.component_list:
-#                    blk[k].mole_frac_phase['Liq', j].value = \
-#                        blk[k].mole_frac[j].value
+#                    blk[k].mole_frac_phase_comp['Liq', j].value = \
+#                        blk[k].mole_frac_comp[j].value
 #
 #            elif blk[k]._params.config.valid_phase == "Vap":
 #                blk[k].flow_mol_phase['Vap'].value = \
 #                    blk[k].flow_mol.value
 #
 #                for j in blk[k]._params.component_list:
-#                    blk[k].mole_frac_phase['Vap', j].value = \
-#                        blk[k].mole_frac[j].value
+#                    blk[k].mole_frac_phase_comp['Vap', j].value = \
+#                        blk[k].mole_frac_comp[j].value
 #
 #            else:
 #                if blk[k].temperature.value > blk[k].temperature_dew.value:
@@ -530,9 +530,9 @@ class _GenericStateBlock(StateBlock):
 #                        1e-5*blk[k].flow_mol.value
 #
 #                    for j in blk[k]._params.component_list:
-#                        blk[k].mole_frac_phase['Vap', j].value = \
-#                            blk[k].mole_frac[j].value
-#                        blk[k].mole_frac_phase['Liq', j].value = \
+#                        blk[k].mole_frac_phase_comp['Vap', j].value = \
+#                            blk[k].mole_frac_comp[j].value
+#                        blk[k].mole_frac_phase_comp['Liq', j].value = \
 #                            blk[k]._mole_frac_tdew[j].value
 #                elif blk[k].temperature.value < \
 #                        blk[k].temperature_bubble.value:
@@ -542,10 +542,10 @@ class _GenericStateBlock(StateBlock):
 #                    blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
 #
 #                    for j in blk[k]._params.component_list:
-#                        blk[k].mole_frac_phase['Vap', j].value = \
+#                        blk[k].mole_frac_phase_comp['Vap', j].value = \
 #                            blk[k]._mole_frac_tbub[j].value
-#                        blk[k].mole_frac_phase['Liq', j].value = \
-#                            blk[k].mole_frac[j].value
+#                        blk[k].mole_frac_phase_comp['Liq', j].value = \
+#                            blk[k].mole_frac_comp[j].value
 #                else:
 #                    # Two-phase
 #                    # TODO : Try to find some better guesses than this
@@ -555,10 +555,10 @@ class _GenericStateBlock(StateBlock):
 #                        0.5*blk[k].flow_mol.value
 #
 #                    for j in blk[k]._params.component_list:
-#                        blk[k].mole_frac_phase['Vap', j].value = \
-#                            blk[k].mole_frac[j].value
-#                        blk[k].mole_frac_phase['Liq', j].value = \
-#                            blk[k].mole_frac[j].value
+#                        blk[k].mole_frac_phase_comp['Vap', j].value = \
+#                            blk[k].mole_frac_comp[j].value
+#                        blk[k].mole_frac_phase_comp['Liq', j].value = \
+#                            blk[k].mole_frac_comp[j].value
 
         # ---------------------------------------------------------------------
         # Solve phase equilibrium constraints
@@ -635,7 +635,7 @@ class _GenericStateBlock(StateBlock):
                 blk[k].flow_mol.unfix()
             for j in blk[k]._params.component_list:
                 if flags['Xflag'][k, j] is False:
-                    blk[k].mole_frac[j].unfix()
+                    blk[k].mole_frac_comp[j].unfix()
             if flags['Pflag'][k] is False:
                 blk[k].pressure.unfix()
             if flags['Tflag'][k] is False:
@@ -869,13 +869,13 @@ class GenericStateBlockData(StateBlockData):
         self.mw = Expression(
                 doc="Average molecular weight",
                 expr=sum(self.phase_frac[p] *
-                         sum(self.mole_frac_phase[p, j]*self._params.mw_comp[j]
+                         sum(self.mole_frac_phase_comp[p, j]*self._params.mw_comp[j]
                              for j in self._params.component_list)
                          for p in self._params.phase_list))
 
     def _mw_phase(self):
         def rule_mw_phase(b, p):
-            return sum(b.mole_frac_phase[p, j]*b._params.mw_comp[j]
+            return sum(b.mole_frac_phase_comp[p, j]*b._params.mw_comp[j]
                        for j in b._params.component_list)
         self.mw_phase = Expression(
                 self._params.phase_list,

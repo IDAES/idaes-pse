@@ -25,8 +25,8 @@ def main():
                                                        'defined_state': True})
 
     m.fs.state.flow_mol.fix(100)
-    m.fs.state.mole_frac["benzene"].fix(0.5)
-    m.fs.state.mole_frac["toluene"].fix(0.5)
+    m.fs.state.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state.mole_frac_comp["toluene"].fix(0.5)
     m.fs.state.temperature.fix(368)
     m.fs.state.pressure.fix(101325)
 
@@ -73,11 +73,12 @@ def main():
     m.fs.state.enth_mol_phase.display()
     m.fs.existing.enth_mol_phase.display()
 
-    m.fs.state.mole_frac_phase.display()
+    m.fs.state.mole_frac_phase_comp.display()
     m.fs.existing.mole_frac_phase.display()
 
-    for k in m.fs.state.mole_frac_phase.keys():
-        err = m.fs.state.mole_frac_phase[k] - m.fs.existing.mole_frac_phase[k]
+    for k in m.fs.state.mole_frac_phase_comp.keys():
+        err = m.fs.state.mole_frac_phase_comp[k] - \
+              m.fs.existing.mole_frac_phase[k]
         print(k, value(err))
 
 #    m.fs.state.display()

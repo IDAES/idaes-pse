@@ -44,7 +44,7 @@ def FPTx(b):
                      domain=NonNegativeReals,
                      bounds=f_bounds,
                      doc='Component molar flowrate [mol/s]')
-    b.mole_frac = Var(b._params.component_list,
+    b.mole_frac_comp = Var(b._params.component_list,
                       bounds=(0, None),
                       initialize=1 / len(b._params.component_list),
                       doc='Mixture mole fractions [-]')
@@ -64,7 +64,7 @@ def FPTx(b):
                            bounds=f_bounds,
                            doc='Phase molar flow rates [mol/s]')
 
-    b.mole_frac_phase = Var(
+    b.mole_frac_phase_comp = Var(
         b._params.phase_list,
         b._params.component_list,
         initialize=1/len(b._params.component_list),
@@ -84,15 +84,15 @@ def FPTx(b):
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
-            return b.mole_frac[i] == \
-                b.mole_frac_phase[b._params.phase_list[1], i]
+            return b.mole_frac_comp[i] == \
+                b.mole_frac_phase_comp[b._params.phase_list[1], i]
         b.component_flow_balances = Constraint(b._params.component_list,
                                                rule=rule_comp_mass_balance)
 
         if b.config.defined_state is False:
             # applied at outlet only
             b.sum_mole_frac_out = Constraint(
-                expr=1 == sum(b.mole_frac[i]
+                expr=1 == sum(b.mole_frac_comp[i]
                               for i in b._params.component_list))
 
         def rule_phase_frac(b, p):
@@ -108,23 +108,23 @@ def FPTx(b):
         b.total_flow_balance = Constraint(rule=rule_total_mass_balance)
 
         def rule_comp_mass_balance(b, i):
-            return b.flow_mol*b.mole_frac[i] == sum(
-                b.flow_mol_phase[p]*b.mole_frac_phase[p, i]
+            return b.flow_mol*b.mole_frac_comp[i] == sum(
+                b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
                 for p in b._params.phase_list)
         b.component_flow_balances = Constraint(b._params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b):
-            return sum(b.mole_frac_phase[b._params.phase_list[1], i]
+            return sum(b.mole_frac_phase_comp[b._params.phase_list[1], i]
                        for i in b._params.component_list) -\
-                sum(b.mole_frac_phase[b._params.phase_list[2], i]
+                sum(b.mole_frac_phase_comp[b._params.phase_list[2], i]
                     for i in b._params.component_list) == 0
         b.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
         if b.config.defined_state is False:
             # applied at outlet only
             b.sum_mole_frac_out = \
-                Constraint(expr=1 == sum(b.mole_frac[i]
+                Constraint(expr=1 == sum(b.mole_frac_comp[i]
                            for i in b._params.component_list))
 
         def rule_phase_frac(b, p):
@@ -135,14 +135,14 @@ def FPTx(b):
     else:
         # Otherwise use a general formulation
         def rule_comp_mass_balance(b, i):
-            return b.flow_mol*b.mole_frac[i] == sum(
-                b.flow_mol_phase[p]*b.mole_frac_phase[p, i]
+            return b.flow_mol*b.mole_frac_comp[i] == sum(
+                b.flow_mol_phase[p]*b.mole_frac_phase_comp[p, i]
                 for p in b._params.phase_list)
         b.component_flow_balances = Constraint(b._params.component_list,
                                                rule=rule_comp_mass_balance)
 
         def rule_mole_frac(b, p):
-            return sum(b.mole_frac_phase[p, i]
+            return sum(b.mole_frac_phase_comp[p, i]
                        for i in b._params.component_list) == 1
         b.sum_mole_frac = Constraint(b._params.phase_list,
                                      rule=rule_mole_frac)
@@ -150,7 +150,7 @@ def FPTx(b):
         if b.config.defined_state is False:
             # applied at outlet only
             b.sum_mole_frac_out = \
-                Constraint(expr=1 == sum(b.mole_frac[i]
+                Constraint(expr=1 == sum(b.mole_frac_comp[i]
                            for i in b._params.component_list))
 
         def rule_phase_frac(b, p):
@@ -163,7 +163,7 @@ def FPTx(b):
     def get_material_flow_terms_FPTx(p, j):
         """Create material flow terms for control volume."""
         if j in b._params.component_list:
-            return b.flow_mol_phase[p] * b.mole_frac_phase[p, j]
+            return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
         else:
             return 0
     b.get_material_flow_terms = get_material_flow_terms_FPTx
@@ -176,7 +176,7 @@ def FPTx(b):
     def get_material_density_terms_FPTx(p, j):
         """Create material density terms."""
         if j in b._params.component_list:
-            return b.dens_mol_phase[p] * b.mole_frac_phase[p, j]
+            return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
         else:
             return 0
     b.get_material_density_terms = get_material_density_terms_FPTx
@@ -193,7 +193,7 @@ def FPTx(b):
     def define_state_vars_FPTx():
         """Define state vars."""
         return {"flow_mol": b.flow_mol,
-                "mole_frac": b.mole_frac,
+                "mole_frac_comp": b.mole_frac_comp,
                 "temperature": b.temperature,
                 "pressure": b.pressure}
     b.define_state_vars = define_state_vars_FPTx

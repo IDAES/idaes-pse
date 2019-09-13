@@ -23,7 +23,7 @@ def bubble_temp_ideal(b):
         raise GenericPropertyPackageError(b, "pressure_sat_comp")
 
     def rule_bubble_temp(b):
-        return sum(b.mole_frac[j] *
+        return sum(b.mole_frac_comp[j] *
                    b._params.config.pressure_sat_comp(b,
                                                       b.temperature_bubble,
                                                       j)
@@ -32,7 +32,7 @@ def bubble_temp_ideal(b):
     b.eq_temperature_bubble = Constraint(rule=rule_bubble_temp)
 
     def rule_mole_frac_bubble_temp(b, j):
-        return b._mole_frac_tbub[j]*b.pressure == b.mole_frac[j] * \
+        return b._mole_frac_tbub[j]*b.pressure == b.mole_frac_comp[j] * \
                     b._params.config.pressure_sat_comp(b,
                                                        b.temperature_bubble,
                                                        j)
@@ -59,7 +59,7 @@ def dew_temp_ideal(b):
 
     def rule_dew_temp(b):
         return (b.pressure*sum(
-                    b.mole_frac[j] /
+                    b.mole_frac_comp[j] /
                     b._params.config.pressure_sat_comp(b,
                                                        b.temperature_dew,
                                                        j)
@@ -70,7 +70,7 @@ def dew_temp_ideal(b):
     def rule_mole_frac_dew_temp(b, j):
         return (b._mole_frac_tdew[j] *
                 b._params.config.pressure_sat_comp(b, b.temperature_dew, j) ==
-                b.mole_frac[j]*b.pressure)
+                b.mole_frac_comp[j]*b.pressure)
     b.eq_mole_frac_tdew = Constraint(b._params.component_list,
                                      rule=rule_mole_frac_dew_temp)
 
@@ -83,14 +83,14 @@ def bubble_press_ideal(b):
 
     def rule_bubble_press(b):
         return b.pressure_bubble == sum(
-                b.mole_frac[j] *
+                b.mole_frac_comp[j] *
                 b._params.config.pressure_sat_comp(b, b.temperature, j)
                 for j in b._params.component_list)
     b.eq_pressure_bubble = Constraint(rule=rule_bubble_press)
 
     def rule_mole_frac_bubble_press(b, j):
         return b._mole_frac_pbub[j]*b.pressure_bubble == \
-            b.mole_frac[j]*b._params.config.pressure_sat_comp(b,
+            b.mole_frac_comp[j]*b._params.config.pressure_sat_comp(b,
                                                               b.temperature,
                                                               j)
     b.eq_mole_frac_pbub = Constraint(b._params.component_list,
@@ -105,7 +105,7 @@ def dew_press_ideal(b):
 
     def rule_dew_press(b):
         return 0 == 1 - b.pressure_dew*sum(
-                            b.mole_frac[j] /
+                            b.mole_frac_comp[j] /
                             b._params.config.pressure_sat_comp(b,
                                                                b.temperature,
                                                                j)
@@ -115,6 +115,6 @@ def dew_press_ideal(b):
     def rule_mole_frac_dew_press(b, j):
         return (b._mole_frac_pdew[j] *
                 b._params.config.pressure_sat_comp(b, b.temperature, j) ==
-                b.mole_frac[j]*b.pressure_dew)
+                b.mole_frac_comp[j]*b.pressure_dew)
     b.eq_mole_frac_pdew = Constraint(b._params.component_list,
                                      rule=rule_mole_frac_dew_press)
