@@ -23,7 +23,7 @@ from pyomo.environ import log
 
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
-def Perry_cp_liq(b, j, T):
+def cp_mol_liq(b, j, T):
     # Specific enthalpy
     return (b._params.cp_liq[j, "5"]*T**4 +
             b._params.cp_liq[j, "4"]*T**3 +
@@ -32,7 +32,7 @@ def Perry_cp_liq(b, j, T):
             b._params.cp_liq[j, "1"])
 
 
-def Perry_enth_liq(b, j, T):
+def enth_mol_liq(b, j, T):
     # Specific enthalpy
     return ((b._params.cp_liq[j, "5"]/5) *
             (T**5-b._params.temperature_ref**5) +
@@ -46,7 +46,7 @@ def Perry_enth_liq(b, j, T):
             (T-b._params.temperature_ref))
 
 
-def Perry_entr_liq(b, j, T):
+def entr_mol_liq(b, j, T):
     # Specific entropy
     return ((b._params.cp_liq[j, '5']/4)*T**4 +
             (b._params.cp_liq[j, '4']/3)*T**3 +
@@ -57,7 +57,7 @@ def Perry_entr_liq(b, j, T):
 
 # -----------------------------------------------------------------------------
 # Densities
-def Perry_dens_liq(b, T, j):
+def dens_mol_liq(b, T, j):
     # pg. 2-98
     return (b._params.dens_mol_liq_coeff[j, '1'] /
             b._params.dens_mol_liq_coeff[j, '2']**(

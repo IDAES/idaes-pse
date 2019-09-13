@@ -23,7 +23,7 @@ from pyomo.environ import exp, log
 
 # -----------------------------------------------------------------------------
 # Heat capacities, enthalpies and entropies
-def RPP_cp_ig(b, j, T):
+def cp_mol_ig(b, j, T):
     # Specific enthalpy
     return (b._params.cp_ig[j, "D"]*T**3 +
             b._params.cp_ig[j, "C"]*T**2 +
@@ -31,7 +31,7 @@ def RPP_cp_ig(b, j, T):
             b._params.cp_ig[j, "A"])
 
 
-def RPP_enth_ig(b, j, T):
+def enth_mol_ig(b, j, T):
     # Specific enthalpy
     return ((b._params.cp_ig[j, "D"]/4) *
             (T**4-b._params.temperature_ref**4) +
@@ -43,7 +43,7 @@ def RPP_enth_ig(b, j, T):
             (T-b._params.temperature_ref))
 
 
-def RPP_entr_ig(b, j, T):
+def entr_mol_ig(b, j, T):
     # Specific entropy
     return ((b._params.cp_ig[j, 'D']/3)*T**3 +
             (b._params.cp_ig[j, 'C']/2)*T**2 +
@@ -54,7 +54,7 @@ def RPP_entr_ig(b, j, T):
 # -----------------------------------------------------------------------------
 # Saturation pressure
 # Note that this equation in not valid beyond the critical temperature
-def RPP_Psat1(b, T, j):
+def pressure_sat(b, T, j):
     x = 1 - T/b._params.temperature_crit[j]
 
     return (exp((1-x)**-1 * (b._params.pressure_sat_coeff[j, 'A']*x +

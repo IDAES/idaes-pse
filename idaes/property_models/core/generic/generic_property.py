@@ -117,18 +117,18 @@ class GenericParameterData(PhysicalParameterBlock):
         description="Method to calculate liquid component molar enthalpies",
         doc="""Flag indicating what method to use when calculating liquid phase
         component molar enthalpies."""))
-    CONFIG.declare("enth_mol_comp_vap", ConfigValue(
-        description="Method to calculate vapor component molar enthalpies",
-        doc="""Flag indicating what method to use when calculating vapor phase
-        component molar enthalpies."""))
+    CONFIG.declare("enth_mol_comp_ig", ConfigValue(
+        description="Method to calculate ideal gas component molar enthalpies",
+        doc="""Flag indicating what method to use when calculating ideal gas
+        phase component molar enthalpies."""))
     CONFIG.declare("entr_mol_comp_liq", ConfigValue(
         description="Method to calculate liquid component molar entropies",
         doc="""Flag indicating what method to use when calculating liquid phase
         component molar entropies."""))
-    CONFIG.declare("entr_mol_comp_vap", ConfigValue(
-        description="Method to calculate vapor component molar entropies",
-        doc="""Flag indicating what method to use when calculating vapor phase
-        component molar entropies."""))
+    CONFIG.declare("entr_mol_comp_ig", ConfigValue(
+        description="Method to calculate ideal gas component molar entropies",
+        doc="""Flag indicating what method to use when calculating ideal gas
+        phase component molar entropies."""))
     CONFIG.declare("pressure_sat_comp", ConfigValue(
         description="Method to use to calculate saturation pressure",
         doc="""Flag indicating what method to use when calcuating saturation
@@ -210,8 +210,8 @@ class _GenericStateBlock(StateBlock):
         Initialisation routine for property package.
         Keyword Arguments:
             flow_mol : value at which to initialize molar flow (default=None)
-            mole_frac_comp : dict of values to use when initializing mole fractions
-                        (default = None)
+            mole_frac_comp : dict of values to use when initializing mole
+                        fractions (default = None)
             pressure : value at which to initialize pressure (default=None)
             temperature : value at which to initialize temperature
                           (default=None)
@@ -277,8 +277,8 @@ class _GenericStateBlock(StateBlock):
                     else:
                         Xflag[k, j] = False
                         if mole_frac_comp is None:
-                            blk[k].mole_frac_comp[j].fix(1 / len(blk[k].
-                                                    _params.component_list))
+                            blk[k].mole_frac_comp[j].fix(
+                                    1/len(blk[k]._params.component_list))
                         else:
                             blk[k].mole_frac_comp[j].fix(mole_frac_comp[j])
 
@@ -406,13 +406,14 @@ class _GenericStateBlock(StateBlock):
                               sum(blk[k].mole_frac_comp[j] /
                                   antoine_P(blk[k], j, Tdew0)
                                   for j in blk[k]._params.component_list) - 1)
-                    df = -value(blk[k].pressure*math.log(10) *
-                                sum(blk[k].mole_frac_comp[j] *
-                                    blk[k]._params.antoine_coeff[j, 'B'] /
-                                    ((Tdew0 +
-                                      blk[k]._params.antoine_coeff[j, 'C'])**2 *
-                                    antoine_P(blk[k], j, Tdew0))
-                                    for j in blk[k]._params.component_list))
+                    df = -value(
+                            blk[k].pressure*math.log(10) *
+                            sum(blk[k].mole_frac_comp[j] *
+                                blk[k]._params.antoine_coeff[j, 'B'] /
+                                ((Tdew0 +
+                                  blk[k]._params.antoine_coeff[j, 'C'])**2 *
+                                antoine_P(blk[k], j, Tdew0))
+                                for j in blk[k]._params.component_list))
 
                     # Limit temperature step to avoid avoid excessive overshoot
                     if f/df > 20:
@@ -869,7 +870,8 @@ class GenericStateBlockData(StateBlockData):
         self.mw = Expression(
                 doc="Average molecular weight",
                 expr=sum(self.phase_frac[p] *
-                         sum(self.mole_frac_phase_comp[p, j]*self._params.mw_comp[j]
+                         sum(self.mole_frac_phase_comp[p, j] *
+                             self._params.mw_comp[j]
                              for j in self._params.component_list)
                          for p in self._params.phase_list))
 

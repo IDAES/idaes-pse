@@ -65,12 +65,12 @@ class TestParameterData(GenericParameterData):
         self.config.bubble_pressure = bubble_press_ideal
         self.config.dew_pressure = dew_press_ideal
 
-        self.config.dens_mol_comp_liq = Perrys.Perry_dens_liq
-        self.config.enth_mol_comp_liq = Perrys.Perry_enth_liq
-        self.config.enth_mol_comp_vap = RPP.RPP_enth_ig
-        self.config.entr_mol_comp_liq = Perrys.Perry_entr_liq
-        self.config.entr_mol_comp_vap = RPP.RPP_entr_ig
-        self.config.pressure_sat_comp = RPP.RPP_Psat1
+        self.config.dens_mol_comp_liq = Perrys
+        self.config.enth_mol_comp_liq = Perrys
+        self.config.enth_mol_comp_ig = RPP
+        self.config.entr_mol_comp_liq = Perrys
+        self.config.entr_mol_comp_ig = RPP
+        self.config.pressure_sat_comp = RPP
         # ---------------------------------------------------------------------
         self.component_list = Set(initialize=['benzene', 'toluene'])
 

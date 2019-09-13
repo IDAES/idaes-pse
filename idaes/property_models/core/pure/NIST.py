@@ -24,7 +24,7 @@ from pyomo.environ import log
 
 # -----------------------------------------------------------------------------
 # Shomate Equation for heat capacities, enthalpy and entropy
-def shomate_cp_ig(b, j, T):
+def cp_mol_ig(b, j, T):
     # Specific heat capacity (const. P)  via the Shomate equation
     return(b._params.cp_ig[j, "A"] +
            b._params.cp_ig[j, "B"]*T +
@@ -33,7 +33,7 @@ def shomate_cp_ig(b, j, T):
            b._params.cp_ig[j, "E"]*T**-2)
 
 
-def shomate_enth_ig(b, j, T):
+def enth_mol_ig(b, j, T):
     # Specific enthalpy via the Shomate equation
     return(b._params.cp_ig[j, "A"]*(T-b._params.temperature_ref) +
            (b._params.cp_ig[j, "B"]/2) *
@@ -46,7 +46,7 @@ def shomate_enth_ig(b, j, T):
            b._params.cp_ig[j, "F"] - b._params.cp_ig[j, "H"])
 
 
-def shomate_entr_ig(b, j, T):
+def entr_mol_ig(b, j, T):
     # Specific entropy via the Shomate equation
     return(b._params.cp_ig[j, "A"]*log(T) +
            b._params.cp_ig[j, "B"]*T +

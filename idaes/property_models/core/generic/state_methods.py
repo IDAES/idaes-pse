@@ -45,9 +45,9 @@ def FPTx(b):
                      bounds=f_bounds,
                      doc='Component molar flowrate [mol/s]')
     b.mole_frac_comp = Var(b._params.component_list,
-                      bounds=(0, None),
-                      initialize=1 / len(b._params.component_list),
-                      doc='Mixture mole fractions [-]')
+                           bounds=(0, None),
+                           initialize=1 / len(b._params.component_list),
+                           doc='Mixture mole fractions [-]')
     b.pressure = Var(initialize=101325,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
