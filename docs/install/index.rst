@@ -35,25 +35,17 @@ to operate.
 +-----------------------+------------------+-----------------------------+
 |                       | Windows          | :ref:`min_install_windows`  |
 +-----------------------+------------------+-----------------------------+
-|                       | Mac OSX          | not supported [1]_          |
+|                       | Mac OSX          | :ref:`min_install_osx`      |
 +-----------------------+------------------+-----------------------------+
 | Full                  | Linux            | :ref:`full_install_linux`   |
 +-----------------------+------------------+-----------------------------+
 |                       | Windows          | :ref:`full_install_windows` |
 +-----------------------+------------------+-----------------------------+
-|                       | Mac OSX          | not supported [1]_          |
+|                       | Mac OSX          |  use minimal install        |
 +-----------------------+------------------+-----------------------------+
 | Docker-based          | Windows, Linux   | :ref:`install_docker`       |
 |                       | OSX              |                             |
 +-----------------------+------------------+-----------------------------+
-
-.. [1] For advanced users, Mac OSX installation may be performed with some small changes
-       to the Linux installation instructions.
-
-.. note::
-
-    These installation procedures are only fully tested on Debian-based Linux
-    distributions.
 
 
 
