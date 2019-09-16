@@ -62,3 +62,18 @@ def pressure_sat(b, T, j):
                              b._params.pressure_sat_coeff[j, 'C']*x**3 +
                              b._params.pressure_sat_coeff[j, 'D']*x**6)) *
             b._params.pressure_crit[j])
+
+
+def pressure_sat_dT(b, T, j):
+    x = 1 - T/b._params.temperature_crit[j]
+
+    return (-pressure_sat(b, T, j) *
+            ((b._params.pressure_sat_coeff[j, 'A'] +
+              1.5*b._params.pressure_sat_coeff[j, 'B']*x**0.5 +
+              3*b._params.pressure_sat_coeff[j, 'C']*x**2 +
+              6*b._params.pressure_sat_coeff[j, 'D']*x**5)/T +
+             (b._params.temperature_crit[j]/T**2) *
+             (b._params.pressure_sat_coeff[j, 'A']*x +
+              b._params.pressure_sat_coeff[j, 'B']*x**1.5 +
+              b._params.pressure_sat_coeff[j, 'C']*x**3 +
+              b._params.pressure_sat_coeff[j, 'D']*x**6)))

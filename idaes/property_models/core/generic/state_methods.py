@@ -197,3 +197,26 @@ def FPTx(b):
                 "temperature": b.temperature,
                 "pressure": b.pressure}
     b.define_state_vars = define_state_vars_FPTx
+
+    def FPTx_initialization(b):
+        if len(b._params.phase_list) == 1:
+            for p in b._params.phase_list:
+                b.flow_mol_phase[p].value = \
+                    b.flow_mol.value
+
+                for j in b._params.component_list:
+                    b.mole_frac_phase_comp[p, j].value = \
+                        b.mole_frac_comp[j].value
+
+        else:
+            # TODO : Try to find some better guesses than this
+            for p in b._params.phase_list:
+                b.flow_mol_phase[p].value = \
+                    b.flow_mol.value / len(b._params.phase_list)
+
+                for j in b._params.component_list:
+                    b.mole_frac_phase_comp[p, j].value = \
+                        b.mole_frac_comp[j].value
+    b._state_initialization = FPTx_initialization
+
+    b._state_do_not_initialize = ["sum_mole_frac_out"]

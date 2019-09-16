@@ -14,7 +14,6 @@
 Framework for generic property packages
 """
 # Import Python libraries
-import math
 import logging
 
 # Import Pyomo libraries
@@ -32,7 +31,8 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock)
 from idaes.core.util.initialization import solve_indexed_blocks
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              number_activated_constraints)
 from idaes.core.util.exceptions import PropertyPackageError
 
 # Import sub-model libraries
@@ -44,6 +44,7 @@ _log = logging.getLogger(__name__)
 
 
 # TODO: Need clean-up methods for all methods to work with Pyomo DAE
+# Need way to dynamically determine units of measurement....
 class GenericPropertyPackageError(PropertyPackageError):
     # Error message for when a property is called for but no option provided
     def __init__(self, block, prop):
@@ -202,19 +203,14 @@ class _GenericStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, flow_mol=None, mole_frac_comp=None,
-                   temperature=None, pressure=None, state_vars_fixed=False,
+    def initialize(blk, state_args={}, state_vars_fixed=False,
                    hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
         Initialisation routine for property package.
         Keyword Arguments:
-            flow_mol : value at which to initialize molar flow (default=None)
-            mole_frac_comp : dict of values to use when initializing mole
-                        fractions (default = None)
-            pressure : value at which to initialize pressure (default=None)
-            temperature : value at which to initialize temperature
-                          (default=None)
+            state_args : a dict of initial vlaues for the state variables
+                    defined by the property package.
             outlvl : sets output level of initialisation routine
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
@@ -248,72 +244,50 @@ class _GenericStateBlock(StateBlock):
 
         _log.info('Starting {} initialisation'.format(blk.name))
 
-        # Deactivate the constraints specific for outlet block i.e.
-        # when defined state is False
+        # Create dict to hold information on what states needed to be fixed
+        flag_dict = {}
+
         for k in blk.keys():
+            # Deactivate the constraints specific for outlet block i.e.
+            # when defined state is False
             if blk[k].config.defined_state is False:
-                blk[k].sum_mole_frac_out.deactivate()
+                try:
+                    blk[k].sum_mole_frac_out.deactivate()
+                except AttributeError:
+                    pass
 
-        # Fix state variables if not already fixed
-        if state_vars_fixed is False:
-            Fflag = {}
-            Xflag = {}
-            Pflag = {}
-            Tflag = {}
+            # Fix state variables if not already fixed
+            if state_vars_fixed is False:
+                for name, var in blk[k].define_state_vars().items():
+                    flag_dict[name] = {}
 
-            for k in blk.keys():
-                if blk[k].flow_mol.fixed is True:
-                    Fflag[k] = True
-                else:
-                    Fflag[k] = False
-                    if flow_mol is None:
-                        blk[k].flow_mol.fix(1.0)
+                    if var.is_indexed:
+                        for idx in var:
+                            if var[idx].fixed:
+                                flag_dict[name][k, idx] = True
+                            else:
+                                flag_dict[name][k, idx] = False
+                                try:
+                                    var[idx].fix(state_args[name][idx])
+                                except KeyError:
+                                    var.fix()
                     else:
-                        blk[k].flow_mol.fix(flow_mol)
-
-                for j in blk[k]._params.component_list:
-                    if blk[k].mole_frac_comp[j].fixed is True:
-                        Xflag[k, j] = True
-                    else:
-                        Xflag[k, j] = False
-                        if mole_frac_comp is None:
-                            blk[k].mole_frac_comp[j].fix(
-                                    1/len(blk[k]._params.component_list))
+                        if var.fixed:
+                            flag_dict[name][k] = True
                         else:
-                            blk[k].mole_frac_comp[j].fix(mole_frac_comp[j])
+                            flag_dict[name][k] = False
+                            try:
+                                var.fix(state_args[name])
+                            except KeyError:
+                                var.fix()
+            else:
+                # When state vars are fixed, check that DoF is 0
+                for k in blk.keys():
+                    if degrees_of_freedom(blk[k]) != 0:
+                        raise Exception("State vars fixed but degrees of "
+                                        "freedom for state block is not zero "
+                                        "during initialization.")
 
-                if blk[k].pressure.fixed is True:
-                    Pflag[k] = True
-                else:
-                    Pflag[k] = False
-                    if pressure is None:
-                        blk[k].pressure.fix(101325.0)
-                    else:
-                        blk[k].pressure.fix(pressure)
-
-                if blk[k].temperature.fixed is True:
-                    Tflag[k] = True
-                else:
-                    Tflag[k] = False
-                    if temperature is None:
-                        blk[k].temperature.fix(325)
-                    else:
-                        blk[k].temperature.fix(temperature)
-
-            # ---------------------------------------------------------------------
-            # If input block, return flags, else release state
-            flags = {"Fflag": Fflag,
-                     "Xflag": Xflag,
-                     "Pflag": Pflag,
-                     "Tflag": Tflag}
-
-        else:
-            # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
-                    raise Exception("State vars fixed but degrees of freedom "
-                                    "for state block is not zero during "
-                                    "initialization.")
         # Set solver options
         if outlvl > 1:
             stee = True
@@ -330,46 +304,38 @@ class _GenericStateBlock(StateBlock):
 
         # ---------------------------------------------------------------------
         # If present, initialize bubble and dew point calculations
-        # Antoine equation
-        def antoine_P(b, j, T):
-            return 1e5*10**(b._params.antoine_coeff[j, 'A'] -
-                            b._params.antoine_coeff[j, 'B'] /
-                            (T + b._params.antoine_coeff[j, 'C']))
-
-        # Bubble temperature initialization
         for k in blk.keys():
+            # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tbub"):
-                Tbub0 = 0
-                for j in blk[k]._params.component_list:
-                    Tbub0 += value(
-                            blk[k].mole_frac_comp[j] *
-                            (blk[k]._params.antoine_coeff[j, 'B'] /
-                             (blk[k]._params.antoine_coeff[j, 'A'] -
-                              math.log10(value(blk[k].pressure*1e-5))) -
-                             blk[k]._params.antoine_coeff[j, 'C']))
+                # Use lowest component critical temperature as starting point
+                # Starting high and moving down generally works better,
+                # as it under-predicts next step due to exponential form of
+                # Psat.
+                # Subtract 1 to avoid potenetial singularities at Tcrit
+                Tbub0 = min(blk[k]._params.temperature_crit[j]
+                            for j in blk[k]._params.component_list) - 1
 
                 err = 1
                 counter = 0
 
-                # Simple Newton solver
-                # Tolerance does not need to be too small, and limit iterations
-                while err > 1e-2 and counter < 100:
-                    f = value(sum(antoine_P(blk[k], j, Tbub0) *
+                # Newton solver with step limiter to prevent overshoot
+                # Tolerance only needs to be ~1e-1
+                # Iteration limit of 30
+                while err > 1e-1 and counter < 30:
+                    f = value(sum(blk[k]._params.config.pressure_sat_comp
+                                  .pressure_sat(blk[k], Tbub0, j) *
                                   blk[k].mole_frac_comp[j]
                                   for j in blk[k]._params.component_list) -
                               blk[k].pressure)
                     df = value(sum(
-                            blk[k].mole_frac_comp[j] *
-                            blk[k]._params.antoine_coeff[j, 'B'] *
-                            math.log(10)*antoine_P(blk[k], j, Tbub0) /
-                            (Tbub0 + blk[k]._params.antoine_coeff[j, 'C'])**2
-                            for j in blk[k]._params.component_list))
+                           blk[k].mole_frac_comp[j]*blk[k]._params.config
+                           .pressure_sat_comp.pressure_sat_dT(blk[k], Tbub0, j)
+                           for j in blk[k]._params.component_list))
 
                     # Limit temperature step to avoid avoid excessive overshoot
-                    if f/df > 20:
-                        Tbub1 = Tbub0 - 20
-                    elif f/df < -20:
-                        Tbub1 = Tbub0 + 20
+                    # Only limit positive steps due to non-linearity
+                    if f/df < -50:
+                        Tbub1 = Tbub0 + 50
                     else:
                         Tbub1 = Tbub0 - f/df
 
@@ -382,44 +348,47 @@ class _GenericStateBlock(StateBlock):
                 for j in blk[k]._params.component_list:
                     blk[k]._mole_frac_tbub[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure /
-                            antoine_P(blk[k], j, Tbub0))
+                            blk[k]._params.config.pressure_sat_comp
+                                  .pressure_sat(blk[k], Tbub0, j))
 
-        # Dew temperature initialization
-        for k in blk.keys():
+            # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
-                Tdew0 = 0
-                for j in blk[k]._params.component_list:
-                    Tdew0 += value(
-                            blk[k].mole_frac_comp[j] *
-                            (blk[k]._params.antoine_coeff[j, 'B'] /
-                             (blk[k]._params.antoine_coeff[j, 'A'] -
-                              math.log10(value(blk[k].pressure*1e-5))) -
-                             blk[k]._params.antoine_coeff[j, 'C']))
+                if hasattr(blk[k], "_mole_frac_tbub"):
+                    # If Tbub has been clacuated above, use this as the
+                    # starting point
+                    Tdew0 = blk[k].temperature_bubble.value
+                else:
+                    # Otherwise, use lowest component critical temperature as
+                    # starting point
+                    # Subtract 1 to avoid potenetial singularities at Tcrit
+                    Tdew0 = min(blk[k]._params.temperature_crit[j]
+                                for j in blk[k]._params.component_list) - 1
 
                 err = 1
                 counter = 0
 
-                # Simple Newton solver
-                # Tolerance does not need to be too small, and limit iterations
-                while err > 1e-2 and counter < 100:
+                # Newton solver with step limiter to prevent overshoot
+                # Tolerance only needs to be ~1e-1
+                # Iteration limit of 30
+                while err > 1e-1 and counter < 30:
                     f = value(blk[k].pressure *
                               sum(blk[k].mole_frac_comp[j] /
-                                  antoine_P(blk[k], j, Tdew0)
+                                  blk[k]._params.config.pressure_sat_comp
+                                  .pressure_sat(blk[k], Tdew0, j)
                                   for j in blk[k]._params.component_list) - 1)
                     df = -value(
-                            blk[k].pressure*math.log(10) *
-                            sum(blk[k].mole_frac_comp[j] *
-                                blk[k]._params.antoine_coeff[j, 'B'] /
-                                ((Tdew0 +
-                                  blk[k]._params.antoine_coeff[j, 'C'])**2 *
-                                antoine_P(blk[k], j, Tdew0))
+                            blk[k].pressure *
+                            sum(blk[k].mole_frac_comp[j] /
+                                blk[k]._params.config.pressure_sat_comp
+                                  .pressure_sat(blk[k], Tdew0, j)**2 *
+                                blk[k]._params.config
+                                .pressure_sat_comp.pressure_sat_dT(
+                                        blk[k], Tdew0, j)
                                 for j in blk[k]._params.component_list))
 
                     # Limit temperature step to avoid avoid excessive overshoot
-                    if f/df > 20:
-                        Tdew1 = Tdew0 - 20
-                    elif f/df < -20:
-                        Tdew1 = Tdew0 + 20
+                    if f/df < -50:
+                        Tdew1 = Tdew0 + 50
                     else:
                         Tdew1 = Tdew0 - f/df
 
@@ -432,42 +401,42 @@ class _GenericStateBlock(StateBlock):
                 for j in blk[k]._params.component_list:
                     blk[k]._mole_frac_tdew[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure /
-                            antoine_P(blk[k], j, Tdew0))
+                            blk[k]._params.config.pressure_sat_comp
+                                  .pressure_sat(blk[k], Tdew0, j))
 
-        # Bubble pressure initialization
-        for k in blk.keys():
+            # Bubble pressure initialization
             if hasattr(blk[k], "_mole_frac_pbub"):
                 blk[k].pressure_bubble.value = value(
                         sum(blk[k].mole_frac_comp[j] *
-                            antoine_P(blk[k], j, blk[k].temperature)
+                            blk[k]._params.config.pressure_sat_comp
+                                  .pressure_sat(blk[k], blk[k].temperature, j)
                             for j in blk[k]._params.component_list))
 
                 for j in blk[k]._params.component_list:
                     blk[k]._mole_frac_pbub[j].value = value(
-                            blk[k].mole_frac_comp[j] *
-                            antoine_P(blk[k], j, blk[k].temperature) /
-                            blk[k].pressure_bubble)
+                        blk[k].mole_frac_comp[j] *
+                        blk[k]._params.config.pressure_sat_comp
+                              .pressure_sat(blk[k], blk[k].temperature, j) /
+                        blk[k].pressure_bubble)
 
-                blk[k].pressure_bubble.display()
-                blk[k]._mole_frac_pbub.display()
-
-        # Dew pressure initialization
-        for k in blk.keys():
+            # Dew pressure initialization
             if hasattr(blk[k], "_mole_frac_pdew"):
                 blk[k].pressure_dew.value = value(
                         sum(1/(blk[k].mole_frac_comp[j] /
-                               antoine_P(blk[k], j, blk[k].temperature))
+                               blk[k]._params.config.pressure_sat_comp
+                               .pressure_sat(blk[k], blk[k].temperature, j))
                             for j in blk[k]._params.component_list))
 
                 for j in blk[k]._params.component_list:
                     blk[k]._mole_frac_pdew[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
-                            antoine_P(blk[k], j, blk[k].temperature))
+                            blk[k]._params.config.pressure_sat_comp
+                                  .pressure_sat(blk[k], blk[k].temperature, j))
 
-        # Solve bubble and dew point constraints
-        for k in blk.keys():
+            # Solve bubble and dew point constraints
             for c in blk[k].component_objects(Constraint):
-                # Deactivate all property constraints
+                # Deactivate all constraints not assoicated wtih bubble and dew
+                # points
                 if c.local_name not in ("eq_pressure_dew",
                                         "eq_pressure_bubble",
                                         "eq_temperature_dew",
@@ -478,19 +447,23 @@ class _GenericStateBlock(StateBlock):
                                         "_sum_mole_frac_pdew"):
                     c.deactivate()
 
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
+        # If StateBlock has active constraints (i.e. has bubble and/or dew
+        # point calculations), solve the block to converge these
+        if number_activated_constraints(blk) > 0:
+            results = solve_indexed_blocks(opt, [blk], tee=stee)
 
-        if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Dew and bubble points initialization for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Dew and bubble points initialization for "
-                             "{} failed".format(blk.name))
+            if outlvl > 0:
+                if results.solver.termination_condition \
+                        == TerminationCondition.optimal:
+                    _log.info("Dew and bubble points initialization for "
+                              "{} completed".format(blk.name))
+                else:
+                    _log.warning("Dew and bubble points initialization for "
+                                 "{} failed".format(blk.name))
 
         # ---------------------------------------------------------------------
-        # If flash, initialize T1 and Teq
+        # If StateBlock is using a smooth VLE, calculate _T1 and _Teq
+        eq_check = 0
         for k in blk.keys():
             if hasattr(blk[k], "_t1"):
                 blk[k]._t1.value = max(blk[k].temperature.value,
@@ -498,99 +471,41 @@ class _GenericStateBlock(StateBlock):
                 blk[k]._teq.value = min(blk[k]._t1.value,
                                         blk[k].temperature_dew.value)
 
-        if outlvl > 0:
+                eq_check += 1
+
+        if outlvl > 0 and eq_check > 0:
             _log.info("Equilibrium temperature initialization for "
                       "{} completed".format(blk.name))
 
-#        # ---------------------------------------------------------------------
-#        # Initialize flow rates and compositions
-#        # TODO : This will need to be generalised more when we move to a
-#        # modular implementation
-#        for k in blk.keys():
-#            if blk[k]._params.config.valid_phase == "Liq":
-#                blk[k].flow_mol_phase['Liq'].value = \
-#                    blk[k].flow_mol.value
-#
-#                for j in blk[k]._params.component_list:
-#                    blk[k].mole_frac_phase_comp['Liq', j].value = \
-#                        blk[k].mole_frac_comp[j].value
-#
-#            elif blk[k]._params.config.valid_phase == "Vap":
-#                blk[k].flow_mol_phase['Vap'].value = \
-#                    blk[k].flow_mol.value
-#
-#                for j in blk[k]._params.component_list:
-#                    blk[k].mole_frac_phase_comp['Vap', j].value = \
-#                        blk[k].mole_frac_comp[j].value
-#
-#            else:
-#                if blk[k].temperature.value > blk[k].temperature_dew.value:
-#                    # Pure vapour
-#                    blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
-#                    blk[k].flow_mol_phase["Vap"].value = \
-#                        1e-5*blk[k].flow_mol.value
-#
-#                    for j in blk[k]._params.component_list:
-#                        blk[k].mole_frac_phase_comp['Vap', j].value = \
-#                            blk[k].mole_frac_comp[j].value
-#                        blk[k].mole_frac_phase_comp['Liq', j].value = \
-#                            blk[k]._mole_frac_tdew[j].value
-#                elif blk[k].temperature.value < \
-#                        blk[k].temperature_bubble.value:
-#                    # Pure liquid
-#                    blk[k].flow_mol_phase["Vap"].value = \
-#                        1e-5*blk[k].flow_mol.value
-#                    blk[k].flow_mol_phase["Vap"].value = blk[k].flow_mol.value
-#
-#                    for j in blk[k]._params.component_list:
-#                        blk[k].mole_frac_phase_comp['Vap', j].value = \
-#                            blk[k]._mole_frac_tbub[j].value
-#                        blk[k].mole_frac_phase_comp['Liq', j].value = \
-#                            blk[k].mole_frac_comp[j].value
-#                else:
-#                    # Two-phase
-#                    # TODO : Try to find some better guesses than this
-#                    blk[k].flow_mol_phase["Vap"].value = \
-#                        0.5*blk[k].flow_mol.value
-#                    blk[k].flow_mol_phase["Vap"].value = \
-#                        0.5*blk[k].flow_mol.value
-#
-#                    for j in blk[k]._params.component_list:
-#                        blk[k].mole_frac_phase_comp['Vap', j].value = \
-#                            blk[k].mole_frac_comp[j].value
-#                        blk[k].mole_frac_phase_comp['Liq', j].value = \
-#                            blk[k].mole_frac_comp[j].value
-
         # ---------------------------------------------------------------------
-        # Solve phase equilibrium constraints
+        # Initialize flow rates and compositions
         for k in blk.keys():
-            for c in blk[k].component_objects(Constraint):
-                # Activate equilibrium constraints
-                if c.local_name in ("total_flow_balance",
-                                    "component_flow_balances",
-                                    "equilibrium_constraint",
-                                    "sum_mole_frac",
-                                    "_t1_constraint",
-                                    "_teq_constraint"):
-                    c.activate()
-
-        results = solve_indexed_blocks(opt, [blk], tee=stee)
+            blk[k]._state_initialization(blk[k])
 
         if outlvl > 0:
-            if results.solver.termination_condition \
-                    == TerminationCondition.optimal:
-                _log.info("Phase equilibrium initialization for "
-                          "{} completed".format(blk.name))
-            else:
-                _log.warning("Phase equilibrium initialization for "
-                             "{} failed".format(blk.name))
+            _log.info("State variable initialization for "
+                      "{} completed".format(blk.name))
+
+        # ---------------------------------------------------------------------
+        if (blk[k]._params.config.phase_equilibrium_formulation is not None and
+                (not blk[k].config.defined_state or blk[k].always_flash)):
+            blk[k]._phase_equil_initialization(blk[k])
+
+            if outlvl > 0:
+                if results.solver.termination_condition \
+                        == TerminationCondition.optimal:
+                    _log.info("Phase equilibrium initialization for "
+                              "{} completed".format(blk.name))
+                else:
+                    _log.warning("Phase equilibrium initialization for "
+                                 "{} failed".format(blk.name))
 
         # ---------------------------------------------------------------------
         # Initialize other properties
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
-                # Activate all constraints except sum_mole_frac_out
-                if c.local_name not in ("sum_mole_frac_out"):
+                # Activate all constraints except flagged do_not_initialize
+                if c.local_name not in (blk[k]._state_do_not_initialize):
                     c.activate()
 
         if outlvl > 0:
@@ -605,14 +520,15 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Return state to initial conditions
         for k in blk.keys():
-            if (blk[k].config.defined_state is False):
-                blk[k].sum_mole_frac_out.activate()
+            for c in blk[k].component_objects(Constraint):
+                if c.local_name in (blk[k]._state_do_not_initialize):
+                    c.activate()
 
         if state_vars_fixed is False:
             if hold_state is True:
-                return flags
+                return flag_dict
             else:
-                blk.release_state(flags)
+                blk.release_state(flag_dict)
 
         if outlvl > 0:
             _log.info("Initialisation completed for {}".format(blk.name))
@@ -632,15 +548,14 @@ class _GenericStateBlock(StateBlock):
 
         # Unfix state variables
         for k in blk.keys():
-            if flags['Fflag'][k] is False:
-                blk[k].flow_mol.unfix()
-            for j in blk[k]._params.component_list:
-                if flags['Xflag'][k, j] is False:
-                    blk[k].mole_frac_comp[j].unfix()
-            if flags['Pflag'][k] is False:
-                blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
-                blk[k].temperature.unfix()
+            for name, var in blk[k].define_state_vars().items():
+                if var.is_indexed:
+                    for idx in var:
+                        if flags[name][k, idx] is False:
+                            var[idx].unfix()
+                else:
+                    if flags[name][k] is False:
+                        var[idx].unfix()
 
         if outlvl > 0:
             if outlvl > 0:

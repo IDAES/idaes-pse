@@ -58,7 +58,7 @@ def entr_mol_ig(b, j, T):
 
 # -----------------------------------------------------------------------------
 # Antoine equation for saturation pressure
-def antoine(b, T, j):
+def pressure_sat(b, T, j):
     return 10**(b._params.antoine_coeff[j, 'A'] -
                 b._params.antoine_coeff[j, 'B'] /
                 (T + b._params.antoine_coeff[j, 'C']))

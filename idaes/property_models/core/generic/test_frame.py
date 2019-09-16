@@ -38,7 +38,7 @@ def main():
     m.fs.state.entr_mol.display()
     m.fs.state.gibbs_mol.display()
 
-#    m.fs.state.initialize()
+    m.fs.state.initialize()
 
     # Current Ideal-Ideal model
     m.fs.properties_ideal_vl = BTXParameterBlock(default={
@@ -66,6 +66,9 @@ def main():
 
     m.fs.state.temperature_bubble.display()
     m.fs.existing.temperature_bubble.display()
+
+    m.fs.state.temperature_dew.display()
+    m.fs.existing.temperature_dew.display()
 
     m.fs.state.enth_mol_phase_comp.display()
     m.fs.existing.enth_mol_phase_comp.display()

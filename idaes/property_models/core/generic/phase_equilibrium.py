@@ -57,6 +57,19 @@ def smooth_VLE(b):
     b.equilibrium_constraint = \
         Constraint(b._params.component_list, rule=rule_equilibrium)
 
+    def smooth_VLE_initialization(b):
+        for c in b.component_objects(Constraint):
+            # Activate equilibrium constraints
+            if c.local_name in ("total_flow_balance",
+                                "component_flow_balances",
+                                "equilibrium_constraint",
+                                "sum_mole_frac",
+                                "_t1_constraint",
+                                "_teq_constraint"):
+                c.activate()
+
+    b._phase_equil_initialization = smooth_VLE_initialization
+
 
 def smooth_VLE_log(b):
     # Definition of equilibrium temperature for smooth VLE

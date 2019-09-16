@@ -25,6 +25,7 @@ from idaes.core import declare_process_block_class
 from idaes.property_models.core.generic.generic_property import (
         GenericParameterData)
 
+import idaes.property_models.core.generic.state_methods as state_methods
 import idaes.property_models.core.eos.ideal as ideal
 from idaes.property_models.core.generic.phase_equilibrium import smooth_VLE
 from idaes.property_models.core.generic.bubble_dew import (bubble_temp_ideal,
@@ -50,7 +51,8 @@ class TestParameterData(GenericParameterData):
 
         # ---------------------------------------------------------------------
         # Set config arguments
-        # Default state definition
+        self.config.state_definition = state_methods.FPTx
+
         self.config.state_bounds = {"flow_mol": (0, 1000),
                                     "temperature": (273.15, 450),
                                     "pressure": (5e4, 1e6)}
@@ -172,22 +174,6 @@ class TestParameterData(GenericParameterData):
                             mutable=False,
                             initialize=cp_liq_data,
                             doc="Parameters for liquid cp")
-
-        # Source: NIST Webbook (units are Pa, K)
-        # A parameter +5 to convert from bar to Pa
-#        antoine_coeff_data = {('benzene', 'A'): 9.72583,
-#                              ('benzene', 'B'): 1660.652,
-#                              ('benzene', 'C'): -1.461,
-#                              ('toluene', 'A'): 9.07827,
-#                              ('toluene', 'B'): 1343.943,
-#                              ('toluene', 'C'): -53.773}
-#
-#        self.antoine_coeff = Param(
-#            self.component_list,
-#            ['A', 'B', 'C'],
-#            mutable=False,
-#            initialize=antoine_coeff_data,
-#            doc="Antoine coefficients for saturation pressure")
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
