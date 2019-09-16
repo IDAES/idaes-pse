@@ -9,6 +9,8 @@ import glob
 import os
 import pathlib
 import shutil
+# third-party
+import pytest
 # package
 from idaes.util.testutil import run_notebook
 
@@ -34,6 +36,7 @@ def move_to_tmp(module_name, tmp_path):
     return d
 
 
+@pytest.mark.nocircleci()
 def test_module_2(tmp_path):
     module_name = "Workshop_Module_2"
     d = move_to_tmp(module_name, tmp_path)
