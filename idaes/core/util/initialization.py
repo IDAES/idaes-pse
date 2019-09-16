@@ -15,7 +15,7 @@
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block
+from pyomo.environ import Block, Var
 from pyomo.network import Arc
 
 __author__ = "Andrew Lee, John Siirola"
@@ -51,6 +51,11 @@ def propagate_state(stream, direction="forward"):
 
     for v in value_source.vars:
         for i in value_source.vars[v]:
+            if not isinstance(value_dest.vars[v], Var):
+                raise TypeError("Port contains one or more members which are "
+                                "not Vars. propogate_state works by assigning "
+                                "to the value attribute, thus can only be "
+                                "when Port members are Pyomo Vars.")
             if not value_dest.vars[v][i].fixed:
                 value_dest.vars[v][i].value = value_source.vars[v][i].value
 

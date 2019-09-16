@@ -15,7 +15,7 @@ Tests for math util methods.
 """
 
 import pytest
-from pyomo.environ import Block, ConcreteModel,  Constraint, \
+from pyomo.environ import Block, ConcreteModel,  Constraint, Expression, \
                             Set, SolverFactory, Var, value
 from pyomo.network import Arc, Port
 from idaes.core.util.initialization import (propagate_state,
@@ -164,6 +164,30 @@ def test_propagate_state_fixed():
     assert m.b2.v1.fixed is True
     assert m.b2.v2[1].fixed is False
     assert m.b2.v2[2].fixed is False
+
+
+def test_propagate_state_Expression():
+    m = ConcreteModel()
+
+    def block_rule(b):
+        b.s = Set(initialize=[1, 2])
+        b.v1 = Var()
+        b.v2 = Var(b.s)
+
+        b.e = Expression(expr=b.v1)
+
+        b.p = Port()
+        b.p.add(b.e, "E")
+        b.p.add(b.v2, "V2")
+        return
+
+    m.b1 = Block(rule=block_rule)
+    m.b2 = Block(rule=block_rule)
+
+    m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
+
+    with pytest.raises(TypeError):
+        propagate_state(m.s1)
 
 
 def test_propagate_state_invalid_stream():
