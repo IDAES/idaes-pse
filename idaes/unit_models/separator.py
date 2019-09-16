@@ -772,7 +772,10 @@ linked the mixed state and all outlet states,
                                         return mb[t].component(l_name)[ps, j]
                             elif self.config.split_basis == \
                                     SplittingType.componentFlow:
-                                s_check = split_map[j]
+                                if split_map[j] == o:
+                                    return 1
+                                else:
+                                    return self.eps
                             elif self.config.split_basis == \
                                     SplittingType.phaseComponentFlow:
                                 for ps in mb[t]._params.phase_list:
@@ -784,11 +787,6 @@ linked the mixed state and all outlet states,
                                         "{} This should not happen. Please "
                                         "report this bug to the IDAES "
                                         "developers.".format(self.name))
-
-                            if s_check == o:
-                                return 1
-                            else:
-                                return self.eps
 
                         e_obj = Expression(
                                 self.flowsheet().config.time,
