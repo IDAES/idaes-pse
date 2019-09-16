@@ -767,13 +767,18 @@ linked the mixed state and all outlet states,
                         def e_rule(b, t, p, j):
                             if self.config.split_basis == \
                                         SplittingType.phaseFlow:
-                                s_check = split_map[p]
+                                for ps in mb[t]._params.phase_list:
+                                    if split_map[ps] == o:
+                                        return mb[t].component(l_name)[ps, j]
                             elif self.config.split_basis == \
                                     SplittingType.componentFlow:
                                 s_check = split_map[j]
                             elif self.config.split_basis == \
                                     SplittingType.phaseComponentFlow:
-                                s_check = split_map[p, j]
+                                for ps in mb[t]._params.phase_list:
+                                    if split_map[ps, j] == o:
+                                        return 1
+                                return self.eps
                             else:
                                 raise BurntToast(
                                         "{} This should not happen. Please "
