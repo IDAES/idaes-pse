@@ -25,9 +25,9 @@ from idaes.core import declare_process_block_class
 from idaes.property_models.core.generic.generic_property import (
         GenericParameterData)
 
-import idaes.property_models.core.generic.state_methods as state_methods
+from idaes.property_models.core.state_definitions import FPTx
 import idaes.property_models.core.eos.ideal as ideal
-from idaes.property_models.core.generic.phase_equilibrium import smooth_VLE
+from idaes.property_models.core.phase_equil import smooth_VLE
 from idaes.property_models.core.generic.bubble_dew import (bubble_temp_ideal,
                                                            dew_temp_ideal,
                                                            bubble_press_ideal,
@@ -51,7 +51,7 @@ class TestParameterData(GenericParameterData):
 
         # ---------------------------------------------------------------------
         # Set config arguments
-        self.config.state_definition = state_methods.FPTx
+        self.config.state_definition = FPTx
 
         self.config.state_bounds = {"flow_mol": (0, 1000),
                                     "temperature": (273.15, 450),

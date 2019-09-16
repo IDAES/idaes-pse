@@ -35,9 +35,6 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_constraints)
 from idaes.core.util.exceptions import PropertyPackageError
 
-# Import sub-model libraries
-import idaes.property_models.core.generic.state_methods as state_methods
-
 
 # Set up logger
 _log = logging.getLogger(__name__)
@@ -66,7 +63,6 @@ class GenericParameterData(PhysicalParameterBlock):
 
     # General options
     CONFIG.declare("state_definition", ConfigValue(
-        default=state_methods.FPTx,
         description="Choice of State Variable",
         doc="""Flag indicating the set of state variables to use for property
         package. Values should be a valid Python method which creates the
@@ -480,7 +476,7 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         # Initialize flow rates and compositions
         for k in blk.keys():
-            blk[k]._state_initialization(blk[k])
+            blk[k]._params.config.state_definition.state_initialization(blk[k])
 
         if outlvl > 0:
             _log.info("State variable initialization for "
@@ -489,7 +485,8 @@ class _GenericStateBlock(StateBlock):
         # ---------------------------------------------------------------------
         if (blk[k]._params.config.phase_equilibrium_formulation is not None and
                 (not blk[k].config.defined_state or blk[k].always_flash)):
-            blk[k]._phase_equil_initialization(blk[k])
+            blk[k]._params.config.phase_equilibrium_formulation \
+                .phase_equil_initialization(blk[k])
 
             if outlvl > 0:
                 if results.solver.termination_condition \
@@ -505,7 +502,9 @@ class _GenericStateBlock(StateBlock):
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
                 # Activate all constraints except flagged do_not_initialize
-                if c.local_name not in (blk[k]._state_do_not_initialize):
+                if c.local_name not in (
+                        blk[k]._params.config
+                        .state_definition.do_not_initialize):
                     c.activate()
 
         if outlvl > 0:
@@ -521,7 +520,9 @@ class _GenericStateBlock(StateBlock):
         # Return state to initial conditions
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
-                if c.local_name in (blk[k]._state_do_not_initialize):
+                if c.local_name in (
+                        blk[k]._params.config
+                        .state_definition.do_not_initialize):
                     c.activate()
 
         if state_vars_fixed is False:
@@ -577,7 +578,7 @@ class GenericStateBlockData(StateBlockData):
                     "state_definition configuration argument. Please fix "
                     "you property parameter defintion to include this "
                     "configuration argument.")
-        self._params.config.state_definition(self)
+        self._params.config.state_definition.define_state(self)
 
         # Create common components for each property package
         if self._params.config.equation_of_state is None:
@@ -593,7 +594,7 @@ class GenericStateBlockData(StateBlockData):
         # Add phase equilibrium constraints if necessary
         if (self._params.config.phase_equilibrium_formulation is not None and
                 (not self.config.defined_state or self.always_flash)):
-            self._params.config.phase_equilibrium_formulation(self)
+            self._params.config.phase_equilibrium_formulation.phase_equil(self)
 
     # -------------------------------------------------------------------------
     # Bubble and Dew Points
