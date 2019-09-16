@@ -18,7 +18,7 @@ import pytest
 from pyomo.environ import Block, ConcreteModel,  Constraint, \
                             Set, SolverFactory, Var, value
 from pyomo.network import Arc, Port
-from idaes.core.util.initialization import (propogate_state,
+from idaes.core.util.initialization import (propagate_state,
                                             solve_indexed_blocks)
 
 __author__ = "Andrew Lee"
@@ -34,7 +34,7 @@ else:
     solver = None
 
 
-def test_propogate_state():
+def test_propagate_state():
     m = ConcreteModel()
 
     def block_rule(b):
@@ -62,9 +62,9 @@ def test_propogate_state():
     assert m.b2.v2[1].value is None
     assert m.b2.v2[2].value is None
 
-    propogate_state(m.s1)
+    propagate_state(m.s1)
 
-    # Check that values were propogated correctly
+    # Check that values were propagated correctly
     assert m.b2.v1.value == m.b1.v1.value
     assert m.b2.v2[1].value == m.b1.v2[1].value
     assert m.b2.v2[2].value == m.b1.v2[2].value
@@ -77,7 +77,7 @@ def test_propogate_state():
     assert m.b2.v2[2].fixed is False
 
 
-def test_propogate_state_reverse():
+def test_propagate_state_reverse():
     m = ConcreteModel()
 
     def block_rule(b):
@@ -105,9 +105,9 @@ def test_propogate_state_reverse():
     assert m.b1.v2[1].value is None
     assert m.b1.v2[2].value is None
 
-    propogate_state(m.s1, direction="backward")
+    propagate_state(m.s1, direction="backward")
 
-    # Check that values were propogated correctly
+    # Check that values were propagated correctly
     assert m.b2.v1.value == m.b1.v1.value
     assert m.b2.v2[1].value == m.b1.v2[1].value
     assert m.b2.v2[2].value == m.b1.v2[2].value
@@ -120,7 +120,7 @@ def test_propogate_state_reverse():
     assert m.b2.v2[2].fixed is False
 
 
-def test_propogate_state_fixed():
+def test_propagate_state_fixed():
     m = ConcreteModel()
 
     def block_rule(b):
@@ -151,9 +151,9 @@ def test_propogate_state_fixed():
     # Fix v1 in block 2
     m.b2.v1.fix(500)
 
-    propogate_state(m.s1)
+    propagate_state(m.s1)
 
-    # Check that values were propogated correctly
+    # Check that values were propagated correctly
     assert m.b2.v1.value == 500
     assert m.b2.v2[1].value == m.b1.v2[1].value
     assert m.b2.v2[2].value == m.b1.v2[2].value
@@ -166,14 +166,14 @@ def test_propogate_state_fixed():
     assert m.b2.v2[2].fixed is False
 
 
-def test_propogate_state_invalid_stream():
+def test_propagate_state_invalid_stream():
     m = ConcreteModel()
 
     with pytest.raises(TypeError):
-        propogate_state(m)
+        propagate_state(m)
 
 
-def test_propogate_state_invalid_direction():
+def test_propagate_state_invalid_direction():
     m = ConcreteModel()
 
     def block_rule(b):
@@ -192,7 +192,7 @@ def test_propogate_state_invalid_direction():
     m.s1 = Arc(source=m.b1.p, destination=m.b2.p)
 
     with pytest.raises(ValueError):
-        propogate_state(m.s1, direction="foo")
+        propagate_state(m.s1, direction="foo")
 
 
 @pytest.mark.skipif(solver is None, reason="Solver not available")

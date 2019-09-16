@@ -21,14 +21,14 @@ from pyomo.network import Arc
 __author__ = "Andrew Lee, John Siirola"
 
 
-def propogate_state(stream, direction="forward"):
+def propagate_state(stream, direction="forward"):
     """
-    This method propogates values between Ports along Arcs. Values can be
-    propogated in either direction using the direction argument.
+    This method propagates values between Ports along Arcs. Values can be
+    propagated in either direction using the direction argument.
 
     Args:
-        stream : Arc object along which to propogate values
-        direction: direction in which to propogate values. Default = 'forward'
+        stream : Arc object along which to propagate values
+        direction: direction in which to propagate values. Default = 'forward'
                 Valid value: 'forward', 'backward'.
 
     Returns:
