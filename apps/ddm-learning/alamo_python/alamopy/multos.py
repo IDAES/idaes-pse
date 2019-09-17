@@ -15,6 +15,7 @@
 
 import os
 import platform
+import subprocess
 
 
 def deletefile(*fname):
@@ -63,9 +64,14 @@ def catfile(outf, *fname):
 
 
 def has_alamo():  # Tested on Linux, not on Windows
-    # tos = platform.platform()
-
-    for path in os.environ["PATH"].split(os.pathsep):
-        exe_file = os.path.join(path, 'alamo')
-        if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
-            return exe_file
+    try:
+        s = subprocess.check_output(["alamo"])
+        if b"Licensing error" in s: 
+            _alamo_ok = False
+        else:
+            _alamo_ok = True
+    except subprocess.CalledProcessError:
+        _alamo_ok = False
+    if _alamo_ok is None:
+        _alamo_ok = False
+    return _alamo_ok
