@@ -440,10 +440,10 @@ class HeatExchangerData(UnitModelBlockData):
         alf3 = {'floating_head':0.09005,'fixed_head':0.09861,
                 'U-tube':0.09790,'Kettle_vap':0.09005}
         
-        if (self.config.side_2.property_package.get_metadata().
+        if (self.config.tube.property_package.get_metadata().
                 default_units['length']) == 'm':
             area = self.area*10.7639
-        elif (self.config.side_2.property_package.get_metadata().
+        elif (self.config.tube.property_package.get_metadata().
                 default_units['length']) == 'ft':
             area = self.area
         else:
@@ -458,12 +458,12 @@ class HeatExchangerData(UnitModelBlockData):
         #------------------------------------------------------
         #Pressure factor calculation
         # doublecheck units (higher pressure fluid should be tube side)
-        if (self.config.side_2.property_package.get_metadata().
+        if (self.config.tube.property_package.get_metadata().
                 properties['pressure']['units']) == 'Pa':
-            pressure = self.side_2.properties_in[0].pressure*14.69/1.01325e5
-        elif (self.config.side_2.property_package.get_metadata().
+            pressure = self.tube.properties_in[0].pressure*14.69/1.01325e5
+        elif (self.config.tube.property_package.get_metadata().
                 properties['pressure']['units']) == 'psig':
-            pressure = self.side_2.properties_in[0].pressure 
+            pressure = self.tube.properties_in[0].pressure 
         #side 2 should be the high pressure side
 
         #units must be in psig
