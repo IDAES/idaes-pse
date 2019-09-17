@@ -102,6 +102,8 @@ def test_config():
     assert not m.fs.unit.config.tube.has_pressure_change
     assert m.fs.unit.config.tube.property_package is m.fs.properties
 
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
 @pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_costing():
     m = ConcreteModel()
