@@ -47,7 +47,7 @@ _log = logging.getLogger(__name__)
 class ReboilerData(UnitModelBlockData):
     """
     Reboiler unit for distillation model.
-    Unit model to condense (total/partial) the vapor from the top tray of
+    Unit model to reboil the liquid from the bottom tray of
     the distillation column.
     """
     CONFIG = UnitModelBlockData.CONFIG()
@@ -162,20 +162,25 @@ see property package for documentation.}"""))
 
         if self.config.has_boilup_ratio is True:
             def rule_boilup_ratio(self, t):
-                if hasattr(self.properties_out[t].flow_mol_phase):
+                if hasattr(self.control_volume.properties_out[t],
+                           "flow_mol_phase"):
                     return self.boilup_ratio * \
-                        self.properties_out[t].flow_mol_phase["Liq"] == \
-                        self.properties_out[t].flow_mol_phase["Vap"]
-                elif hasattr(self.properties_out[t].flow_mol_phase_comp):
+                        self.control_volume.properties_out[t].\
+                        flow_mol_phase["Liq"] == self.control_volume.\
+                        properties_out[t].flow_mol_phase["Vap"]
+                elif hasattr(self.control_volume.properties_out[t],
+                             "flow_mol_phase_comp"):
                     return self.boilup_ratio * \
-                        sum(self.properties_out[t].flow_mol_phase["Liq", i]
-                            for i in self.properties_out[t].
+                        sum(self.control_volume.properties_out[t].
+                            flow_mol_phase_comp["Liq", i]
+                            for i in self.control_volume.properties_out[t].
                             _params.component_list) == \
-                        sum(self.properties_out[t].flow_mol_phase["Vap", i]
-                            for i in self.properties_out[t].
+                        sum(self.control_volume.properties_out[t].
+                            flow_mol_phase_comp["Vap", i]
+                            for i in self.control_volume.properties_out[t].
                             _params.component_list)
                 else:
-                    raise Exception("Unsupported flow mole phase variables")
+                    raise Exception("Unsupported flow variables")
             self.eq_boilup_ratio = Constraint(self.flowsheet().time,
                                               rule=rule_boilup_ratio)
 
@@ -201,9 +206,6 @@ see property package for documentation.}"""))
         self.vapor_reboil = Port(noruleinit=True,
                                  doc="Vapor outlet stream that is returned to "
                                  "to the bottom tray.")
-        # Add codnenser specific variables
-        self.boilup_ratio = Var(initialize=1, doc="boilup ratio for "
-                                "the reboiler")
 
     def _make_splits_reboiler(self):
         # Get dict of Port members and names
@@ -305,7 +307,7 @@ see property package for documentation.}"""))
                         def rule_bottoms_flow(self, t):
                             return self.control_volume.properties_out[t].\
                                 component(local_name)["Liq"]
-                        self.e_distillate_flow = Expression(
+                        self.e_bottoms_flow = Expression(
                             self.flowsheet().time,
                             rule=rule_bottoms_flow)
 
@@ -332,7 +334,7 @@ see property package for documentation.}"""))
                         def rule_bottoms_flow(self, t, i):
                             return self.control_volume.properties_out[t].\
                                 component(local_name)["Liq", i]
-                        self.e_distillate_flow = Expression(
+                        self.e_bottoms_flow = Expression(
                             self.flowsheet().time, index_set,
                             rule=rule_bottoms_flow)
 
@@ -342,7 +344,7 @@ see property package for documentation.}"""))
 
                     # add the reference and variable name to the
                     # distillate port
-                    self.vapor_outlet.add(self.e_vap_flow, k)
+                    self.vapor_reboil.add(self.e_vap_flow, k)
             elif "enth" in k:
                 if "phase" not in k:
                     # assumes total mixture enthalpy (enth_mol or enth_mass)
