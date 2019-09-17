@@ -102,6 +102,7 @@ def test_config():
     assert not m.fs.unit.config.tube.has_pressure_change
     assert m.fs.unit.config.tube.property_package is m.fs.properties
 
+@pytest.mark.skipif(solver is None, reason="Solver not available")
 def test_costing():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -109,8 +110,8 @@ def test_costing():
     m.fs.properties = iapws95.Iapws95ParameterBlock()
 
     m.fs.unit = HeatExchanger(default={
-                "side_1": {"property_package": m.fs.properties},
-                "side_2": {"property_package": m.fs.properties},
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.countercurrent})
 #   Set inputs
     m.fs.unit.inlet_1.flow_mol[0].fix(100)
@@ -129,7 +130,7 @@ def test_costing():
     m.fs.unit.initialize()
     m.fs.unit._get_costing()
     
-#    @pytest.mark.skipif(solver is None, reason="Solver not available")
+
     results = solver.solve(m)
 #    
 #    return m
