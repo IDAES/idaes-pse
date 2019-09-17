@@ -102,7 +102,37 @@ def test_config():
     assert not m.fs.unit.config.side_2.has_pressure_change
     assert m.fs.unit.config.side_2.property_package is m.fs.properties
 
+def test_costing():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
 
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+    m.fs.unit = HeatExchanger(default={
+                "side_1": {"property_package": m.fs.properties},
+                "side_2": {"property_package": m.fs.properties},
+                "flow_pattern": HeatExchangerFlowPattern.countercurrent})
+#   Set inputs
+    m.fs.unit.inlet_1.flow_mol[0].fix(100)
+    m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+    m.fs.unit.inlet_1.pressure[0].fix(101325)
+
+    m.fs.unit.inlet_2.flow_mol[0].fix(100)
+    m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+    m.fs.unit.inlet_2.pressure[0].fix(101325)
+
+    m.fs.unit.area.fix(1000)
+    m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+    assert degrees_of_freedom(m) == 0
+    
+    m.fs.unit.initialize()
+    m.fs.unit._get_costing()
+    
+#    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    results = solver.solve(m)
+#    
+#    return m
 # -----------------------------------------------------------------------------
 class TestBTX_cocurrent(object):
     @pytest.fixture(scope="class")

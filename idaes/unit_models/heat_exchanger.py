@@ -20,8 +20,9 @@ import logging
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import (Var, log, Expression, Constraint, Reference,
-                           PositiveReals, SolverFactory, ExternalFunction)
+from pyomo.environ import (Var, Param, log, Expression, Constraint, Reference,
+                           PositiveReals, SolverFactory, ExternalFunction,
+                           exp, log10)
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
 
@@ -356,3 +357,124 @@ class HeatExchangerData(UnitModelBlockData):
                  "Side 2 Inlet": self.inlet_2,
                  "Side 2 Outlet": self.outlet_2},
                 time_point=time_point)
+
+    def _get_costing(self, hx_type='U-tube', FM='stain_steel', ce_i= '2018', 
+                     FL = '12ft'):
+        '''
+        Heat exchanger costing method
+        Source: Process and Product Design Principles: Synthesis, Analysis, 
+        and Evaluation
+        Seider, Seader, Lewin, Windagdo, 3rd Ed. John Wiley and Sons
+        Chapter 22. Cost Accounting and Capital Cost Estimation
+        22.2 Cost Indexes and Capital Investment
+        
+        This method computes the purchase cost (CP) for a shell and tube heat
+        exchanger (Eq. 22.43), the model computes the base cost (CB for 4 type 
+        of heat exchangers, such as floating head, fixed head, U-tube, and 
+        Kettle vaporizer), construction material factor (FM), pressure design 
+        factor (FP), and tube lenght correction factor (FL), using CE base cost 
+        index of 500. 
+        
+        Cp = FP*FM*FL*CB
+        
+        Args:
+            hx_type : 'floating_head', 'fixed_head', 'U-tube'*, 'Kettle_vap'
+            
+            material factor (FM): 'stain_steel'*, 'carb_steel'
+            
+            tube length (FL): '8ft'*, '12ft', '16ft', '20ft'
+            
+            CE Cost Index (ce_i): '2019', '2018'*, '2017' ... '2010'
+            
+            * --> default options
+        '''
+        # ------------------------ Heat Exchanger cost ------------------------
+        # heat exchanger cost
+        self.base_cost = Var(initialize = 1e5,
+                             bounds=(0, 1e12), 
+                             doc='Heat Exchanger Base Cost CB cost in $')
+        self.purchase_cost = Var(initialize =1e6,
+                                 bounds = (0,1e12), 
+                                 doc = 'Heat Exchanger Purchase Cost CP in $')
+        self.FP = Var(initialize = 100,
+                      doc = 'hx Pressure factor')
+        self.FL = Param(mutable = True, initialize = 1.12, 
+                        doc='hx tube length correction factor')
+        self.FM = Param(mutable = True, initialize = 3, 
+                        doc= 'construction material correction factor')
+        self.CE_index = Param(mutable = True, initialize = 671.1,
+                              doc= 'CE cost index $ year')
+        self.hx_os = Param(mutable = True, initialize = 1.1,
+                           doc= 'hx oversize factor 1.1 to 1.5')
+
+
+        # slect length correction factor 
+        c_fl = {'8ft':1.25, '12ft':1.12, '16ft':1.05, '20ft':1.00}
+        self.FL = c_fl[FL]
+
+        # select construction material (stainless steel default)
+        c_material = {'stain_steel':3, 'carbon_steel':2}
+        self.FM = c_material[FM]
+        # FM can be calculated for advanced materials Eq. 22.44 
+        #i.e. Carbon Steel/Cr-Mo steel, Cr-Mo steel/Cr-Mo steel, Monel/Monel, 
+        #Titanium/titanium, etc.
+        
+        # Cost index $/year (method argument or 2018 default)
+        ce_index_dic = {'2019':680, '2018':671.1, '2017':567.5, '2016':541.7,
+                    '2015':556.8, '2014':576.1, '2013':567.3, '2012':584.6, 
+                    '2011':585.7, '2010':550.8}
+        self.CE_index = ce_index_dic[ce_i]
+
+        #--------------------------------------------------
+        # base cost calculation
+#       # select heat exchanger type:
+        alf1 = {'floating_head':11.9052,'fixed_head':11.2927,
+                'U-tube':11.3852,'Kettle_vap':12.2052}
+        alf2 = {'floating_head':0.8709,'fixed_head':0.8228,
+                'U-tube':0.9186,'Kettle_vap':0.8709}
+        alf3 = {'floating_head':0.09005,'fixed_head':0.09861,
+                'U-tube':0.09790,'Kettle_vap':0.09005}
+        
+        if (self.config.side_2.property_package.get_metadata().
+                default_units['length']) == 'm':
+            area = self.area*10.7639
+        elif (self.config.side_2.property_package.get_metadata().
+                default_units['length']) == 'ft':
+            area = self.area
+        else:
+            raise Exception('area units not suported')
+
+        def hx_cost_rule(self):
+            return self.base_cost == self.FL * exp(alf1[hx_type] 
+                        - alf2[hx_type]*log10(area*self.hx_os)
+                        + alf3[hx_type]*log10(area*self.hx_os)**2)
+        self.base_cost_eq = Constraint(rule=hx_cost_rule)
+        
+        #------------------------------------------------------
+        #Pressure factor calculation
+        # doublecheck units (higher pressure fluid should be tube side)
+        if (self.config.side_2.property_package.get_metadata().
+                properties['pressure']['units']) == 'Pa':
+            pressure = self.side_2.properties_in[0].pressure*14.69/1.01325e5
+        elif (self.config.side_2.property_package.get_metadata().
+                properties['pressure']['units']) == 'psig':
+            pressure = self.side_2.properties_in[0].pressure 
+        #side 2 should be the high pressure side
+
+        #units must be in psig
+        def hx_P_factor(self):
+            # eq valid from 600 pisg to 3000 psig
+            #    return self.hx_FP == 0.8510 + 0.1292*(pressure/600) 
+            #                                + 0.0198*(pressure/600)**2
+            # eq valid from 100 pisg to 2000 psig
+            return self.FP == 0.9803 + (0.018*(pressure/100) 
+                                        + 0.0017*(pressure/100)**2)
+        self.p_factor_eq = Constraint(rule=hx_P_factor)
+
+
+        #---------------------------------------------------------
+        # purchase cost equation
+        def hx_CP_rule(self):
+            return self.purchase_cost == (self.FP*self.FM*self.FL*
+                                          (self.CE_index/500)*self.base_cost)
+        self.cp_cost_eq = Constraint(rule=hx_CP_rule)
