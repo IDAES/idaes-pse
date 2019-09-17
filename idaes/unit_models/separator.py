@@ -767,9 +767,11 @@ linked the mixed state and all outlet states,
                         def e_rule(b, t, p, j):
                             if self.config.split_basis == \
                                         SplittingType.phaseFlow:
-                                for ps in mb[t]._params.phase_list:
-                                    if split_map[ps] == o:
-                                        return mb[t].component(l_name)[ps, j]
+                                raise ConfigurationError(
+                                        "{} ideal phase separation cannot be "
+                                        "used when mole_frac_phase or "
+                                        "mass_frac_phase is one of the state "
+                                        "variables.")
                             elif self.config.split_basis == \
                                     SplittingType.componentFlow:
                                 if split_map[j] == o:
@@ -778,10 +780,11 @@ linked the mixed state and all outlet states,
                                     return self.eps
                             elif self.config.split_basis == \
                                     SplittingType.phaseComponentFlow:
-                                for ps in mb[t]._params.phase_list:
-                                    if split_map[ps, j] == o:
-                                        return 1
-                                return self.eps
+                                raise ConfigurationError(
+                                        "{} ideal phase-component separation "
+                                        "cannot be used when mole_frac_phase "
+                                        "or mass_frac_phase is one of the "
+                                        "state variables.")
                             else:
                                 raise BurntToast(
                                         "{} This should not happen. Please "
@@ -804,7 +807,7 @@ linked the mixed state and all outlet states,
                                 return self.eps
 
                         elif self.config.split_basis == \
-                                    SplittingType.phaseComponentFlow:
+                                SplittingType.phaseComponentFlow:
                             def e_rule(b, t, j):
                                 if any(split_map[p, j] == o for p in
                                        self.config.property_package.phase_list):
