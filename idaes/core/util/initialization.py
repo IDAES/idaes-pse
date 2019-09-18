@@ -15,9 +15,49 @@
 This module contains utility functions for initialization of IDAES models.
 """
 
-from pyomo.environ import Block
+from pyomo.environ import Block, Var
+from pyomo.network import Arc
 
 __author__ = "Andrew Lee, John Siirola"
+
+
+def propagate_state(stream, direction="forward"):
+    """
+    This method propagates values between Ports along Arcs. Values can be
+    propagated in either direction using the direction argument.
+
+    Args:
+        stream : Arc object along which to propagate values
+        direction: direction in which to propagate values. Default = 'forward'
+                Valid value: 'forward', 'backward'.
+
+    Returns:
+        None
+    """
+    if not isinstance(stream, Arc):
+        raise TypeError("Unexpected type of stream argument. Value must be "
+                        "a Pyomo Arc.")
+
+    if direction == "forward":
+        value_source = stream.source
+        value_dest = stream.destination
+    elif direction == "backward":
+        value_source = stream.destination
+        value_dest = stream.source
+    else:
+        raise ValueError("Unexpected value for direction argument: ({}). "
+                         "Value must be either 'forward' or 'backward'."
+                         .format(direction))
+
+    for v in value_source.vars:
+        for i in value_source.vars[v]:
+            if not isinstance(value_dest.vars[v], Var):
+                raise TypeError("Port contains one or more members which are "
+                                "not Vars. propogate_state works by assigning "
+                                "to the value attribute, thus can only be "
+                                "when Port members are Pyomo Vars.")
+            if not value_dest.vars[v][i].fixed:
+                value_dest.vars[v][i].value = value_source.vars[v][i].value
 
 
 # HACK, courtesy of J. Siirola
@@ -28,7 +68,7 @@ def solve_indexed_blocks(solver, blocks, **kwds):
     the contents of the objects in the blocks argument and then solved.
 
     Args:
-        solve : a Pyomo solver object to use when solving the Indexed Block
+        solver : a Pyomo solver object to use when solving the Indexed Block
         blocks : an object which inherits from Block, or a list of Blocks
         kwds : a dict of argumnets to be passed to the solver
 
