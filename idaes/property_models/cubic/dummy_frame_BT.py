@@ -8,7 +8,7 @@ Created on Tue Jul 23 14:36:11 2019
 
 from idaes.core import FlowsheetBlock
 from idaes.property_models.cubic import BT_PR_VLE
-from idaes.property_models.ideal import BTX_ideal_VLE
+#from idaes.property_models.ideal import BTX_ideal_VLE
 
 from pyomo.environ import ConcreteModel, SolverFactory, value
 
@@ -20,8 +20,8 @@ def main():
 
     m.fs.props = BT_PR_VLE.BTParameterBlock(
             default={'valid_phase': ('Vap', 'Liq')})
-    m.fs.props_ideal = BTX_ideal_VLE.BTXParameterBlock(
-            default={'valid_phase': ('Vap', 'Liq')})
+#    m.fs.props_ideal = BTX_ideal_VLE.BTXParameterBlock(
+#            default={'valid_phase': ('Vap', 'Liq')})
 
     m.fs.state = m.fs.props.state_block_class(default={'parameters': m.fs.props,
                                                        'defined_state': True})
@@ -30,7 +30,7 @@ def main():
 
     F = 100
     x_benzene = 0.5
-    T = 370
+    T = 400
     P = 1e5
 
     # -----------------------------------------------------------------------------
@@ -48,6 +48,8 @@ def main():
     # -----------------------------------------------------------------------------
     m.fs.state.enth_mol
     m.fs.state.entr_mol
+    m.fs.state.dens_mol_phase
+    m.fs.state.dens_mass_phase
 
     #m.fs.ideal.enth_mol_phase_comp
 
@@ -77,6 +79,9 @@ def main():
     m.fs.state.temperature_bubble.display()
     m.fs.state._teq.display()
     #m.fs.state._fug_phase_eq.display()
+    m.fs.state.dens_mol_phase.display()
+    m.fs.state.dens_mass_phase.display()
+    m.fs.state.compress_fact.display()
 
     #print()
     #for j in m.fs.props.component_list:
