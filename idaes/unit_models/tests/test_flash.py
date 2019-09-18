@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
 from idaes.core import (FlowsheetBlock, MaterialBalanceType, EnergyBalanceType,
                         MomentumBalanceType)
 from idaes.unit_models.flash import Flash, EnergySplittingType
-from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
+from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
 from idaes.property_models import iapws95
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
@@ -55,9 +56,9 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert m.fs.unit.config.ideal_separation
@@ -69,13 +70,16 @@ def test_config():
 
 
 # -----------------------------------------------------------------------------
-class TestSaponification(object):
+class TestBTXIdeal(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock()
+        m.fs.properties = BTXParameterBlock(default={"valid_phase":
+                                                     ('Liq', 'Vap'),
+                                                     "activity_coeff_model":
+                                                     "Ideal"})
 
         m.fs.unit = Flash(default={"property_package": m.fs.properties})
 
@@ -106,8 +110,8 @@ class TestSaponification(object):
         assert hasattr(btx.fs.unit, "heat_duty")
         assert hasattr(btx.fs.unit, "deltaP")
 
-        assert number_variables(btx) == 50
-        assert number_total_constraints(btx) == 43
+        assert number_variables(btx) == 48
+        assert number_total_constraints(btx) == 41
         assert number_unused_variables(btx) == 0
 
     def test_dof(self, btx):
@@ -158,22 +162,22 @@ class TestSaponification(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, btx):
-        assert (pytest.approx(0.645, abs=1e-3) ==
+        assert (pytest.approx(0.603, abs=1e-3) ==
                 value(btx.fs.unit.liq_outlet.flow_mol[0]))
-        assert (pytest.approx(0.355, abs=1e-3) ==
+        assert (pytest.approx(0.396, abs=1e-3) ==
                 value(btx.fs.unit.vap_outlet.flow_mol[0]))
         assert (pytest.approx(368, abs=1e-3) ==
                 value(btx.fs.unit.liq_outlet.temperature[0]))
         assert (pytest.approx(101325, abs=1e-3) ==
                 value(btx.fs.unit.liq_outlet.pressure[0]))
 
-        assert (pytest.approx(0.421, abs=1e-3) ==
+        assert (pytest.approx(0.412, abs=1e-3) ==
                 value(btx.fs.unit.liq_outlet.mole_frac[0, "benzene"]))
-        assert (pytest.approx(0.579, abs=1e-3) ==
+        assert (pytest.approx(0.588, abs=1e-3) ==
                 value(btx.fs.unit.liq_outlet.mole_frac[0, "toluene"]))
-        assert (pytest.approx(0.643, abs=1e-3) ==
+        assert (pytest.approx(0.634, abs=1e-3) ==
                 value(btx.fs.unit.vap_outlet.mole_frac[0, "benzene"]))
-        assert (pytest.approx(0.357, abs=1e-3) ==
+        assert (pytest.approx(0.366, abs=1e-3) ==
                 value(btx.fs.unit.vap_outlet.mole_frac[0, "toluene"]))
 
     @pytest.mark.initialize
@@ -232,8 +236,8 @@ class TestIAPWS(object):
         assert hasattr(iapws.fs.unit, "heat_duty")
         assert hasattr(iapws.fs.unit, "deltaP")
 
-        assert number_variables(iapws) == 21
-        assert number_total_constraints(iapws) == 16
+        assert number_variables(iapws) == 18
+        assert number_total_constraints(iapws) == 13
         assert number_unused_variables(iapws) == 0
 
     def test_dof(self, iapws):

@@ -24,18 +24,16 @@ from idaes.core import (ControlVolume1DBlock,
                         FlowsheetBlockData,
                         declare_process_block_class,
                         FlowDirection,
-                        PhysicalParameterBlock,
-                        StateBlock,
-                        StateBlockData,
-                        ReactionParameterBlock,
-                        ReactionBlockBase,
-                        ReactionBlockDataBase,
-                        MaterialFlowBasis)
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 from idaes.core.control_volume1d import ControlVolume1DBlockData
 from idaes.core.util.exceptions import (BalanceTypeNotSupportedError,
                                         ConfigurationError,
                                         PropertyNotSupportedError)
 from idaes.core.control_volume1d import DistributedVars
+from idaes.core.util.testing import (PhysicalParameterTestBlock,
+                                     ReactionParameterTestBlock)
 
 
 # -----------------------------------------------------------------------------
@@ -44,162 +42,6 @@ from idaes.core.control_volume1d import DistributedVars
 class _Flowsheet(FlowsheetBlockData):
     def build(self):
         super(_Flowsheet, self).build()
-
-
-@declare_process_block_class("PhysicalParameterTestBlock")
-class _PhysicalParameterBlock(PhysicalParameterBlock):
-    def build(self):
-        super(_PhysicalParameterBlock, self).build()
-
-        self.phase_list = Set(initialize=["p1", "p2"])
-        self.component_list = Set(initialize=["c1", "c2"])
-        self.phase_equilibrium_idx = Set(initialize=["e1", "e2"])
-        self.element_list = Set(initialize=["H", "He", "Li"])
-        self.element_comp = {"c1": {"H": 1, "He": 2, "Li": 3},
-                             "c2": {"H": 4, "He": 5, "Li": 6}}
-
-        self.phase_equilibrium_list = \
-            {"e1": ["c1", ("p1", "p2")],
-             "e2": ["c2", ("p1", "p2")]}
-
-        # Attribute to switch flow basis for testing
-        self.basis_switch = 1
-
-        self.state_block_class = TestStateBlock
-
-    @classmethod
-    def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
-
-
-class SBlockBase(StateBlock):
-    def initialize(blk, outlvl=0, optarg=None, solver=None,
-                   hold_state=False, **state_args):
-        for k in blk.keys():
-            blk[k].init_test = True
-
-@declare_process_block_class("TestStateBlock", block_class=SBlockBase)
-class StateTestBlockData(StateBlockData):
-    CONFIG = ConfigBlock(implicit=True)
-
-    def build(self):
-        super(StateTestBlockData, self).build()
-
-        self.test_var = Var()
-        self.pressure = Var()
-
-    def get_material_flow_terms(b, p, j):
-        return b.test_var
-
-    def get_material_density_terms(b, p, j):
-        return b.test_var
-
-    def get_enthalpy_flow_terms(b, p):
-        return b.test_var
-
-    def get_enthalpy_density_terms(b, p):
-        return b.test_var
-
-    def define_state_vars(b):
-        """Define state variables for ports."""
-        return {}
-
-    def model_check(self):
-        self.check = True
-
-    def get_material_flow_basis(b):
-        if b.config.parameters.basis_switch == 1:
-            return MaterialFlowBasis.molar
-        elif b.config.parameters.basis_switch == 2:
-            return MaterialFlowBasis.mass
-        else:
-            return MaterialFlowBasis.other
-
-
-@declare_process_block_class("ReactionParameterTestBlock")
-class _ReactionParameterBlock(ReactionParameterBlock):
-    def build(self):
-        super(_ReactionParameterBlock, self).build()
-
-        self.phase_list = Set(initialize=["p1", "p2"])
-        self.component_list = Set(initialize=["c1", "c2"])
-        self.rate_reaction_idx = Set(initialize=["r1", "r2"])
-        self.equilibrium_reaction_idx = Set(initialize=["e1", "e2"])
-
-        self.rate_reaction_stoichiometry = {("r1", "p1", "c1"): 1,
-                                            ("r1", "p1", "c2"): 1,
-                                            ("r1", "p2", "c1"): 1,
-                                            ("r1", "p2", "c2"): 1,
-                                            ("r2", "p1", "c1"): 1,
-                                            ("r2", "p1", "c2"): 1,
-                                            ("r2", "p2", "c1"): 1,
-                                            ("r2", "p2", "c2"): 1}
-        self.equilibrium_reaction_stoichiometry = {
-                                            ("e1", "p1", "c1"): 1,
-                                            ("e1", "p1", "c2"): 1,
-                                            ("e1", "p2", "c1"): 1,
-                                            ("e1", "p2", "c2"): 1,
-                                            ("e2", "p1", "c1"): 1,
-                                            ("e2", "p1", "c2"): 1,
-                                            ("e2", "p2", "c1"): 1,
-                                            ("e2", "p2", "c2"): 1}
-
-        self.reaction_block_class = ReactionBlock
-
-        # Attribute to switch flow basis for testing
-        self.basis_switch = 1
-
-    @classmethod
-    def define_metadata(cls, obj):
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
-
-    @classmethod
-    def get_required_properties(self):
-        return {}
-
-
-class RBlockBase(ReactionBlockBase):
-    def initialize(blk, outlvl=0, optarg=None, solver=None):
-        for k in blk.keys():
-            blk[k].init_test = True
-
-
-@declare_process_block_class("ReactionBlock", block_class=RBlockBase)
-class ReactionBlockData(ReactionBlockDataBase):
-    CONFIG = ConfigBlock(implicit=True)
-
-    def build(self):
-        super(ReactionBlockData, self).build()
-
-        self.reaction_rate = Var(["r1", "r2"])
-
-        self.dh_rxn = {"r1": 1,
-                       "r2": 2,
-                       "e1": 3,
-                       "e2": 4}
-
-    def model_check(self):
-        self.check = True
-
-    def get_reaction_rate_basis(b):
-        if b.config.parameters.basis_switch == 1:
-            return MaterialFlowBasis.molar
-        elif b.config.parameters.basis_switch == 2:
-            return MaterialFlowBasis.mass
-        else:
-            return MaterialFlowBasis.other
 
 
 @declare_process_block_class("CVFrame")
@@ -1025,6 +867,60 @@ def test_rxn_rate_conv_mass_mole():
                 assert (m.fs.cv._rxn_rate_conv(
                         t, x, j, has_rate_reactions=True) ==
                         m.fs.cv.properties[t, x].mw[j])
+
+
+# -----------------------------------------------------------------------------
+# Test add_material_balances default
+def test_add_material_balances_default_fail():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    m.fs.pp.default_balance_switch = 2
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_material_balances(MaterialBalanceType.useDefault)
+
+
+def test_add_material_balances_default():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    mb = m.fs.cv.add_material_balances(MaterialBalanceType.useDefault)
+
+    assert isinstance(mb, Constraint)
+    assert len(mb) == 4
+    for p in m.fs.pp.phase_list:
+        for j in m.fs.pp.component_list:
+            with pytest.raises(KeyError):
+                assert m.fs.cv.material_balances[0, 0, p, j]
+            assert type(m.fs.cv.material_balances[0, 1, p, j]) is \
+                _GeneralConstraintData
 
 
 # -----------------------------------------------------------------------------
@@ -2461,6 +2357,62 @@ def test_add_total_material_balances():
 
     with pytest.raises(BalanceTypeNotSupportedError):
         m.fs.cv.add_total_material_balances()
+
+
+# -----------------------------------------------------------------------------
+# Test add_energy_balances default
+def test_add_energy_balances_default_fail():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    m.fs.pp.default_balance_switch = 2
+
+    with pytest.raises(ConfigurationError):
+        m.fs.cv.add_energy_balances(EnergyBalanceType.useDefault)
+
+
+def test_add_energy_balances_default():
+    m = ConcreteModel()
+    m.fs = Flowsheet(default={"dynamic": False})
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.rp = ReactionParameterTestBlock(default={"property_package": m.fs.pp})
+
+    m.fs.cv = ControlVolume1DBlock(default={
+                "property_package": m.fs.pp,
+                "reaction_package": m.fs.rp,
+                "transformation_method": "dae.finite_difference",
+                "transformation_scheme": "BACKWARD",
+                "finite_elements": 10})
+
+    m.fs.cv.add_geometry()
+    m.fs.cv.add_state_blocks(has_phase_equilibrium=False)
+    m.fs.cv.add_reaction_blocks(has_equilibrium=False)
+
+    eb = m.fs.cv.add_energy_balances(EnergyBalanceType.useDefault)
+
+    assert isinstance(eb, Constraint)
+    assert len(eb) == 1
+    assert isinstance(m.fs.cv._enthalpy_flow, Var)
+    assert isinstance(m.fs.cv.enthalpy_flow_linking_constraint, Constraint)
+    assert isinstance(m.fs.cv.enthalpy_flow_dx, DerivativeVar)
+
+    with pytest.raises(KeyError):
+        assert m.fs.cv.enthalpy_balances[0, 0]
+    assert type(m.fs.cv.enthalpy_balances[0, 1]) is \
+        _GeneralConstraintData
 
 
 # -----------------------------------------------------------------------------

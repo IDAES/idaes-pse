@@ -28,7 +28,8 @@ from idaes.core import (FlowsheetBlock,
                         MomentumBalanceType)
 from idaes.unit_models import Heater
 
-from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
+from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
 from idaes.property_models import iapws95
 from idaes.property_models.examples.saponification_thermo import \
     SaponificationParameterBlock
@@ -62,9 +63,9 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
+        EnergyBalanceType.useDefault
     assert m.fs.unit.config.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
     assert not m.fs.unit.config.has_phase_equilibrium

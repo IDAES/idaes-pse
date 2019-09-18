@@ -2,6 +2,7 @@
 """
 Institute for the Design of Advanced Energy Systems
 """
+from pathlib import Path
 import os
 import sys
 from setuptools import setup, find_packages
@@ -11,28 +12,55 @@ def warn(s):
     sys.stderr.write("*** WARNING *** {}\n".format(s))
 
 
-def get_version(file, name="__version__"):
-    """Get the version of the package from the given file by
-    executing it and extracting the given `name`.
-    """
-    path = os.path.realpath(file)
+def get_version():
+    code_file = os.path.join("idaes", "ver.py")
+    code = open(code_file).read()
     local_namespace = {}
-    exec(open(path).read(), {}, local_namespace)
-    return local_namespace[name]
+    exec(code, {}, local_namespace)
+    return local_namespace["__version__"]
 
 
-NAME = "idaes"
-VERSION = get_version(os.path.join(NAME, "ver.py"))
+NAME = "idaes-pse"
+VERSION = get_version()
+README = open("README.md").read()
+README = README[README.find("#") :]  # ignore everything before title
+
+
+def rglob(path, glob):
+    """Return list of paths from `path` matching `glob`.
+    """
+    p = Path(path)
+    return list(map(str, p.rglob(glob)))
+
+
+alamopy_dir = Path(".") / "apps" / "ddm-learning" / "alamo_python"
+ripe_dir = Path(".") / "apps" / "ddm-learning" / "ripe_python"
+
+
+def find_all_packages():
+    test_patterns = ["*.tests", "*.tests.*", "tests.*", "tests"]
+    result = []
+    for pkgdir in (".", alamopy_dir, ripe_dir):
+        result.extend(find_packages(str(pkgdir)))
+    return result
+
 
 kwargs = dict(
+    zip_safe=False,
     name=NAME,
     version=VERSION,
-    packages=find_packages(),
+    packages=find_all_packages(),
+    package_dir={
+        "idaes": "idaes",
+        "alamopy": str(alamopy_dir / "alamopy"),
+        "ripe": str(ripe_dir / "ripe"),
+    },
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
+        # idaes core / dmf
         "backports.shutil_get_terminal_size",
-        "bokeh",
+        "bokeh==0.12.9",
         "bunch",
         "click",
         "colorama",
@@ -41,20 +69,26 @@ kwargs = dict(
         "lxml",
         "matplotlib",
         "mock",
+        "nbconvert",
+        "nbformat",
+        "numpy",
+        "networkx",
         "pandas",
-        "pendulum",
+        "pendulum==1.4.4",
+        "pint",
         "psutil",
+        "pyomo",
         "pytest",
+        "pyutilib",
         "pyyaml",
         "sympy",
         "tinydb",
         "toml",
-        "networkx",
+        # alamopy
+        # ripe
+        "rbfopt",
     ],
-    entry_points="""
-    [console_scripts]
-    dmf=idaes.dmf.cli:base_command
-    """,
+    entry_points={"console_scripts": ["dmf = idaes.dmf.cli:base_command"]},
     extras_require={
         # For developers. Only installed if [dev] is added to package name
         "dev": [
@@ -76,27 +110,54 @@ kwargs = dict(
         ]
     },
     package_data={
-        # If any package contains *.template, *.json, *.dll, or *.so file,
-        # include them:
-        "": ["*.template", "*.json", "*.dll", "*.so", "*.svg"]
+        # If any package contains these files, include them:
+        "": [
+            "*.template",
+            "*.json",
+            "*.dll",
+            "*.so",
+            "*.svg",
+            "*.png",
+            "*.jpg",
+            "*.csv",
+            "*.ipynb",
+        ]
     },
-    author="IDAES Team",
-    author_email="idaes-dev@idaes.org",
-    maintainer="Keith Beattie",
-    url="https://github.com/IDAES/idaes",
-    license="BSD 3-clause",
-    description="IDAES core framework",
-    long_description=__doc__,
+    include_package_data=True,
     data_files=[],
-    keywords=[NAME, "energy systems"],
+    maintainer="Keith Beattie",
+    maintainer_email="ksbeattie@lbl.gov",
+    url="https://idaes.org",
+    license="BSD ",
+    platforms=["any"],
+    description="IDAES Process Systems Engineering Framework",
+    long_description=README,
+    long_description_content_type="text/markdown",
+    keywords=[NAME, "energy systems", "chemical engineering", "process modeling"],
     classifiers=[
-        "Programming Language :: Python :: 3.7",
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: End Users/Desktop",
+        "Intended Audience :: Science/Research",
         "License :: OSI Approved :: BSD License",
-        "Operating System :: OS Independent",
+        "Natural Language :: English",
+        "Operating System :: MacOS",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: Unix",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Topic :: Scientific/Engineering :: Mathematics",
+        "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
 )
+
+if len(sys.argv) > 1 and sys.argv[1] == "packages":
+    print(f"alamopy dir: {alamopy_dir}")
+    print(f"ripe dir: {ripe_dir}")
+    print("\n".join(find_all_packages()))
+    sys.exit(0)
 
 setup(**kwargs)

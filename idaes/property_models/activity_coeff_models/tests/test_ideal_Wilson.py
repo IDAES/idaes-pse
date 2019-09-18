@@ -22,7 +22,7 @@ from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
-from idaes.ui.report import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom
 
 # -----------------------------------------------------------------------------
 # Create a flowsheet for test
@@ -61,7 +61,7 @@ m.fs.state_block_Wilson_v = m.fs.properties_Wilson_v.state_block_class(
 
 def test_build_inlet_state_block():
 
-    assert len(m.fs.properties_Wilson_vl.config) == 3
+    assert len(m.fs.properties_Wilson_vl.config) == 4
 
     # vapor-liquid (Wilson)
     assert m.fs.properties_Wilson_vl.config.valid_phase == ('Vap', 'Liq') or \
@@ -74,7 +74,7 @@ def test_build_inlet_state_block():
     assert not hasattr(m.fs.state_block_Wilson_vl, "eq_mol_frac_out")
 
     # liquid only (Wilson)
-    assert len(m.fs.properties_Wilson_l.config) == 3
+    assert len(m.fs.properties_Wilson_l.config) == 4
 
     assert m.fs.properties_Wilson_l.config.valid_phase == 'Liq'
     assert len(m.fs.properties_Wilson_l.phase_list) == 1
@@ -85,7 +85,7 @@ def test_build_inlet_state_block():
     assert not hasattr(m.fs.state_block_Wilson_l, "eq_mol_frac_out")
 
     # vapor only (Wilson)
-    assert len(m.fs.properties_Wilson_v.config) == 3
+    assert len(m.fs.properties_Wilson_v.config) == 4
 
     assert m.fs.properties_Wilson_v.config.valid_phase == 'Vap'
     assert len(m.fs.properties_Wilson_v.phase_list) == 1
@@ -166,7 +166,7 @@ m.fs1.state_block_Wilson_v = m.fs1.properties_Wilson_v.state_block_class(
 
 
 def test_build_outlet_state_block():
-    assert len(m.fs.properties_Wilson_vl.config) == 3
+    assert len(m.fs.properties_Wilson_vl.config) == 4
 
     # vapor-liquid (Wilson)
     assert m.fs1.properties_Wilson_vl.config.valid_phase == ('Vap', 'Liq') or \
@@ -179,7 +179,7 @@ def test_build_outlet_state_block():
     assert hasattr(m.fs1.state_block_Wilson_vl, "eq_mol_frac_out")
 
     # liquid only (Wilson)
-    assert len(m.fs1.properties_Wilson_l.config) == 3
+    assert len(m.fs1.properties_Wilson_l.config) == 4
 
     assert m.fs1.properties_Wilson_l.config.valid_phase == 'Liq'
     assert len(m.fs1.properties_Wilson_l.phase_list) == 1
@@ -190,7 +190,7 @@ def test_build_outlet_state_block():
     assert hasattr(m.fs1.state_block_Wilson_l, "eq_mol_frac_out")
 
     # vapour only (Wilson)
-    assert len(m.fs1.properties_Wilson_v.config) == 3
+    assert len(m.fs1.properties_Wilson_v.config) == 4
 
     assert m.fs1.properties_Wilson_v.config.valid_phase == 'Vap'
     assert len(m.fs1.properties_Wilson_v.phase_list) == 1

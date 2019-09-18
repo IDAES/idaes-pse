@@ -23,7 +23,8 @@ from pyomo.environ import (ConcreteModel,
 from idaes.core import FlowsheetBlock, MaterialBalanceType
 from idaes.unit_models.feed_flash import FeedFlash, FlashType
 from idaes.property_models import iapws95
-from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
+from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
@@ -54,19 +55,22 @@ def test_config():
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
     assert m.fs.unit.config.material_balance_type == \
-        MaterialBalanceType.componentPhase
+        MaterialBalanceType.useDefault
     assert m.fs.unit.config.flash_type == FlashType.isothermal
     assert m.fs.unit.config.property_package is m.fs.properties
 
 
 # -----------------------------------------------------------------------------
-class TestBTX(object):
+class TestBTXIdeal(object):
     @pytest.fixture(scope="class")
     def btx(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
 
-        m.fs.properties = BTXParameterBlock()
+        m.fs.properties = BTXParameterBlock(default={"valid_phase":
+                                                     ('Liq', 'Vap'),
+                                                     "activity_coeff_model":
+                                                     "Ideal"})
 
         m.fs.unit = FeedFlash(default={"property_package": m.fs.properties})
 
@@ -88,8 +92,8 @@ class TestBTX(object):
 
         assert hasattr(btx.fs.unit, "isothermal")
 
-        assert number_variables(btx) == 36
-        assert number_total_constraints(btx) == 31
+        assert number_variables(btx) == 34
+        assert number_total_constraints(btx) == 29
         assert number_unused_variables(btx) == 0
 
     def test_dof(self, btx):
@@ -143,7 +147,7 @@ class TestBTX(object):
                 value(btx.fs.unit.outlet.temperature[0]))
         assert (pytest.approx(1.0, abs=1e-2) ==
                 value(btx.fs.unit.outlet.flow_mol[0]))
-        assert (pytest.approx(0.355, abs=1e-3) ==
+        assert (pytest.approx(0.396, abs=1e-3) ==
                 value(btx.fs.unit.control_volume.
                       properties_out[0].flow_mol_phase["Vap"]))
 
@@ -184,8 +188,8 @@ class TestIAPWS(object):
 
         assert hasattr(iapws.fs.unit, "isenthalpic")
 
-        assert number_variables(iapws) == 7
-        assert number_total_constraints(iapws) == 4
+        assert number_variables(iapws) == 6
+        assert number_total_constraints(iapws) == 3
         assert number_unused_variables(iapws) == 0
 
     def test_dof(self, iapws):

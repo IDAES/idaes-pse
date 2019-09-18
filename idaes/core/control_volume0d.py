@@ -1231,7 +1231,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def enthalpy_holdup_calculation(b, t, p):
                 return b.enthalpy_holdup[t, p] == (
                             b.volume[t]*self.phase_fraction[t, p] *
-                            b.properties_out[t].get_enthalpy_density_terms(p))
+                            b.properties_out[t].get_energy_density_terms(p))
 
         return self.enthalpy_balances
 
@@ -1420,14 +1420,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                              optarg=optarg,
                                              solver=solver,
                                              hold_state=hold_state,
-                                             **state_args)
+                                             state_args=state_args)
 
         blk.properties_out.initialize(outlvl=outlvl-1,
                                       optarg=optarg,
                                       solver=solver,
                                       hold_state=False,
-                                      **state_args)
-
+                                      state_args=state_args)
         try:
             blk.reactions.initialize(outlvl=outlvl-1,
                                      optarg=optarg,

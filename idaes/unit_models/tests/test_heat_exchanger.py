@@ -34,7 +34,8 @@ from idaes.unit_models.heat_exchanger import (delta_temperature_lmtd_callback,
                                               HeatExchanger,
                                               HeatExchangerFlowPattern)
 
-from idaes.property_models.ideal.BTX_ideal_VLE import BTXParameterBlock
+from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
+    import BTXParameterBlock
 from idaes.property_models import iapws95
 from idaes.property_models.examples.saponification_thermo import \
     SaponificationParameterBlock
@@ -62,44 +63,44 @@ def test_config():
     m.fs.properties = PhysicalParameterTestBlock()
 
     m.fs.unit = HeatExchanger(default={
-            "side_1": {"property_package": m.fs.properties},
-            "side_2": {"property_package": m.fs.properties}})
+        "shell": {"property_package": m.fs.properties},
+        "tube": {"property_package": m.fs.properties}})
 
     # Check unit config arguments
     assert len(m.fs.unit.config) == 6
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
-    assert isinstance(m.fs.unit.config.side_1, ConfigBlock)
-    assert isinstance(m.fs.unit.config.side_2, ConfigBlock)
+    assert isinstance(m.fs.unit.config.shell, ConfigBlock)
+    assert isinstance(m.fs.unit.config.tube, ConfigBlock)
     assert m.fs.unit.config.delta_temperature_callback is \
         delta_temperature_lmtd_callback
     assert m.fs.unit.config.flow_pattern == \
         HeatExchangerFlowPattern.countercurrent
 
-    # Check side_1 config
-    assert len(m.fs.unit.config.side_1) == 7
-    assert m.fs.unit.config.side_1.material_balance_type == \
-        MaterialBalanceType.componentPhase
-    assert m.fs.unit.config.side_1.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
-    assert m.fs.unit.config.side_1.momentum_balance_type == \
+    # Check shell config
+    assert len(m.fs.unit.config.shell) == 7
+    assert m.fs.unit.config.shell.material_balance_type == \
+        MaterialBalanceType.useDefault
+    assert m.fs.unit.config.shell.energy_balance_type == \
+        EnergyBalanceType.useDefault
+    assert m.fs.unit.config.shell.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
-    assert not m.fs.unit.config.side_1.has_phase_equilibrium
-    assert not m.fs.unit.config.side_1.has_pressure_change
-    assert m.fs.unit.config.side_1.property_package is m.fs.properties
+    assert not m.fs.unit.config.shell.has_phase_equilibrium
+    assert not m.fs.unit.config.shell.has_pressure_change
+    assert m.fs.unit.config.shell.property_package is m.fs.properties
 
-    # Check side_2 config
-    assert len(m.fs.unit.config.side_2) == 7
-    assert m.fs.unit.config.side_2.material_balance_type == \
-        MaterialBalanceType.componentPhase
-    assert m.fs.unit.config.side_2.energy_balance_type == \
-        EnergyBalanceType.enthalpyTotal
-    assert m.fs.unit.config.side_2.momentum_balance_type == \
+    # Check tube config
+    assert len(m.fs.unit.config.tube) == 7
+    assert m.fs.unit.config.tube.material_balance_type == \
+        MaterialBalanceType.useDefault
+    assert m.fs.unit.config.tube.energy_balance_type == \
+        EnergyBalanceType.useDefault
+    assert m.fs.unit.config.tube.momentum_balance_type == \
         MomentumBalanceType.pressureTotal
-    assert not m.fs.unit.config.side_2.has_phase_equilibrium
-    assert not m.fs.unit.config.side_2.has_pressure_change
-    assert m.fs.unit.config.side_2.property_package is m.fs.properties
+    assert not m.fs.unit.config.tube.has_phase_equilibrium
+    assert not m.fs.unit.config.tube.has_pressure_change
+    assert m.fs.unit.config.tube.property_package is m.fs.properties
 
 
 # -----------------------------------------------------------------------------
@@ -112,8 +113,8 @@ class TestBTX_cocurrent(object):
         m.fs.properties = BTXParameterBlock(default={"valid_phase": 'Liq'})
 
         m.fs.unit = HeatExchanger(default={
-                "side_1": {"property_package": m.fs.properties},
-                "side_2": {"property_package": m.fs.properties},
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.cocurrent})
 
         return m
@@ -239,15 +240,15 @@ class TestBTX_cocurrent(object):
         assert abs(value(btx.fs.unit.inlet_2.flow_mol[0] -
                          btx.fs.unit.outlet_2.flow_mol[0])) <= 1e-6
 
-        side_1 = value(
+        shell = value(
                 btx.fs.unit.outlet_1.flow_mol[0] *
-                (btx.fs.unit.side_1.properties_in[0].enth_mol_phase['Liq'] -
-                 btx.fs.unit.side_1.properties_out[0].enth_mol_phase['Liq']))
-        side_2 = value(
+                (btx.fs.unit.shell.properties_in[0].enth_mol_phase['Liq'] -
+                 btx.fs.unit.shell.properties_out[0].enth_mol_phase['Liq']))
+        tube = value(
                 btx.fs.unit.outlet_2.flow_mol[0] *
-                (btx.fs.unit.side_2.properties_in[0].enth_mol_phase['Liq'] -
-                 btx.fs.unit.side_2.properties_out[0].enth_mol_phase['Liq']))
-        assert abs(side_1 + side_2) <= 1e-6
+                (btx.fs.unit.tube.properties_in[0].enth_mol_phase['Liq'] -
+                 btx.fs.unit.tube.properties_out[0].enth_mol_phase['Liq']))
+        assert abs(shell + tube) <= 1e-6
 
     @pytest.mark.ui
     def test_report(self, btx):
@@ -267,8 +268,8 @@ class TestIAPWS_countercurrent(object):
         m.fs.properties = iapws95.Iapws95ParameterBlock()
 
         m.fs.unit = HeatExchanger(default={
-                "side_1": {"property_package": m.fs.properties},
-                "side_2": {"property_package": m.fs.properties},
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.countercurrent})
 
         return m
@@ -411,8 +412,8 @@ class TestSaponification_crossflow(object):
         m.fs.properties = SaponificationParameterBlock()
 
         m.fs.unit = HeatExchanger(default={
-                "side_1": {"property_package": m.fs.properties},
-                "side_2": {"property_package": m.fs.properties},
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.crossflow})
 
         return m
