@@ -29,7 +29,7 @@ Option 1 - "FTPz":
  	<li>Total molar flow rate (mol/s) - <code> <font color="red"> flow_mol </font> </code>
  	<li>Temperature (K) - <code> <font color="red"> temperature </font> </code>
 	<li>Presure (Pa) - <code> <font color="red"> pressure</font></code>
-	<li>Mole fraction of the mixture - <code> <font color="red"> mole_frac</font></code> 
+	<li>Mole fraction of the mixture - <code> <font color="red"> mole_frac_comp</font></code> 
 	</ul>
 	</body>
 
@@ -86,9 +86,9 @@ The number of degrees of freedom that need to be fixed to yield a square problem
    :header: "Property Model Type", "State variables", "Additional Variables", "Total number of variables"
    :widths: 25, 15, 10, 30
 
-   "Ideal (vapor) - Ideal (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac``", "None", "3 + :math:`N_{c}`"
-   "Ideal (vapor) - NRTL (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac``", "``alpha``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
-   "Ideal (vapor) - Wilson (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac``", "``vol_mol_comp``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
+   "Ideal (vapor) - Ideal (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac_comp``", "None", "3 + :math:`N_{c}`"
+   "Ideal (vapor) - NRTL (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac_comp``", "``alpha``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
+   "Ideal (vapor) - Wilson (liquid)", "``flow_mol``, ``temperature``, ``pressure``, ``mole_frac`_comp`", "``vol_mol_comp``, ``tau``", "3 + :math:`N_{c}` + :math:`2N_{c}^{2}`"
 
 Please refer to reference 3 for recommended values for ``tau``.
 
@@ -198,11 +198,11 @@ List of Variables
    :header: "Variable Name", "Description", "Units"
 
    "``flow_mol``", "Total molar flow rate", "mol/s"
-   "``mole_frac``", "Mixture mole fraction indexed by component", "None"
+   "``mole_frac_comp``", "Mixture mole fraction indexed by component", "None"
    "``temperature``", "Temperature", "K"
    "``pressure``", "Pressure", "Pa"
    "``flow_mol_phase``", "Molar flow rate indexed by phase", "mol/s"
-   "``mole_frac_phase``", "Mole fraction indexed by phase and component", "None"
+   "``mole_frac_phase_comp``", "Mole fraction indexed by phase and component", "None"
    "``pressure_sat``", "Saturation or vapor pressure indexed by component", "Pa"
    "``density_mol_phase``", "Molar density indexed by phase", "mol/m3"
    "``ds_vap``", "Molar entropy of vaporization", "J/mol.K" 
