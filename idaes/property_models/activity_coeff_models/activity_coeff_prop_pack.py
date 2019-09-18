@@ -171,7 +171,8 @@ conditions, and thus corresponding constraints  should be included,
              "pressure_dew": {"method": "_pressure_dew",
                               "units": "Pa"},
              "fug_vap": {"method": "_fug_vap", "units": "Pa"},
-             "fug_liq": {"method": "_fug_liq", "units": "Pa"}})
+             "fug_liq": {"method": "_fug_liq", "units": "Pa"},
+             'ds_vap': {'method': '_ds_vap', 'units': 'J/mol.K'}})
 
         obj.add_default_units({"time": "s",
                                "length": "m",
