@@ -87,7 +87,7 @@ Note: ``delta_temperature`` may be either a variable or expression depending on 
 Constraints
 -----------
 
-The default constants can be overridden by providing :ref:`alternative rules <models/heat_exchanger:Rules>` for
+The default constants can be overridden by providing :ref:`alternative rules <models/heat_exchanger:Callbacks>` for
 the heat transfer equation, temperature difference, and heat transfer coefficient. The section
 describes the default constraints.
 
