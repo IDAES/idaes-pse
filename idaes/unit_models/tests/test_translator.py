@@ -95,7 +95,7 @@ class TestTranslate(object):
         assert hasattr(trans.fs.unit, "outlet")
         assert len(trans.fs.unit.outlet.vars) == 4
         assert hasattr(trans.fs.unit.outlet, "flow_mol")
-        assert hasattr(trans.fs.unit.outlet, "mole_frac")
+        assert hasattr(trans.fs.unit.outlet, "mole_frac_comp")
         assert hasattr(trans.fs.unit.outlet, "temperature")
         assert hasattr(trans.fs.unit.outlet, "pressure")
 
