@@ -17,19 +17,19 @@ Main capabilities of HELMET
 default HELMET use
 """
 
+__author__ = "Marissa Engle <mengle@andrew.cmu.edu>"
 
 import os
 import platform
 import subprocess
 
-# import helmet
+
+import alamopy
 from helmet import AncillaryEquations  # , Certainty
 from helmet import Plotting, DataImport, DataManipulation
-from helmet import GAMSWrite, SoaveDensity, BasisFunctions
+from helmet import GAMSWrite, BasisFunctions
 
 from matplotlib import cm
-
-__author__ = "Marissa Engle <mengle@andrew.cmu.edu>"
 
 
 global R
@@ -52,6 +52,9 @@ num_terms = 12
 global props
 props = []
 
+global has_alamo
+has_alamo = None
+
 global flag_dirty
 flag_dirty = False
 
@@ -71,6 +74,7 @@ def initialize(**kwargs):
     global max_time, num_terms, props
     global sample, sample_ratio
     global flag_dirty
+    global has_alamo
 
     k_dict = {
         "R": R,
@@ -108,6 +112,11 @@ def initialize(**kwargs):
             else:
                 raise Exception("Not a keyword argument")
 
+    if has_alamo is None:
+        has_alamo = alamopy.multos.has_alamo()
+        if not has_alamo:
+            print("No ALAMO software found.")
+
     updateModelSettings()
 
     flag_dirty = True
@@ -124,7 +133,7 @@ def updateModelSettings():
     global max_time, num_terms, props
     global flag_dirty
 
-    SoaveDensity.molData((critT, critP, critD, M, triple, acc), molecule, R)
+    # SoaveDensity.molData((critT, critP, critD, M, triple, acc), molecule, R)
     Plotting.molData((critT, critP, critD, M, triple, acc), molecule, R)
     Plotting.props = props
     DataImport.molData((critT, critP, critD, M, triple, acc), R)
@@ -146,18 +155,27 @@ def prepareAncillaryEquations(plot=False, keepFiles=False):
         DL - saturated liquid density 
         DV - saturated vapor density
         PV - vapor pressure
+    Dependent on ALAMO
     """
-    AncillaryEquations.DL()
-    AncillaryEquations.DV()
-    AncillaryEquations.PV()
+    global has_alamo
 
-    if plot:
-        Plotting.viewAnc()
+    if has_alamo:
+        AncillaryEquations.DL()
+        AncillaryEquations.DV()
+        AncillaryEquations.PV()
 
-    if not keepFiles:
-        for p in ["DL", "DV", "PV"]:
-            os.remove("%s%s" % (molecule, p))
-            os.remove("%s%s.lst" % (molecule, p))
+        if plot:
+            Plotting.viewAnc()
+
+        if not keepFiles:
+            for p in ["DL", "DV", "PV"]:
+                os.remove("%s%s" % (molecule, p))
+                os.remove("%s%s.lst" % (molecule, p))
+    else:
+        if plot:
+            Plotting.viewAnc()
+        print("Couldn't regress ancillary equations. ALAMO executable not found")
+
 
 
 def viewPropertyData():

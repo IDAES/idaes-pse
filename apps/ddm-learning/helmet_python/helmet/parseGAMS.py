@@ -1,5 +1,20 @@
-import re
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes".
+##############################################################################
+"""
+Parses and prints the solutions of the multiparameter equation of state solution
+"""
 
+import re
 from helmet import BasisFunctions
 
 indexes = []
@@ -7,6 +22,9 @@ betas = []
 
 
 def parser(filename, num=2):
+    """
+    Parse solution files for the muliparameter equation of state
+    """
     global indexes, betas
     print("Parsing %s" % filename)
     dataFile = open(filename)
@@ -60,20 +78,27 @@ def parser(filename, num=2):
         ind = ind + 1
         betas.append(betas_sub)
 
-    # writeEquation(indexes,betas)
-
 
 def getIndexes():
+    """
+    Returns indexes of the basis function terms
+    """
     global indexes
     return indexes
 
 
 def getBetas():
+    """
+    Returns the weights of the basis functions
+    """
     global betas
     return betas
 
 
 def writeTerm(index):
+    """
+    Writes the basis function term with the given index
+    """
     global coeffs
     coeffs = []
     eqtn = ""
@@ -105,208 +130,10 @@ def writeTerm(index):
     return eqtn
 
 
-# def writeEquation():
-#     global coeffs
-#     global indexes
-#     eqtn = ""
-#     terms = 0
-#     coeffs = []
-#     last_term = indexes[-1]
-#     for i in range(1, 9):
-#         for j in range(1, 13):  # 12
-#             coeffs.append([i, j / 8.0, 0])
-#             terms = terms + 1
-#             if "%i" % terms in indexes:
-#                 if eqtn == "":
-#                     eqtn = eqtn + " %s^%d * %s^%.3f +" % ("D", i, "T", j / 8.0)
-#                 elif "%i" % terms == last_term:
-#                     eqtn = eqtn + " %s^%d * %s^%.3f" % ("D", i, "T", j / 8.0)
-#                 else:
-#                     eqtn = eqtn + " %s^%d * %s^%.3f +" % ("D", i, "T", j / 8.0)
-#     for i in range(1, 6):
-#         for j in range(1, 24):  # 24
-#             coeffs.append([i, j / 8.0, 1])
-#             terms = terms + 1
-#             if "%i" % terms in indexes:
-#                 if eqtn == "":
-#                     eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^1) +" % (
-#                         "D",
-#                         i,
-#                         "T",
-#                         j / 8.0,
-#                     )
-#                 elif "%i" % terms == last_term:
-#                     eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^1)" % (
-#                         "D",
-#                         i,
-#                         "T",
-#                         j / 8.0,
-#                     )
-#                 else:
-#                     eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^1) +" % (
-#                         "D",
-#                         i,
-#                         "T",
-#                         j / 8.0,
-#                     )
-#     for i in range(1, 6):
-#         for j in range(1, 30):  # 24
-#             coeffs.append([i, j / 8.0, 2])
-#             terms = terms + 1
-#             if "%i" % terms in indexes:
-#                 if eqtn == "":
-#                     eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^2) +" % (
-#                         "D",
-#                         i,
-#                         "T",
-#                         j / 8.0,
-#                     )
-#                 elif "%i" % terms == last_term:
-#                     eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^2)" % (
-#                         "D",
-#                         i,
-#                         "T",
-#                         j / 8.0,
-#                     )
-#                 else:
-#                     eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^2) +" % (
-#                         "D",
-#                         i,
-#                         "T",
-#                         j / 8.0,
-#                     )
-#     for i in range(2, 5):
-#         for j in range(24, 38):  # 38
-#             coeffs.append([i, j / 2.0, 3])
-#             terms = terms + 1
-#             if "%i" % terms in indexes:
-#                 if eqtn == "":
-#                     eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^3) +" % (
-#                         "D",
-#                         i,
-#                         "T",
-#                         j / 8.0,
-#                     )
-#                 elif "%i" % terms == last_term:
-#                     eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^3)" % (
-#                         "D",
-#                         i,
-#                         "T",
-#                         j / 8.0,
-#                     )
-#                 else:
-#                     eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^3) +" % (
-#                         "D",
-#                         i,
-#                         "T",
-#                         j / 8.0,
-#                     )
-#     print(eqtn)
-
-
-def writeEquationIndexes(Y, Beta = None):
-    global coeffs
-    global indexes
-    indexes = Y
-
-
-    eqtn = ""
-    terms = 0
-    coeffs = []
-    last_term = indexes[-1]
-    for i in range(1, 9):
-        for j in range(1, 13):  # 12
-            coeffs.append([i, j / 8.0, 0])
-            terms = terms + 1
-            if terms in indexes:
-                if eqtn == "":
-                    eqtn = eqtn + " %s^%d * %s^%.3f +" % ("D", i, "T", j / 8.0)
-                elif terms == last_term:
-                    eqtn = eqtn + " %s^%d * %s^%.3f" % ("D", i, "T", j / 8.0)
-                else:
-                    eqtn = eqtn + " %s^%d * %s^%.3f +" % ("D", i, "T", j / 8.0)
-    for i in range(1, 6):
-        for j in range(1, 24):  # 24
-            coeffs.append([i, j / 8.0, 1])
-            terms = terms + 1
-            if terms in indexes:
-                if eqtn == "":
-                    eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^1) +" % (
-                        "D",
-                        i,
-                        "T",
-                        j / 8.0,
-                    )
-                elif terms == last_term:
-                    eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^1)" % (
-                        "D",
-                        i,
-                        "T",
-                        j / 8.0,
-                    )
-                else:
-                    eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^1) +" % (
-                        "D",
-                        i,
-                        "T",
-                        j / 8.0,
-                    )
-    for i in range(1, 6):
-        for j in range(1, 30):  # 24
-            coeffs.append([i, j / 8.0, 2])
-            terms = terms + 1
-            if terms in indexes:
-                if eqtn == "":
-                    eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^2) +" % (
-                        "D",
-                        i,
-                        "T",
-                        j / 8.0,
-                    )
-                elif terms == last_term:
-                    eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^2)" % (
-                        "D",
-                        i,
-                        "T",
-                        j / 8.0,
-                    )
-                else:
-                    eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^2) +" % (
-                        "D",
-                        i,
-                        "T",
-                        j / 8.0,
-                    )
-    for i in range(2, 5):
-        for j in range(24, 38):  # 38
-            coeffs.append([i, j / 2.0, 3])
-            terms = terms + 1
-            if terms in indexes:
-                if eqtn == "":
-                    eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^3) +" % (
-                        "D",
-                        i,
-                        "T",
-                        j / 2.0,
-                    )
-                elif terms == last_term:
-                    eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^3)" % (
-                        "D",
-                        i,
-                        "T",
-                        j / 2.0,
-                    )
-                else:
-                    eqtn = eqtn + " %s^%d * %s^%.3f * exp(-D^3) +" % (
-                        "D",
-                        i,
-                        "T",
-                        j / 2.0,
-                    )
-    print(eqtn)
-
-
 def writeEquation(Y, Beta =None):
+    """
+    Write full multiparameter equation
+    """
     global coeffs
     global indexes
 

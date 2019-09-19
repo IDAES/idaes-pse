@@ -101,83 +101,85 @@ def formCustomBasis(LemJac=False):
 
 
 def getTerm(Y):
+    """ Prints index and basis function based on Y index"""
     for y in Y:
         print(y)
         d, t, c, m = coeffs[y - 1]
         print("Delta^%f Tau^%f np.exp(-Delta^%f) np.exp(-Tau^%f)" % (d, t, c, m))
 
 
-def ideal(D, T):
-    global ai_vals
+# def ideal(D, T):
+#     global ai_vals
 
-    # TOLUENE
-    a = [3.5241174832, 1.1360823464]
-    c = [4.0, 0, 0]
-    # B = [
-    #     0.96464,
-    #     -2.7855,
-    #     0.86712,
-    #     -0.18860,
-    #     0.11804,
-    #     0.0025181,
-    #     0.57196,
-    #     -0.029287,
-    #     -0.43351,
-    #     -0.12540,
-    #     -0.028207,
-    #     0.014076,
-    # ]
-    v = [1.6994, 8.0577, 17.059, 8.4567, 8.6423]
-    u = [190, 797, 1619, 3072, 7915]
+#     # TOLUENE
+#     a = [3.5241174832, 1.1360823464]
+#     c = [4.0, 0, 0]
+#     # B = [
+#     #     0.96464,
+#     #     -2.7855,
+#     #     0.86712,
+#     #     -0.18860,
+#     #     0.11804,
+#     #     0.0025181,
+#     #     0.57196,
+#     #     -0.029287,
+#     #     -0.43351,
+#     #     -0.12540,
+#     #     -0.028207,
+#     #     0.014076,
+#     # ]
+#     v = [1.6994, 8.0577, 17.059, 8.4567, 8.6423]
+#     u = [190, 797, 1619, 3072, 7915]
 
-    # Carbon Monoxide
-    a = [-3.3728318564, 3.3683460039]
-    c = [3.5, 0.22311e-6, 1.5]
-    # B = [
-    #     0.90554,
-    #     -2.4515,
-    #     0.53149,
-    #     0.024173,
-    #     0.072156,
-    #     0.00018818,
-    #     0.19405,
-    #     -0.043268,
-    #     -0.12778,
-    #     -0.027896,
-    #     -0.03414,
-    #     0.016329,
-    # ]
-    v = [1.0128]
-    u = [3089]
+#     # Carbon Monoxide
+#     a = [-3.3728318564, 3.3683460039]
+#     c = [3.5, 0.22311e-6, 1.5]
+#     # B = [
+#     #     0.90554,
+#     #     -2.4515,
+#     #     0.53149,
+#     #     0.024173,
+#     #     0.072156,
+#     #     0.00018818,
+#     #     0.19405,
+#     #     -0.043268,
+#     #     -0.12778,
+#     #     -0.027896,
+#     #     -0.03414,
+#     #     0.016329,
+#     # ]
+#     v = [1.0128]
+#     u = [3089]
 
-    idealA = (
-        a[0]
-        + a[1] * T
-        + np.log(D)
-        + (c[0] - 1) * np.log(T)
-        - c[1] * (critT) ** c[2] / (c[2] * (c[2] + 1)) * T ** (-c[2])
-    )
-    for uit, vi in zip(u, v):
-        ui = uit / float(critT)
-        idealA = idealA + vi * np.log(1 - np.exp(-ui * T))
-    ai_vals = idealA
+#     idealA = (
+#         a[0]
+#         + a[1] * T
+#         + np.log(D)
+#         + (c[0] - 1) * np.log(T)
+#         - c[1] * (critT) ** c[2] / (c[2] * (c[2] + 1)) * T ** (-c[2])
+#     )
+#     for uit, vi in zip(u, v):
+#         ui = uit / float(critT)
+#         idealA = idealA + vi * np.log(1 - np.exp(-ui * T))
+#     ai_vals = idealA
 
 
-def ar(D, T):
-    global ar_vals
-    global coeffs
-    for d, t, c, m in coeffs:
-        val = 0
-        if c == 0:
-            val = (D ** d) * (T ** t)
-        elif m == 0:
-            val = np.exp(-D ** c) * (D ** (d)) * (T ** t)
-        else:
-            val = np.exp(-D ** c) * (D ** (d)) * (T ** t) * np.exp(-T ** m)
-        ar_vals.append(val)
+# def ar(D, T):
+#     global ar_vals
+#     global coeffs
+#     for d, t, c, m in coeffs:
+#         val = 0
+#         if c == 0:
+#             val = (D ** d) * (T ** t)
+#         elif m == 0:
+#             val = np.exp(-D ** c) * (D ** (d)) * (T ** t)
+#         else:
+#             val = np.exp(-D ** c) * (D ** (d)) * (T ** t) * np.exp(-T ** m)
+#         ar_vals.append(val)
 
 
 def idealBY(D, T, Y, Beta):
+    """Ideal Helmholtz contribution"""
 
     # TOLUENE
     if molecule == "TOL":
@@ -252,6 +254,7 @@ def idealBY(D, T, Y, Beta):
 
 
 def arBY(D, T, Y, Beta):
+    """Residual Helmholtz contribution"""
     global drd_vals
     global coeffs
     # drd_vals = [];
@@ -276,6 +279,7 @@ def arBY(D, T, Y, Beta):
 
 
 def drd(D, T):
+    """Partial derivative with respect to density"""
     global drd_vals
     global coeffs
 
@@ -285,23 +289,16 @@ def drd(D, T):
         if c == 0:
             val = d * (D ** d) * (T ** t)
         elif m == 0:
-            # x,y = sy.symbols('x, y')
-            # expr = x**d * y**t * sy.exp(-(x**c))
-            # f_prime = expr.diff(x,1)
-            # checkVal = f_prime.subs([(x,D),(y,T)])
-
             val = np.exp(-D ** c) * ((D ** (d)) * (T ** t) * (d - c * (D ** c)))
-            # print D*checkVal, val
         else:
             val = (
                 np.exp(-D ** c) * (D ** (d)) * (T ** t) * np.exp(-T ** m) * (d - c * (D ** c))
             )
         drd_vals.append(val)
-        # print val;
-    # print len(drd_vals);
 
 
 def d2rd(D, T):
+    """Partial derivative with respect to density twice"""
     global d2rd_vals
     global coeffs
     d2rd_vals = []
@@ -309,23 +306,12 @@ def d2rd(D, T):
         val = 0
         if c == 0:
             val = d * (d - 1) * (D ** d) * (T ** t)
-        elif m == 0:  # TODO
+        elif m == 0:  
             val = np.exp(-D ** c) * (
                 (D ** (d))
                 * (T ** t)
                 * ((d - c * (D ** c)) * (d - 1 - c * (D ** c)) - (c ** 2) * (D ** c))
             )
-            # Base = (D ** (d)) * (T ** (t)) * np.exp(-(D ** c))
-            # A = (d - c * (D ** c)) * (d - 1 - c * (D ** c)) - (c ** 2) * (D ** c)
-            # valCheck = Base * A
-
-            # x,y = sy.symbols('x, y')
-            # expr = x**d * y**t * sy.exp(-(x**c))
-            # f_prime = expr.diff(x,2)
-            # checkVal = f_prime.subs([(x,D),(y,T)])
-
-            # print val, valCheck, checkVal*(D**2)
-
         else:
             val = np.exp(-D ** c) * (
                 (D ** (d))
@@ -334,34 +320,23 @@ def d2rd(D, T):
                 * ((d - c * (D ** c)) * (d - 1 - c * (D ** c)) - (c ** 2) * (D ** c))
             )
         d2rd_vals.append(val)
-        # print val;
-    # print len(drd_vals);
 
 
 def d2rdt(D, T):
+    """Partial derivative with respect to density twice and temperature"""
     global d2rdt_vals
     global coeffs
-    # d2rd_vals = []
+
     for d, t, c, m in coeffs:
         val = 0
         if c == 0:
             val = d * (d - 1) * t * (D ** d) * (T ** t)
-        elif m == 0:  # TODO
+        elif m == 0: 
             val = np.exp(-D ** c) * (
                 (D ** (d))
                 * (T ** t)
                 * ((d - c * (D ** c)) * (d - 1 - c * (D ** c)) - (c ** 2) * (D ** c))
             )
-            # Base = t * (D ** (d)) * (T ** (t)) * np.exp(-(D ** c))
-            # A = (d - c * (D ** c)) * (d - 1 - c * (D ** c)) - (c ** 2) * (D ** c)
-            # valCheck = Base * A
-
-            # x,y = sy.symbols('x, y')
-            # expr = x**d * y**t * sy.exp(-(x**c))
-            # f_prime = expr.diff(x,2)
-            # checkVal = f_prime.subs([(x,D),(y,T)])
-
-            # print val, valCheck, checkVal*(D**2)
 
         else:
             val = (
@@ -378,12 +353,10 @@ def d2rdt(D, T):
                 * (t - m * (T ** m))
             )
         d2rdt_vals.append(val)
-        # print val;
-    # print len(drd_vals);
 
 
-# @staticmethod
 def d3rd(D, T):
+    """Third partial derivative with respect to density"""
     global d3rd_vals
     global coeffs
     d3rd_vals = []
@@ -403,23 +376,6 @@ def d3rd(D, T):
                     + (3 * d - 3 + c - 3 * c * (D ** c)) * (-(c ** 2) * (D ** (c)))
                 )
             )
-
-            # Base = (D ** (d)) * (T ** (t)) * np.exp(-(D ** c))
-            # A = (d - c * (D ** c)) * (d - 1 - c * (D ** c)) * (d - 2 - c * (D ** c))
-            # B = -(c ** 2) * (D ** (c)) * (3 * d - 3 + c - 3 * c * (D ** c))
-            # valCheck = Base * (A + B)
-            # fx = (x**d)*(y**(t))*exp(-(x**c))
-            # valCheck = sy.diff(fx,(D,T),3)
-            # # valCheck = sp.diff(lambda x,y: (x**d)*(y**t)*exp(-(x**c)), (D,T), (3,0))
-            # if i < 10:
-            #   print val, valCheck
-            #   i = i +1;
-            # x,y = sy.symbols('x, y')
-            # expr = x**d * y**t * sy.exp(-(x**c))
-            # f_prime = expr.diff(x,3)
-            # checkVal = f_prime.subs([(x,D),(y,T)])
-
-            # print val, valCheck, checkVal*(D**3)
 
         else:
             val = (
@@ -442,12 +398,11 @@ def d3rd(D, T):
                     - (c ** 3) * (D ** (3 * c))
                 )
             )
-            # print val
         d3rd_vals.append(val)
 
 
-# TODO
 def d4rd(D, T):
+    """Fourth partial derivative with respect to density"""
     global d4rd_vals
     global coeffs
     d4rd_vals = []
@@ -482,38 +437,8 @@ def d4rd(D, T):
                     * (-(c ** 2) * (D ** (c)))
                 )
             )
-            # Base = (D ** (d)) * (T ** (t)) * np.exp(-D ** c)
-            # A = (
-            #     (d - c * (D ** c))
-            #     * (d - 1 - c * (D ** c))
-            #     * (d - 2 - c * (D ** c))
-            #     * (d - 3 - c * (D ** c))
-            # )
-            # # B = (3*d-3+c-3*c*(D**c))*(d-3-c*(D**c));
-            # # E = c*(3*d-3+c-6*c*(D**c))
-            # # C = (d-c*(D**c))*(d-1-c*(D**c)) + (d-1-c*(D**c))*(d-2-c*(D**c)) + (d-c*(D**c))*(d-2-c*(D**c))
 
-            # BCE = (
-            #     (c ** 2) * ((D ** c) - 1) * (6 * D ** c - 1)
-            #     - 2 * c * (2 * d - 3) * (3 * (D ** c) - 1)
-            #     + 6 * d ** 2
-            #     - 18 * d
-            #     + 11
-            # )
-            # valCheck = Base*(A-(c**2)*(D**(c))*(B+ C+E));
-            # valCheck1 = Base * (A - (c ** 2) * (D ** (c)) * (BCE))
-            # if i < 10:
-            #   print val, valCheck, valCheck1
-            #   i = i +1;
-
-            # x,y = sy.symbols('x, y')
-            # expr = x**d * y**t * sy.exp(-(x**c))
-            # f_prime = expr.diff(x,4)
-            # checkVal = f_prime.subs([(x,D),(y,T)])
-
-            # print val, valCheck1, checkVal*(D**4)
-
-        else:  # TODO(
+        else:  
             val = (
                 (D ** (d))
                 * (T ** t)
@@ -535,11 +460,11 @@ def d4rd(D, T):
                 )
             )
             val = 0
-            # print val
         d4rd_vals.append(val)
 
 
 def d5rd(D, T):
+    """Fifth partial derivative with respect to density"""
     global d5rd_vals
     global coeffs
     d5rd_vals = []
@@ -548,31 +473,11 @@ def d5rd(D, T):
         if c == 0:
             val = d * (d - 1) * (d - 2) * (d - 3) * (d - 4) * (D ** d) * (T ** t)
         elif m == 0:
-            # Base = (D**(d))*(T**(t))*exp(-(D**c))
-            # A = (d-c*(D**c))*(d-1-c*(D**c))*(d-2-c*(D**c))*(d-3-c*(D**c))*(d-4-c*(D**c))
-
-            # # from  d4rd
-            # # B = (3*d-3+c-3*c*(D**c))*(d-3-c*(D**c));
-            # # E = c*(3*d-3+c-6*c*(D**c))
-            # # C = (d-c*(D**c))*(d-1-c*(D**c)) + (d-1-c*(D**c))*(d-2-c*(D**c)) + (d-c*(D**c))*(d-2-c*(D**c))
-            # BCE = (c**2)*((D**c)-1)*(6*D**c-1) - 2*c*(2*d-3)*(3*(D**c)-1)+6*d**2-18*d + 11
-            # # dr4dvalCheck = Base*(A-(c**2)*(D**(c))*(BCE));
-
-            #                   #3                                          #0                                                  #2                                  #1
-            # F = (d-c*(D**c))*(d-1-c*(D**c))*(d-2-c*(D**c)) + (d-1-c*(D**c))*(d-2-c*(D**c))*(d-3-c*(D**c)) + (d-c*(D**c))*(d-1-c*(D**c))*(d-3-c*(D**c)) + (d-c*(D**c))*(d-2-c*(D**c))*(d-3-c*(D**c))
-            # G = (-c**2*(D**c))*(c**2*(D**(c)))*(12*c*(D**c) - 7*c -12*d + 18)
-            # H = (-c**2*(D**c))*c*(BCE)
-
-            # val = Base*(d-4-c*(D**c)*(A - (c**2)*(D**(c))*(BCE))) + Base*(-c**2*(D**c)*F) + Base*(G+H)
-
             x, y = sy.symbols("x, y")
             expr = x ** d * y ** t * sy.exp(-(x ** c))
             f_prime = expr.diff(x, 5)
             val = f_prime.subs([(x, D), (y, T)]) * (D ** 5)
-
-            # print 'dr5d', val, checkVal*(D**5)
-
-        else:  # TODO
+        else: 
             val = (
                 (D ** (d))
                 * (T ** t)
@@ -594,12 +499,11 @@ def d5rd(D, T):
                 )
             )
             val = 0
-            # print val
         d5rd_vals.append(val)
 
 
-
 def dtrdt(D, T):
+    """Second partial derivative with respect to density and temperature"""
     global dtrdt_vals
     global coeffs
     dtrdt_vals = []
@@ -620,6 +524,7 @@ def dtrdt(D, T):
 
 
 def rTT(D, T):
+    """Second partial derivative with respect to temperature""" 
     global rtt_vals
     global coeffs
     rtt_vals = []
@@ -635,6 +540,7 @@ def rTT(D, T):
 
 
 def d3rdRes(D, T, Y, Beta):
+    """Third partial derivative with respect to density"""
     global d3rd_vals
     global coeffs
     d3rd_vals = []
@@ -678,8 +584,6 @@ def d3rdRes(D, T, Y, Beta):
         # print val
     return val
 
-
-# USED ENGLE - 9/19
 
 # PVT derivatives
 def drdRes(D, T, Y, Beta):
@@ -737,6 +641,7 @@ def drdRes(D, T, Y, Beta):
 
 # CV derivatives
 def iTT(D, T):
+    """Ideal helmholtz contribution second partial derivative with respect to temperature"""
     global itt_val
 
     # TOLUENE
@@ -798,6 +703,7 @@ def iTT(D, T):
 
 
 def rTTRes(D, T, Y, Beta):
+    """Residual helmholtz contribution second partial derivative with respect to temperature"""
     global rtt_vals
     global coeffs
     val = 0
@@ -838,6 +744,7 @@ def rTTRes(D, T, Y, Beta):
 
 
 def d2rdRes(D, T, Y, Beta):
+    """Residual helmholtz contribution second partial derivative with respect to density"""
     global d2rd_vals
     global coeffs
     val = 0
@@ -900,6 +807,7 @@ def d2rdRes(D, T, Y, Beta):
 
 
 def dtrdtRes(D, T, Y, Beta):
+    """Residual helmholtz contribution second partial derivative with respect to density and temperature"""
     global dtrdt_vals
     global coeffs
     val = 0
@@ -942,6 +850,7 @@ def dtrdtRes(D, T, Y, Beta):
 
 
 def d2rdrtRes(D, T, Y, Beta):
+    """Residual helmholtz contribution third partial derivative with respect to density(2) and temperature(1)"""
     global d2rd_vals
     global coeffs
     val = 0
@@ -952,7 +861,7 @@ def d2rdrtRes(D, T, Y, Beta):
         [d, t, c, m] = coeffs[x]
         if c == 0:
             val = y * d * (d - 1) * (D ** d) * t * (T ** t)
-        elif m != 0:  # TODO
+        elif m != 0:
             val = (
                 np.exp(-D ** c)
                 * (D ** (d))
@@ -980,7 +889,7 @@ def d2rdrtRes(D, T, Y, Beta):
             [d, t, c, m] = coeffs[x]
             if c == 0:
                 val += y * d * (d - 1) * (D ** d) * t * (T ** t)
-            elif m == 0:  # TODO
+            elif m == 0:
                 val += (
                     y
                     * np.exp(-D ** c)
@@ -1010,3 +919,4 @@ def d2rdrtRes(D, T, Y, Beta):
                     * (t - m * (T ** m))
                 )
     return val
+    

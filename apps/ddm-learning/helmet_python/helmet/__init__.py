@@ -10,7 +10,6 @@ __all__ = [
     "parseGAMS",
     "BasisFunctions",
     "DataManipulation",
-    "SoaveDensity",
     "plotDL",
     "plotDV",
     "plotPV",
@@ -27,5 +26,4 @@ from .Helmet import initialize
 from .AncillaryEquations import DL, DV, PV
 from .BasisFunctions import formCustomBasis
 from .GAMSWrite import GenerateGDXGamsFiledtlmv
-from .SoaveDensity import molData
 from .Plotting import viewAnc, plotDL, plotDV, plotPV

@@ -15,7 +15,6 @@ Importing thermodynamic data, specific structures for text files
 """
 
 import numpy as np
-from helmet import SoaveDensity
 
 
 filename, sampleRatio = "", ""
@@ -55,7 +54,7 @@ def regionsOfData(molecule, DataValues, PVT=False, CV=False):
     """
 
     Reg1, Reg2, Reg3, Reg4, Reg5, Reg6 = [], [], [], [], [], []
-    # critical Region
+
     if PVT:
         for P, D, T in DataValues:
             T = float(T)
@@ -503,12 +502,12 @@ def PV(molecule):
             i += 1
 
 
-def InSat(molecule):
-    # Cubic-ness
-    Tsat = float(critT) * 0.75
-    DL = SoaveDensity.Sat_Liq_Density(Tsat)
-    DV = SoaveDensity.Sat_Vap_Density(Tsat)
-    for d in np.linspace(DV, DL, 10):
-        Dc = d / float(critD)
-        InSatValues.append([Dc, Tsat])
-    return Tsat, DV, DL
+# def InSat(molecule):
+#     # Cubic-ness
+#     Tsat = float(critT) * 0.75
+#     DL = SoaveDensity.Sat_Liq_Density(Tsat)
+#     DV = SoaveDensity.Sat_Vap_Density(Tsat)
+#     for d in np.linspace(DV, DL, 10):
+#         Dc = d / float(critD)
+#         InSatValues.append([Dc, Tsat])
+#     return Tsat, DV, DL
