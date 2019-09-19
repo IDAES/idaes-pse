@@ -31,8 +31,7 @@ from idaes.core import (declare_process_block_class,
                         StateBlockData,
                         StateBlock,
                         MaterialBalanceType,
-                        EnergyBalanceType,
-                        MomentumBalanceType)
+                        EnergyBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import degrees_of_freedom, \
@@ -287,15 +286,15 @@ class HDAParameterData(PhysicalParameterBlock):
         obj.add_properties(
             {'flow_mol': {'method': None, 'units': 'mol/s'},
              'flow_mol_phase_comp': {'method': None, 'units': 'mol/s'},
-             'mole_frac': {'method': None, 'units': 'none'},
+             'mole_frac_comp': {'method': None, 'units': 'none'},
              'temperature': {'method': None, 'units': 'K'},
              'pressure': {'method': None, 'units': 'Pa'},
              'flow_mol_phase': {'method': None, 'units': 'mol/s'},
              'dens_mol_phase': {'method': '_dens_mol_phase',
                                 'units': 'mol/m^3'},
              'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
-             'mole_frac_phase': {'method': '_mole_frac_phase',
-                                 'units': 'no unit'},
+             'mole_frac_phase_comp': {'method': '_mole_frac_phase',
+                                      'units': 'no unit'},
              'energy_internal_mol_phase_comp': {
                      'method': '_energy_internal_mol_phase_comp',
                      'units': 'J/mol'},
@@ -597,20 +596,20 @@ class IdealStateBlockData(StateBlockData):
         self.flow_mol = Expression(rule=flow_mol,
                                    doc='Total molar flowrate [mol/s]')
 
-        def mole_frac_phase(b, p, j):
+        def mole_frac_phase_comp(b, p, j):
             return b.flow_mol_phase_comp[p, j]/b.flow_mol_phase[p]
-        self.mole_frac_phase = Expression(
+        self.mole_frac_phase_comp = Expression(
                 self._params.phase_list,
                 self._params.component_list,
-                rule=mole_frac_phase,
+                rule=mole_frac_phase_comp,
                 doc='Phase mole fractions [-]')
 
-        def mole_frac(b, j):
+        def mole_frac_comp(b, j):
             return (sum(b.flow_mol_phase_comp[p, j]
                         for p in b._params.phase_list) / b.flow_mol)
-        self.mole_frac = Expression(self._params.component_list,
-                                    rule=mole_frac,
-                                    doc='Mixture mole fractions [-]')
+        self.mole_frac_comp = Expression(self._params.component_list,
+                                         rule=mole_frac_comp,
+                                         doc='Mixture mole fractions [-]')
 
         # Reaction Stoichiometry
         add_object_reference(self, "phase_equilibrium_list_ref",
@@ -703,7 +702,7 @@ class IdealStateBlockData(StateBlockData):
         def rule_energy_internal_mol_phase(b, p):
             return b.energy_internal_mol_phase[p] == sum(
                 b.energy_internal_mol_phase_comp[p, i] *
-                b.mole_frac_phase[p, i]
+                b.mole_frac_phase_comp[p, i]
                 for i in b._params.component_list)
         self.eq_energy_internal_mol_phase = Constraint(
                 self._params.phase_list,
@@ -735,7 +734,7 @@ class IdealStateBlockData(StateBlockData):
         def rule_enth_mol_phase(b, p):
             return b.enth_mol_phase[p] == sum(
                     b.enth_mol_phase_comp[p, i] *
-                    b.mole_frac_phase[p, i]
+                    b.mole_frac_phase_comp[p, i]
                     for i in b._params.component_list)
         self.eq_enth_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_enth_mol_phase)
@@ -764,7 +763,7 @@ class IdealStateBlockData(StateBlockData):
         def rule_entr_mol_phase(b, p):
             return b.entr_mol_phase[p] == sum(
                     b.entr_mol_phase_comp[p, i] *
-                    b.mole_frac_phase[p, i]
+                    b.mole_frac_phase_comp[p, i]
                     for i in b._params.component_list)
         self.eq_entr_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_entr_mol_phase)
@@ -785,7 +784,7 @@ class IdealStateBlockData(StateBlockData):
     def get_material_density_terms(self, p, j):
         """Create material density terms."""
         if j in self._params.component_list:
-            return self.dens_mol_phase[p] * self.mole_frac_phase[p, j]
+            return self.dens_mol_phase[p] * self.mole_frac_phase_comp[p, j]
         else:
             return 0
 
@@ -913,7 +912,7 @@ class IdealStateBlockData(StateBlockData):
                                           rule=rule_psat_dew)
 
             def rule_temp_dew(b):
-                return b.pressure * sum(b.mole_frac[i] /
+                return b.pressure * sum(b.mole_frac_comp[i] /
                                         b._p_sat_dewT[i]
                                         for i in ['toluene', 'benzene']) \
                     - 1 == 0
@@ -946,7 +945,7 @@ class IdealStateBlockData(StateBlockData):
 
             def rule_pressure_dew(b):
                 return b.pressure_dew * \
-                    sum(b.mole_frac[i] / b._p_sat_dewP[i]
+                    sum(b.mole_frac_comp[i] / b._p_sat_dewP[i]
                         for i in ['toluene', 'benzene']) \
                     - 1 == 0
             self.eq_pressure_dew = Constraint(rule=rule_pressure_dew)
@@ -961,7 +960,7 @@ class IdealStateBlockData(StateBlockData):
 # Liquid phase properties
     def _dens_mol_liq(b):
         return b.dens_mol_phase['Liq'] == 1e3*sum(
-                b.mole_frac_phase['Liq', j] *
+                b.mole_frac_phase_comp['Liq', j] *
                 b._params.dens_liq_params[j, '1'] /
                 b._params.dens_liq_params[j, '2'] **
                 (1 + (1-b.temperature /
@@ -972,9 +971,9 @@ class IdealStateBlockData(StateBlockData):
     def _fug_liq(self):
         def fug_liq_rule(b, i):
             if i in ['hydrogen', 'methane']:
-                return b.mole_frac_phase['Liq', i]
+                return b.mole_frac_phase_comp['Liq', i]
             else:
-                return b.pressure_sat[i] * b.mole_frac_phase['Liq', i]
+                return b.pressure_sat[i] * b.mole_frac_phase_comp['Liq', i]
         self.fug_liq = Expression(self._params.component_list,
                                   rule=fug_liq_rule)
 
@@ -1017,7 +1016,7 @@ class IdealStateBlockData(StateBlockData):
                     + b._params.cp_ig['Liq', j, '1'] *
                       log(b.temperature / b._params.temperature_ref)) -
                 b._params.gas_const *
-                log(b.mole_frac_phase['Liq', j]*b.pressure /
+                log(b.mole_frac_phase_comp['Liq', j]*b.pressure /
                     b._params.pressure_ref))
 
 # -----------------------------------------------------------------------------
@@ -1032,7 +1031,7 @@ class IdealStateBlockData(StateBlockData):
             if i in ['hydrogen', 'methane']:
                 return 1e-6
             else:
-                return b.mole_frac_phase['Vap', i] * b.pressure
+                return b.mole_frac_phase_comp['Vap', i] * b.pressure
         self.fug_vap = Expression(self._params.component_list,
                                   rule=fug_vap_rule)
 
@@ -1081,5 +1080,5 @@ class IdealStateBlockData(StateBlockData):
                     + b._params.cp_ig['Vap', j, '1'] *
                       log(b.temperature / b._params.temperature_ref)) -
                 b._params.gas_const *
-                log(b.mole_frac_phase['Vap', j]*b.pressure /
+                log(b.mole_frac_phase_comp['Vap', j]*b.pressure /
                     b._params.pressure_ref))
