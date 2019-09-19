@@ -659,7 +659,7 @@ def PVTdt(textFile, DataToWrite, Combination=False, PlotData=False):
     """
     # print "PVT: "
     # PVTindexes = DataImport.PVTindexes
-    # IsothermIndexes = DataImport.isothermIndex
+    IsothermIndexes = DataImport.isothermIndex
     # print Combination
     i = 1
     for x in DataToWrite:
@@ -703,7 +703,7 @@ def PVTdt(textFile, DataToWrite, Combination=False, PlotData=False):
     #       j+=1
     #   i+=1;
     # Crit(textFile, DataToWrite, Combination)
-    # InSat(textFile, DataImport.InSatValues,Combination)
+    InSat(textFile, DataImport.InSatValues,Combination)
 
     if PlotData:
         x, y, z = [], [], []

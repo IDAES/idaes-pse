@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import matplotlib
 from mpl_toolkits.mplot3d import Axes3D
+import pandas as pd
 # import re
 
 # import helmet
@@ -30,7 +31,7 @@ triple = 0
 
 global props
 props = ["PVT", "CV", "CP", "SND"]
-
+markers = [".", ",","o","v","^", "<", ">", "1","2", "3","4","8","s", "p","P","*","x","X","D","d","|","_"];
 
 def molData(fluidData, Dmolecule, RVal):
     """
@@ -348,8 +349,7 @@ def sseCombo(lstFile=None, plot = False, report=False, surface=cm.coolwarm):
 
 
 def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
-    Y = PVT1
-    Beta = PVT1Vals
+    Y, Beta = PVT1, PVT1Vals
 
     BasisFunctions.formCustomBasis()
 
@@ -502,7 +502,25 @@ def ssePVT(PVT1=[], PVT1Vals=[], saveFig=False, show=True, report=False):
         ax3.set_xlabel("Delta")
         ax3.set_ylabel("Tau")
         ax3.set_zlabel("Pressure")
-        ax3.legend(loc="upper right", fontsize=20)
+        ax3.legend(bbox_to_anchor=(1.04, 1), loc="upper left", fontsize=20)
+
+
+        # figAAD = plt.figure()
+        # axAAD = figAAD.add_subplot(111)
+        # PVTAAD = [ (x-y)/x for x, y in zip(Pa,PlaceHolder)]
+        # SAAD = [ x[0] for x in zip(Sources,PVTAAD) if abs(x[1]) >1]
+        # TAAD = [ x[0] for x in zip(T,PVTAAD) if abs(x[1]) >1]
+        # PVTAAD = [ x[1] for x in zip(T,PVTAAD) if abs(x[1]) >1]
+
+        # df = pd.DataFrame(dict(x=TAAD, y=PVTAAD, label=SAAD))
+        # groups = df.groupby('label')
+
+        # i = 0
+        # for name, group in groups:
+        #     axAAD.scatter(group.x, group.y, label=name, marker=markers[i])
+        #     i+=1
+        # # axAAD.scatter(TAAD, PVTAAD, label=SAAD)
+        # axAAD.legend(loc="right")
 
 
         if saveFig:

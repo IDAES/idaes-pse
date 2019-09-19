@@ -1,6 +1,19 @@
-# module for ALAMO Writing.
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes".
+##############################################################################
+"""
+Modeling for saturated densities and vapor pressure
+"""
 
-# import math
 import sys
 import alamopy
 import importlib
@@ -21,6 +34,7 @@ DataToWrite = []
 
 
 def DL():
+    "ALAMO regression of Saturated Liquid Density"
     global DLfun
     DataImport.DL(molecule)
     Values = DataImport.DLValues
@@ -41,12 +55,7 @@ def DL():
         savetrace=True,
         savescratch=True,
     )
-    # print(res['model'], res['ssr'], res['R2'])
 
-    # conf_inv = alamopy.almconfidence(res)
-    # print('Confidence Intervals : {}'.format(conf_inv['conf_inv']))
-
-    # alamopy.almplot(res)
     if res is None:
         raise Exception("Model does not exist for Saturated Liquid Density")
 
@@ -54,6 +63,9 @@ def DL():
 
 
 def getDL():
+    """ 
+    Imports the regressed saturated liquid density function
+    """
     global DLfun
     if DLfun is None:
         DLfun = importlib.import_module("%sDL" % molecule, "f")
@@ -61,6 +73,9 @@ def getDL():
 
 
 def DV():
+    """
+    ALAMO regression of saturated vapor density
+    """
     global DVfun
     DataImport.DV(molecule)
     Values = DataImport.DVValues
@@ -88,6 +103,9 @@ def DV():
 
 
 def getDV():
+    """ 
+    Imports the regressed saturated vapor density function
+    """
     global DVfun
     if DVfun is None:
         DVfun = importlib.import_module("%sDV" % molecule, "f")
@@ -95,6 +113,7 @@ def getDV():
 
 
 def PV():
+    "ALAMO regression of vapor pressure"
     global PVfun
     DataImport.PV(molecule)
     Values = DataImport.Values
@@ -121,101 +140,10 @@ def PV():
 
 
 def getPV():
+    """ 
+    Imports the regressed vapor pressure function
+    """
     global PVfun
     if PVfun is None:
         PVfun = importlib.import_module("%sPV" % molecule, "f")
     return PVfun
-
-
-
-
-# Opening an ALAMO File
-# def openFile(data_name):
-#     global textFile
-#     print("Creating new text file")
-#     name = molecule + data_name + ".alm"
-#     print(name)
-#     try:
-#         textFile = open(name, "w")
-#     except Exception:
-#         print("couldn't open the file Something wrong")
-#         sys.exit(0)
-
-
-# # Closing an ALAMO File
-# def closeFile():
-#     textFile.close()
-#     print("Closing File")
-
-
-# # Set of Basis Functions used
-# def CP0CustomBasisMin(num_custom):
-#     textFile.write("ncustombas %d\n" % num_custom)
-#     textFile.write("BEGIN_CUSTOMBAS\n")
-#     for i in range(1, 8000):
-#         textFile.write(
-#             "(min(30,%f)/T)^2 * exp(min(30,%f)/T)/(exp(min(30,%f)/T)-1)^2\n"
-#             % (i / 1000.0, i / 1000.0, i / 1000.0)
-#         )
-#     # 		textFile.write("(T%d\n" %(i, i, i) );
-#     textFile.write("END_CUSTOMBAS\n\n")
-
-
-# def CP0CustomBasisArr(num_custom):
-#     textFile.write("ncustombas %d\n" % num_custom)
-#     textFile.write("BEGIN_CUSTOMBAS\n")
-#     for i in range(1, 8000):  # 1-5
-#         textFile.write(
-#             "exp(%f/T)*(%f/T/(exp(%f/T)-1))^2\n" % (i / 1000.0, i / 1000.0, i / 1000.0)
-#         )
-#     # 		textFile.write("(T%d\n" %(i, i, i) );
-#     textFile.write("END_CUSTOMBAS\n\n")
-
-# def CP0CustomBasis(num_custom):
-#     textFile.write("ncustombas %d\n" % num_custom)
-#     textFile.write("BEGIN_CUSTOMBAS\n")
-#     for i in range(1, 8000):  # 1-5
-#         textFile.write(
-#             "(%f/T)^2 * exp(%f/T)/(exp(%f/T)-1)^2\n"
-#             % (i / 1000.0, i / 1000.0, i / 1000.0)
-#         )
-#         # 		textFile.write("(T%d\n" %(i, i, i) );
-#         # try:
-#         #     calc = (i / 5) ** 2 * math.exp(i / 5) / (math.exp(i / 5) - 1) ** 2
-#         #     # print l
-#         # except OverflowError:
-#         #     # print "OverFlow %f" %(i)
-#         #     continue
-#         # except ZeroDivisionError:
-#         #     # print "Zero %f" %(i)
-#         #     continue
-
-#     textFile.write("END_CUSTOMBAS\n\n")
-
-
-
-
-# def CP0():
-#     DataImport.CP0(molecule)
-#     CP0Values = DataImport.CP0Values
-#     openFile("CP0")
-#     mins = [0, 0]
-#     maxs = [0, 0]
-#     DataToWrite = []
-#     for x in CP0Values:
-#         manVal = DataManipulation.CP0(x)
-#         DataToWrite.append(manVal)
-#     mins[0] = min(y[0] for y in DataToWrite)
-#     mins[1] = min(y[1] for y in DataToWrite)
-#     maxs[0] = max(y[0] for y in DataToWrite)
-#     maxs[1] = max(y[1] for y in DataToWrite)
-#     minmax = "xmin %d \nxmax %d \n" % (mins[0], maxs[0])
-#     writeHeader(1, 1, len(CP0Values), len(CP0Values), ["T"], ["CP0"], minmax)
-#     CP0CustomBasis(7999)
-#     # CP0CustomBasisArr(7999);
-#     textFile.write("BEGIN_DATA\n")
-#     for x in DataToWrite:
-#         textFile.write("	%s   %s\n" % (x[0], x[1]))
-#     textFile.write("END_DATA\n\n")
-#     closeFile()
-

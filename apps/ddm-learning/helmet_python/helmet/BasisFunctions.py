@@ -1,13 +1,21 @@
-# module GAMS Terms
-
-# import math
-# from pylab import *
-# import matplotlib.pyplot as plt
-# from mpl_toolkits.mplot3d import Axes3D
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes".
+##############################################################################
+"""
+Basis functions for generating the multiparameter equation of state
+"""
 import numpy as np
 import sympy as sy
 
-# y = sy.symbols('x')
 
 drd_vals = []
 ar_vals = []
@@ -43,59 +51,8 @@ def molData(fluidData, Dmolecule, RVal):
     Rm = RVal
 
 
-# def formCustomMixBasis(LemJac=False):
-#     """ Basis Functions developed a bank of terms based on literature (Lemmon, Span, Wagner) """
-#     # print "terms"
-#     global coeffs, indexes
-#     coeffs = []
-#     if LemJac:
-#         for i in range(1, 6):
-#             for j in range(1, 13):  # 12
-#                 coeffs.append([i, j / 8.0, 0, 0])
-#         indexes.append(len(coeffs))
-#         for i in range(1, 6):
-#             for j in range(1, 24):  # 24
-#                 coeffs.append([i, j / 8.0, 1, 0])
-#         for i in range(1, 6):
-#             for j in range(1, 30):  # 24
-#                 coeffs.append([i, j / 8.0, 2, 0])
-#         for i in range(2, 5):
-#             for j in range(24, 38):  # 38
-#                 coeffs.append([i, j / 2.0, 3, 0])
-#         indexes.append(len(coeffs))
-#         for i in range(1, 6):
-#             for j in range(1, 24):  # 24
-#                 for m in range(1, 7):
-#                     coeffs.append([i, j / 8.0, 1, m / 2])
-#         for i in range(1, 6):
-#             for j in range(1, 30):  # 24
-#                 for m in range(1, 7):
-#                     coeffs.append([i, j / 8.0, 2, m / 2])
-#         for i in range(2, 5):
-#             for j in range(24, 38):  # 38
-#                 for m in range(1, 7):
-#                     coeffs.append([i, j / 2.0, 3, m / 2])
-#         indexes.append(len(coeffs))
-#     else:
-#         for i in range(1, 6):
-#             for j in range(1, 13):  # 12
-#                 coeffs.append([i, j / 8.0, 0, 0])
-#         indexes.append(len(coeffs))
-#         for i in range(1, 6):
-#             for j in range(1, 24):  # 24
-#                 coeffs.append([i, j / 8.0, 1, 0])
-#         for i in range(1, 6):
-#             for j in range(1, 30):  # 24
-#                 coeffs.append([i, j / 8.0, 2, 0])
-#         for i in range(2, 5):
-#             for j in range(24, 38):  # 38
-#                 coeffs.append([i, j / 2.0, 3, 0])
-#         indexes.append(len(coeffs))
-
-
 def formCustomBasis(LemJac=False):
     """ Basis Functions developed a bank of terms based on literature (Lemmon, Span, Wagner) """
-    # print "terms"
     global coeffs, indexes
     coeffs = []
     if LemJac:
@@ -107,7 +64,7 @@ def formCustomBasis(LemJac=False):
             for j in range(1, 24):  # 24
                 coeffs.append([i, j / 8.0, 1, 0])
         for i in range(1, 6):
-            for j in range(1, 30):  # 24
+            for j in range(1, 30):  # 30
                 coeffs.append([i, j / 8.0, 2, 0])
         for i in range(2, 5):
             for j in range(24, 38):  # 38
@@ -141,147 +98,6 @@ def formCustomBasis(LemJac=False):
             for j in range(24, 38):  # 38
                 coeffs.append([i, j / 2.0, 3, 0])
         indexes.append(len(coeffs))
-
-
-# def formCustomBasesFlex():
-#     global coeffs, indexes
-#     coeffs = []
-
-#     coeffs.append([5, 1, 3, 0])
-#     coeffs.append([5, 2, 1, 0])
-#     coeffs.append([5, 1, 1, 0])
-#     coeffs.append([0.0001, 1, 3, 0])
-#     coeffs.append([4.11737, 1, 0, 0])
-#     coeffs.append([2.49949, 3, 0, 0])
-#     coeffs.append([2.653320, 2, 0, 0])
-#     coeffs.append([0.0001, 3, 0, 0])
-#     coeffs.append([2.893860, 1, 0, 0])
-#     coeffs.append([4.41217, 2, 1, 0])
-#     coeffs.append([1.25253, 3, 0, 0])
-#     coeffs.append([0.0001, 2, 0, 0])
-
-
-# def formSpanWagnerNonPolarBasis():
-#     global coeffs, indexes
-#     coeffs = []
-
-#     coeffs.append([1, 0.25, 0])
-#     coeffs.append([1, 1.125, 0])
-#     coeffs.append([1, 1.5, 0])
-#     coeffs.append([2, 1.375, 0])
-#     coeffs.append([3, 0.25, 0])
-#     coeffs.append([7, 0.875, 0])
-
-#     # for i in range(1,9):
-#     #   for j in range(1,13): #12
-#     #       coeffs.append([i,j/8.0, 0])
-
-#     # if(i==1 and j/8.0 == 0.25):
-#     #   print len(coeffs)
-#     # if(i==1 and j/8.0 == 1.125):
-#     #   print len(coeffs)
-#     # if(i==1 and j/8.0 == 1.5):
-#     #   print len(coeffs)
-#     # if(i==2 and j/8.0 == 1.375):
-#     #   print len(coeffs)
-#     # if(i==3 and j/8.0 == 0.25):
-#     #   print len(coeffs)
-#     # if(i==7 and j/8.0 == 0.875):
-#     #   print len(coeffs)
-
-#     # print("out")
-
-#     # d.append(i);
-#     # t.append(j/8.0);
-#     # c.append(0);
-#     # x = "\t %s^%d * %s^%f\n" %(CritDensLabel, i, CritTempLabel, j/8.0)
-#     # k+=1
-#     # textFile.write(x);
-
-#     coeffs.append([2, 0.625, 1])
-#     coeffs.append([5, 1.75, 1])
-#     # indexes.append(len(coeffs))
-#     # for i in range(1,6):
-#     #   for j in range(1,24): #24
-#     #       coeffs.append([i,j/8.0, 1])
-#     # if(i==2 and j/8.0 == 0.625):
-#     #   print len(coeffs)
-#     # if(i==5 and j/8.0 == 1.75):
-#     #   print len(coeffs)
-#     # print("out")
-
-#     # d.append(i);
-#     # t.append(j/8.0);
-#     # c.append(1)
-#     # y = "\t %s^%d * %s^%f * np.exp(-%s^%d)\n" %(CritDensLabel,i, CritTempLabel, j/8.0, CritDensLabel,1)
-#     # k +=1
-#     # textFile.write(y);
-
-#     coeffs.append([1, 3.625, 2])
-#     coeffs.append([4, 3.625, 2])
-
-#     # for i in range(1,6):
-#     #   for j in range(1,30): #24
-#     #       coeffs.append([i,j/8.0, 2])
-#     # if(i==1 and j/8.0 == 3.625):
-#     #   print len(coeffs)
-#     # if(i==4 and j/8.0 == 3.625):
-#     #   print len(coeffs)
-#     # print("out")
-
-#     # d.append(i);
-#     # t.append(j/8.0);
-#     # c.append(2)
-#     # k+= 1
-#     # y = "\t %s^%d * %s^%f * np.exp(-%s^%d)\n" %(CritDensLabel,i, CritTempLabel, j/8.0, CritDensLabel,2)
-#     # textFile.write(y);
-
-#     coeffs.append([3, 14.5, 3])
-#     coeffs.append([4, 12.0, 3])
-
-#     # for i in range(2,5):
-#     #   for j in range(24,38): #38
-#     #       coeffs.append([i,j/2.0, 3])
-#     # if(i==3 and j/2.0 == 14.5):
-#     #   print len(coeffs)
-#     # if(i==4 and j/2.0 == 12.0):
-#     #   print len(coeffs)
-#     # d.append(i);
-#     # t.append(j/8.0);
-#     # c.append(1)
-#     # k+=1
-#     # y = "\t %s^%d * %s^%f * np.exp(-%s^%d)\n" %(CritDensLabel,i, CritTempLabel, j/2.0, CritDensLabel,3)
-#     # textFile.write(y);
-#     indexes.append(len(coeffs))
-#     # print len(coeffs)
-
-
-# def formIdealBasis():
-#     # a = [3.5241174832, 1.1360823464]
-#     c = 4.0
-#     # B = [
-#     #     0.96464,
-#     #     -2.7855,
-#     #     0.86712,
-#     #     -0.18860,
-#     #     0.11804,
-#     #     0.0025181,
-#     #     0.57196,
-#     #     -0.029287,
-#     #     -0.43351,
-#     #     -0.12540,
-#     #     -0.028207,
-#     #     0.014076,
-#     # ]
-#     v = [1.6994, 8.0577, 17.059, 8.4567, 8.6423]
-#     u = [190, 797, 1619, 3072, 7915]
-
-#     T = CVnp[:, 1]
-#     iThetaTT = -np.ones_like(T) * (c - 1) / T ** 2
-#     for uit, vi in zip(u, v):
-#         ui = uit / float(critT)
-#         iThetaTT = iThetaTT - vi * (ui) ** 2 * np.exp(-ui * T) * (1 - np.exp(-ui * T)) ** (-2)
-#     return iThetaTT
 
 
 def getTerm(Y):
@@ -459,7 +275,6 @@ def arBY(D, T, Y, Beta):
         return val
 
 
-# @staticmethod
 def drd(D, T):
     global drd_vals
     global coeffs
@@ -486,7 +301,6 @@ def drd(D, T):
     # print len(drd_vals);
 
 
-# @staticmethod
 def d2rd(D, T):
     global d2rd_vals
     global coeffs

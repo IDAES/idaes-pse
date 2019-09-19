@@ -124,8 +124,6 @@ def updateModelSettings():
     global max_time, num_terms, props
     global flag_dirty
 
-    # Certainty.molData((critT, critP, critD, M, triple, acc), molecule, R)
-    # FuncEval.molData((critT, critP, critD, M, triple, acc), molecule, R)
     SoaveDensity.molData((critT, critP, critD, M, triple, acc), molecule, R)
     Plotting.molData((critT, critP, critD, M, triple, acc), molecule, R)
     Plotting.props = props
@@ -187,7 +185,11 @@ def setupRegression(numTerms=14, gams=False, pyomo=False):
     GAMSWrite.runFile = "main"
     GAMSWrite.GenerateGamsShell()
 
+
 def runRegression(gams = False, pyomo=False):
+    """
+    Runs the gdx and main regression gams file
+    """
 
     GAMSWrite.runFile ="gdx"
     command = "gams %s%s.gms"%(molecule,GAMSWrite.runFile)

@@ -1,20 +1,24 @@
-# module Data Import
-# Based on the structure of Lemmon data txt files.
+##############################################################################
+# Institute for the Design of Advanced Energy Systems Process Systems
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# software owners: The Regents of the University of California, through
+# Lawrence Berkeley National Laboratory,  National Technology & Engineering
+# Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
+# University Research Corporation, et al. All rights reserved.
+#
+# Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
+# license information, respectively. Both files are also available online
+# at the URL "https://github.com/IDAES/idaes".
+##############################################################################
+"""
+Importing thermodynamic data, specific structures for text files
+"""
+
 import numpy as np
-# import matplotlib.pyplot as plt
-
-
-# import helmet
-# from helmet import BasisFunctions
-
-# from helmet import DataImport
-# from helmet import DataManipulation
-
 from helmet import SoaveDensity
 
 
-filename = ""
-sampleRatio = ""
+filename, sampleRatio = "", ""
 Values, DVValues, DLValues, CPValues, PVTValues, PVTSamples, CP0Values, BValues, CVValues, CVValuesn, SNDValues = (
     [],
     [],
@@ -36,6 +40,9 @@ critT, critD, critP, acc, R, M, Rm = [0, 0, 0, 0, 0, 0, 0]
 
 
 def molData(fluidData, RVal):
+    """
+    Molecular data passed to the module
+    """
     global critT, critP, critD, M, triple, acc, R, Rm
     (critT, critP, critD, M, triple, acc) = fluidData
     R = RVal
@@ -43,6 +50,10 @@ def molData(fluidData, RVal):
 
 
 def regionsOfData(molecule, DataValues, PVT=False, CV=False):
+    """
+    Organization of data into regions
+    """
+
     Reg1, Reg2, Reg3, Reg4, Reg5, Reg6 = [], [], [], [], [], []
     # critical Region
     if PVT:
@@ -50,11 +61,10 @@ def regionsOfData(molecule, DataValues, PVT=False, CV=False):
             T = float(T)
             P = float(P)
             D = float(D)
-            # print 'D', D
+
             vals = [P, D, T]
             if T < float(critT):
                 if D < float(critD):
-                    # print 'D' , D
                     Reg1.append(vals)
                 else:
                     Reg2.append(vals)
@@ -136,6 +146,10 @@ def regionsOfData(molecule, DataValues, PVT=False, CV=False):
 
 
 def sampleData(Regions, ratio):
+    """
+    Sampling of the data regions
+    """
+    global isothermIndex
     Reg1, Reg2, Reg3, Reg4, Reg5, Reg6 = Regions
     Indexes = []
 
@@ -322,7 +336,9 @@ def CP(molecule, sample=False, ratio=5):
 
 
 def CV(molecule, sample=False, ratio=5):
-
+    """
+    Import isochoric heat capacity
+    """
     global CVValues, CVindexes
     CVValues, CVindexes = [], []
 
@@ -360,6 +376,10 @@ def CV(molecule, sample=False, ratio=5):
 
 
 def SND(molecule, sample=False, ratio=5):
+    """
+    Import speed of sound data
+    """
+
     global SNDValues, SNDindexes
     SNDValues, SNDindexes = [], []
 
@@ -398,6 +418,9 @@ def SND(molecule, sample=False, ratio=5):
 
 
 def CP0(molecule):
+    """
+    Import ideal isobaric heat capacity
+    """
     rawfile = molecule + "CP0.RAW"
     dataFile = open(filename + "/" + rawfile)
     i = 0
@@ -412,6 +435,9 @@ def CP0(molecule):
 
 
 def DL(molecule):
+    """
+    Import saturated liquid density
+    """
     rawfile = ""
     dataFile = ""
     try:
@@ -432,6 +458,9 @@ def DL(molecule):
 
 
 def DV(molecule):
+    """
+    Import of saturated vapor density
+    """
     rawfile = ""
     dataFile = ""
     try:
@@ -452,6 +481,9 @@ def DV(molecule):
 
 
 def PV(molecule):
+    """
+    Import saturated vapor pressure
+    """
     rawfile = ""
     dataFile = ""
     try:
