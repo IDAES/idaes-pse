@@ -909,21 +909,21 @@ class TestBTXIdeal(object):
         assert hasattr(btx.fs.unit, "inlet")
         assert len(btx.fs.unit.inlet.vars) == 4
         assert hasattr(btx.fs.unit.inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet, "temperature")
         assert hasattr(btx.fs.unit.inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet_1")
         assert len(btx.fs.unit.outlet_1.vars) == 4
         assert hasattr(btx.fs.unit.outlet_1, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet_1, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet_1, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet_1, "temperature")
         assert hasattr(btx.fs.unit.outlet_1, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet_2")
         assert len(btx.fs.unit.outlet_2.vars) == 4
         assert hasattr(btx.fs.unit.outlet_2, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet_2, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet_2, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet_2, "temperature")
         assert hasattr(btx.fs.unit.outlet_2, "pressure")
 
@@ -937,8 +937,8 @@ class TestBTXIdeal(object):
         btx.fs.unit.inlet.flow_mol[0].fix(1)  # mol/s
         btx.fs.unit.inlet.temperature[0].fix(368)  # K
         btx.fs.unit.inlet.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.inlet.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         btx.fs.unit.split_fraction[0, "outlet_1", "Vap"].fix(0.8)
         btx.fs.unit.split_fraction[0, "outlet_2", "Liq"].fix(0.8)
@@ -965,29 +965,29 @@ class TestBTXIdeal(object):
         assert (pytest.approx(101325, abs=1e3) ==
                 value(btx.fs.unit.mixed_state[0].pressure))
         assert (pytest.approx(0.412, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
                       "Liq", "benzene"]))
         assert (pytest.approx(0.588, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
                       "Liq", "toluene"]))
         assert (pytest.approx(0.634, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
                       "Vap", "benzene"]))
         assert (pytest.approx(0.366, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
                       "Vap", "toluene"]))
 
         # Also need to initialize outlet states
-        btx.fs.unit.outlet_1_state.initialize(state_args={"flow_mol": 1,
-                                              "pressure": 101325,
-                                              "temperature": 368,
-                                              "mole_frac": {"benzene": 0.5,
-                                                            "toluene": 0.5}})
-        btx.fs.unit.outlet_2_state.initialize(state_args={"flow_mol": 1,
-                                              "pressure": 101325,
-                                              "temperature": 368,
-                                              "mole_frac": {"benzene": 0.5,
-                                                            "toluene": 0.5}})
+        btx.fs.unit.outlet_1_state.initialize(state_args={
+                "flow_mol": 1,
+                "pressure": 101325,
+                "temperature": 368,
+                "mole_frac_comp": {"benzene": 0.5, "toluene": 0.5}})
+        btx.fs.unit.outlet_2_state.initialize(state_args={
+                "flow_mol": 1,
+                "pressure": 101325,
+                "temperature": 368,
+                "mole_frac_comp": {"benzene": 0.5, "toluene": 0.5}})
 
         assert degrees_of_freedom(btx) == 0
 
@@ -1017,9 +1017,9 @@ class TestBTXIdeal(object):
         assert (pytest.approx(101325, abs=1e3) ==
                 value(btx.fs.unit.outlet_1.pressure[0]))
         assert (pytest.approx(0.573, abs=1e-3) ==
-                value(btx.fs.unit.outlet_1.mole_frac[0, "benzene"]))
+                value(btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]))
         assert (pytest.approx(0.427, abs=1e-3) ==
-                value(btx.fs.unit.outlet_1.mole_frac[0, "toluene"]))
+                value(btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]))
 
         assert (pytest.approx(0.562, abs=1e-3) ==
                 value(btx.fs.unit.outlet_2.flow_mol[0]))
@@ -1028,9 +1028,9 @@ class TestBTXIdeal(object):
         assert (pytest.approx(101325, abs=1e3) ==
                 value(btx.fs.unit.outlet_2.pressure[0]))
         assert (pytest.approx(0.443, abs=1e-3) ==
-                value(btx.fs.unit.outlet_2.mole_frac[0, "benzene"]))
+                value(btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]))
         assert (pytest.approx(0.557, abs=1e-3) ==
-                value(btx.fs.unit.outlet_2.mole_frac[0, "toluene"]))
+                value(btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]))
 
     @pytest.mark.initialize
     @pytest.mark.solver
@@ -1041,18 +1041,20 @@ class TestBTXIdeal(object):
                          btx.fs.unit.outlet_2.flow_mol[0])) <= 1e-5
 
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] *
-                         btx.fs.unit.inlet.mole_frac[0, "benzene"] -
+                         btx.fs.unit.inlet.mole_frac_comp[0, "benzene"] -
                          btx.fs.unit.outlet_1.flow_mol[0] *
-                         btx.fs.unit.outlet_1.mole_frac[0, "benzene"] -
+                         btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"] -
                          btx.fs.unit.outlet_2.flow_mol[0] *
-                         btx.fs.unit.outlet_2.mole_frac[0, "benzene"])) <= 1e-5
+                         btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"])) \
+            <= 1e-5
 
         assert abs(value(btx.fs.unit.inlet.flow_mol[0] *
-                         btx.fs.unit.inlet.mole_frac[0, "toluene"] -
+                         btx.fs.unit.inlet.mole_frac_comp[0, "toluene"] -
                          btx.fs.unit.outlet_1.flow_mol[0] *
-                         btx.fs.unit.outlet_1.mole_frac[0, "toluene"] -
+                         btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"] -
                          btx.fs.unit.outlet_2.flow_mol[0] *
-                         btx.fs.unit.outlet_2.mole_frac[0, "toluene"])) <= 1e-5
+                         btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"])) \
+            <= 1e-5
 
         assert abs(value(
             btx.fs.unit.mixed_state[0].flow_mol_phase["Vap"] *
@@ -1242,11 +1244,11 @@ class IdealTestBlockData(StateBlockData):
         self.pressure = Var(initialize=1e5)
         self.temperature = Var(initialize=300)
 
-        self.mole_frac = Var(self._params.component_list,
-                             initialize=0.5)
-        self.mole_frac_phase = Var(self._params.phase_list,
-                                   self._params.component_list,
-                                   initialize=0.5)
+        self.mole_frac_comp = Var(self._params.component_list,
+                                  initialize=0.5)
+        self.mole_frac_phase_comp = Var(self._params.phase_list,
+                                        self._params.component_list,
+                                        initialize=0.5)
 
         self.test_var = Var(initialize=1)
         self.test_var_comp = Var(self._params.component_list,
@@ -1271,10 +1273,10 @@ class IdealTestBlockData(StateBlockData):
 
         self.flow_mol = 9
 
-        self.mole_frac_phase["p1", "c1"] = 0.9
-        self.mole_frac_phase["p1", "c2"] = 0.7
-        self.mole_frac_phase["p2", "c1"] = 0.5
-        self.mole_frac_phase["p2", "c2"] = 0.3
+        self.mole_frac_phase_comp["p1", "c1"] = 0.9
+        self.mole_frac_phase_comp["p1", "c2"] = 0.7
+        self.mole_frac_phase_comp["p2", "c1"] = 0.5
+        self.mole_frac_phase_comp["p2", "c2"] = 0.3
 
         self.test_var_comp["c1"] = 2000
         self.test_var_comp["c2"] = 3000
@@ -1289,9 +1291,9 @@ class IdealTestBlockData(StateBlockData):
 
     def define_state_vars(self):
         if self._state_var_switch == 1:
-            return {"mole_frac": self.mole_frac}
+            return {"mole_frac_comp": self.mole_frac_comp}
         elif self._state_var_switch == 2:
-            return {"mole_frac_phase": self.mole_frac_phase}
+            return {"mole_frac_phase_comp": self.mole_frac_phase_comp}
         elif self._state_var_switch == 3:
             return {"flow_mol_phase_comp": self.flow_mol_phase_comp}
         elif self._state_var_switch == 4:
@@ -1632,10 +1634,10 @@ class TestIdealConstruction(object):
         m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                         m.outlet_list)
 
-        assert value(m.fs.sep.outlet_1.mole_frac[0, "c1"]) == 1
-        assert value(m.fs.sep.outlet_1.mole_frac[0, "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.mole_frac[0, "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.mole_frac[0, "c2"]) == 1
+        assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c2"]) == 1
 
     def test_mole_frac_w_phase_split(self):
         m = ConcreteModel()
@@ -1659,10 +1661,10 @@ class TestIdealConstruction(object):
         m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                         m.outlet_list)
 
-        assert value(m.fs.sep.outlet_1.mole_frac[0, "c1"]) == 0.9
-        assert value(m.fs.sep.outlet_1.mole_frac[0, "c2"]) == 0.7
-        assert value(m.fs.sep.outlet_2.mole_frac[0, "c1"]) == 0.5
-        assert value(m.fs.sep.outlet_2.mole_frac[0, "c2"]) == 0.3
+        assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c1"]) == 0.9
+        assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c2"]) == 0.7
+        assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c1"]) == 0.5
+        assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c2"]) == 0.3
 
     def test_mole_frac_w_phase_comp_split(self):
         m = ConcreteModel()
@@ -1688,14 +1690,14 @@ class TestIdealConstruction(object):
         m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                         m.outlet_list)
 
-        assert value(m.fs.sep.outlet_1.mole_frac[0, "c1"]) == 1
-        assert value(m.fs.sep.outlet_1.mole_frac[0, "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.mole_frac[0, "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.mole_frac[0, "c2"]) == 1
-        assert value(m.fs.sep.outlet_3.mole_frac[0, "c1"]) == 1
-        assert value(m.fs.sep.outlet_3.mole_frac[0, "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.mole_frac[0, "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_4.mole_frac[0, "c2"]) == 1
+        assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c1"]) == 1
+        assert value(m.fs.sep.outlet_1.mole_frac_comp[0, "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_2.mole_frac_comp[0, "c2"]) == 1
+        assert value(m.fs.sep.outlet_3.mole_frac_comp[0, "c1"]) == 1
+        assert value(m.fs.sep.outlet_3.mole_frac_comp[0, "c2"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.mole_frac_comp[0, "c1"]) == 1e-8
+        assert value(m.fs.sep.outlet_4.mole_frac_comp[0, "c2"]) == 1
 
     def test_mole_frac_w_phase_split_no_fallback(self):
         m = ConcreteModel()
@@ -1718,7 +1720,7 @@ class TestIdealConstruction(object):
 
         # Delete mole_frac_phase so that the fallback should fail
         m.fs.sep.mixed_state[0].del_component(
-                m.fs.sep.mixed_state[0].mole_frac_phase)
+                m.fs.sep.mixed_state[0].mole_frac_phase_comp)
 
         with pytest.raises(AttributeError):
             m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
@@ -1748,15 +1750,23 @@ class TestIdealConstruction(object):
         m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
                                         m.outlet_list)
 
-        assert value(m.fs.sep.outlet_1.mole_frac_phase[0, "p1", "c1"]) == 1
-        assert value(m.fs.sep.outlet_1.mole_frac_phase[0, "p1", "c2"]) == 1e-8
-        assert value(m.fs.sep.outlet_1.mole_frac_phase[0, "p2", "c1"]) == 1
-        assert value(m.fs.sep.outlet_1.mole_frac_phase[0, "p2", "c2"]) == 1e-8
+        assert value(
+                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c1"]) == 1
+        assert value(
+                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
+        assert value(
+                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 1
+        assert value(
+                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c2"]) == 1e-8
 
-        assert value(m.fs.sep.outlet_2.mole_frac_phase[0, "p1", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.mole_frac_phase[0, "p1", "c2"]) == 1
-        assert value(m.fs.sep.outlet_2.mole_frac_phase[0, "p2", "c1"]) == 1e-8
-        assert value(m.fs.sep.outlet_2.mole_frac_phase[0, "p2", "c2"]) == 1
+        assert value(
+                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c1"]) == 1e-8
+        assert value(
+                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c2"]) == 1
+        assert value(
+                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
+        assert value(
+                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 1
 
     def test_mole_frac_phase_w_phase_split(self):
         m = ConcreteModel()
@@ -2602,21 +2612,21 @@ class TestBTX_Ideal(object):
         assert hasattr(btx.fs.unit, "inlet")
         assert len(btx.fs.unit.inlet.vars) == 4
         assert hasattr(btx.fs.unit.inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet, "temperature")
         assert hasattr(btx.fs.unit.inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet_1")
         assert len(btx.fs.unit.outlet_1.vars) == 4
         assert hasattr(btx.fs.unit.outlet_1, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet_1, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet_1, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet_1, "temperature")
         assert hasattr(btx.fs.unit.outlet_1, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet_2")
         assert len(btx.fs.unit.outlet_2.vars) == 4
         assert hasattr(btx.fs.unit.outlet_2, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet_2, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet_2, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet_2, "temperature")
         assert hasattr(btx.fs.unit.outlet_2, "pressure")
 
@@ -2629,8 +2639,8 @@ class TestBTX_Ideal(object):
         btx.fs.unit.inlet.temperature[0].fix(368)  # K
         btx.fs.unit.inlet.pressure[0].fix(101325)  # Pa
 
-        btx.fs.unit.inlet.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         assert degrees_of_freedom(btx) == 0
 
@@ -2650,16 +2660,16 @@ class TestBTX_Ideal(object):
         assert (pytest.approx(101325, abs=1e3) ==
                 value(btx.fs.unit.mixed_state[0].pressure))
         assert (pytest.approx(0.412, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
                         "Liq", "benzene"]))
         assert (pytest.approx(0.588, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
                         "Liq", "toluene"]))
         assert (pytest.approx(0.634, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
                         "Vap", "benzene"]))
         assert (pytest.approx(0.366, abs=1e-3) ==
-                value(btx.fs.unit.mixed_state[0].mole_frac_phase[
+                value(btx.fs.unit.mixed_state[0].mole_frac_phase_comp[
                         "Vap", "toluene"]))
 
         assert degrees_of_freedom(btx) == 0
@@ -2685,9 +2695,9 @@ class TestBTX_Ideal(object):
         assert (pytest.approx(101325, abs=1e3) ==
                 value(btx.fs.unit.outlet_1.pressure[0]))
         assert (pytest.approx(0.634, abs=1e-3) ==
-                value(btx.fs.unit.outlet_1.mole_frac[0, "benzene"]))
+                value(btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"]))
         assert (pytest.approx(0.366, abs=1e-3) ==
-                value(btx.fs.unit.outlet_1.mole_frac[0, "toluene"]))
+                value(btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"]))
 
         assert (pytest.approx(0.604, abs=1e-3) ==
                 value(btx.fs.unit.outlet_2.flow_mol[0]))
@@ -2696,9 +2706,9 @@ class TestBTX_Ideal(object):
         assert (pytest.approx(101325, abs=1e3) ==
                 value(btx.fs.unit.outlet_2.pressure[0]))
         assert (pytest.approx(0.412, abs=1e-3) ==
-                value(btx.fs.unit.outlet_2.mole_frac[0, "benzene"]))
+                value(btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"]))
         assert (pytest.approx(0.588, abs=1e-3) ==
-                value(btx.fs.unit.outlet_2.mole_frac[0, "toluene"]))
+                value(btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"]))
 
     @pytest.mark.initialize
     @pytest.mark.solver
@@ -2708,19 +2718,21 @@ class TestBTX_Ideal(object):
                          btx.fs.unit.outlet_1.flow_mol[0] -
                          btx.fs.unit.outlet_2.flow_mol[0])) <= 1e-5
 
-        assert abs(value(btx.fs.unit.inlet.flow_mol[0] *
-                         btx.fs.unit.inlet.mole_frac[0, "benzene"] -
-                         btx.fs.unit.outlet_1.flow_mol[0] *
-                         btx.fs.unit.outlet_1.mole_frac[0, "benzene"] -
-                         btx.fs.unit.outlet_2.flow_mol[0] *
-                         btx.fs.unit.outlet_2.mole_frac[0, "benzene"])) <= 1e-5
+        assert abs(value(
+                btx.fs.unit.inlet.flow_mol[0] *
+                btx.fs.unit.inlet.mole_frac_comp[0, "benzene"] -
+                btx.fs.unit.outlet_1.flow_mol[0] *
+                btx.fs.unit.outlet_1.mole_frac_comp[0, "benzene"] -
+                btx.fs.unit.outlet_2.flow_mol[0] *
+                btx.fs.unit.outlet_2.mole_frac_comp[0, "benzene"])) <= 1e-5
 
-        assert abs(value(btx.fs.unit.inlet.flow_mol[0] *
-                         btx.fs.unit.inlet.mole_frac[0, "toluene"] -
-                         btx.fs.unit.outlet_1.flow_mol[0] *
-                         btx.fs.unit.outlet_1.mole_frac[0, "toluene"] -
-                         btx.fs.unit.outlet_2.flow_mol[0] *
-                         btx.fs.unit.outlet_2.mole_frac[0, "toluene"])) <= 1e-5
+        assert abs(value(
+                btx.fs.unit.inlet.flow_mol[0] *
+                btx.fs.unit.inlet.mole_frac_comp[0, "toluene"] -
+                btx.fs.unit.outlet_1.flow_mol[0] *
+                btx.fs.unit.outlet_1.mole_frac_comp[0, "toluene"] -
+                btx.fs.unit.outlet_2.flow_mol[0] *
+                btx.fs.unit.outlet_2.mole_frac_comp[0, "toluene"])) <= 1e-5
 
         # Assume energy conservation is covered by control volume tests
 

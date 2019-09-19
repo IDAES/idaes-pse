@@ -23,8 +23,8 @@ supports the following combinations for gas-liquid mixtures:
 3. Ideal (vapor) - Wilson (liquid)
 
 This property package currently supports the flow_mol, temperature, pressure
-and mole_frac as state variables (mole basis). Support for other combinations
-will be available in the future.
+and mole_frac_comp as state variables (mole basis). Support for other
+combinations will be available in the future.
 
 Please note that the parameters required to compute the activity coefficient
 for the component needs to be provided by the user in the parameter block or
@@ -48,7 +48,6 @@ import logging
 from pyomo.environ import Constraint, log, NonNegativeReals, value, Var, exp,\
     Set, Expression, Param, sqrt
 from pyomo.opt import SolverFactory, TerminationCondition
-from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.config import ConfigValue, In
 
 # Import IDAES cores
@@ -139,49 +138,49 @@ conditions, and thus corresponding constraints  should be included,
     def define_metadata(cls, obj):
         """Define properties supported and units."""
         obj.add_properties(
-            {'flow_mol': {'method': None, 'units': 'mol/s'},
-             'mole_frac': {'method': None, 'units': 'no unit'},
-             'temperature': {'method': None, 'units': 'K'},
-             'pressure': {'method': None, 'units': 'Pa'},
-             'flow_mol_phase': {'method': None, 'units': 'mol/s'},
-             'density_mol': {'method': '_density_mol',
-                             'units': 'mol/m^3'},
-             'pressure_sat': {'method': '_pressure_sat', 'units': 'Pa'},
-             'mole_frac_phase': {'method': '_mole_frac_phase',
-                                 'units': 'no unit'},
-             'energy_internal_mol_phase_comp': {
-                     'method': '_energy_internal_mol_phase_comp',
-                     'units': 'J/mol'},
-             'energy_internal_mol_phase': {
-                     'method': '_energy_internal_mol_phase',
-                     'units': 'J/mol'},
-             'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp',
-                                     'units': 'J/mol'},
-             'enth_mol_phase': {'method': '_enth_mol_phase',
-                                'units': 'J/mol'},
-             'entr_mol_phase_comp': {'method': '_entr_mol_phase_comp',
-                                     'units': 'J/mol'},
-             'entr_mol_phase': {'method': '_entr_mol_phase',
-                                'units': 'J/mol'},
-             'temperature_bubble': {'method': '_temperature_bubble',
-                                    'units': 'K'},
-             'temperature_dew': {'method': '_temperature_dew',
-                                 'units': 'K'},
-             'pressure_bubble': {'method': '_pressure_bubble',
-                                 'units': 'Pa'},
-             'pressure_dew': {'method': '_pressure_dew',
-                              'units': 'Pa'},
-             'fug_vap': {'method': '_fug_vap', 'units': 'Pa'},
-             'fug_liq': {'method': '_fug_liq', 'units': 'Pa'},
+            {"flow_mol": {"method": None, "units": "mol/s"},
+             "mole_frac_comp": {"method": None, "units": "no unit"},
+             "temperature": {"method": None, "units": "K"},
+             "pressure": {"method": None, "units": "Pa"},
+             "flow_mol_phase": {"method": None, "units": "mol/s"},
+             "density_mol": {"method": "_density_mol",
+                             "units": "mol/m^3"},
+             "pressure_sat": {"method": "_pressure_sat", "units": "Pa"},
+             "mole_frac_phase_comp": {"method": "_mole_frac_phase",
+                                      "units": "no unit"},
+             "energy_internal_mol_phase_comp": {
+                 "method": "_energy_internal_mol_phase_comp",
+                 "units": "J/mol"},
+             "energy_internal_mol_phase": {
+                 "method": "_energy_internal_mol_phase",
+                 "units": "J/mol"},
+             "enth_mol_phase_comp": {"method": "_enth_mol_phase_comp",
+                                     "units": "J/mol"},
+             "enth_mol_phase": {"method": "_enth_mol_phase",
+                                "units": "J/mol"},
+             "entr_mol_phase_comp": {"method": "_entr_mol_phase_comp",
+                                     "units": "J/mol"},
+             "entr_mol_phase": {"method": "_entr_mol_phase",
+                                "units": "J/mol"},
+             "temperature_bubble": {"method": "_temperature_bubble",
+                                    "units": "K"},
+             "temperature_dew": {"method": "_temperature_dew",
+                                 "units": "K"},
+             "pressure_bubble": {"method": "_pressure_bubble",
+                                 "units": "Pa"},
+             "pressure_dew": {"method": "_pressure_dew",
+                              "units": "Pa"},
+             "fug_vap": {"method": "_fug_vap", "units": "Pa"},
+             "fug_liq": {"method": "_fug_liq", "units": "Pa"},
              'ds_vap': {'method': '_ds_vap', 'units': 'J/mol.K'}})
 
-        obj.add_default_units({'time': 's',
-                               'length': 'm',
-                               'mass': 'g',
-                               'amount': 'mol',
-                               'temperature': 'K',
-                               'energy': 'J',
-                               'holdup': 'mol'})
+        obj.add_default_units({"time": "s",
+                               "length": "m",
+                               "mass": "g",
+                               "amount": "mol",
+                               "temperature": "K",
+                               "energy": "J",
+                               "holdup": "mol"})
 
 
 class _ActivityCoeffStateBlock(StateBlock):
@@ -205,7 +204,7 @@ class _ActivityCoeffStateBlock(StateBlock):
 
                          If FTPz are chosen as state_vars, then keys for
                          the state_args dictionary are:
-                         flow_mol, temperature, pressure and mole_frac
+                         flow_mol, temperature, pressure and mole_frac_comp
 
                          If FcTP are chose as the state_vars, then keys for
                          the state_args dictionary are:
@@ -263,17 +262,17 @@ class _ActivityCoeffStateBlock(StateBlock):
                                                 "guess")
 
                     for j in blk[k]._params.component_list:
-                        if blk[k].mole_frac[j].fixed is True:
+                        if blk[k].mole_frac_comp[j].fixed is True:
                             Xflag[k, j] = True
                         else:
                             Xflag[k, j] = False
                             if state_args is None:
-                                blk[k].mole_frac[j].fix(1 / len(blk[k].
-                                                        _params.component_list))
+                                blk[k].mole_frac_comp[j].fix(
+                                        1/len(blk[k]._params.component_list))
                             else:
                                 try:
-                                    blk[k].mole_frac[j].\
-                                        fix(state_args["mole_frac"][j])
+                                    blk[k].mole_frac_comp[j].\
+                                        fix(state_args["mole_frac_comp"][j])
                                 except KeyError:
                                     raise Exception("Please check the key "
                                                     "values provided for the "
@@ -544,7 +543,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                     blk[k].flow_mol.unfix()
                 for j in blk[k]._params.component_list:
                     if flags["Xflag"][k, j] is False:
-                        blk[k].mole_frac[j].unfix()
+                        blk[k].mole_frac_comp[j].unfix()
                 if flags["Pflag"][k] is False:
                     blk[k].pressure.unfix()
                 if flags["Tflag"][k] is False:
@@ -607,10 +606,11 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.flow_mol = Var(initialize=1.0,
                                 domain=NonNegativeReals,
                                 doc="Total molar flowrate [mol/s]")
-            self.mole_frac = Var(self._params.component_list,
-                                 bounds=(0, 1),
-                                 initialize=1 / len(self._params.component_list),
-                                 doc="Mixture mole fraction")
+            self.mole_frac_comp = Var(
+                    self._params.component_list,
+                    bounds=(0, 1),
+                    initialize=1 / len(self._params.component_list),
+                    doc="Mixture mole fraction")
             self.pressure = Var(initialize=101325,
                                 domain=NonNegativeReals,
                                 doc="State pressure [Pa]")
@@ -618,10 +618,11 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                    domain=NonNegativeReals,
                                    doc="State temperature [K]")
         else:
-            self.flow_mol_comp = Var(self._params.component_list,
-                                     initialize=1 / len(self._params.component_list),
-                                     domain=NonNegativeReals,
-                                     doc="Component molar flowrate [mol/s]")
+            self.flow_mol_comp = Var(
+                    self._params.component_list,
+                    initialize=1 / len(self._params.component_list),
+                    domain=NonNegativeReals,
+                    doc="Component molar flowrate [mol/s]")
             self.pressure = Var(initialize=101325,
                                 domain=NonNegativeReals,
                                 doc="State pressure [Pa]")
@@ -643,10 +644,10 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 return self.flow_mol_comp[i] / \
                     sum(self.flow_mol_comp[i]
                         for i in self._params.component_list)
-            self.mole_frac = Expression(self._params.component_list,
-                                        rule=rule_mix_mole_frac)
+            self.mole_frac_comp = Expression(self._params.component_list,
+                                             rule=rule_mix_mole_frac)
 
-        self.mole_frac_phase = \
+        self.mole_frac_phase_comp = \
             Var(self._params.phase_list,
                 self._params.component_list,
                 initialize=1 / len(self._params.component_list),
@@ -660,15 +661,16 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.eq_total = Constraint(rule=rule_total_mass_balance)
 
             def rule_comp_mass_balance(self, i):
-                return self.flow_mol * self.mole_frac[i] == \
-                    self.flow_mol_phase["Liq"] * self.mole_frac_phase["Liq", i]
+                return self.flow_mol * self.mole_frac_comp[i] == \
+                    self.flow_mol_phase["Liq"] * \
+                    self.mole_frac_phase_comp["Liq", i]
             self.eq_comp = Constraint(self._params.component_list,
                                       rule=rule_comp_mass_balance)
 
             if self.config.defined_state is False:
                 # applied at outlet only
                 self.eq_mol_frac_out = \
-                    Constraint(expr=sum(self.mole_frac[i]
+                    Constraint(expr=sum(self.mole_frac_comp[i]
                                for i in self._params.component_list) == 1)
         else:
             def rule_comp_mass_balance(self, i):
@@ -678,7 +680,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                       rule=rule_comp_mass_balance)
 
             def rule_mole_frac(self, i):
-                return self.mole_frac_phase["Liq", i] * \
+                return self.mole_frac_phase_comp["Liq", i] * \
                     sum(self.flow_mol_phase_comp["Liq", i]
                         for i in self._params.component_list) == \
                     self.flow_mol_phase_comp["Liq", i]
@@ -693,16 +695,18 @@ class ActivityCoeffStateBlockData(StateBlockData):
             self.eq_total = Constraint(rule=rule_total_mass_balance)
 
             def rule_comp_mass_balance(self, i):
-                return self.flow_mol * self.mole_frac[i] == \
-                    self.flow_mol_phase["Vap"] * self.mole_frac_phase["Vap", i]
+                return self.flow_mol * self.mole_frac_comp[i] == \
+                    self.flow_mol_phase["Vap"] * \
+                    self.mole_frac_phase_comp["Vap", i]
             self.eq_comp = Constraint(self._params.component_list,
                                       rule=rule_comp_mass_balance)
 
             if self.config.defined_state is False:
                 # applied at outlet only
                 self.eq_mol_frac_out = \
-                    Constraint(expr=sum(self.mole_frac[i]
-                                        for i in self._params.component_list) == 1)
+                    Constraint(expr=sum(self.mole_frac_comp[i]
+                                        for i in self._params.component_list)
+                               == 1)
         else:
             def rule_comp_mass_balance(self, i):
                 return self.flow_mol_comp[i] == \
@@ -711,7 +715,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                       rule=rule_comp_mass_balance)
 
             def rule_mole_frac(self, i):
-                return self.mole_frac_phase["Vap", i] * \
+                return self.mole_frac_phase_comp["Vap", i] * \
                     sum(self.flow_mol_phase_comp["Vap", i]
                         for i in self._params.component_list) == \
                     self.flow_mol_phase_comp["Vap", i]
@@ -729,24 +733,26 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
             # Component mole balance
             def rule_comp_mass_balance(self, i):
-                return self.flow_mol * self.mole_frac[i] == \
-                    self.flow_mol_phase["Liq"] * self.mole_frac_phase["Liq", i] + \
-                    self.flow_mol_phase["Vap"] * self.mole_frac_phase["Vap", i]
+                return self.flow_mol * self.mole_frac_comp[i] == (
+                    self.flow_mol_phase["Liq"] *
+                    self.mole_frac_phase_comp["Liq", i] +
+                    self.flow_mol_phase["Vap"] *
+                    self.mole_frac_phase_comp["Vap", i])
             self.eq_comp = Constraint(self._params.component_list,
                                       rule=rule_comp_mass_balance)
 
             # sum of mole fractions constraint (sum(x_i)-sum(y_i)=0)
             def rule_mole_frac(self):
-                return sum(self.mole_frac_phase["Liq", i]
+                return sum(self.mole_frac_phase_comp["Liq", i]
                            for i in self._params.component_list) -\
-                    sum(self.mole_frac_phase["Vap", i]
+                    sum(self.mole_frac_phase_comp["Vap", i]
                         for i in self._params.component_list) == 0
             self.eq_sum_mol_frac = Constraint(rule=rule_mole_frac)
 
             if self.config.defined_state is False:
-                # applied at outlet only as complete state information is unknown
+                # applied at outlet only as complete state information unknown
                 self.eq_mol_frac_out = \
-                    Constraint(expr=sum(self.mole_frac[i]
+                    Constraint(expr=sum(self.mole_frac_comp[i]
                                for i in self._params.component_list) == 1)
         else:
             def rule_comp_mass_balance(self, i):
@@ -757,7 +763,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                       rule=rule_comp_mass_balance)
 
             def rule_mole_frac(self, p, i):
-                return self.mole_frac_phase[p, i] * \
+                return self.mole_frac_phase_comp[p, i] * \
                     sum(self.flow_mol_phase_comp[p, i]
                         for i in self._params.component_list) == \
                     self.flow_mol_phase_comp[p, i]
@@ -863,10 +869,10 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         # First sum part in the NRTL equation
         def rule_A(self, i):
-            value_1 = sum(self.mole_frac_phase["Liq", j] *
+            value_1 = sum(self.mole_frac_phase_comp["Liq", j] *
                           self.tau[j, i] * self.Gij_coeff[j, i]
                           for j in self._params.component_list)
-            value_2 = sum(self.mole_frac_phase["Liq", k] *
+            value_2 = sum(self.mole_frac_phase_comp["Liq", k] *
                           self.Gij_coeff[k, i]
                           for k in self._params.component_list)
             return self.A[i] == value_1 / value_2
@@ -874,16 +880,17 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         # Second sum part in the NRTL equation
         def rule_B(self, i):
-            value = sum((self.mole_frac_phase["Liq", j] *
+            value = sum((self.mole_frac_phase_comp["Liq", j] *
                          self.Gij_coeff[i, j] /
-                         sum(self.mole_frac_phase["Liq", k] *
+                         sum(self.mole_frac_phase_comp["Liq", k] *
                              self.Gij_coeff[k, j]
                              for k in self._params.component_list)) *
-                        (self.tau[i, j] - sum(self.mole_frac_phase["Liq", m] *
-                                              self.tau[m, j] *
-                         self.Gij_coeff[m, j]
-                         for m in self._params.component_list) /
-                         sum(self.mole_frac_phase["Liq", k] *
+                        (self.tau[i, j] - sum(
+                                self.mole_frac_phase_comp["Liq", m] *
+                                self.tau[m, j] *
+                                self.Gij_coeff[m, j]
+                                for m in self._params.component_list) /
+                         sum(self.mole_frac_phase_comp["Liq", k] *
                          self.Gij_coeff[k, j]
                          for k in self._params.component_list))
                         for j in self._params.component_list)
@@ -904,7 +911,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                 initialize=1.0,
                                 doc="Molar volume of component")
 
-        self.tau = Var(self._params.component_list, self._params.component_list,
+        self.tau = Var(self._params.component_list,
+                       self._params.component_list,
                        initialize=1.0,
                        doc="Binary interaction parameter for Wilson model")
 
@@ -944,7 +952,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         # First sum part in Wilson equation
         def rule_A(self, i):
-            value_1 = log(sum(self.mole_frac_phase["Liq", j] *
+            value_1 = log(sum(self.mole_frac_phase_comp["Liq", j] *
                               self.Gij_coeff[j, i]
                               for j in self._params.component_list))
             return self.A[i] == value_1
@@ -952,9 +960,9 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         # Second sum part in Wilson equation
         def rule_B(self, i):
-            value = sum((self.mole_frac_phase["Liq", j] *
+            value = sum((self.mole_frac_phase_comp["Liq", j] *
                          self.Gij_coeff[i, j] /
-                         sum(self.mole_frac_phase["Liq", k] *
+                         sum(self.mole_frac_phase_comp["Liq", k] *
                              self.Gij_coeff[k, j]
                              for k in self._params.component_list))
                         for j in self._params.component_list)
@@ -993,11 +1001,12 @@ class ActivityCoeffStateBlockData(StateBlockData):
                  self._reduced_temp[j]**3 +
                  self._params.pressure_sat_coeff[j, "D"] *
                  self._reduced_temp[j]**6)
-        self.eq_P_vap = Constraint(self._params.component_list, rule=rule_P_vap)
+        self.eq_P_vap = Constraint(self._params.component_list,
+                                   rule=rule_P_vap)
 
     def _fug_vap(self):
         def rule_fug_vap(self, i):
-            return self.mole_frac_phase["Vap", i] * self.pressure
+            return self.mole_frac_phase_comp["Vap", i] * self.pressure
         self.fug_vap = Expression(self._params.component_list,
                                   rule=rule_fug_vap)
 
@@ -1005,10 +1014,10 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def rule_fug_liq(self, i):
             if self.config.parameters.config.\
                     activity_coeff_model == "Ideal":
-                return self.mole_frac_phase["Liq", i] * \
+                return self.mole_frac_phase_comp["Liq", i] * \
                     self.pressure_sat[i]
             else:
-                return self.mole_frac_phase["Liq", i] * \
+                return self.mole_frac_phase_comp["Liq", i] * \
                     self.activity_coeff_comp[i] * self.pressure_sat[i]
         self.fug_liq = Expression(self._params.component_list,
                                   rule=rule_fug_liq)
@@ -1045,7 +1054,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def rule_energy_internal_mol_phase(b, p):
             return b.energy_internal_mol_phase[p] == sum(
                 b.energy_internal_mol_phase_comp[p, i] *
-                b.mole_frac_phase[p, i]
+                b.mole_frac_phase_comp[p, i]
                 for i in b._params.component_list)
         self.eq_energy_internal_mol_phase = Constraint(
             self._params.phase_list,
@@ -1079,7 +1088,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def rule_enth_mol_phase(b, p):
             return b.enth_mol_phase[p] == sum(
                 b.enth_mol_phase_comp[p, i] *
-                b.mole_frac_phase[p, i]
+                b.mole_frac_phase_comp[p, i]
                 for i in b._params.component_list)
         self.eq_enth_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_enth_mol_phase)
@@ -1147,7 +1156,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         def rule_entr_mol_phase(self, p):
             return self.entr_mol_phase[p] == sum(
                 self.entr_mol_phase_comp[p, i] *
-                self.mole_frac_phase[p, i]
+                self.mole_frac_phase_comp[p, i]
                 for i in self._params.component_list)
         self.eq_entr_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_entr_mol_phase)
@@ -1219,13 +1228,13 @@ class ActivityCoeffStateBlockData(StateBlockData):
         if (p == "Vap") and (j in self._params.component_list):
             if self._params.config.state_vars == "FTPz":
                 return self.flow_mol_phase["Vap"] * \
-                    self.mole_frac_phase["Vap", j]
+                    self.mole_frac_phase_comp["Vap", j]
             else:
                 return self.flow_mol_phase_comp["Vap", j]
         elif (p == "Liq") and (j in self._params.component_list):
             if self._params.config.state_vars == "FTPz":
                 return self.flow_mol_phase["Liq"] * \
-                    self.mole_frac_phase["Liq", j]
+                    self.mole_frac_phase_comp["Liq", j]
             else:
                 return self.flow_mol_phase_comp["Liq", j]
         else:
@@ -1252,12 +1261,12 @@ class ActivityCoeffStateBlockData(StateBlockData):
         """Create material density terms."""
         if p == "Liq":
             if j in self._params.component_list:
-                return self.density_mol[p] * self.mole_frac_phase["Liq", j]
+                return self.density_mol[p]*self.mole_frac_phase_comp["Liq", j]
             else:
                 return 0
         elif p == "Vap":
             if j in self._params.component_list:
-                return self.density_mol[p] * self.mole_frac_phase["Vap", j]
+                return self.density_mol[p]*self.mole_frac_phase_comp["Vap", j]
             else:
                 return 0
 
@@ -1277,7 +1286,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
 
         if self._params.config.state_vars == "FTPz":
             return {"flow_mol": self.flow_mol,
-                    "mole_frac": self.mole_frac,
+                    "mole_frac_comp": self.mole_frac_comp,
                     "temperature": self.temperature,
                     "pressure": self.pressure}
         else:
@@ -1333,7 +1342,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 if self.config.parameters.config.activity_coeff_model == \
                         "Ideal":
 
-                    return sum(self.mole_frac[i] *
+                    return sum(self.mole_frac_comp[i] *
                                self._p_sat_bubbleT[i]
                                for i in self._params.component_list) - \
                         self.pressure == 0
@@ -1352,11 +1361,11 @@ class ActivityCoeffStateBlockData(StateBlockData):
                         rule=rule_Gij_coeff_bubble)
 
                     def rule_A_bubble(self, i):
-                        value_1 = sum(self.mole_frac[j] *
+                        value_1 = sum(self.mole_frac_comp[j] *
                                       self.tau[j, i] *
                                       self.Gij_coeff_bubble[j, i]
                                       for j in self._params.component_list)
-                        value_2 = sum(self.mole_frac[k] *
+                        value_2 = sum(self.mole_frac_comp[k] *
                                       self.Gij_coeff_bubble[k, i]
                                       for k in self._params.component_list)
                         return value_1 / value_2
@@ -1364,19 +1373,21 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                                rule=rule_A_bubble)
 
                     def rule_B_bubble(self, i):
-                        value = sum((self.mole_frac[j] *
-                                     self.Gij_coeff_bubble[i, j] /
-                                     sum(self.mole_frac[k] *
-                                         self.Gij_coeff_bubble[k, j]
-                                         for k in self._params.component_list)) *
-                                    (self.tau[i, j] - sum(self.mole_frac[m] *
-                                                          self.tau[m, j] *
-                                     self.Gij_coeff_bubble[m, j]
-                                     for m in self._params.component_list) /
-                                     sum(self.mole_frac[k] *
+                        value = sum(
+                                (self.mole_frac_comp[j] *
+                                 self.Gij_coeff_bubble[i, j] /
+                                 sum(self.mole_frac_comp[k] *
+                                     self.Gij_coeff_bubble[k, j]
+                                     for k in self._params.component_list)) *
+                                (self.tau[i, j] - sum(
+                                    self.mole_frac_comp[m] *
+                                    self.tau[m, j] *
+                                    self.Gij_coeff_bubble[m, j]
+                                    for m in self._params.component_list) /
+                                 sum(self.mole_frac_comp[k] *
                                      self.Gij_coeff_bubble[k, j]
                                      for k in self._params.component_list))
-                                    for j in self._params.component_list)
+                                for j in self._params.component_list)
                         return value
                     self.B_bubble = Expression(self._params.component_list,
                                                rule=rule_B_bubble)
@@ -1387,7 +1398,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                         Expression(self._params.component_list,
                                    rule=rule_activity_coeff_bubble)
 
-                    return sum(self.mole_frac[i] *
+                    return sum(self.mole_frac_comp[i] *
                                self.activity_coeff_comp_bubble[i] *
                                self._p_sat_bubbleT[i]
                                for i in self._params.component_list) - \
@@ -1407,17 +1418,18 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                    rule=rule_Gij_coeff_bubble)
 
                     def rule_A_bubble(self, i):
-                        value_1 = log(sum(self.mole_frac[j] *
-                                          self.Gij_coeff_bubble[j, i]
-                                          for j in self._params.component_list))
+                        value_1 = log(sum(
+                                self.mole_frac_comp[j] *
+                                self.Gij_coeff_bubble[j, i]
+                                for j in self._params.component_list))
                         return value_1
                     self.A_bubble = Expression(self._params.component_list,
                                                rule=rule_A_bubble)
 
                     def rule_B_bubble(self, i):
-                        value = sum((self.mole_frac[j] *
+                        value = sum((self.mole_frac_comp[j] *
                                      self.Gij_coeff_bubble[i, j] /
-                                     sum(self.mole_frac[k] *
+                                     sum(self.mole_frac_comp[k] *
                                          self.Gij_coeff_bubble[k, j]
                                          for k in self._params.component_list))
                                     for j in self._params.component_list)
@@ -1431,7 +1443,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                         Expression(self._params.component_list,
                                    rule=rule_activity_coeff_bubble)
 
-                    return sum(self.mole_frac[i] *
+                    return sum(self.mole_frac_comp[i] *
                                self.activity_coeff_comp_bubble[i] *
                                self._p_sat_bubbleT[i]
                                for i in self._params.component_list) - \
@@ -1476,7 +1488,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 if self.config.parameters.config.activity_coeff_model == \
                         "Ideal":
                     return self.pressure * \
-                        sum(self.mole_frac[i] /
+                        sum(self.mole_frac_comp[i] /
                             self._p_sat_dewT[i]
                             for i in self._params.component_list) - 1 == 0
                 elif self.config.parameters.config.\
@@ -1494,10 +1506,10 @@ class ActivityCoeffStateBlockData(StateBlockData):
                         rule=rule_Gij_coeff_dew)
 
                     def rule_A_dew(self, i):
-                        value_1 = sum(self.mole_frac[j] *
+                        value_1 = sum(self.mole_frac_comp[j] *
                                       self.tau[j, i] * self.Gij_coeff_dew[j, i]
                                       for j in self._params.component_list)
-                        value_2 = sum(self.mole_frac[k] *
+                        value_2 = sum(self.mole_frac_comp[k] *
                                       self.Gij_coeff_dew[k, i]
                                       for k in self._params.component_list)
                         return value_1 / value_2
@@ -1505,19 +1517,21 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                             rule=rule_A_dew)
 
                     def rule_B_dew(self, i):
-                        value = sum((self.mole_frac[j] *
-                                     self.Gij_coeff_dew[i, j] /
-                                     sum(self.mole_frac[k] *
-                                         self.Gij_coeff_dew[k, j]
-                                         for k in self._params.component_list)) *
-                                    (self.tau[i, j] - sum(self.mole_frac[m] *
-                                                          self.tau[m, j] *
-                                     self.Gij_coeff_dew[m, j]
-                                     for m in self._params.component_list) /
-                                     sum(self.mole_frac[k] *
+                        value = sum(
+                                (self.mole_frac_comp[j] *
+                                 self.Gij_coeff_dew[i, j] /
+                                 sum(self.mole_frac_comp[k] *
+                                     self.Gij_coeff_dew[k, j]
+                                     for k in self._params.component_list)) *
+                                (self.tau[i, j] - sum(
+                                    self.mole_frac_comp[m] *
+                                    self.tau[m, j] *
+                                    self.Gij_coeff_dew[m, j]
+                                    for m in self._params.component_list) /
+                                 sum(self.mole_frac_comp[k] *
                                      self.Gij_coeff_dew[k, j]
                                      for k in self._params.component_list))
-                                    for j in self._params.component_list)
+                                for j in self._params.component_list)
                         return value
                     self.B_dew = Expression(self._params.component_list,
                                             rule=rule_B_dew)
@@ -1528,7 +1542,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                         Expression(self._params.component_list,
                                    rule=rule_activity_coeff_dew)
 
-                    return sum(self.mole_frac[i] *
+                    return sum(self.mole_frac_comp[i] *
                                self.pressure /
                                (self.activity_coeff_comp[i] *
                                 self._p_sat_dewT[i])
@@ -1548,17 +1562,18 @@ class ActivityCoeffStateBlockData(StateBlockData):
                                    rule=rule_Gij_coeff_dew)
 
                     def rule_A_dew(self, i):
-                        value_1 = log(sum(self.mole_frac[j] *
-                                          self.Gij_coeff_dew[j, i]
-                                          for j in self._params.component_list))
+                        value_1 = log(sum(
+                                self.mole_frac_comp[j] *
+                                self.Gij_coeff_dew[j, i]
+                                for j in self._params.component_list))
                         return value_1
                     self.A_dew = Expression(self._params.component_list,
                                             rule=rule_A_dew)
 
                     def rule_B_dew(self, i):
-                        value = sum((self.mole_frac[j] *
+                        value = sum((self.mole_frac_comp[j] *
                                      self.Gij_coeff_dew[i, j] /
-                                     sum(self.mole_frac[k] *
+                                     sum(self.mole_frac_comp[k] *
                                          self.Gij_coeff_dew[k, j]
                                          for k in self._params.component_list))
                                     for j in self._params.component_list)
@@ -1572,7 +1587,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
                         Expression(self._params.component_list,
                                    rule=rule_activity_coeff_dew)
 
-                    return sum(self.mole_frac[i] *
+                    return sum(self.mole_frac_comp[i] *
                                self.pressure /
                                (self.activity_coeff_comp[i] *
                                 self._p_sat_dewT[i])

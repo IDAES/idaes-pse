@@ -27,6 +27,7 @@ def run_notebook(path: str, name: str):
                 if output.output_type == "error":
                     failed = True
                     num = cell["execution_count"]
-                    exc = f"{output['ename']} = {output['evalue']}"
-                    print(f"ERROR in {fullpath} [{num}]: {exc}")
+                    print(f"ERROR in {output['ename']} in {fullpath} [{num}]:")
+                    for tb_line in output["traceback"]:
+                        print(tb_line)
     return not failed
