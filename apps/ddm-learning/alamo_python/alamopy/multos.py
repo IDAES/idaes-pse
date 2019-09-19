@@ -16,7 +16,7 @@
 import os
 import platform
 import subprocess
-
+import shutil
 
 def deletefile(*fname):
     "Deletes files"
@@ -44,10 +44,7 @@ def movefile(*fname):
 def copyfile(outf, inf):
     "Copies files"
     tos = platform.platform()
-    if 'Windows' in tos:
-        os.system("copy " + inf + ' ' + outf)
-    else:
-        os.system("cp " + inf + ' ' + outf)
+    shutil.copy(inf, outf)
 
 
 def catfile(outf, *fname):
