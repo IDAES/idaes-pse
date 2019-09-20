@@ -153,12 +153,12 @@ class TestBTX(object):
         assert hasattr(btx.fs.unit, "inlet")
         assert len(btx.fs.unit.inlet.vars) == 4
         assert hasattr(btx.fs.unit.inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet, "temperature")
         assert hasattr(btx.fs.unit.inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "flow_mol")
-        assert hasattr(btx.fs.unit, "mole_frac")
+        assert hasattr(btx.fs.unit, "mole_frac_comp")
         assert hasattr(btx.fs.unit, "temperature")
         assert hasattr(btx.fs.unit, "pressure")
 
@@ -170,8 +170,8 @@ class TestBTX(object):
         btx.fs.unit.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.temperature[0].fix(365)  # K
         btx.fs.unit.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.mole_frac_comp[0, "toluene"].fix(0.5)
 
         assert degrees_of_freedom(btx) == 0
 
@@ -214,10 +214,10 @@ class TestBTX(object):
         assert (pytest.approx(5, abs=1e-3) ==
                 value(btx.fs.unit.properties[0].flow_mol_phase["Liq"]))
         assert (pytest.approx(0.5, abs=1e-3) ==
-                value(btx.fs.unit.properties[0].mole_frac_phase["Liq",
+                value(btx.fs.unit.properties[0].mole_frac_phase_comp["Liq",
                                                                 "benzene"]))
         assert (pytest.approx(0.5, abs=1e-3) ==
-                value(btx.fs.unit.properties[0].mole_frac_phase["Liq",
+                value(btx.fs.unit.properties[0].mole_frac_phase_comp["Liq",
                                                                 "toluene"]))
 
     @pytest.mark.ui

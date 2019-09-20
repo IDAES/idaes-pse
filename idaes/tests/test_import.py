@@ -12,7 +12,14 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
-import pathlib, importlib, os, re, time
+# stdlib
+import importlib
+import pathlib
+import os
+import re
+import time
+
+# package
 import idaes
 from idaes.dmf.util import ColorTerm
 
@@ -40,8 +47,16 @@ def importr(root: pathlib.Path, max_sec=10):
         # - this is to skip directories like '.ipynb_checkpoints'
         bad = False
         for name in path.parts[:-1]:
-            if name != os.path.sep and not good_modname.match(name):
+            if name == os.path.sep:
+                continue
+            if (
+                name.startswith("Workshop")      # skip workshop tutorials
+                or name == "tests"                # skip all tests
+                or not good_modname.match(name)   # no _bla
+            ):
                 bad = True
+
+            if bad:
                 break
         # stop if bad directory component or Python filename is invalid
         bad = bad or not good_modname.match(path.parts[-1][:-3])

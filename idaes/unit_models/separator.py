@@ -764,8 +764,9 @@ linked the mixed state and all outlet states,
 
                 elif (l_name.startswith("mole_frac") or
                       l_name.startswith("mass_frac")):
+                    print(l_name)
                     # Mole and mass frac need special handling
-                    if l_name.endswith("_phase"):
+                    if "_phase" in l_name:
                         def e_rule(b, t, p, j):
                             if self.config.split_basis == \
                                         SplittingType.phaseFlow:
@@ -816,7 +817,8 @@ linked the mixed state and all outlet states,
 
                         else:
                             def e_rule(b, t, j):
-                                mfp = mb[t].component(l_name+"_phase")
+                                mfp = mb[t].component(
+                                        l_name.replace("_comp", "_phase_comp"))
 
                                 if mfp is None:
                                     raise AttributeError(
@@ -985,8 +987,8 @@ linked the mixed state and all outlet states,
                                         else:
                                             continue
                                 else:
-                                    ivar = mb[t].component(l_name +
-                                                           "_phase_comp")
+                                    ivar = mb[t].component(
+                                            l_name+"_phase_comp")
                                     if ivar is not None:
                                         for p in self.config \
                                                 .property_package.phase_list:
@@ -1005,8 +1007,8 @@ linked the mixed state and all outlet states,
                                     SplittingType.componentFlow:
                                 ivar = mb[t].component(l_name+"_comp")
                                 if ivar is not None:
-                                    for j in self.config \
-                                            .property_package.component_list:
+                                    for j in self.config.property_package \
+                                            .component_list:
                                         if split_map[j] == o:
                                             return ivar[j]
                                         else:
