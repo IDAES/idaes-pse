@@ -20,6 +20,7 @@ shared: &shared
     - run: ./scripts/remove-idaes-from-path.sh
     - run: pip install pip==18.0.0
     - run: pip install -r requirements.txt
+    - run: pylint -E --ignore-patterns="test_.*" idaes || true
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
