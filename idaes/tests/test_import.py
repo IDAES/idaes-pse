@@ -50,7 +50,8 @@ def importr(root: pathlib.Path, max_sec=10):
             if name == os.path.sep:
                 continue
             if (
-                name.startswith("Workshop")      # skip workshop tutorials
+                name.startswith("Workshop")       # skip workshop tutorials (1)
+                or name.startswith("Module_")     # skip workshop tutorials (2)
                 or name == "tests"                # skip all tests
                 or not good_modname.match(name)   # no _bla
             ):
