@@ -764,7 +764,6 @@ linked the mixed state and all outlet states,
 
                 elif (l_name.startswith("mole_frac") or
                       l_name.startswith("mass_frac")):
-                    print(l_name)
                     # Mole and mass frac need special handling
                     if "_phase" in l_name:
                         def e_rule(b, t, p, j):
