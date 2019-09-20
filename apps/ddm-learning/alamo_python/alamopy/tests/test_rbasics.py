@@ -38,8 +38,8 @@ def test_basic():
         almsim = wrapwriter(sim)
         # Call alamo through the alamopy wrapper
         res = alamo(x, z, almname='cam6',monomialpower=(1,2,3,4,5,6), multi2power=(1,2), simulator=almsim, expandoutput=True,maxiter=20)#,cvfun=True)
-        conf_inv = almconfidence(res)
+        #conf_inv = almconfidence(res)
 
-        print('Model: {}'.format(res['model']))
-        print('Confidence Intervals : {}'.format(conf_inv['conf_inv']))
+        #print('Model: {}'.format(res['model']))
+        #print('Confidence Intervals : {}'.format(conf_inv['conf_inv']))
         almplot(res, show=False)
