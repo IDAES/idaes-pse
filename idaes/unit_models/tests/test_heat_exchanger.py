@@ -124,28 +124,28 @@ class TestBTX_cocurrent(object):
         assert hasattr(btx.fs.unit, "inlet_1")
         assert len(btx.fs.unit.inlet_1.vars) == 4
         assert hasattr(btx.fs.unit.inlet_1, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet_1, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet_1, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet_1, "temperature")
         assert hasattr(btx.fs.unit.inlet_1, "pressure")
 
         assert hasattr(btx.fs.unit, "inlet_2")
         assert len(btx.fs.unit.inlet_2.vars) == 4
         assert hasattr(btx.fs.unit.inlet_2, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet_2, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet_2, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet_2, "temperature")
         assert hasattr(btx.fs.unit.inlet_2, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet_1")
         assert len(btx.fs.unit.outlet_1.vars) == 4
         assert hasattr(btx.fs.unit.outlet_1, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet_1, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet_1, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet_1, "temperature")
         assert hasattr(btx.fs.unit.outlet_1, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet_2")
         assert len(btx.fs.unit.outlet_2.vars) == 4
         assert hasattr(btx.fs.unit.outlet_2, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet_2, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet_2, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet_2, "temperature")
         assert hasattr(btx.fs.unit.outlet_2, "pressure")
 
@@ -167,14 +167,14 @@ class TestBTX_cocurrent(object):
         btx.fs.unit.inlet_1.flow_mol[0].fix(5)  # mol/s
         btx.fs.unit.inlet_1.temperature[0].fix(365)  # K
         btx.fs.unit.inlet_1.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.inlet_1.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet_1.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.inlet_1.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.inlet_1.mole_frac_comp[0, "toluene"].fix(0.5)
 
         btx.fs.unit.inlet_2.flow_mol[0].fix(1)  # mol/s
         btx.fs.unit.inlet_2.temperature[0].fix(300)  # K
         btx.fs.unit.inlet_2.pressure[0].fix(101325)  # Pa
-        btx.fs.unit.inlet_2.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet_2.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.inlet_2.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.inlet_2.mole_frac_comp[0, "toluene"].fix(0.5)
 
         btx.fs.unit.area.fix(1)
         btx.fs.unit.overall_heat_transfer_coefficient.fix(100)

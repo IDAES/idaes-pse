@@ -102,8 +102,8 @@ def test_setInputs_inlet_state_block():
     m.fs.state_block_Wilson_vl.flow_mol.fix(1)
     m.fs.state_block_Wilson_vl.temperature.fix(368)
     m.fs.state_block_Wilson_vl.pressure.fix(101325)
-    m.fs.state_block_Wilson_vl.mole_frac["benzene"].fix(0.5)
-    m.fs.state_block_Wilson_vl.mole_frac["toluene"].fix(0.5)
+    m.fs.state_block_Wilson_vl.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_Wilson_vl.mole_frac_comp["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_Wilson_vl) == 4
 
@@ -117,8 +117,8 @@ def test_setInputs_inlet_state_block():
     m.fs.state_block_Wilson_l.flow_mol.fix(1)
     m.fs.state_block_Wilson_l.temperature.fix(368)
     m.fs.state_block_Wilson_l.pressure.fix(101325)
-    m.fs.state_block_Wilson_l.mole_frac["benzene"].fix(0.5)
-    m.fs.state_block_Wilson_l.mole_frac["toluene"].fix(0.5)
+    m.fs.state_block_Wilson_l.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_Wilson_l.mole_frac_comp["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_Wilson_l) == 0
 
@@ -126,8 +126,8 @@ def test_setInputs_inlet_state_block():
     m.fs.state_block_Wilson_v.flow_mol.fix(1)
     m.fs.state_block_Wilson_v.temperature.fix(368)
     m.fs.state_block_Wilson_v.pressure.fix(101325)
-    m.fs.state_block_Wilson_v.mole_frac["benzene"].fix(0.5)
-    m.fs.state_block_Wilson_v.mole_frac["toluene"].fix(0.5)
+    m.fs.state_block_Wilson_v.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_Wilson_v.mole_frac_comp["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_Wilson_v) == 0
 
@@ -207,7 +207,7 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_Wilson_vl.flow_mol.fix(1)
     m.fs1.state_block_Wilson_vl.temperature.fix(368)
     m.fs1.state_block_Wilson_vl.pressure.fix(101325)
-    m.fs1.state_block_Wilson_vl.mole_frac["benzene"].fix(0.5)
+    m.fs1.state_block_Wilson_vl.mole_frac_comp["benzene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs1.state_block_Wilson_vl) == 4
 
@@ -215,7 +215,7 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_Wilson_l.flow_mol.fix(1)
     m.fs1.state_block_Wilson_l.temperature.fix(368)
     m.fs1.state_block_Wilson_l.pressure.fix(101325)
-    m.fs1.state_block_Wilson_l.mole_frac["benzene"].fix(0.5)
+    m.fs1.state_block_Wilson_l.mole_frac_comp["benzene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs1.state_block_Wilson_l) == 0
 
@@ -223,6 +223,6 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_Wilson_v.flow_mol.fix(1)
     m.fs1.state_block_Wilson_v.temperature.fix(368)
     m.fs1.state_block_Wilson_v.pressure.fix(101325)
-    m.fs1.state_block_Wilson_v.mole_frac["benzene"].fix(0.5)
+    m.fs1.state_block_Wilson_v.mole_frac_comp["benzene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs1.state_block_Wilson_v) == 0

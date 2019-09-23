@@ -111,8 +111,8 @@ def test_setInputs_inlet_state_block():
     m.fs.state_block_ideal_vl_FTPz.flow_mol.fix(1)
     m.fs.state_block_ideal_vl_FTPz.temperature.fix(368)
     m.fs.state_block_ideal_vl_FTPz.pressure.fix(101325)
-    m.fs.state_block_ideal_vl_FTPz.mole_frac["benzene"].fix(0.5)
-    m.fs.state_block_ideal_vl_FTPz.mole_frac["toluene"].fix(0.5)
+    m.fs.state_block_ideal_vl_FTPz.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_ideal_vl_FTPz.mole_frac_comp["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_ideal_vl_FTPz) == 0
 
@@ -120,8 +120,8 @@ def test_setInputs_inlet_state_block():
     m.fs.state_block_ideal_l.flow_mol.fix(1)
     m.fs.state_block_ideal_l.temperature.fix(368)
     m.fs.state_block_ideal_l.pressure.fix(101325)
-    m.fs.state_block_ideal_l.mole_frac["benzene"].fix(0.5)
-    m.fs.state_block_ideal_l.mole_frac["toluene"].fix(0.5)
+    m.fs.state_block_ideal_l.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_ideal_l.mole_frac_comp["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_ideal_l) == 0
 
@@ -129,8 +129,8 @@ def test_setInputs_inlet_state_block():
     m.fs.state_block_ideal_v.flow_mol.fix(1)
     m.fs.state_block_ideal_v.temperature.fix(368)
     m.fs.state_block_ideal_v.pressure.fix(101325)
-    m.fs.state_block_ideal_v.mole_frac["benzene"].fix(0.5)
-    m.fs.state_block_ideal_v.mole_frac["toluene"].fix(0.5)
+    m.fs.state_block_ideal_v.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.state_block_ideal_v.mole_frac_comp["toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.state_block_ideal_v) == 0
 
@@ -146,10 +146,10 @@ def test_solve():
     assert results.solver.status == SolverStatus.ok
 
     # Check for VLE results
-    assert value(m.fs.state_block_ideal_vl_FTPz.mole_frac_phase['Liq',
+    assert value(m.fs.state_block_ideal_vl_FTPz.mole_frac_phase_comp['Liq',
                                                                 'benzene']) == \
         pytest.approx(0.4121, abs=1e-3)
-    assert value(m.fs.state_block_ideal_vl_FTPz.mole_frac_phase['Vap',
+    assert value(m.fs.state_block_ideal_vl_FTPz.mole_frac_phase_comp['Vap',
                                                                 'benzene']) == \
         pytest.approx(0.6339, abs=1e-3)
 
@@ -162,10 +162,10 @@ def test_solve():
     assert results.solver.status == SolverStatus.ok
 
     # Check for results
-    assert value(m.fs.state_block_ideal_l.mole_frac_phase['Liq',
+    assert value(m.fs.state_block_ideal_l.mole_frac_phase_comp['Liq',
                                                           'benzene']) == \
         pytest.approx(0.5, abs=1e-3)
-    assert value(m.fs.state_block_ideal_l.mole_frac_phase['Liq',
+    assert value(m.fs.state_block_ideal_l.mole_frac_phase_comp['Liq',
                                                           'toluene']) == \
         pytest.approx(0.5, abs=1e-3)
 
@@ -178,10 +178,10 @@ def test_solve():
     assert results.solver.status == SolverStatus.ok
 
     # Check for results
-    assert value(m.fs.state_block_ideal_v.mole_frac_phase['Vap',
+    assert value(m.fs.state_block_ideal_v.mole_frac_phase_comp['Vap',
                                                           'benzene']) == \
         pytest.approx(0.5, abs=1e-3)
-    assert value(m.fs.state_block_ideal_v.mole_frac_phase['Vap',
+    assert value(m.fs.state_block_ideal_v.mole_frac_phase_comp['Vap',
                                                           'toluene']) == \
         pytest.approx(0.5, abs=1e-3)
 
@@ -261,7 +261,7 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_ideal_vl.flow_mol.fix(1)
     m.fs1.state_block_ideal_vl.temperature.fix(368)
     m.fs1.state_block_ideal_vl.pressure.fix(101325)
-    m.fs1.state_block_ideal_vl.mole_frac["benzene"].fix(0.5)
+    m.fs1.state_block_ideal_vl.mole_frac_comp["benzene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs1.state_block_ideal_vl) == 0
 
@@ -269,7 +269,7 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_ideal_l.flow_mol.fix(1)
     m.fs1.state_block_ideal_l.temperature.fix(368)
     m.fs1.state_block_ideal_l.pressure.fix(101325)
-    m.fs1.state_block_ideal_l.mole_frac["benzene"].fix(0.5)
+    m.fs1.state_block_ideal_l.mole_frac_comp["benzene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs1.state_block_ideal_l) == 0
 
@@ -277,6 +277,6 @@ def test_setInputs_outlet_state_block():
     m.fs1.state_block_ideal_v.flow_mol.fix(1)
     m.fs1.state_block_ideal_v.temperature.fix(368)
     m.fs1.state_block_ideal_v.pressure.fix(101325)
-    m.fs1.state_block_ideal_v.mole_frac["benzene"].fix(0.5)
+    m.fs1.state_block_ideal_v.mole_frac_comp["benzene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs1.state_block_ideal_v) == 0
