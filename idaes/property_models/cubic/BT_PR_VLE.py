@@ -82,7 +82,7 @@ class BTParameterData(CubicParameterData):
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        temperature_crit_data = {'benzene': 562.2,
+        temperature_crit_data = {'benzene': 562.2z,
                                  'toluene': 591.8}
 
         self.temperature_crit = Param(
