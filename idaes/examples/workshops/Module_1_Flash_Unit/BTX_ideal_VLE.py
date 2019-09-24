@@ -25,7 +25,7 @@ from pyomo.environ import Param, NonNegativeReals, Set
 from idaes.core import declare_process_block_class
 from idaes.core.util.misc import extract_data
 
-from .ideal_prop_pack_VLE import IdealParameterData
+from ideal_prop_pack_VLE import IdealParameterData
 
 # Some more inforation about this module
 __author__ = "Jaffer Ghouse"
