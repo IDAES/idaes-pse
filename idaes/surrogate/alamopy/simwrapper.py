@@ -1,6 +1,6 @@
 #!/usr/bin/python
 def main():
-    from idaes.surrogates import alamopy.examples
+    from idaes.surrogate.alamopy import examples
     infile = 'input.txt'
     outfile = 'output.txt'
     fin = open(infile, 'r')
@@ -15,7 +15,7 @@ def main():
         x = [0] * (ninputs + 1)
         for k in range(0, ninputs):
             x[k] = float(newlist[k])
-        x[ninputs] = alamopy.examples.sixcamel(*x[:-1])
+        x[ninputs] = examples.sixcamel(*x[:-1])
         for k in range(0, len(x)):
             fout.write(str(x[k]) + ' ')
         fout.write(' \n')

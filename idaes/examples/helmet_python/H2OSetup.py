@@ -1,32 +1,37 @@
 import os
-import helmet.Helmet as Helmet
+from idaes.surrogate.helmet import Helmet
 
-# Push information for the molecule
 
-num_terms = 14
+def main():
+    # Push information for the molecule
 
-Fluids = {'H2O': (647.096, 22.064, 17.8737279956, 18.015268, 273.16, 0.344 )}
+    num_terms = 14
 
-molecule = 'H2O'
-(critT, critP, critD, M, triple, acc) = Fluids[molecule]
-R = 8.314472; # J mol^-1 K^-1 
+    Fluids = {'H2O': (647.096, 22.064, 17.8737279956, 18.015268, 273.16, 0.344 )}
 
-# Constants for a molecule 
-Helmet.initialize(molecule=molecule, fluid_data = Fluids[molecule], filename = os.getcwd() + "/%s"%molecule, gamsname= os.getcwd() + "/%s"%molecule, props=['PVT','CV', 'CP','SND'], sample =3)
- 
-# Prepare Ancillary Equations of sat liq/vapor density and vapor pressure
-Helmet.prepareAncillaryEquations()  # plot=True
+    molecule = 'H2O'
+    (critT, critP, critD, M, triple, acc) = Fluids[molecule]
+    R = 8.314472; # J mol^-1 K^-1
 
-# View data used for regression
-Helmet.viewPropertyData()
+    # Constants for a molecule
+    Helmet.initialize(molecule=molecule, fluid_data = Fluids[molecule], filename = os.getcwd() + "/%s"%molecule, gamsname= os.getcwd() + "/%s"%molecule, props=['PVT','CV', 'CP','SND'], sample =3)
 
-# Write GAMS Gdx data file and regression file
-Helmet.setupRegression(numTerms = num_terms, gams=True)
+    # Prepare Ancillary Equations of sat liq/vapor density and vapor pressure
+    Helmet.prepareAncillaryEquations()  # plot=True
 
-# runs the GAMS gdx and regression file
-# Helmet.runRegression(gams=True)
-			 	
+    # View data used for regression
+    Helmet.viewPropertyData()
 
-# View Results by importing the data
-#Helmet.viewResults("H2Omain.lst", plot=True)
+    # Write GAMS Gdx data file and regression file
+    Helmet.setupRegression(numTerms = num_terms, gams=True)
 
+    # runs the GAMS gdx and regression file
+    # Helmet.runRegression(gams=True)
+
+
+    # View Results by importing the data
+    #Helmet.viewResults("H2Omain.lst", plot=True)
+
+
+if __name__ == "__main__":
+    main()

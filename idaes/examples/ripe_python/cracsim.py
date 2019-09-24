@@ -19,10 +19,13 @@ import pyomo.environ as pyo
 
 # define fractional variance of noise, SNR = 1 / noise
 noise = 0.05
+
 # Reference temperature defined
 Tr = 750.0
 # Kinetic parameters are hard coded in the form [[k1,k2...],[E1,E2,...]]
 kinetic_params = [[250,220,38,25],[115,131,55,75]]
+
+
 def sim(data):
     import numpy as np
     # Enable 1/2d calls

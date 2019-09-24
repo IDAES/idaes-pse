@@ -19,52 +19,64 @@
 # Error maximization sampling can be used to refine the model
 
 import pyomo.environ as pyo
-import ripe
+from idaes.surrogate import ripe
 import numpy as np
 import random
-import cracsim
+from . import cracsim
 
 np.random.seed(100)
 
-Tr = 750.0
-# Experimental variance is known in this problem, it can be estimated if not provided
-noise = 0.05
-# ndata = 10 in publication example
-ndata = 30
-ns = 9
-# Define temperature bounds
-Tlo = 500
-Tup = 1000
-# Define range of inlet concentrations
-lb = [0,0,0,0,0,1,0,0,1]
-ub = [3]*ns
 
-gc = .008314
+def main():
+    Tr = 750.0
+    # Experimental variance is known in this problem,
+    # it can be estimated if not provided
+    noise = 0.05
+    # ndata = 10 in publication example
+    ndata = 30
+    ns = 9
+    # Define temperature bounds
+    Tlo = 500
+    Tup = 1000
+    # Define range of inlet concentrations
+    lb = [0,0,0,0,0,1,0,0,1]
+    ub = [3]*ns
 
-Temp = np.linspace(Tlo,Tup,ndata)
-# Initialize concentration data
+    gc = .008314
 
-# Inlet concentrations are fixed in publication example
-#cdata0 = [[.5,0,0,0,0,4.5,0,0,4.5]]*ndata
-cdata0=np.zeros([ndata,ns])
-for i in range(ndata):
-    for j in range(ns):
-        cdata0[i,j] = random.uniform(lb[j],ub[j])
+    Temp = np.linspace(Tlo,Tup,ndata)
+    # Initialize concentration data
+
+    # Inlet concentrations are fixed in publication example
+    # cdata0 = [[.5,0,0,0,0,4.5,0,0,4.5]]*ndata
+    cdata0=np.zeros([ndata,ns])
+    for i in range(ndata):
+        for j in range(ns):
+            cdata0[i,j] = random.uniform(lb[j],ub[j])
 
 
-# Calculate steady-state concentration values from simulator cracsim.py
-cdata = cracsim.sim(np.hstack((cdata0,np.expand_dims(Temp, axis=1))))
+    # Calculate steady-state concentration values from simulator cracsim.py
+    cdata = cracsim.sim(np.hstack((cdata0,np.expand_dims(Temp, axis=1))))
 
-# In this example, we know the true stoichiometries. Lets define them first for clarity
-t_stoich = [[-1,1,0,0,0,0,1,0,0],[-1,0,1,1,0,0,0,0,0],[0,0,0,-1,2,0,-2,0,0],[0,0,0,0,-1,-2,4,1,0]] 
-# Additional considered stoichiometries are defined
-a_stoich = [[-1,0,0,0,0,-16,21,8,0],[-1,0,0,4,0,0,-3,0,0],[0,0,0,-1,0,-4,6,2,0],[-1,0,1,0,2,0,-2,0,0]]
-# Index 0-3 are the true reactions, 4-7 are considered reactions
-stoichs = t_stoich+a_stoich
+    # In this example, we know the true stoichiometries. Lets define them first for clarity
+    t_stoich = [[-1,1,0,0,0,0,1,0,0],[-1,0,1,1,0,0,0,0,0],[0,0,0,-1,2,0,-2,0,0],[0,0,0,0,-1,-2,4,1,0]]
+    # Additional considered stoichiometries are defined
+    a_stoich = [[-1,0,0,0,0,-16,21,8,0],[-1,0,0,4,0,0,-3,0,0],[0,0,0,-1,0,-4,6,2,0],[-1,0,1,0,2,0,-2,0,0]]
+    # Index 0-3 are the true reactions, 4-7 are considered reactions
+    stoichs = t_stoich+a_stoich
 
-# Define kinetic mechanisms, adsorption parameters must be known a-priori
-kco = 35
-kst = 1.5
+    # Define kinetic mechanisms, adsorption parameters must be known a-priori
+    kco = 35
+    kst = 1.5
+
+    # Mechanisms can be defined for each stoichiometry using a list-of-list
+    mechs = [[[0,1,3,4,7],eb_dep],[[0],[t_st_prod,cat_st_prod_t1]],[[0,1],cat_ben_prod_t2],[[2,3],meth_prod_t3],[[2,3],ch4_to_co_t4],[[2,3,4,5,6,7],[ma_g,ma_h]]]
+
+    # Experimental variance is known in this case
+    sigma = np.multiply(noise**2,cdata)
+
+    results = ripe.ripemodel(cdata,stoich = stoichs,mechanisms=mechs,x0=cdata0,temp=Temp,sigma=sigma,tref=Tr)
+
 
 def keq(*x):
     a,b,c,d,f,g,h,i,j,T = x
@@ -102,14 +114,6 @@ def ma_g(*x):
     a,b,c,d,f,g,h,i,j,Temp = x
     return g
 
-# Mechanisms can be defined for each stoichiometry using a list-of-list
-mechs = [[[0,1,3,4,7],eb_dep],[[0],[t_st_prod,cat_st_prod_t1]],[[0,1],cat_ben_prod_t2],[[2,3],meth_prod_t3],[[2,3],ch4_to_co_t4],[[2,3,4,5,6,7],[ma_g,ma_h]]]
-
-# Experimental variance is known in this case
-sigma = np.multiply(noise**2,cdata)
-
-results = ripe.ripemodel(cdata,stoich = stoichs,mechanisms=mechs,x0=cdata0,temp=Temp,sigma=sigma,tref=Tr)
-
 
 # The following section of code can be un-commented in order to continue sampling data until an accurate model is obtained
 # note that this is considerably more computationally expensive
@@ -142,3 +146,6 @@ while any(err >  [2*noise*s for s in new_res] ):
 #    print 'maximum allowable tolerances : ', [noise*s for s in new_res]
 '''
 
+
+if __name__ == "__main__":
+    main()

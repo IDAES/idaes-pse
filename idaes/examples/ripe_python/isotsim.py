@@ -13,6 +13,7 @@
 import numpy as np
 noise = 0.1
 
+
 def sim(data):
     x0 = data
     params = [1.5,2.1,0.9]

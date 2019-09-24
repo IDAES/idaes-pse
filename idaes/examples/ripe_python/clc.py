@@ -10,18 +10,24 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-import ripe
+from idaes.surrogate import ripe
 import numpy as np
 
-spec = ['X']
-# Import data from csv
-data = np.genfromtxt('clc.csv', delimiter=',')
-t = data[:,0]
-xdata = data[:,1]
-stoich = [1]
 
-# User pre-defined clc rate forms found in RIPE
-mechs = ripe.clcforms
+def main():
+    spec = ['X']
+    # Import data from csv
+    data = np.genfromtxt('clc.csv', delimiter=',')
+    t = data[:,0]
+    xdata = data[:,1]
+    stoich = [1]
 
-# Identify optimal kinetic mechanism
-results = ripe.ripemodel(xdata,stoichiometry=stoich,mechanisms=mechs,time=t)
+    # User pre-defined clc rate forms found in RIPE
+    mechs = ripe.clcforms
+
+    # Identify optimal kinetic mechanism
+    results = ripe.ripemodel(xdata,stoichiometry=stoich,mechanisms=mechs,time=t)
+
+
+if __name__ == "__main__":
+    main()
