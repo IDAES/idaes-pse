@@ -16,5 +16,5 @@ Smoke tests, to make sure things are working at all.
 
 
 def test_ripe_import():
-    from ripe import ripemodel
+    from idaes.surrogate.ripe import ripemodel
 

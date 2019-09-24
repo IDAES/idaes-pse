@@ -16,4 +16,4 @@ Smoke tests, to make sure things are working at all.
 
 
 def test_helmet_import():
-    import helmet
+    from idaes.surrogate import helmet

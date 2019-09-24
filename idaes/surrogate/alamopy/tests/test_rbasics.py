@@ -14,13 +14,14 @@
 Alamopy tests with sixhumpcamel examples
 """
 import pytest
-import alamopy
-from alamopy import alamo, almconfidence, almplot, wrapwriter
-from alamopy.multos import deletefile
+from idaes.surrogate import alamopy
+from idaes.surrogate.alamopy import alamo, almconfidence, almplot, wrapwriter
+from idaes.surrogate.alamopy.multos import deletefile
 import numpy as np
-import alamopy.examples as examples
+import idaes.examples.alamo_python as examples
 
 has_alamo_flag = alamopy.multos.has_alamo()
+
 
 @pytest.mark.skipif(not has_alamo_flag, reason="alamo executable not found")
 def test_basic():

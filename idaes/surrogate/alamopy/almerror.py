@@ -13,7 +13,7 @@
 """
 Errors
 """
-from alamopy import writethis
+from idaes.surrogate.alamopy import writethis
 
 
 def almerror(code):

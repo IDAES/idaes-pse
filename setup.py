@@ -33,30 +33,11 @@ def rglob(path, glob):
     return list(map(str, p.rglob(glob)))
 
 
-alamopy_dir = Path(".") / "apps" / "ddm-learning" / "alamo_python"
-ripe_dir = Path(".") / "apps" / "ddm-learning" / "ripe_python"
-helmet_dir = Path(".") / "apps" / "ddm-learning" / "helmet_python"
-
-
-def find_all_packages():
-    test_patterns = ["*.tests", "*.tests.*", "tests.*", "tests"]
-    result = []
-    for pkgdir in (".", alamopy_dir, ripe_dir, helmet_dir):
-        result.extend(find_packages(str(pkgdir)))
-    return result
-
-
 kwargs = dict(
     zip_safe=False,
     name=NAME,
     version=VERSION,
-    packages=find_all_packages(),
-    package_dir={
-        "idaes": "idaes",
-        "alamopy": str(alamopy_dir / "alamopy"),
-        "ripe": str(ripe_dir / "ripe"),
-        "helmet": str(helmet_dir / "helmet"),
-    },
+    packages=['idaes'],
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
     install_requires=[
@@ -87,7 +68,9 @@ kwargs = dict(
         "tinydb",
         "toml",
         # alamopy
+        # <nothing>
         # ripe
+        # <nothing>
         # helmet
         "rbfopt",
     ],
@@ -156,12 +139,5 @@ kwargs = dict(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
 )
-
-if len(sys.argv) > 1 and sys.argv[1] == "packages":
-    print(f"alamopy dir: {alamopy_dir}")
-    print(f"ripe dir: {ripe_dir}")
-    print(f"helmet dir: {helmet_dir}")
-    print("\n".join(find_all_packages()))
-    sys.exit(0)
 
 setup(**kwargs)

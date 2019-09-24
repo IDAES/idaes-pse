@@ -10,7 +10,7 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-import ripe
+from idaes.surrogate import ripe
 import numpy as np
 # import itertools as it
 import sys

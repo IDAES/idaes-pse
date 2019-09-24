@@ -11,10 +11,11 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 
+from .multos import deletefile, movefile, catfile
+
 
 def almwriter(data, debug, vargs, kwargs):
     # This function writes a .alm file for the given data
-    from alamopy.multos import deletefile, movefile, catfile
 
     xdata = vargs[0]
     zdata = vargs[1]

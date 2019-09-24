@@ -19,10 +19,10 @@ import numpy as np
 import os
 
 #
-import alamopy
-from alamopy import almerror
-from alamopy.writethis import writethis
-from alamopy.multos import deletefile
+from idaes.surrogate import alamopy
+from idaes.surrogate.alamopy import almerror
+from idaes.surrogate.alamopy.writethis import writethis
+from idaes.surrogate.alamopy.multos import deletefile
 
 
 def doalamo(xdata, zdata, **kwargs):
