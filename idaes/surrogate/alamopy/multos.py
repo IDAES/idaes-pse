@@ -68,14 +68,15 @@ def catfile(outf, *fname):
 
 
 def has_alamo():
-    "Checks for ALAMO"
+    """Checks for ALAMO
+    """
     try:
         s = subprocess.check_output(["alamo"])
         if b"Licensing error" in s: 
             _alamo_ok = False
         else:
             _alamo_ok = True
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, FileNotFoundError):
         _alamo_ok = False
 
     return _alamo_ok
