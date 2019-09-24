@@ -1,6 +1,6 @@
 #!/usr/bin/python
 def main():
-    import alamopy.examples
+    from idaes.surrogates import alamopy.examples
     infile = 'input.txt'
     outfile = 'output.txt'
     fin = open(infile, 'r')

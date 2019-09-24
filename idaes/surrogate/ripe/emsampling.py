@@ -13,7 +13,6 @@
 # This file contains two subroutines
 #  - construcutmodel(results, kwargs) : constructs a steady-state pyomo reactor model for use in error maximization sampling
 #  - ems(riperes,sim,lb,ub,nspec,kwargs) : perform error maximization sampling
-import ripe
 import numpy as np
 import rbfopt
 import os
@@ -21,7 +20,8 @@ import os
 # import random
 import datetime
 import time
-
+# pkg
+from idaes.surrogate import ripe
 
 def constructmodel(riperes, **kwargs):
     # Inputs:

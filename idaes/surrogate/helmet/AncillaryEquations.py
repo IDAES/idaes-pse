@@ -15,11 +15,11 @@ Modeling for saturated densities and vapor pressure
 """
 
 import sys
-import alamopy
+from idaes.surrogate import alamopy
 import importlib
 
-from helmet import DataImport
-from helmet import DataManipulation
+from . import DataImport
+from . import DataManipulation
 
 
 molecule = ""

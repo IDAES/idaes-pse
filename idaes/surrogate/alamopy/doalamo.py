@@ -974,7 +974,7 @@ def readTraceFile(vargs, data, debug):
     trace_str = trace_file  # currentDirectory + "/" + trace_file
     try:
         lf = open(trace_str).read()
-    except IOError as err:
+    except (IOError, FileNotFoundError) as err:
         if debug["mock"]:
             data["results"]["clrtime"] = "0"
             data["results"]["size"] = "6"

@@ -13,9 +13,10 @@
 """
 Parses and prints the solutions of the multiparameter equation of state solution
 """
-
+# stdlib
 import re
-from helmet import BasisFunctions
+# pkg
+from . import BasisFunctions
 
 indexes = []
 betas = []

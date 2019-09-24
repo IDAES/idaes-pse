@@ -14,12 +14,12 @@
 GAMS writer for the regression
 """
 import sys
-from helmet import (
+from . import (
     DataImport,
     BasisFunctions,
     GAMSDataWrite,
     DataManipulation,
-    SoaveDensity
+    #SoaveDensity
 )
 
 import numpy as np

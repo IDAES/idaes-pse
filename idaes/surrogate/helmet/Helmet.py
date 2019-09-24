@@ -24,38 +24,38 @@ import platform
 import subprocess
 
 
-import alamopy
-from helmet import AncillaryEquations  # , Certainty
-from helmet import Plotting, DataImport, DataManipulation
-from helmet import GAMSWrite, BasisFunctions
+from idaes.surrogate import alamopy
+from . import AncillaryEquations  # , Certainty
+from . import Plotting, DataImport, DataManipulation
+from . import GAMSWrite, BasisFunctions
 
 from matplotlib import cm
 
 
-global R
+# global R
 R = 8.314472  # kJ mol^-1 K^-1
 
-global molecule, filename, gamsname, data_name
+# global molecule, filename, gamsname, data_name
 molecule, filename, gamsname, data_name = None, None, None, None
 
-global sample, sample_ratio
+# global sample, sample_ratio
 sample = False
 sample_ratio = 5
 
-global critT, critP, critD, M, triple, acc
+# global critT, critP, critD, M, triple, acc
 critT, critP, critD, M, triple, acc = 0, 0, 0, 0, 0, 0
 
-global max_time, num_terms
+# global max_time, num_terms
 max_time = 500
 num_terms = 12
 
-global props
+# global props
 props = []
 
-global has_alamo
+# global has_alamo
 has_alamo = None
 
-global flag_dirty
+# global flag_dirty
 flag_dirty = False
 
 

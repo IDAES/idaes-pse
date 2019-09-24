@@ -11,9 +11,8 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 import numpy as np
-import ripe
-# import sys
-from ripe.shared import sharedata as sd
+from . import mechs
+from .shared import sharedata as sd
 # from ripe.shared import debug as debug
 
 consivars = sd["ivars"]
@@ -60,7 +59,7 @@ def makeaterm(data, stoich, mechs, kwargs, ncons, mechlist, fixarray, sharedata)
                     for h_ind in list(mechline[0]):
                         # final index over stoichiometries
                         if mspec == "massact" or mechline[2]:
-                            s_mech = ripe.mechs.mechperstoich(mspec, stoich[h_ind])
+                            s_mech = mechs.mechperstoich(mspec, stoich[h_ind])
                         else:
                             s_mech = mspec
                         if "T" in kwargs.keys():

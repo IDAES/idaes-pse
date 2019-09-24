@@ -25,9 +25,10 @@ def test_hasalamo():
     has_alamo_flag = alamopy.multos.has_alamo()
     if has_alamo_flag:
         alamopy.debug['has_alamo'] = True
+        version = alamopy.get_alamo_version()
     else:
         alamopy.debug['has_alamo'] = False
+        version = "n/a"  # cannot get version w/o alamo present
 
-    version = alamopy.get_alamo_version()
     print("ALAMO Version: %s"% version)
 

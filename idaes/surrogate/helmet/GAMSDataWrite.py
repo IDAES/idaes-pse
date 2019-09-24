@@ -16,7 +16,7 @@ Writer of the data into the GAMS file
 
 import numpy as np
 import matplotlib.pyplot as plt
-from helmet import BasisFunctions, DataImport
+from . import BasisFunctions, DataImport
 
 Combination = False
 R = 8.314472

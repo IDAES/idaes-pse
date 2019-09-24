@@ -34,7 +34,7 @@ import pendulum
 
 import itertools
 import visPlot
-import alamopy
+from idaes.surrogates import alamopy
 
 # Third-party imports
 try:

@@ -57,7 +57,7 @@ def postpickle(data):
 
 def almunpickle(fname):
     # unpickle and relambdify
-    import alamopy
+    from idaes.surrogates import alamopy
     # from alamopy import postpickle
     import pickle
 

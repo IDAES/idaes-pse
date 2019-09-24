@@ -12,15 +12,13 @@
 ##############################################################################
 
 import numpy as np
-import ripe
 
-_all__ = ["lin", "linjac", "arr", "arrjac", "refarr", "refarrjac"]
+# _all__ = ["lin", "linjac", "arr", "arrjac", "refarr", "refarrjac"]
 # This subroutine contains definitions for the arrhenious form accepted by RIPE
 # Currently, the forms cannot be defined by the user
 # The lin,arr, and refarra subroutines return squared residuals
-# the linjac, arrjac, and refarrjac subroutiens return the jocbian of the esitmated parameter
-
-sharedata = ripe.sharedata
+# the linjac, arrjac, and refarrjac subroutiens return the jocbian of the
+# esitmated parameter
 
 
 def lin(y, x, a):
