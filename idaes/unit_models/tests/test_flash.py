@@ -88,21 +88,21 @@ class TestBTXIdeal(object):
     @pytest.mark.build
     def test_build(self, btx):
         assert hasattr(btx.fs.unit.inlet, "flow_mol")
-        assert hasattr(btx.fs.unit.inlet, "mole_frac")
+        assert hasattr(btx.fs.unit.inlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.inlet, "temperature")
         assert hasattr(btx.fs.unit.inlet, "pressure")
 
         assert hasattr(btx.fs.unit, "vap_outlet")
         assert len(btx.fs.unit.vap_outlet.vars) == 4
         assert hasattr(btx.fs.unit.vap_outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.vap_outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.vap_outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.vap_outlet, "temperature")
         assert hasattr(btx.fs.unit.vap_outlet, "pressure")
 
         assert hasattr(btx.fs.unit, "liq_outlet")
         assert len(btx.fs.unit.liq_outlet.vars) == 4
         assert hasattr(btx.fs.unit.liq_outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.liq_outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.liq_outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.liq_outlet, "temperature")
         assert hasattr(btx.fs.unit.liq_outlet, "pressure")
 
@@ -118,8 +118,8 @@ class TestBTXIdeal(object):
         btx.fs.unit.inlet.flow_mol.fix(1)
         btx.fs.unit.inlet.temperature.fix(368)
         btx.fs.unit.inlet.pressure.fix(101325)
-        btx.fs.unit.inlet.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.inlet.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
         btx.fs.unit.heat_duty.fix(0)
         btx.fs.unit.deltaP.fix(0)
@@ -172,13 +172,13 @@ class TestBTXIdeal(object):
                 value(btx.fs.unit.liq_outlet.pressure[0]))
 
         assert (pytest.approx(0.412, abs=1e-3) ==
-                value(btx.fs.unit.liq_outlet.mole_frac[0, "benzene"]))
+                value(btx.fs.unit.liq_outlet.mole_frac_comp[0, "benzene"]))
         assert (pytest.approx(0.588, abs=1e-3) ==
-                value(btx.fs.unit.liq_outlet.mole_frac[0, "toluene"]))
+                value(btx.fs.unit.liq_outlet.mole_frac_comp[0, "toluene"]))
         assert (pytest.approx(0.634, abs=1e-3) ==
-                value(btx.fs.unit.vap_outlet.mole_frac[0, "benzene"]))
+                value(btx.fs.unit.vap_outlet.mole_frac_comp[0, "benzene"]))
         assert (pytest.approx(0.366, abs=1e-3) ==
-                value(btx.fs.unit.vap_outlet.mole_frac[0, "toluene"]))
+                value(btx.fs.unit.vap_outlet.mole_frac_comp[0, "toluene"]))
 
     @pytest.mark.initialize
     @pytest.mark.solver
