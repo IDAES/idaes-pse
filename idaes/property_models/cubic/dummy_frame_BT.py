@@ -25,13 +25,13 @@ def main():
 
     F = 100
     x_benzene = 0.5
-    T = 450
-    P = 2e5
+    T = 350
+    P = 1e5
 
     # -----------------------------------------------------------------------------
     m.fs.state.flow_mol.fix(F)
-    m.fs.state.mole_frac["benzene"].fix(x_benzene)
-    m.fs.state.mole_frac["toluene"].fix(1-x_benzene)
+    m.fs.state.mole_frac_comp["benzene"].fix(x_benzene)
+    m.fs.state.mole_frac_comp["toluene"].fix(1-x_benzene)
     m.fs.state.temperature.fix(T)
     m.fs.state.pressure.fix(P)
 
@@ -57,12 +57,12 @@ def main():
 #    m.fs.state.dens_mol_phase.display()
 #    m.fs.state.dens_mass_phase.display()
 
-    m.fs.state.compress_fact.display()
+    m.fs.state.compress_fact_phase.display()
     m.fs.state.enth_mol_phase.display()
     m.fs.state.entr_mol_phase.display()
-    m.fs.state.mole_frac_phase.display()
-    m.fs.state.fug_phase.display()
-    m.fs.state.fug_coeff_phase.display()
+    m.fs.state.mole_frac_phase_comp.display()
+    m.fs.state.fug_phase_comp.display()
+    m.fs.state.fug_coeff_phase_comp.display()
     print("Vapor Fraction:", value(m.fs.state.flow_mol_phase["Vap"]/m.fs.state.flow_mol))
     print()
 #    m.fs.state.delta.display()
@@ -72,7 +72,7 @@ def main():
 #    m.fs.state.bm.display()
 #    m.fs.state.A.display()
 #    m.fs.state.B.display()
-#    m.fs.state.compress_fact.display()
+#    m.fs.state.compress_fact_phase.display()
 
 
 if __name__ == "__main__":

@@ -10,14 +10,16 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+import pytest
 
 from idaes.core import FlowsheetBlock
-from idaes.property_models.cubic import BT_PR_VLE
+from idaes.property_models.cubic import BT_PR
 
 from pyomo.environ import (ConcreteModel,
                            Objective,
                            SolverFactory,
-                           TerminationCondition)
+                           TerminationCondition,
+                           value)
 
 
 def test_T_sweep():
@@ -25,7 +27,7 @@ def test_T_sweep():
 
     m.fs = FlowsheetBlock(default={'dynamic': False})
 
-    m.fs.props = BT_PR_VLE.BTParameterBlock(
+    m.fs.props = BT_PR.BTParameterBlock(
             default={'valid_phase': ('Vap', 'Liq')})
 
     m.fs.state = m.fs.props.state_block_class(
@@ -61,7 +63,7 @@ def test_P_sweep():
 
     m.fs = FlowsheetBlock(default={'dynamic': False})
 
-    m.fs.props = BT_PR_VLE.BTParameterBlock(
+    m.fs.props = BT_PR.BTParameterBlock(
             default={'valid_phase': ('Vap', 'Liq')})
 
     m.fs.state = m.fs.props.state_block_class(
@@ -90,3 +92,32 @@ def test_P_sweep():
             assert results.solver.termination_condition == \
                 TerminationCondition.optimal
             print(T, m.fs.state.pressure.value)
+
+
+def test_T350_P1_x5():
+    m = ConcreteModel()
+
+    m.fs = FlowsheetBlock(default={'dynamic': False})
+
+    m.fs.props = BT_PR.BTParameterBlock(
+            default={'valid_phase': ('Vap', 'Liq')})
+
+    m.fs.state = m.fs.props.state_block_class(
+            default={'parameters': m.fs.props,
+                     'defined_state': True})
+
+    m.fs.state.flow_mol.fix(100)
+    m.fs.state.mole_frac["benzene"].fix(0.5)
+    m.fs.state.mole_frac["toluene"].fix(0.5)
+    m.fs.state.temperature.fix(350)
+    m.fs.state.pressure.fix(1e5)
+
+    m.fs.state.initialize(outlvl=0)
+
+    solver = SolverFactory('ipopt')
+    solver.solve(m)
+
+    assert pytest.approx(value(m.fs.state._teq), abs=1e-1) == 365
+    assert pytest.approx(value(m.fs.state.compress_fact["Liq"]), 1e-5) == 0.0035346
+    assert pytest.approx(value(m.fs.state.compress_fact["Vap"]), 1e-5) == 0.966749
+    assert pytest.approx(value(m.fs.state.fug_coeff_phase["Liq"]), 1e-5) == 0.0035346
