@@ -17,7 +17,9 @@ The code and examples have been tested with the following operating systems:
 |----------------|--------------------|
 | Linux          | Any modern Linux   |
 | Windows        | Windows 10         |
-| Mac OSX        | Not supported      |
+| Mac OSX        | Not supported*     |
+
+*For advanced users, Mac OSX installation may be performed with some small changes to the Linux installation instructions.
 
 Most of the functionality is implemented in Python. In accordance with
 the end-of-life for many Python 2 libraries, the IDAES Toolkit is written
