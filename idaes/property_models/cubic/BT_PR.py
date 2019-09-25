@@ -11,7 +11,12 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Example Peng-Robinson parameter block for the VLE calucations for H2O.
+Example Peng-Robinson parameter block for the VLE calucations for a
+benzene-toluene system.
+
+Unless otherwise noted, parameters are from:
+"The Properties of Gases and Liquids, 4th Edition", Reid, Prausnitz and Poling,
+McGraw-Hill, 1987
 """
 
 # Chages the divide behavior to not do integer division
@@ -35,34 +40,29 @@ from idaes.property_models.cubic.cubic_prop_pack_VLE import (
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("H2OParameterBlock")
-class H2OParameterData(CubicParameterData):
+@declare_process_block_class("BTParameterBlock")
+class BTParameterData(CubicParameterData):
 
     def build(self):
         '''
         Callable method for Block construction.
         '''
-        super(H2OParameterData, self).build()
+        super(BTParameterData, self).build()
 
         self.cubic_type = CubicEoS.PR
 
-        self.component_list = Set(initialize=['H2O'])
+        self.component_list = Set(initialize=['benzene', 'toluene'])
 
         # List of components in each phase (optional)
         self.phase_comp = {"Liq": self.component_list,
                            "Vap": self.component_list}
 
         # List of phase equilibrium index
-        self.phase_equilibrium_idx = Set(initialize=[1])
+        self.phase_equilibrium_idx = Set(initialize=[1, 2])
 
         self.phase_equilibrium_list = \
-            {1: ["H2O", ("Vap", "Liq")]}
-
-        # List of all chemical elements that constitute the chemical species
-        self.elem = ['H', 'O']
-
-        # Elemental composition of all species
-        self.elem_comp = {'H2O': {'H': 2, 'O': 1}}
+            {1: ["benzene", ("Vap", "Liq")],
+             2: ["toluene", ("Vap", "Liq")]}
 
         # Thermodynamic reference state
         self.pressure_ref = Param(mutable=True,
@@ -72,7 +72,16 @@ class H2OParameterData(CubicParameterData):
                                      default=298.15,
                                      doc='Reference temperature [K]')
 
-        pressure_crit_data = {'H2O': 22120000}
+
+        # Gas Constant
+        self.gas_const = Param(within=NonNegativeReals,
+                               mutable=False,
+                               default=8.314462618,
+                               doc='Gas Constant [J/mol.K]')
+
+        # Critical Properties
+        pressure_crit_data = {'benzene': 48.9e5,
+                              'toluene': 41.0e5}
 
         self.pressure_crit = Param(
             self.component_list,
@@ -81,7 +90,8 @@ class H2OParameterData(CubicParameterData):
             initialize=extract_data(pressure_crit_data),
             doc='Critical pressure [Pa]')
 
-        temperature_crit_data = {'H2O': 647.3}
+        temperature_crit_data = {'benzene': 562.2,
+                                 'toluene': 591.8}
 
         self.temperature_crit = Param(
             self.component_list,
@@ -90,8 +100,9 @@ class H2OParameterData(CubicParameterData):
             initialize=extract_data(temperature_crit_data),
             doc='Critical temperature [K]')
 
-        # Pitzer acentricity factor (from Prop. Gases & Liquids)
-        omega_data = {'H2O': 0.344}
+        # Pitzer acentricity factor
+        omega_data = {'benzene': 0.212,
+                      'toluene': 0.263}
 
         self.omega = Param(
             self.component_list,
@@ -102,7 +113,8 @@ class H2OParameterData(CubicParameterData):
 
         # Peng-Robinson binary interaction parameters
         kappa_data = {
-            ('H2O', 'H2O'): 0.0000}
+            ('benzene', 'benzene'): 0.0000, ('benzene', 'toluene'): 0.0000,
+            ('toluene', 'benzene'): 0.0000, ('toluene', 'toluene'): 0.0000}
 
         self.kappa = Param(
             self.component_list,
@@ -112,39 +124,61 @@ class H2OParameterData(CubicParameterData):
             initialize=extract_data(kappa_data),
             doc='Peng-Robinson binary interaction parameters')
 
-        # Gas Constant
-        self.gas_const = Param(within=NonNegativeReals,
-                               mutable=False,
-                               default=8.314,
-                               doc='Gas Constant [J/mol.K]')
-
-        # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition, Chemical Engineering Series - Robert C. Reid
-        mw_comp_data = {'H2O': 0.018015}
+        # Molecular Weights
+        mw_comp_data = {'benzene': 78.1136E-3,
+                        'toluene': 92.1405E-3}
 
         self.mw_comp = Param(self.component_list,
                              mutable=False,
                              initialize=extract_data(mw_comp_data),
                              doc="molecular weight Kg/mol")
 
-        # Constants for specific heat capacity, enthalpy
-        cp_ig_data = {('H2O', '1'): 32.24,
-                      ('H2O', '2'): 1.924e-3,
-                      ('H2O', '3'): 1.055e-5,
-                      ('H2O', '4'): -3.596e-9,
-                      ('H2O', '5'): 0}
+        # Constants for specific heat capacity, enthalpy and entropy
+        cp_ig_data = {('benzene', '1'): -3.392E1,
+                      ('benzene', '2'): 4.739E-1,
+                      ('benzene', '3'): -3.017E-4,
+                      ('benzene', '4'): 7.130E-8,
+                      ('toluene', '1'): -2.435E1,
+                      ('toluene', '2'): 5.125E-1,
+                      ('toluene', '3'): -2.765E-4,
+                      ('toluene', '4'): 4.911E-8}
 
         self.cp_ig = Param(self.component_list,
-                           ['1', '2', '3', '4', '5'],
+                           ['1', '2', '3', '4'],
                            mutable=False,
                            initialize=extract_data(cp_ig_data),
                            doc="Parameters to compute cp_comp")
 
+        # Standard heats of formation
+        # Source: NIST Webbook, https://webbook.nist.gov
+        # Retrieved 25th September 2019
+        dh_form_data = {'benzene': 82.9e3,
+                        'toluene': 50.1e3}
+
+        self.enth_mol_form_ref = Param(self.component_list,
+                                       mutable=False,
+                                       initialize=extract_data(dh_form_data),
+                                       doc="Standard heats of formation")
+
+        # Standard entropy of formation
+        # Source: Engineering Toolbox, https://www.engineeringtoolbox.com
+        # Retrieved 25th September, 2019
+        ds_form_data = {'benzene': -269,
+                        'toluene': -321}
+
+        self.entr_mol_form_ref = Param(self.component_list,
+                                       mutable=False,
+                                       initialize=extract_data(ds_form_data),
+                                       doc="Standard entropy of formation")
+
         # Antoine coefficients for ideal vapour (units: bar, K)
         # This is needed for initial guesses of bubble and dew points
-        antoine_data = {('H2O', '1'): 3.55959,
-                        ('H2O', '2'): 643.748,
-                        ('H2O', '3'): -198.043}
+        antoine_data = {('benzene', '1'): 4.202,
+                        ('benzene', '2'): 1322,
+                        ('benzene', '3'): -38.56,
+                        ('toluene', '1'): 4.216,
+                        ('toluene', '2'): 1435,
+                        ('toluene', '3'): -43.33}
 
         self.antoine = Param(self.component_list,
                              ['1', '2', '3'],

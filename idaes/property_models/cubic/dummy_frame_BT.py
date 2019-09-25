@@ -7,7 +7,7 @@ Created on Tue Jul 23 14:36:11 2019
 """
 
 from idaes.core import FlowsheetBlock
-from idaes.property_models.cubic import BT_PR_VLE_A, cubic_prop_pack_VLE
+from idaes.property_models.cubic import BT_PR
 
 from pyomo.environ import ConcreteModel, SolverFactory, value
 
@@ -17,7 +17,7 @@ def main():
 
     m.fs = FlowsheetBlock(default={'dynamic': False})
 
-    m.fs.props = BT_PR_VLE_A.BTParameterBlock(
+    m.fs.props = BT_PR.BTParameterBlock(
             default={'valid_phase': ('Vap', 'Liq')})
 
     m.fs.state = m.fs.props.state_block_class(default={'parameters': m.fs.props,
@@ -25,8 +25,8 @@ def main():
 
     F = 100
     x_benzene = 0.5
-    T = 400
-    P = 1e5
+    T = 450
+    P = 2e5
 
     # -----------------------------------------------------------------------------
     m.fs.state.flow_mol.fix(F)
@@ -51,8 +51,8 @@ def main():
 
     print()
     print("Cubic")
-#    m.fs.state.temperature_dew.display()
-#    m.fs.state.temperature_bubble.display()
+    m.fs.state.temperature_dew.display()
+    m.fs.state.temperature_bubble.display()
     m.fs.state._teq.display()
 #    m.fs.state.dens_mol_phase.display()
 #    m.fs.state.dens_mass_phase.display()
@@ -62,13 +62,17 @@ def main():
     m.fs.state.entr_mol_phase.display()
     m.fs.state.mole_frac_phase.display()
     m.fs.state.fug_phase.display()
+    m.fs.state.fug_coeff_phase.display()
     print("Vapor Fraction:", value(m.fs.state.flow_mol_phase["Vap"]/m.fs.state.flow_mol))
-
     print()
-    print(value(cubic_prop_pack_VLE.CubicStateBlockData._enth_mol_comp_ig(m.fs.state, 'benzene')),
-          value(cubic_prop_pack_VLE.CubicStateBlockData._enth_mol_comp_ig(m.fs.state, 'toluene')))
-    m.fs.state.dadT.display()
-    print(value(cubic_prop_pack_VLE.CubicStateBlockData._enth_mol_cubic(m.fs.state, 'Vap')))
+#    m.fs.state.delta.display()
+#    m.fs.state.a.display()
+#    m.fs.state.am.display()
+#    m.fs.state.b.display()
+#    m.fs.state.bm.display()
+#    m.fs.state.A.display()
+#    m.fs.state.B.display()
+#    m.fs.state.compress_fact.display()
 
 
 if __name__ == "__main__":

@@ -12,9 +12,24 @@
 ##############################################################################
 """
 General Cubic Equation of State property package with VLE calucations.
-Correlations to compute Cp_comp, h_comp and vapor pressure are obtained from
-"The properties of gases and liquids by Robert C. Reid" and "Perry's Chemical
-Engineers Handbook by Robert H. Perry". SI units.
+Cubic formulation and pure component property correlations from:
+"The Properties of Gases and Liquids, 4th Edition", Reid, Prausnitz and Poling,
+McGraw-Hill, 1987
+
+Smooth Vapor-Liquid Equilibrium formulation from:
+"A Smooth, Square Flash Formulation for Equation-Oriented Flowsheet
+Optimization", Burgard et al., Proceedings of the 13 the International
+Symposium on Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego
+
+All calcuations have been cross referenced against Aspen Plus.
+Compressability factors show god agreement (~0.1% error)
+Fugacity and phase equilibrium calcuations show a notable difference, however
+this is believed to be due to some undocumented correction Aspen Plus is
+applying. Checking of equations andcomparison to other implementations show
+that the values calculated by this method are correct.
+enthalpy and entropy calculations are correct, with any differences being due
+differences in reference states (Aspen Plus heats and entropies of formation
+vary from those documented elsewhere).
 """
 
 # Chages the divide behavior to not do integer division
@@ -698,7 +713,10 @@ class CubicStateBlockData(StateBlockData):
                            for i in self._params.component_list))
 
     def _make_flash_eq(self):
-
+        """
+        Implementation of smooth VLE formulation.
+        See module header for reference.
+        """
         def rule_total_mass_balance(b):
             return b.flow_mol_phase['Liq'] + \
                 b.flow_mol_phase['Vap'] == b.flow_mol
@@ -795,22 +813,6 @@ class CubicStateBlockData(StateBlockData):
         self.eq_dens_mass_phase = Constraint(self._params.phase_list,
                                              rule=rule_dens_mass_phase)
 
-#    def _enth_mol_phase_comp(self):
-#        self.enth_mol_phase_comp = Var(self._params.phase_list,
-#                                       self._params.component_list,
-#                                       doc="Phase-component molar specific "
-#                                           "enthalpies [J/mol]")
-#
-#        def rule_enth_mol_phase_comp(b, p, j):
-#            if p == 'Vap':
-#                return b._enth_mol_comp_vap(j)
-#            else:
-#                return b._enth_mol_comp_liq(j)
-#        self.eq_enth_mol_phase_comp = Constraint(
-#            self._params.phase_list,
-#            self._params.component_list,
-#            rule=rule_enth_mol_phase_comp)
-#
     def _enth_mol_phase(self):
         self.enth_mol_phase = Var(
             self._params.phase_list,
@@ -824,22 +826,6 @@ class CubicStateBlockData(StateBlockData):
         self.eq_enth_mol_phase = Constraint(self._params.phase_list,
                                             rule=rule_enth_mol_phase)
 
-#    def _entr_mol_phase_comp(self):
-#        self.entr_mol_phase_comp = Var(
-#            self._params.phase_list,
-#            self._params.component_list,
-#            doc='Phase-component molar specific entropies [J/mol.K]')
-#
-#        def rule_entr_mol_phase_comp(b, p, j):
-#            if p == 'Vap':
-#                return b._entr_mol_comp_vap(j)
-#            else:
-#                return b._entr_mol_comp_liq(j)
-#        self.eq_entr_mol_phase_comp = Constraint(
-#            self._params.phase_list,
-#            self._params.component_list,
-#            rule=rule_entr_mol_phase_comp)
-#
     def _enth_mol(self):
         self.enth_mol = Var(
             doc='Mixture molar specific enthalpies [J/mol]')
@@ -1073,34 +1059,6 @@ class CubicStateBlockData(StateBlockData):
     def _enth_mol_liq_ig(b):
         return b._enth_mol_ig("Liq")
 
-#    def _enth_mol_comp_liq(b, j):
-#        return b.enth_mol_phase_comp["Liq", j] == b.dh_liq[j] + \
-#            ((b._params.cp_ig["Liq", j, '5'] / 5) *
-#             (b.temperature**5 - b._params.temperature_ref**5)
-#             + (b._params.cp_ig["Liq", j, '4'] / 4) *
-#               (b.temperature**4 - b._params.temperature_ref**4)
-#             + (b._params.cp_ig["Liq", j, '3'] / 3) *
-#               (b.temperature**3 - b._params.temperature_ref**3)
-#             + (b._params.cp_ig["Liq", j, '2'] / 2) *
-#               (b.temperature**2 - b._params.temperature_ref**2)
-#             + b._params.cp_ig["Liq", j, '1'] *
-#               (b.temperature - b._params.temperature_ref))
-#
-#    def _entr_mol_comp_liq(b, j):
-#        return b.entr_mol_phase_comp["Liq", j] == (
-#            b.ds_liq[j] + ((b._params.cp_ig["Liq", j, '5'] / 4) *
-#                           (b.temperature**4 - b._params.temperature_ref**4)
-#                           + (b._params.cp_ig["Liq", j, '4'] / 3) *
-#                           (b.temperature**3 - b._params.temperature_ref**3)
-#                           + (b._params.cp_ig["Liq", j, '3'] / 2) *
-#                           (b.temperature**2 - b._params.temperature_ref**2)
-#                           + b._params.cp_ig["Liq", j, '2'] *
-#                           (b.temperature - b._params.temperature_ref)
-#                           + b._params.cp_ig["Liq", j, '1'] *
-#                           log(b.temperature / b._params.temperature_ref)) -
-#            b._params.gas_const * log(b.mole_frac_phase["Liq", j] * b.pressure /
-#                                      b._params.pressure_ref))
-
     def _entr_mol_liq(b):
         return b._entr_mol_cubic("Liq")
 
@@ -1233,34 +1191,6 @@ class CubicStateBlockData(StateBlockData):
     def _enth_mol_vap_ig(b):
         return b._enth_mol_ig("Vap")
 
-#    def _enth_mol_comp_vap(b, j):
-#        return b.enth_mol_phase_comp['Vap', j] == b.dh_vap[j] + \
-#            ((b._params.cp_ig['Vap', j, '5'] / 5) *
-#             (b.temperature**5 - b._params.temperature_ref**5)
-#             + (b._params.cp_ig['Vap', j, '4'] / 4) *
-#               (b.temperature**4 - b._params.temperature_ref**4)
-#             + (b._params.cp_ig['Vap', j, '3'] / 3) *
-#               (b.temperature**3 - b._params.temperature_ref**3)
-#             + (b._params.cp_ig['Vap', j, '2'] / 2) *
-#               (b.temperature**2 - b._params.temperature_ref**2)
-#             + b._params.cp_ig['Vap', j, '1'] *
-#               (b.temperature - b._params.temperature_ref))
-#
-#    def _entr_mol_comp_vap(b, j):
-#        return b.entr_mol_phase_comp['Vap', j] == (
-#            b.ds_vap[j] + ((b._params.cp_ig['Vap', j, '5'] / 4) *
-#                           (b.temperature**4 - b._params.temperature_ref**4)
-#                           + (b._params.cp_ig['Vap', j, '4'] / 3) *
-#                           (b.temperature**3 - b._params.temperature_ref**3)
-#                           + (b._params.cp_ig['Vap', j, '3'] / 2) *
-#                           (b.temperature**2 - b._params.temperature_ref**2)
-#                           + b._params.cp_ig['Vap', j, '2'] *
-#                           (b.temperature - b._params.temperature_ref)
-#                           + b._params.cp_ig['Vap', j, '1'] *
-#                           log(b.temperature / b._params.temperature_ref)) -
-#            b._params.gas_const * log(b.mole_frac_phase['Vap', j] * b.pressure /
-#                                      b._params.pressure_ref))
-
     def _entr_mol_vap(b):
         return b._entr_mol_cubic("Vap")
 
@@ -1372,6 +1302,8 @@ class CubicStateBlockData(StateBlockData):
 
 # -----------------------------------------------------------------------------
 # Common Cubic Functions
+# All of these equations drawn from Properties of Gases and Liquids
+# Quantities appended with _eq represent calcuations at equilibrium temperature
     def common_cubic(blk):
         if hasattr(blk, "omegaA"):
             return
@@ -1478,6 +1410,7 @@ class CubicStateBlockData(StateBlockData):
                                             function="ceos_z_vap_extend")
 
         def rule_delta(b, p, i):
+            # See pg. 145 in Properties of Gases and Liquids
             return (2*sqrt(blk.a[i])/b.am[p] *
                     sum(b.mole_frac_phase[p, j]*sqrt(blk.a[j]) *
                         (1-b._params.kappa[i, j])
@@ -1487,6 +1420,7 @@ class CubicStateBlockData(StateBlockData):
                                rule=rule_delta)
 
         def rule_delta_eq(b, p, i):
+            # See pg. 145 in Properties of Gases and Liquids
             return (2*sqrt(blk._a_eq[i])/b._am_eq[p] *
                     sum(b.mole_frac_phase[p, j]*sqrt(blk._a_eq[j]) *
                         (1-b._params.kappa[i, j])
@@ -1496,6 +1430,7 @@ class CubicStateBlockData(StateBlockData):
                                    rule=rule_delta_eq)
 
         def rule_dadT(b, p):
+            # See pg. 102 in Properties of Gases and Liquids
             return -((b._params.gas_const/2)*sqrt(b.omegaA) *
                      sum(sum(b.mole_frac_phase[p, i] *
                              b.mole_frac_phase[p, j] *
@@ -1544,6 +1479,7 @@ class CubicStateBlockData(StateBlockData):
         return b.mole_frac_phase[p, j]*b.pressure*b.fug_coeff_phase[p, j]
 
     def _fug_coeff_cubic(b, p, j):
+        # See pg. 145 in Properties of Gases and Liquids
         return exp((b.b[j]/b.bm[p]*(b.compress_fact[p]-1) *
                     (b.B[p]*b.EoS_p) -
                     log(b.compress_fact[p]-b.B[p]) *
@@ -1556,6 +1492,7 @@ class CubicStateBlockData(StateBlockData):
                    (b.B[p]*b.EoS_p))
 
     def _log_equilibrium_cubic(b, p, j):
+        # See pg. 145 in Properties of Gases and Liquids
         return ((b.b[j]/b.bm[p]*(b._compress_fact_eq[p]-1) *
                  (b._B_eq[p]*b.EoS_p) -
                  log(b._compress_fact_eq[p]-b._B_eq[p]) *
@@ -1568,6 +1505,7 @@ class CubicStateBlockData(StateBlockData):
                 (b._B_eq[p]*b.EoS_p) + log(b.mole_frac_phase[p, j]))
 
     def _enth_mol_cubic(b, p):
+        # Derived from equation on pg. 120 in Properties of Gases and Liquids
         return (((b.temperature*b.dadT[p] - b.am[p]) *
                  log((2*b.compress_fact[p] + b.B[p]*(b.EoS_u + b.EoS_p)) /
                      (2*b.compress_fact[p] + b.B[p]*(b.EoS_u - b.EoS_p))) +
@@ -1575,10 +1513,12 @@ class CubicStateBlockData(StateBlockData):
                  b.bm[p]*b.EoS_p) / (b.bm[p]*b.EoS_p) + b._enth_mol_ig(p))
 
     def _enth_mol_ig(b, p):
-        return sum(b.mole_frac_phase[p, j]*b._enth_mol_comp_ig(j)
+        return sum(b.mole_frac_phase[p, j]*(b._enth_mol_comp_ig(j) +
+                                            b._params.enth_mol_form_ref[j])
                    for j in b._params.component_list)
 
     def _entr_mol_cubic(b, p):
+        # See pg. 102 in Properties of Gases and Liquids
         return ((b._params.gas_const*log((b.compress_fact[p]-b.B[p]) /
                                          b.compress_fact[p])*b.bm[p]*b.EoS_p +
                  b._params.gas_const*log(b.compress_fact[p] *
@@ -1591,17 +1531,14 @@ class CubicStateBlockData(StateBlockData):
                 (b.bm[p]*b.EoS_p) + b._entr_mol_ig(p))
 
     def _entr_mol_ig(b, p):
-        return sum(b.mole_frac_phase[p, j]*b._entr_mol_comp_ig(j)
+        return sum(b.mole_frac_phase[p, j]*(b._entr_mol_comp_ig(j) +
+                                            b._params.entr_mol_form_ref[j])
                    for j in b._params.component_list)
 
 # -----------------------------------------------------------------------------
 # Pure component properties
-    # TODO : Implementation question. Should this be here as part of a list of
-    # options, or part of the ParameterBlock as a user-specified method?
     def _enth_mol_comp_ig(b, j):
         return (
-            (b._params.cp_ig[j, "5"]/5) *
-            (b.temperature**5-b._params.temperature_ref**5) +
             (b._params.cp_ig[j, "4"]/4) *
             (b.temperature**4-b._params.temperature_ref**4) +
             (b._params.cp_ig[j, "3"]/3) *
@@ -1611,8 +1548,6 @@ class CubicStateBlockData(StateBlockData):
             b._params.cp_ig[j, "1"] *
             (b.temperature-b._params.temperature_ref))
 
-    # TODO : Implementation question. Should this be here as part of a list of
-    # options, or part of the ParameterBlock as a user-specified method?
     def _entr_mol_comp_ig(b, j):
         return ((b._params.cp_ig[j, '4']/3) *
                 (b.temperature**3-b._params.temperature_ref**3) +
