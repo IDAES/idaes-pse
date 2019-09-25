@@ -52,6 +52,7 @@ Contents
     apps/index	      
     version
     tutorials
+    jupyterlab/index
     developer/index
     Modules <apidoc/modules>
     glossary
