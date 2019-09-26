@@ -35,12 +35,13 @@ def rglob(path, glob):
 
 alamopy_dir = Path(".") / "apps" / "ddm-learning" / "alamo_python"
 ripe_dir = Path(".") / "apps" / "ddm-learning" / "ripe_python"
+helmet_dir = Path(".") / "apps" / "ddm-learning" / "helmet_python"
 
 
 def find_all_packages():
     test_patterns = ["*.tests", "*.tests.*", "tests.*", "tests"]
     result = []
-    for pkgdir in (".", alamopy_dir, ripe_dir):
+    for pkgdir in (".", alamopy_dir, ripe_dir, helmet_dir):
         result.extend(find_packages(str(pkgdir)))
     return result
 
@@ -54,6 +55,7 @@ kwargs = dict(
         "idaes": "idaes",
         "alamopy": str(alamopy_dir / "alamopy"),
         "ripe": str(ripe_dir / "ripe"),
+        "helmet": str(helmet_dir / "helmet"),
     },
     # Put abstract (non-versioned) deps here.
     # Concrete dependencies go in requirements[-dev].txt
@@ -86,6 +88,7 @@ kwargs = dict(
         "toml",
         # alamopy
         # ripe
+        # helmet
         "rbfopt",
     ],
     entry_points={"console_scripts": ["dmf = idaes.dmf.cli:base_command"]},
@@ -101,6 +104,7 @@ kwargs = dict(
             "jsonschema",
             "jupyter_contrib_nbextensions",
             "mock",
+            "pylint",
             "pytest-cov",
             "python-coveralls",
             "snowballstemmer==1.2.1",
@@ -157,6 +161,7 @@ kwargs = dict(
 if len(sys.argv) > 1 and sys.argv[1] == "packages":
     print(f"alamopy dir: {alamopy_dir}")
     print(f"ripe dir: {ripe_dir}")
+    print(f"helmet dir: {helmet_dir}")
     print("\n".join(find_all_packages()))
     sys.exit(0)
 
