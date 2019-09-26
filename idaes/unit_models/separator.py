@@ -764,29 +764,30 @@ linked the mixed state and all outlet states,
 
                 elif (l_name.startswith("mole_frac") or
                       l_name.startswith("mass_frac")):
-                    print(l_name)
                     # Mole and mass frac need special handling
                     if "_phase" in l_name:
                         def e_rule(b, t, p, j):
                             if self.config.split_basis == \
                                         SplittingType.phaseFlow:
-                                s_check = split_map[p]
+                                return s_vars[s][p, j]
                             elif self.config.split_basis == \
                                     SplittingType.componentFlow:
-                                s_check = split_map[j]
+                                if split_map[j] == o:
+                                    return 1
+                                else:
+                                    return self.eps
                             elif self.config.split_basis == \
                                     SplittingType.phaseComponentFlow:
-                                s_check = split_map[p, j]
+                                for ps in self.config.property_package \
+                                        .phase_list:
+                                    if split_map[ps, j] == o:
+                                        return 1
+                                return self.eps
                             else:
                                 raise BurntToast(
                                         "{} This should not happen. Please "
                                         "report this bug to the IDAES "
                                         "developers.".format(self.name))
-
-                            if s_check == o:
-                                return 1
-                            else:
-                                return self.eps
 
                         e_obj = Expression(
                                 self.flowsheet().config.time,
@@ -807,7 +808,8 @@ linked the mixed state and all outlet states,
                                 SplittingType.phaseComponentFlow:
                             def e_rule(b, t, j):
                                 if any(split_map[p, j] == o for p in
-                                       self.config.property_package.phase_list):
+                                       self.config.property_package
+                                       .phase_list):
                                     return 1
                                 # else:
                                 return self.eps
@@ -827,7 +829,8 @@ linked the mixed state and all outlet states,
                                         "indexing sets is not available."
                                         .format(self.name, s))
 
-                                for p in self.config.property_package.phase_list:
+                                for p in self.config.property_package \
+                                        .phase_list:
                                     if self.config.split_basis == \
                                             SplittingType.phaseFlow:
                                         s_check = split_map[p]
@@ -898,7 +901,8 @@ linked the mixed state and all outlet states,
                                     "not available."
                                     .format(self.name, s))
 
-                            for j in self.config.property_package.component_list:
+                            for j in self.config.property_package \
+                                    .component_list:
                                 if self.config.split_basis == \
                                         SplittingType.componentFlow:
                                     s_check = split_map[j]
@@ -990,7 +994,9 @@ linked the mixed state and all outlet states,
                                             if split_map[p] == o:
                                                 return sum(
                                                     ivar[p, j] for j in
-                                                    self.config.property_package.component_list)
+                                                    self.config
+                                                    .property_package
+                                                    .component_list)
                                             else:
                                                 continue
                                     else:
@@ -1007,14 +1013,17 @@ linked the mixed state and all outlet states,
                                         else:
                                             continue
                                 else:
-                                    ivar = mb[t].component(l_name+"_phase_comp")
+                                    ivar = mb[t].component(l_name +
+                                                           "_phase_comp")
                                     if ivar is not None:
                                         for j in self.config.property_package \
                                                 .component_list:
                                             if split_map[j] == o:
                                                 return sum(
                                                     ivar[p, j] for p in
-                                                    self.config.property_package.phase_list)
+                                                    self.config
+                                                    .property_package
+                                                    .phase_list)
                                             else:
                                                 continue
                                     else:
@@ -1023,8 +1032,8 @@ linked the mixed state and all outlet states,
                                     SplittingType.phaseComponentFlow:
                                 ivar = mb[t].component(l_name+"_phase_comp")
                                 if ivar is not None:
-                                    for p in self.config \
-                                            .property_package.phase_list:
+                                    for p in self.config.property_package \
+                                            .phase_list:
                                         for j in self.config.property_package \
                                                 .component_list:
                                             if split_map[p, j] == o:
