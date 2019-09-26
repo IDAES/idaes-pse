@@ -26,7 +26,7 @@ DIRS = [
     str(p)
     for p in (
         Path("idaes/dmf"),
-        Path("apps/ddm-learning/alamo_python/alamopy"),
+        # Path("apps/ddm-learning/alamo_python/alamopy"),
         # Path("apps/ddm-learning/ripe_python/ripe"),
     )
 ]
