@@ -7,11 +7,12 @@ shared-dev: &shared-dev
     - run: ./scripts/remove-idaes-from-path.sh
     - run: pip install pip==18.0.0
     - run: pip install -r requirements-dev.txt
-    - run: pyomo --version
-    - run: cd docs && make all
-    - run: pytest -c pytest-dev.ini docs idaes -m "not nocircleci"
-    - run: coverage report
-    - run: coveralls
+    - run: pylint -E --ignore-patterns="test_.*" idaes || true
+#    - run: pyomo --version
+#    - run: cd docs && make all
+    - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
+#    - run: coverage report
+#    - run: coveralls
 
 shared: &shared
   working_directory: ~/repo
@@ -37,3 +38,5 @@ workflows:
   build:
     jobs:
       - "python-3.7"
+      - "python-3.7-dev"
+
