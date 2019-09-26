@@ -1199,7 +1199,7 @@ class TestIAPWS(object):
 
 
 # -----------------------------------------------------------------------------
-# Define some generic Property Block classes fortesting ideal separations
+# Define some generic Property Block classes for testing ideal separations
 @declare_process_block_class("IdealTestBlock")
 class _IdealParameterBlock(PhysicalParameterBlock):
     def build(self):
@@ -1718,7 +1718,7 @@ class TestIdealConstruction(object):
         m.outlet_list = m.fs.sep.create_outlet_list()
         m.fs.sep.add_mixed_state_block()
 
-        # Delete mole_frac_phase_comp sothat the fallback should fail
+        # Delete mole_frac_phase_comp so that the fallback should fail
         m.fs.sep.mixed_state[0].del_component(
                 m.fs.sep.mixed_state[0].mole_frac_phase_comp)
 
@@ -1789,26 +1789,25 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 2
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
         assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c1"]) == 1
+                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c1"]) == 0.9
         assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c2"]) == 1
+                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c2"]) == 0.7
         assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
+                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 0.5
         assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c2"]) == 1e-8
+                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c2"]) == 0.3
 
         assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c1"]) == 1e-8
+                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c1"]) == 0.9
         assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
+                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p1", "c2"]) == 0.7
         assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 1
+                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 0.5
         assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 1
+                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 0.3
 
     def test_mole_frac_phase_w_phase_comp_split(self):
         m = ConcreteModel()
@@ -1833,15 +1832,14 @@ class TestIdealConstruction(object):
 
         m.fs.sep.mixed_state[0]._state_var_switch = 2
 
-        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state,
-                                        m.outlet_list)
+        m.fs.sep.partition_outlet_flows(m.fs.sep.mixed_state, m.outlet_list)
 
         assert value(
                 m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c1"]) == 1
         assert value(
                 m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
         assert value(
-                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
+                m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c1"]) == 1
         assert value(
                 m.fs.sep.outlet_1.mole_frac_phase_comp[0, "p2", "c2"]) == 1e-8
 
@@ -1852,10 +1850,10 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
         assert value(
-                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 1e-8
+                m.fs.sep.outlet_2.mole_frac_phase_comp[0, "p2", "c2"]) == 1
 
         assert value(
-                m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p1", "c1"]) == 1e-8
+                m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p1", "c1"]) == 1
         assert value(
                 m.fs.sep.outlet_3.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
         assert value(
@@ -1866,7 +1864,7 @@ class TestIdealConstruction(object):
         assert value(
                 m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p1", "c1"]) == 1e-8
         assert value(
-                m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p1", "c2"]) == 1e-8
+                m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p1", "c2"]) == 1
         assert value(
                 m.fs.sep.outlet_4.mole_frac_phase_comp[0, "p2", "c1"]) == 1e-8
         assert value(
