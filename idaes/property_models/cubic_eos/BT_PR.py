@@ -32,7 +32,7 @@ from pyomo.environ import Reals, Param, NonNegativeReals, Set
 from idaes.core import declare_process_block_class
 from idaes.core.util.misc import extract_data
 
-from idaes.property_models.cubic.cubic_prop_pack_VLE import (
+from idaes.property_models.cubic_eos.cubic_prop_pack import (
         CubicParameterData, CubicEoS)
 
 
