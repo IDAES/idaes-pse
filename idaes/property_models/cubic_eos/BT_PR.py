@@ -72,7 +72,6 @@ class BTParameterData(CubicParameterData):
                                      default=298.15,
                                      doc='Reference temperature [K]')
 
-
         # Gas Constant
         self.gas_const = Param(within=NonNegativeReals,
                                mutable=False,
@@ -131,7 +130,7 @@ class BTParameterData(CubicParameterData):
         self.mw_comp = Param(self.component_list,
                              mutable=False,
                              initialize=extract_data(mw_comp_data),
-                             doc="molecular weight Kg/mol")
+                             doc="molecular weight kg/mol")
 
         # Constants for specific heat capacity, enthalpy and entropy
         cp_ig_data = {('benzene', '1'): -3.392E1,
