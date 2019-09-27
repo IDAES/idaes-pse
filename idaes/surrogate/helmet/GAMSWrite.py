@@ -1,6 +1,6 @@
 ##############################################################################
 # Institute for the Design of Advanced Energy Systems Process Systems
-# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018, by the
+# Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
 # software owners: The Regents of the University of California, through
 # Lawrence Berkeley National Laboratory,  National Technology & Engineering
 # Solutions of Sandia, LLC, Carnegie Mellon University, West Virginia
@@ -8,7 +8,7 @@
 #
 # Please see the files COPYRIGHT.txt and LICENSE.txt for full copyright and
 # license information, respectively. Both files are also available online
-# at the URL "https://github.com/IDAES/idaes".
+# at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
 GAMS writer for the regression
@@ -633,12 +633,7 @@ def writeDerivatives(props):
         textFile.write("SNDvecCV(SND(i),'0') = -itt('SND',i);\n")
         textFile.write("SNDvecCV(SND(i),j) = -t(j)*(t(j)-1);\n\n")
 
-    Z = 0
-
-    if molecule == "H2O":
-        Z = (float(critP) * 1000 / Rm / float(critT) / float(critD)) - 1.00
-    else:
-        Z = (float(critP) / Rm / float(critT) / float(critD)) - 1.00
+    Z = (float(critP) * 1000 / Rm / float(critT) / float(critD)) - 1.00
     textFile.write("parameter CRITvec(jl) ,CRITvec1(jl), CRITvec2(jl);\n\n")
     textFile.write("CRITvec('0') = %f;\n" % Z)
     textFile.write("CRITvec(j)$(l(j) = 0) = -d(j);\n")

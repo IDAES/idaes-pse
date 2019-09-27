@@ -87,6 +87,7 @@ kwargs = dict(
             "jsonschema",
             "jupyter_contrib_nbextensions",
             "mock",
+            "pylint",
             "pytest-cov",
             "python-coveralls",
             "snowballstemmer==1.2.1",
