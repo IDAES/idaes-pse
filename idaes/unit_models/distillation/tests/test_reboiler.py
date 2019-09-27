@@ -19,7 +19,8 @@ import pytest
 from pyomo.environ import (ConcreteModel, TerminationCondition,
                            SolverStatus, value)
 
-from idaes.core import FlowsheetBlock
+from idaes.core import FlowsheetBlock, MaterialBalanceType, EnergyBalanceType, \
+    MomentumBalanceType
 from idaes.unit_models.distillation import Reboiler
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
@@ -41,58 +42,93 @@ m.fs.properties_2 = BTXParameterBlock(default={"valid_phase":
 
 ###############################################################################
 # total reboiler with FTPz
-m.fs.R101 = Reboiler(default={"property_package": m.fs.properties})
 
-# Fix the partial reboiler variables
-m.fs.R101.boilup_ratio.fix(1)
-m.fs.R101.deltaP.fix(0)
+def test_build():
+    m.fs.R101 = Reboiler(default={"property_package": m.fs.properties})
 
-# Fix the inputs (typically this will be the outlet vapor from the top tray)
-m.fs.R101.inlet.flow_mol.fix(1)
-m.fs.R101.inlet.temperature.fix(362)
-m.fs.R101.inlet.pressure.fix(101325)
-m.fs.R101.inlet.mole_frac[0, "benzene"].fix(0.5)
-m.fs.R101.inlet.mole_frac[0, "toluene"].fix(0.5)
+    assert len(m.fs.R101.config) == 9
 
-print("-----------------------------------------------------------------------")
-print("Total Reboiler - FTPz")
-print("The degrees of freedom is ", degrees_of_freedom(m))
+    assert m.fs.R101.config.has_boilup_ratio
+    assert m.fs.R101.config.material_balance_type == \
+        MaterialBalanceType.componentPhase
+    assert m.fs.R101.config.energy_balance_type == \
+        EnergyBalanceType.enthalpyTotal
+    assert m.fs.R101.config.momentum_balance_type == \
+        MomentumBalanceType.pressureTotal
+    assert m.fs.R101.config.has_pressure_change
 
+    assert hasattr(m.fs.R101, "inlet")
+    assert hasattr(m.fs.R101.inlet, "flow_mol")
+    assert hasattr(m.fs.R101.inlet, "mole_frac")
+    assert hasattr(m.fs.R101.inlet, "temperature")
+    assert hasattr(m.fs.R101.inlet, "pressure")
 
-solver = get_default_solver()
-m.fs.R101.initialize(solver=solver, outlvl=2)
+    assert hasattr(m.fs.R101, "bottoms")
+    assert hasattr(m.fs.R101.bottoms, "flow_mol")
+    assert hasattr(m.fs.R101.bottoms, "mole_frac")
+    assert hasattr(m.fs.R101.bottoms, "temperature")
+    assert hasattr(m.fs.R101.bottoms, "pressure")
 
-m.fs.R101.bottoms.display()
-m.fs.R101.vapor_reboil.display()
-m.fs.R101.heat_duty.display()
+    assert hasattr(m.fs.R101, "vapor_reboil")
+    assert hasattr(m.fs.R101.vapor_reboil, "flow_mol")
+    assert hasattr(m.fs.R101.vapor_reboil, "mole_frac")
+    assert hasattr(m.fs.R101.vapor_reboil, "temperature")
+    assert hasattr(m.fs.R101.vapor_reboil, "pressure")
 
-print("-----------------------------------------------------------------------")
+def test_set_inputs():
 
-###############################################################################
-# total condenser with FcTP
-m.fs.R101_FcTP = Reboiler(default={"property_package": m.fs.properties_2})
+    assert degrees_of_freedom(m.fs.R101) == 7
 
-# Fix the partial condenser variables
-m.fs.R101_FcTP.boilup_ratio.fix(1)
-m.fs.R101_FcTP.deltaP.fix(0)
+    # Fix the partial reboiler variables
+    m.fs.R101.boilup_ratio.fix(1)
+    m.fs.R101.deltaP.fix(0)
 
-# Fix the inputs (typically this will be the outlet vapor from the top tray)
-m.fs.R101_FcTP.inlet.flow_mol_comp[0, "benzene"].fix(0.5)
-m.fs.R101_FcTP.inlet.flow_mol_comp[0, "toluene"].fix(0.5)
-m.fs.R101_FcTP.inlet.temperature.fix(362)
-m.fs.R101_FcTP.inlet.pressure.fix(101325)
+    # Fix the inputs (typically this will be the outlet vapor from the top tray)
+    m.fs.R101.inlet.flow_mol.fix(1)
+    m.fs.R101.inlet.temperature.fix(362)
+    m.fs.R101.inlet.pressure.fix(101325)
+    m.fs.R101.inlet.mole_frac[0, "benzene"].fix(0.5)
+    m.fs.R101.inlet.mole_frac[0, "toluene"].fix(0.5)
 
+    assert degrees_of_freedom(m.fs.R101) == 0
 
-print("-----------------------------------------------------------------------")
-print("Reboiler - FcTP")
-print("The degrees of freedom is ", degrees_of_freedom(m.fs.R101_FcTP))
+def test_solve():
 
+    solver = get_default_solver()
+    m.fs.R101.initialize(solver=solver, outlvl=2)
 
-solver = get_default_solver()
-m.fs.R101_FcTP.initialize(solver=solver, outlvl=2)
+    solve_status = solver.solve(m.fs.R101)
 
-m.fs.R101_FcTP.bottoms.display()
-m.fs.R101_FcTP.vapor_reboil.display()
-m.fs.R101_FcTP.heat_duty.display()
+    assert solve_status.solver.termination_condition == \
+        TerminationCondition.optimal
+    assert solve_status.solver.status == SolverStatus.ok
 
-print("-----------------------------------------------------------------------")
+# def test_solution():
+
+# # total condenser with FcTP
+# m.fs.R101_FcTP = Reboiler(default={"property_package": m.fs.properties_2})
+#
+# # Fix the partial condenser variables
+# m.fs.R101_FcTP.boilup_ratio.fix(1)
+# m.fs.R101_FcTP.deltaP.fix(0)
+#
+# # Fix the inputs (typically this will be the outlet vapor from the top tray)
+# m.fs.R101_FcTP.inlet.flow_mol_comp[0, "benzene"].fix(0.5)
+# m.fs.R101_FcTP.inlet.flow_mol_comp[0, "toluene"].fix(0.5)
+# m.fs.R101_FcTP.inlet.temperature.fix(362)
+# m.fs.R101_FcTP.inlet.pressure.fix(101325)
+#
+#
+# print("-----------------------------------------------------------------------")
+# print("Reboiler - FcTP")
+# print("The degrees of freedom is ", degrees_of_freedom(m.fs.R101_FcTP))
+#
+#
+# solver = get_default_solver()
+# m.fs.R101_FcTP.initialize(solver=solver, outlvl=2)
+#
+# m.fs.R101_FcTP.bottoms.display()
+# m.fs.R101_FcTP.vapor_reboil.display()
+# m.fs.R101_FcTP.heat_duty.display()
+#
+# print("-----------------------------------------------------------------------")
