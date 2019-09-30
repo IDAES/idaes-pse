@@ -38,7 +38,7 @@ try:
                                Separator)
     from idaes.unit_models.pressure_changer import ThermodynamicAssumption
 
-    from idaes.ui.report import degrees_of_freedom
+    from idaes.core.util.model_statistics import degrees_of_freedom
 
     print("IDAES Import Checks:        Passed")
     check_count += 1
@@ -76,18 +76,6 @@ if (results.solver.termination_condition == TerminationCondition.optimal
     check_count += 1
 else:
     print("Simple Model Check:         FAILED")
-
-## -----------------------------------------------------------------------------
-## Test module imports
-#try:
-#    import hda_ideal_VLE as thermo_props
-#    import hda_kinetics as reaction_props
-#    import idaes.property_models.ideal.BTX_ideal_VLE as ideal_props
-#
-#    print("Module Availability Check:  Passed")
-#    check_count += 1
-#except:
-#    print("Module Availability Check:  FAILED")
 
 # -----------------------------------------------------------------------------
 # Summary
