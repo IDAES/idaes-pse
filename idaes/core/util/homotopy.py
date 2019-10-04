@@ -29,20 +29,20 @@ from idaes.core.util.exceptions import ConfigurationError
 
 
 def homotopy(model, variables, targets, solver='ipopt', solver_options={},
-             step_init=0.1, step_cut = 0.5, iter_target = 10, step_accel = 1,
-             max_step = 1, min_step = 0.05, max_iter = 200):
+             step_init=0.1, step_cut=0.5, iter_target=10, step_accel=1,
+             max_step=1, min_step=0.05, max_iter=200):
     """
     Homotopy meta-solver routine.
 
     Args:
         model : model to be solved
-        variables : list of Pyomo Var objects to be varied using homotopy. "
-                    "Variables must be fixed.
+        variables : list of Pyomo Var objects to be varied using homotopy.
+                    Variables must be fixed.
         targets : list of target values for each variable
-        solver : solver to use to converge model at each step.
+        solver : solver to use to converge model at each step
         solver_options : dict of option arguments to be passed to solver object
         step_init : initial homotopy step size
-        step_cut : factor to reduce step size by on failed step
+        step_cut : factor by which to reduce step size on failed step
         step_accel : acceleration factor for adjusting step size on successful
                      step
         iter_target : target number of solver iterations per homotopy step
@@ -143,12 +143,12 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
 
     # Perform initial solve of model to confirm feasible initial solution
     results = solver_obj.solve(model, tee=DEBUG)
-    
-    if not (results.solver.termination_condition == 
+
+    if not (results.solver.termination_condition ==
             TerminationCondition.optimal and
             results.solver.status == SolverStatus.ok):
         _log.exception("Homotopy Failed - initial solution infeasible.")
-    
+
     print(results)
 
     # TODO : Check that number of iterations can be accessed from results object
@@ -194,9 +194,9 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
         results = solver_obj.solve(model, tee=DEBUG)
 
         # Check solver output for convergence
-        if (results.solver.termination_condition == 
-            TerminationCondition.optimal and
-            results.solver.status == SolverStatus.ok):
+        if (results.solver.termination_condition ==
+                TerminationCondition.optimal and
+                results.solver.status == SolverStatus.ok):
             # Step succeeded - accept current state
             current_state = to_json(model, return_dict=True)
 
@@ -204,10 +204,10 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
             n_0 = n_1
 
             # Check solver iterations and calculate next step size
-            solver_iterations = 8  # TODO : for now picking a value of iterations
-            
+            solver_iterations = 8  # TODO : for now picking a value for iterations
+
             s_proposed = s*(1 + step_accel*(iter_target/solver_iterations-1))
-            
+
             if s_proposed > max_step:
                 s = max_step
             elif s_proposed < min_step:
@@ -219,7 +219,7 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
             from_json(model, current_state)
 
             # Try to cut back step size
-            if s != min_step:
+            if s > min_step:
                 # Step size can be cut
                 s = max(min_step, s*step_cut)
             else:
@@ -227,11 +227,10 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
                 _log.exception(
                         "Homotopy failed - could not converge at minimum step "
                         "size. Current progress is {}".format(n_0))
-        
+
         if iter_count >= max_iter:  # Use greater than or equal to to be safe
-                _log.exception(
-                        "Homotopy failed - maximum homotopy iterations "
-                        "exceeded. Current progress is {}".format(n_0))
+            _log.exception("Homotopy failed - maximum homotopy iterations "
+                           "exceeded. Current progress is {}".format(n_0))
 
     _log.info("Homotopy successful - converged at target values in {} "
               "iterations.".format(iter_count))
