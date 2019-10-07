@@ -24,6 +24,7 @@ from idaes.core import FlowsheetBlock
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.exceptions import ConfigurationError
 
 from idaes.core.util.homotopy import homotopy
 
@@ -43,6 +44,120 @@ def model():
 
 # -----------------------------------------------------------------------------
 # Test argument validation
+def test_invalid_model(model):
+    o = object()
+
+    with pytest.raises(TypeError):
+        homotopy(o, [model.x], [20])
+
+
+def test_var_not_in_model(model):
+    m2 = ConcreteModel()
+
+    with pytest.raises(ConfigurationError):
+        homotopy(m2, [model.x], [20])
+
+
+def test_var_not_fixed(model):
+    model.x.unfix()
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20])
+
+
+def test_current_value_ub(model):
+    model.x.setub(5)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20])
+
+
+def test_target_value_ub(model):
+    model.x.setub(12)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20])
+
+
+def test_current_value_lb(model):
+    model.x.setlb(12)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20])
+
+
+def test_target_value_lb(model):
+    model.x.fix(50)
+    model.x.setlb(30)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20])
+
+
+def test_step_init(model):
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], step_init=0.01)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], step_init=0.9)
+
+
+def test_step_cut(model):
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], step_cut=0.09)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], step_cut=0.91)
+
+
+def test_step_accel(model):
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], step_accel=-1)
+
+
+def test_iter_target(model):
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], iter_target=0)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], iter_target=1.7)
+
+
+def test_max_step(model):
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], max_step=0.04)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], max_step=1.1)
+
+
+def test_min_step(model):
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], min_step=0.009)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], min_step=0.11)
+
+
+def test_min_max_step(model):
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], min_step=0.1, max_step=0.05)
+
+
+def test_init_step_min_max(model):
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], step_init=0.2, max_step=0.1)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], step_init=0.05, min_step=0.1)
+
+
+def test_max_eval(model):
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], max_eval=0)
+
+    with pytest.raises(ConfigurationError):
+        homotopy(model, [model.x], [20], max_eval=1.7)
 
 
 # -----------------------------------------------------------------------------

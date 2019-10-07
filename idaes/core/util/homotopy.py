@@ -20,7 +20,8 @@ import logging
 
 from pyomo.environ import (Block,
                            SolverFactory,
-                           TerminationCondition)
+                           TerminationCondition,
+                           Var)
 from pyomo.contrib.parmest.ipopt_solver_wrapper import ipopt_solve_with_stats
 
 from idaes.core.util.model_serializer import to_json, from_json
@@ -92,10 +93,26 @@ def homotopy(model, variables, targets, solver='ipopt',
     for i in range(len(variables)):
         v = variables[i]
         t = targets[i]
+
+        if not isinstance(v, Var):
+            raise TypeError("Variable provided ({}) was not a valid Pyomo Var "
+                            "component.".format(v))
+
+        # Check that v is part of model
+        parent = v.parent_block()
+        while parent != model:
+            if parent is None:
+                raise ConfigurationError("Variable {} is not part of model"
+                                         .format(v))
+            parent = parent.parent_block()
+
+        # Check that v is fixed
         if not v.fixed:
             raise ConfigurationError(
                     "Homotopy metasolver provided with unfixed variable {}."
                     "All variables must be fixed.".format(v.name))
+
+        # Check bounds on v (they don't really matter, but check for sanity)
         if v.ub is not None:
             if v.value > v.ub:
                 raise ConfigurationError(
@@ -122,9 +139,9 @@ def homotopy(model, variables, targets, solver='ipopt',
     # TODO : Should we be more restrictive on these values to avoid users
     # TODO : picking numbers that are less likely to solve (but still valid)?
     # Validate homotopy parameter selections
-    if not 0 < step_init <= 1:
+    if not 0.05 <= step_init <= 0.8:
         raise ConfigurationError("Invalid value for step_init ({}). Must lie "
-                                 "between 0 and 1.".format(step_init))
+                                 "between 0.05 and 0.8.".format(step_init))
     if not 0.1 <= step_cut <= 0.9:
         raise ConfigurationError("Invalid value for step_cut ({}). Must lie "
                                  "between 0.1 and 0.9.".format(step_cut))
@@ -136,6 +153,9 @@ def homotopy(model, variables, targets, solver='ipopt',
         raise ConfigurationError("Invalid value for iter_target ({}). Must be "
                                  "greater than or equal to 1."
                                  .format(iter_target))
+    if not isinstance(iter_target, int):
+        raise ConfigurationError("Invalid value for iter_target ({}). Must be "
+                                 "an an integer.".format(iter_target))
     if not 0.05 <= max_step <= 1:
         raise ConfigurationError("Invalid value for max_step ({}). Must lie "
                                  "between 0.05 and 1."
@@ -154,6 +174,9 @@ def homotopy(model, variables, targets, solver='ipopt',
         raise ConfigurationError("Invalid value for max_eval ({}). Must be "
                                  "greater than or equal to 1."
                                  .format(step_accel))
+    if not isinstance(max_eval, int):
+        raise ConfigurationError("Invalid value for max_eval ({}). Must be "
+                                 "an an integer.".format(iter_target))
 
     # Create solver object
     solver_obj = SolverFactory(solver)
