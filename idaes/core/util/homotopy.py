@@ -20,17 +20,18 @@ import logging
 
 from pyomo.environ import (Block,
                            SolverFactory,
-                           SolverStatus,
                            TerminationCondition)
+from pyomo.contrib.parmest.ipopt_solver_wrapper import ipopt_solve_with_stats
 
 from idaes.core.util.model_serializer import to_json, from_json
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 
 
-def homotopy(model, variables, targets, solver='ipopt', solver_options={},
-             step_init=0.1, step_cut=0.5, iter_target=10, step_accel=1,
-             max_step=1, min_step=0.05, max_iter=200):
+def homotopy(model, variables, targets, solver='ipopt',
+             max_solver_iterations=50, max_solver_time=10,
+             step_init=0.1, step_cut=0.5, iter_target=4, step_accel=0.5,
+             max_step=1, min_step=0.05, max_eval=200):
     """
     Homotopy meta-solver routine.
 
@@ -40,7 +41,9 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
                     Variables must be fixed.
         targets : list of target values for each variable
         solver : solver to use to converge model at each step
-        solver_options : dict of option arguments to be passed to solver object
+        max_solver_iterations : maximum number of solver iterations per
+                    homotopy step
+        max_solver_time : maximum cpu time for the solver per homotopy step
         step_init : initial homotopy step size
         step_cut : factor by which to reduce step size on failed step
         step_accel : acceleration factor for adjusting step size on successful
@@ -48,16 +51,27 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
         iter_target : target number of solver iterations per homotopy step
         max_step : maximum homotopy step size
         min_step : minimum homotopy step size
-        max_iter : maximum number of homotopy iterations (but successful and
+        max_eval : maximum number of homotopy evaluations (both successful and
                    unsuccessful)
 
     Returns:
-        A ComponentSet including all Block components in block (including block
-        itself)
+        A Pyomo TerminationCondition Enum with one of the following:
+            - TerminationCondition.optimal : successfully converged to target
+            value(s)
+            - TerminationCondition.infeasible : could not find feasible
+            solution at initial point
+            - TerminationCondition.minStepLength : could not converge to target
+            values due to finding no solutuon with minimum step size
+            - TerminationCondition.maxEvaluations : reached maximum number of
+            problem evaluations without converging to target values
+            - TerminationCondition.other : solution converged at target values
+            with regularisation
+        Solver progress : a fraction indication how far the solver progressed
+            from the initial values ot the target values
+        Number of Iterations : number of homotopy evaluations before solver
+            terminated
     """
-    # Add a setting to display debugging output - don't expose to the user
-    DEBUG = True
-    eps = 1e-6  # Tolerance for homotopy step convergence to 1
+    eps = 1e-3  # Tolerance for homotopy step convergence to 1
 
     # Get model logger
     _log = logging.getLogger(__name__)
@@ -114,19 +128,19 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
     if not 0.1 <= step_cut <= 0.9:
         raise ConfigurationError("Invalid value for step_cut ({}). Must lie "
                                  "between 0.1 and 0.9.".format(step_cut))
-    if step_accel < 1:
+    if step_accel < 0:
         raise ConfigurationError("Invalid value for step_accel ({}). Must be "
-                                 "greater than or equal to 1."
+                                 "greater than or equal to 0."
                                  .format(step_accel))
     if iter_target < 1:
         raise ConfigurationError("Invalid value for iter_target ({}). Must be "
                                  "greater than or equal to 1."
                                  .format(iter_target))
-    if not 0.05 < max_step <= 1:
+    if not 0.05 <= max_step <= 1:
         raise ConfigurationError("Invalid value for max_step ({}). Must lie "
                                  "between 0.05 and 1."
                                  .format(max_step))
-    if not 0.01 < min_step <= 0.1:
+    if not 0.01 <= min_step <= 0.1:
         raise ConfigurationError("Invalid value for min_step ({}). Must lie "
                                  "between 0.01 and 0.1."
                                  .format(min_step))
@@ -136,22 +150,27 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
     if not min_step <= step_init <= max_step:
         raise ConfigurationError("Invalid arguments: step_init must lie "
                                  "between min_step and max_step.")
+    if max_eval < 1:
+        raise ConfigurationError("Invalid value for max_eval ({}). Must be "
+                                 "greater than or equal to 1."
+                                 .format(step_accel))
 
     # Create solver object
     solver_obj = SolverFactory(solver)
-    solver_obj.option = solver_options
 
     # Perform initial solve of model to confirm feasible initial solution
-    results = solver_obj.solve(model, tee=DEBUG)
+    results, solved, sol_iter, sol_time, sol_reg = ipopt_solve_with_stats(
+            model, solver_obj, max_solver_iterations, max_solver_time)
 
-    if not (results.solver.termination_condition ==
-            TerminationCondition.optimal and
-            results.solver.status == SolverStatus.ok):
+    if not solved:
         _log.exception("Homotopy Failed - initial solution infeasible.")
-
-    print(results)
-
-    # TODO : Check that number of iterations can be accessed from results object
+        return TerminationCondition.infeasible, 0, 0
+    elif sol_reg != "-":
+        _log.warning(
+                "Homotopy - initial solution converged with regularization.")
+        return TerminationCondition.other, 0, 0
+    else:
+        _log.info("Homotopy - initial point converged")
 
     # Set up homotopy variables
     # Get initial values and deltas for all variables
@@ -160,9 +179,6 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
     for i in range(len(variables)):
         v_init.append(variables[i].value)
         delta.append(targets[i] - variables[i].value)
-
-    if DEBUG:
-        print(v_init, delta)
 
     n_0 = 0.0  # Homotopy progress variable
     s = step_init  # Set step size to step_init
@@ -181,22 +197,19 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
         else:
             n_1 = n_0 + s
 
-        _log.info("Homotopy Iteration {}. Next Step {} (current step {})"
+        _log.info("Homotopy Iteration {}. Next Step: {} (Current: {})"
                   .format(iter_count, n_1, n_0))
 
         # Update values for all variables using n_1
         for i in range(len(variables)):
             variables[i].fix(v_init[i] + delta[i]*n_1)
-            if DEBUG:
-                variables[i].display()
 
         # Solve model at new state
-        results = solver_obj.solve(model, tee=DEBUG)
+        results, solved, sol_iter, sol_time, sol_reg = ipopt_solve_with_stats(
+            model, solver_obj, max_solver_iterations, max_solver_time)
 
         # Check solver output for convergence
-        if (results.solver.termination_condition ==
-                TerminationCondition.optimal and
-                results.solver.status == SolverStatus.ok):
+        if solved:
             # Step succeeded - accept current state
             current_state = to_json(model, return_dict=True)
 
@@ -204,9 +217,7 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
             n_0 = n_1
 
             # Check solver iterations and calculate next step size
-            solver_iterations = 8  # TODO : for now picking a value for iterations
-
-            s_proposed = s*(1 + step_accel*(iter_target/solver_iterations-1))
+            s_proposed = s*(1 + step_accel*(iter_target/sol_iter-1))
 
             if s_proposed > max_step:
                 s = max_step
@@ -227,10 +238,19 @@ def homotopy(model, variables, targets, solver='ipopt', solver_options={},
                 _log.exception(
                         "Homotopy failed - could not converge at minimum step "
                         "size. Current progress is {}".format(n_0))
+                return TerminationCondition.minStepLength, n_0, iter_count
 
-        if iter_count >= max_iter:  # Use greater than or equal to to be safe
+        if iter_count >= max_eval:  # Use greater than or equal to to be safe
             _log.exception("Homotopy failed - maximum homotopy iterations "
                            "exceeded. Current progress is {}".format(n_0))
+            return TerminationCondition.maxEvaluations, n_0, iter_count
 
-    _log.info("Homotopy successful - converged at target values in {} "
-              "iterations.".format(iter_count))
+    if sol_reg == "-":
+        _log.info("Homotopy successful - converged at target values in {} "
+                  "iterations.".format(iter_count))
+        return TerminationCondition.optimal, n_0, iter_count
+    else:
+        _log.exception(
+                "Homotopy failed - converged at target values with "
+                "regularization in {} iterations.".format(iter_count))
+        return TerminationCondition.other, n_0, iter_count
