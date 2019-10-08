@@ -200,7 +200,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 'flow_mol_comp': {'method': None, 'units': 'mol/s'},
                 'pressure': {'method': None, 'units': 'Pa'},
                 'temperature': {'method': None, 'units': 'K'},
-                'mole_frac': {'method': None, 'units': None},
+                'mole_frac_comp': {'method': None, 'units': None},
                 'cp_mol': {'method': '_cp_mol', 'units': 'J/mol.K'},
                 'cp_mol_comp': {'method': '_cp_mol_comp',
                                 'units': 'J/mol.K'},
@@ -323,7 +323,7 @@ class _StateBlock(StateBlock):
                         blk[k].temperature.fix(state_args["temperature"])
 
                 for j in blk[k]._params.component_list:
-                    blk[k].mole_frac[j] = \
+                    blk[k].mole_frac_comp[j] = \
                         (value(blk[k].flow_mol_comp[j]) /
                          sum(value(blk[k].flow_mol_comp[i])
                              for i in blk[k]._params.component_list))
@@ -479,7 +479,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
                                initialize=1500,
                                bounds=(1450, 3000),
                                doc='State temperature [K]')
-        self.mole_frac = Var(self._params.component_list,
+        self.mole_frac_comp = Var(self._params.component_list,
                              domain=Reals,
                              initialize=0.0,
                              doc='State component mole fractions [-]')
@@ -488,7 +488,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
         # Mole fractions
         def mole_frac_constraint(b, j):
             return b.flow_mol_comp[j] == (
-                       b.mole_frac[j] *
+                       b.mole_frac_comp[j] *
                        sum(b.flow_mol_comp[k]
                            for k in b._params.component_list))
         self.mole_frac_constraint = Constraint(self._params.component_list,
@@ -544,7 +544,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
                           doc="Mixture heat capacity [J/mol.K]")
 
         def cp_mol(b):
-            return b.cp_mol == sum(b.cp_mol_comp[j]*b.mole_frac[j]
+            return b.cp_mol == sum(b.cp_mol_comp[j]*b.mole_frac_comp[j]
                                    for j in b._params.component_list)
         try:
             # Try to build constraint
@@ -599,7 +599,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
             # Try to build constraint
             self.mixture_energy_internal_eqn = Constraint(expr=(
                         self.energy_internal_mol == sum(
-                                self.mole_frac[j] *
+                                self.mole_frac_comp[j] *
                                 self.energy_internal_mol_phase_comp["Vap", j]
                                 for j in self._params.component_list)))
         except AttributeError:
@@ -647,7 +647,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
             # Try to build constraint
             self.mixture_enthalpy_eqn = Constraint(expr=(
                         self.enth_mol == sum(
-                                self.mole_frac[j] *
+                                self.mole_frac_comp[j] *
                                 self.enth_mol_phase_comp["Vap", j]
                                 for j in self._params.component_list)))
         except AttributeError:
@@ -673,7 +673,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
                     b._params.cp_params[j, 4]*(b.temperature*1e-3)**3/3 -
                     b._params.cp_params[j, 5]/(2*(b.temperature*1e-3)**2) +
                     b._params.cp_params[j, 7] -
-                    b._params.gas_const*log(b.mole_frac[j] *
+                    b._params.gas_const*log(b.mole_frac_comp[j] *
                                             b.pressure/b._params.pressure_ref))
         try:
             # Try to build constraint
@@ -694,7 +694,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
             # Try to build constraint
             self.mixture_entropy_eqn = Constraint(expr=(
                         self.entr_mol == sum(
-                                self.mole_frac[j] *
+                                self.mole_frac_comp[j] *
                                 self.entr_mol_phase_comp["Vap", j]
                                 for j in self._params.component_list)))
         except AttributeError:
@@ -769,7 +769,7 @@ class MethaneCombustionStateBlockData(StateBlockData):
         return b.flow_mol*b.enth_mol
 
     def get_material_density_terms(b, p, j):
-        return b.dens_mol_phase[p]*b.mole_frac[j]
+        return b.dens_mol_phase[p]*b.mole_frac_comp[j]
 
     def get_energy_density_terms(b, p):
         return b.dens_mol_phase[p]*b.energy_internal_mol

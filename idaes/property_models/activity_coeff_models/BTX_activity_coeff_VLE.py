@@ -112,6 +112,20 @@ class BTXParameterData(ActivityCoeffParameterData):
             initialize=extract_data(temperature_critical_data),
             doc='Critical temperature [K]')
 
+        # Source: The Properties of Gases and Liquids (1987)
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
+        temperature_boil_data = {'benzene': 353.2,
+                                 'toluene': 383.8,
+                                 'o-xylene': 417.6
+                                 }
+
+        self.temperature_boil = Param(
+            self.component_list,
+            within=NonNegativeReals,
+            mutable=False,
+            initialize=extract_data(temperature_boil_data),
+            doc='Boiling point at standard atmosphere [K]')
+
         # Gas Constant
         self.gas_const = Param(within=NonNegativeReals,
                                mutable=False,
