@@ -62,19 +62,10 @@ def homotopy(model, variables, targets,
                    unsuccessful) (default=200)
 
     Returns:
-        A Pyomo TerminationCondition Enum with one of the following:
-            - TerminationCondition.optimal : successfully converged to target
-            value(s)
-            - TerminationCondition.infeasible : could not find feasible
-            solution at initial point
-            - TerminationCondition.minStepLength : could not converge to target
-            values due to finding no solutuon with minimum step size
-            - TerminationCondition.maxEvaluations : reached maximum number of
-            problem evaluations without converging to target values
-            - TerminationCondition.other : solution converged at target values
-            with regularisation
-        Solver progress : a fraction indication how far the solver progressed
-            from the initial values ot the target values
+        Termination Condition : A Pyomo TerminationCondition Enum indicating
+            how the meta-solver terminated (see documentation)
+        Solver Progress : a fraction indication how far the solver progressed
+            from the initial values to the target values
         Number of Iterations : number of homotopy evaluations before solver
             terminated
     """
