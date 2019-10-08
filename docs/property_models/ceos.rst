@@ -1,7 +1,7 @@
 Cubic Equations of State
 ========================
 
-This property package implements a general form of a cubic equation of state which can be used for most cubibc-type equations of state. This package supports phase equilibrium calucations with a smooth phase transition formulation that makes it amenable for equation oriented optimization. The following equations of state are currently supported:
+This property package implements a general form of a cubic equation of state which can be used for most cubic-type equations of state. This package supports phase equilibrium calculations with a smooth phase transition formulation that makes it amenable for equation oriented optimization. The following equations of state are currently supported:
 
 * Peng-Robinson
 * Soave-Redlich-Kwong
@@ -22,7 +22,7 @@ The state block uses the following state variables:
       	<ul>
  	<li>Total molar flow rate (mol/s) - <code> <font color="red"> flow_mol </font> </code>
  	<li>Temperature (K) - <code> <font color="red"> temperature </font> </code>
-	<li>Presure (Pa) - <code> <font color="red"> pressure</font></code>
+	<li>Pressure (Pa) - <code> <font color="red"> pressure</font></code>
 	<li>Mole fraction of the mixture - <code> <font color="red"> mole_frac_comp</font></code> 
 	</ul>
 	</body>
@@ -46,7 +46,7 @@ The ``valid_phase`` argument denotes the valid phases for a given set of inlet c
 
 Degrees of Freedom
 ------------------
-In general, the general cubic equation of state has a number of degrees of freedom equal to 2 + the number of components in the system (total flow rate, temperature, pressure and N-1 mole fractions). In soem cases (primarily inlets to units), this is increased by 1 due to the removal of a constraint on the sum of mole fractions. 
+In general, the general cubic equation of state has a number of degrees of freedom equal to 2 + the number of components in the system (total flow rate, temperature, pressure and N-1 mole fractions). In some cases (primarily inlets to units), this is increased by 1 due to the removal of a constraint on the sum of mole fractions. 
 
 General Cubic Equation of State
 -------------------------------
@@ -56,7 +56,7 @@ All equations come from "The Properties of Gases and Liquids, 4th Edition" by Re
 .. math:: A = \frac{a_mP}{R^2T^2}
 .. math:: B = \frac{b_mP}{RT}
 
-where :math:`Z` is the compressibility factor of the mixture, :math:`a_m` and :math:`b_m` are properties of the mixture and :math:`u` and :math:`w` are parameters which depend on the sepcific equation of state being used as show in the table below.
+where :math:`Z` is the compressibility factor of the mixture, :math:`a_m` and :math:`b_m` are properties of the mixture and :math:`u` and :math:`w` are parameters which depend on the specific equation of state being used as show in the table below.
 
 .. csv-table::
    :header: "Equation", ":math:`u`", ":math:`w`", ":math:`\Omega_A`", ":math:`\Omega_B`", ":math:`\kappa_j`"
@@ -85,12 +85,12 @@ The flash equations consists of the following equations:
 
 At the equilibrium condition, the fugacity of the vapor and liquid phase are defined as follows:
 
-.. math:: f_{i}^{vap} = f_{i}^{liq}
+.. math:: \ln{f_{i}^{vap}} = \ln{f_{i}^{liq}}
 .. math:: f_{i}^{phase} = y_{i}^{phase}\phi_{i}^{phase}P
 .. math:: \ln{\phi_{i}} = \frac{b_i}{b_m}(Z-1) - \ln{(Z-B)} + \frac{A}{B\sqrt{u^2-4w}}\left(\frac{b_i}{b_m}-\delta_i\right)\ln{\left(\frac{2Z+B(u+\sqrt{u^2-4w})}{2Z+B(u-\sqrt{u^2-4w})}\right)}
 .. math:: \delta_i = \frac{2a_i^{1/2}}{a_m}\sum_j{x_ja_j^{1/2}(1-k_{ij})}
 
-The cubic equation of state is solved to find :math:`Z` for each phase subject to the composion of that phase. Typically, the flash calculations are computed at a given temperature, :math:`T`. However, the flash calculations become trivial if the given conditions do not fall in the two phase region. For simulation only studies, the user may know a priori the condition of the stream but when the same set of equations are used for optimization, there is a high probablity that the specifications can transcend the phase envelope and hence the flash equations included may be trivial in the single phase region (i.e. liquid or vapor only). To circumvent this problem, property packages in IDAES that support VLE will compute the flash calculations at an "equilibrium" temperature :math:`T_{eq}`. The equilibrium temperature is computed as follows:
+The cubic equation of state is solved to find :math:`Z` for each phase subject to the composition of that phase. Typically, the flash calculations are computed at a given temperature, :math:`T`. However, the flash calculations become trivial if the given conditions do not fall in the two phase region. For simulation only studies, the user may know a priori the condition of the stream but when the same set of equations are used for optimization, there is a high probability that the specifications can transcend the phase envelope and hence the flash equations included may be trivial in the single phase region (i.e. liquid or vapor only). To circumvent this problem, property packages in IDAES that support VLE will compute the flash calculations at an "equilibrium" temperature :math:`T_{eq}`. The equilibrium temperature is computed as follows:
 
 .. math:: T_{1} = max(T_{bubble}, T) 
 .. math:: T_{eq} = min(T_{1}, T_{dew})
@@ -100,7 +100,7 @@ where :math:`T_{eq}` is the equilibrium temperature at which flash calculations 
 .. math:: T_{1} = 0.5{[T + T_{bubble} + \sqrt{(T-T_{bubble})^2 + \epsilon_{1}^2}]}
 .. math:: T_{eq} = 0.5{[T_{1} + T_{dew} - \sqrt{(T-T_{dew})^2 + \epsilon_{2}^2}]}
 
-where :math:`\epsilon_1` and :math:`\epsilon_2` are smoothing parameters (mutable). The default values are 0.01 and 0.0005 respectively. It is recommended that :math:`\epsilon_1` > :math:`\epsilon_2`. Please refer to reference 4 for more details. Therefore, it can be seen that if the stream temperature is less than that of the bubble point temperature, the VLE calucalations will be computed at the bubble point. Similarly, if the stream temperature is greater than the dew point temperature, then the VLE calculations are computed at the dew point temperature. For all other conditions, the equilibrium calcualtions will be computed at the actual temperature.
+where :math:`\epsilon_1` and :math:`\epsilon_2` are smoothing parameters (mutable). The default values are 0.01 and 0.0005 respectively. It is recommended that :math:`\epsilon_1` > :math:`\epsilon_2`. Please refer to reference 4 for more details. Therefore, it can be seen that if the stream temperature is less than that of the bubble point temperature, the VLE calculations will be computed at the bubble point. Similarly, if the stream temperature is greater than the dew point temperature, then the VLE calculations are computed at the dew point temperature. For all other conditions, the equilibrium calculations will be computed at the actual temperature.
 
 Other Constraints
 -----------------
@@ -136,6 +136,29 @@ The ideal entropy term is given by:
 The residual entropy term is given by:
 
 .. math:: s_{i}^{r}b_m\sqrt{u^2-4w} = R\ln{\frac{Z-B}{Z}}b_m\sqrt{u^2-4w} + R\ln{\frac{ZP^{ref}}{P}}b_m\sqrt{u^2-4w} + \frac{da}{dT}\ln{\left(\frac{2Z+B(u+\sqrt{u^2-4w})}{2Z+B(u-\sqrt{u^2-4w})}\right)}
+
+Fugacity
+^^^^^^^^
+
+Fugacity is calculated from the system pressure, mole fractions and fugacity coefficients as follows:
+
+.. math :: f_{i, p} = x_{i, p} \phi_{i, p} P
+
+Fugacity Coefficient
+^^^^^^^^^^^^^^^^^^^^
+
+The fugacity coefficient is calculated from the departure function of the cubic equation of state as shown below:
+
+.. math:: \ln{\phi_{i}} = \frac{b_i}{b_m}(Z-1) - \ln{(Z-B)} + \frac{A}{B\sqrt{u^2-4w}}\left(\frac{b_i}{b_m}-\delta_i\right)\ln{\left(\frac{2Z+B(u+\sqrt{u^2-4w})}{2Z+B(u-\sqrt{u^2-4w})}\right)}
+
+.. math:: \delta_i = \frac{2a_i^{1/2}}{a_m} \sum_j{x_j a_j^{1/2}(1-k_{ij})}
+
+Gibbs Energy
+^^^^^^^^^^^^
+
+The Gibbs energy of the system is calculated using the definition of Gibbs energy:
+
+.. math:: g_i = h_i - T \Delta s_i
 
 List of Variables
 -----------------
@@ -175,7 +198,7 @@ List of Parameters
    "``pressure_ref``", "Reference pressure", "Pa"
    "``temperature_ref``", "Reference temperature", "K"
    "``omega``", "Pitzer acentricity factor", "None"
-   "``kappa``", "Binary interaction paraters for EoS (note that parameters are specific for a given EoS", "None"
+   "``kappa``", "Binary interaction parameters for EoS (note that parameters are specific for a given EoS", "None"
    "``mw_comp``", "Component molecular weights", "kg/mol"
    "``cp_ig``", "Parameters for calculating component heat capacities", "varies"
    "``dh_form``", "Component standard heats of formation (used for enthalpy at reference state)", "J/mol"
