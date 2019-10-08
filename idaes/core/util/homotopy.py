@@ -29,31 +29,37 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.exceptions import ConfigurationError
 
 
-def homotopy(model, variables, targets, solver='ipopt',
+def homotopy(model, variables, targets,
              max_solver_iterations=50, max_solver_time=10,
              step_init=0.1, step_cut=0.5, iter_target=4, step_accel=0.5,
              max_step=1, min_step=0.05, max_eval=200):
     """
-    Homotopy meta-solver routine.
+    Homotopy meta-solver routine using Ipopt as the non-linear solver. This
+    routine takes a model along with a list of fixed variables in that model
+    and a list of target values for those variables. The routine then tries to
+    iteratively move the values of the fixed variables to their target values
+    using an adaptive step size.
 
     Args:
         model : model to be solved
         variables : list of Pyomo Var objects to be varied using homotopy.
                     Variables must be fixed.
         targets : list of target values for each variable
-        solver : solver to use to converge model at each step
         max_solver_iterations : maximum number of solver iterations per
-                    homotopy step
+                    homotopy step (default=50)
         max_solver_time : maximum cpu time for the solver per homotopy step
-        step_init : initial homotopy step size
+                    (default=10)
+        step_init : initial homotopy step size (default=0.1)
         step_cut : factor by which to reduce step size on failed step
+                    (default=0.5)
         step_accel : acceleration factor for adjusting step size on successful
-                     step
+                     step (default=0.5)
         iter_target : target number of solver iterations per homotopy step
-        max_step : maximum homotopy step size
-        min_step : minimum homotopy step size
+                    (default=4)
+        max_step : maximum homotopy step size (default=1)
+        min_step : minimum homotopy step size (default=0.05)
         max_eval : maximum number of homotopy evaluations (both successful and
-                   unsuccessful)
+                   unsuccessful) (default=200)
 
     Returns:
         A Pyomo TerminationCondition Enum with one of the following:
@@ -179,7 +185,7 @@ def homotopy(model, variables, targets, solver='ipopt',
                                  "an an integer.".format(iter_target))
 
     # Create solver object
-    solver_obj = SolverFactory(solver)
+    solver_obj = SolverFactory('ipopt')
 
     # Perform initial solve of model to confirm feasible initial solution
     results, solved, sol_iter, sol_time, sol_reg = ipopt_solve_with_stats(
@@ -198,10 +204,8 @@ def homotopy(model, variables, targets, solver='ipopt',
     # Set up homotopy variables
     # Get initial values and deltas for all variables
     v_init = []
-    delta = []
     for i in range(len(variables)):
         v_init.append(variables[i].value)
-        delta.append(targets[i] - variables[i].value)
 
     n_0 = 0.0  # Homotopy progress variable
     s = step_init  # Set step size to step_init
@@ -225,7 +229,7 @@ def homotopy(model, variables, targets, solver='ipopt',
 
         # Update values for all variables using n_1
         for i in range(len(variables)):
-            variables[i].fix(v_init[i] + delta[i]*n_1)
+            variables[i].fix(targets[i]*n_1 + v_init[i]*(1-n_1))
 
         # Solve model at new state
         results, solved, sol_iter, sol_time, sol_reg = ipopt_solve_with_stats(
