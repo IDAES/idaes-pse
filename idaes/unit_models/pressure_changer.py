@@ -344,7 +344,7 @@ see property package for documentation.}"""))
                          doc="Pressure for isentropic calculations")
         def isentropic_pressure(b, t):
             return b.sfp*b.properties_isentropic[t].pressure == \
-                b.sfp*b.ratioP[t]*b.control_volume.properties_out[t].pressure
+                b.sfp*b.control_volume.properties_out[t].pressure
 
         # This assumes isentropic composition is the same as outlet
         mb_type = self.config.material_balance_type
@@ -407,12 +407,12 @@ see property package for documentation.}"""))
                     "contact the IDAES developers with this bug."
                     .format(self.name))
 
-        # This assumes isentropic entropy is the same as outlet
+        # This assumes isentropic entropy is the same as inlet
         @self.Constraint(self.flowsheet().config.time,
                          doc="Isentropic assumption")
         def isentropic(b, t):
             return b.properties_isentropic[t].entr_mol == \
-                       b.control_volume.properties_out[t].entr_mol
+                       b.control_volume.properties_in[t].entr_mol
 
         # Isentropic work
         @self.Constraint(self.flowsheet().config.time,
@@ -421,7 +421,7 @@ see property package for documentation.}"""))
             return b.sfe*b.work_isentropic[t] == b.sfe*(
                 sum(b.properties_isentropic[t].get_enthalpy_flow_terms(p)
                     for p in b.config.property_package.phase_list) -
-                sum(b.control_volume.properties_out[t]
+                sum(b.control_volume.properties_in[t]
                     .get_enthalpy_flow_terms(p)
                     for p in b.config.property_package.phase_list))
 
