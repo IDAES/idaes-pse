@@ -43,7 +43,9 @@ _log = logging.getLogger(__name__)
 
 @declare_process_block_class("MethaneParameterBlock")
 class MethaneParameterData(ActivityCoeffParameterData):
-    # Config block for the _IdealStateBlock
+    # Methane combstion only considers and ideal vapor phase, so need to
+    # overload the user-selection of activity coefficient model and valid
+    # phases. Do this by creating our own Config block with limited choices.
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     CONFIG.declare("activity_coeff_model", ConfigValue(
