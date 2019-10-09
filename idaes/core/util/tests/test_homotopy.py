@@ -18,7 +18,11 @@ __author__ = "Andrew Lee"
 
 import pytest
 
-from pyomo.environ import ConcreteModel, Constraint, Var, TerminationCondition
+from pyomo.environ import (ConcreteModel,
+                           Constraint,
+                           Param,
+                           TerminationCondition,
+                           Var)
 
 from idaes.core import FlowsheetBlock
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
@@ -49,6 +53,13 @@ def test_invalid_model(model):
 
     with pytest.raises(TypeError):
         homotopy(o, [model.x], [20])
+
+
+def test_not_var(model):
+    model.p = Param()
+
+    with pytest.raises(TypeError):
+        homotopy(model, [model.p], [20])
 
 
 def test_var_not_in_model(model):
