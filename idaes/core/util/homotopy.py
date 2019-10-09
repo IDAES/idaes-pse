@@ -20,8 +20,7 @@ import logging
 
 from pyomo.environ import (Block,
                            SolverFactory,
-                           TerminationCondition,
-                           Var)
+                           TerminationCondition)
 from pyomo.core.base.var import _VarData
 from pyomo.contrib.parmest.ipopt_solver_wrapper import ipopt_solve_with_stats
 
