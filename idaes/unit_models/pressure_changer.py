@@ -344,7 +344,7 @@ see property package for documentation.}"""))
                          doc="Pressure for isentropic calculations")
         def isentropic_pressure(b, t):
             return b.sfp*b.properties_isentropic[t].pressure == \
-                b.sfp*b.ratioP[t]*b.control_volume.properties_out[t].pressure
+                b.sfp*b.control_volume.properties_out[t].pressure
 
         # This assumes isentropic composition is the same as outlet
         mb_type = self.config.material_balance_type
