@@ -18,7 +18,7 @@ cvalsim = None  # could cause problems
 def allcard(xdata, zdata, xval, zval, **kwargs):
     # enumerate all model cardinalities via ccmiqp and 
     # use validation/cross-validaiton to determine 
-    from idaes.surrogates import alamopy
+    from idaes.surrogate import alamopy
     from alamopy.writethis import writethis
     import numpy as np
     import math

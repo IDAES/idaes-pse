@@ -33,7 +33,7 @@ _log = logging.getLogger(__name__)
 alamo_enabled = True
 
 try:
-    from idaes.surrogates import alamopy
+    from idaes.surrogate import alamopy
 except ImportError:
     warnings.warn('Cannot import ALAMO')
     alamo_enabled = False
