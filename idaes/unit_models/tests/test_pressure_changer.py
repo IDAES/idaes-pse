@@ -404,10 +404,10 @@ class TestIAPWS(object):
         assert pytest.approx(151325, abs=1e2) == \
             value(iapws.fs.unit.outlet.pressure[0])
 
-        assert pytest.approx(151.5, abs=1e-1) == \
+        assert pytest.approx(101.43796915073504, abs=1e-1) == \
             value(iapws.fs.unit.work_mechanical[0])
 
-        assert pytest.approx(136.4, abs=1e-1) == \
+        assert pytest.approx(91.29417223566153, abs=1e-1) == \
             value(iapws.fs.unit.work_isentropic[0])
 
     @pytest.mark.initialize
