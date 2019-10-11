@@ -16,7 +16,6 @@ This is used to run ALAMO on property data.
 """
 # stdlib
 import logging
-import warnings
 # third-party
 import numpy as np
 from pandas import DataFrame
@@ -25,18 +24,13 @@ from idaes.dmf import resource, propdata
 # from idaes.dmf.experiment import Experiment
 # alamo
 from idaes.dmf import errors
+from idaes.surrogate import alamopy
 
 __author__ = 'Dan Gunter <dkgunter@lbl.gov>'
 
 _log = logging.getLogger(__name__)
 
-alamo_enabled = True
-
-try:
-    from idaes.surrogate import alamopy
-except ImportError:
-    warnings.warn('Cannot import ALAMO')
-    alamo_enabled = False
+alamo_enabled = alamopy.multos.has_alamo()
 
 
 class SurrogateModel(object):
