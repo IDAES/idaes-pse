@@ -48,6 +48,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock)
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 
 # -----------------------------------------------------------------------------
@@ -130,12 +131,20 @@ def test_costing():
     assert degrees_of_freedom(m) == 0
     
     m.fs.unit.initialize()
-    m.fs.unit._get_costing()
+
+    m.fs.unit.get_costing()
+    calculate_variable_from_constraint(
+                m.fs.unit.costing.base_cost,
+                m.fs.unit.costing.base_cost_eq)
     
+    calculate_variable_from_constraint(
+                m.fs.unit.costing.purchase_cost,
+                m.fs.unit.costing.cp_cost_eq)
 
     results = solver.solve(m)
-#    
-#    return m
+    assert m.fs.unit.costing.purchase_cost.value == \
+                                            pytest.approx(52442.7363,1e-5)
+
 # -----------------------------------------------------------------------------
 class TestBTX_cocurrent(object):
     @pytest.fixture(scope="class")
