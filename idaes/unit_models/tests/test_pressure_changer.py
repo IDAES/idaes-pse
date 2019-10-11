@@ -395,6 +395,16 @@ class TestIAPWS(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution(self, iapws):
+        # Check that outlet and isentropic pressure are equal
+        assert pytest.approx(
+            value(iapws.fs.unit.properties_isentropic[0].pressure), 1e-6) == \
+            value(iapws.fs.unit.outlet.pressure[0])
+
+        # Check that inlet and isentropic entropies are equal
+        assert pytest.approx(
+            value(iapws.fs.unit.properties_isentropic[0].entr_mol), 1e-6) == \
+            value(iapws.fs.unit.control_volume.properties_in[0].entr_mol)
+
         assert pytest.approx(100, abs=1e-5) == \
             value(iapws.fs.unit.outlet.flow_mol[0])
 
@@ -409,6 +419,13 @@ class TestIAPWS(object):
 
         assert pytest.approx(91.29417223566153, abs=1e-1) == \
             value(iapws.fs.unit.work_isentropic[0])
+
+        # For verification, check outlet and isentropic temperatures
+        assert pytest.approx(326.170, 1e-5) == \
+            value(iapws.fs.unit.control_volume.properties_out[0].temperature)
+
+        assert pytest.approx(326.170, 1e-5) == \
+            value(iapws.fs.unit.properties_isentropic[0].temperature)
 
     @pytest.mark.initialize
     @pytest.mark.solver
