@@ -750,11 +750,18 @@ linked to all inlet states and the mixed state,
                                                   for i in range(
                                                          len(i_block_list))) /
                                               len(i_block_list))
-
+        # Fix state variables so that the property package does not overwrite them with default values
+        for k in mblock.keys():
+            for v in mblock[k].define_state_vars().values():
+                v.fix()
         mblock.initialize(outlvl=outlvl-1,
                           optarg=optarg,
                           solver=solver,
                           hold_state=False)
+        # Unfix state variables
+        for k in mblock.keys():
+            for v in mblock[k].define_state_vars().values():
+                v.unfix()
 
         if blk.config.mixed_state_block is None:
             if (hasattr(blk, "pressure_equality_constraints") and

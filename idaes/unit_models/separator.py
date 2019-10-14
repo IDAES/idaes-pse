@@ -1199,10 +1199,18 @@ linked the mixed state and all outlet states,
                             s_vars[v][k].value = m_var[k].value
 
                 # Call initialization routine for outlet StateBlock
+                # Fix state variables so that the property package does not overwrite them with default values
+                for k in o_block.keys():
+                    for v in o_block[k].define_state_vars().values():
+                        v.fix()
                 o_block.initialize(outlvl=outlvl-1,
                                    optarg=optarg,
                                    solver=solver,
                                    hold_state=False)
+                # Unfix state variables
+                for k in o_block.keys():
+                    for v in o_block[k].define_state_vars().values():
+                        v.unfix()
 
         if blk.config.mixed_state_block is None:
             results = opt.solve(blk, tee=stee)
