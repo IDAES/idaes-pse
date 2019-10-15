@@ -9,6 +9,7 @@ from pyomo.environ import *
 import scipy.optimize as opt
 import warnings
 import itertools
+from sampling import FeatureScaling as fs
 
 
 """
@@ -38,7 +39,7 @@ class ResultReport:
     ===================================================================================================================
     """
 
-    def __init__(self, radial_weights, best_r_value, best_lambda_param, centres, y_training_predictions, rmse_error, x_condition_number, reg_setting, r_square):
+    def __init__(self, radial_weights, best_r_value, best_lambda_param, centres, y_training_predictions, rmse_error, x_condition_number, reg_setting, r_square, basis_function, data_min, data_max):
         self.weights = radial_weights
         self.sigma = best_r_value
         self.regularization = reg_setting
@@ -48,11 +49,54 @@ class ResultReport:
         self.output_predictions = y_training_predictions
         self.condition_number = x_condition_number
         self.R2 = r_square
+        self.basis_function = basis_function
+        self.x_data_min = data_min[:, :-1]
+        self.x_data_max = data_max[:, :-1]
+        self.y_data_min = data_min[:, -1]
+        self.y_data_max = data_max[:, -1]
         if x_condition_number < (1 / np.finfo(float).eps):
             self.solution_status = 'ok'
         else:
             warnings.warn('The parameter matrix A in A.x=B is ill-conditioned (condition number > 1e10). The solution returned may be inaccurate or unstable - inspect rmse error. Regularization (if not already done) may improve solution')
             self.solution_status = 'unstable solution'
+
+    def rbf_generate_expression(self, variable_list):
+        t1 = np.array([variable_list])
+        basis_vector = []
+        # Calculate distances from centres
+        for i in range(0, self.centres.shape[0]):
+            ans = 0
+            for j in range(0, self.centres.shape[1]):
+                ans += (((t1[0, j] - self.x_data_min[0, j])/(self.x_data_max[0, j]- self.x_data_min[0, j])) - self.centres[i, j]) ** 2
+            eucl_d = ans ** 0.5
+            basis_vector.append(eucl_d)
+        rbf_terms_list = []
+        if self.basis_function == 'linear':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append(RadialBasisFunctions.linear_transformation(basis_vector[k]))
+        elif self.basis_function == 'cubic':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append(RadialBasisFunctions.cubic_transformation(basis_vector[k]))
+        elif self.basis_function == 'gaussian':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append(exp(-1 * ((self.sigma * basis_vector[k]) ** 2)))
+        elif self.basis_function == 'mq':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append((((basis_vector[k] * self.sigma) ** 2) + 1) ** 0.5)
+        elif self.basis_function == 'imq':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append(1 / ((((basis_vector[k] * self.sigma) ** 2) + 1) ** 0.5))
+        elif self.basis_function == 'spline':
+            for k in range(0, len(basis_vector)):
+                rbf_terms_list.append(((basis_vector[k] ** 2) * log(basis_vector[k])))
+
+        rbf_terms_array = np.asarray(rbf_terms_list)
+        rbf_expr = self.y_data_min[0]
+        rbf_expr += (self.y_data_max[0] - self.y_data_min[0]) * sum(w * t for w, t in zip(
+            np.nditer(self.weights),
+            np.nditer(rbf_terms_array, flags=['refs_ok'])
+        ))
+        return rbf_expr
 
 
 class FeatureScaling:
@@ -83,8 +127,10 @@ class FeatureScaling:
         # Confirm that data type is an array or DataFrame
         if isinstance(data, np.ndarray):
             input_data = data
+            data_headers = []
         elif isinstance(data, pd.DataFrame):
             input_data = data.values
+            data_headers = data.columns.values.tolist()
         else:
             raise TypeError('original_data_input: Pandas dataframe or numpy array required.')
 
@@ -95,6 +141,9 @@ class FeatureScaling:
         scaled_data = (input_data - data_minimum)/(data_maximum - data_minimum)
         data_minimum = data_minimum.reshape(1, data_minimum.shape[0])
         data_maximum = data_maximum.reshape(1, data_maximum.shape[0])
+
+        if len(data_headers) > 0:
+            scaled_data = pd.DataFrame(scaled_data, columns=data_headers)
         return scaled_data, data_minimum, data_maximum
 
     @staticmethod
@@ -234,14 +283,21 @@ class RadialBasisFunctions:
         # Check data types and shapes
         if isinstance(XY_data, pd.DataFrame):
             xy_data = XY_data.values
+            self.x_data_columns = list(XY_data.columns)[:-1]
         elif isinstance(XY_data, np.ndarray):
             xy_data = XY_data
+            self.x_data_columns = list(range(XY_data.shape[1] - 1))
         else:
             raise ValueError('Pandas dataframe or numpy array required for "XY_data".')
 
-        self.x_data = xy_data[:, :-1]
-        self.y_data = xy_data[:, -1].reshape(xy_data.shape[0], 1)
-        self.centres = xy_data[:, :-1]
+        self.x_data_unscaled = xy_data[:, :-1]
+        self.y_data_unscaled = xy_data[:, -1].reshape(xy_data.shape[0], 1)
+        xy_data_scaled, self.data_min, self.data_max = fs.data_scaling_minmax(XY_data)
+        x_data_scaled = xy_data_scaled[:, :-1]
+        y_data_scaled = xy_data_scaled[:, -1]
+        self.x_data = x_data_scaled.reshape(self.x_data_unscaled.shape)
+        self.y_data = y_data_scaled.reshape(self.y_data_unscaled.shape)
+        self.centres = xy_data_scaled[:, :-1]
 
         if solution_method is None:
             solution_method = 'algebraic'
@@ -881,12 +937,13 @@ class RadialBasisFunctions:
             radial_weights = self.bfgs_parameter_optimization(x_transformed, self.y_data)
         radial_weights = radial_weights.reshape(radial_weights.shape[0], 1)
 
-        training_ss_error, rmse_error, y_training_predictions = self.error_calculation(radial_weights, x_transformed, self.y_data)
-        r_square = self.r2_calculation(self.y_data, y_training_predictions)
-        results = ResultReport(radial_weights, best_r_value, best_lambda_param, self.centres, y_training_predictions, rmse_error, x_condition_number, self.regularization, r_square)
+        training_ss_error, rmse_error, y_training_predictions_scaled = self.error_calculation(radial_weights, x_transformed, self.y_data)
+        r_square = self.r2_calculation(self.y_data, y_training_predictions_scaled)
+        y_training_predictions = self.data_min[0, -1] + y_training_predictions_scaled * (self.data_max[0, -1] - self.data_min[0, -1])
+        results = ResultReport(radial_weights, best_r_value, best_lambda_param, self.centres, y_training_predictions, rmse_error, x_condition_number, self.regularization, r_square, self.basis_function, self.data_min, self.data_max)
         return results
 
-    def rbf_predict_output(self, radial_weights, x_data, centres_matrix, r, lambda_reg):
+    def rbf_predict_output(self, results_vector, x_data):
         """
         =====================================================================================================================
 
@@ -905,6 +962,12 @@ class RadialBasisFunctions:
 
         =====================================================================================================================
         """
+        radial_weights = results_vector.weights
+        centres_matrix = results_vector.centres
+        r = results_vector.sigma
+        lambda_reg = results_vector.regularization_parameter
+        x_pred_scaled = ((x_data - results_vector.x_data_min) / (results_vector.x_data_max - results_vector.x_data_min))
+        x_data = x_pred_scaled.reshape(x_data.shape)
 
         basis_vector = np.zeros((x_data.shape[0], centres_matrix.shape[0]))
         # Calculate distances from centres
@@ -930,6 +993,13 @@ class RadialBasisFunctions:
         # Add regularization shifting?
         x_transformed = x_transformed + (0 * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
         # x_transformed = x_transformed + (lambda_reg * np.eye(x_transformed.shape[0], x_transformed.shape[1]))
-        y_prediction = np.matmul(x_transformed, radial_weights)
+        y_prediction_scaled = np.matmul(x_transformed, radial_weights)
+        y_prediction_unscaled = results_vector.y_data_min + y_prediction_scaled * (results_vector.y_data_max - results_vector.y_data_min)
+        return y_prediction_unscaled
 
-        return y_prediction
+    def get_feature_vector(self):
+        p = Param(self.x_data_columns, mutable=True, initialize=0)
+        p.index_set().construct()
+        p.construct()
+        self.feature_list = p
+        return p

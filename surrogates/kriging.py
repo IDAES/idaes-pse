@@ -1,7 +1,9 @@
 import numpy as np
 from scipy.optimize import basinhopping
+import scipy.optimize as opt
 import pandas as pd
-from pyomo.environ import Param, exp
+from pyomo.core import Param, exp
+from sampling import FeatureScaling as fs
 
 
 class ResultReport:
@@ -26,7 +28,7 @@ class ResultReport:
     ===================================================================================================================
     """
 
-    def __init__(self, theta, reg_param, mean, variance, cov_mat, cov_inv, ymu, y_training, r2_training, rmse_error, p, x_data):
+    def __init__(self, theta, reg_param, mean, variance, cov_mat, cov_inv, ymu, y_training, r2_training, rmse_error, p, x_data, x_data_scaled, x_data_min, x_data_max):
         self.optimal_weights = theta
         self.optimal_p = p
         self.optimal_mean = mean
@@ -39,12 +41,16 @@ class ResultReport:
         self.training_R2 = r2_training
         self.training_rmse = rmse_error
         self.x_data = x_data
+        self.scaled_x = x_data_scaled
+        self.x_min = x_data_min
+        self.x_max = x_data_max
 
     def kriging_generate_expression(self, variable_list):
         t1 = np.array([variable_list])
         phi_var = []
         for i in range(0, self.x_data.shape[0]):
-            curr_term = sum(self.optimal_weights[j] * (t1[0, j] - self.x_data[i, j]) ** self.optimal_p for j in range(0, self.x_data.shape[1]))
+            curr_term = sum(self.optimal_weights[j] * ( ((t1[0, j] - self.x_min[0, j])/(self.x_max[0, j] - self.x_min[0, j])) - self.scaled_x[i, j]) ** self.optimal_p for j in range(0, self.x_data.shape[1]))
+
             curr_term = exp(-curr_term)
             phi_var.append(curr_term)
         phi_var_array = np.asarray(phi_var)
@@ -70,7 +76,7 @@ class MyBounds(object):
 
 class KrigingModel:
 
-    def __init__(self, XY_data):
+    def __init__(self, XY_data, numerical_gradients=True, regularization=True):
 
         # Check data types and shapes
         if isinstance(XY_data, pd.DataFrame):
@@ -82,9 +88,22 @@ class KrigingModel:
         else:
             raise ValueError('Pandas dataframe or numpy array required for "XY_data".')
 
-        self.x_data = xy_data[:, :-1]
+        self.x_data = xy_data[:, :-1].reshape(xy_data.shape[0], xy_data.shape[1]-1)
         self.y_data = xy_data[:, -1].reshape(xy_data.shape[0], 1)
         self.num_vars = self.x_data.shape[1] + 1  # thetas and reg parameter only
+        x_data_scaled, self.x_data_min, self.x_data_max = fs.data_scaling_minmax(self.x_data)
+        self.x_data_scaled = x_data_scaled.reshape(self.x_data.shape)
+
+        if isinstance(regularization, bool):
+            self.num_grads = numerical_gradients
+        else:
+            raise Exception('numerical_gradients must be boolean.')
+
+        if isinstance(regularization, bool):
+            self.regularization = regularization
+        else:
+            raise Exception('Choice of regularization must be boolean.')
+
 
     @staticmethod
     def covariance_matrix_generator(x, theta, reg_param, p):
@@ -145,14 +164,54 @@ class KrigingModel:
             conc_log_like = 1e4
         return conc_log_like
 
-    def basinhopping_optimization(self, p):
-        # Create initial value list  - random generation from uniform distribution for thetas, median value of range for p
+    def numerical_gradient(self, var_vector, x, y, p):
+        eps = 1e-6
+        grad_vec = np.zeros(len(var_vector), )
+        for i in range(0, len(var_vector)):
+            var_vector_plus = np.copy(var_vector)
+            var_vector_plus[i] = var_vector[i] + eps
+            var_vector_minus = np.copy(var_vector)
+            var_vector_minus[i] = var_vector[i] - eps
+            # of = self.objective_function(var_vector, x, y, p)
+            of_plus = self.objective_function(var_vector_plus, x, y, p)
+            of_minus = self.objective_function(var_vector_minus, x, y, p)
+            grad_current = (of_plus - of_minus) / (2 * eps)
+            grad_vec[i, ] = grad_current
+        if self.regularization is False:
+            grad_vec[-1, ] = 0
+        return grad_vec
+
+    def parameter_optimization(self, p):
+        """
+        Parameter (theta) optimization using BFGS algorithm
+        """
         initial_value_list = np.random.randn(self.num_vars - 1, )
         initial_value_list = initial_value_list.tolist()
         initial_value_list.append(1e-4)
-        other_args = {"args": (self.x_data, self.y_data, p)}
-        mybounds = MyBounds()  # Bounds on regularization parameter
-        opt_results = basinhopping(self.objective_function, initial_value_list, minimizer_kwargs=other_args, niter=100, disp=True, accept_test=mybounds, interval=10)
+        initial_value = np.array(initial_value_list)
+        initial_value = initial_value.reshape(initial_value.shape[0], 1)
+        # Create bounds for variables. All logthetas btw (-4, 4), reg param between (1e-9, 0.1)
+        bounds = []
+        for i in range(0, len(initial_value_list)):
+            if i == len(initial_value_list) - 1:
+                if self.regularization is True:
+                    bounds.append((1e-6, 0.1))
+                else:
+                    bounds.append((1e-10, 1e-10))
+            else:
+                bounds.append((-3, 3))
+        bounds = tuple(bounds)
+
+        if self.num_grads:
+            print('Optimizing kriging parameters using L-BFGS-B algorithm...')
+            other_args = (self.x_data_scaled, self.y_data, p)
+            opt_results = opt.minimize(self.objective_function, initial_value, args=other_args, method='L-BFGS-B', jac=self.numerical_gradient, bounds=bounds, options={'gtol': 1e-7}) #, 'disp': True})
+        else:
+            print('Optimizing Kriging parameters using Basinhopping algorithm...')
+            other_args = {"args": (self.x_data_scaled, self.y_data, p), 'bounds': bounds}
+            # other_args = {"args": (self.x_data, self.y_data, p)}
+            mybounds = MyBounds()  # Bounds on regularization parameter
+            opt_results = basinhopping(self.objective_function, initial_value_list, minimizer_kwargs=other_args, niter=1000, disp=True, accept_test=mybounds) # , interval=5)
         return opt_results
 
     def optimal_parameter_evaluation(self, var_vector, p):
@@ -160,12 +219,12 @@ class KrigingModel:
         reg_param = var_vector[-1]
         theta = 10 ** theta  # Assumes log(theta) provided. Ensures that theta is always positive
         ns = self.y_data.shape[0]
-        cov_mat = self.covariance_matrix_generator(self.x_data, theta, reg_param, p)
+        cov_mat = self.covariance_matrix_generator(self.x_data_scaled, theta, reg_param, p)
         cov_inv = self.covariance_inverse_generator(cov_mat)
         mean = self.kriging_mean(cov_inv, self.y_data)
         y_mu = self.y_mu_calculation(self.y_data, mean)
         variance = self.kriging_sd(cov_inv, y_mu, ns)
-        print('\nFinal results\n================\nTheta:', theta, '\nMean:', mean,'\nRegularization parameter:', reg_param)
+        print('\nFinal results\n================\nTheta:', theta, '\nMean:', mean, '\nRegularization parameter:', reg_param)
         return theta, reg_param, mean, variance, cov_mat, cov_inv, y_mu
 
     @staticmethod
@@ -207,11 +266,13 @@ class KrigingModel:
         return r_square
 
     def kriging_predict_output(self, kriging_params, x_pred):
+        x_pred_scaled = ((x_pred - self.x_data_min) / (self.x_data_max - self.x_data_min))
+        x_pred = x_pred_scaled.reshape(x_pred.shape)
         if x_pred.ndim == 1:
-           x_pred = x_pred.reshape(1, len(x_pred))
+            x_pred = x_pred.reshape(1, len(x_pred))
         y_pred = np.zeros((x_pred.shape[0], 1))
         for i in range(0, x_pred.shape[0]):
-            cmt = (np.matmul(((np.abs(x_pred[i, :] - self.x_data)) ** kriging_params.optimal_p), kriging_params.optimal_weights)).transpose()
+            cmt = (np.matmul(((np.abs(x_pred[i, :] - self.x_data_scaled)) ** kriging_params.optimal_p), kriging_params.optimal_weights)).transpose()
             cov_matrix_tests = np.exp(-1 * cmt)
             y_pred[i, 0] = kriging_params.optimal_mean + np.matmul(np.matmul(cov_matrix_tests.transpose(), kriging_params.covariance_matrix_inverse), kriging_params.optimal_y_mu)
         return y_pred
@@ -219,17 +280,15 @@ class KrigingModel:
     def kriging_training(self):
         # Create p values, for now fixed at p=2. Arraying p makes the code significantly (at least 7x slower)
         p = 2
-        # p = 2 * np.ones((self.num_vars-1, ))
-
-        # Solve optimization problem with basinhopping
-        bh_results = self.basinhopping_optimization(p)
+        # Solve optimization problem
+        bh_results = self.parameter_optimization(p)
         # Calculate other variables and parameters
         optimal_theta, optimal_reg_param, optimal_mean, optimal_variance, optimal_cov_mat, opt_cov_inv, optimal_ymu = self.optimal_parameter_evaluation(bh_results.x, p)
         # Training performance
-        training_ss_error, rmse_error, y_training_predictions = self.error_calculation(optimal_theta, p, optimal_mean, opt_cov_inv, optimal_ymu, self.x_data, self.y_data)
+        training_ss_error, rmse_error, y_training_predictions = self.error_calculation(optimal_theta, p, optimal_mean, opt_cov_inv, optimal_ymu, self.x_data_scaled, self.y_data)
         r2_training = self.r2_calculation(self.y_data, y_training_predictions)
         # Return results
-        results = ResultReport(optimal_theta, optimal_reg_param, optimal_mean, optimal_variance, optimal_cov_mat, opt_cov_inv, optimal_ymu, y_training_predictions, r2_training, rmse_error, p, self.x_data)
+        results = ResultReport(optimal_theta, optimal_reg_param, optimal_mean, optimal_variance, optimal_cov_mat, opt_cov_inv, optimal_ymu, y_training_predictions, r2_training, rmse_error, p, self.x_data, self.x_data_scaled, self.x_data_min, self.x_data_max)
         return results
 
     def get_feature_vector(self):

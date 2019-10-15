@@ -63,7 +63,7 @@ class ResultReport:
         self.optimal_weights_array = optimal_weight_vector
         self.polynomial_order = polynomial_order
         self.multinomials = multinomials
-        self.errors = {'MAE': mae_error, 'MSE': mse_error, 'R2':R2, 'Adjusted R2': adjusted_R2}
+        self.errors = {'MAE': mae_error, 'MSE': mse_error, 'R2': R2, 'Adjusted R2': adjusted_R2}
         self.number_of_iterations = number_of_iterations
         self.iteration_summary = results_vector
         self.additional_features_data = additional_features_array
@@ -85,18 +85,18 @@ class ResultReport:
         ).transpose()
         n = len(terms)
 
-        ans = sum(w*t for w,t in zip(
+        ans = sum(w*t for w, t in zip(
             np.nditer(self.optimal_weights_array),
             np.nditer(terms, flags=['refs_ok'])
         ))
 
-        user_term_map = dict((id(a), b) for a,b in zip(
+        user_term_map = dict((id(a), b) for a, b in zip(
             self.extra_terms_feature_vector,
             variable_list,
         ))
-        for w,expr in zip(np.nditer(self.optimal_weights_array[n:]),
-                          self.extra_terms_expressions):#, flags=['refs_ok'])):
-            ans += float(w) * replace_expressions(expr, user_term_map)
+        if len(self.extra_terms_expressions) > 0:
+            for w, expr in zip(np.nditer(self.optimal_weights_array[n:]), self.extra_terms_expressions):
+                ans += float(w) * replace_expressions(expr, user_term_map)
         return ans
 
 
@@ -128,8 +128,10 @@ class FeatureScaling:
         # Confirm that data type is an array or DataFrame
         if isinstance(data, np.ndarray):
             input_data = data
+            data_headers = []
         elif isinstance(data, pd.DataFrame):
             input_data = data.values
+            data_headers = data.columns.values.tolist()
         else:
             raise TypeError('original_data_input: Pandas dataframe or numpy array required.')
 
@@ -140,6 +142,10 @@ class FeatureScaling:
         scaled_data = (input_data - data_minimum)/(data_maximum - data_minimum)
         data_minimum = data_minimum.reshape(1, data_minimum.shape[0])
         data_maximum = data_maximum.reshape(1, data_maximum.shape[0])
+
+        if len(data_headers) > 0:
+            scaled_data = pd.DataFrame(scaled_data, columns=data_headers)
+
         return scaled_data, data_minimum, data_maximum
 
     @staticmethod
@@ -279,7 +285,7 @@ class PolynomialRegression:
             self.regression_data_columns = list(original_data_input.columns)[:-1]
         elif isinstance(original_data_input, np.ndarray):
             original_data = original_data_input
-            self.regression_data_columns = list(range(original_data_input.shape[1]))
+            self.regression_data_columns = list(range(original_data_input.shape[1]-1))
         else:
             raise ValueError('original_data_input: Pandas dataframe or numpy array required.')
 
@@ -1098,8 +1104,8 @@ class PolynomialRegression:
 
     def fit_surrogate(self):
         cMap = ComponentMap()
-        for i,col in enumerate(self.regression_data_columns):
-            cMap[self.feature_list[col]] = self.regression_data[:,i]
+        for i, col in enumerate(self.regression_data_columns):
+            cMap[self.feature_list[col]] = self.regression_data[:, i]
         npe = NumpyEvaluator(cMap)
         additional_data = list(
             npe.walk_expression(term) for term in self.additional_term_expressions
