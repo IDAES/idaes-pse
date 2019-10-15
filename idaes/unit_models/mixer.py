@@ -722,18 +722,20 @@ linked to all inlet states and the mixed state,
         else:
             mblock = blk.config.mixed_state_block
 
+
+        o_flags = {}
         # Calculate initial guesses for mixed stream state
         for t in blk.flowsheet().config.time:
             # Iterate over state vars as defined by property package
             s_vars = mblock[t].define_state_vars()
-            o_flags = {}
             for s in s_vars:
                 i_vars = []
                 for k in s_vars[s]:
                     # Record whether variable was fixed or not
-                    o_flags[s, k] = s_vars[s][k].fixed
+                    o_flags[t, s, k] = s_vars[s][k].fixed
 
-                    # If fixed, use current value, otherwise calculate guess from mixed state
+                    # If fixed, use current value
+                    # otherwise calculate guess from mixed state
                     if not s_vars[s][k].fixed:
                         for i in range(len(i_block_list)):
                             i_vars.append(getattr(i_block_list[i][t],
@@ -747,30 +749,27 @@ linked to all inlet states and the mixed state,
                         elif "flow" in s:
                             # If a "flow" variable (i.e. extensive), sum inlets
                             for k in s_vars[s]:
-                                s_vars[s][k].value = sum(i_vars[i][k].value
-                                                         for i in range(
-                                                                 len(i_block_list)))
+                                s_vars[s][k].value = sum(
+                                        i_vars[i][k].value
+                                        for i in range(len(i_block_list)))
                         else:
                             # Otherwise use average of inlets
                             for k in s_vars[s]:
-                                s_vars[s][k].value = (sum(i_vars[i][k].value
-                                                          for i in range(
-                                                                 len(i_block_list))) /
-                                                      len(i_block_list))
-        # Revert fixed status of variables to what they were before
-        for s in s_vars:
-            for k in s_vars[s]:
-                s_vars[s][k].fixed = o_flags[s, k]
+                                s_vars[s][k].value = (
+                                    sum(i_vars[i][k].value for i in
+                                        range(len(i_block_list))) /
+                                    len(i_block_list))
 
         mblock.initialize(outlvl=outlvl-1,
                           optarg=optarg,
                           solver=solver,
                           hold_state=False)
-        # Unfix state variables
 
-        for k in mblock.keys():
-            for v in mblock[k].define_state_vars().values():
-                v.unfix()
+        # Revert fixed status of variables to what they were before
+        for t in blk.flowsheet().config.time:
+            for s in s_vars:
+                for k in s_vars[s]:
+                    s_vars[s][k].fixed = o_flags[t, s, k]
 
         if blk.config.mixed_state_block is None:
             if (hasattr(blk, "pressure_equality_constraints") and

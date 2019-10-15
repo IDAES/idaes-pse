@@ -1161,17 +1161,19 @@ linked the mixed state and all outlet states,
             # Get corresponding outlet StateBlock
             o_block = getattr(blk, o+"_state")
 
+            # Create dict to store fixed status of state variables
+            o_flags = {}
             for t in blk.flowsheet().config.time:
 
                 # Calculate values for state variables
                 s_vars = o_block[t].define_state_vars()
-                o_flags = {}
                 for v in s_vars:
                     for k in s_vars[v]:
                         # Record whether variable was fixed or not
-                        o_flags[v, k] = s_vars[v][k].fixed
+                        o_flags[t, v, k] = s_vars[v][k].fixed
 
-                        # If fixed, use current value, otherwise calculate guess from mixed state
+                        # If fixed, use current value
+                        # otherwise calculate guess from mixed state and fix
                         if not s_vars[v][k].fixed:
                             m_var = getattr(mblock[t], s_vars[v].local_name)
                             if "flow" in v:
@@ -1180,40 +1182,40 @@ linked the mixed state and all outlet states,
                                 try:
                                     if (k is None or blk.config.split_basis ==
                                             SplittingType.totalFlow):
-                                        s_vars[v][k].value = value(
-                                            m_var[k]*blk.split_fraction[(t, o)])
+                                        s_vars[v][k].fix(value(
+                                            m_var[k] *
+                                            blk.split_fraction[(t, o)]))
                                     else:
-                                        s_vars[v][k].value = value(
+                                        s_vars[v][k].fix(value(
                                                 m_var[k]*blk.split_fraction[
-                                                        (t, o) + k])
+                                                        (t, o) + k]))
                                 except KeyError:
                                     raise KeyError(
-                                            "{} state variable and split fraction "
-                                            "indexing sets do not match. The in-built"
-                                            " initialization routine for Separators "
-                                            "relies on the split fraction and state "
-                                            "variable indexing sets matching to "
-                                            "calculate initial guesses for extensive "
-                                            "variables. In other cases users will "
-                                            "need to provide their own initial "
-                                            "guesses".format(blk.name))
+                                        "{} state variable and split fraction "
+                                        "indexing sets do not match. The "
+                                        "in-built  initialization routine for "
+                                        "Separators relies on the split "
+                                        "fraction and state variable indexing "
+                                        "sets matching to calculate initial "
+                                        "guesses for extensive variables. In "
+                                        "other cases users will need to "
+                                        "provide their own initial guesses"
+                                        .format(blk.name))
                             else:
                                 # Otherwise intensive, equate to mixed stream
-                                s_vars[v][k].value = m_var[k].value
+                                s_vars[v][k].fix(m_var[k].value)
 
-                # Call initialization routine for outlet StateBlock
-                # Fix state variables so that the property package does not overwrite them with default values
-                for k in o_block.keys():
-                    for v in o_block[k].define_state_vars().values():
-                        v.fix()
-                o_block.initialize(outlvl=outlvl-1,
-                                   optarg=optarg,
-                                   solver=solver,
-                                   hold_state=False)
-                # Revert fixed status of variables to what they were before
+            # Call initialization routine for outlet StateBlock
+            o_block.initialize(outlvl=outlvl-1,
+                               optarg=optarg,
+                               solver=solver,
+                               hold_state=False)
+
+            # Revert fixed status of variables to what they were before
+            for t in blk.flowsheet().config.time:
                 for v in s_vars:
                     for k in s_vars[v]:
-                        s_vars[v][k].fixed = o_flags[v, k]
+                        s_vars[v][k].fixed = o_flags[t, v, k]
 
         if blk.config.mixed_state_block is None:
             results = opt.solve(blk, tee=stee)
