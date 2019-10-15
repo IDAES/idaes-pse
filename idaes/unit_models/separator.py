@@ -1165,38 +1165,41 @@ linked the mixed state and all outlet states,
 
                 # Calculate values for state variables
                 s_vars = o_block[t].define_state_vars()
-
+                o_flags = {}
                 for v in s_vars:
-                    m_var = getattr(mblock[t], s_vars[v].local_name)
+                    for k in s_vars[v]:
+                        # Record whether variable was fixed or not
+                        o_flags[v, k] = s_vars[v][k].fixed
 
-                    if "flow" in v:
-                        # If a "flow" variable, is extensive
-                        # Apply split fraction
-                        try:
-                            for k in s_vars[v]:
-                                if (k is None or blk.config.split_basis ==
-                                        SplittingType.totalFlow):
-                                    s_vars[v][k].value = value(
-                                        m_var[k]*blk.split_fraction[(t, o)])
-                                else:
-                                    s_vars[v][k].value = value(
-                                            m_var[k]*blk.split_fraction[
-                                                    (t, o) + k])
-                        except KeyError:
-                            raise KeyError(
-                                    "{} state variable and split fraction "
-                                    "indexing sets do not match. The in-built"
-                                    " initialization routine for Separators "
-                                    "relies on the split fraction and state "
-                                    "variable indexing sets matching to "
-                                    "calculate initial guesses for extensive "
-                                    "variables. In other cases users will "
-                                    "need to provide their own initial "
-                                    "guesses".format(blk.name))
-                    else:
-                        # Otherwise intensive, equate to mixed stream
-                        for k in s_vars[v]:
-                            s_vars[v][k].value = m_var[k].value
+                        # If fixed, use current value, otherwise calculate guess from mixed state
+                        if not s_vars[v][k].fixed:
+                            m_var = getattr(mblock[t], s_vars[v].local_name)
+                            if "flow" in v:
+                                # If a "flow" variable, is extensive
+                                # Apply split fraction
+                                try:
+                                    if (k is None or blk.config.split_basis ==
+                                            SplittingType.totalFlow):
+                                        s_vars[v][k].value = value(
+                                            m_var[k]*blk.split_fraction[(t, o)])
+                                    else:
+                                        s_vars[v][k].value = value(
+                                                m_var[k]*blk.split_fraction[
+                                                        (t, o) + k])
+                                except KeyError:
+                                    raise KeyError(
+                                            "{} state variable and split fraction "
+                                            "indexing sets do not match. The in-built"
+                                            " initialization routine for Separators "
+                                            "relies on the split fraction and state "
+                                            "variable indexing sets matching to "
+                                            "calculate initial guesses for extensive "
+                                            "variables. In other cases users will "
+                                            "need to provide their own initial "
+                                            "guesses".format(blk.name))
+                            else:
+                                # Otherwise intensive, equate to mixed stream
+                                s_vars[v][k].value = m_var[k].value
 
                 # Call initialization routine for outlet StateBlock
                 # Fix state variables so that the property package does not overwrite them with default values
@@ -1207,10 +1210,10 @@ linked the mixed state and all outlet states,
                                    optarg=optarg,
                                    solver=solver,
                                    hold_state=False)
-                # Unfix state variables
-                for k in o_block.keys():
-                    for v in o_block[k].define_state_vars().values():
-                        v.unfix()
+                # Revert fixed status of variables to what they were before
+                for v in s_vars:
+                    for k in s_vars[v]:
+                        s_vars[v][k].fixed = o_flags[v, k]
 
         if blk.config.mixed_state_block is None:
             results = opt.solve(blk, tee=stee)
