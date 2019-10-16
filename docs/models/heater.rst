@@ -2,9 +2,9 @@ Heater
 ======
 
 .. index::
-  pair: idaes.unit_models.heat_exchanger;Heater
+  pair: idaes.unit_models.heater;Heater
 
-.. module:: idaes.unit_models.heat_exchanger
+.. module:: idaes.unit_models.heater
 
 The Heater model is a simple 0D model that adds or removes heat from a
 material stream.

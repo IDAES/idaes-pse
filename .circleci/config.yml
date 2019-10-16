@@ -4,32 +4,33 @@ shared-dev: &shared-dev
   working_directory: ~/repo
   steps:
     - checkout
-    - run: ./install-solvers.sh
-    - run: sudo pip install pip==18.0.0
-    - run: sudo pip install -r requirements-dev.txt
-    - run: pyomo --version
-    - run: cd docs && make all
-    - run: pytest -c pytest-dev.ini docs idaes -m "not nocircleci"
-    - run: coverage report
-    - run: coveralls
+    - run: ./scripts/remove-idaes-from-path.sh
+    - run: pip install pip==18.0.0
+    - run: pip install -r requirements-dev.txt
+    - run: pylint -E --ignore-patterns="test_.*" idaes || true
+#    - run: pyomo --version
+#    - run: cd docs && make all
+    - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
+#    - run: coverage report
+#    - run: coveralls
 
 shared: &shared
   working_directory: ~/repo
   steps:
     - checkout
-    - run: ./install-solvers.sh
-    - run: sudo pip install pip==18.0.0
-    - run: sudo pip install -r requirements.txt
+    - run: ./scripts/remove-idaes-from-path.sh
+    - run: pip install pip==18.0.0
+    - run: pip install -r requirements.txt
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
   "python-3.7":
     docker:
-      - image: circleci/python:3.7
+      - image: idaes/jupyterhub:latest
     <<: *shared
   "python-3.7-dev":
     docker:
-      - image: circleci/python:3.7
+      - image: idaes/jupyterhub:latest
     <<: *shared-dev
 
 workflows:
@@ -37,3 +38,5 @@ workflows:
   build:
     jobs:
       - "python-3.7"
+      - "python-3.7-dev"
+

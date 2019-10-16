@@ -16,10 +16,10 @@ Test CSV merging for property data
 # stdlib
 import logging
 import sys
+from io import StringIO
 
 # third-party
 import pytest
-from six import StringIO
 
 # local
 from idaes.dmf.propdata import AddedCSVColumnError

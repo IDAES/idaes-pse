@@ -46,16 +46,7 @@ that are not required by the IDAES framework.
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     bash Miniconda3-latest-Linux-x86_64.sh
 
-Create and activate a conda environment (along with its own copy of ``pip``)
-for the new IDAES installation **(you will need to** ``conda activate idaes``
-**when you open a fresh terminal window and wish to use IDAES)**:
-
-.. code-block:: sh
-
-    conda create -n idaes pip
-    conda activate idaes
-
-Obtain the source code for IDAES from GitHub:
+Next, obtain the source code for IDAES from GitHub:
 
 .. code-block:: sh
 
@@ -78,6 +69,13 @@ This step is optional, but highly recommended.
     make
 
 .. note:: If you get an error about ``funcadd.h`` not being found, either ``ASL_BUILD`` is not set correctly or the ASL did not compile properly.
+
+If you are familiar with Python/Conda environments, you will probably
+want to create a new environment for your IDAES installation before
+starting to install Python and/or Conda packages,
+*e.g.*, ``conda create -n <env>`` then ``conda activate <env>``.
+If you are not familiar with these commands, don't worry, this is
+an optional step.
 
 Install the required Python packages:
 

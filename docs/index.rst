@@ -49,8 +49,10 @@ Contents
     property_models/index
     vis/index
     dmf/index
+    apps/index	      
     version
     tutorials
+    jupyterlab/index
     developer/index
     Modules <apidoc/modules>
     glossary

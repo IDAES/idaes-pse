@@ -5,10 +5,10 @@
 ALL: iapws95 cubic_eos functions
 
 iapws95:
-	$(MAKE) -C ./idaes/property_models/iapws95
+	$(MAKE) -C ./idaes/property_models/iapws95_lib
 
 iapws95_clean:
-	$(MAKE) -C ./idaes/property_models/iapws95 clean
+	$(MAKE) -C ./idaes/property_models/iapws95_lib clean
 
 cubic_eos:
 	$(MAKE) -C ./idaes/property_models/cubic_eos
@@ -22,9 +22,13 @@ functions:
 functions_clean:
 	$(MAKE) -C ./idaes/functions clean
 
-clean: iapws95_clean cubic_eos_clean functions_clean
+clean: iapws95_clean cubic_eos_clean functions_clean dist_clean
 
 docs: docs_html
+
+.PHONY: dist
+dist:
+	python setup.py bdist_wheel && /bin/ls -l dist/
 
 alldocs:
 	$(MAKE) -C ./docs all
@@ -34,3 +38,7 @@ docs_html:
 
 docs_clean:
 	$(MAKE) -C ./docs allclean
+
+dist_clean:
+	/bin/rm -rf dist
+	/bin/rm -rf build

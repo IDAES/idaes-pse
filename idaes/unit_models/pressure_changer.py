@@ -14,7 +14,6 @@
 """
 Standard IDAES pressure changer model.
 """
-from __future__ import division
 
 # Import Python libraries
 import logging
@@ -35,6 +34,7 @@ from idaes.core import (ControlVolume0DBlock,
                         useDefault)
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
+from idaes.core.util.exceptions import BalanceTypeNotSupportedError, BurntToast
 
 __author__ = "Emmanuel Ogbe, Andrew Lee"
 logger = logging.getLogger('idaes.unit_model')
@@ -55,24 +55,28 @@ class PressureChangerData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
 
     CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
-**default** - MaterialBalanceType.componentPhase.
+**default** - MaterialBalanceType.useDefault.
 **Valid values:** {
+**MaterialBalanceType.useDefault - refer to property package for default
+balance type
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
 **MaterialBalanceType.componentTotal** - use total component balances,
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
+        default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyTotal.
+**default** - EnergyBalanceType.useDefault.
 **Valid values:** {
+**EnergyBalanceType.useDefault - refer to property package for default
+balance type
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
@@ -107,7 +111,7 @@ constructed, **default** = False.
             compressor (True (default), pressure increase) or an expander
             (False, pressure decrease)."""))
     CONFIG.declare("thermodynamic_assumption", ConfigValue(
-        default=ThermodynamicAssumption.isentropic,
+        default=ThermodynamicAssumption.isothermal,
         domain=In(ThermodynamicAssumption),
         description="Thermodynamic assumption to use",
         doc="""Flag to set the thermodynamic assumption to use for the unit.
@@ -182,51 +186,10 @@ see property package for documentation.}"""))
         self.add_outlet_port()
 
         # Set Unit Geometry and holdup Volume
-        self.set_geometry()
-
-        # Construct performance equations
-        self.add_performance()
-
-        # Construct equations for thermodynamic assumption
-        if self.config.thermodynamic_assumption == \
-                ThermodynamicAssumption.isothermal:
-            self.add_isothermal()
-        elif self.config.thermodynamic_assumption == \
-                ThermodynamicAssumption.isentropic:
-            self.add_isentropic()
-        elif self.config.thermodynamic_assumption == \
-                ThermodynamicAssumption.pump:
-            self.add_pump()
-        elif self.config.thermodynamic_assumption == \
-                ThermodynamicAssumption.adiabatic:
-            self.add_adiabatic()
-
-    def set_geometry(self):
-        """
-        Define the geometry of the unit as necessary, and link to control
-        volume
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-        # For this case, just create a reference to control volume
         if self.config.has_holdup is True:
             add_object_reference(self, "volume", self.control_volume.volume)
 
-    def add_performance(self):
-        """
-        Define constraints which describe the behaviour of the unit model.
-
-        Args:
-            None
-
-        Returns:
-            None
-        """
-
+        # Construct performance equations
         # Set references to balance terms at unit level
         # Add Work transfer variable 'work' as necessary
         add_object_reference(self, "work_mechanical", self.control_volume.work)
@@ -253,6 +216,20 @@ see property package for documentation.}"""))
             return (self.sfp*b.ratioP[t] *
                     b.control_volume.properties_in[t].pressure ==
                     self.sfp*b.control_volume.properties_out[t].pressure)
+
+        # Construct equations for thermodynamic assumption
+        if self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.isothermal:
+            self.add_isothermal()
+        elif self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.isentropic:
+            self.add_isentropic()
+        elif self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.pump:
+            self.add_pump()
+        elif self.config.thermodynamic_assumption == \
+                ThermodynamicAssumption.adiabatic:
+            self.add_adiabatic()
 
     def add_pump(self):
         """
@@ -367,22 +344,75 @@ see property package for documentation.}"""))
                          doc="Pressure for isentropic calculations")
         def isentropic_pressure(b, t):
             return b.sfp*b.properties_isentropic[t].pressure == \
-                b.sfp*b.ratioP[t]*b.control_volume.properties_out[t].pressure
+                b.sfp*b.control_volume.properties_out[t].pressure
 
         # This assumes isentropic composition is the same as outlet
-        @self.Constraint(self.flowsheet().config.time,
-                         self.config.property_package.component_list,
-                         doc="Material flows for isentropic properties")
-        def isentropic_material(b, t, j):
-            return b.properties_isentropic[t].flow_mol_comp[j] == \
-                        b.control_volume.properties_out[t].flow_mol_comp[j]
+        mb_type = self.config.material_balance_type
+        if mb_type == MaterialBalanceType.useDefault:
+            mb_type = \
+                self.control_volume._get_representative_property_block() \
+                .default_material_balance_type()
 
-        # This assumes isentropic entropy is the same as outlet
+        if mb_type == \
+                MaterialBalanceType.componentPhase:
+            @self.Constraint(self.flowsheet().config.time,
+                             self.config.property_package.phase_list,
+                             self.config.property_package.component_list,
+                             doc="Material flows for isentropic properties")
+            def isentropic_material(b, t, p, j):
+                return (
+                    b.properties_isentropic[t].get_material_flow_terms(p, j) ==
+                    b.control_volume.properties_out[t]
+                    .get_material_flow_terms(p, j))
+        elif mb_type == \
+                MaterialBalanceType.componentTotal:
+            @self.Constraint(self.flowsheet().config.time,
+                             self.config.property_package.component_list,
+                             doc="Material flows for isentropic properties")
+            def isentropic_material(b, t, j):
+                return (sum(
+                    b.properties_isentropic[t].get_material_flow_terms(p, j)
+                    for p in self.config.property_package.phase_list) ==
+                    sum(b.control_volume.properties_out[t]
+                        .get_material_flow_terms(p, j)
+                        for p in self.config.property_package.phase_list))
+        elif mb_type == \
+                MaterialBalanceType.total:
+            @self.Constraint(self.flowsheet().config.time,
+                             doc="Material flows for isentropic properties")
+            def isentropic_material(b, t, p, j):
+                return (sum(sum(
+                    b.properties_isentropic[t].get_material_flow_terms(p, j)
+                    for j in self.config.property_package.component_list)
+                    for p in self.config.property_package.phase_list) ==
+                    sum(sum(b.control_volume.properties_out[t]
+                        .get_material_flow_terms(p, j)
+                        for j in self.config.property_package.component_list)
+                        for p in self.config.property_package.phase_list))
+        elif mb_type == \
+                MaterialBalanceType.elementTotal:
+            raise BalanceTypeNotSupportedError(
+                    "{} PressureChanger does not support element balances."
+                    .format(self.name))
+        elif mb_type == \
+                MaterialBalanceType.none:
+            raise BalanceTypeNotSupportedError(
+                    "{} PressureChanger does not support material_balance_type"
+                    " = none."
+                    .format(self.name))
+        else:
+            raise BurntToast(
+                    "{} PressureChanger received an unexpected argument for "
+                    "material_balance_type. This should never happen. Please "
+                    "contact the IDAES developers with this bug."
+                    .format(self.name))
+
+        # This assumes isentropic entropy is the same as inlet
         @self.Constraint(self.flowsheet().config.time,
                          doc="Isentropic assumption")
         def isentropic(b, t):
             return b.properties_isentropic[t].entr_mol == \
-                       b.control_volume.properties_out[t].entr_mol
+                       b.control_volume.properties_in[t].entr_mol
 
         # Isentropic work
         @self.Constraint(self.flowsheet().config.time,
@@ -391,7 +421,7 @@ see property package for documentation.}"""))
             return b.sfe*b.work_isentropic[t] == b.sfe*(
                 sum(b.properties_isentropic[t].get_enthalpy_flow_terms(p)
                     for p in b.config.property_package.phase_list) -
-                sum(b.control_volume.properties_out[t]
+                sum(b.control_volume.properties_in[t]
                     .get_enthalpy_flow_terms(p)
                     for p in b.config.property_package.phase_list))
 
@@ -478,7 +508,7 @@ see property package for documentation.}"""))
         except AttributeError:
             pass
 
-    def initialize(blk, state_args={}, routine=None, outlvl=0,
+    def initialize(blk, state_args=None, routine=None, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
         General wrapper for pressure changer initialisation routines
@@ -560,7 +590,7 @@ see property package for documentation.}"""))
         blk.control_volume.properties_in.initialize(outlvl=outlvl-1,
                                                     optarg=optarg,
                                                     solver=solver,
-                                                    **state_args)
+                                                    state_args=state_args)
 
         if outlvl > 0:
             logger.info('{} Initialisation Step 1 Complete.'.format(blk.name))

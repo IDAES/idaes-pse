@@ -14,8 +14,6 @@
 Base class for control volumes
 """
 
-from __future__ import division
-
 # Import Python libraries
 import logging
 
@@ -297,6 +295,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                        self.config.property_package.
                                        component_list,
                                        domain=Reals,
+                                       initialize=1.0,
                                        doc="Material holdup in unit [{}]"
                                            .format(units['holdup']))
         if dynamic:
@@ -322,6 +321,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
+                        initialize=0.0,
                         doc="Amount of component generated in "
                             "unit by kinetic reactions [{}/{}]"
                             .format(units['holdup'], units['time']))
@@ -340,6 +340,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.config.property_package.phase_list,
                 self.config.property_package.component_list,
                 domain=Reals,
+                initialize=0.0,
                 doc="Amount of component generated in unit "
                     "by equilibrium reactions [{}/{}]"
                     .format(units['holdup'], units['time']))
@@ -356,6 +357,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.flowsheet().config.time,
                 self.config.property_package.phase_equilibrium_idx,
                 domain=Reals,
+                initialize=0.0,
                 doc="Amount of generation in unit by phase "
                     "equilibria [{}/{}]"
                     .format(units['holdup'], units['time']))
@@ -367,6 +369,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
+                        initialize=0.0,
                         doc="Component material transfer into unit [{}/{}]"
                             .format(units['holdup'], units['time']))
 
@@ -504,6 +507,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.flowsheet().config.time,
                     self.config.reaction_package.rate_reaction_idx,
                     domain=Reals,
+                    initialize=0.0,
                     doc="Extent of kinetic reactions[{}/{}]"
                         .format(units['holdup'], units['time']))
 
@@ -528,6 +532,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.flowsheet().config.time,
                     self.config.reaction_package.equilibrium_reaction_idx,
                     domain=Reals,
+                    initialize=0.0,
                     doc="Extent of equilibrium reactions[{}/{}]"
                         .format(units['holdup'], units['time']))
 
@@ -654,6 +659,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.config.property_package.phase_list,
                     self.config.property_package.component_list,
                     domain=Reals,
+                    initialize=0.0,
                     doc="Material holdup in unit [{}]".format(units['holdup']))
         if dynamic:
             self.material_accumulation = DerivativeVar(
@@ -678,6 +684,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.config.property_package.phase_list,
                 self.config.property_package.component_list,
                 domain=Reals,
+                initialize=0.0,
                 doc="Amount of component generated in "
                     "unit by kinetic reactions [{}/{}]"
                     .format(units['holdup'], units['time']))
@@ -696,6 +703,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                 self.config.property_package.phase_list,
                 self.config.property_package.component_list,
                 domain=Reals,
+                initialize=0.0,
                 doc="Amount of component generated in unit "
                     "by equilibrium reactions [{}/{}]"
                     .format(units['holdup'], units['time']))
@@ -707,6 +715,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.config.property_package.phase_list,
                         self.config.property_package.component_list,
                         domain=Reals,
+                        initialize=0.0,
                         doc="Component material transfer into unit [{}/{}]"
                             .format(units['holdup'], units['time']))
 
@@ -823,6 +832,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.flowsheet().config.time,
                     self.config.reaction_package.rate_reaction_idx,
                     domain=Reals,
+                    initialize=0.0,
                     doc="Extent of kinetic reactions[{}/{}]"
                         .format(units['holdup'], units['time']))
 
@@ -847,6 +857,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.flowsheet().config.time,
                     self.config.reaction_package.equilibrium_reaction_idx,
                     domain=Reals,
+                    initialize=0.0,
                     doc="Extent of equilibrium reactions[{}/{}]"
                         .format(units['holdup'], units['time']))
 
@@ -956,6 +967,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                     self.flowsheet().config.time,
                     self.config.property_package.element_list,
                     domain=Reals,
+                    initialize=1.0,
                     doc="Elemental holdup in unit [{}]"
                         .format(units['amount']))
 
@@ -992,6 +1004,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                             self.flowsheet().config.time,
                             self.config.property_package.element_list,
                             domain=Reals,
+                            initialize=0.0,
                             doc="Element material transfer into unit [{}/{}]"
                             .format(units['amount'], units['time']))
 
@@ -1110,6 +1123,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                         self.flowsheet().config.time,
                         self.config.property_package.phase_list,
                         domain=Reals,
+                        initialize=1.0,
                         doc="Enthalpy holdup in unit [{}]"
                         .format(units['energy']))
 
@@ -1217,7 +1231,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
             def enthalpy_holdup_calculation(b, t, p):
                 return b.enthalpy_holdup[t, p] == (
                             b.volume[t]*self.phase_fraction[t, p] *
-                            b.properties_out[t].get_enthalpy_density_terms(p))
+                            b.properties_out[t].get_energy_density_terms(p))
 
         return self.enthalpy_balances
 
@@ -1266,6 +1280,7 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         if has_pressure_change:
             self.deltaP = Var(self.flowsheet().config.time,
                               domain=Reals,
+                              initialize=0.0,
                               doc="Pressure difference across unit [{}]"
                                   .format(p_units))
 
@@ -1405,14 +1420,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
                                              optarg=optarg,
                                              solver=solver,
                                              hold_state=hold_state,
-                                             **state_args)
+                                             state_args=state_args)
 
         blk.properties_out.initialize(outlvl=outlvl-1,
                                       optarg=optarg,
                                       solver=solver,
                                       hold_state=False,
-                                      **state_args)
-
+                                      state_args=state_args)
         try:
             blk.reactions.initialize(outlvl=outlvl-1,
                                      optarg=optarg,

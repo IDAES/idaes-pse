@@ -13,7 +13,6 @@
 """
 Standard IDAES STOICHIOMETRIC reactor model
 """
-from __future__ import division
 
 # Import Pyomo libraries
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -44,24 +43,28 @@ class StoichiometricReactorData(UnitModelBlockData):
     CONFIG = UnitModelBlockData.CONFIG()
 
     CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
-**default** - MaterialBalanceType.componentPhase.
+**default** - MaterialBalanceType.useDefault.
 **Valid values:** {
+**MaterialBalanceType.useDefault - refer to property package for default
+balance type
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
 **MaterialBalanceType.componentTotal** - use total component balances,
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
+        default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyTotal.
+**default** - EnergyBalanceType.useDefault.
 **Valid values:** {
+**EnergyBalanceType.useDefault - refer to property package for default
+balance type
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
@@ -185,9 +188,6 @@ see reaction package for documentation.}"""))
 
         # Add performance equations
         add_object_reference(self,
-                             "rate_reaction_idx_ref",
-                             self.config.reaction_package.rate_reaction_idx)
-        add_object_reference(self,
                              "rate_reaction_extent",
                              self.control_volume.rate_reaction_extent)
 
@@ -201,7 +201,7 @@ see reaction package for documentation.}"""))
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}
-        for r in self.rate_reaction_idx_ref:
+        for r in self.config.reaction_package.rate_reaction_idx:
             var_dict[f"Reaction Extent [{r}]"] = \
                 self.rate_reaction_extent[time_point, r]
         if hasattr(self, "heat_duty"):

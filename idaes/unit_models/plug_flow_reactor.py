@@ -13,8 +13,6 @@
 """
 Standard IDAES PFR model.
 """
-from __future__ import division
-
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Var
 from pyomo.common.config import ConfigBlock, ConfigValue, In
@@ -42,24 +40,28 @@ class PFRData(UnitModelBlockData):
     """
     CONFIG = UnitModelBlockData.CONFIG()
     CONFIG.declare("material_balance_type", ConfigValue(
-        default=MaterialBalanceType.componentPhase,
+        default=MaterialBalanceType.useDefault,
         domain=In(MaterialBalanceType),
         description="Material balance construction flag",
         doc="""Indicates what type of mass balance should be constructed,
-**default** - MaterialBalanceType.componentPhase.
+**default** - MaterialBalanceType.useDefault.
 **Valid values:** {
+**MaterialBalanceType.useDefault - refer to property package for default
+balance type
 **MaterialBalanceType.none** - exclude material balances,
 **MaterialBalanceType.componentPhase** - use phase component balances,
 **MaterialBalanceType.componentTotal** - use total component balances,
 **MaterialBalanceType.elementTotal** - use total element balances,
 **MaterialBalanceType.total** - use total material balance.}"""))
     CONFIG.declare("energy_balance_type", ConfigValue(
-        default=EnergyBalanceType.enthalpyTotal,
+        default=EnergyBalanceType.useDefault,
         domain=In(EnergyBalanceType),
         description="Energy balance construction flag",
         doc="""Indicates what type of energy balance should be constructed,
-**default** - EnergyBalanceType.enthalpyTotal.
+**default** - EnergyBalanceType.useDefault.
 **Valid values:** {
+**EnergyBalanceType.useDefault - refer to property package for default
+balance type
 **EnergyBalanceType.none** - exclude energy balances,
 **EnergyBalanceType.enthalpyTotal** - single enthalpy balance for material,
 **EnergyBalanceType.enthalpyPhase** - enthalpy balances for each phase,
@@ -250,15 +252,10 @@ domain,
         self.add_inlet_port()
         self.add_outlet_port()
 
-        # Add performance equations
-        add_object_reference(self,
-                             "rate_reaction_idx_ref",
-                             self.config.reaction_package.rate_reaction_idx)
-
         # Add PFR performance equation
         @self.Constraint(self.flowsheet().config.time,
                          self.control_volume.length_domain,
-                         self.rate_reaction_idx_ref,
+                         self.config.reaction_package.rate_reaction_idx,
                          doc="PFR performance equation")
         def performance_eqn(b, t, x, r):
             return b.control_volume.rate_reaction_extent[t, x, r] == (

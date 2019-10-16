@@ -28,7 +28,10 @@ from idaes.core import (declare_process_block_class,
                         ReactionParameterBlock,
                         ReactionBlockBase,
                         ReactionBlockDataBase,
-                        MaterialFlowBasis)
+                        MaterialFlowBasis,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MomentumBalanceType)
 
 
 def get_default_solver():
@@ -38,7 +41,8 @@ def get_default_solver():
     """
     if SolverFactory('ipopt').available(exception_flag=False):
         solver = SolverFactory('ipopt')
-        solver.options = {'tol': 1e-6}
+        solver.options = {'tol': 1e-6,
+                          'linear_solver': 'mumps'}
     else:
         solver = None
 
@@ -65,6 +69,7 @@ class _PhysicalParameterBlock(PhysicalParameterBlock):
 
         # Attribute to switch flow basis for testing
         self.basis_switch = 1
+        self.default_balance_switch = 1
 
         self.state_block_class = TestStateBlock
 
@@ -98,12 +103,20 @@ class StateTestBlockData(StateBlockData):
     def build(self):
         super(StateTestBlockData, self).build()
 
+        self.flow_vol = Var(initialize=20)
+        self.flow_mol_phase_comp = Var(self._params.phase_list,
+                                       self._params.component_list,
+                                       initialize=2)
         self.test_var = Var(initialize=1)
         self.pressure = Var(initialize=1e5)
         self.temperature = Var(initialize=300)
+
+        self.enth_mol = Var(initialize=10000)
+
         self.gibbs_mol_phase_comp = Var(self._params.phase_list,
                                         self._params.component_list,
                                         initialize=50)
+        self.entr_mol = Var(initialize=1000)
 
     def get_material_flow_terms(b, p, j):
         return b.test_var
@@ -114,7 +127,7 @@ class StateTestBlockData(StateBlockData):
     def get_enthalpy_flow_terms(b, p):
         return b.test_var
 
-    def get_enthalpy_density_terms(b, p):
+    def get_energy_density_terms(b, p):
         return b.test_var
 
     def model_check(self):
@@ -128,8 +141,21 @@ class StateTestBlockData(StateBlockData):
         else:
             return MaterialFlowBasis.other
 
+    def default_material_balance_type(self):
+        if self._params.default_balance_switch == 1:
+            return MaterialBalanceType.componentPhase
+        else:
+            raise NotImplementedError
+
+    def default_energy_balance_type(self):
+        if self._params.default_balance_switch == 1:
+            return EnergyBalanceType.enthalpyTotal
+        else:
+            raise NotImplementedError
+
     def define_state_vars(self):
-        return {"temperature": self.temperature,
+        return {"component_flow": self.flow_mol_phase_comp,
+                "temperature": self.temperature,
                 "pressure": self.pressure}
 
 
