@@ -20,8 +20,10 @@ import logging
 from enum import Enum
 
 # Import Pyomo libraries
-from pyomo.environ import (Var, log, Reference,
-                           PositiveReals, SolverFactory, ExternalFunction)
+from pyomo.environ import (Var, Param, log, Expression, Constraint, Reference,
+                           PositiveReals, SolverFactory, ExternalFunction,
+                           exp, log10, Block)
+
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
 
@@ -39,6 +41,8 @@ from idaes.functions import functions_lib
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.unit_models.heater import (_make_heater_config_block,
                                       _make_heater_control_volume)
+
+import idaes.core.util.unit_costing as costing
 
 _log = logging.getLogger(__name__)
 
@@ -355,8 +359,16 @@ class HeatExchangerData(UnitModelBlockData):
 
     def _get_stream_table_contents(self, time_point=0):
         return create_stream_table_dataframe(
-            {"Shell Inlet": self.inlet_1,
-             "Shell Outlet": self.outlet_1,
-             "Tube Inlet": self.inlet_2,
-             "Tube Outlet": self.outlet_2},
-            time_point=time_point)
+                {"Shell Inlet": self.inlet_1,
+                 "Shell Outlet": self.outlet_1,
+                 "Tube Inlet": self.inlet_2,
+                 "Tube Outlet": self.outlet_2},
+                 time_point=time_point)
+
+    def get_costing(self, module=costing):
+        if not hasattr(self.flowsheet(), 'costing'):
+            self.flowsheet().get_costing()
+        self.costing = Block()
+        
+        module.hx_costing(self.costing)
+

@@ -48,6 +48,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_unused_variables)
 from idaes.core.util.testing import (get_default_solver,
                                      PhysicalParameterTestBlock)
+from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
 
 # -----------------------------------------------------------------------------
@@ -102,6 +103,47 @@ def test_config():
     assert not m.fs.unit.config.tube.has_pressure_change
     assert m.fs.unit.config.tube.property_package is m.fs.properties
 
+@pytest.mark.skipif(not iapws95.iapws95_available(),
+                    reason="IAPWS not available")
+@pytest.mark.skipif(solver is None, reason="Solver not available")
+def test_costing():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.properties = iapws95.Iapws95ParameterBlock()
+
+    m.fs.unit = HeatExchanger(default={
+                "shell": {"property_package": m.fs.properties},
+                "tube": {"property_package": m.fs.properties},
+                "flow_pattern": HeatExchangerFlowPattern.countercurrent})
+#   Set inputs
+    m.fs.unit.inlet_1.flow_mol[0].fix(100)
+    m.fs.unit.inlet_1.enth_mol[0].fix(4000)
+    m.fs.unit.inlet_1.pressure[0].fix(101325)
+
+    m.fs.unit.inlet_2.flow_mol[0].fix(100)
+    m.fs.unit.inlet_2.enth_mol[0].fix(3500)
+    m.fs.unit.inlet_2.pressure[0].fix(101325)
+
+    m.fs.unit.area.fix(1000)
+    m.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+    assert degrees_of_freedom(m) == 0
+    
+    m.fs.unit.initialize()
+
+    m.fs.unit.get_costing()
+    calculate_variable_from_constraint(
+                m.fs.unit.costing.base_cost,
+                m.fs.unit.costing.base_cost_eq)
+    
+    calculate_variable_from_constraint(
+                m.fs.unit.costing.purchase_cost,
+                m.fs.unit.costing.cp_cost_eq)
+
+    results = solver.solve(m)
+    assert m.fs.unit.costing.purchase_cost.value == \
+                                            pytest.approx(52442.7363,1e-5)
 
 # -----------------------------------------------------------------------------
 class TestBTX_cocurrent(object):
