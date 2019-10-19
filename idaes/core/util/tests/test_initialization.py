@@ -78,6 +78,13 @@ def test_fix_state_vars_basic(model):
     assert not flags[None, "temperature", None]
 
 
+def test_fix_state_vars_None_value(model):
+    model.fs.sb.pressure.value = None
+
+    with pytest.raises(ConfigurationError):
+        fix_state_vars(model.fs.sb)
+
+
 def test_fix_state_vars_guesses(model):
     # Note that flow_mol_phase_comp is labled as compoennt_flow
     # in define_state_vars

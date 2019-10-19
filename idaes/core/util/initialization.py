@@ -63,8 +63,19 @@ def fix_state_vars(blk, state_args={}):
                                 .format(n))
                         v[i].fix(val)
                     else:
-                        # No guess, use current value
-                        v[i].fix()
+                        # No guess, try to use current value
+                        if v[i].value is not None:
+                            v[i].fix()
+                        else:
+                            # No initial value - raise Exception before this
+                            # gets to a solver.
+                            raise ConfigurationError(
+                                'State variable {} does not have a value '
+                                'assigned. This usually occurs when a Var '
+                                'is not assigned an initial value when it is '
+                                'created. Please ensure all variables have '
+                                'valid values before fixing them.'
+                                .format(v.name))
 
     return flags
 
