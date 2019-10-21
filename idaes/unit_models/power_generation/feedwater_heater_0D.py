@@ -104,12 +104,12 @@ def _set_prop_pack(hxcfg, fwhcfg):
         hxcfg: Heat exchanger subblock config block
         fwhcfg: Overall feedwater heater config block
     """
-    if hxcfg.shell.property_package == useDefault:
-        hxcfg.shell.property_package = fwhcfg.property_package
-        hxcfg.shell.property_package_args = fwhcfg.property_package_args
-    if hxcfg.tube.property_package == useDefault:
-        hxcfg.tube.property_package = fwhcfg.property_package
-        hxcfg.tube.property_package_args = fwhcfg.property_package_args
+    if hxcfg.side_1.property_package == useDefault:
+        hxcfg.side_1.property_package = fwhcfg.property_package
+        hxcfg.side_1.property_package_args = fwhcfg.property_package_args
+    if hxcfg.side_2.property_package == useDefault:
+        hxcfg.side_2.property_package = fwhcfg.property_package
+        hxcfg.side_2.property_package_args = fwhcfg.property_package_args
 
 
 @declare_process_block_class("FWHCondensing0D", doc=
@@ -123,8 +123,8 @@ class FWHCondensing0DData(HeatExchangerData):
         @self.Constraint(self.flowsheet().config.time,
             doc="Calculate steam extraction rate such that all steam condenses")
         def extraction_rate_constraint(b, t):
-            return b.shell.properties_out[t].enth_mol_sat_phase["Liq"] == \
-                   b.shell.properties_out[t].enth_mol
+            return b.side_1.properties_out[t].enth_mol_sat_phase["Liq"] == \
+                   b.side_1.properties_out[t].enth_mol
 
     def initialize(self, *args, **kwargs):
         """
