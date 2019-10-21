@@ -22,7 +22,7 @@ from enum import Enum
 # Import Pyomo libraries
 from pyomo.environ import (Var, Param, log, Expression, Constraint, Reference,
                            PositiveReals, SolverFactory, ExternalFunction,
-                           exp, log10, Block)
+                           exp, log10, Block, Reference)
 
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.opt import TerminationCondition
@@ -43,6 +43,7 @@ from idaes.unit_models.heater import (_make_heater_config_block,
                                       _make_heater_control_volume)
 
 import idaes.core.util.unit_costing as costing
+from idaes.core.util.misc import add_object_reference
 
 _log = logging.getLogger(__name__)
 
@@ -57,16 +58,24 @@ def _make_heat_exchanger_config(config):
     """
     Declare configuration options for HeatExchangerData block.
     """
-    config.declare("shell", ConfigBlock(
+    config.declare("hot_side", ConfigValue(
+        default="shell",
+        domain=str,
+        doc="Hot side name, sets control volume and inlet and outlet names"))
+    config.declare("cold_side", ConfigValue(
+        default="tube",
+        domain=str,
+        doc="Cold side name, sets control volume and inlet and outlet names"))
+    config.declare("side_1", ConfigBlock(
         implicit=True,
         description="Config block for shell",
         doc="""A config block used to construct the shell control volume."""))
-    config.declare("tube", ConfigBlock(
+    config.declare("side_2", ConfigBlock(
         implicit=True,
         description="Config block for tube",
         doc="""A config block used to construct the tube control volume."""))
-    _make_heater_config_block(config.shell)
-    _make_heater_config_block(config.tube)
+    _make_heater_config_block(config.side_1)
+    _make_heater_config_block(config.side_2)
     config.declare("delta_temperature_callback", ConfigValue(
         default=delta_temperature_lmtd_callback,
         description="Callback for for temperature difference calculations"))
@@ -137,7 +146,7 @@ class HeatExchangerData(UnitModelBlockData):
     Simple 0D heat exchange unit.
     Unit model to transfer heat from one material to another.
     """
-    CONFIG = UnitModelBlockData.CONFIG()
+    CONFIG = UnitModelBlockData.CONFIG(implicit=True)
     _make_heat_exchanger_config(CONFIG)
 
     def set_scaling_factor_energy(self, f):
@@ -150,8 +159,8 @@ class HeatExchangerData(UnitModelBlockData):
         Args:
             f: Energy balance scaling factor
         """
-        self.shell.scaling_factor_energy.value = f
-        self.tube.scaling_factor_energy.value = f
+        self.side_1.scaling_factor_energy.value = f
+        self.side_2.scaling_factor_energy.value = f
 
     def build(self):
         """
@@ -167,6 +176,12 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         super().build()
         config = self.config
+
+        if config.hot_side in config:
+            config.side_1.set_value(config[config.hot_side])
+        if config.cold_side in config:
+            config.side_2.set_value(config[config.cold_side])
+
         ########################################################################
         # Add variables                                                        #
         ########################################################################
@@ -190,21 +205,36 @@ class HeatExchangerData(UnitModelBlockData):
         ########################################################################
         # Add control volumes                                                  #
         ########################################################################
-        _make_heater_control_volume(self, "shell", config.shell,
+        _make_heater_control_volume(self, "side_1", config.side_1,
                                     dynamic=config.dynamic,
                                     has_holdup=config.has_holdup)
-        _make_heater_control_volume(self, "tube", config.tube,
+        _make_heater_control_volume(self, "side_2", config.side_2,
                                     dynamic=config.dynamic,
                                     has_holdup=config.has_holdup)
+        # Add named references to side_1 and side_2, side 1 and 2 maintain
+        # backward compatability and are names the user doesn't need to worry
+        # about the sign convention for duty is heat from side 1 to side 2 is
+        # positive
+        add_object_reference(self, "shell", self.side_1)
+        add_object_reference(self, "tube", self.side_2)
+
         # Add convienient references to heat duty.
-        q = self.heat_duty = Reference(self.tube.heat)
+        q = self.heat_duty = Reference(self.side_2.heat)
         ########################################################################
         # Add ports                                                            #
         ########################################################################
-        self.add_inlet_port(name="inlet_1", block=self.shell)
-        self.add_inlet_port(name="inlet_2", block=self.tube)
-        self.add_outlet_port(name="outlet_1", block=self.shell)
-        self.add_outlet_port(name="outlet_2", block=self.tube)
+        # Keep old port names, just for backward compatability
+        self.add_inlet_port(name="inlet_1", block=self.shell, doc="Hot side inlet")
+        self.add_inlet_port(name="inlet_2", block=self.tube, doc="Cold side inlet")
+        self.add_outlet_port(name="outlet_1", block=self.shell, doc="Hot side outlet")
+        self.add_outlet_port(name="outlet_2", block=self.tube, doc="Cold side outlet")
+
+        # Using Andrew's function for now, I think Pyomo's refrence has trouble
+        # with scalar (pyomo) components.
+        add_object_reference(self, "shell_inlet", self.inlet_1)
+        add_object_reference(self, "tube_inlet", self.inlet_2)
+        add_object_reference(self, "shell_outlet", self.outlet_1)
+        add_object_reference(self, "tube_outlet", self.outlet_2)
         ########################################################################
         # Add end temperaure differnece constraints                            #
         ########################################################################
@@ -244,7 +274,7 @@ class HeatExchangerData(UnitModelBlockData):
         # Add Heat transfer equation                                           #
         ########################################################################
         deltaT = self.delta_temperature
-        scale = self.shell.scaling_factor_energy
+        scale = self.side_1.scaling_factor_energy
         @self.Constraint(self.flowsheet().config.time)
         def heat_transfer_equation(b, t):
             if self.config.flow_pattern == HeatExchangerFlowPattern.crossflow:
@@ -369,6 +399,5 @@ class HeatExchangerData(UnitModelBlockData):
         if not hasattr(self.flowsheet(), 'costing'):
             self.flowsheet().get_costing()
         self.costing = Block()
-        
-        module.hx_costing(self.costing)
 
+        module.hx_costing(self.costing)

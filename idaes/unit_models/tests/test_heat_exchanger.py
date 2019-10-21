@@ -129,14 +129,14 @@ def test_costing():
     m.fs.unit.overall_heat_transfer_coefficient.fix(100)
 
     assert degrees_of_freedom(m) == 0
-    
+
     m.fs.unit.initialize()
 
     m.fs.unit.get_costing()
     calculate_variable_from_constraint(
                 m.fs.unit.costing.base_cost,
                 m.fs.unit.costing.base_cost_eq)
-    
+
     calculate_variable_from_constraint(
                 m.fs.unit.costing.purchase_cost,
                 m.fs.unit.costing.cp_cost_eq)
@@ -362,6 +362,20 @@ class TestIAPWS_countercurrent(object):
         iapws.fs.unit.inlet_2.flow_mol[0].fix(100)
         iapws.fs.unit.inlet_2.enth_mol[0].fix(3500)
         iapws.fs.unit.inlet_2.pressure[0].fix(101325)
+
+        iapws.fs.unit.area.fix(1000)
+        iapws.fs.unit.overall_heat_transfer_coefficient.fix(100)
+
+        assert degrees_of_freedom(iapws) == 0
+
+    def test_dof_alt_name1(self, iapws):
+        iapws.fs.unit.shell_inlet.flow_mol[0].fix(100)
+        iapws.fs.unit.shell_inlet.enth_mol[0].fix(4000)
+        iapws.fs.unit.shell_inlet.pressure[0].fix(101325)
+
+        iapws.fs.unit.tube_inlet.flow_mol[0].fix(100)
+        iapws.fs.unit.tube_inlet.enth_mol[0].fix(3500)
+        iapws.fs.unit.tube_inlet.pressure[0].fix(101325)
 
         iapws.fs.unit.area.fix(1000)
         iapws.fs.unit.overall_heat_transfer_coefficient.fix(100)
