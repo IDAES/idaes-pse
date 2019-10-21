@@ -179,8 +179,10 @@ class HeatExchangerData(UnitModelBlockData):
 
         if config.hot_side in config:
             config.side_1.set_value(config[config.hot_side])
+            config[config.hot_side] = config.side_1
         if config.cold_side in config:
             config.side_2.set_value(config[config.cold_side])
+            config[config.cold_side] = config.side_2
 
         ########################################################################
         # Add variables                                                        #

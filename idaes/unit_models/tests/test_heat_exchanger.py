@@ -68,7 +68,9 @@ def test_config():
         "tube": {"property_package": m.fs.properties}})
 
     # Check unit config arguments
-    assert len(m.fs.unit.config) == 6
+    # There are 8 to 10 arguments since you can add a side 1 and 2 config by
+    # side_1, side_2, or whatever the user named them
+    assert len(m.fs.unit.config) >= 8 and len(m.fs.unit.config) <= 10
 
     assert not m.fs.unit.config.dynamic
     assert not m.fs.unit.config.has_holdup
