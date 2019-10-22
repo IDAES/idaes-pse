@@ -55,8 +55,13 @@ from pyomo.util.calc_var_value import calculate_variable_from_constraint
 # Get default solver for testing
 solver = get_default_solver()
 
-
 # -----------------------------------------------------------------------------
+def test_bad_option():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(KeyError):
+        m.fs.unit = HeatExchanger(default={"I'm a bad option":"hot"})
+
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -308,8 +313,8 @@ class TestBTX_cocurrent_alt_name(object):
         m.fs.properties = BTXParameterBlock(default={"valid_phase": 'Liq'})
 
         m.fs.unit = HeatExchanger(default={
-                "hot_side":"hot",
-                "cold_side":"cold",
+                "hot_side_name":"hot",
+                "cold_side_name":"cold",
                 "hot": {"property_package": m.fs.properties},
                 "cold": {"property_package": m.fs.properties},
                 "flow_pattern": HeatExchangerFlowPattern.cocurrent})
