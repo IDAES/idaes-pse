@@ -91,23 +91,25 @@ def _make_heat_exchanger_config(config):
         ),
     )
     config.declare(
-        "side_1",
+        "hot_side_config",
         ConfigBlock(
             implicit=True,
             description="Config block for hot side",
-            doc="""A config block used to construct the hot side control volume.""",
+            doc="""A config block used to construct the hot side control volume.
+This config can be given by the hot side name instead of hot_side_config.""",
         ),
     )
     config.declare(
-        "side_2",
+        "cold_side_config",
         ConfigBlock(
             implicit=True,
             description="Config block for cold side",
-            doc="""A config block used to construct the cold side control volume.""",
+            doc="""A config block used to construct the cold side control volume.
+This config can be given by the cold side name instead of cold_side_config.""",
         ),
     )
-    _make_heater_config_block(config.side_1)
-    _make_heater_config_block(config.side_2)
+    _make_heater_config_block(config.hot_side_config)
+    _make_heater_config_block(config.cold_side_config)
     config.declare(
         "delta_temperature_callback",
         ConfigValue(
@@ -205,19 +207,9 @@ class HeatExchangerData(UnitModelBlockData):
         self.side_1.scaling_factor_energy.value = f
         self.side_2.scaling_factor_energy.value = f
 
-    def build(self):
+    def _process_config(self):
+        """Check for configuration errors and alternate config option names.
         """
-        Building model
-
-        Args:
-            None
-        Returns:
-            None
-        """
-        ########################################################################
-        #  Call UnitModel.build to setup dynamics and configure                #
-        ########################################################################
-        super().build()
         config = self.config
 
         if config.hot_side_name == config.cold_side_name:
@@ -235,11 +227,31 @@ class HeatExchangerData(UnitModelBlockData):
                 raise KeyError("Heatexchanger config option {} not defined".format(o))
 
         if config.hot_side_name in config:
-            config.side_1.set_value(config[config.hot_side_name])
-            config[config.hot_side_name] = config.side_1
+            config.hot_side_config.set_value(config[config.hot_side_name])
+            # Allow access to hot_side_config under the hot_side_name, backward
+            # compatible with the tube and shell notation
+            setattr(config, config.hot_side_name, config.hot_side_config)
         if config.cold_side_name in config:
-            config.side_2.set_value(config[config.cold_side_name])
-            config[config.cold_side_name] = config.side_2
+            config.cold_side_config.set_value(config[config.cold_side_name])
+            # Allow access to hot_side_config under the cold_side_name, backward
+            # compatible with the tube and shell notation
+            setattr(config, config.cold_side_name, config.cold_side_config)
+
+    def build(self):
+        """
+        Building model
+
+        Args:
+            None
+        Returns:
+            None
+        """
+        ########################################################################
+        #  Call UnitModel.build to setup dynamics and configure                #
+        ########################################################################
+        super().build()
+        self._process_config()
+        config = self.config
 
         ########################################################################
         # Add variables                                                        #
@@ -277,14 +289,14 @@ class HeatExchangerData(UnitModelBlockData):
         _make_heater_control_volume(
             self,
             "side_1",
-            config.side_1,
+            config.hot_side_config,
             dynamic=config.dynamic,
             has_holdup=config.has_holdup,
         )
         _make_heater_control_volume(
             self,
             "side_2",
-            config.side_2,
+            config.cold_side_config,
             dynamic=config.dynamic,
             has_holdup=config.has_holdup,
         )

@@ -104,12 +104,15 @@ def _set_prop_pack(hxcfg, fwhcfg):
         hxcfg: Heat exchanger subblock config block
         fwhcfg: Overall feedwater heater config block
     """
-    if hxcfg.side_1.property_package == useDefault:
-        hxcfg.side_1.property_package = fwhcfg.property_package
-        hxcfg.side_1.property_package_args = fwhcfg.property_package_args
-    if hxcfg.side_2.property_package == useDefault:
-        hxcfg.side_2.property_package = fwhcfg.property_package
-        hxcfg.side_2.property_package_args = fwhcfg.property_package_args
+    # this sets the property pack for the hot and cold side, but if the user
+    # provides a specific property package using the tube and shell names it
+    # will override this.  I think this behavior is fine, and what we'd want.
+    if hxcfg.hot_side_config.property_package == useDefault:
+        hxcfg.hot_side_config.property_package = fwhcfg.property_package
+        hxcfg.hot_side_config.property_package_args = fwhcfg.property_package_args
+    if hxcfg.cold_side_config.property_package == useDefault:
+        hxcfg.cold_side_config.property_package = fwhcfg.property_package
+        hxcfg.cold_side_config.property_package_args = fwhcfg.property_package_args
 
 
 @declare_process_block_class("FWHCondensing0D", doc=
