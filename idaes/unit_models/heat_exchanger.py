@@ -302,7 +302,7 @@ class HeatExchangerData(UnitModelBlockData):
         )
         # Add named references to side_1 and side_2, side 1 and 2 maintain
         # backward compatability and are names the user doesn't need to worry
-        # about the sign convention for duty is heat from side 1 to side 2 is
+        # about. The sign convention for duty is heat from side 1 to side 2 is
         # positive
         add_object_reference(self, config.hot_side_name, self.side_1)
         add_object_reference(self, config.cold_side_name, self.side_2)
