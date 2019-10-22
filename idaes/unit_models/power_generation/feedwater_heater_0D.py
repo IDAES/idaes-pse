@@ -126,8 +126,8 @@ class FWHCondensing0DData(HeatExchangerData):
         @self.Constraint(self.flowsheet().config.time,
             doc="Calculate steam extraction rate such that all steam condenses")
         def extraction_rate_constraint(b, t):
-            return b.side_1.properties_out[t].enth_mol_sat_phase["Liq"] == \
-                   b.side_1.properties_out[t].enth_mol
+            return b.shell.properties_out[t].enth_mol_sat_phase["Liq"] == \
+                   b.shell.properties_out[t].enth_mol
 
     def initialize(self, *args, **kwargs):
         """
