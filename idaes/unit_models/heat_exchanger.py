@@ -220,6 +220,14 @@ class HeatExchangerData(UnitModelBlockData):
         super().build()
         config = self.config
 
+        if config.hot_side_name == config.cold_side_name:
+            raise NameError(
+                "Heatexchanger hot and cold side cannot have the same name '{}'."
+                " Be sure to set both the hot_side_name and cold_side_name.".format(
+                    config.hot_side_name
+                )
+            )
+
         for o in config:
             if not (
                 o in self.CONFIG or o in [config.hot_side_name, config.cold_side_name]

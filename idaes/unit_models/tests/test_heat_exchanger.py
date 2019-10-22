@@ -62,6 +62,12 @@ def test_bad_option():
     with pytest.raises(KeyError):
         m.fs.unit = HeatExchanger(default={"I'm a bad option":"hot"})
 
+def test_same_name():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+    with pytest.raises(NameError):
+        m.fs.unit = HeatExchanger(default={"cold_side_name":"shell"})
+
 def test_config():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(default={"dynamic": False})
