@@ -20,9 +20,7 @@ import os
 from numpy import logspace
 
 from pyomo.environ import (ConcreteModel,
-                           Expression,
                            ExternalFunction,
-                           Param,
                            value)
 from pyomo.core.base.external import AMPLExternalFunction
 
@@ -62,8 +60,6 @@ def between(y, x1, x2):
     return 0 > (y-x1)*(y-x2)
 
 
-@pytest.mark.skipif(not prop_available,
-                    reason="Cubic root finder not available")
 @pytest.fixture()
 def root_finder():
     m = ConcreteModel()
@@ -86,6 +82,8 @@ def root_finder():
 # TODO - happen.
 
 
+@pytest.mark.skipif(not prop_available,
+                    reason="Cubic root finder not available")
 def test_roots_Z_liq(root_finder):
     for eos_type in [0, 1]:
         u = EoS_param[eos_type]["u"]
@@ -137,17 +135,25 @@ def test_roots_Z_liq(root_finder):
                     assert h[0] == 0
 
                     # Partial derivatives w.r.t. B
+                    # Use small finite difference step and get new values
                     ZAp, gAp, hAp = f.evaluate_fgh(
                             args=(eos_type, A*(1+DEL), B))
                     ZAm, gAm, hAm = f.evaluate_fgh(
                             args=(eos_type, A*(1-DEL), B))
 
+                    # Calculate numerical first partial derivative
                     dZdA_p = (ZAp-Z)/(A*DEL)
                     dZdA_m = (Z-ZAm)/(A*DEL)
 
+                    # Calculate numerical second partial derivative
+                    # For this, use finite differences on the external function
+                    # gradients.
                     d2ZdA2_p = (gAp[1]-g[1])/(A*DEL)
                     d2ZdA2_m = (g[1]-gAm[1])/(A*DEL)
 
+                    # Check that external function value agrees with one of the
+                    # numerical values (delta+ or delta-), or lies between the
+                    # two numerical values.
                     if abs(g[1]) > ZERO_CUT:
                         assert (dZdA_p == pytest.approx(g[1], FD_TOL) or
                                 dZdA_m == pytest.approx(g[1], FD_TOL) or
@@ -159,17 +165,25 @@ def test_roots_Z_liq(root_finder):
                                 between(h[1], d2ZdA2_p, d2ZdA2_m))
 
                     # Partial derivatives w.r.t. B
+                    # Use small finite difference step and get new values
                     ZBp, gBp, hBp = f.evaluate_fgh(
                             args=(eos_type, A, B*(1+DEL)))
                     ZBm, gBm, hBm = f.evaluate_fgh(
                             args=(eos_type, A, B*(1-DEL)))
 
+                    # Calculate numerical first partial derivative
                     dZdB_p = (ZBp-Z)/(B*DEL)
                     dZdB_m = (Z-ZBm)/(B*DEL)
 
+                    # Calculate numerical second partial derivative
+                    # For this, use finite differences on the external function
+                    # gradients.
                     d2ZdB2_p = (gBp[2]-g[2])/(B*DEL)
                     d2ZdB2_m = (g[2]-gBm[2])/(B*DEL)
 
+                    # Check that external function value agrees with one of the
+                    # numerical values (delta+ or delta-), or lies between the
+                    # two numerical values.
                     if abs(g[2]) > ZERO_CUT:
                         assert (dZdB_p == pytest.approx(g[2], FD_TOL) or
                                 dZdB_m == pytest.approx(g[2], FD_TOL) or
@@ -182,4 +196,4 @@ def test_roots_Z_liq(root_finder):
 
 
 # TODO : Add tests for extended functions. These are harder, and I need to look
-# into hwat these do where a root is absent.
+# into what these do where a root is absent.
