@@ -87,7 +87,7 @@ def root_finder():
 
 
 def test_roots_Z_liq(root_finder):
-    for eos_type in [0]:
+    for eos_type in [0, 1]:
         u = EoS_param[eos_type]["u"]
         w = EoS_param[eos_type]["w"]
 
