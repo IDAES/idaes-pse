@@ -2,7 +2,6 @@
 <html>
 <title>IDAES Model Solver</title>
 <!DOCTYPE HTML>
-<h2>{{ date }}</h2>
 <head>
     <meta http-equiv="cache-control" content="no-cache" />
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
@@ -23,10 +22,15 @@
                 });
             });
         });
+        function outputUpdate(val) {
+            document.querySelector('#date_value').value = val;
+        }
+
     </script>
 </head>
 <body>
     <div id=data>
+        <h2>{{ date }}</h2>
         <div class="row">
             <div class="column">
                 <img src="{{ raw_img }}"> 
@@ -35,7 +39,10 @@
                 <img src="{{ modeled_img }}">
             </div>
         </div>
-        <input id="date_slider" name="slider1" class="sync" type="range" min="0" max="{{ range }}" value="{{ slider_value }}"/> <br>
+        <div class="range_slider">
+            <input id="date_slider" name="slider1" class="slider" type="range" min="0" max="{{ range }}" value="{{ slider_value }}" oninput="outputUpdate(value)"/>
+            <output for="date_slider" id="date_value">{{ date }}</output>
+        </div>
     </div>
 </body>
 </html>
