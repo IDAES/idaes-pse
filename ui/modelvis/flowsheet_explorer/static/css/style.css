@@ -1,0 +1,17 @@
+.date_slider {
+  margin : 0 auto;
+}
+
+.solvebtn {
+  float: right;
+  position: relative;
+}
+
+.row {
+  display: flex;
+}
+
+.column {
+  flex: 50%;
+  padding: 5px;
+}

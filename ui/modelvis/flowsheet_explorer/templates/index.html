@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<title>IDAES Model Solver</title>
+<!DOCTYPE HTML>
+<head>
+    <meta http-equiv="cache-control" content="no-cache" />
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(function(){
+            var form = $('form');
+            $('#date_slider').on('change mouseup', function(){
+                var sliderVal = $(this).val();
+                $.ajax({
+                    type: "POST",
+                    url: form.action,
+                    data: $(this).serialize(),
+                    success: function(data){
+                        $('#data').html(data);
+                    }
+                }).done(function(res){
+                    //do something with the response from the server
+                });
+            });
+        });
+    </script>
+</head>
+<body>
+    <div id=data>
+        <div class="row">
+            <div class="column">
+                <img src="{{ raw_img }}"> 
+            </div>
+            <div class="column">
+                <img src="{{ modeled_img }}">
+            </div>
+        </div>
+        <input id="date_slider" name="slider1" class="sync" type="range" min="0" max="{{ range }}" value="{{ slider_value }}"/> <br>
+    </div>
+</body>
+</html>
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
