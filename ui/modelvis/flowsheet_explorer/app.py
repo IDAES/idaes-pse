@@ -15,15 +15,16 @@ def index():
     files = [name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))]
     file_count = len(files)
     files_dict = dict(enumerate(files))
-    print(json.dumps(files_dict))
     slider_val = int(file_count / 2)
     if request.method == 'POST':
-        slider_val = request.form.get('slider1')
+        print("Got here")
+        slider_val = request.form.get('date_slider')
         if not slider_val:
             slider_val = int(file_count / 2)
         else:
             slider_val = int(slider_val)
 
+    print(slider_val)
     date = os.path.splitext(files[slider_val])[0]
     if file_count != 0:
         return render_template("index.html", date=date, slider_value=slider_val, range=file_count, raw_img="/static/raw/" + files[slider_val], modeled_img="/static/modeled/" + files[slider_val], slider_labels=json.dumps(files_dict))

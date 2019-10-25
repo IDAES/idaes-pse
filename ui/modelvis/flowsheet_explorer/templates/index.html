@@ -10,8 +10,7 @@
     <script type="text/javascript" charset="utf-8">
         $(function() {
             var form = $('form');
-            $('#date_slider').on('change mouseup', function(){
-                var sliderVal = $(this).val();
+            $('#sliderInput').on('change mouseup', function(){
                 $.ajax({
                     type: "POST",
                     url: form.action,
@@ -24,41 +23,52 @@
                 });
             });
         });
-        $(function() {
-         $("#slider-range").slider({
-           min: 0,
-           max: {{ range }},
-           step: 1,
-           values: [{{ slider_value }}],
-           slide: function(event, ui) {
+        
+        var oldSliderVal = -1;
 
-             $("#amount-min").val(ui.values[0]);
-           }
-         });
-         $("#amount-min").val({{ slider_labels | safe }}[$("#slider-range").slider("values", 0)]);
+        function init()
+        {
+            var bubble = document.getElementById('bubble');
+            var sliderInput = document.getElementById('sliderInput');
 
-         $('#amount-min').on('input', function() {
-             // console.log($(this).val())
-             $("#amount-min").val({{ slider_labels | safe }}[$("#slider-range").slider("values", 0, $(this).val())])
-             // $("#slider-range").slider('values', {{ slider_labels | safe }}[$(this).val()]);
-            // {{ slider_labels | safe }}[$("#slider-range").slider('values', $(this).val())];
+            sliderInput.addEventListener('mousemove', moveBubble);
+            sliderInput.addEventListener('mousedown', show);
+            sliderInput.addEventListener('mouseup', hide);
+        }   
 
-         });
-       });
+        var show = function(e)
+        {
+            bubble.style.left = e.clientX-(bubble.offsetWidth/2)+'px';  
+            bubble.style.opacity = '1';
+        }
 
+        var hide = function()
+        {
+            bubble.style.opacity = '0';
+        }
+
+        var moveBubble = function(e)
+        {
+            if(oldSliderVal !== '0' && oldSliderVal !== '100')
+            { 
+                bubble.style.left = e.clientX-(bubble.offsetWidth/2)+'px';        
+            }
+            var sliderVal = sliderInput.value
+            bubble.innerHTML = {{ slider_labels | safe }}[sliderVal];
+            oldSliderVal = sliderVal;
+        }
 
     </script>
 </head>
 <body>
     <div id=data>
         <h2>{{ date }}</h2>
-        <div style="margin-bottom:20px;">
-          <label for="amount">Price range:</label>
-          <span style="float:left;">    
-                <input id="amount-min" step="1" type="string" placeholder="0" style="border: 1px solid #ddd;; color:#f6931f; font-weight:bold; text-align:center; width:150px; padding-bottom: 0px; padding-top: 0px;">
-            </span>
-        </div>
-        <div id="slider-range"></div>
+        <body onload="init()">
+            <input id="sliderInput" name="date_slider" type="range" min="0" max="{{ range }}" value="{{ slider_value }}" ng-model="cellphoneSelectedRange">
+
+            <div id="bubble" style="position: absolute; top: 6px; width: 200px; height:20px; pointer-events: none; opacity: 0;">
+            </div>
+        </body>
         <div class="row">
             <div class="column">
                 <img src="{{ raw_img }}"> 
@@ -67,9 +77,8 @@
                 <img src="{{ modeled_img }}">
             </div>
         </div>
-        
-    </div>
 </body>
 </html>
 <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 <link rel="stylesheet" href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/rangeslider.css') }}">
