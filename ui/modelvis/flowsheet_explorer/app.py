@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request
 
+import ast
+import json
 import os
 
 app = Flask(__name__)
@@ -12,6 +14,8 @@ def index():
     path = os.path.join(os.getcwd(), "static/modeled")
     files = [name for name in os.listdir(path) if os.path.isfile(os.path.join(path, name))]
     file_count = len(files)
+    files_dict = dict(enumerate(files))
+    print(json.dumps(files_dict))
     slider_val = int(file_count / 2)
     if request.method == 'POST':
         slider_val = request.form.get('slider1')
@@ -22,7 +26,7 @@ def index():
 
     date = os.path.splitext(files[slider_val])[0]
     if file_count != 0:
-        return render_template("index.html", date=date, slider_value=slider_val, range=file_count, raw_img="/static/raw/" + files[slider_val], modeled_img="/static/modeled/" + files[slider_val], slider_ticks=[range(0, file_count)], slider_labels=files)
+        return render_template("index.html", date=date, slider_value=slider_val, range=file_count, raw_img="/static/raw/" + files[slider_val], modeled_img="/static/modeled/" + files[slider_val], slider_labels=json.dumps(files_dict))
 
 
 if __name__ == '__main__':

@@ -5,8 +5,10 @@
 <head>
     <meta http-equiv="cache-control" content="no-cache" />
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="//code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
     <script type="text/javascript" charset="utf-8">
-        $(function(){
+        $(function() {
             var form = $('form');
             $('#date_slider').on('change mouseup', function(){
                 var sliderVal = $(this).val();
@@ -22,15 +24,41 @@
                 });
             });
         });
-        function outputUpdate(val) {
-            document.querySelector('#date_value').value = val;
-        }
+        $(function() {
+         $("#slider-range").slider({
+           min: 0,
+           max: {{ range }},
+           step: 1,
+           values: [{{ slider_value }}],
+           slide: function(event, ui) {
+
+             $("#amount-min").val(ui.values[0]);
+           }
+         });
+         $("#amount-min").val({{ slider_labels | safe }}[$("#slider-range").slider("values", 0)]);
+
+         $('#amount-min').on('input', function() {
+             // console.log($(this).val())
+             $("#amount-min").val({{ slider_labels | safe }}[$("#slider-range").slider("values", 0, $(this).val())])
+             // $("#slider-range").slider('values', {{ slider_labels | safe }}[$(this).val()]);
+            // {{ slider_labels | safe }}[$("#slider-range").slider('values', $(this).val())];
+
+         });
+       });
+
 
     </script>
 </head>
 <body>
     <div id=data>
         <h2>{{ date }}</h2>
+        <div style="margin-bottom:20px;">
+          <label for="amount">Price range:</label>
+          <span style="float:left;">    
+                <input id="amount-min" step="1" type="string" placeholder="0" style="border: 1px solid #ddd;; color:#f6931f; font-weight:bold; text-align:center; width:150px; padding-bottom: 0px; padding-top: 0px;">
+            </span>
+        </div>
+        <div id="slider-range"></div>
         <div class="row">
             <div class="column">
                 <img src="{{ raw_img }}"> 
@@ -39,11 +67,9 @@
                 <img src="{{ modeled_img }}">
             </div>
         </div>
-        <div class="range_slider">
-            <input id="date_slider" name="slider1" class="slider" type="range" min="0" max="{{ range }}" value="{{ slider_value }}" oninput="outputUpdate(value)"/>
-            <output for="date_slider" id="date_value">{{ date }}</output>
-        </div>
+        
     </div>
 </body>
 </html>
 <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">

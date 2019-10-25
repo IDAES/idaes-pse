@@ -16,7 +16,4 @@
   padding: 5px;
 }
 
-.date_slider::-webkit-slider-thumb::before {
-    content: "test";
-}
 
