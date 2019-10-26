@@ -123,11 +123,13 @@ of shell is a saturated liquid.""")
 class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
+        self.enth_sub = Var(self.flowsheet().config.time, initialize=0)
+        self.enth_sub.fix()
         @self.Constraint(self.flowsheet().config.time,
             doc="Calculate steam extraction rate such that all steam condenses")
         def extraction_rate_constraint(b, t):
-            return b.shell.properties_out[t].enth_mol_sat_phase["Liq"] == \
-                   b.shell.properties_out[t].enth_mol
+            return  b.shell.properties_out[t].enth_mol - b.enth_sub[t] == \
+                   b.shell.properties_out[t].enth_mol_sat_phase["Liq"]
 
     def initialize(self, *args, **kwargs):
         """
