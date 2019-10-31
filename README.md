@@ -1,13 +1,17 @@
-<!-- BEGIN Status badges -->
-[![CircleCI](https://circleci.com/gh/IDAES/idaes-dev.svg?style=svg&circle-token=f01aa6337105a565ae7caa0e0eab66826bd8ea81)](https://circleci.com/gh/IDAES/idaes-dev)
-[![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes-dev/badge.svg?t=PJNalC)](https://coveralls.io/github/IDAES/idaes-dev)
-<!-- END Status badges -->
-
 # IDAES Toolkit
 
 The IDAES Toolkit aims to provide multi-scale, simulation-based, open source
 computational tools and models to support the design, analysis, optimization,
 scale-up, operation and troubleshooting of innovative, advanced energy systems.
+
+<!-- BEGIN Status badges -->
+## Build status
+| idaes-dev | idaes-pse |
+|:---------:|:---------:|
+| (dev repo) | (public repo) |
+| [![CircleCI](https://circleci.com/gh/IDAES/idaes-dev.svg?style=svg&circle-token=f01aa6337105a565ae7caa0e0eab66826bd8ea81)](https://circleci.com/gh/IDAES/idaes-dev)|[![CircleCI](https://circleci.com/gh/IDAES/idaes-pse.svg?style=svg)](https://circleci.com/gh/IDAES/idaes-pse)|
+| [![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes-dev/badge.svg?t=PJNalC)](https://coveralls.io/github/IDAES/idaes-dev)||
+<!-- END Status badges -->
 
 ## System requirements
 
