@@ -139,7 +139,10 @@ class FeatureScaling:
             input_data = input_data.reshape(len(input_data), 1)
         data_minimum = np.min(input_data, axis=0)
         data_maximum = np.max(input_data, axis=0)
-        scaled_data = (input_data - data_minimum)/(data_maximum - data_minimum)
+        scale = data_maximum - data_minimum
+        scale[scale == 0.0] = 1.0
+        scaled_data = (input_data - data_minimum)/scale
+        # scaled_data = (input_data - data_minimum)/(data_maximum - data_minimum)
         data_minimum = data_minimum.reshape(1, data_minimum.shape[0])
         data_maximum = data_maximum.reshape(1, data_maximum.shape[0])
 
