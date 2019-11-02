@@ -8,9 +8,7 @@ scale-up, operation and troubleshooting of innovative, advanced energy systems.
 ## Build statuses
 | idaes-dev | idaes-pse |
 |:---------:|:---------:|
-| (private dev repo) | (public repo) |
-| [![CircleCI](https://circleci.com/gh/IDAES/idaes-dev.svg?style=svg&circle-token=f01aa6337105a565ae7caa0e0eab66826bd8ea81)](https://circleci.com/gh/IDAES/idaes-dev)|[![CircleCI](https://circleci.com/gh/IDAES/idaes-pse.svg?style=svg)](https://circleci.com/gh/IDAES/idaes-pse)|
-| [![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes-dev/badge.svg?t=PJNalC)](https://coveralls.io/github/IDAES/idaes-dev)||
+| [![CircleCI](https://circleci.com/gh/IDAES/idaes-dev.svg?style=svg&circle-token=f01aa6337105a565ae7caa0e0eab66826bd8ea81)](https://circleci.com/gh/IDAES/idaes-dev) [![Coverage Status](https://coveralls.io/repos/github/IDAES/idaes-dev/badge.svg?t=PJNalC)](https://coveralls.io/github/IDAES/idaes-dev) |[![CircleCI](https://circleci.com/gh/IDAES/idaes-pse.svg?style=svg)](https://circleci.com/gh/IDAES/idaes-pse)|
 <!-- END Status badges -->
 
 ## System requirements
