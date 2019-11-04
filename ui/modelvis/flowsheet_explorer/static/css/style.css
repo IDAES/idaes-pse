@@ -12,8 +12,16 @@
 }
 
 .column {
-  flex: 50%;
   padding: 5px;
+  overflow: auto;
+  height: 500px;
+}
+
+.zoom {
+  display: block;
+  margin-bottom: 5px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 html,
