@@ -26,6 +26,8 @@ def index():
 
     print(slider_val)
     date = os.path.splitext(files[slider_val])[0]
+    day, hour = date.split("_")
+    date = day + " " + hour + ":00"
     if file_count != 0:
         return render_template("index.html", date=date, slider_value=slider_val, range=file_count, raw_img="/static/raw/" + files[slider_val], modeled_img="/static/modeled/" + files[slider_val], slider_labels=json.dumps(files_dict))
 
