@@ -1,0 +1,384 @@
+GAMS 25.1.3  r4e34d435fbd Released Oct 30, 2018 LEX-LEG x86 64bit/Linux                                                                                                                                                                09/19/19 16:58:35 Page 1
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+   3  **************** IMPORT
+   4  Set jl /0*398/
+   5   j(jl) /1*398/
+   6   jld(j) /72*96/;
+   7   
+GDXIN   /home/mengle/CurrentIDAES/idaes-dev/apps/ddm-learning/helmet_python/examples/H2OData.gdx
+   9  Sets i, PVT(i), PVTG(PVT), PVTL(PVT), PVTC(PVT), PVTLD(PVT), PVTMD(PVT), PVTHD(PVT), IT(i), CV(i), CVC(CV), CVMD(CV), CP(i), CPG(CP), CPL(CP), CPC(CP), CPLD(CP), CPMD(CP), CPHD(CP), SND(i), SNDG(SND), SNDL(SND), SNDC(SND), SNDLD(SND), SNDMD(SND), SN
+      DHD(SND);
+--- LOAD  i = 2:i
+--- LOAD  PVT = 10:PVT
+--- LOAD  PVTG = 11:PVTG
+--- LOAD  PVTL = 12:PVTL
+--- LOAD  PVTC = 13:PVTC
+--- LOAD  PVTLD = 14:PVTLD
+--- LOAD  PVTMD = 15:PVTMD
+--- LOAD  PVTHD = 16:PVTHD
+--- LOAD  IT = 34:IT
+--- LOAD  CV = 17:CV
+--- LOAD  CVC = 18:CVC
+--- LOAD  CVMD = 19:CVMD
+--- LOAD  CP = 20:CP
+--- LOAD  CPG = 21:CPG
+--- LOAD  CPL = 22:CPL
+--- LOAD  CPC = 23:CPC
+--- LOAD  CPLD = 24:CPLD
+--- LOAD  CPMD = 25:CPMD
+--- LOAD  CPHD = 26:CPHD
+--- LOAD  SND = 27:SND
+--- LOAD  SNDG = 28:SNDG
+--- LOAD  SNDL = 29:SNDL
+--- LOAD  SNDC = 30:SNDC
+--- LOAD  SNDLD = 31:SNDLD
+--- LOAD  SNDMD = 32:SNDMD
+--- LOAD  SNDHD = 33:SNDHD
+  11   
+  12  Sets p /'Crit', 'PVT', 'CV', 'CP', 'SND'/;
+  13   
+  14  **************** IMPORT BASIS FUNCTION VALUES
+  15  parameters z(p,i), delta(p,i), tau(p,i), itt(p,i), d(j), l(j), t(j);
+--- LOAD  z = 35:z
+--- LOAD  delta = 5:delta
+--- LOAD  tau = 6:tau
+--- LOAD  itt = 4:itt
+--- LOAD  d = 7:d
+--- LOAD  l = 9:l
+--- LOAD  t = 8:t
+  18   
+  19  Set Crit(i) /1/;
+  20  delta('Crit','1') = 1;
+  21  tau('Crit','1') = 1;
+  22   
+  23  Parameter data(p,i);
+  24  data('PVT', PVT(i)) = 1;
+GAMS 25.1.3  r4e34d435fbd Released Oct 30, 2018 LEX-LEG x86 64bit/Linux                                                                                                                                                                09/19/19 16:58:35 Page 2
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+  25  data('CV', CV(i)) = 1;
+  26  data('CP', CP(i)) = 1;
+  27  data('SND', SND(i)) = 1;
+  28  data('Crit',Crit(i)) =1;
+  29   
+  30  Parameter variance(p,i);
+  31  variance('PVT',PVTG) = 0.047384;
+  32  variance('PVT',PVTL) = 2.284072;
+  33  variance('PVT',PVTC) = 0.003705;
+  34  variance('PVT',PVTLD) = 0.022144;
+  35  variance('PVT',PVTMD) = 0.048740;
+  36  variance('PVT',PVTHD) = 0.121001;
+  37  variance('CV',CVC) = 0.635609;
+  38  variance('CV',CVMD) = 0.634663;
+  39  variance('CP',CPG) = 1528.018116;
+  40  variance('CP',CPL) = 28.078728;
+  41  variance('CP',CPC) = 24062.552119;
+  42  variance('CP',CPLD) = 16.319043;
+  43  variance('CP',CPMD) = 23.374795;
+  44  variance('CP',CPHD) = 2.565652;
+  45  variance('SND',SNDG) = 0.018847;
+  46  variance('SND',SNDL) = 46.678411;
+  47  variance('SND',SNDC) = 0.439575;
+  48  variance('SND',SNDLD) = 0.439575;
+  49  variance('SND',SNDMD) = 0.323904;
+  50  variance('SND',SNDHD) = 2.370323;
+  55   
+  56   
+  57  ****** Derivatives
+  58   
+  59  parameter PVTvec(i,j), PVTvecCV(i,j);
+  60  PVTvec(PVT(i),j)$(l(j) = 0) = d(j);
+  61  PVTvec(PVT(i),j)$(l(j) <> 0) = d(j)- l(j)*(power(delta('PVT',i),l(j)));
+  62   
+  63  PVTvecCV(PVT(i),j) = t(j)*(t(j)-1);
+  64  parameter CVvec(i,jl);
+  65  CVvec(CV(i),'0') = itt('CV',i);
+  66  CVvec(CV(i),j) = -t(j)*(t(j)-1);
+  67   
+  68  parameter CPvecA(i,jl), CPvecB(i,jl), CPvecCV(i,jl);
+  69   
+  70  CPvecA(CP(i),'0')= 1;
+  71  CPvecA(CP(i),j)$(l(j) =0) = 2*d(j) + d(j)*(d(j)-1);
+  72  CPvecA(CP(i),j)$(l(j) <> 0) = 2*(d(j)-l(j)*power(delta('CP',i),l(j))) + (d(j)-l(j)*power(delta('CP',i),l(j)))*(d(j) - 1 - l(j)*power(delta('CP',i),l(j))) - power(l(j),2)*power(delta('CP',i),l(j));
+  73   
+  74  CPvecB(CP(i),'0') = 1;
+  75  CPvecB(CP(i),j)$(l(j) = 0) = d(j)*(1-t(j));
+  76  CPvecB(CP(i),j)$(l(j) <> 0) = (d(j) - l(j)*power(delta('CP',i),l(j)))*(1-t(j));
+  77   
+  78  CPvecCV(CP(i),'0') = 0;
+  79  CPvecCV(CP(i),j) = -t(j)*(t(j)-1);
+  80  parameter SNDvecA(i,jl), SNDvecB(i,jl), SNDvecCV(i,jl);
+  81   
+GAMS 25.1.3  r4e34d435fbd Released Oct 30, 2018 LEX-LEG x86 64bit/Linux                                                                                                                                                                09/19/19 16:58:35 Page 3
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+  82  SNDvecA(SND(i),'0')= 1;
+  83  SNDvecA(SND(i),j)$(l(j) =0) = 2*d(j) + d(j)*(d(j)-1);
+  84  SNDvecA(SND(i),j)$(l(j) <> 0) = 2*(d(j)-l(j)*power(delta('SND',i),l(j))) + (d(j)-l(j)*power(delta('SND',i),l(j)))*(d(j) - 1 - l(j)*power(delta('SND',i),l(j))) - power(l(j),2)*power(delta('SND',i),l(j));
+  85   
+  86  SNDvecB(SND(i),'0') = 1;
+  87  SNDvecB(SND(i),j)$(l(j) = 0) = d(j)*(1-t(j));
+  88  SNDvecB(SND(i),j)$(l(j) <> 0) = (d(j) - l(j)*power(delta('SND',i),l(j)))*(1-t(j));
+  89   
+  90  SNDvecCV(SND(i),'0') = -itt('SND',i);
+  91  SNDvecCV(SND(i),j) = -t(j)*(t(j)-1);
+  92   
+  93  parameter CRITvec(jl) ,CRITvec1(jl), CRITvec2(jl);
+  94   
+  95  CRITvec('0') = -0.770562;
+  96  CRITvec(j)$(l(j) = 0) = -d(j);
+  97  CRITvec(j)$(l(j) <> 0) = -d(j) + l(j)*power(delta('Crit','1'),l(j));
+  98   
+  99  CRITvec1('0')= 1;
+ 100  CRITvec1(j)$(l(j) =0) = d(j)*(d(j)+1);
+ 101  CRITvec1(j)$(l(j) <> 0) = d(j)*(d(j)+1) - 2*(d(j)+1)*l(j)*power(delta('Crit','1'),l(j)) - l(j)*(l(j)+1)*power(delta('Crit','1'),l(j)) + power(l(j),2)*power(delta('Crit','1'),(2*l(j)));
+ 102   
+ 103  CRITvec2('0') = 0;
+ 104  CRITvec2(j)$(l(j)=0) = 2*d(j)*(2*d(j)-1) + d(j)*(d(j)-1)*(d(j)-2);
+ 105  CRITvec2(j)$(l(j)<>0) = 2*(d(j)-l(j)) + 4*((d(j)-l(j))*(d(j)-1-l(j)) - power(l(j),2)) + (d(j)*(d(j)-1)*(d(j)-2) + (-2*l(j) + 6*d(j)*l(j) - 3 * power(d(j),2)*l(j) - 3*d(j)*power(l(j),2) + 3*power(l(j),2) - power(l(j),3)) + (3*d(j)*power(l(j),2) - 3*p
+      ower(l(j),2) + 3*power(l(j),3))-power(l(j),3));
+ 106   
+ 107  parameter ITvec(i,j);
+ 108  ITvec(i,j)$(l(j) = 0) = d(j)*(d(j)-1)*(d(j)-2);
+ 109  ITvec(i,j)$(l(j) <> 0 ) =d(j)*(d(j)-1)*(d(j)-2) + power(delta('PVT',i),l(j))*(-2*l(j)+6*d(j)*l(j)-3*(d(j)**2)*l(j)-3*d(j)*(l(j)**2)+3*(l(j)**2) - (l(j)**3)) + power(delta('PVT',i),2*l(j))*(3*d(j)*(l(j)**2) - 3*(l(j)**2) + 3*(l(j)**3)) - (l(j)**3)*po
+      wer(delta('PVT',i),3*l(j));
+ 110   
+ 111   
+ 112   
+ 113  ********** BASIS FUNCTIONS
+ 114   
+ 115  parameter base(p,i,jl);
+ 116   
+ 117  base(p,i,'0') = 1;
+ 118  base(p, i,j)$(data(p,i)=1 and l(j) <> 0) = (delta(p,i)**d(j))* (tau(p,i)**t(j)) * exp(- (delta(p,i)**l(j)));
+ 119  base(p,i,j)$(data(p,i)=1 and l(j) = 0) = (delta(p,i)**d(j))* (tau(p,i)**t(j));
+ 120   
+ 121   
+ 122   
+ 123  ********  EQUATIONS and VARIABLES
+ 124   
+ 125  binary variable y(j);
+ 126  variables beta(jl), sse;
+ 127  variables gammaCrit, gammaCrit1, gammaCrit2, gammaPVT(i),  gammaIT(i), gammaCPB(i), gammaCPC(i), gammaSNDA(i), gammaSNDB(i), SNDomega(i);
+ 128  positive variables  gammaCV(i), gammaCPA(i), gammaSNDC(i), SNDpsi(i);
+ 129  beta.lo(j) = betalo(j); beta.up(j) = betaup(j);
+ 130  equations eq1, eq2, eq3, ITgamma, Critgamma, Critgamma1, Critgamma2,
+ 131     gammaAPVT, ITgamma, gammaACV, gammaACP, gammaBCP, gammaCCP,  gammaASND, gammaBSND, gammaCSND, omegaSND, psiSND
+ 132   obj;
+GAMS 25.1.3  r4e34d435fbd Released Oct 30, 2018 LEX-LEG x86 64bit/Linux                                                                                                                                                                09/19/19 16:58:35 Page 4
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+ 133  beta.FX('0')=1;
+ 134  eq1(j).. betalo(j)*y(j) =l= beta(j);
+ 135  eq2(j).. beta(j) =l= betaup(j)*y(j);
+ 136  eq3.. sum(j, y(j)) =e= 14;
+ 137   
+ 138  gammaAPVT(PVT(i)).. gammaPVT(i) =e= sum(j,beta(j)*PVTvec(i,j)*base('PVT',i,j));
+ 139   
+ 140  ITgamma(IT(i)).. gammaIT(i) =e= sum(j, beta(j)*ITvec(i,j)*base('PVT',i,j));
+ 141  gammaACV(CV(i)).. gammaCV(i) =e= sum(jl, beta(jl)*CVvec(i,jl)*base('CV',i,jl));
+ 142   
+ 143  gammaACP(CP(i)).. gammaCPA(i) =e= sum(j,beta(j)*CPvecCV(i,j)*base('CP',i,j));
+ 144  gammaBCP(CP(i)).. gammaCPB(i) =e= sum(jl,  beta(jl)*CPvecB(i,jl)*base('CP',i,jl));
+ 145  gammaCCP(CP(i)).. gammaCPC(i) =e= sum(jl,beta(jl)*CPvecA(i,jl)*base('CP',i,jl));
+ 146   
+ 147  gammaASND(SND(i)).. gammaSNDA(i) =e= sum(jl,beta(jl)*SNDvecA(i,jl)*base('SND',i,jl));
+ 148  gammaBSND(SND(i)).. gammaSNDB(i) =e= sum(jl,beta(jl)*SNDvecB(i,jl)*base('SND',i,jl));
+ 149  gammaCSND(SND(i)).. gammaSNDC(i) =e= sum(jl,beta(jl)*SNDvecCV(i,jl)*base('SND',i,jl));
+ 150  omegaSND(SND(i)).. SNDomega(i) =e= gammaSNDA(i)*gammaSNDC(i);
+ 151  psiSND(SND(i))..   SNDpsi(i) =e= gammaSNDB(i)*gammaSNDB(i);
+ 152   
+ 153  Critgamma..  gammaCrit =e= sum(jl, beta(jl)*Critvec(jl));
+ 154  Critgamma1.. gammaCrit1 =e= sum(jl, beta(jl)*Critvec1(jl));
+ 155  Critgamma2.. gammaCrit2 =e= sum(jl, beta(jl)*Critvec2(jl));
+ 156   
+ 157   
+ 158   
+ 159  ******** OBJECTIVES
+ 160   
+ 161  EQUATION objPVT;
+ 162  objPVT.. sse =e=  + sum(PVT(i),power(z('PVT',i) - gammaPVT(i),2)/variance('PVT',i)) + 100*sum(IT(i),power(gammaIT(i),2))   + 5* power( gammaCrit,2) + 5 * power(gammaCrit1,2)+ 5* power(gammaCrit2,2);
+ 163   
+ 164   
+ 165   
+ 166  EQUATION objPVTCVCPSND;
+ 167  objPVTCVCPSND.. sse =e=  + sum(PVT(i),power(z('PVT',i) - gammaPVT(i),2)/variance('PVT',i)) + sum(CV(i), power( z('CV',i) - gammaCV(i),2)/variance('CV',i)) + sum(CP(i),power(z('CP',i) - gammaCPA(i) - power(gammaCPB(i),2)/gammaCPC(i),2)/variance('CP',
+      i)) + sum(SND(i),power(z('SND',i)*gammaSNDC(i) - SNDomega(i) - SNDpsi(i) ,2)/variance('SND',i)) + 100*sum(IT(i),power(gammaIT(i),2))   + 5* power( gammaCrit,2) + 5 * power(gammaCrit1,2)+ 5* power(gammaCrit2,2);
+ 168   
+ 169   
+ 170   
+ 171   
+ 172   
+ 173  ****** Property Bounds
+ 174   
+ 175  beta.up(j) = 5;
+ 176  beta.lo(j) = -5;
+ 177   
+ 178  gammaPVT.up(PVT)$(z('PVT',PVT)>0) = 112.252954;
+ 179  gammaPVT.lo(PVT)$(z('PVT',PVT)>0) = -1.000000;
+ 180   
+ 181  *gammaCV.up(i) = z('CV',i)*1.05;
+ 182  *gammaCV.lo(i) = z('CV',i)*0.95;
+ 183   
+ 184  *gammaCPA.lo(i) = 0;
+GAMS 25.1.3  r4e34d435fbd Released Oct 30, 2018 LEX-LEG x86 64bit/Linux                                                                                                                                                                09/19/19 16:58:35 Page 5
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+ 185  *gammaCPA.up(i) = 20;
+ 186  *gammaCPB.lo(i) = 0;
+ 187  *gammaCPB.up(i) = 20;
+ 188  *gammaCPC.lo(i) = 1E-16;
+ 189  *gammaCPC.up(i) = 40;
+ 190   
+ 191  *gammaSNDA.up(i) = 50;
+ 192  *gammaSNDA.lo(i) = 0;
+ 193  *gammaSNDB.up(i) = 20;
+ 194  *gammaSNDB.lo(i) = 0;
+ 195  *gammaSNDC.up(i) = 20;
+ 196  *gammaSNDC.lo(i) = 0;
+ 197   
+ 198  *SNDomega.lo(i) = 0;
+ 199  *SNDomega.up(i)  = 120;
+ 200  *SNDpsi.lo(i) = 0;
+ 201  *SNDpsi.up(i) = 100;
+ 202   
+ 203   
+ 204   
+ 205  ******** GENERAL OPTIONS
+ 206  option optca = 0.0001;
+ 207  option optcr = 0.0001 ;
+ 208  option limrow = 0, limcol =0 ;
+ 209  option solprint=off;
+ 210  option reslim = 1000;
+ 211  option sys12 = 1;
+ 212  maxexecerror = 10000;
+ 213  option rminlp = baron;
+ 214  option minlp = baron;
+ 215  option decimals = 6;
+ 216  option savepoint = 1;
+ 217   
+ 218   
+ 219  ******** SOLVES
+ 220   
+ 221  option reslim = 500;
+ 222  model sse_PVT / eq1, eq2, eq3, Critgamma, Critgamma1, Critgamma2, objPVT, gammaAPVT, ITgamma /;
+ 223  solve sse_PVT minimizing sse using minlp;
+ 224  display beta.l, y.l;
+ 225   
+ 226  gammaPVT.l(i) = sum(j,beta.l(j)*PVTvec(i,j)*base('PVT',i,j));
+ 227   
+ 228  gammaIT.l(i) = sum(j, beta.l(j)*ITvec(i,j)*base('PVT',i,j));
+ 229  gammaCV.l(i) = sum(jl, beta.l(jl)*CVvec(i,jl)*base('CV',i,jl));
+ 230   
+ 231  gammaCPA.l(i) = sum(j,beta.l(j)*CPvecCV(i,j)*base('CP',i,j));
+ 232  gammaCPB.l(i) = sum(jl,  beta.l(jl)*CPvecB(i,jl)*base('CP',i,jl));
+ 233  gammaCPC.l(i) = sum(jl,beta.l(jl)*CPvecA(i,jl)*base('CP',i,jl));
+ 234   
+ 235  gammaSNDA.l(i) = sum(jl,beta.l(jl)*SNDvecA(i,jl)*base('SND',i,jl));
+ 236  gammaSNDB.l(i) = sum(jl,beta.l(jl)*SNDvecB(i,jl)*base('SND',i,jl));
+ 237  gammaSNDC.l(i) = sum(jl,beta.l(jl)*SNDvecCV(i,jl)*base('SND',i,jl));
+GAMS 25.1.3  r4e34d435fbd Released Oct 30, 2018 LEX-LEG x86 64bit/Linux                                                                                                                                                                09/19/19 16:58:35 Page 6
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+C o m p i l a t i o n
+
+
+ 238  SNDomega.l(i) = gammaSNDA.l(i)*gammaSNDC.l(i);
+ 239  SNDpsi.l(i) = gammaSNDB.l(i)*gammaSNDB.l(i);
+ 240   
+ 241  option reslim = 3600;
+ 242  model sse_PVTCVCPSND / eq1, eq2, eq3, Critgamma, Critgamma1, Critgamma2, objPVTCVCPSND, gammaAPVT, gammaACV, gammaACP, gammaBCP, gammaCCP, gammaASND, gammaBSND, gammaCSND, ITgamma /;
+ 243  solve sse_PVTCVCPSND minimizing sse using minlp;
+ 244  display beta.l, y.l;
+ 245   
+ 246   
+ 247   
+ 248  ****************Post Evaluation
+ 249   
+ 250  display gammaCrit.l, gammaCrit1.l, gammaCrit2.l;
+ 251  display gammaIT.l;
+ 252  display gammaPVT.l;
+ 253  display gammaCV.l;
+ 254  display gammaCPA.l, gammaCPB.l, gammaCPC.l;
+ 255  parameter mingammaCPA, mingammaCPB, mingammaCPC;
+ 256  mingammaCPA = smin(CP(i), gammaCPA.l(i));
+ 257  mingammaCPB = smin(CP(i), gammaCPB.l(i));
+ 258  mingammaCPC = smin(CP(i), gammaCPC.l(i));
+ 259  display mingammaCPA, mingammaCPB, mingammaCPC;
+ 260   
+ 261  parameter maxgammaCPA, maxgammaCPB, maxgammaCPC;
+ 262  maxgammaCPA = smax(CP(i), gammaCPA.l(i));
+ 263  maxgammaCPB = smax(CP(i), gammaCPB.l(i));
+ 264  maxgammaCPC = smax(CP(i), gammaCPC.l(i));
+ 265  display maxgammaCPA, maxgammaCPB, maxgammaCPC;
+ 266   
+ 267  display gammaSNDA.l, gammaSNDB.l, gammaSNDC.l;
+ 268  parameter mingammaSNDA, mingammaSNDB, mingammaSNDC, minSNDomega, minSNDpsi;
+ 269  mingammaSNDA = smin(SND(i), gammaSNDA.l(i));
+ 270  mingammaSNDB = smin(SND(i), gammaSNDB.l(i));
+ 271  mingammaSNDC = smin(SND(i), gammaSNDC.l(i));
+ 272  minSNDomega = smin(SND(i), SNDomega.l(i));
+ 273  minSNDpsi = smin(SND(i), SNDpsi.l(i));
+ 274  display mingammaSNDA, mingammaSNDB, mingammaSNDC, minSNDomega, minSNDpsi;
+ 275   
+ 276  parameter maxgammaSNDA, maxgammaSNDB, maxgammaSNDC, maxSNDomega, maxSNDpsi;
+ 277  maxgammaSNDA = smax(SND(i), gammaSNDA.l(i));
+ 278  maxgammaSNDB = smax(SND(i), gammaSNDB.l(i));
+ 279  maxgammaSNDC = smax(SND(i), gammaSNDC.l(i));
+ 280  maxSNDomega = smax(SND(i), SNDomega.l(i));
+ 281  maxSNDpsi = smax(SND(i), SNDpsi.l(i));
+ 282  display maxgammaSNDA, maxgammaSNDB, maxgammaSNDC, maxSNDomega, maxSNDpsi;
+ 283   
+ 284  parameter  errPVT, errCV, errCP, errSND, totErr;
+ 285  errPVT = sum(PVT,power(z('PVT',PVT) - gammaPVT.l(PVT),2)/variance('PVT',PVT));
+ 286  errCV =  sum(CV(i), power( z('CV',i) - gammaCV.l(i),2)/variance('CV',i));
+ 287  errCP =  sum(CP(i),power(z('CP',i) - gammaCPA.l(i) - power(gammaCPB.l(i),2)/gammaCPC.l(i),2)/variance('CP',i));
+ 288  errSND=  sum(SND(i),power(z('SND',i)*gammaSNDC.l(i) - SNDomega.l(i) - SNDpsi.l(i) ,2)/variance('SND',i));
+ 289  totErr =  + errPVT + errCV + errCP + errSND + 100*sum(IT(i),power(gammaIT.l(i),2))   + 5* power( gammaCrit.l,2) + 5 * power(gammaCrit1.l,2)+ 5* power(gammaCrit2.l,2);
+ 290  display  errPVT, errCV, errCP, errSND, totErr;
+GAMS 25.1.3  r4e34d435fbd Released Oct 30, 2018 LEX-LEG x86 64bit/Linux                                                                                                                                                                09/19/19 16:58:35 Page 7
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Include File Summary
+
+
+   SEQ   GLOBAL TYPE      PARENT   LOCAL  FILENAME
+
+     1        1 INPUT          0       0  /home/mengle/CurrentIDAES/idaes-dev/apps/ddm-learning/helmet_python/examples/H2Omain.gms
+     2        8 GDXIN          1       8  /home/mengle/CurrentIDAES/idaes-dev/apps/ddm-learning/helmet_python/examples/H2OData.gdx
+
+
+COMPILATION TIME     =        0.003 SECONDS      3 MB  25.1.3 r4e34d435fbd LEX-LEG
+GAMS 25.1.3  r4e34d435fbd Released Oct 30, 2018 LEX-LEG x86 64bit/Linux                                                                                                                                                                09/19/19 16:58:35 Page 8
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+E x e c u t i o n
+
+
+**** MaxExecError resets GAMS parameter ExecErr=10000
+GAMS 25.1.3  r4e34d435fbd Released Oct 30, 2018 LEX-LEG x86 64bit/Linux                                                                                                                                                                09/19/19 16:58:35 Page 9
+G e n e r a l   A l g e b r a i c   M o d e l i n g   S y s t e m
+Model Statistics    SOLVE sse_PVT Using MINLP From line 223
+
+
+MODEL STATISTICS
+
+BLOCKS OF EQUATIONS           9     SINGLE EQUATIONS        1,365
+BLOCKS OF VARIABLES           8     SINGLE VARIABLES        1,365
+NON ZERO ELEMENTS       228,050     NON LINEAR N-Z            567
+DERIVATIVE POOL              20     CONSTANT POOL             554
+CODE LENGTH               2,777     DISCRETE VARIABLES        398
+
+
+GENERATION TIME      =        0.143 SECONDS     67 MB  25.1.3 r4e34d435fbd LEX-LEG
+
+
+EXECUTION TIME       =        1.241 SECONDS     67 MB  25.1.3 r4e34d435fbd LEX-LEG

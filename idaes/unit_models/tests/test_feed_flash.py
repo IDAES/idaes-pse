@@ -79,14 +79,14 @@ class TestBTXIdeal(object):
     @pytest.mark.build
     def test_build(self, btx):
         assert hasattr(btx.fs.unit, "flow_mol")
-        assert hasattr(btx.fs.unit, "mole_frac")
+        assert hasattr(btx.fs.unit, "mole_frac_comp")
         assert hasattr(btx.fs.unit, "temperature")
         assert hasattr(btx.fs.unit, "pressure")
 
         assert hasattr(btx.fs.unit, "outlet")
         assert len(btx.fs.unit.outlet.vars) == 4
         assert hasattr(btx.fs.unit.outlet, "flow_mol")
-        assert hasattr(btx.fs.unit.outlet, "mole_frac")
+        assert hasattr(btx.fs.unit.outlet, "mole_frac_comp")
         assert hasattr(btx.fs.unit.outlet, "temperature")
         assert hasattr(btx.fs.unit.outlet, "pressure")
 
@@ -100,8 +100,8 @@ class TestBTXIdeal(object):
         btx.fs.unit.flow_mol.fix(1)
         btx.fs.unit.temperature.fix(368)
         btx.fs.unit.pressure.fix(101325)
-        btx.fs.unit.mole_frac[0, "benzene"].fix(0.5)
-        btx.fs.unit.mole_frac[0, "toluene"].fix(0.5)
+        btx.fs.unit.mole_frac_comp[0, "benzene"].fix(0.5)
+        btx.fs.unit.mole_frac_comp[0, "toluene"].fix(0.5)
 
         assert degrees_of_freedom(btx) == 0
 
