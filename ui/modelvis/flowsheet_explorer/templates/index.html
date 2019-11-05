@@ -17,7 +17,7 @@
                     data: $(this).serialize(),
                     success: function(data){
                         $('#data').html(data); // reloads the HTML (but not the JS!)
-						init();
+						            init();
                     }
                 }).done(function(res){
                     //do something with the response from the server
@@ -25,7 +25,6 @@
             });
         });
         
-		
         var oldSliderVal = -1;
 
         function init()
@@ -40,8 +39,11 @@
             sliderInput.addEventListener('mousedown', show);
             sliderInput.addEventListener('mouseup', hide);
 			
-			zoom_in_button.addEventListener('mouseup', zoom_in);
-			zoom_out_button.addEventListener('mouseup', zoom_out);
+			      zoom_in_button.addEventListener('mouseup', zoom_in);
+			      zoom_out_button.addEventListener('mouseup', zoom_out);
+            sliderInput.addEventListener('mousemove', moveBubble);
+            sliderInput.addEventListener('mousedown', show);
+            sliderInput.addEventListener('mouseup', hide);
         }   
 
         var show = function(e)
@@ -54,7 +56,7 @@
         {
             bubble.style.opacity = '0';
         }
-		
+
         var moveBubble = function(e)
         {
             if(oldSliderVal !== '0' && oldSliderVal !== '100')
@@ -132,3 +134,4 @@
 </body>
 </html>
 <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
