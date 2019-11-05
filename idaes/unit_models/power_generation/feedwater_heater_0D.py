@@ -29,7 +29,7 @@ __author__ = "John Eslick"
 
 import logging
 from pyomo.common.config import ConfigValue, In, ConfigBlock
-from pyomo.environ import SolverFactory, TransformationFactory, Var, value
+from pyomo.environ import SolverFactory, TransformationFactory, Var, value, Constraint
 from pyomo.opt import TerminationCondition
 from pyomo.network import Arc
 
@@ -272,7 +272,6 @@ class FWH0DData(UnitModelBlockData):
             # fix the steam and fwh inlet for init
             self.desuperheat.inlet_1.fix()
             self.desuperheat.inlet_1.flow_mol.unfix() #unfix for extract calc
-
         # initialize mixer if included
         if config.has_drain_mixer:
             self.drain_mix.steam.fix()
@@ -290,12 +289,14 @@ class FWH0DData(UnitModelBlockData):
             self.cooling.inlet_2.fix()
         else:
             self.condense.inlet_2.fix()
+        if not config.has_drain_mixer and not config.has_desuperheat:
+            self.condense.inlet_1.fix()
+            self.condense.inlet_1.flow_mol.unfix()
         self.condense.initialize(*args, **kwargs)
         # Initialize drain cooling if included
         if config.has_drain_cooling:
             _set_port(self.cooling.inlet_1, self.condense.outlet_1)
             self.cooling.initialize(*args, **kwargs)
-
         # Solve all together
         outlvl = kwargs.get("outlvl", 0)
         opt = SolverFactory(kwargs.get("solver", "ipopt"))
