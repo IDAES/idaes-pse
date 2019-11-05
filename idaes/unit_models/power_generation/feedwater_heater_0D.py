@@ -29,7 +29,7 @@ __author__ = "John Eslick"
 
 import logging
 from pyomo.common.config import ConfigValue, In, ConfigBlock
-from pyomo.environ import SolverFactory, TransformationFactory, Var, value, Constraint
+from pyomo.environ import SolverFactory, TransformationFactory, Var, value
 from pyomo.opt import TerminationCondition
 from pyomo.network import Arc
 
