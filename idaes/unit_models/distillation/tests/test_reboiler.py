@@ -104,6 +104,7 @@ def test_solve():
     assert solve_status.solver.status == SolverStatus.ok
 
 # def test_solution():
+#     assert
 
 # # total condenser with FcTP
 # m.fs.R101_FcTP = Reboiler(default={"property_package": m.fs.properties_2})
