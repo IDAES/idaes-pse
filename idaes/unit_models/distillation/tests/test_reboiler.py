@@ -24,7 +24,8 @@ from idaes.core import FlowsheetBlock, MaterialBalanceType, EnergyBalanceType, \
 from idaes.unit_models.distillation import Reboiler
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import degrees_of_freedom, \
+    number_variables, number_total_constraints
 from idaes.core.util.testing import get_default_solver
 
 m = ConcreteModel()
@@ -42,6 +43,7 @@ m.fs.properties_2 = BTXParameterBlock(default={"valid_phase":
 
 ###############################################################################
 # total reboiler with FTPz
+
 
 def test_build():
     m.fs.R101 = Reboiler(default={"property_package": m.fs.properties})
@@ -78,13 +80,15 @@ def test_build():
 
 def test_set_inputs():
 
-    assert degrees_of_freedom(m.fs.R101) == 7
+    assert number_variables(m.fs.R101) == 51
+    assert number_total_constraints(m.fs.R101) == 44
 
-    # Fix the partial reboiler variables
+    # Fix the reboiler variables
     m.fs.R101.boilup_ratio.fix(1)
     m.fs.R101.deltaP.fix(0)
 
-    # Fix the inputs (typically this will be the outlet vapor from the top tray)
+    # Fix the inputs (typically this will be the outlet liquid from the
+    # bottom tray)
     m.fs.R101.inlet.flow_mol.fix(1)
     m.fs.R101.inlet.temperature.fix(362)
     m.fs.R101.inlet.pressure.fix(101325)
@@ -105,33 +109,34 @@ def test_solve():
         TerminationCondition.optimal
     assert solve_status.solver.status == SolverStatus.ok
 
-# def test_solution():
-#     assert
 
-# # total condenser with FcTP
-# m.fs.R101_FcTP = Reboiler(default={"property_package": m.fs.properties_2})
-#
-# # Fix the partial condenser variables
-# m.fs.R101_FcTP.boilup_ratio.fix(1)
-# m.fs.R101_FcTP.deltaP.fix(0)
-#
-# # Fix the inputs (typically this will be the outlet vapor from the top tray)
-# m.fs.R101_FcTP.inlet.flow_mol_comp[0, "benzene"].fix(0.5)
-# m.fs.R101_FcTP.inlet.flow_mol_comp[0, "toluene"].fix(0.5)
-# m.fs.R101_FcTP.inlet.temperature.fix(362)
-# m.fs.R101_FcTP.inlet.pressure.fix(101325)
-#
-#
-# print("-----------------------------------------------------------------------")
-# print("Reboiler - FcTP")
-# print("The degrees of freedom is ", degrees_of_freedom(m.fs.R101_FcTP))
-#
-#
-# solver = get_default_solver()
-# m.fs.R101_FcTP.initialize(solver=solver, outlvl=2)
-#
-# m.fs.R101_FcTP.bottoms.display()
-# m.fs.R101_FcTP.vapor_reboil.display()
-# m.fs.R101_FcTP.heat_duty.display()
-#
-# print("-----------------------------------------------------------------------")
+def test_solution():
+
+    # Reboiler when using FTPz
+    # Bottoms port
+    assert (pytest.approx(0.5, abs=1e-3) ==
+            value(m.fs.R101.bottoms.flow_mol[0]))
+    assert (pytest.approx(0.3891, abs=1e-3) ==
+            value(m.fs.R101.bottoms.mole_frac_comp[0, "benzene"]))
+    assert (pytest.approx(0.6109, abs=1e-3) ==
+            value(m.fs.R101.bottoms.mole_frac_comp[0, "toluene"]))
+    assert (pytest.approx(368.728, abs=1e-3) ==
+            value(m.fs.R101.bottoms.temperature[0]))
+    assert (pytest.approx(101325, abs=1e-3) ==
+            value(m.fs.R101.bottoms.pressure[0]))
+
+    # Vapor reboil port
+    assert (pytest.approx(0.5, abs=1e-3) ==
+            value(m.fs.R101.vapor_reboil.flow_mol[0]))
+    assert (pytest.approx(0.6108, abs=1e-3) ==
+            value(m.fs.R101.vapor_reboil.mole_frac_comp[0, "benzene"]))
+    assert (pytest.approx(0.3892, abs=1e-3) ==
+            value(m.fs.R101.vapor_reboil.mole_frac_comp[0, "toluene"]))
+    assert (pytest.approx(368.728, abs=1e-3) ==
+            value(m.fs.R101.vapor_reboil.temperature[0]))
+    assert (pytest.approx(101325, abs=1e-3) ==
+            value(m.fs.R101.bottoms.pressure[0]))
+
+    # Unit level
+    assert (pytest.approx(17082.730, abs=1e-3) ==
+            value(m.fs.R101.heat_duty[0]))
