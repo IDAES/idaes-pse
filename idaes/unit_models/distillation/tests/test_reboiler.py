@@ -59,21 +59,22 @@ def test_build():
 
     assert hasattr(m.fs.R101, "inlet")
     assert hasattr(m.fs.R101.inlet, "flow_mol")
-    assert hasattr(m.fs.R101.inlet, "mole_frac")
+    assert hasattr(m.fs.R101.inlet, "mole_frac_comp")
     assert hasattr(m.fs.R101.inlet, "temperature")
     assert hasattr(m.fs.R101.inlet, "pressure")
 
     assert hasattr(m.fs.R101, "bottoms")
     assert hasattr(m.fs.R101.bottoms, "flow_mol")
-    assert hasattr(m.fs.R101.bottoms, "mole_frac")
+    assert hasattr(m.fs.R101.bottoms, "mole_frac_comp")
     assert hasattr(m.fs.R101.bottoms, "temperature")
     assert hasattr(m.fs.R101.bottoms, "pressure")
 
     assert hasattr(m.fs.R101, "vapor_reboil")
     assert hasattr(m.fs.R101.vapor_reboil, "flow_mol")
-    assert hasattr(m.fs.R101.vapor_reboil, "mole_frac")
+    assert hasattr(m.fs.R101.vapor_reboil, "mole_frac_comp")
     assert hasattr(m.fs.R101.vapor_reboil, "temperature")
     assert hasattr(m.fs.R101.vapor_reboil, "pressure")
+
 
 def test_set_inputs():
 
@@ -87,10 +88,11 @@ def test_set_inputs():
     m.fs.R101.inlet.flow_mol.fix(1)
     m.fs.R101.inlet.temperature.fix(362)
     m.fs.R101.inlet.pressure.fix(101325)
-    m.fs.R101.inlet.mole_frac[0, "benzene"].fix(0.5)
-    m.fs.R101.inlet.mole_frac[0, "toluene"].fix(0.5)
+    m.fs.R101.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+    m.fs.R101.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.R101) == 0
+
 
 def test_solve():
 

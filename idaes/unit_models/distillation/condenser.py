@@ -305,18 +305,22 @@ see property package for documentation.}"""))
                     # vapor outlet port
                     self.vapor_outlet.add(Reference(var), k)
 
-                elif "mass_frac" in k or "mole_frac" in k:
+                elif "frac" in k and ("mole" in k or "mass" in k):
 
                     # Mole/mass frac is typically indexed
                     index_set = member_list[k].index_set()
 
                     # if state var is not mole/mass frac by phase
                     if "phase" not in k:
-                        # Assuming the state block has the var "mole_frac_phase"
-                        # Valid if VLE is supported
-                        # Create a string "mole_frac_phase" or "mass_frac_phase"
-                        local_name = str(member_list[k].local_name) + \
-                            "_phase"
+                        # Assuming the state block has the var
+                        # "mole_frac_phase_comp". Valid if VLE is supported
+                        # Create a string "mole_frac_phase_comp" or
+                        # "mass_frac_phase_comp". Cannot directly append phase
+                        # to k as the naming convention is phase followed
+                        # by comp
+                        str_split = k.split('_')
+                        local_name = '_'.join(str_split[0:2]) + \
+                            "_phase" + "_" + str_split[2]
 
                         # Rule for liquid fraction
                         def rule_liq_frac(self, t, i):

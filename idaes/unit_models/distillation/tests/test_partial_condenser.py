@@ -72,26 +72,26 @@ def test_build_partial_condenser():
     assert hasattr(m.fs.C101_partial, "inlet")
 
     assert hasattr(m.fs.C101_partial.inlet, "flow_mol")
-    assert hasattr(m.fs.C101_partial.inlet, "mole_frac")
+    assert hasattr(m.fs.C101_partial.inlet, "mole_frac_comp")
     assert hasattr(m.fs.C101_partial.inlet, "temperature")
     assert hasattr(m.fs.C101_partial.inlet, "pressure")
 
     assert hasattr(m.fs.C101_partial, "reflux")
 
     assert hasattr(m.fs.C101_partial.reflux, "flow_mol")
-    assert hasattr(m.fs.C101_partial.reflux, "mole_frac")
+    assert hasattr(m.fs.C101_partial.reflux, "mole_frac_comp")
     assert hasattr(m.fs.C101_partial.reflux, "temperature")
     assert hasattr(m.fs.C101_partial.reflux, "pressure")
 
     assert hasattr(m.fs.C101_partial, "distillate")
     assert hasattr(m.fs.C101_partial.distillate, "flow_mol")
-    assert hasattr(m.fs.C101_partial.distillate, "mole_frac")
+    assert hasattr(m.fs.C101_partial.distillate, "mole_frac_comp")
     assert hasattr(m.fs.C101_partial.distillate, "temperature")
     assert hasattr(m.fs.C101_partial.distillate, "pressure")
 
     assert hasattr(m.fs.C101_partial, "vapor_outlet")
     assert hasattr(m.fs.C101_partial.vapor_outlet, "flow_mol")
-    assert hasattr(m.fs.C101_partial.vapor_outlet, "mole_frac")
+    assert hasattr(m.fs.C101_partial.vapor_outlet, "mole_frac_comp")
     assert hasattr(m.fs.C101_partial.vapor_outlet, "temperature")
     assert hasattr(m.fs.C101_partial.vapor_outlet, "pressure")
 
@@ -145,8 +145,8 @@ def test_set_inputs():
     m.fs.C101_partial.inlet.flow_mol.fix(1)
     m.fs.C101_partial.inlet.temperature.fix(375)
     m.fs.C101_partial.inlet.pressure.fix(101325)
-    m.fs.C101_partial.inlet.mole_frac[0, "benzene"].fix(0.5)
-    m.fs.C101_partial.inlet.mole_frac[0, "toluene"].fix(0.5)
+    m.fs.C101_partial.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+    m.fs.C101_partial.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.C101_partial) == 0
 
@@ -192,9 +192,9 @@ def test_solution():
     assert (pytest.approx(0.2306, abs=1e-3) ==
             value(m.fs.C101_partial.reflux.flow_mol[0]))
     assert (pytest.approx(0.3806, abs=1e-3) ==
-            value(m.fs.C101_partial.reflux.mole_frac[0, "benzene"]))
+            value(m.fs.C101_partial.reflux.mole_frac_comp[0, "benzene"]))
     assert (pytest.approx(0.6193, abs=1e-3) ==
-            value(m.fs.C101_partial.reflux.mole_frac[0, "toluene"]))
+            value(m.fs.C101_partial.reflux.mole_frac_comp[0, "toluene"]))
     assert (pytest.approx(369, abs=1e-3) ==
             value(m.fs.C101_partial.reflux.temperature[0]))
     assert (pytest.approx(101325, abs=1e-3) ==
@@ -204,9 +204,9 @@ def test_solution():
     assert (pytest.approx(0.2306, abs=1e-3) ==
             value(m.fs.C101_partial.distillate.flow_mol[0]))
     assert (pytest.approx(0.3806, abs=1e-3) ==
-            value(m.fs.C101_partial.distillate.mole_frac[0, "benzene"]))
+            value(m.fs.C101_partial.distillate.mole_frac_comp[0, "benzene"]))
     assert (pytest.approx(0.6193, abs=1e-3) ==
-            value(m.fs.C101_partial.distillate.mole_frac[0, "toluene"]))
+            value(m.fs.C101_partial.distillate.mole_frac_comp[0, "toluene"]))
     assert (pytest.approx(369, abs=1e-3) ==
             value(m.fs.C101_partial.distillate.temperature[0]))
     assert (pytest.approx(101325, abs=1e-3) ==
@@ -216,9 +216,9 @@ def test_solution():
     assert (pytest.approx(0.5387, abs=1e-3) ==
             value(m.fs.C101_partial.vapor_outlet.flow_mol[0]))
     assert (pytest.approx(0.6021, abs=1e-3) ==
-            value(m.fs.C101_partial.vapor_outlet.mole_frac[0, "benzene"]))
+            value(m.fs.C101_partial.vapor_outlet.mole_frac_comp[0, "benzene"]))
     assert (pytest.approx(0.3979, abs=1e-3) ==
-            value(m.fs.C101_partial.vapor_outlet.mole_frac[0, "toluene"]))
+            value(m.fs.C101_partial.vapor_outlet.mole_frac_comp[0, "toluene"]))
     assert (pytest.approx(369, abs=1e-3) ==
             value(m.fs.C101_partial.vapor_outlet.temperature[0]))
     assert (pytest.approx(101325, abs=1e-3) ==

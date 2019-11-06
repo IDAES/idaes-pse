@@ -71,20 +71,20 @@ def test_build_total_condenser():
     assert hasattr(m.fs.C101_total, "inlet")
 
     assert hasattr(m.fs.C101_total.inlet, "flow_mol")
-    assert hasattr(m.fs.C101_total.inlet, "mole_frac")
+    assert hasattr(m.fs.C101_total.inlet, "mole_frac_comp")
     assert hasattr(m.fs.C101_total.inlet, "temperature")
     assert hasattr(m.fs.C101_total.inlet, "pressure")
 
     assert hasattr(m.fs.C101_total, "reflux")
 
     assert hasattr(m.fs.C101_total.reflux, "flow_mol")
-    assert hasattr(m.fs.C101_total.reflux, "mole_frac")
+    assert hasattr(m.fs.C101_total.reflux, "mole_frac_comp")
     assert hasattr(m.fs.C101_total.reflux, "temperature")
     assert hasattr(m.fs.C101_total.reflux, "pressure")
 
     assert hasattr(m.fs.C101_total, "distillate")
     assert hasattr(m.fs.C101_total.distillate, "flow_mol")
-    assert hasattr(m.fs.C101_total.distillate, "mole_frac")
+    assert hasattr(m.fs.C101_total.distillate, "mole_frac_comp")
     assert hasattr(m.fs.C101_total.distillate, "temperature")
     assert hasattr(m.fs.C101_total.distillate, "pressure")
 
@@ -137,8 +137,8 @@ def test_set_inputs():
     m.fs.C101_total.inlet.flow_mol.fix(1)
     m.fs.C101_total.inlet.temperature.fix(375)
     m.fs.C101_total.inlet.pressure.fix(101325)
-    m.fs.C101_total.inlet.mole_frac[0, "benzene"].fix(0.5)
-    m.fs.C101_total.inlet.mole_frac[0, "toluene"].fix(0.5)
+    m.fs.C101_total.inlet.mole_frac_comp[0, "benzene"].fix(0.5)
+    m.fs.C101_total.inlet.mole_frac_comp[0, "toluene"].fix(0.5)
 
     assert degrees_of_freedom(m.fs.C101_total) == 0
 
@@ -184,9 +184,9 @@ def test_solution():
     assert (pytest.approx(0.4999, abs=1e-3) ==
             value(m.fs.C101_total.reflux.flow_mol[0]))
     assert (pytest.approx(0.5, abs=1e-3) ==
-            value(m.fs.C101_total.reflux.mole_frac[0, "benzene"]))
+            value(m.fs.C101_total.reflux.mole_frac_comp[0, "benzene"]))
     assert (pytest.approx(0.5, abs=1e-3) ==
-            value(m.fs.C101_total.reflux.mole_frac[0, "toluene"]))
+            value(m.fs.C101_total.reflux.mole_frac_comp[0, "toluene"]))
     assert (pytest.approx(365.347, abs=1e-3) ==
             value(m.fs.C101_total.reflux.temperature[0]))
     assert (pytest.approx(101325, abs=1e-3) ==
@@ -196,9 +196,9 @@ def test_solution():
     assert (pytest.approx(0.4999, abs=1e-3) ==
             value(m.fs.C101_total.distillate.flow_mol[0]))
     assert (pytest.approx(0.5, abs=1e-3) ==
-            value(m.fs.C101_total.distillate.mole_frac[0, "benzene"]))
+            value(m.fs.C101_total.distillate.mole_frac_comp[0, "benzene"]))
     assert (pytest.approx(0.5, abs=1e-3) ==
-            value(m.fs.C101_total.distillate.mole_frac[0, "toluene"]))
+            value(m.fs.C101_total.distillate.mole_frac_comp[0, "toluene"]))
     assert (pytest.approx(365.347, abs=1e-3) ==
             value(m.fs.C101_total.distillate.temperature[0]))
     assert (pytest.approx(101325, abs=1e-3) ==
