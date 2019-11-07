@@ -130,6 +130,7 @@ def test_build_partial_condenser():
     assert hasattr(m.fs.C101_partial_FcTP.distillate, "temperature")
     assert hasattr(m.fs.C101_partial_FcTP.distillate, "pressure")
 
+
 def test_set_inputs():
 
     # Check variables and constraints when using FTPz
@@ -167,6 +168,7 @@ def test_set_inputs():
 
     assert degrees_of_freedom(m.fs.C101_partial_FcTP) == 0
 
+
 def test_solve():
     # Test the solve to optimality for FTPz state vars
     m.fs.C101_partial.initialize(solver=solver, outlvl=1)
@@ -184,6 +186,7 @@ def test_solve():
     assert solve_status.solver.termination_condition == \
         TerminationCondition.optimal
     assert solve_status.solver.status == SolverStatus.ok
+
 
 def test_solution():
 
@@ -251,16 +254,16 @@ def test_solution():
 
     # Vapor outlet port
     assert (pytest.approx(0.3244, abs=1e-3) ==
-            value(m.fs.C101_partial_FcTP.vapor_outlet.\
+            value(m.fs.C101_partial_FcTP.vapor_outlet.
                   flow_mol_comp[0, "benzene"]))
     assert (pytest.approx(0.2143, abs=1e-3) ==
-            value(m.fs.C101_partial_FcTP.vapor_outlet.\
+            value(m.fs.C101_partial_FcTP.vapor_outlet.
                   flow_mol_comp[0, "toluene"]))
     assert (pytest.approx(369, abs=1e-3) ==
-            value(m.fs.C101_partial_FcTP.vapor_outlet.\
+            value(m.fs.C101_partial_FcTP.vapor_outlet.
                   temperature[0]))
     assert (pytest.approx(101325, abs=1e-3) ==
-            value(m.fs.C101_partial_FcTP.vapor_outlet.\
+            value(m.fs.C101_partial_FcTP.vapor_outlet.
                   pressure[0]))
 
     # Unit level
