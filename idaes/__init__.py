@@ -68,7 +68,7 @@ except AttributeError:
 
 if data_directory != None:
     bin_directory = os.path.join(data_directory, "bin")
-    os.environ['PATH'] = ";".join(["bin_directory", os.environ['PATH']])
+    os.environ['PATH'] = ";".join([bin_directory, os.environ['PATH']])
 else:
     bin_directory = None
 
