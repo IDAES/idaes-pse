@@ -10,27 +10,20 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
-"""Utility for copying examples to a convienient location"""
+"""Commandline Utilities for Managing the IDAES Data Directory"""
 
 __author__ = "John Eslick"
 
 import os
-import shutil
+import idaes
 import click
 from idaes.commands import cb
-import pkg_resources
 
-
-@cb.command(help="Copy example files")
-@click.option(
-    "--location", default="./idaes-examples", help="Path to copy example files to"
-)
-# the underscore get turned into a '-' so the command is get-examples
-def get_examples(location):
-    examples_path = pkg_resources.resource_filename("idaes.examples", "")
-    todir = os.path.abspath(location)
-    print("Copying '{}' to '{}'...".format(examples_path, todir))
-    try:
-        shutil.copytree(examples_path, todir)
-    except FileExistsError:
-        print("New examples directory '{}' already exists.".format(todir))
+@cb.command(help="Show the IDAES data directory path")
+# the underscore get turned into a '-' so the command is data-directory
+@click.option("--exists", is_flag=True)
+def data_directory(exists):
+    if exists:
+        print(os.path.exists(idaes.data_directory))
+    else:
+        print(idaes.data_directory)

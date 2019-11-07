@@ -54,6 +54,15 @@ _config.plugins.declare(
     ),
 )
 
+try:
+    if os.name == 'nt':  # Windows
+        data_directory = os.path.join(
+            os.environ['LOCALAPPDATA'], "idaes"
+        )
+    else:  # any other OS
+        data_directory = os.path.join(os.environ['HOME'], ".idaes")
+except:
+    data_directory = None
 
 def _read_config(config):
     """Read either a TOML formatted config file or a configuration dictionary.
