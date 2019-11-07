@@ -113,6 +113,7 @@ def test_solve():
 def test_solution():
 
     # Reboiler when using FTPz
+
     # Bottoms port
     assert (pytest.approx(0.5, abs=1e-3) ==
             value(m.fs.R101.bottoms.flow_mol[0]))
