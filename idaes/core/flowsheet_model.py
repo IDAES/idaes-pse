@@ -31,6 +31,8 @@ from idaes.core.util.exceptions import DynamicError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.dmf.ui.flowsheet_serializer import FlowsheetSerializer
 
+import idaes.core.util.unit_costing as costing
+
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
 
@@ -197,6 +199,12 @@ within this flowsheet if not otherwise specified,
         """
         serializer = FlowsheetSerializer()
         serializer.serialize(self, file_base_name, overwrite)
+
+    def get_costing(self, module=costing, year=None):
+        self.costing = pe.Block()
+        
+        module.global_costing_parameters(self.costing, year)
+        
 
     def _get_stream_table_contents(self, time_point=0):
         """
