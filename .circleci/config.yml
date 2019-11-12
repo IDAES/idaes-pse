@@ -11,8 +11,8 @@ shared-dev: &shared-dev
 #    - run: pyomo --version
 #    - run: cd docs && make all
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
-#    - run: coverage report
-#    - run: coveralls
+    - run: coverage xml
+    - run: coveralls
 
 shared: &shared
   working_directory: ~/repo
