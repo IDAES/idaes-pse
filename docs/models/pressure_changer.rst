@@ -16,7 +16,7 @@ Typical fixed variables are:
 Model Structure
 ---------------
 
-The core Pressure Changer unit model consists of a single control volume (named ControlVolume0DBlock), a state block, containing the states, one Inlet Port (named inlet) and one Outlet Port (named outlet).
+The core Pressure Changer unit model consists of a single ``ControlVolume0D`` (named ``control_volume``) with one Inlet Port (named ``inlet``) and one Outlet Port (named ``outlet``). Additionally, if an isentropic pressure changer is used, the unit model contains an additional ``StateBlock`` named ``properties_isentropic`` at the unit model level.
 
 Variables
 ---------
@@ -63,7 +63,7 @@ Isentropic Assumption
 
 The isentropic assumption creates an additional set of Property Blocks (indexed by time) for the isentropic fluid calculations (named properties_isentropic). This requires a set of balance equations relating the inlet state to the isentropic conditions, which are shown below:
 
-.. math:: F_{in,t,p,j} = F_{out,t,p,j}
+.. math:: F_{in,t,p,j} = F_{isentropic,t,p,j}
 .. math:: s_{in,t} = s_{isentropic,t}
 .. math:: P_{in,t} \times P_{ratio,t} = P_{isentropic,t}
 
