@@ -1,13 +1,19 @@
 function init()
 {
     // Set up the event listeners for the slider that shows and hides the buttons
+    // and for the zoom level buttons
     var bubble = document.getElementById('bubble');
     var slider = document.getElementById('slider');
+
+    var zoom_in_button = document.getElementById('z_in');
+    var zoom_out_button = document.getElementById('z_out');
 
     slider.addEventListener('mousemove', moveBubble);
     slider.addEventListener('mousedown', show);
     slider.addEventListener('mouseup', hide);
 
+    zoom_in_button.addEventListener('mouseup', zoom_in);
+    zoom_out_button.addEventListener('mouseup', zoom_out);
     // var back_arrow = document.getElementById('back_arrow');
     // back_arrow.addEventListener('click', back_click);
 }
@@ -107,4 +113,42 @@ var moveBubble = function(e)
     var sliderVal = slider.value
     bubble.innerHTML = slider_labels[sliderVal];
     oldSliderVal = sliderVal;
+}
+
+
+var zoom_in = function(e)
+{
+    // Zoom the images in simultaneously
+    raw_im.width = raw_im.width * 1.25;
+    modeled_im.width = modeled_im.width * 1.25;
+}
+
+var zoom_out = function(e)
+{
+    // Zoom the images out simultaneously
+    raw_im.width = raw_im.width * 0.8;
+    modeled_im.width = modeled_im.width * 0.8;
+}
+
+// effectively a pair of mutex(?) locks to prevent stalling during scrolling, 
+// particularly via mousewheel
+var scrolling_from_left = false;
+var scrolling_from_right = false;
+
+function SyncScrollLeft() {
+    if (!scrolling_from_left) {
+        scrolling_from_right = true;
+        leftpane.scrollTop = rightpane.scrollTop;
+        leftpane.scrollLeft = rightpane.scrollLeft;
+    }
+        scrolling_from_left = false;
+}
+
+function SyncScrollRight() {
+    if (!scrolling_from_right) {
+        scrolling_from_left = true;
+        rightpane.scrollTop = leftpane.scrollTop;
+        rightpane.scrollLeft = leftpane.scrollLeft;
+    }
+    scrolling_from_right = false;
 }
