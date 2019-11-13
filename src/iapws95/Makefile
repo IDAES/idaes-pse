@@ -1,19 +1,10 @@
 include ../Makefile.in
 
-ifeq ($(ASL),)
-    CFLAGS = -Wall -Wextra -O3
-else
-    CFLAGS = -Wall -Wextra -O3 -I$(ASL)
-endif
-
 ifeq ($(BOOST),)
     CXXFLAGS = -c $(CFLAGS) -std=c++11 -fPIC
 else
     CXXFLAGS = -c $(CFLAGS) -std=c++11 -fPIC -I$(BOOST)
 endif
-
-LDFLAGS = -shared -lm
-LDFLAGS_EXE = -lm
 
 OBJECTS = iapws95_external.o iapws95_phi.o iapws95_asl_funcs.o iapws95_memo.o
 

@@ -1,13 +1,5 @@
 include ../Makefile.in
 
-ifeq ($(ASL),)
-    CFLAGS = -Wall -Wextra -O3
-else
-    CFLAGS = -Wall -Wextra -O3 -I$(ASL)
-endif
-
-LDFLAGS = -shared -lm
-
 ALL: cubic_roots.so
 
 cubic_roots.o: cubic_roots.c

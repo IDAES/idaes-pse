@@ -1,13 +1,5 @@
 include ../Makefile.in
 
-ifeq ($(ASL),)
-    CFLAGS = -Wall -Wextra -O3 -fPIC
-else
-    CFLAGS = -Wall -Wextra -O3 -fPIC -I$(ASL)
-endif
-
-LDFLAGS = -shared -lm
-
 ALL: functions.so
 
 functions.o: functions.c
