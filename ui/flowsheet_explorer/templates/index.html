@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<title>IDAES Flowsheet Explorer</title>
+<!DOCTYPE HTML>
+<head>
+    <meta http-equiv="cache-control" content="no-cache" />
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="//code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script type="text/javascript">
+            var range = {{ range }}
+            var slider_labels = {{ slider_labels | safe }}
+    </script>
+    
+</head>
+<body>
+    <div id=data>
+        <div class="header">
+            <h1>IDAES Flowsheet Explorer</h1>
+            <h2>{{ date }}</h2>
+        </div>
+        <body onload="init()">
+            <div class="row">
+                <div class="back_column">
+                    <input id="back_arrow" type="image" src="{{ url_for('static', filename='back_arrow.png') }}" style="display: inline; float: left; width: 100%; height:50px;"/>
+                </div>
+                <div class="slider_column">
+                    <input id="slider" name="date_slider" type="range" min="0" max="{{ range }}" value="{{ slider_value }}" ng-model="cellphoneSelectedRange">
+                    <div id="bubble" style="display: inline; position: relative; top: 6px; width: 200px; height: 20px; pointer-events: none; opacity: 0;"></div>
+                </div>
+                <div class="forward_column">
+                    <input id="forward_arrow" type="image" src="{{ url_for('static', filename='forward_arrow.png') }}" style="display: inline; float: right ; width: 100%; height:50px;"/>
+                </div>
+            </div>
+            
+            
+        </body>
+        <div class="row">
+            <div class="image_column">
+                <h3>Raw</h3>
+                <img src="{{ raw_img }}"> 
+            </div>
+            <div class="image_column">
+                <h3>Modeled</h3>
+                <img src="{{ modeled_img }}">
+            </div>
+        </div>
+</body>
+</html>
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
