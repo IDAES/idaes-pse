@@ -38,4 +38,4 @@ else
     CFLAGS = -Wall -Wextra -O3 -static -fPIC -I$(ASL)
 endif
 
-LDFLAGS = -shared -lm --static
+LDFLAGS = -shared -lm
