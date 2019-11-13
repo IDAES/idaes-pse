@@ -52,12 +52,16 @@ m.fs.tray_mixer.liq_in_properties[0].mole_frac_comp["benzene"].fix(0.5)
 m.fs.tray_mixer.liq_in_properties[0].mole_frac_comp["toluene"].fix(0.5)
 
 m.fs.tray_mixer.vap_in_properties[0].flow_mol.fix(1)
-m.fs.tray_mixer.vap_in_properties[0].temperature.fix(370)
+m.fs.tray_mixer.vap_in_properties[0].temperature.fix(372)
 m.fs.tray_mixer.vap_in_properties[0].pressure.fix(101325)
 m.fs.tray_mixer.vap_in_properties[0].mole_frac_comp["benzene"].fix(0.5)
 m.fs.tray_mixer.vap_in_properties[0].mole_frac_comp["toluene"].fix(0.5)
 
+m.fs.tray_mixer.deltaP.fix(0)
+
 m.fs.tray_mixer.initialize(outlvl=2, solver=solver)
+
+solve_status = solver.solve(m, tee=True)
 
 m.fs.tray_mixer.mixed_feed_properties[0].flow_mol.display()
 m.fs.tray_mixer.mixed_feed_properties[0].mole_frac_comp.display()

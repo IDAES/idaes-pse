@@ -22,7 +22,7 @@ import logging
 from pyomo.common.config import ConfigBlock, ConfigValue, In
 from pyomo.network import Port
 from pyomo.environ import Reference, Expression, Var, Constraint, \
-    TerminationCondition
+    TerminationCondition, value
 
 # Import IDAES cores
 from idaes.core import (ControlVolume0DBlock,
@@ -45,15 +45,52 @@ class TrayMixerData(UnitModelBlockData):
     Tray Mixer unit for distillation model.
     """
     CONFIG = UnitModelBlockData.CONFIG()
-    CONFIG.declare("has_feed", ConfigValue(
+#     CONFIG.declare("has_feed", ConfigValue(
+#         default=False,
+#         domain=In([True, False]),
+#         description="Feed inlet construction flag.",
+#         doc="""Indicates if there is a feed inlet to the tray,
+# **default** - False.
+# **Valid values:** {
+# **True** - include a feed inlet to the tray,
+# **False** - exclude a feed inlet to the tray.}"""))
+    CONFIG.declare("has_side_liquid_draw", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Feed inlet construction flag.",
-        doc="""Indicates if there is a feed inlet to the tray,
+        description="Side liquid draw construction flag.",
+        doc="""Indicates if there is a side liquid draw from the tray,
 **default** - False.
 **Valid values:** {
-**True** - include a feed inlet to the tray,
-**False** - exclude a feed inlet to the tray.}"""))
+**True** - include a side liquid draw from the tray,
+**False** - exclude a side liquid draw from the tray.}"""))
+    CONFIG.declare("has_side_vapor_draw", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Side vapor draw construction flag.",
+        doc="""Indicates if there is a side vapor draw from the tray,
+**default** - False.
+**Valid values:** {
+**True** - include a side vapor draw from the tray,
+**False** - exclude a side vapor draw from the tray.}"""))
+    CONFIG.declare("has_heat_transfer", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Heat transfer to/from tray construction flag.",
+        doc="""Indicates if there is heat transfer to/from the tray,
+**default** - False.
+**Valid values:** {
+**True** - include a heat transfer term,
+**False** - exclude a heat transfer term.}"""))
+    CONFIG.declare("has_pressure_change", ConfigValue(
+        default=True,
+        domain=In([True, False]),
+        description="Pressure change term construction flag",
+        doc="""Indicates whether terms for pressure change should be
+    constructed,
+    **default** - False.
+    **Valid values:** {
+    **True** - include pressure change terms,
+    **False** - exclude pressure change terms.}"""))
     CONFIG.declare("property_package", ConfigValue(
         default=useDefault,
         domain=is_physical_parameter_block,
@@ -118,6 +155,9 @@ see property package for documentation.}"""))
         self._add_material_balance()
         self._add_energy_balance()
 
+        self._add_pressure_balance()
+        self._add_ports()
+
     def _add_material_balance(self):
 
         @self.Constraint(self.flowsheet().config.time,
@@ -132,6 +172,10 @@ see property package for documentation.}"""))
 
     def _add_energy_balance(self):
 
+        if self.config.has_heat_transfer:
+            self.heat_duty = Var(initialize=0,
+                                 doc="heat duty for the tray")
+
         @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_mixing_equations(b, t):
             return 0 == (
@@ -142,11 +186,48 @@ see property package for documentation.}"""))
                 sum(self.mixed_feed_properties[t].get_enthalpy_flow_terms(p)
                     for p in b.config.property_package.phase_list))
 
+    def _add_pressure_balance(self):
+        if self.config.has_pressure_change:
+            self.deltaP = Var(initialize=0,
+                              doc="pressure drop across tray")
+        @self.Constraint(self.flowsheet().config.time,
+                         doc="Pressure drop constraint for tray")
+        def pressure_drop_equation(self, t):
+            if self.config.has_pressure_change:
+                return self.mixed_feed_properties[t].pressure == \
+                    self.vap_in_properties[t].pressure - self.deltaP
+            else:
+                return self.mixed_feed_properties[t].pressure == \
+                    self.vap_in_properties[t].pressure
+
+    def _add_ports(self):
+
+        if self.config.has_side_liquid_draw:
+            self.side_liq = Port(noruleinit=True, doc="side liquid draw.")
+        if self.config.has_side_vapor_draw:
+            self.side_vap = Port(noruleinit=True, doc="side vapor draw.")
+
     def initialize(self, solver=None, outlvl=None):
 
         # Initialize the inlet state blocks
         self.liq_in_properties.initialize(outlvl=outlvl)
         self.vap_in_properties.initialize(outlvl=outlvl)
+
+        # Initialize the mixed outlet state block
+        self.mixed_feed_properties.initialize(outlvl=outlvl)
+
+        # Deactivate energy balance
+        self.enthalpy_mixing_equations.deactivate()
+        average_temperature = \
+            0.5 * (self.liq_in_properties[0].temperature.value
+                   + self.vap_in_properties[0].temperature.value)
+
+        self.mixed_feed_properties[:].temperature.fix(average_temperature)
+
+        # Deactivate pressure balance
+        self.pressure_drop_equation.deactivate()
+        self.mixed_feed_properties[:].pressure.\
+            fix(self.vap_in_properties[0].pressure.value)
 
         if solver is not None:
             if outlvl > 2:
@@ -154,8 +235,38 @@ see property package for documentation.}"""))
             else:
                 tee = False
 
-            solver_output = solver.solve(self, tee=tee)
-            if solver_output.solver.termination_condition == \
-                    TerminationCondition.optimal:
-                _log.info('{} Tray Mixer Initialisation Complete.'
-                          .format(self.name))
+        solver_output = solver.solve(self, tee=tee)
+
+        if solver_output.solver.termination_condition == \
+                TerminationCondition.optimal:
+            _log.info('{} Mass balance solve successful.'
+                      .format(self.name))
+        else:
+            _log.info('{} Mass balance solve failed.'
+                      .format(self.name))
+
+        # Activate energy balance
+        self.enthalpy_mixing_equations.activate()
+        self.mixed_feed_properties[:].temperature.unfix()
+
+        solver_output = solver.solve(self, tee=tee)
+
+        if solver_output.solver.termination_condition == \
+                TerminationCondition.optimal:
+            _log.info('{} Mass/Energy balance solve successful.'
+                      .format(self.name))
+        else:
+            _log.info('{} Mass/Energy balance solve failed.'
+                      .format(self.name))
+
+        # Activate pressure balance
+        self.pressure_drop_equation.activate()
+        self.mixed_feed_properties[:].pressure.unfix()
+
+        if solver_output.solver.termination_condition == \
+                TerminationCondition.optimal:
+            _log.info('{} Tray initialisation complete.'
+                      .format(self.name))
+        else:
+            _log.info('{} Mass/Energy/Pressure balance solve failed.'
+                      .format(self.name))
