@@ -58,7 +58,9 @@ from idaes.core import (declare_process_block_class,
                         StateBlock,
                         MaterialBalanceType,
                         EnergyBalanceType)
-from idaes.core.util.initialization import solve_indexed_blocks
+from idaes.core.util.initialization import (fix_state_vars,
+                                            revert_state_vars,
+                                            solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -191,7 +193,7 @@ class _ActivityCoeffStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, state_args=None, hold_state=False,
+    def initialize(blk, state_args={}, hold_state=False,
                    state_vars_fixed=False, outlvl=1,
                    solver="ipopt", optarg={"tol": 1e-8}):
         """
@@ -242,138 +244,15 @@ class _ActivityCoeffStateBlock(StateBlock):
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
-            if blk[k]._params.config.state_vars == "FTPz":
-                Fflag = {}
-                Xflag = {}
-                Pflag = {}
-                Tflag = {}
+            flags = fix_state_vars(blk, state_args)
+        else:
+            # Check when the state vars are fixed already result in dof 0
+            for k in blk.keys():
+                if degrees_of_freedom(blk[k]) != 0:
+                    raise Exception("State vars fixed but degrees of freedom "
+                                    "for state block is not zero during "
+                                    "initialization.")
 
-                for k in blk.keys():
-                    if blk[k].flow_mol.fixed is True:
-                        Fflag[k] = True
-                    else:
-                        Fflag[k] = False
-                        if state_args is None:
-                            blk[k].flow_mol.fix(1.0)
-                        else:
-                            try:
-                                blk[k].flow_mol.fix(state_args["flow_mol"])
-                            except KeyError:
-                                raise Exception("Please check the key values "
-                                                "provided for the initial "
-                                                "guess")
-
-                    for j in blk[k]._params.component_list:
-                        if blk[k].mole_frac_comp[j].fixed is True:
-                            Xflag[k, j] = True
-                        else:
-                            Xflag[k, j] = False
-                            if state_args is None:
-                                blk[k].mole_frac_comp[j].fix(
-                                        1/len(blk[k]._params.component_list))
-                            else:
-                                try:
-                                    blk[k].mole_frac_comp[j].\
-                                        fix(state_args["mole_frac_comp"][j])
-                                except KeyError:
-                                    raise Exception("Please check the key "
-                                                    "values provided for the "
-                                                    "initial guess")
-
-                    if blk[k].pressure.fixed is True:
-                        Pflag[k] = True
-                    else:
-                        Pflag[k] = False
-                        if state_args is None:
-                            blk[k].pressure.fix(101325.0)
-                        else:
-                            try:
-                                blk[k].pressure.fix(state_args["pressure"])
-                            except KeyError:
-                                raise Exception("Please check the key "
-                                                "values provided for the "
-                                                "initial guess")
-
-                    if blk[k].temperature.fixed is True:
-                        Tflag[k] = True
-                    else:
-                        Tflag[k] = False
-                        if state_args is None:
-                            blk[k].temperature.fix(300)
-                        else:
-                            try:
-                                blk[k].temperature.\
-                                    fix(state_args["temperature"])
-                            except KeyError:
-                                raise Exception("Please check the key "
-                                                "values provided for the "
-                                                "initial guess")
-                flags = {"Fflag": Fflag,
-                         "Xflag": Xflag,
-                         "Pflag": Pflag,
-                         "Tflag": Tflag}
-            elif blk[k]._params.config.state_vars == "FcTP":
-                Fcflag = {}
-                Pflag = {}
-                Tflag = {}
-
-                # Fix state variables if not already fixed
-                for k in blk.keys():
-                    for j in blk[k]._params.component_list:
-                        if blk[k].flow_mol_comp[j].fixed is True:
-                            Fcflag[k, j] = True
-                        else:
-                            Fcflag[k, j] = False
-                            if state_args is None:
-                                blk[k].flow_mol_comp[j].\
-                                    fix(1 / len(blk[k]._params.component_list))
-                            else:
-                                try:
-                                    blk[k].flow_mol_comp[j].\
-                                        fix(state_args["flow_mol_comp"][j])
-                                except KeyError:
-                                    raise Exception("Please check the key "
-                                                    "values provided for the "
-                                                    "initial guess")
-
-                    if blk[k].pressure.fixed is True:
-                        Pflag[k] = True
-                    else:
-                        Pflag[k] = False
-                        if state_args is None:
-                            blk[k].pressure.fix(101325.0)
-                        else:
-                            try:
-                                blk[k].pressure.fix(state_args["pressure"])
-                            except KeyError:
-                                raise Exception("Please check the key "
-                                                "values provided for the "
-                                                "initial guess")
-
-                    if blk[k].temperature.fixed is True:
-                        Tflag[k] = True
-                    else:
-                        Tflag[k] = False
-                        if state_args is None:
-                            blk[k].temperature.fix(300)
-                        else:
-                            try:
-                                blk[k].temperature.\
-                                    fix(state_args["temperature"])
-                            except KeyError:
-                                raise Exception("Please check the key "
-                                                "values provided for the "
-                                                "initial guess")
-
-                flags = {"Fcflag": Fcflag,
-                         "Pflag": Pflag,
-                         "Tflag": Tflag}
-            else:
-                for k in blk.keys():
-                    if degrees_of_freedom(blk[k]) != 0:
-                        raise Exception("State vars fixed but degrees of "
-                                        "freedom for state block is not "
-                                        "zero during initialization.")
         # Set solver options
         if outlvl > 1:
             stee = True
@@ -539,25 +418,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             return
 
         # Unfix state variables
-        for k in blk.keys():
-            if blk[k]._params.config.state_vars == "FTPz":
-                if flags["Fflag"][k] is False:
-                    blk[k].flow_mol.unfix()
-                for j in blk[k]._params.component_list:
-                    if flags["Xflag"][k, j] is False:
-                        blk[k].mole_frac_comp[j].unfix()
-                if flags["Pflag"][k] is False:
-                    blk[k].pressure.unfix()
-                if flags["Tflag"][k] is False:
-                    blk[k].temperature.unfix()
-            else:
-                for j in blk[k]._params.component_list:
-                    if flags["Fcflag"][k, j] is False:
-                        blk[k].flow_mol_comp[j].unfix()
-                if flags["Pflag"][k] is False:
-                    blk[k].pressure.unfix()
-                if flags["Tflag"][k] is False:
-                    blk[k].temperature.unfix()
+        revert_state_vars(blk, flags)
 
         if outlvl > 0:
             if outlvl > 0:
