@@ -9,8 +9,8 @@ import importlib
 import toml
 import pyomo.common.plugin
 import pyomo.common.config
-from .ver import __version__  # noqa
 
+from .ver import __version__  # noqa
 
 _log = logging.getLogger(__name__)
 
@@ -56,7 +56,6 @@ _config.plugins.declare(
     ),
 )
 
-
 # Standard locations for config file, binary libraries and executables, ...
 try:
     if os.name == 'nt':  # Windows
@@ -68,7 +67,7 @@ except AttributeError:
 
 if data_directory != None:
     bin_directory = os.path.join(data_directory, "bin")
-    os.environ['PATH'] = ";".join([bin_directory, os.environ['PATH']])
+    os.environ['PATH'] = os.pathsep.join([bin_directory, os.environ['PATH']])
 else:
     bin_directory = None
 
