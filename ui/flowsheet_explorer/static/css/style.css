@@ -1,19 +1,45 @@
-.date_slider {
-  margin : 0 auto;
+.header {
+  text-align: center;
 }
 
-.solvebtn {
-  float: right;
-  position: relative;
+.date_slider {
+  margin : 0 auto;
+  width: 100%;
+  display: inline;
 }
 
 .row {
   display: flex;
+  width: 100%;
 }
 
-.column {
+.back_column {
+  width: 2%;
+  padding: 5px;
+}
+
+.slider_column {
+  width: 96%;
+  padding: 5px;
+}
+
+.forward_column {
+  width: 2%;
+  padding: 5px;
+}
+
+.image_column {
+  text-align: center;
   flex: 50%;
   padding: 5px;
+  overflow: auto;
+  height: 500px;
+}
+
+.zoom {display: block;
+    margin-bottom: 5px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 html,
