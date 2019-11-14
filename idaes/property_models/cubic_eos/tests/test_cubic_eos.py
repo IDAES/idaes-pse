@@ -216,10 +216,16 @@ def test_roots_Z_liq(root_finder):
                             assert (pytest.approx(d2ZdAB_p, FD_TOL) == h[4] or
                                     pytest.approx(d2ZdAB_m, FD_TOL) == h[4] or
                                     between(h[4], d2ZdAB_p, d2ZdAB_m))
-#                        if not B_skip:
-#                            assert (pytest.approx(d2ZdB2_p, FD_TOL) == h[5] or
-#                                    pytest.approx(d2ZdB2_m, FD_TOL) == h[5] or
-#                                    between(h[5], d2ZdB2_p, d2ZdB2_m))
+                        if not B_skip:
+                            # Second derivative w.r.t. B is very sensitive near
+                            # point that roots disappear, and is at a
+                            # maximum (or minimum) so skip tests if close to
+                            # this point
+                            if abs(dis) > 1e-7:
+                                assert (
+                                    pytest.approx(d2ZdB2_p, FD_TOL) == h[5] or
+                                    pytest.approx(d2ZdB2_m, FD_TOL) == h[5] or
+                                    between(h[5], d2ZdB2_p, d2ZdB2_m))
 
                 except AssertionError:
                     # Print values at failure and raise exception
@@ -362,10 +368,16 @@ def test_roots_Z_vap(root_finder):
                             assert (pytest.approx(d2ZdAB_p, FD_TOL) == h[4] or
                                     pytest.approx(d2ZdAB_m, FD_TOL) == h[4] or
                                     between(h[4], d2ZdAB_p, d2ZdAB_m))
-#                        if not B_skip:
-#                            assert (pytest.approx(d2ZdB2_p, FD_TOL) == h[5] or
-#                                    pytest.approx(d2ZdB2_m, FD_TOL) == h[5] or
-#                                    between(h[5], d2ZdB2_p, d2ZdB2_m))
+                        if not B_skip:
+                            # Second derivative w.r.t. B is very sensitive near
+                            # point that roots disappear, and is at a
+                            # maximum (or minimum) so skip tests if close to
+                            # this point
+                            if abs(dis) > 1e-7:
+                                assert (
+                                    pytest.approx(d2ZdB2_p, FD_TOL) == h[5] or
+                                    pytest.approx(d2ZdB2_m, FD_TOL) == h[5] or
+                                    between(h[5], d2ZdB2_p, d2ZdB2_m))
 
                 except AssertionError:
                     # Print values at failure and raise exception
