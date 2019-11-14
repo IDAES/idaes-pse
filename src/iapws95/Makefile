@@ -26,7 +26,7 @@ iapws95_tests.o: iapws95_tests.cpp
 		$(CXX) $(CXXFLAGS) iapws95_tests.cpp -o iapws95_tests.o
 
 iapws95_external.so: $(OBJECTS)
-	  $(CXX) $(LDFLAGS) $(OBJECTS) -o iapws95_external.so
+	  $(LD) $(LDFLAGS) $(OBJECTS) -o iapws95_external.so
 
 clean:
 	rm -f *.o
