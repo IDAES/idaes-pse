@@ -474,7 +474,7 @@ def test_roots_Z_liq_ext(root_finder):
 
                     except AssertionError:
                         # Print values at failure and raise exception
-                        print(eos_type, T, P, A, B, Z, c1x, c2x, c3x, c4x)
+                        print(eos_type, T, P, A, B, Z)
                         raise
 
                 if TEST_DERS:
@@ -588,7 +588,7 @@ def test_roots_Z_liq_ext(root_finder):
 
                     except AssertionError:
                         # Print values at failure and raise exception
-                        print(eos_type, T, P, A, B, Z, det, a)
+                        print(eos_type, T, P, A, B, Z)
                         raise
 
 
@@ -795,5 +795,5 @@ def test_roots_Z_vap_ext(root_finder):
 
                     except AssertionError:
                         # Print values at failure and raise exception
-                        print(eos_type, T, P, A, B, Z, det, a)
+                        print(eos_type, T, P, A, B, Z)
                         raise
