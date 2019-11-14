@@ -18,7 +18,13 @@ import pytest
 from pyomo.environ import Block, ConcreteModel,  Constraint, Expression, \
                             Set, SolverFactory, Var, value
 from pyomo.network import Arc, Port
-from idaes.core.util.initialization import (propagate_state,
+
+from idaes.core import FlowsheetBlock
+from idaes.core.util.testing import PhysicalParameterTestBlock
+from idaes.core.util.exceptions import ConfigurationError
+from idaes.core.util.initialization import (fix_state_vars,
+                                            revert_state_vars,
+                                            propagate_state,
                                             solve_indexed_blocks)
 
 __author__ = "Andrew Lee"
@@ -32,6 +38,309 @@ if SolverFactory('ipopt').available():
                       'bound_push': 1e-8}
 else:
     solver = None
+
+
+@pytest.fixture
+def model():
+    m = ConcreteModel()
+    m.fs = FlowsheetBlock(default={"dynamic": False})
+
+    m.fs.pp = PhysicalParameterTestBlock()
+    m.fs.sb = m.fs.pp.state_block_class(default={'parameters': m.fs.pp})
+
+    for i in m.fs.sb.flow_mol_phase_comp:
+        assert not m.fs.sb.flow_mol_phase_comp[i].fixed
+        assert m.fs.sb.flow_mol_phase_comp[i].value == 2
+    assert not m.fs.sb.pressure.fixed
+    assert m.fs.sb.pressure.value == 1e5
+    assert not m.fs.sb.temperature.fixed
+    assert m.fs.sb.temperature.value == 300
+
+    return m
+
+
+def test_fix_state_vars_basic(model):
+    flags = fix_state_vars(model.fs.sb)
+
+    for i in model.fs.sb.flow_mol_phase_comp:
+        assert model.fs.sb.flow_mol_phase_comp[i].fixed
+        assert model.fs.sb.flow_mol_phase_comp[i].value == 2
+    assert model.fs.sb.pressure.fixed
+    assert model.fs.sb.pressure.value == 1e5
+    assert model.fs.sb.temperature.fixed
+    assert model.fs.sb.temperature.value == 300
+
+    assert not flags[None, "component_flow", ("p1", "c1")]
+    assert not flags[None, "component_flow", ("p1", "c2")]
+    assert not flags[None, "component_flow", ("p2", "c1")]
+    assert not flags[None, "component_flow", ("p2", "c2")]
+    assert not flags[None, "pressure", None]
+    assert not flags[None, "temperature", None]
+
+
+def test_fix_state_vars_None_value(model):
+    model.fs.sb.pressure.value = None
+
+    with pytest.raises(ConfigurationError):
+        fix_state_vars(model.fs.sb)
+
+
+def test_fix_state_vars_guesses(model):
+    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # in define_state_vars
+    state_args = {"component_flow": {("p1", "c1"): 1,
+                                     ("p1", "c2"): 2,
+                                     ("p2", "c1"): 3,
+                                     ("p2", "c2"): 4},
+                  "pressure": 2e5,
+                  "temperature": 500}
+
+    flags = fix_state_vars(model.fs.sb, state_args)
+
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].value == 1
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].value == 2
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].value == 3
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].value == 4
+
+    assert model.fs.sb.pressure.fixed
+    assert model.fs.sb.pressure.value == 2e5
+    assert model.fs.sb.temperature.fixed
+    assert model.fs.sb.temperature.value == 500
+
+    assert not flags[None, "component_flow", ("p1", "c1")]
+    assert not flags[None, "component_flow", ("p1", "c2")]
+    assert not flags[None, "component_flow", ("p2", "c1")]
+    assert not flags[None, "component_flow", ("p2", "c2")]
+    assert not flags[None, "pressure", None]
+    assert not flags[None, "temperature", None]
+
+
+def test_fix_state_vars_partial_guesses(model):
+    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # in define_state_vars
+    state_args = {"component_flow": {("p1", "c1"): 1,
+                                     ("p1", "c2"): 2,
+                                     ("p2", "c1"): 3,
+                                     ("p2", "c2"): 4}}
+
+    flags = fix_state_vars(model.fs.sb, state_args)
+
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].value == 1
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].value == 2
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].value == 3
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].value == 4
+
+    assert model.fs.sb.pressure.fixed
+    assert model.fs.sb.pressure.value == 1e5
+    assert model.fs.sb.temperature.fixed
+    assert model.fs.sb.temperature.value == 300
+
+    assert not flags[None, "component_flow", ("p1", "c1")]
+    assert not flags[None, "component_flow", ("p1", "c2")]
+    assert not flags[None, "component_flow", ("p2", "c1")]
+    assert not flags[None, "component_flow", ("p2", "c2")]
+    assert not flags[None, "pressure", None]
+    assert not flags[None, "temperature", None]
+
+
+def test_fix_state_vars_guesses_mismatch_index(model):
+    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # in define_state_vars
+    state_args = {"component_flow": {("p1", "c1"): 1,
+                                     ("p1", "c2"): 2,
+                                     ("p2", "c1"): 3},
+                  "pressure": 2e5,
+                  "temperature": 500}
+
+    with pytest.raises(ConfigurationError):
+        fix_state_vars(model.fs.sb, state_args)
+
+
+def test_fix_state_vars_fixed_no_guesses(model):
+    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # in define_state_vars
+    model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
+    model.fs.sb.pressure.fix(1.5e5)
+
+    flags = fix_state_vars(model.fs.sb)
+
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].value == 10
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].value == 2
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].value == 2
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].value == 2
+
+    assert model.fs.sb.pressure.fixed
+    assert model.fs.sb.pressure.value == 1.5e5
+    assert model.fs.sb.temperature.fixed
+    assert model.fs.sb.temperature.value == 300
+
+    # Pressure and component_flow[p1, c1] should be True
+    assert flags[None, "component_flow", ("p1", "c1")]
+    assert not flags[None, "component_flow", ("p1", "c2")]
+    assert not flags[None, "component_flow", ("p2", "c1")]
+    assert not flags[None, "component_flow", ("p2", "c2")]
+    assert flags[None, "pressure", None]
+    assert not flags[None, "temperature", None]
+
+
+def test_fix_state_vars_fixed_guesses(model):
+    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # in define_state_vars
+    model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
+    model.fs.sb.pressure.fix(1.5e5)
+
+    state_args = {"component_flow": {("p1", "c1"): 1,
+                                     ("p1", "c2"): 2,
+                                     ("p2", "c1"): 3,
+                                     ("p2", "c2"): 4},
+                  "pressure": 2e5,
+                  "temperature": 500}
+
+    flags = fix_state_vars(model.fs.sb, state_args)
+
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].value == 10
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].value == 2
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].value == 3
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].value == 4
+
+    assert model.fs.sb.pressure.fixed
+    assert model.fs.sb.pressure.value == 1.5e5
+    assert model.fs.sb.temperature.fixed
+    assert model.fs.sb.temperature.value == 500
+
+    # Pressure and component_flow[p1, c1] should be True
+    assert flags[None, "component_flow", ("p1", "c1")]
+    assert not flags[None, "component_flow", ("p1", "c2")]
+    assert not flags[None, "component_flow", ("p2", "c1")]
+    assert not flags[None, "component_flow", ("p2", "c2")]
+    assert flags[None, "pressure", None]
+    assert not flags[None, "temperature", None]
+
+
+def test_revert_state_vars_basic(model):
+    flags = fix_state_vars(model.fs.sb)
+
+    revert_state_vars(model.fs.sb, flags)
+
+    for i in model.fs.sb.flow_mol_phase_comp:
+        assert not model.fs.sb.flow_mol_phase_comp[i].fixed
+        assert model.fs.sb.flow_mol_phase_comp[i].value == 2
+    assert not model.fs.sb.pressure.fixed
+    assert model.fs.sb.pressure.value == 1e5
+    assert not model.fs.sb.temperature.fixed
+    assert model.fs.sb.temperature.value == 300
+
+
+def test_revert_state_vars_guesses(model):
+    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # in define_state_vars
+    state_args = {"component_flow": {("p1", "c1"): 1,
+                                     ("p1", "c2"): 2,
+                                     ("p2", "c1"): 3,
+                                     ("p2", "c2"): 4},
+                  "pressure": 2e5,
+                  "temperature": 500}
+
+    flags = fix_state_vars(model.fs.sb, state_args)
+
+    revert_state_vars(model.fs.sb, flags)
+
+    assert not model.fs.sb.flow_mol_phase_comp[("p1", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].value == 1
+    assert not model.fs.sb.flow_mol_phase_comp[("p1", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].value == 2
+    assert not model.fs.sb.flow_mol_phase_comp[("p2", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].value == 3
+    assert not model.fs.sb.flow_mol_phase_comp[("p2", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].value == 4
+
+    assert not model.fs.sb.pressure.fixed
+    assert model.fs.sb.pressure.value == 2e5
+    assert not model.fs.sb.temperature.fixed
+    assert model.fs.sb.temperature.value == 500
+
+
+def test_revert_state_vars_fixed_no_guesses(model):
+    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # in define_state_vars
+    model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
+    model.fs.sb.pressure.fix(1.5e5)
+
+    flags = fix_state_vars(model.fs.sb)
+    revert_state_vars(model.fs.sb, flags)
+
+    # Pressure and componet_flow[p1, c1] should still be fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].value == 10
+    assert not model.fs.sb.flow_mol_phase_comp[("p1", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].value == 2
+    assert not model.fs.sb.flow_mol_phase_comp[("p2", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].value == 2
+    assert not model.fs.sb.flow_mol_phase_comp[("p2", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].value == 2
+
+    assert model.fs.sb.pressure.fixed
+    assert model.fs.sb.pressure.value == 1.5e5
+    assert not model.fs.sb.temperature.fixed
+    assert model.fs.sb.temperature.value == 300
+
+
+def test_revert_state_vars_fixed_guesses(model):
+    # Note that flow_mol_phase_comp is labled as compoennt_flow
+    # in define_state_vars
+    model.fs.sb.flow_mol_phase_comp["p1", "c1"].fix(10)
+    model.fs.sb.pressure.fix(1.5e5)
+
+    state_args = {"component_flow": {("p1", "c1"): 1,
+                                     ("p1", "c2"): 2,
+                                     ("p2", "c1"): 3,
+                                     ("p2", "c2"): 4},
+                  "pressure": 2e5,
+                  "temperature": 500}
+
+    flags = fix_state_vars(model.fs.sb, state_args)
+    revert_state_vars(model.fs.sb, flags)
+
+    # Pressure and componet_flow[p1, c1] should still be fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c1")].value == 10
+    assert not model.fs.sb.flow_mol_phase_comp[("p1", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p1", "c2")].value == 2
+    assert not model.fs.sb.flow_mol_phase_comp[("p2", "c1")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c1")].value == 3
+    assert not model.fs.sb.flow_mol_phase_comp[("p2", "c2")].fixed
+    assert model.fs.sb.flow_mol_phase_comp[("p2", "c2")].value == 4
+
+    assert model.fs.sb.pressure.fixed
+    assert model.fs.sb.pressure.value == 1.5e5
+    assert not model.fs.sb.temperature.fixed
+    assert model.fs.sb.temperature.value == 500
+
+
+def test_revert_state_vars_flag_mismatch(model):
+    flags = {(None, 'component_flow', ('p1', 'c1')): False,
+             (None, 'component_flow', ('p1', 'c2')): False,
+             (None, 'component_flow', ('p2', 'c1')): False,
+             (None, 'pressure', None): False}
+
+    with pytest.raises(ConfigurationError):
+        revert_state_vars(model.fs.sb, flags)
 
 
 def test_propagate_state():
