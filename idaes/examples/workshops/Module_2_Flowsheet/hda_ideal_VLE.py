@@ -32,7 +32,9 @@ from idaes.core import (declare_process_block_class,
                         StateBlock,
                         MaterialBalanceType,
                         EnergyBalanceType)
-from idaes.core.util.initialization import solve_indexed_blocks
+from idaes.core.util.initialization import (fix_state_vars,
+                                            revert_state_vars,
+                                            solve_indexed_blocks)
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.model_statistics import degrees_of_freedom, \
                                              number_unfixed_variables
@@ -337,7 +339,7 @@ class _IdealStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, state_args=None, state_vars_fixed=False,
+    def initialize(blk, state_args={}, state_vars_fixed=False,
                    hold_state=False, outlvl=1,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
@@ -389,47 +391,7 @@ class _IdealStateBlock(StateBlock):
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
-            Fflag = {}
-            Pflag = {}
-            Tflag = {}
-
-            for k in blk.keys():
-                for p in blk[k]._params.phase_list:
-                    for j in blk[k]._params.component_list:
-                        if blk[k].flow_mol_phase_comp[p, j].fixed is True:
-                            Fflag[k, p, j] = True
-                        else:
-                            Fflag[k, p, j] = False
-                            if state_args is None:
-                                blk[k].flow_mol_phase_comp[p, j].fix(
-                                    1 / len(blk[k]._params.component_list))
-                            else:
-                                blk[k].flow_mol_phase_comp[p, j].fix(
-                                    state_args["flow_mol_phase_comp"][p, j])
-
-                if blk[k].pressure.fixed is True:
-                    Pflag[k] = True
-                else:
-                    Pflag[k] = False
-                    if state_args is None:
-                        blk[k].pressure.fix(101325.0)
-                    else:
-                        blk[k].pressure.fix(state_args["pressure"])
-
-                if blk[k].temperature.fixed is True:
-                    Tflag[k] = True
-                else:
-                    Tflag[k] = False
-                    if state_args is None:
-                        blk[k].temperature.fix(325)
-                    else:
-                        blk[k].temperature.fix(state_args["temperature"])
-
-            # -----------------------------------------------------------------
-            # If input block, return flags, else release state
-            flags = {"Fflag": Fflag,
-                     "Pflag": Pflag,
-                     "Tflag": Tflag}
+            flags = fix_state_vars(blk, state_args)
 
         else:
             # Check when the state vars are fixed already result in dof 0
@@ -540,15 +502,7 @@ class _IdealStateBlock(StateBlock):
             return
 
         # Unfix state variables
-        for k in blk.keys():
-            for p in blk[k]._params.phase_list:
-                for j in blk[k]._params.component_list:
-                    if flags['Fflag'][k, p, j] is False:
-                        blk[k].flow_mol_phase_comp[p, j].unfix()
-            if flags['Pflag'][k] is False:
-                blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
-                blk[k].temperature.unfix()
+        revert_state_vars(blk, flags)
 
         if outlvl > 0:
             if outlvl > 0:

@@ -220,7 +220,7 @@ within this flowsheet if not otherwise specified,
         if self.config.dynamic == useDefault:
             if fs is None:
                 # No parent, so default to steady-state and warn user
-                _log.warning('{} is a top level flowhseet, but dynamic flag '
+                _log.warning('{} is a top level flowsheet, but dynamic flag '
                              'set to useDefault. Dynamic '
                              'flag set to False by default'
                              .format(self.name))
