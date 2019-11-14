@@ -31,7 +31,7 @@ from idaes.core.util.exceptions import DynamicError
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.dmf.ui.flowsheet_serializer import FlowsheetSerializer
 
-import idaes.core.util.unit_costing as costing
+from idaes.core.util import unit_costing as costing
 
 # Some more information about this module
 __author__ = "John Eslick, Qi Chen, Andrew Lee"
@@ -189,10 +189,10 @@ within this flowsheet if not otherwise specified,
         in the directory that you ran from Jupyter Lab.
         :param overwrite: Boolean to overwrite an existing file_base_name.idaes.vis.
         If True, the existing file with the same file_base_name will be overwritten.
-        This will cause you to lose any saved layout. 
+        This will cause you to lose any saved layout.
         If False and there is an existing file with that file_base_name, you will get
         an error message stating that you cannot save a file to the file_base_name
-        (and therefore overwriting the saved layout). If there is not an existing 
+        (and therefore overwriting the saved layout). If there is not an existing
         file with that file_base_name then it saves as normal.
         Defaults to False.
         :return: None
@@ -202,9 +202,9 @@ within this flowsheet if not otherwise specified,
 
     def get_costing(self, module=costing, year=None):
         self.costing = pe.Block()
-        
+
         module.global_costing_parameters(self.costing, year)
-        
+
 
     def _get_stream_table_contents(self, time_point=0):
         """

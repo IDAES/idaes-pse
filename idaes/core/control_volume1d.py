@@ -189,7 +189,7 @@ argument)."""))
                                     doc="Normalized length domain")
 
         # Validated and create flow direction attribute
-        if flow_direction in FlowDirection:
+        if flow_direction in (flwd for flwd in FlowDirection):
             self._flow_direction = flow_direction
         else:
             raise ConfigurationError("{} invalid value for flow_direction "
