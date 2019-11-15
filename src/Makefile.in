@@ -31,7 +31,7 @@ CXX = g++
 RM = rm
 CP = cp
 MKDIR = mkdir
-LD = gcc
+LINK = libtool --mode=link gcc
 
 ifeq ($(ASL),)
     CFLAGS = -Wall -Wextra -O3 -static -fPIC
@@ -39,4 +39,4 @@ else
     CFLAGS = -Wall -Wextra -O3 -static -fPIC -I$(ASL)
 endif
 
-LDFLAGS = --shared -static-libgcc
+LDFLAGS = -shared -nostartfiles -lstdc++ -lm -all-static

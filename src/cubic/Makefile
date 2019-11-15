@@ -6,7 +6,7 @@ cubic_roots.o: cubic_roots.c
 	$(CC) -c $(CFLAGS) -fPIC cubic_roots.c -o cubic_roots.o
 
 cubic_roots.so: cubic_roots.o
-	$(CC) $(LDFLAGS) cubic_roots.o -o cubic_roots.so
+	$(LINK) $(LDFLAGS) cubic_roots.o -o cubic_roots.so
 
 clean:
 	rm -f *.o
