@@ -27,12 +27,13 @@ from pyomo.network import Arc
 
 from idaes.core import (FlowsheetBlockData,
                         FlowsheetBlock,
+                        UnitModelBlock,
                         declare_process_block_class,
                         useDefault)
 from idaes.core.util.exceptions import DynamicError
 from idaes.core.util.testing import PhysicalParameterTestBlock
 
-from idaes.unit_models import CSTR, Heater
+from idaes.unit_models import Heater
 
 
 @declare_process_block_class("Flowsheet")
@@ -351,7 +352,7 @@ class TestSubFlowsheetBuild(object):
             m.fs.sub = FlowsheetBlock(default={"dynamic": True, "time": m.s})
 
 
-class TestCosting(object):
+class TestOther(object):
     def test_costing(self):
         m = ConcreteModel()
         m.fs = FlowsheetBlock(default={"dynamic": False})
@@ -360,6 +361,18 @@ class TestCosting(object):
         assert isinstance(m.fs.costing, Block)
         assert isinstance(m.fs.costing.CE_index, Param)
         assert m.fs.costing.CE_index.value == 671.1
+
+    def test_model_checks(self):
+        m = ConcreteModel()
+        m.fs = FlowsheetBlock(default={"dynamic": False})
+
+        m.fs.props = PhysicalParameterTestBlock()
+        m.fs.config.default_property_package = m.fs.props
+
+        m.fs.unit1 = Heater()
+        m.fs.unit2 = UnitModelBlock()
+
+        m.fs.model_check()
 
 
 class TestVisualisation(object):
