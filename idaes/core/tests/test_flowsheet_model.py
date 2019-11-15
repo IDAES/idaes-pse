@@ -369,8 +369,7 @@ class TestOther(object):
         m.fs.props = PhysicalParameterTestBlock()
         m.fs.config.default_property_package = m.fs.props
 
-        m.fs.unit1 = Heater()
-        m.fs.unit2 = UnitModelBlock()
+        m.fs.unit1 = UnitModelBlock()
 
         m.fs.model_check()
 

@@ -146,9 +146,8 @@ within this flowsheet if not otherwise specified,
                 try:
                     o.model_check()
                 except AttributeError:
-                    _log.warning('{} Model/block has no model check. To '
-                                 'correct this, add a model_check method to '
-                                 'the associated unit model class'
+                    # This should never happen, but just in case
+                    _log.warning('{} Model/block has no model_check method.'
                                  .format(o.name))
 
     def stream_table(self, true_state=False, time_point=0, orient='columns'):
