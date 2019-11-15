@@ -617,7 +617,7 @@ def test_roots_Z_vap_ext(root_finder):
                 c4 = -(A*B+w*B**2+w*B**3)
 
                 det = c2**2 - 3*c3
-                a = -(1.0/3.0)*(c2 + det**0.5)
+                a = -(1.0/3.0)*(c2 - det**0.5)
 
                 # Check to see if extension is triggered
                 if det <= 0 or (a**3 + c2*a**2 + c3*a + c4) <= 0:
@@ -643,8 +643,8 @@ def test_roots_Z_vap_ext(root_finder):
 
                         if dis >= 0:
                             # Cubic has 2 or 3 real roots
-                            # Second derivative should be non-positive
-                            assert dz2 <= 0
+                            # Second derivative should be non-negative
+                            assert dz2 >= 0
                         # otherwise no need to check 2nd derivative
 
                     except AssertionError:

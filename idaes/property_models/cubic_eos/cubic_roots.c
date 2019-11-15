@@ -92,7 +92,7 @@ double cubic_root_ext(int phase, eos_indx eos, double A, double B,
 
   const double u = eos_u[eos];
   const double w = eos_w[eos];
-  double b, c, d, z, a;
+  double b, c, d, z, a, pm;
   double bext, cext, dext;
   double det;
 
@@ -100,10 +100,13 @@ double cubic_root_ext(int phase, eos_indx eos, double A, double B,
   c = A + w*B*B - u*B - u*B*B;
   d = -A*B - w*B*B - w*B*B*B;
 
+  if(phase == liquid) pm = -1.0; //liquid
+  else pm = 1.0;  //vapor
+
   det = b*b - 3*c;
   if(det > 0){
     // could need the extension on liquid side so check
-    a = -1.0/3.0*b - 1.0*sqrt(det)/3.0;
+    a = -1.0/3.0*b + pm*1.0*sqrt(det)/3.0;
     if( ((a*a*a + b*a*a + c*a + d < 0)&&(phase==liquid)) ||
         ((a*a*a + b*a*a + c*a + d > 0)&&(phase==vapor))){
       //use extension liquid
