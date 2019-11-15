@@ -127,7 +127,6 @@ within this flowsheet if not otherwise specified,
         """
         return True
 
-    # TODO [Qi]: this should be implemented as a transformation
     def model_check(self):
         """
         This method runs model checks on all unit models in a flowsheet.
@@ -204,7 +203,6 @@ within this flowsheet if not otherwise specified,
         self.costing = pe.Block()
 
         module.global_costing_parameters(self.costing, year)
-
 
     def _get_stream_table_contents(self, time_point=0):
         """
