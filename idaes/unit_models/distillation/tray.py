@@ -38,12 +38,32 @@ from idaes.core.util.exceptions import PropertyPackageError
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("TrayMixer")
-class TrayMixerData(UnitModelBlockData):
+@declare_process_block_class("Tray")
+class TrayData(UnitModelBlockData):
     """
-    Tray Mixer unit for distillation model.
+    Tray unit for distillation model.
     """
     CONFIG = UnitModelBlockData.CONFIG()
+    CONFIG.declare("is_top_tray", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Flag to indicate top tray.",
+        doc="""Indicates if this is a top tray and constructs
+corresponding ports,
+**default** - False.
+**Valid values:** {
+**True** - top tray,
+**False** - conventional tray}"""))
+    CONFIG.declare("is_bottom_tray", ConfigValue(
+        default=False,
+        domain=In([True, False]),
+        description="Flag to indicate bottom tray.",
+        doc="""Indicates if this is a bottom tray and constructs
+corresponding ports,
+**default** - False.
+**Valid values:** {
+**True** - bottom tray,
+**False** - conventional tray}"""))
     CONFIG.declare("has_liquid_side_draw", ConfigValue(
         default=False,
         domain=In([True, False]),
@@ -72,7 +92,7 @@ class TrayMixerData(UnitModelBlockData):
 **True** - include a heat transfer term,
 **False** - exclude a heat transfer term.}"""))
     CONFIG.declare("has_pressure_change", ConfigValue(
-        default=True,
+        default=False,
         domain=In([True, False]),
         description="Pressure change term construction flag",
         doc="""Indicates whether terms for pressure change should be
@@ -108,9 +128,9 @@ see property package for documentation.}"""))
             None
         """
         # Call UnitModel.build to setup dynamics
-        super(TrayMixerData, self).build()
+        super(TrayData, self).build()
 
-        # Create the inlets for the tray mixer
+        # Create the inlets for the tray
         inlet_list = ["liq", "vap"]
 
         # Setup StateBlock argument dict
@@ -207,6 +227,14 @@ see property package for documentation.}"""))
         if self.config.has_vapor_side_draw:
             self.vap_side_draw = Port(noruleinit=True, doc="vapor side draw.")
             self._make_vap_side_split()
+        if self.config.is_top_tray and not self.config.is_bottom_tray:
+            self.vap_out = Port(noruleinit=True, doc="vapor from top tray.")
+            self._make_vap_out_top_tray()
+        elif self.config.is_bottom_tray and not self.config.is_top_tray:
+            self.liq_out = Port(noruleinit=True, doc="liquid from bottom tray")
+            self._make_liq_out_bottom_tray()
+        elif self.config.is_top_tray and self.config.is_bottom_tray:
+            raise Exception("Configuration Error")
 
     def _make_liq_side_split(self):
 
@@ -362,7 +390,308 @@ see property package for documentation.}"""))
                         "phase are supported.")
 
     def _make_vap_side_split(self):
-        pass
+        self.vap_side_sf = Var(initialize=0.01,
+                               doc="split fraction for the vapor side draw")
+
+        member_list = self.properties_in_vap[0].define_port_members()
+
+        for k in member_list:
+            # Create references and populate the intensive variables
+            if "flow" not in k and "frac" not in k and "enth" not in k:
+                if not member_list[k].is_indexed():
+                    var = self.properties_out[:].\
+                        component(member_list[k].local_name)
+                else:
+                    var = self.properties_out[:].\
+                        component(member_list[k].local_name)[...]
+
+                # add the reference and variable name to the liq_side_draw port
+                self.vap_side_draw.add(Reference(var), k)
+
+            elif "frac" in k and ("mole" in k or "mass" in k):
+
+                # Mole/mass frac is typically indexed
+                index_set = member_list[k].index_set()
+
+                # if state var is not mole/mass frac by phase
+                if "phase" not in k:
+                    # Assuming the state block has the var
+                    # "mole_frac_phase_comp". Valid if VLE is supported
+                    # Create a string "mole_frac_phase_comp" or
+                    # "mass_frac_phase_comp". Cannot directly append phase
+                    # to k as the naming convention is phase followed
+                    # by comp
+                    str_split = k.split('_')
+                    local_name = '_'.join(str_split[0:2]) + \
+                        "_phase" + "_" + str_split[2]
+
+                    # Rule for vapor fraction
+                    def rule_vap_frac(self, t, i):
+                        return self.properties_out[t].\
+                            component(local_name)["Vap", i]
+                    self.e_vap_frac = Expression(
+                        self.flowsheet().time, index_set,
+                        rule=rule_vap_frac)
+
+                    # add the reference and variable name to the liq_side_draw port
+                    self.vap_side_draw.add(self.e_vap_frac, k)
+
+                else:
+
+                    # Assumes mole_frac_phase or mass_frac_phase exist as
+                    # state vars in the port and therefore access directly
+                    # from the state block.
+                    var = self.properties_out[:].\
+                        component(member_list[k].local_name)[...]
+
+                    # add the reference and variable name to the
+                    # liq_side_draw port
+                    self.vap_side_draw.add(Reference(var), k)
+            elif "flow" in k:
+                if "phase" not in k:
+
+                    # Assumes that here the var is total flow or component
+                    # flow. However, need to extract the flow by phase from
+                    # the state block. Expects to find the var
+                    # flow_mol_phase or flow_mass_phase in the state block.
+
+                    # Check if it is not indexed by component list and this
+                    # is total flow
+                    if not member_list[k].is_indexed():
+                        # if state var is not flow_mol/flow_mass
+                        # by phase
+                        local_name = str(member_list[k].local_name) + \
+                            "_phase"
+
+                        # Rule to link the liq flow to the liq_side_draw
+                        def rule_vap_flow(self, t):
+                            return self.properties_out[t].\
+                                component(local_name)["Vap"] * \
+                                (self.vap_side_sf)
+                        self.e_vap_flow = Expression(
+                            self.flowsheet().time,
+                            rule=rule_vap_flow)
+                    else:
+                        # when it is flow comp indexed by component list
+                        str_split = \
+                            str(member_list[k].local_name).split("_")
+                        if len(str_split) == 3 and str_split[-1] == "comp":
+                            local_name = str_split[0] + "_" + \
+                                str_split[1] + "_phase_" + "comp"
+
+                        # Get the indexing set i.e. component list
+                        index_set = member_list[k].index_set()
+
+                        # Rule to link the liq flow to the liq_side_draw
+                        def rule_vap_flow(self, t, i):
+                            return self.properties_out[t].\
+                                component(local_name)["Vap", i] * \
+                                (self.vap_side_sf)
+                        self.e_vap_flow = Expression(
+                            self.flowsheet().time, index_set,
+                            rule=rule_vap_flow)
+
+                    # add the reference and variable name to the
+                    # liq_side_draw port
+                    self.vap_side_draw.add(self.e_vap_flow, k)
+            elif "enth" in k:
+                if "phase" not in k:
+                    # assumes total mixture enthalpy (enth_mol or enth_mass)
+                    if not member_list[k].is_indexed():
+                        # if state var is not enth_mol/enth_mass
+                        # by phase, add _phase string to extract the right
+                        # value from the state block
+                        local_name = str(member_list[k].local_name) + \
+                            "_phase"
+                    else:
+                        raise PropertyPackageError(
+                            "Expected an unindexed variable.")
+
+                    # Rule to link the liq enthalpy to the reflux.
+                    # Setting the enthalpy to the
+                    # enth_mol_phase['Liq'] value from the state block
+                    def rule_vap_enth(self, t):
+                        return self.properties_out[t].\
+                            component(local_name)["Vap"]
+                    self.e_vap_enth = Expression(
+                        self.flowsheet().time,
+                        rule=rule_vap_enth)
+
+                    # add the reference and variable name to the reflux port
+                    self.vap_side_draw.add(self.e_vap_enth, k)
+                elif "phase" in k:
+                    # assumes enth_mol_phase or enth_mass_phase.
+                    # This is an intensive property, you create a direct
+                    # reference irrespective of the reflux, distillate and
+                    # vap_outlet
+
+                    # Rule for liq flow
+                    if not member_list[k].is_indexed():
+                        var = self.properties_out[:].\
+                            component(member_list[k].local_name)
+                    else:
+                        var = self.properties_out[:].\
+                            component(member_list[k].local_name)[...]
+
+                    # add the reference and variable name to the reflux port
+                    self.vap_side_draw.add(Reference(var), k)
+                else:
+                    raise Exception(
+                        "Unrecognized enthalpy state variable. "
+                        "Only total mixture enthalpy or enthalpy by "
+                        "phase are supported.")
+
+    def _make_vap_out_top_tray(self):
+        if not self.config.has_vapor_side_draw:
+            self.vap_side_sf = 0
+
+        member_list = self.properties_in_vap[0].define_port_members()
+
+        for k in member_list:
+            # Create references and populate the intensive variables
+            if "flow" not in k and "frac" not in k and "enth" not in k:
+                if not member_list[k].is_indexed():
+                    var = self.properties_out[:].\
+                        component(member_list[k].local_name)
+                else:
+                    var = self.properties_out[:].\
+                        component(member_list[k].local_name)[...]
+
+                # add the reference and variable name to the liq_side_draw port
+                self.vap_out.add(Reference(var), k)
+
+            elif "frac" in k and ("mole" in k or "mass" in k):
+
+                # Mole/mass frac is typically indexed
+                index_set = member_list[k].index_set()
+
+                # if state var is not mole/mass frac by phase
+                if "phase" not in k:
+                    # Assuming the state block has the var
+                    # "mole_frac_phase_comp". Valid if VLE is supported
+                    # Create a string "mole_frac_phase_comp" or
+                    # "mass_frac_phase_comp". Cannot directly append phase
+                    # to k as the naming convention is phase followed
+                    # by comp
+                    str_split = k.split('_')
+                    local_name = '_'.join(str_split[0:2]) + \
+                        "_phase" + "_" + str_split[2]
+
+                    # Rule for vapor fraction
+                    def rule_vap_frac(self, t, i):
+                        return self.properties_out[t].\
+                            component(local_name)["Vap", i]
+                    self.e_vap_frac_top = Expression(
+                        self.flowsheet().time, index_set,
+                        rule=rule_vap_frac)
+
+                    # add the reference and variable name to the liq_side_draw port
+                    self.vap_out.add(self.e_vap_frac_top, k)
+
+                else:
+
+                    # Assumes mole_frac_phase or mass_frac_phase exist as
+                    # state vars in the port and therefore access directly
+                    # from the state block.
+                    var = self.properties_out[:].\
+                        component(member_list[k].local_name)[...]
+
+                    # add the reference and variable name to the
+                    # liq_side_draw port
+                    self.vap_out.add(Reference(var), k)
+            elif "flow" in k:
+                if "phase" not in k:
+
+                    # Assumes that here the var is total flow or component
+                    # flow. However, need to extract the flow by phase from
+                    # the state block. Expects to find the var
+                    # flow_mol_phase or flow_mass_phase in the state block.
+
+                    # Check if it is not indexed by component list and this
+                    # is total flow
+                    if not member_list[k].is_indexed():
+                        # if state var is not flow_mol/flow_mass
+                        # by phase
+                        local_name = str(member_list[k].local_name) + \
+                            "_phase"
+
+                        # Rule to link the liq flow to the liq_side_draw
+                        def rule_vap_flow(self, t):
+                            return self.properties_out[t].\
+                                component(local_name)["Vap"] * \
+                                (1 - self.vap_side_sf)
+                        self.e_vap_flow_top = Expression(
+                            self.flowsheet().time,
+                            rule=rule_vap_flow)
+                    else:
+                        # when it is flow comp indexed by component list
+                        str_split = \
+                            str(member_list[k].local_name).split("_")
+                        if len(str_split) == 3 and str_split[-1] == "comp":
+                            local_name = str_split[0] + "_" + \
+                                str_split[1] + "_phase_" + "comp"
+
+                        # Get the indexing set i.e. component list
+                        index_set = member_list[k].index_set()
+
+                        # Rule to link the liq flow to the liq_side_draw
+                        def rule_vap_flow(self, t, i):
+                            return self.properties_out[t].\
+                                component(local_name)["Vap", i] * \
+                                (1 - self.vap_side_sf)
+                        self.e_vap_flow_top = Expression(
+                            self.flowsheet().time, index_set,
+                            rule=rule_vap_flow)
+
+                    # add the reference and variable name to the
+                    # liq_side_draw port
+                    self.vap_out.add(self.e_vap_flow_top, k)
+            elif "enth" in k:
+                if "phase" not in k:
+                    # assumes total mixture enthalpy (enth_mol or enth_mass)
+                    if not member_list[k].is_indexed():
+                        # if state var is not enth_mol/enth_mass
+                        # by phase, add _phase string to extract the right
+                        # value from the state block
+                        local_name = str(member_list[k].local_name) + \
+                            "_phase"
+                    else:
+                        raise PropertyPackageError(
+                            "Expected an unindexed variable.")
+
+                    # Rule to link the liq enthalpy to the reflux.
+                    # Setting the enthalpy to the
+                    # enth_mol_phase['Liq'] value from the state block
+                    def rule_vap_enth(self, t):
+                        return self.properties_out[t].\
+                            component(local_name)["Vap"]
+                    self.e_vap_enth_top = Expression(
+                        self.flowsheet().time,
+                        rule=rule_vap_enth)
+
+                    # add the reference and variable name to the reflux port
+                    self.vap_out.add(self.e_vap_enth_top, k)
+                elif "phase" in k:
+                    # assumes enth_mol_phase or enth_mass_phase.
+                    # This is an intensive property, you create a direct
+                    # reference irrespective of the reflux, distillate and
+                    # vap_outlet
+
+                    # Rule for liq flow
+                    if not member_list[k].is_indexed():
+                        var = self.properties_out[:].\
+                            component(member_list[k].local_name)
+                    else:
+                        var = self.properties_out[:].\
+                            component(member_list[k].local_name)[...]
+
+                    # add the reference and variable name to the reflux port
+                    self.vap_out.add(Reference(var), k)
+                else:
+                    raise Exception(
+                        "Unrecognized enthalpy state variable. "
+                        "Only total mixture enthalpy or enthalpy by "
+                        "phase are supported.")
 
     def initialize(self, solver=None, outlvl=None):
 
