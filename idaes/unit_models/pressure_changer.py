@@ -656,10 +656,10 @@ see property package for documentation.}"""))
         if hasattr(self, "deltaP"):
             var_dict["Pressure Change"] = self.deltaP[time_point]
         if hasattr(self, "ratioP"):
-            var_dict["Pressure Ratio"] = self.deltaP[time_point]
+            var_dict["Pressure Ratio"] = self.ratioP[time_point]
         if hasattr(self, "efficiency_pump"):
-            var_dict["Efficiency"] = self.deltaP[time_point]
+            var_dict["Efficiency"] = self.efficiency_pump[time_point]
         if hasattr(self, "efficiency_isentropic"):
-            var_dict["Isentropic Efficiency"] = self.deltaP[time_point]
+            var_dict["Isentropic Efficiency"] = self.efficiency_isentropic[time_point]
 
         return {"vars": var_dict}
