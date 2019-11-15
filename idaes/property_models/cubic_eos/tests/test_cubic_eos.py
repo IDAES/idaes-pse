@@ -649,7 +649,7 @@ def test_roots_Z_vap_ext(root_finder):
 
                     except AssertionError:
                         # Print values at failure and raise exception
-                        print(eos_type, T, P, A, B, Z, det, a)
+                        print(eos_type, T, P, A, B, Z)
                         raise
 
                 else:
