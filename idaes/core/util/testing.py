@@ -42,7 +42,7 @@ def get_default_solver():
     if SolverFactory('ipopt').available(exception_flag=False):
         solver = SolverFactory('ipopt')
         solver.options = {'tol': 1e-6,
-                          'linear_solver': 'mumps'}
+                          'linear_solver': 'ma27'}
     else:
         solver = None
 

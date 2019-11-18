@@ -23,7 +23,6 @@
  Author: John Eslick
  File iapws95.cpp
 ------------------------------------------------------------------------------*/
-
 #include<stdio.h>
 #include<cmath>
 #include<iostream>
