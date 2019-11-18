@@ -23,6 +23,198 @@ pytestmark = pytest.mark.iapws
 prop_available = iapws95.iapws95_available()
 
 
+# -----------------------------------------------------------------------------
+# Test Enums and common functions
+def test_htpx():
+#    assert iapws95.htpx(300, P=101325) == 48201.37307016228  # 112143
+    assert iapws95.htpx(400, P=101325) == 48201.37307016228  # 2.72979E06
+
+    assert iapws95.htpx(373.15, x=1e-10) == -7551.395791038054  # 418655
+    assert iapws95.htpx(373.15, x=1-1e-10) == 48201.37307016228  # 441219
+
+
+def test_PhaseType():
+    assert len(iapws95.PhaseType) == 4
+
+    # Check that expected values do not raise Exceptions
+    iapws95.PhaseType.MIX
+    iapws95.PhaseType.LG
+    iapws95.PhaseType.L
+    iapws95.PhaseType.G
+
+
+def test_STateVars():
+    assert len(iapws95.StateVars) == 2
+
+    # Check that expected values do not raise Exceptions
+    iapws95.StateVars.PH
+    iapws95.StateVars.TPX
+
+
+# -----------------------------------------------------------------------------
+# Test builds with different phase presentations and state vars
+def test_build_default():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock()
+    model.prop_in = iapws95.Iapws95StateBlock(
+            default={"parameters": model.prop_param})
+
+    assert len(model.prop_param.phase_list) == 1
+    for i in model.prop_param.phase_list:
+        assert i in ["Mix"]
+
+    sv = model.prop_in.define_state_vars()
+    assert len(sv) == 3
+    for i in sv:
+        assert i in ["flow_mol", "enth_mol", "pressure"]
+
+
+def test_build_MIX_PH():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock(
+            default={"phase_presentation": iapws95.PhaseType.MIX,
+                     "state_vars": iapws95.StateVars.PH})
+    model.prop_in = iapws95.Iapws95StateBlock(
+            default={"parameters": model.prop_param})
+
+    assert len(model.prop_param.phase_list) == 1
+    for i in model.prop_param.phase_list:
+        assert i in ["Mix"]
+
+    sv = model.prop_in.define_state_vars()
+    assert len(sv) == 3
+    for i in sv:
+        assert i in ["flow_mol", "enth_mol", "pressure"]
+
+
+def test_build_LG_PH():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock(
+            default={"phase_presentation": iapws95.PhaseType.LG,
+                     "state_vars": iapws95.StateVars.PH})
+    model.prop_in = iapws95.Iapws95StateBlock(
+            default={"parameters": model.prop_param})
+
+    assert len(model.prop_param.phase_list) == 2
+    for i in model.prop_param.phase_list:
+        assert i in ["Liq", "Vap"]
+
+    sv = model.prop_in.define_state_vars()
+    assert len(sv) == 3
+    for i in sv:
+        assert i in ["flow_mol", "enth_mol", "pressure"]
+
+
+def test_build_L_PH():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock(
+            default={"phase_presentation": iapws95.PhaseType.L,
+                     "state_vars": iapws95.StateVars.PH})
+    model.prop_in = iapws95.Iapws95StateBlock(
+            default={"parameters": model.prop_param})
+
+    assert len(model.prop_param.phase_list) == 1
+    for i in model.prop_param.phase_list:
+        assert i in ["Liq"]
+
+    sv = model.prop_in.define_state_vars()
+    assert len(sv) == 3
+    for i in sv:
+        assert i in ["flow_mol", "enth_mol", "pressure"]
+
+
+def test_build_G_PH():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock(
+            default={"phase_presentation": iapws95.PhaseType.G,
+                     "state_vars": iapws95.StateVars.PH})
+    model.prop_in = iapws95.Iapws95StateBlock(
+            default={"parameters": model.prop_param})
+
+    assert len(model.prop_param.phase_list) == 1
+    for i in model.prop_param.phase_list:
+        assert i in ["Vap"]
+
+    sv = model.prop_in.define_state_vars()
+    assert len(sv) == 3
+    for i in sv:
+        assert i in ["flow_mol", "enth_mol", "pressure"]
+
+
+def test_build_MIX_TPX():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock(
+            default={"phase_presentation": iapws95.PhaseType.MIX,
+                     "state_vars": iapws95.StateVars.TPX})
+    model.prop_in = iapws95.Iapws95StateBlock(
+            default={"parameters": model.prop_param})
+
+    assert len(model.prop_param.phase_list) == 1
+    for i in model.prop_param.phase_list:
+        assert i in ["Mix"]
+
+    sv = model.prop_in.define_state_vars()
+    assert len(sv) == 4
+    for i in sv:
+        assert i in ["flow_mol", "temperature", "pressure", "vapor_frac"]
+
+
+def test_build_LG_TPX():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock(
+            default={"phase_presentation": iapws95.PhaseType.LG,
+                     "state_vars": iapws95.StateVars.TPX})
+    model.prop_in = iapws95.Iapws95StateBlock(
+            default={"parameters": model.prop_param})
+
+    assert len(model.prop_param.phase_list) == 2
+    for i in model.prop_param.phase_list:
+        assert i in ["Liq", "Vap"]
+
+    sv = model.prop_in.define_state_vars()
+    assert len(sv) == 4
+    for i in sv:
+        assert i in ["flow_mol", "temperature", "pressure", "vapor_frac"]
+
+
+def test_build_L_TPX():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock(
+            default={"phase_presentation": iapws95.PhaseType.L,
+                     "state_vars": iapws95.StateVars.TPX})
+    model.prop_in = iapws95.Iapws95StateBlock(
+            default={"parameters": model.prop_param})
+
+    assert len(model.prop_param.phase_list) == 1
+    for i in model.prop_param.phase_list:
+        assert i in ["Liq"]
+
+    sv = model.prop_in.define_state_vars()
+    assert len(sv) == 3
+    for i in sv:
+        assert i in ["flow_mol", "temperature", "pressure"]
+
+
+def test_build_G_TPX():
+    model = ConcreteModel()
+    model.prop_param = iapws95.Iapws95ParameterBlock(
+            default={"phase_presentation": iapws95.PhaseType.G,
+                     "state_vars": iapws95.StateVars.TPX})
+    model.prop_in = iapws95.Iapws95StateBlock(
+            default={"parameters": model.prop_param})
+
+    assert len(model.prop_param.phase_list) == 1
+    for i in model.prop_param.phase_list:
+        assert i in ["Vap"]
+
+    sv = model.prop_in.define_state_vars()
+    assert len(sv) == 3
+    for i in sv:
+        assert i in ["flow_mol", "temperature", "pressure"]
+
+
+# -----------------------------------------------------------------------------
+# Test values against data tables
 def read_data(fname, col):
     dfile = os.path.join(this_file_dir(), fname)
     cond = []  # Tuple (T [K],P [Pa], data) pressure in file is MPa
