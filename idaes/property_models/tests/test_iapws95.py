@@ -12,11 +12,14 @@
 ##############################################################################
 
 import pytest
-from pyomo.environ import ConcreteModel, value
+from pyomo.environ import ConcreteModel, value, Var
+from pyomo.core.kernel.component_set import ComponentSet
 from pyomo.common.fileutils import this_file_dir
 from idaes.property_models import iapws95
 import csv
 import os
+
+from idaes.core import MaterialBalanceType, EnergyBalanceType
 
 # Set module level pyest marker
 pytestmark = pytest.mark.iapws
@@ -53,92 +56,445 @@ def test_STateVars():
 
 # -----------------------------------------------------------------------------
 # Test builds with different phase presentations and state vars
-def test_build_default():
-    model = ConcreteModel()
-    model.prop_param = iapws95.Iapws95ParameterBlock()
-    model.prop_in = iapws95.Iapws95StateBlock(
-            default={"parameters": model.prop_param})
+class TestMixPh(object):
+    # This should be the default option, so test with no arguments
+    @pytest.fixture(scope="class")
+    def model(self):
+        model = ConcreteModel()
+        model.params = iapws95.Iapws95ParameterBlock()
 
-    assert len(model.prop_param.phase_list) == 1
-    for i in model.prop_param.phase_list:
-        assert i in ["Mix"]
+        return model
 
-    sv = model.prop_in.define_state_vars()
-    assert len(sv) == 3
-    for i in sv:
-        assert i in ["flow_mol", "enth_mol", "pressure"]
+    def test_config(self, model):
+        assert model.params.config.phase_presentation == iapws95.PhaseType.MIX
+        assert model.params.config.state_vars == iapws95.StateVars.PH
+
+        assert len(model.params.phase_list) == 1
+        for i in model.params.phase_list:
+            assert i in ["Mix"]
+
+    def test_build(self, model):
+        model.prop = iapws95.Iapws95StateBlock(
+                [1],
+                default={"parameters": model.params})
+
+        assert isinstance(model.prop[1].flow_mol, Var)
+        assert isinstance(model.prop[1].pressure, Var)
+        assert isinstance(model.prop[1].enth_mol, Var)
+
+        assert isinstance(model.prop[1].extensive_set, ComponentSet)
+        assert isinstance(model.prop[1].intensive_set, ComponentSet)
+
+    def test_get_material_flow_terms(self, model):
+        for p in model.params.phase_list:
+            for j in model.params.component_list:
+                assert model.prop[1].get_material_flow_terms(p, j) is \
+                    model.prop[1].flow_mol
+
+    def test_get_enthalpy_flow_terms(self, model):
+        for p in model.params.phase_list:
+            assert model.prop[1].get_enthalpy_flow_terms(p) == \
+                    model.prop[1].enth_mol*model.prop[1].flow_mol
+
+    def test_get_material_density_terms(self, model):
+        for p in model.params.phase_list:
+            for j in model.params.component_list:
+                assert model.prop[1].get_material_density_terms(p, j) is \
+                    model.prop[1].dens_mol
+
+    def test_get_energy_density_terms(self, model):
+        for p in model.params.phase_list:
+            assert model.prop[1].get_energy_density_terms(p) == \
+                    model.prop[1].dens_mol*model.prop[1].energy_internal_mol
+
+    def test_default_material_balance_type(self, model):
+        assert model.prop[1].default_material_balance_type() is \
+            MaterialBalanceType.componentTotal
+
+    def test_default_energy_balance_type(self, model):
+        assert model.prop[1].default_energy_balance_type() is \
+            EnergyBalanceType.enthalpyTotal
+
+    def test_define_state_vars(self, model):
+        sv = model.prop[1].define_state_vars()
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol", "enth_mol", "pressure"]
+
+    def test_define_display_vars(self, model):
+        dv = model.prop[1].define_display_vars()
+        assert len(dv) == 6
+        for i in dv:
+            assert i in ["Molar Flow (mol/s)",
+                         "Mass Flow (kg/s)",
+                         "T (K)",
+                         "P (Pa)",
+                         "Vapor Fraction",
+                         "Molar Enthalpy (J/mol)"]
+
+    def test_extensive_state_vars(self, model):
+        for i in model.prop[1].extensive_set:
+            assert i is model.prop[1].flow_mol
+
+    def test_intensive_state_vars(self, model):
+        for i in model.prop[1].intensive_set:
+            assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
+
+    def test_model_check(self, model):
+        assert model.prop[1].model_check() is None
+
+    def test_data_initialize(self, model):
+        assert model.prop[1].initialize() is None
+
+    def test_initialize(self, model):
+        assert not model.prop[1].flow_mol.fixed
+        assert not model.prop[1].enth_mol.fixed
+        assert not model.prop[1].pressure.fixed
+
+        flags = model.prop.initialize(hold_state=True)
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
+        model.prop.release_state(flags)
+
+        assert not model.prop[1].flow_mol.fixed
+        assert not model.prop[1].enth_mol.fixed
+        assert not model.prop[1].pressure.fixed
 
 
-def test_build_MIX_PH():
-    model = ConcreteModel()
-    model.prop_param = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.MIX,
-                     "state_vars": iapws95.StateVars.PH})
-    model.prop_in = iapws95.Iapws95StateBlock(
-            default={"parameters": model.prop_param})
+class TestLGPh(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        model = ConcreteModel()
+        model.params = iapws95.Iapws95ParameterBlock(
+                default={"phase_presentation": iapws95.PhaseType.LG})
 
-    assert len(model.prop_param.phase_list) == 1
-    for i in model.prop_param.phase_list:
-        assert i in ["Mix"]
+        return model
 
-    sv = model.prop_in.define_state_vars()
-    assert len(sv) == 3
-    for i in sv:
-        assert i in ["flow_mol", "enth_mol", "pressure"]
+    def test_config(self, model):
+        assert model.params.config.phase_presentation == iapws95.PhaseType.LG
+        assert model.params.config.state_vars == iapws95.StateVars.PH
+
+        assert len(model.params.phase_list) == 2
+        for i in model.params.phase_list:
+            assert i in ["Liq", "Vap"]
+
+    def test_build(self, model):
+        model.prop = iapws95.Iapws95StateBlock(
+                [1],
+                default={"parameters": model.params})
+
+        assert isinstance(model.prop[1].flow_mol, Var)
+        assert isinstance(model.prop[1].pressure, Var)
+        assert isinstance(model.prop[1].enth_mol, Var)
+
+        assert isinstance(model.prop[1].extensive_set, ComponentSet)
+        assert isinstance(model.prop[1].intensive_set, ComponentSet)
+
+    def test_get_material_flow_terms(self, model):
+        for p in model.params.phase_list:
+            for j in model.params.component_list:
+                assert model.prop[1].get_material_flow_terms(p, j) == \
+                    model.prop[1].flow_mol*model.prop[1].phase_frac[p]
+
+    def test_get_enthalpy_flow_terms(self, model):
+        for p in model.params.phase_list:
+            assert model.prop[1].get_enthalpy_flow_terms(p) == (
+                    model.prop[1].enth_mol_phase[p] *
+                    model.prop[1].phase_frac[p] *
+                    model.prop[1].flow_mol)
+
+    def test_get_material_density_terms(self, model):
+        for p in model.params.phase_list:
+            for j in model.params.component_list:
+                assert model.prop[1].get_material_density_terms(p, j) is \
+                    model.prop[1].dens_mol_phase[p]
+
+    def test_get_energy_density_terms(self, model):
+        for p in model.params.phase_list:
+            assert model.prop[1].get_energy_density_terms(p) == (
+                    model.prop[1].dens_mol_phase[p] *
+                    model.prop[1].energy_internal_mol_phase[p])
+
+    def test_default_material_balance_type(self, model):
+        assert model.prop[1].default_material_balance_type() is \
+            MaterialBalanceType.componentTotal
+
+    def test_default_energy_balance_type(self, model):
+        assert model.prop[1].default_energy_balance_type() is \
+            EnergyBalanceType.enthalpyTotal
+
+    def test_define_state_vars(self, model):
+        sv = model.prop[1].define_state_vars()
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol", "enth_mol", "pressure"]
+
+    def test_define_display_vars(self, model):
+        dv = model.prop[1].define_display_vars()
+        assert len(dv) == 6
+        for i in dv:
+            assert i in ["Molar Flow (mol/s)",
+                         "Mass Flow (kg/s)",
+                         "T (K)",
+                         "P (Pa)",
+                         "Vapor Fraction",
+                         "Molar Enthalpy (J/mol)"]
+
+    def test_extensive_state_vars(self, model):
+        for i in model.prop[1].extensive_set:
+            assert i is model.prop[1].flow_mol
+
+    def test_intensive_state_vars(self, model):
+        for i in model.prop[1].intensive_set:
+            assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
+
+    def test_model_check(self, model):
+        assert model.prop[1].model_check() is None
+
+    def test_data_initialize(self, model):
+        assert model.prop[1].initialize() is None
+
+    def test_initialize(self, model):
+        assert not model.prop[1].flow_mol.fixed
+        assert not model.prop[1].enth_mol.fixed
+        assert not model.prop[1].pressure.fixed
+
+        flags = model.prop.initialize(hold_state=True)
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
+        model.prop.release_state(flags)
+
+        assert not model.prop[1].flow_mol.fixed
+        assert not model.prop[1].enth_mol.fixed
+        assert not model.prop[1].pressure.fixed
 
 
-def test_build_LG_PH():
-    model = ConcreteModel()
-    model.prop_param = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.LG,
-                     "state_vars": iapws95.StateVars.PH})
-    model.prop_in = iapws95.Iapws95StateBlock(
-            default={"parameters": model.prop_param})
+class TestLPh(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        model = ConcreteModel()
+        model.params = iapws95.Iapws95ParameterBlock(
+                default={"phase_presentation": iapws95.PhaseType.L})
 
-    assert len(model.prop_param.phase_list) == 2
-    for i in model.prop_param.phase_list:
-        assert i in ["Liq", "Vap"]
+        return model
 
-    sv = model.prop_in.define_state_vars()
-    assert len(sv) == 3
-    for i in sv:
-        assert i in ["flow_mol", "enth_mol", "pressure"]
+    def test_config(self, model):
+        assert model.params.config.phase_presentation == iapws95.PhaseType.L
+        assert model.params.config.state_vars == iapws95.StateVars.PH
+
+        assert len(model.params.phase_list) == 1
+        for i in model.params.phase_list:
+            assert i in ["Liq"]
+
+    def test_build(self, model):
+        model.prop = iapws95.Iapws95StateBlock(
+                [1],
+                default={"parameters": model.params})
+
+        assert isinstance(model.prop[1].flow_mol, Var)
+        assert isinstance(model.prop[1].pressure, Var)
+        assert isinstance(model.prop[1].enth_mol, Var)
+
+        assert isinstance(model.prop[1].extensive_set, ComponentSet)
+        assert isinstance(model.prop[1].intensive_set, ComponentSet)
+
+    def test_get_material_flow_terms(self, model):
+        for p in model.params.phase_list:
+            for j in model.params.component_list:
+                assert model.prop[1].get_material_flow_terms(p, j) == \
+                    model.prop[1].flow_mol*model.prop[1].phase_frac[p]
+
+    def test_get_enthalpy_flow_terms(self, model):
+        for p in model.params.phase_list:
+            assert model.prop[1].get_enthalpy_flow_terms(p) == (
+                    model.prop[1].enth_mol_phase[p] *
+                    model.prop[1].phase_frac[p] *
+                    model.prop[1].flow_mol)
+
+    def test_get_material_density_terms(self, model):
+        for p in model.params.phase_list:
+            for j in model.params.component_list:
+                assert model.prop[1].get_material_density_terms(p, j) is \
+                    model.prop[1].dens_mol_phase[p]
+
+    def test_get_energy_density_terms(self, model):
+        for p in model.params.phase_list:
+            assert model.prop[1].get_energy_density_terms(p) == (
+                    model.prop[1].dens_mol_phase[p] *
+                    model.prop[1].energy_internal_mol_phase[p])
+
+    def test_default_material_balance_type(self, model):
+        assert model.prop[1].default_material_balance_type() is \
+            MaterialBalanceType.componentTotal
+
+    def test_default_energy_balance_type(self, model):
+        assert model.prop[1].default_energy_balance_type() is \
+            EnergyBalanceType.enthalpyTotal
+
+    def test_define_state_vars(self, model):
+        sv = model.prop[1].define_state_vars()
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol", "enth_mol", "pressure"]
+
+    def test_define_display_vars(self, model):
+        dv = model.prop[1].define_display_vars()
+        assert len(dv) == 6
+        for i in dv:
+            assert i in ["Molar Flow (mol/s)",
+                         "Mass Flow (kg/s)",
+                         "T (K)",
+                         "P (Pa)",
+                         "Vapor Fraction",
+                         "Molar Enthalpy (J/mol)"]
+
+    def test_extensive_state_vars(self, model):
+        for i in model.prop[1].extensive_set:
+            assert i is model.prop[1].flow_mol
+
+    def test_intensive_state_vars(self, model):
+        for i in model.prop[1].intensive_set:
+            assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
+
+    def test_model_check(self, model):
+        assert model.prop[1].model_check() is None
+
+    def test_data_initialize(self, model):
+        assert model.prop[1].initialize() is None
+
+    def test_initialize(self, model):
+        assert not model.prop[1].flow_mol.fixed
+        assert not model.prop[1].enth_mol.fixed
+        assert not model.prop[1].pressure.fixed
+
+        flags = model.prop.initialize(hold_state=True)
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
+        model.prop.release_state(flags)
+
+        assert not model.prop[1].flow_mol.fixed
+        assert not model.prop[1].enth_mol.fixed
+        assert not model.prop[1].pressure.fixed
 
 
-def test_build_L_PH():
-    model = ConcreteModel()
-    model.prop_param = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.L,
-                     "state_vars": iapws95.StateVars.PH})
-    model.prop_in = iapws95.Iapws95StateBlock(
-            default={"parameters": model.prop_param})
+class TestGPh(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        model = ConcreteModel()
+        model.params = iapws95.Iapws95ParameterBlock(
+                default={"phase_presentation": iapws95.PhaseType.G})
 
-    assert len(model.prop_param.phase_list) == 1
-    for i in model.prop_param.phase_list:
-        assert i in ["Liq"]
+        return model
 
-    sv = model.prop_in.define_state_vars()
-    assert len(sv) == 3
-    for i in sv:
-        assert i in ["flow_mol", "enth_mol", "pressure"]
+    def test_config(self, model):
+        assert model.params.config.phase_presentation == iapws95.PhaseType.G
+        assert model.params.config.state_vars == iapws95.StateVars.PH
 
+        assert len(model.params.phase_list) == 1
+        for i in model.params.phase_list:
+            assert i in ["Vap"]
 
-def test_build_G_PH():
-    model = ConcreteModel()
-    model.prop_param = iapws95.Iapws95ParameterBlock(
-            default={"phase_presentation": iapws95.PhaseType.G,
-                     "state_vars": iapws95.StateVars.PH})
-    model.prop_in = iapws95.Iapws95StateBlock(
-            default={"parameters": model.prop_param})
+    def test_build(self, model):
+        model.prop = iapws95.Iapws95StateBlock(
+                [1],
+                default={"parameters": model.params})
 
-    assert len(model.prop_param.phase_list) == 1
-    for i in model.prop_param.phase_list:
-        assert i in ["Vap"]
+        assert isinstance(model.prop[1].flow_mol, Var)
+        assert isinstance(model.prop[1].pressure, Var)
+        assert isinstance(model.prop[1].enth_mol, Var)
 
-    sv = model.prop_in.define_state_vars()
-    assert len(sv) == 3
-    for i in sv:
-        assert i in ["flow_mol", "enth_mol", "pressure"]
+        assert isinstance(model.prop[1].extensive_set, ComponentSet)
+        assert isinstance(model.prop[1].intensive_set, ComponentSet)
+
+    def test_get_material_flow_terms(self, model):
+        for p in model.params.phase_list:
+            for j in model.params.component_list:
+                assert model.prop[1].get_material_flow_terms(p, j) == \
+                    model.prop[1].flow_mol*model.prop[1].phase_frac[p]
+
+    def test_get_enthalpy_flow_terms(self, model):
+        for p in model.params.phase_list:
+            assert model.prop[1].get_enthalpy_flow_terms(p) == (
+                    model.prop[1].enth_mol_phase[p] *
+                    model.prop[1].phase_frac[p] *
+                    model.prop[1].flow_mol)
+
+    def test_get_material_density_terms(self, model):
+        for p in model.params.phase_list:
+            for j in model.params.component_list:
+                assert model.prop[1].get_material_density_terms(p, j) is \
+                    model.prop[1].dens_mol_phase[p]
+
+    def test_get_energy_density_terms(self, model):
+        for p in model.params.phase_list:
+            assert model.prop[1].get_energy_density_terms(p) == (
+                    model.prop[1].dens_mol_phase[p] *
+                    model.prop[1].energy_internal_mol_phase[p])
+
+    def test_default_material_balance_type(self, model):
+        assert model.prop[1].default_material_balance_type() is \
+            MaterialBalanceType.componentTotal
+
+    def test_default_energy_balance_type(self, model):
+        assert model.prop[1].default_energy_balance_type() is \
+            EnergyBalanceType.enthalpyTotal
+
+    def test_define_state_vars(self, model):
+        sv = model.prop[1].define_state_vars()
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol", "enth_mol", "pressure"]
+
+    def test_define_display_vars(self, model):
+        dv = model.prop[1].define_display_vars()
+        assert len(dv) == 6
+        for i in dv:
+            assert i in ["Molar Flow (mol/s)",
+                         "Mass Flow (kg/s)",
+                         "T (K)",
+                         "P (Pa)",
+                         "Vapor Fraction",
+                         "Molar Enthalpy (J/mol)"]
+
+    def test_extensive_state_vars(self, model):
+        for i in model.prop[1].extensive_set:
+            assert i is model.prop[1].flow_mol
+
+    def test_intensive_state_vars(self, model):
+        for i in model.prop[1].intensive_set:
+            assert i in [model.prop[1].enth_mol, model.prop[1].pressure]
+
+    def test_model_check(self, model):
+        assert model.prop[1].model_check() is None
+
+    def test_data_initialize(self, model):
+        assert model.prop[1].initialize() is None
+
+    def test_initialize(self, model):
+        assert not model.prop[1].flow_mol.fixed
+        assert not model.prop[1].enth_mol.fixed
+        assert not model.prop[1].pressure.fixed
+
+        flags = model.prop.initialize(hold_state=True)
+
+        assert model.prop[1].flow_mol.fixed
+        assert model.prop[1].enth_mol.fixed
+        assert model.prop[1].pressure.fixed
+
+        model.prop.release_state(flags)
+
+        assert not model.prop[1].flow_mol.fixed
+        assert not model.prop[1].enth_mol.fixed
+        assert not model.prop[1].pressure.fixed
 
 
 def test_build_MIX_TPX():
