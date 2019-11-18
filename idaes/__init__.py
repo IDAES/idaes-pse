@@ -56,6 +56,16 @@ _config.plugins.declare(
     ),
 )
 
+_config.declare(
+    "use_idaes_solvers",
+    pyomo.common.config.ConfigValue(
+        default=True,
+        description="Add the IDAES bin directory to the path.",
+        doc="Add the IDAES bin directory to the path such that solvers provided "
+        "by IDAES will be used in preference to previously installed solvers.",
+    ),
+)
+
 # Standard locations for config file, binary libraries and executables, ...
 try:
     if os.name == 'nt':  # Windows
@@ -65,24 +75,15 @@ try:
 except AttributeError:
     data_directory = None
 
-# Standard location for executable binaries.  This gets prepended to the system
-# path.  If you install something here it will take pesidence over other
-# executables, when running IDAES.
+# Standard location for executable binaries.
 if data_directory != None:
     bin_directory = os.path.join(data_directory, "bin")
-    os.environ['PATH'] = os.pathsep.join([bin_directory, os.environ['PATH']])
 else:
     bin_directory = None
 
-# Standard location for IDAES library files. On Windows this includes some
-# MinGW redisributable runtime library files.  On Windwows, append the lib
-# dir to the end of path so the MinGW dlls will be used if not found elsewhere
-# On Linux or OSX nothing needs to be in the path for lib. Path modification is
-# only for MinGW DLLs.
+# Standard location for IDAES library files.
 if data_directory != None:
     lib_directory = os.path.join(data_directory, "lib")
-    if os.name == 'nt':  # Windows
-        os.environ['PATH'] = os.pathsep.join([os.environ['PATH'], lib_directory])
 else:
     lib_directory = None
 
@@ -164,6 +165,7 @@ def _import_packages(packages, optional=True):
 _read_config(
     toml.loads(
         """
+use_idaes_solvers = true
 [plugins]
   required = []
   optional = []
@@ -193,6 +195,15 @@ _local_config_file = "idaes.conf"
 _read_config(_global_config_file)
 _read_config(_local_config_file)
 _log.debug("'idaes' logger debug test")
+
+if _config["use_idaes_solvers"]:
+    # Add IDAES stuff to the path unless you configure otherwise
+    os.environ['PATH'] = os.pathsep.join([bin_directory, os.environ['PATH']])
+    if os.name == 'nt':  # Windows (this is to find MinGW libs)
+        os.environ['PATH'] = os.pathsep.join([os.environ['PATH'], lib_directory])
+    else: # Linux and OSX, so far no need for this, but maybe in future
+        os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
+            [os.environ['LD_LIBRARY_PATH'], lib_directory])
 
 # Load plugins, could read a config file later by calling _read_config, but
 # plugins only automatiaclly import when 'idaes' is imported. Could call
