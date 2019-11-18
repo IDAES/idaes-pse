@@ -65,12 +65,26 @@ try:
 except AttributeError:
     data_directory = None
 
-# Standard location for executable binaries
+# Standard location for executable binaries.  This gets prepended to the system
+# path.  If you install something here it will take pesidence over other
+# executables, when running IDAES.
 if data_directory != None:
     bin_directory = os.path.join(data_directory, "bin")
     os.environ['PATH'] = os.pathsep.join([bin_directory, os.environ['PATH']])
 else:
     bin_directory = None
+
+# Standard location for IDAES library files. On Windows this includes some
+# MinGW redisributable runtime library files.  On Windwows, append the lib
+# dir to the end of path so the MinGW dlls will be used if not found elsewhere
+# On Linux or OSX nothing needs to be in the path for lib. Path modification is
+# only for MinGW DLLs.
+if data_directory != None:
+    lib_directory = os.path.join(data_directory, "lib")
+    if os.name == 'nt':  # Windows
+        os.environ['PATH'] = os.pathsep.join([os.environ['PATH'], lib_directory])
+else:
+    lib_directory = None
 
 def _create_data_dir():
     """Create the IDAES directory to store data files in."""
@@ -80,12 +94,20 @@ def _create_data_dir():
         os.mkdir(data_directory)
 
 def _create_bin_dir():
-    """Create the IDAES directory to store binary files in."""
+    """Create the IDAES directory to store executable files in."""
     _create_data_dir()
     if os.path.exists(bin_directory):
         return
     else:
         os.mkdir(bin_directory)
+
+def _create_lib_dir():
+    """Create the IDAES directory to store library files in."""
+    _create_data_dir()
+    if os.path.exists(lib_directory):
+        return
+    else:
+        os.mkdir(lib_directory)
 
 # Could create directories here, but I'll make that happen when the user does
 # something that requires them.  For now the commandline utility commends will
