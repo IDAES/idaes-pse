@@ -202,8 +202,9 @@ if _config["use_idaes_solvers"]:
     if os.name == 'nt':  # Windows (this is to find MinGW libs)
         os.environ['PATH'] = os.pathsep.join([os.environ['PATH'], lib_directory])
     else: # Linux and OSX, so far no need for this, but maybe in future
+        __orig_ld = os.environ.get('LD_LIBRARY_PATH', '')
         os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(
-            [os.environ['LD_LIBRARY_PATH'], lib_directory])
+            [__orig_ld, lib_directory])
 
 # Load plugins, could read a config file later by calling _read_config, but
 # plugins only automatiaclly import when 'idaes' is imported. Could call
