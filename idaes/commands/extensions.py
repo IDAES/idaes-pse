@@ -20,10 +20,9 @@ from idaes.commands import cb
 
 @cb.command(help="Get IDAES Versions of Solvers")
 @click.option("--url", help="URL to download solver", default=None)
-@click.option("--local", help="Use local zip file", default=None)
-def get_extensions(url, local):
+def get_extensions(url):
     if url is not None:
         click.echo("Getting libraries from: {}".format(url))
     else:
         click.echo("Getting libraries from: {}".format(local))
-    idaes.solvers.download_binaries(local, url)
+    idaes.solvers.download_binaries(url)
