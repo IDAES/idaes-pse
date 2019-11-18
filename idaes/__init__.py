@@ -9,10 +9,12 @@ import importlib
 import toml
 import pyomo.common.plugin
 import pyomo.common.config
+
 from .ver import __version__  # noqa
 
-
 _log = logging.getLogger(__name__)
+
+# Create the general IDAES configuration block
 _config = pyomo.common.config.ConfigBlock("idaes", implicit=False)
 _config.declare(
     "logging",
@@ -54,6 +56,39 @@ _config.plugins.declare(
     ),
 )
 
+# Standard locations for config file, binary libraries and executables, ...
+try:
+    if os.name == 'nt':  # Windows
+        data_directory = os.path.join(os.environ['LOCALAPPDATA'], "idaes")
+    else:  # any other OS
+        data_directory = os.path.join(os.environ['HOME'], ".idaes")
+except AttributeError:
+    data_directory = None
+
+if data_directory != None:
+    bin_directory = os.path.join(data_directory, "bin")
+    os.environ['PATH'] = os.pathsep.join([bin_directory, os.environ['PATH']])
+else:
+    bin_directory = None
+
+def _create_data_dir():
+    """Create the IDAES directory to store data files in."""
+    if os.path.exists(data_directory):
+        return
+    else:
+        os.mkdir(data_directory)
+
+def _create_bin_dir():
+    """Create the IDAES directory to store binary files in."""
+    _create_data_dir()
+    if os.path.exists(bin_directory):
+        return
+    else:
+        os.mkdir(bin_directory)
+
+# Could create directories here, but I'll make that happen when the user does
+# something that requires them.  For now the commandline utility commends will
+# cause the directories to be made.
 
 def _read_config(config):
     """Read either a TOML formatted config file or a configuration dictionary.
@@ -128,17 +163,7 @@ _read_config(
 
 # Try to read the global IDAES config file.
 # Set where to look for config files
-try:
-    if os.name == 'nt':  # Windows
-        _global_config_file = os.path.join(
-            os.environ['LOCALAPPDATA'], "idaes\idaes.conf"
-        )
-    else:  # any other OS
-        _global_config_file = os.path.join(os.environ['HOME'], ".idaes/idaes.conf")
-except AttributeError:
-    _global_config_file = None
-    _log.debug("No suitable global config file path found (this is okay).")
-
+_global_config_file = os.path.join(data_directory, "idaes.conf")
 _local_config_file = "idaes.conf"
 
 # Try to read global config then local

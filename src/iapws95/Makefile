@@ -1,19 +1,10 @@
-include ../../../Makefile.in
-
-ifeq ($(ASL),)
-    CFLAGS = -Wall -Wextra -O3
-else
-    CFLAGS = -Wall -Wextra -O3 -I$(ASL)
-endif
+include ../Makefile.in
 
 ifeq ($(BOOST),)
     CXXFLAGS = -c $(CFLAGS) -std=c++11 -fPIC
 else
     CXXFLAGS = -c $(CFLAGS) -std=c++11 -fPIC -I$(BOOST)
 endif
-
-LDFLAGS = -shared -lm
-LDFLAGS_EXE = -lm
 
 OBJECTS = iapws95_external.o iapws95_phi.o iapws95_asl_funcs.o iapws95_memo.o
 
@@ -35,7 +26,7 @@ iapws95_tests.o: iapws95_tests.cpp
 		$(CXX) $(CXXFLAGS) iapws95_tests.cpp -o iapws95_tests.o
 
 iapws95_external.so: $(OBJECTS)
-	  $(CXX) $(LDFLAGS) $(OBJECTS) -o iapws95_external.so
+	  $(LINK) $(LDFLAGS) $(OBJECTS) -o iapws95_external.so
 
 clean:
 	rm -f *.o

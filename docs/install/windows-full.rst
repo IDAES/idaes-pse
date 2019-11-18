@@ -2,7 +2,6 @@
 
 Windows Installation
 ====================
-.. note:: Windows is not officially supported at this time.
 
 This is a complete guide to installing the IDAES framework on Windows.
 The :ref:`windows_extras` section includes additional information which may be useful.
