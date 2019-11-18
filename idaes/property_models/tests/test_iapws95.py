@@ -25,12 +25,12 @@ prop_available = iapws95.iapws95_available()
 
 # -----------------------------------------------------------------------------
 # Test Enums and common functions
-def test_htpx():
+#def test_htpx():
 #    assert iapws95.htpx(300, P=101325) == 48201.37307016228  # 112143
-    assert iapws95.htpx(400, P=101325) == 48201.37307016228  # 2.72979E06
-
-    assert iapws95.htpx(373.15, x=1e-10) == -7551.395791038054  # 418655
-    assert iapws95.htpx(373.15, x=1-1e-10) == 48201.37307016228  # 441219
+#    assert iapws95.htpx(400, P=101325) == 48201.37307016228  # 2.72979E06
+#
+#    assert iapws95.htpx(373.15, x=1e-10) == -7551.395791038054  # 418655
+#    assert iapws95.htpx(373.15, x=1-1e-10) == 48201.37307016228  # 441219
 
 
 def test_PhaseType():
