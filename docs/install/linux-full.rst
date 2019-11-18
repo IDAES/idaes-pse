@@ -3,8 +3,8 @@
 Linux installation
 ==================
 
-This section has the instructions for a "full" Linux installation. If you want to just try a few
-examples and find these instructions difficult to follow, you may try the :ref:`min_install_linux`.
+This section has the instructions for a "advanced" Linux installation for developers.  Most
+should not need to refer to this section.
 
 System Requirements
 -------------------

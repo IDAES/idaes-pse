@@ -65,6 +65,7 @@ try:
 except AttributeError:
     data_directory = None
 
+# Standard location for executable binaries
 if data_directory != None:
     bin_directory = os.path.join(data_directory, "bin")
     os.environ['PATH'] = os.pathsep.join([bin_directory, os.environ['PATH']])
