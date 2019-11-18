@@ -74,7 +74,12 @@ kwargs = dict(
         # helmet
         "rbfopt",
     ],
-    entry_points={"console_scripts": ["dmf = idaes.dmf.cli:base_command"]},
+    entry_points={
+        "console_scripts": [
+            "dmf = idaes.dmf.cli:base_command",
+            "idaes = idaes.commands.base:command_base",
+        ]
+    },
     extras_require={
         # For developers. Only installed if [dev] is added to package name
         "dev": [
