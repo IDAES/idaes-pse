@@ -76,13 +76,13 @@ except AttributeError:
     data_directory = None
 
 # Standard location for executable binaries.
-if data_directory != None:
+if data_directory is not None:
     bin_directory = os.path.join(data_directory, "bin")
 else:
     bin_directory = None
 
 # Standard location for IDAES library files.
-if data_directory != None:
+if data_directory is not None:
     lib_directory = os.path.join(data_directory, "lib")
 else:
     lib_directory = None
