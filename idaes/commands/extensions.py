@@ -38,10 +38,10 @@ def get_libraries(url, local):
             local = "idaes-lib-linux.zip"
 
     if url is not None:
-        print("Getting libraries from: {}".format(url))
+        click.echo("Getting libraries from: {}".format(url))
         r = requests.get(url)
     else:
-        print("Getting libraries from: {}".format(local))
+        click.echo("Getting libraries from: {}".format(local))
         copyfile(local, zip_file)
     # unzip
     with zipfile.ZipFile(zip_file, 'r') as f:
@@ -67,7 +67,7 @@ def get_solver(solver, url, local, remove):
         if click.confirm("Delete {}?".format(rmpath)):
             os.remove(rmpath)
         else:
-            print("Not removing {}.".format(solver))
+            click.echo("Not removing {}.".format(solver))
     else:
         zip_file = os.path.join(idaes.bin_directory, "idaes-{}.zip".foramt(solver))
         # Here we'll setup the default urls eventally but for now local file
@@ -79,14 +79,14 @@ def get_solver(solver, url, local, remove):
                 local = "idaes-{}-linux.zip".foramt(solver)
 
         if url is not None:
-            print("Getting libraries from: {}".format(url))
+            click.echo("Getting libraries from: {}".format(url))
             r = requests.get(url)
         else:
-            print("Getting libraries from: {}".format(local))
+            click.echo("Getting libraries from: {}".format(local))
             copyfile(local, zip_file)
         # unzip
         with zipfile.ZipFile(zip_file, 'r') as f:
             f.extractall(idaes.bin_directory)
         if os.name == "nt":
-            print("""\n   ***Be sure to install IDAES liraries (idaes get-libraries)
+            click.echo("""\n   ***Be sure to install IDAES liraries (idaes get-libraries)
           to ensure you have required MinGW runtime libraires.\n""")
