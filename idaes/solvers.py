@@ -1,4 +1,5 @@
 import os
+import zipfile
 import idaes
 from shutil import copyfile
 import urllib.request as ur
