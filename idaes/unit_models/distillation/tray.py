@@ -44,25 +44,15 @@ class TrayData(UnitModelBlockData):
     Tray unit for distillation model.
     """
     CONFIG = UnitModelBlockData.CONFIG()
-    CONFIG.declare("is_top_tray", ConfigValue(
+    CONFIG.declare("is_feed_tray", ConfigValue(
         default=False,
         domain=In([True, False]),
-        description="Flag to indicate top tray.",
-        doc="""Indicates if this is a top tray and constructs
+        description="Flag to indicate feed tray.",
+        doc="""Indicates if this is a feed tray and constructs
 corresponding ports,
 **default** - False.
 **Valid values:** {
-**True** - top tray,
-**False** - conventional tray}"""))
-    CONFIG.declare("is_bottom_tray", ConfigValue(
-        default=False,
-        domain=In([True, False]),
-        description="Flag to indicate bottom tray.",
-        doc="""Indicates if this is a bottom tray and constructs
-corresponding ports,
-**default** - False.
-**Valid values:** {
-**True** - bottom tray,
+**True** - Feed tray,
 **False** - conventional tray}"""))
     CONFIG.declare("has_liquid_side_draw", ConfigValue(
         default=False,
@@ -131,7 +121,10 @@ see property package for documentation.}"""))
         super(TrayData, self).build()
 
         # Create the inlets for the tray
-        inlet_list = ["liq", "vap"]
+        if self.config.is_feed_tray:
+            inlet_list = ["feed", "liq", "vap"]
+        else:
+            inlet_list = ["liq", "vap"]
 
         # Setup StateBlock argument dict
         state_block_args = dict(**self.config.property_package_args)
@@ -172,11 +165,19 @@ see property package for documentation.}"""))
                          self.config.property_package.component_list,
                          doc="Material mixing equations")
         def material_mixing_equations(b, t, j):
-            return 0 == sum(
-                self.properties_in_liq[t].get_material_flow_terms(p, j) +
-                self.properties_in_vap[t].get_material_flow_terms(p, j) -
-                self.properties_out[t].get_material_flow_terms(p, j)
-                for p in b.config.property_package.phase_list)
+            if self.config.is_feed_tray:
+                return 0 == sum(
+                    self.properties_in_feed[t].get_material_flow_terms(p, j) +
+                    self.properties_in_liq[t].get_material_flow_terms(p, j) +
+                    self.properties_in_vap[t].get_material_flow_terms(p, j) -
+                    self.properties_out[t].get_material_flow_terms(p, j)
+                    for p in b.config.property_package.phase_list)
+            else:
+                return 0 == sum(
+                    self.properties_in_liq[t].get_material_flow_terms(p, j) +
+                    self.properties_in_vap[t].get_material_flow_terms(p, j) -
+                    self.properties_out[t].get_material_flow_terms(p, j)
+                    for p in b.config.property_package.phase_list)
 
     def _add_energy_balance(self):
 
@@ -186,23 +187,60 @@ see property package for documentation.}"""))
 
         @self.Constraint(self.flowsheet().config.time, doc="Energy balances")
         def enthalpy_mixing_equations(b, t):
-            if self.config.has_heat_transfer:
-                return 0 == (
-                    sum(self.properties_in_liq[t].get_enthalpy_flow_terms(p)
-                        for p in b.config.property_package.phase_list) +
-                    sum(self.properties_in_vap[t].get_enthalpy_flow_terms(p)
-                        for p in b.config.property_package.phase_list) -
-                    sum(self.properties_out[t].get_enthalpy_flow_terms(p)
-                        for p in b.config.property_package.phase_list)) + \
-                    self.heat_duty
+            if self.config.is_feed_tray:
+                if self.config.has_heat_transfer:
+                    return 0 == (
+                        sum(self.properties_in_feed[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) +
+                        sum(self.properties_in_liq[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) +
+                        sum(self.properties_in_vap[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) -
+                        sum(self.properties_out[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list)) + \
+                        self.heat_duty
+                else:
+                    return 0 == (
+                        sum(self.properties_in_feed[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) +
+                        sum(self.properties_in_liq[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) +
+                        sum(self.properties_in_vap[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) -
+                        sum(self.properties_out[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list))
             else:
-                return 0 == (
-                    sum(self.properties_in_liq[t].get_enthalpy_flow_terms(p)
-                        for p in b.config.property_package.phase_list) +
-                    sum(self.properties_in_vap[t].get_enthalpy_flow_terms(p)
-                        for p in b.config.property_package.phase_list) -
-                    sum(self.properties_out[t].get_enthalpy_flow_terms(p)
-                        for p in b.config.property_package.phase_list))
+                if self.config.has_heat_transfer:
+                    return 0 == (
+                        sum(self.properties_in_liq[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) +
+                        sum(self.properties_in_vap[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) -
+                        sum(self.properties_out[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list)) + \
+                        self.heat_duty
+                else:
+                    return 0 == (
+                        sum(self.properties_in_liq[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) +
+                        sum(self.properties_in_vap[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list) -
+                        sum(self.properties_out[t].
+                            get_enthalpy_flow_terms(p)
+                            for p in b.config.property_package.phase_list))
 
     def _add_pressure_balance(self):
         if self.config.has_pressure_change:
@@ -221,52 +259,97 @@ see property package for documentation.}"""))
 
     def _add_ports(self):
 
+        # Add inlet ports
+        if self.config.is_feed_tray:
+            self.feed = Port(noruleinit=True, doc="feed inlet to tray")
+
+        # Add liquid and vapor inlet ports
+        self.liq_in = Port(noruleinit=True, doc="liq inlet to tray")
+        self.vap_in = Port(noruleinit=True, doc="vap inlet to tray")
+
+        # Add liquid outlet port
+        self.liq_out = Port(noruleinit=True, doc="liquid outlet from tray")
+
+        # Add liquid side draw port if selected
         if self.config.has_liquid_side_draw:
-            self.liq_side_sf = Var(initialize=0.01,
-                                   doc="split fraction for the liquid side draw")
+            self.liq_side_sf = Var(
+                initialize=0.01,
+                doc="split fraction for the liquid side draw")
             self.liq_side_draw = Port(noruleinit=True, doc="liquid side draw.")
             self._make_phase_split(
+                port=self.liq_side_draw,
                 phase="Liq",
                 has_liquid_side_draw=self.config.has_liquid_side_draw,
                 side_sf=self.liq_side_sf)
+
+            # Populate the liquid outlet port with the remaining liquid
+            # after the side draw
+            self._make_phase_split(
+                port=self.liq_out,
+                phase="Liq",
+                side_sf=1 - self.liq_side_sf)
+        else:
+            # Populate the liquid outlet port when no liquid side draw
+            self._make_phase_split(
+                port=self.liq_out,
+                phase="Liq",
+                side_sf=1)
+
+        # Add the vapor outlet port
+        self.vap_out = Port(noruleinit=True, doc="vapor outlet from tray")
+
+        # Add vapor side draw port if selected
         if self.config.has_vapor_side_draw:
-            self.vap_side_sf = Var(initialize=0.01,
-                                   doc="split fraction for the vapor side draw")
+            self.vap_side_sf = Var(
+                initialize=0.01,
+                doc="split fraction for the vapor side draw")
             self.vap_side_draw = Port(noruleinit=True, doc="vapor side draw.")
             self._make_phase_split(
+                port=self.vap_side_draw,
                 phase="Vap",
                 has_vapor_side_draw=self.config.has_vapor_side_draw,
                 side_sf=self.vap_side_sf)
-        if self.config.is_top_tray and self.config.is_bottom_tray:
-            raise ConfigurationError(
-                "A tray cannot be both top and bottom "
-                "tray. Please check the config arguments.")
-        elif self.config.is_top_tray:
-            self.vap_out = Port(noruleinit=True, doc="vapor from top tray.")
-            if hasattr(self, "vap_side_sf"):
-                side_sf = 1 - self.vap_side_sf
-            else:
-                side_sf = 1
+            # Populate the vapor outlet port with the remaining vapor
+            # after the vapor side draw
             self._make_phase_split(
+                port=self.vap_out,
                 phase="Vap",
-                is_top_tray=True,
-                side_sf=side_sf)
-        elif self.config.is_bottom_tray:
-            self.liq_out = Port(noruleinit=True, doc="liquid from bottom tray")
-            if hasattr(self, "liq_side_sf"):
-                side_sf = 1 - self.liq_side_sf
-            else:
-                side_sf = 1
+                side_sf=1-self.vap_side_sf)
+        else:
+            # Populate the vapor outlet port when no vapor side draw
             self._make_phase_split(
-                phase="Liq",
-                is_bottom_tray=True,
-                side_sf=side_sf)
+                port=self.vap_out,
+                phase="Vap",
+                side_sf=1)
 
-    def _make_phase_split(self, phase=None,
+        # if self.config.is_top_tray and self.config.is_bottom_tray:
+        #     raise ConfigurationError(
+        #         "A tray cannot be both top and bottom "
+        #         "tray. Please check the config arguments.")
+        # elif self.config.is_top_tray:
+        #     self.vap_out = Port(noruleinit=True, doc="vapor from top tray.")
+        #     if hasattr(self, "vap_side_sf"):
+        #         side_sf = 1 - self.vap_side_sf
+        #     else:
+        #         side_sf = 1
+        #     self._make_phase_split(
+        #         phase="Vap",
+        #         is_top_tray=True,
+        #         side_sf=side_sf)
+        # elif self.config.is_bottom_tray:
+        #     self.liq_out = Port(noruleinit=True, doc="liquid from bottom tray")
+        #     if hasattr(self, "liq_side_sf"):
+        #         side_sf = 1 - self.liq_side_sf
+        #     else:
+        #         side_sf = 1
+        #     self._make_phase_split(
+        #         phase="Liq",
+        #         is_bottom_tray=True,
+        #         side_sf=side_sf)
+
+    def _make_phase_split(self, port=None, phase=None,
                           has_liquid_side_draw=False,
                           has_vapor_side_draw=False,
-                          is_top_tray=False,
-                          is_bottom_tray=False,
                           side_sf=None):
 
         member_list = self.properties_out[0].define_port_members()
@@ -282,14 +365,7 @@ see property package for documentation.}"""))
                         component(member_list[k].local_name)[...]
 
                 # add the reference and variable name to the port
-                if phase == "Liq" and has_liquid_side_draw:
-                    self.liq_side_draw.add(Reference(var), k)
-                elif phase == "Liq" and is_bottom_tray:
-                    self.liq_out.add(Reference(var), k)
-                elif phase == "Vap" and has_vapor_side_draw:
-                    self.vap_side_draw.add(Reference(var), k)
-                elif phase == "Vap" and is_top_tray:
-                    self.vap_out.add(Reference(var), k)
+                port.add(Reference(var), k)
 
             elif "frac" in k and ("mole" in k or "mass" in k):
 
@@ -313,27 +389,14 @@ see property package for documentation.}"""))
                         return self.properties_out[t].\
                             component(local_name)[phase, i]
 
-                    # add the reference and variable name to the liq_side_draw port
-                    if phase == "Liq" and has_liquid_side_draw:
-                        self.e_mole_frac_liq = Expression(
-                            self.flowsheet().time, index_set,
-                            rule=rule_mole_frac)
-                        self.liq_side_draw.add(self.e_mole_frac_liq, k)
-                    elif phase == "Liq" and is_bottom_tray:
-                        self.e_mole_frac_liq_out = Expression(
-                            self.flowsheet().time, index_set,
-                            rule=rule_mole_frac)
-                        self.liq_out.add(self.e_mole_frac_liq_out, k)
-                    elif phase == "Vap" and has_vapor_side_draw:
-                        self.e_mole_frac_vap = Expression(
-                            self.flowsheet().time, index_set,
-                            rule=rule_mole_frac)
-                        self.vap_side_draw.add(self.e_mole_frac_vap, k)
-                    elif phase == "Vap" and is_top_tray:
-                        self.e_mole_frac_vap_out = Expression(
-                            self.flowsheet().time, index_set,
-                            rule=rule_mole_frac)
-                        self.vap_out.add(self.e_mole_frac_vap_out, k)
+                    # add the reference and variable name to the liq_side_draw
+                    # port
+                    expr = Expression(self.flowsheet().time,
+                                      index_set,
+                                      rule=rule_mole_frac)
+                    self.add_component("e_mole_frac_" + port.local_name,
+                                       expr)
+                    port.add(expr, k)
                 else:
 
                     # Assumes mole_frac_phase or mass_frac_phase exist as
@@ -344,14 +407,7 @@ see property package for documentation.}"""))
 
                     # add the reference and variable name to the
                     # liq_side_draw port
-                    if phase == "Liq" and has_liquid_side_draw:
-                        self.liq_side_draw.add(Reference(var), k)
-                    elif phase == "Liq" and is_bottom_tray:
-                        self.liq_out.add(Reference(var), k)
-                    elif phase == "Vap" and has_vapor_side_draw:
-                        self.vap_side_draw.add(Reference(var), k)
-                    elif phase == "Vap" and is_top_tray:
-                        self.vap_out.add(Reference(var), k)
+                    port.add(Reference(var), k)
             elif "flow" in k:
                 if "phase" not in k:
 
@@ -376,27 +432,11 @@ see property package for documentation.}"""))
 
                         # add the reference and variable name to the
                         # liq_side_draw port
-                        if phase == "Liq" and has_liquid_side_draw:
-                            self.e_flow_liq = Expression(
-                                self.flowsheet().time,
-                                rule=rule_flow)
-                            self.liq_side_draw.add(self.e_flow_liq, k)
-                        elif phase == "Liq" and is_bottom_tray:
-                            self.e_flow_liq_bottom = Expression(
-                                self.flowsheet().time,
-                                rule=rule_flow)
-                            self.liq_out.add(self.e_flow_liq_bottom, k)
-                        elif phase == "Vap" and has_vapor_side_draw:
-                            self.e_flow_vap = Expression(
-                                self.flowsheet().time,
-                                rule=rule_flow)
-                            self.vap_side_draw.add(self.e_flow_vap, k)
-                        elif phase == "Vap" and is_top_tray:
-                            self.e_flow_vap_top = Expression(
-                                self.flowsheet().time,
-                                rule=rule_flow)
-                            self.vap_out.add(self.e_flow_vap_top, k)
-
+                        expr = Expression(self.flowsheet().time,
+                                          rule=rule_flow)
+                        self.add_component("e_flow_" + port.local_name,
+                                           expr)
+                        port.add(expr, k)
                     else:
                         # when it is flow comp indexed by component list
                         str_split = \
@@ -413,26 +453,12 @@ see property package for documentation.}"""))
                             return self.properties_out[t].\
                                 component(local_name)[phase, i] * \
                                 (side_sf)
-                        if phase == "Liq" and has_liquid_side_draw:
-                            self.e_flow_liq = Expression(
-                                self.flowsheet().time, index_set,
-                                rule=rule_flow)
-                            self.liq_side_draw.add(self.e_flow_liq, k)
-                        elif phase == "Liq" and is_bottom_tray:
-                            self.e_flow_liq_bottom = Expression(
-                                self.flowsheet().time, index_set,
-                                rule=rule_flow)
-                            self.liq_out.add(self.e_flow_liq_bottom, k)
-                        elif phase == "Vap" and has_vapor_side_draw:
-                            self.e_flow_vap = Expression(
-                                self.flowsheet().time, index_set,
-                                rule=rule_flow)
-                            self.vap_side_draw.add(self.e_flow_vap, k)
-                        elif phase == "Vap" and is_top_tray:
-                            self.e_flow_vap_top = Expression(
-                                self.flowsheet().time, index_set,
-                                rule=rule_flow)
-                            self.vap_out.add(self.e_flow_vap_top, k)
+                        expr = Expression(self.flowsheet().time,
+                                          index_set,
+                                          rule=rule_flow)
+                        self.add_component("e_flow_" + port.local_name,
+                                           expr)
+                        port.add(expr, k)
             elif "enth" in k:
                 if "phase" not in k:
                     # assumes total mixture enthalpy (enth_mol or enth_mass)
@@ -453,27 +479,12 @@ see property package for documentation.}"""))
                         return self.properties_out[t].\
                             component(local_name)[phase]
 
+                    expr = Expression(self.flowsheet().time,
+                                      rule=rule_enth)
+                    self.add_component("e_enth_" + port.local_name,
+                                       expr)
+                    port.add(expr, k)
                     # add the reference and variable name to the reflux port
-                    if phase == "Liq" and has_liquid_side_draw:
-                        self.e_enth_liq = Expression(
-                            self.flowsheet().time,
-                            rule=rule_enth)
-                        self.liq_side_draw.add(self.e_enth_liq, k)
-                    elif phase == "Liq" and is_bottom_tray:
-                        self.e_enth_liq_bottom = Expression(
-                            self.flowsheet().time,
-                            rule=rule_enth)
-                        self.liq_out.add(self.e_enth_liq_bottom, k)
-                    elif phase == "Vap" and has_vapor_side_draw:
-                        self.e_enth_vap = Expression(
-                            self.flowsheet().time,
-                            rule=rule_enth)
-                        self.vap_side_draw.add(self.e_enth_vap, k)
-                    elif phase == "Vap" and is_top_tray:
-                        self.e_enth_vap_top = Expression(
-                            self.flowsheet().time,
-                            rule=rule_enth)
-                        self.vap_out.add(self.e_enth_vap_top, k)
                 elif "phase" in k:
                     # assumes enth_mol_phase or enth_mass_phase.
                     # This is an intensive property, you create a direct
@@ -489,14 +500,7 @@ see property package for documentation.}"""))
                             component(member_list[k].local_name)[...]
 
                     # add the reference and variable name to the reflux port
-                    if phase == "Liq" and has_liquid_side_draw:
-                        self.liq_side_draw.add(Reference(var), k)
-                    elif phase == "Liq" and is_bottom_tray:
-                        self.liq_out.add(Reference(var), k)
-                    elif phase == "Vap" and has_vapor_side_draw:
-                        self.vap_side_draw.add(Reference(var), k)
-                    elif phase == "Vap" and is_top_tray:
-                        self.vap_out.add(Reference(var), k)
+                    port.add(Reference(var), k)
                 else:
                     raise Exception(
                         "Unrecognized enthalpy state variable. "
