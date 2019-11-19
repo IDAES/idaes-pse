@@ -4,6 +4,7 @@ import logging.config
 _log = logging.getLogger(__name__)
 
 default_config = """
+#default_binary_url = "https://github.com/IDAES/idaes-pse/releases/download/testbin/"
 use_idaes_solvers = true
 [plugins]
   required = []
@@ -72,6 +73,14 @@ def new_idaes_config_block():
             description="Add the IDAES bin directory to the path.",
             doc="Add the IDAES bin directory to the path such that solvers provided "
             "by IDAES will be used in preference to previously installed solvers.",
+        ),
+    )
+
+    _config.declare(
+        "default_binary_url",
+        pyomo.common.config.ConfigValue(
+            default=None,
+            description="URL from which to download binaries by default",
         ),
     )
     return _config
