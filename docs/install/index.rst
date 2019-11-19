@@ -18,7 +18,7 @@ to operate.
 
 .. _Docker: https://www.docker.com/
 
-The OS specific istructions provide information about installing Miniconda. If
+The OS specific instructions provide information about installing Miniconda. If
 you already have a Python installation you prefer, you can skip to the generic
 install procedure.
 
