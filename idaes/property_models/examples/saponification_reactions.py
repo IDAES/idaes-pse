@@ -133,8 +133,7 @@ class _ReactionBlock(ReactionBlockBase):
             None
         '''
         if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
+            _log.info('{} Initialisation Complete.'.format(blk.name))
 
 
 @declare_process_block_class("ReactionBlock",

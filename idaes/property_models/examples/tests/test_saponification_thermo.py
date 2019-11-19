@@ -19,8 +19,6 @@ import pytest
 from pyomo.environ import (ConcreteModel,
                            Constraint,
                            Param,
-                           TerminationCondition,
-                           SolverStatus,
                            value,
                            Var)
 from idaes.core import (MaterialBalanceType,
@@ -203,8 +201,48 @@ class TestStateBlock(object):
                          "Temperature",
                          "Pressure"]
 
-    def test_model_check(self, model):
+    def test_model_check_none(self, model, caplog):
         assert model.props[1].model_check() is None
+        assert 'Temperature set below lower bound' not in caplog.text
+        assert 'Temperature set above upper bound' not in caplog.text
+        assert 'Pressure set below lower bound' not in caplog.text
+        assert 'Pressure set above upper bound' not in caplog.text
+
+    def test_model_check_low_T(self, model, caplog):
+        model.props[1].temperature.value = 200
+        assert model.props[1].model_check() is None
+        assert 'Temperature set below lower bound' in caplog.text
+        assert 'Temperature set above upper bound' not in caplog.text
+        assert 'Pressure set below lower bound' not in caplog.text
+        assert 'Pressure set above upper bound' not in caplog.text
+
+    def test_model_check_high_T(self, model, caplog):
+        model.props[1].temperature.value = 350
+        assert model.props[1].model_check() is None
+        assert 'Temperature set below lower bound' not in caplog.text
+        assert 'Temperature set above upper bound' in caplog.text
+        assert 'Pressure set below lower bound' not in caplog.text
+        assert 'Pressure set above upper bound' not in caplog.text
+        # Reset temeprature
+        model.props[1].temperature.value = 298.15
+
+    def test_model_check_low_P(self, model, caplog):
+        model.props[1].pressure.value = 1e2
+        assert model.props[1].model_check() is None
+        assert 'Temperature set below lower bound' not in caplog.text
+        assert 'Temperature set above upper bound' not in caplog.text
+        assert 'Pressure set below lower bound' in caplog.text
+        assert 'Pressure set above upper bound' not in caplog.text
+
+    def test_model_check_high_P(self, model, caplog):
+        model.props[1].pressure.value = 1e7
+        assert model.props[1].model_check() is None
+        assert 'Temperature set below lower bound' not in caplog.text
+        assert 'Temperature set above upper bound' not in caplog.text
+        assert 'Pressure set below lower bound' not in caplog.text
+        assert 'Pressure set above upper bound' in caplog.text
+        # Reset pressure
+        model.props[1].pressure.value = 101325
 
     def test_initialize(self, model):
         assert not model.props[1].flow_vol.fixed
@@ -213,7 +251,7 @@ class TestStateBlock(object):
         for i in model.props[1].conc_mol_comp:
             assert not model.props[1].conc_mol_comp[i].fixed
 
-        model.props.initialize(hold_state=False)
+        model.props.initialize(hold_state=False, outlvl=1)
 
         assert not model.props[1].flow_vol.fixed
         assert not model.props[1].temperature.fixed
@@ -236,7 +274,7 @@ class TestStateBlock(object):
         for i in model.props[1].conc_mol_comp:
             assert model.props[1].conc_mol_comp[i].fixed
 
-        model.props.release_state(flags)
+        model.props.release_state(flags, outlvl=1)
 
         assert not model.props[1].flow_vol.fixed
         assert not model.props[1].temperature.fixed

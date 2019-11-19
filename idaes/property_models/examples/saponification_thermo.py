@@ -200,8 +200,7 @@ class _StateBlock(StateBlock):
                 blk.release_state(flags)
 
         if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
+            _log.info('{} Initialisation Complete.'.format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''
