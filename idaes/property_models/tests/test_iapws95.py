@@ -46,7 +46,7 @@ def test_PhaseType():
     iapws95.PhaseType.G
 
 
-def test_STateVars():
+def test_StateVars():
     assert len(iapws95.StateVars) == 2
 
     # Check that expected values do not raise Exceptions
@@ -163,6 +163,7 @@ class TestMixPh(object):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
+
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 class TestLGPh(object):
