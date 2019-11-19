@@ -62,7 +62,7 @@ def _create_lib_dir():
         os.mkdir(lib_directory)
 
 # Could create directories here, but I'll make that happen when the user does
-# something that requires them.  For now the commandline utility commends will
+# something that requires them.  For now the command line utility commands will
 # cause the directories to be made.
 
 def _import_packages(packages, optional=True):
