@@ -170,6 +170,8 @@ class _StateBlock(StateBlock):
         '''
         # Deactivate the constraints specific for outlet block i.e.
         # when defined state is False
+        # This is needed as fixing state vars fixes conc_mol_comp["H2O"],
+        # which is also specified by the conc_water_eqn constraint
         for k in blk.keys():
             if blk[k].config.defined_state is False:
                 blk[k].conc_water_eqn.deactivate()
@@ -186,11 +188,7 @@ class _StateBlock(StateBlock):
                                     "for state block is not zero during "
                                     "initialization.")
 
-        opt = SolverFactory(solver)
-        opt.options = optarg
-
-        # Post initialization reactivate constraints specific for
-        # all blocks other than the inlet
+        # Reactivate conc_water_eqn
         for k in blk.keys():
             if not blk[k].config.defined_state:
                 blk[k].conc_water_eqn.activate()
