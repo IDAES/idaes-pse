@@ -24,36 +24,36 @@ from idaes.commands import cb
 @click.option("--exists", is_flag=True, help="Show if the directory exists")
 @click.option("--create", is_flag=True, help="Create the directory")
 def data_directory(exists, create):
-    click.echo("IDAES Data Directory")
     if create:
-        click.echo("Creating")
+        click.echo("Creating {}".format(idaes.data_directory))
         idaes._create_data_dir()
-    click.echo(idaes.data_directory)
-    if exists:
-        click.echo("Exists: {}".format(os.path.exists(idaes.data_directory)))
+    elif exists:
+        click.echo(os.path.exists(idaes.data_directory))
+    else:
+        click.echo(idaes.data_directory)
 
 @cb.command(help="Show the IDAES executable file directory path")
 # the underscore get turned into a '-' so the command is data-directory
 @click.option("--exists", is_flag=True, help="Show if the directory exists")
 @click.option("--create", is_flag=True, help="Create the directory")
 def bin_directory(exists, create):
-    click.echo("IDAES Bin Directory")
     if create:
-        click.echo("Creating")
+        click.echo("Creating {}".format(idaes.bin_directory))
         idaes._create_bin_dir()
-    click.echo(idaes.bin_directory)
-    if exists:
-        click.echo("Exists: {}".format(os.path.exists(idaes.bin_directory)))
+    elif exists:
+        click.echo(os.path.exists(idaes.bin_directory))
+    else:
+        click.echo(idaes.bin_directory)
 
 @cb.command(help="Show the IDAES library file directory path")
 # the underscore get turned into a '-' so the command is data-directory
 @click.option("--exists", is_flag=True, help="Show if the directory exists")
 @click.option("--create", is_flag=True, help="Create the directory")
 def lib_directory(exists, create):
-    click.echo("IDAES Lib Directory")
     if create:
-        click.echo("Creating")
+        click.echo("Creating {}".format(idaes.lib_directory))
         idaes._create_lib_dir()
-    click.echo(idaes.lib_directory)
-    if exists:
-        click.echo("Exists: {}".format(os.path.exists(idaes.lib_directory)))
+    elif exists:
+        click.echo(os.path.exists(idaes.lib_directory))
+    else:
+        click.echo(idaes.lib_directory)
