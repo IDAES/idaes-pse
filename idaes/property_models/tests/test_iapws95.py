@@ -169,6 +169,12 @@ class TestMixPh(object):
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    def test_define_port_members(self, model):
+        sv = model.prop[1].define_port_members()
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol", "enth_mol", "pressure"]
+
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -281,6 +287,12 @@ class TestLGPh(object):
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    def test_define_port_members(self, model):
+        sv = model.prop[1].define_port_members()
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol", "enth_mol", "pressure"]
+
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -322,6 +334,7 @@ class TestLGPh(object):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
+
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 class TestLPh(object):
@@ -392,6 +405,12 @@ class TestLPh(object):
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
 
+    def test_define_port_members(self, model):
+        sv = model.prop[1].define_port_members()
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol", "enth_mol", "pressure"]
+
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -433,6 +452,7 @@ class TestLPh(object):
         assert not model.prop[1].flow_mol.fixed
         assert not model.prop[1].enth_mol.fixed
         assert not model.prop[1].pressure.fixed
+
 
 @pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 class TestGPh(object):
@@ -499,6 +519,12 @@ class TestGPh(object):
 
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol", "enth_mol", "pressure"]
+
+    def test_define_port_members(self, model):
+        sv = model.prop[1].define_port_members()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "enth_mol", "pressure"]
@@ -609,6 +635,12 @@ class TestMixTpx(object):
 
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
+        assert len(sv) == 4
+        for i in sv:
+            assert i in ["flow_mol", "temperature", "pressure", "vapor_frac"]
+
+    def test_define_port_members(self, model):
+        sv = model.prop[1].define_port_members()
         assert len(sv) == 4
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure", "vapor_frac"]
@@ -732,6 +764,12 @@ class TestLgTpx(object):
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure", "vapor_frac"]
 
+    def test_define_port_members(self, model):
+        sv = model.prop[1].define_port_members()
+        assert len(sv) == 4
+        for i in sv:
+            assert i in ["flow_mol", "temperature", "pressure", "vapor_frac"]
+
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -851,6 +889,12 @@ class TestLTpx(object):
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure"]
 
+    def test_define_port_members(self, model):
+        sv = model.prop[1].define_port_members()
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol", "temperature", "pressure"]
+
     def test_define_display_vars(self, model):
         dv = model.prop[1].define_display_vars()
         assert len(dv) == 6
@@ -966,6 +1010,12 @@ class TestGTpx(object):
 
     def test_define_state_vars(self, model):
         sv = model.prop[1].define_state_vars()
+        assert len(sv) == 3
+        for i in sv:
+            assert i in ["flow_mol", "temperature", "pressure"]
+
+    def test_define_port_members(self, model):
+        sv = model.prop[1].define_port_members()
         assert len(sv) == 3
         for i in sv:
             assert i in ["flow_mol", "temperature", "pressure"]
