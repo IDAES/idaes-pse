@@ -102,10 +102,10 @@ def htpx(T, P=None, x=None):
     User must provided values for one (and only one) of arguments P and x.
 
     Args:
-        T: Temperature [K]
-        P: Pressure [Pa], None if saturated steam
-        x: Vapor fraction [mol vapor/mol total], None if superheated or
-        subcooled
+        T: Temperature [K] (between 200 and 3000)
+        P: Pressure [Pa] (between 1 and 1e9), None if saturated steam
+        x: Vapor fraction [mol vapor/mol total] (between 0 and 1), None if
+        superheated or subcooled
 
     Returns:
         Total molar enthalpy [J/mol].

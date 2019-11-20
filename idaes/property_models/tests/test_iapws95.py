@@ -52,6 +52,7 @@ def test_htpx_invalid_args():
         iapws95.htpx(300, x=2)
 
 
+@pytest.mark.skipif(not prop_available, reason="IAPWS not available")
 def test_htpx():
     # Compariosn of IAPWS95 results to data from Spirax-Sarco steam tables
     # https://www.spiraxsarco.com/resources-and-design-tools/steam-tables
