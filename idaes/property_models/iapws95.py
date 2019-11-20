@@ -114,6 +114,12 @@ def htpx(T, P=None, x=None):
         raise ConfigurationError(
                 "htpx must be provided with one (and only one) of "
                 "arguments P and x.")
+    if not 200 <= T <= 3e3:
+        raise ConfigurationError("T out of range. Must be between 2e2 and 3e3")
+    if P is not None and not 1 <= P <= 1e9:
+        raise ConfigurationError("P out of range. Must be between 1 and 1e9")
+    if x is not None and not 0 <= x <= 1:
+        raise ConfigurationError("x must be between 0 and 1")
 
     model = ConcreteModel()
     model.prop_param = Iapws95ParameterBlock()
@@ -127,9 +133,9 @@ def htpx(T, P=None, x=None):
         else:  # vapor
             return value(prop.func_hvpt(P/1000, 647.096/T)*prop.mw*1000.0)
     if P is None:
-        Psat = value(prop.func_p_sat(647.096/T))
-        return value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*(x-1) +\
-            value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*x
+        Psat = value(prop.func_p_sat(647.096/T))  # kPa
+        return value(prop.func_hlpt(Psat, 647.096/T)*prop.mw*1000.0)*(1-x) +\
+            value(prop.func_hvpt(Psat, 647.096/T)*prop.mw*1000.0)*x
 
 
 @declare_process_block_class("Iapws95ParameterBlock")

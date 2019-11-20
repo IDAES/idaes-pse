@@ -20,6 +20,7 @@ import csv
 import os
 
 from idaes.core import MaterialBalanceType, EnergyBalanceType
+from idaes.core.util.exceptions import ConfigurationError
 
 # Set module level pyest marker
 pytestmark = pytest.mark.iapws
@@ -28,12 +29,57 @@ prop_available = iapws95.iapws95_available()
 
 # -----------------------------------------------------------------------------
 # Test Enums and common functions
-#def test_htpx():
-#    assert iapws95.htpx(300, P=101325) == 48201.37307016228  # 112143
-#    assert iapws95.htpx(400, P=101325) == 48201.37307016228  # 2.72979E06
-#
-#    assert iapws95.htpx(373.15, x=1e-10) == -7551.395791038054  # 418655
-#    assert iapws95.htpx(373.15, x=1-1e-10) == 48201.37307016228  # 441219
+def test_htpx_invalid_args():
+    with pytest.raises(ConfigurationError):
+        iapws95.htpx(300, P=101325, x=0.5)
+
+    with pytest.raises(ConfigurationError):
+        iapws95.htpx(100, x=0.5)
+
+    with pytest.raises(ConfigurationError):
+        iapws95.htpx(5e3, x=0.5)
+
+    with pytest.raises(ConfigurationError):
+        iapws95.htpx(300, P=0)
+
+    with pytest.raises(ConfigurationError):
+        iapws95.htpx(300, P=1e10)
+
+    with pytest.raises(ConfigurationError):
+        iapws95.htpx(300, x=-1)
+
+    with pytest.raises(ConfigurationError):
+        iapws95.htpx(300, x=2)
+
+
+def test_htpx():
+    # Compariosn of IAPWS95 results to data from Spirax-Sarco steam tables
+    # https://www.spiraxsarco.com/resources-and-design-tools/steam-tables
+    # Retrieved 20 Nov 2019
+
+    # MW for unit conversions
+    mw = 0.01801528
+
+    # There appears to be a small difference between the reference states
+    # for IAPWS package and the reference source.
+    offset = 9.22
+
+    # Subcooled liquid
+    assert iapws95.htpx(300, P=101325) == pytest.approx(112143*mw+offset, 1e-5)
+
+    # Saturated liquid
+    assert iapws95.htpx(500, x=0) == pytest.approx(974919*mw+offset, 1e-5)
+
+    # Wet steam
+    assert iapws95.htpx(550, x=0.5) == pytest.approx(
+            2.00138E06*mw+offset, 1e-5)
+
+    # Saturated vapor
+    assert iapws95.htpx(600, x=1) == pytest.approx(2.67730E06*mw+offset, 1e-5)
+
+    # Superheated steam
+    assert iapws95.htpx(400, P=101325) == pytest.approx(
+            2.72979E06*mw+offset, 1e-5)
 
 
 def test_PhaseType():
