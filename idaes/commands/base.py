@@ -23,8 +23,13 @@ _log = logging.getLogger(__name__)
 @click.group()
 @click.version_option(version=None)
 def command_base():
-    print(
-        """
+    pass
+
+
+@command_base.command(help="Show IDAES copyright information")
+def copyright():
+    click.echo(
+            """
 ================================================================================
  Institute for the Design of Advanced Energy Systems Process Systems
  Engineering Framework (IDAES PSE Framework) Copyright (c) 2018-2019, by the
