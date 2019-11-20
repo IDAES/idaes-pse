@@ -127,7 +127,6 @@ within this flowsheet if not otherwise specified,
         """
         return True
 
-    # TODO [Qi]: this should be implemented as a transformation
     def model_check(self):
         """
         This method runs model checks on all unit models in a flowsheet.
@@ -147,9 +146,8 @@ within this flowsheet if not otherwise specified,
                 try:
                     o.model_check()
                 except AttributeError:
-                    _log.warning('{} Model/block has no model check. To '
-                                 'correct this, add a model_check method to '
-                                 'the associated unit model class'
+                    # This should never happen, but just in case
+                    _log.warning('{} Model/block has no model_check method.'
                                  .format(o.name))
 
     def stream_table(self, true_state=False, time_point=0, orient='columns'):
@@ -204,7 +202,6 @@ within this flowsheet if not otherwise specified,
         self.costing = pe.Block()
 
         module.global_costing_parameters(self.costing, year)
-
 
     def _get_stream_table_contents(self, time_point=0):
         """
