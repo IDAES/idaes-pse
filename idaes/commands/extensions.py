@@ -14,33 +14,20 @@
 
 __author__ = "John Eslick"
 
-import zipfile
-import os
-import idaes
 import click
-from shutil import copyfile
+import idaes.solvers
 from idaes.commands import cb
 
-@cb.command(help="Get Addtional Solvers and Libraries for IDAES")
-@click.option("--url", help="URL to download extentions", default=None)
-@click.option("--local", help="Local extentions file", default=None)
-def get_extensions(url, local):
-    idaes._create_bin_dir()
-    zip_file = os.path.join(idaes.bin_directory, "idaes-bin.zip")
-    # Here we'll setup the default urls eventally but for now local file
-    if local is None:
-        # this is temporary I know it has holes (mac...)
-        if os.name == 'nt':
-            local = "idaes-bin-win.zip"
-        else:
-            local = "idaes-bin-linux.zip"
-
+@cb.command(help="Get IDAES Versions of Solvers")
+@click.option(
+    "--url",
+    help="URL to download solver",
+    default=idaes._config.default_binary_url)
+@click.option("--verbose", help="Show details", is_flag=True)
+def get_extensions(url, verbose):
     if url is not None:
-        print("Getting extensions from: {}".format(url))
-        r = requests.get(url)
+        click.echo("Getting files...")
+        idaes.solvers.download_binaries(url, verbose)
+        click.echo("Done")
     else:
-        print("Getting extensions from: {}".format(local))
-        copyfile(local, zip_file)
-    # unzip
-    with zipfile.ZipFile(zip_file, 'r') as f:
-        f.extractall(idaes.bin_directory)
+        click.echo("\n* You must provide a download URL for IDAES binary files.")
