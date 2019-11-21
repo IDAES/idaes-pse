@@ -1,5 +1,6 @@
 import pyomo.common.config
 import logging.config
+import toml
 
 _log = logging.getLogger(__name__)
 
@@ -21,6 +22,15 @@ use_idaes_solvers = true
     stream = "ext://sys.stdout"
   [logging.loggers.idaes]
     level = "INFO"
+    propagate = false
+    handlers = ["console"]
+  [logging.loggers."idaes.init"]
+    level = 5
+    propagate = false
+    handlers = ["console"]
+  [logging.loggers."idaes.model"]
+    level = "INFO"
+    propagate = false
     handlers = ["console"]
 """
 
@@ -85,6 +95,7 @@ def new_idaes_config_block():
     )
     return _config
 
+
 def read_config(read_config, write_config):
     """Read either a TOML formatted config file or a configuration dictionary.
     Args:
@@ -109,3 +120,18 @@ def read_config(read_config, write_config):
     logging.config.dictConfig(write_config["logging"])
     if config_file is not None:
         _log.debug("Read config {}".format(config_file))
+
+
+def create_dir(d):
+    """Create a directory if it doesn't exist.
+
+    Args:
+        d(str): directory path to create
+
+    Retruns:
+        None
+    """
+    if os.path.exists(d):
+        return
+    else:
+        os.mkdir(d)

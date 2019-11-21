@@ -3,7 +3,6 @@ import logging
 import tarfile
 import idaes
 from shutil import copyfile
-import urllib.request as ur
 from pyomo.common.download import FileDownloader
 
 _log = logging.getLogger(__name__)

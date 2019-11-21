@@ -5,10 +5,10 @@ Set up logging for the idaes module, and import plugins.
 """
 import os
 import logging.config
-import importlib
-import toml
 import pyomo.common.plugin
 import idaes.config
+import idaes.plugins
+import toml
 
 from .ver import __version__  # noqa
 
@@ -40,49 +40,17 @@ else:
 
 def _create_data_dir():
     """Create the IDAES directory to store data files in."""
-    if os.path.exists(data_directory):
-        return
-    else:
-        os.mkdir(data_directory)
+    config.create_dir(data_directory)
 
 def _create_bin_dir():
     """Create the IDAES directory to store executable files in."""
     _create_data_dir()
-    if os.path.exists(bin_directory):
-        return
-    else:
-        os.mkdir(bin_directory)
+    config.create_dir(bin_directory)
 
 def _create_lib_dir():
     """Create the IDAES directory to store library files in."""
     _create_data_dir()
-    if os.path.exists(lib_directory):
-        return
-    else:
-        os.mkdir(lib_directory)
-
-# Could create directories here, but I'll make that happen when the user does
-# something that requires them.  For now the command line utility commands will
-# cause the directories to be made.
-
-def _import_packages(packages, optional=True):
-    """Import plugin package, condensed from pyomo.environ.__init__.py
-    Args:
-        packages: list of pacakges in which to look for plugins
-        optional: true, log ImportError but continue; false, raise if ImportError
-    Returns:
-        None
-    """
-    for name in packages:
-        pname = name + '.plugins'  # look in plugins sub-package
-        try:
-            pkg = importlib.import_module(pname)
-        except ImportError as e:
-            _log.exception("failed to import plugin: {}".format(pname))
-            if not optional:
-                raise e
-        if hasattr(pkg, 'load'):  # run load function for a module if it exists
-            pkg.load()
+    config.create_dir(lib_directory)
 
 # Set default configuration.  Used TOML string to serve as an example for
 # and definitive guide for IDAES configuration files.
@@ -115,8 +83,8 @@ if _config.use_idaes_solvers:
 # This make "idaes" the current plugin environment while importing plugins here
 pyomo.common.plugin.push("idaes")  # Add idaes plugin environment at top of stack
 # Import plugins standard IDAES plugins, non-optional plugins
-_import_packages(_config["plugins"]["required"], optional=False)
+plugins.import_packages(_config["plugins"]["required"], optional=False)
 # Import contrib plugins, failure to import these is non-fatal.
-_import_packages(_config["plugins"]["optional"], optional=True)
+plugins.import_packages(_config["plugins"]["optional"], optional=True)
 # go back to the previous plugin environment (what it was before pushing "idaes")
 pyomo.common.plugin.pop()
