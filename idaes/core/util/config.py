@@ -28,6 +28,7 @@ import logging
 
 _log = logging.getLogger(__name__)
 
+
 def is_physical_parameter_block(val):
     '''Domain validator for property package attributes
 
@@ -160,7 +161,7 @@ def is_time_domain(arg):
                                  'of a Pyomo Set or ContinuousSet object')
     return arg
 
-  
+
 def is_transformation_method(arg):
     '''Domain validator for transformation methods
 
