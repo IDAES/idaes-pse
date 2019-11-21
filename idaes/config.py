@@ -22,7 +22,7 @@ use_idaes_solvers = true
     stream = "ext://sys.stdout"
   [logging.loggers.idaes]
     level = "INFO"
-    propagate = false
+    propagate = true
     handlers = ["console"]
   [logging.loggers."idaes.init"]
     level = 5
