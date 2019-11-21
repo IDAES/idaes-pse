@@ -35,7 +35,7 @@ def solver_tee(logger, tee_level=2):
     """
     return logger. getEffectiveLevel() <= tee_level
 
-def getInitLogger(name, level):
+def getInitLogger(name, level=None):
     """ Get a model initilization logger
 
     Args:
@@ -54,11 +54,7 @@ def getInitLogger(name, level):
     """
     name = ".".join(["idaes.init", name])
     l = logging.getLogger(name)
-    if level is None:
-        # because this logger could have been used before
-        # just take default from global setting.
-        l.setLevel(logging.getLogger("idaes.init").level)
-    else:
+    if level is not None:
         l.setLevel(level)
     return l
 
