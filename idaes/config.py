@@ -1,11 +1,12 @@
 import pyomo.common.config
 import logging.config
 import toml
+import os
 
 _log = logging.getLogger(__name__)
 
 default_config = """
-#default_binary_url = "https://github.com/IDAES/idaes-pse/releases/download/testbin/"
+default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.0/"
 use_idaes_solvers = true
 [plugins]
   required = []
