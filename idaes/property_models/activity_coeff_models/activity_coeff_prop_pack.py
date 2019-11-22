@@ -164,6 +164,8 @@ conditions, and thus corresponding constraints  should be included,
                                      "units": "J/mol"},
              "entr_mol_phase": {"method": "_entr_mol_phase",
                                 "units": "J/mol"},
+             "gibbs_mol_phase_comp": {"method": "_gibbs_mol_phase_comp",
+                                      "units": "J/mol"},
              "temperature_bubble": {"method": "_temperature_bubble",
                                     "units": "K"},
              "temperature_dew": {"method": "_temperature_dew",
@@ -174,7 +176,7 @@ conditions, and thus corresponding constraints  should be included,
                               "units": "Pa"},
              "fug_vap": {"method": "_fug_vap", "units": "Pa"},
              "fug_liq": {"method": "_fug_liq", "units": "Pa"},
-             'ds_vap': {'method': '_ds_vap', 'units': 'J/mol.K'}})
+             'ds_form': {'method': '_ds_form', 'units': 'J/mol.K'}})
 
         obj.add_default_units({"time": "s",
                                "length": "m",
@@ -974,6 +976,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         # Liquid phase comp enthalpy (J/mol)
         # 1E3 conversion factor to convert from J/kmol to J/mol
         return self.enth_mol_phase_comp["Liq", j] * 1E3 == \
+            1e3*self._params.dh_form["Liq", j] + \
             ((self._params.CpIG["Liq", j, "E"] / 5) *
                 (self.temperature**5 -
                  self._params.temperature_reference**5)
@@ -992,7 +995,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def _enth_mol_comp_vap(self, j):
 
         # Vapor phase component enthalpy (J/mol)
-        return self.enth_mol_phase_comp["Vap", j] == self._params.dh_vap[j] + \
+        return self.enth_mol_phase_comp["Vap", j] == \
+            self._params.dh_form["Vap", j] + \
             ((self._params.CpIG["Vap", j, "E"] / 5) *
                 (self.temperature**5 -
                  self._params.temperature_reference**5)
@@ -1041,7 +1045,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def _entr_mol_comp_liq(self, j):
         # Liquid phase comp entropy (J/mol.K)
         # 1E3 conversion factor to convert from J/kmol.K to J/mol.K
-        return self.entr_mol_phase_comp['Liq', j] * 1E3 == (
+        return self.entr_mol_phase_comp['Liq', j] * 1E3 == \
+            1E3*self._params.ds_form["Liq", j] + (
             ((self._params.CpIG['Liq', j, 'E'] / 4) *
                 (self.temperature**4 - self._params.temperature_reference**4)
                 + (self._params.CpIG['Liq', j, 'D'] / 3) *
@@ -1053,23 +1058,10 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 + self._params.CpIG['Liq', j, 'A'] *
              log(self.temperature / self._params.temperature_reference)))
 
-    def _ds_vap(self):
-        # entropy of vaporization = dh_Vap/T_boil
-        # TODO : something more rigorous would be nice
-        self.ds_vap = Var(self._params.component_list,
-                          initialize=86,
-                          doc="Entropy of vaporization [J/mol.K]")
-
-        def rule_ds_vap(b, j):
-            return b._params.dh_vap[j] == (b.ds_vap[j] *
-                                           b._params.temperature_boil[j])
-        self.eq_ds_vap = Constraint(self._params.component_list,
-                                    rule=rule_ds_vap)
-
     def _entr_mol_comp_vap(self, j):
         # component molar entropy of vapor phase
         return self.entr_mol_phase_comp["Vap", j] == (
-            self.ds_vap[j] +
+            self._params.ds_form["Vap", j] +
             ((self._params.CpIG['Vap', j, 'E'] / 4) *
              (self.temperature**4 - self._params.temperature_reference**4)
              + (self._params.CpIG['Vap', j, 'D'] / 3) *
@@ -1080,9 +1072,24 @@ class ActivityCoeffStateBlockData(StateBlockData):
                (self.temperature - self._params.temperature_reference)
                 + self._params.CpIG['Vap', j, 'A'] *
                 log(self.temperature / self._params.temperature_reference)) -
-            self._params.gas_const * log(self.mole_frac_phase['Vap', j] *
+            self._params.gas_const * log(self.mole_frac_phase_comp['Vap', j] *
                                          self.pressure /
                                          self._params.pressure_reference))
+
+    def _gibbs_mol_phase_comp(self):
+        self.gibbs_mol_phase_comp = Var(
+            self._params.phase_list,
+            self._params.component_list,
+            doc="Phase-component molar specific Gibbs energies [J/mol]")
+
+        def rule_gibbs_mol_phase_comp(self, p, j):
+            return self.gibbs_mol_phase_comp[p, j] == \
+                    self.enth_mol_phase_comp[p, j] - \
+                    self.temperature*self.entr_mol_phase_comp[p, j]
+        self.eq_gibbs_mol_phase_comp = Constraint(
+            self._params.phase_list,
+            self._params.component_list,
+            rule=rule_gibbs_mol_phase_comp)
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
