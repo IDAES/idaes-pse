@@ -533,9 +533,11 @@ linked the mixed state and all outlet states,
                     sblock = mixed_block[t]
                     for r in b.config.property_package.phase_equilibrium_idx:
                         if sblock._params.phase_equilibrium_list[r][0] == j:
-                            if sblock._params.phase_equilibrium_list[r][1][0] == p:
+                            if sblock._params \
+                                    .phase_equilibrium_list[r][1][0] == p:
                                 sd[r] = 1
-                            elif sblock._params.phase_equilibrium_list[r][1][1] == p:
+                            elif sblock._params \
+                                    .phase_equilibrium_list[r][1][1] == p:
                                 sd[r] = -1
                             else:
                                 sd[r] = 0
@@ -763,27 +765,29 @@ linked the mixed state and all outlet states,
                 elif (l_name.startswith("mole_frac") or
                       l_name.startswith("mass_frac")):
                     # Mole and mass frac need special handling
-                    if l_name.endswith("_phase"):
+                    if "_phase" in l_name:
                         def e_rule(b, t, p, j):
                             if self.config.split_basis == \
                                         SplittingType.phaseFlow:
-                                s_check = split_map[p]
+                                return s_vars[s][p, j]
                             elif self.config.split_basis == \
                                     SplittingType.componentFlow:
-                                s_check = split_map[j]
+                                if split_map[j] == o:
+                                    return 1
+                                else:
+                                    return self.eps
                             elif self.config.split_basis == \
                                     SplittingType.phaseComponentFlow:
-                                s_check = split_map[p, j]
+                                for ps in self.config.property_package \
+                                        .phase_list:
+                                    if split_map[ps, j] == o:
+                                        return 1
+                                return self.eps
                             else:
                                 raise BurntToast(
                                         "{} This should not happen. Please "
                                         "report this bug to the IDAES "
                                         "developers.".format(self.name))
-
-                            if s_check == o:
-                                return 1
-                            else:
-                                return self.eps
 
                         e_obj = Expression(
                                 self.flowsheet().config.time,
@@ -801,17 +805,19 @@ linked the mixed state and all outlet states,
                                 return self.eps
 
                         elif self.config.split_basis == \
-                                    SplittingType.phaseComponentFlow:
+                                SplittingType.phaseComponentFlow:
                             def e_rule(b, t, j):
                                 if any(split_map[p, j] == o for p in
-                                       self.config.property_package.phase_list):
+                                       self.config.property_package
+                                       .phase_list):
                                     return 1
                                 # else:
                                 return self.eps
 
                         else:
                             def e_rule(b, t, j):
-                                mfp = mb[t].component(l_name+"_phase")
+                                mfp = mb[t].component(
+                                        l_name.replace("_comp", "_phase_comp"))
 
                                 if mfp is None:
                                     raise AttributeError(
@@ -823,7 +829,8 @@ linked the mixed state and all outlet states,
                                         "indexing sets is not available."
                                         .format(self.name, s))
 
-                                for p in self.config.property_package.phase_list:
+                                for p in self.config.property_package \
+                                        .phase_list:
                                     if self.config.split_basis == \
                                             SplittingType.phaseFlow:
                                         s_check = split_map[p]
@@ -894,7 +901,8 @@ linked the mixed state and all outlet states,
                                     "not available."
                                     .format(self.name, s))
 
-                            for j in self.config.property_package.component_list:
+                            for j in self.config.property_package \
+                                    .component_list:
                                 if self.config.split_basis == \
                                         SplittingType.componentFlow:
                                     s_check = split_map[j]
@@ -971,19 +979,24 @@ linked the mixed state and all outlet states,
                                     SplittingType.phaseFlow:
                                 ivar = mb[t].component(l_name+"_phase")
                                 if ivar is not None:
-                                    for p in self.config.property_package.phase_list:
+                                    for p in self.config \
+                                            .property_package.phase_list:
                                         if split_map[p] == o:
                                             return ivar[p]
                                         else:
                                             continue
                                 else:
-                                    ivar = mb[t].component(l_name+"_phase_comp")
+                                    ivar = mb[t].component(
+                                            l_name+"_phase_comp")
                                     if ivar is not None:
-                                        for p in self.config.property_package.phase_list:
+                                        for p in self.config \
+                                                .property_package.phase_list:
                                             if split_map[p] == o:
                                                 return sum(
                                                     ivar[p, j] for j in
-                                                    self.config.property_package.component_list)
+                                                    self.config
+                                                    .property_package
+                                                    .component_list)
                                             else:
                                                 continue
                                     else:
@@ -993,19 +1006,24 @@ linked the mixed state and all outlet states,
                                     SplittingType.componentFlow:
                                 ivar = mb[t].component(l_name+"_comp")
                                 if ivar is not None:
-                                    for j in self.config.property_package.component_list:
+                                    for j in self.config.property_package \
+                                            .component_list:
                                         if split_map[j] == o:
                                             return ivar[j]
                                         else:
                                             continue
                                 else:
-                                    ivar = mb[t].component(l_name+"_phase_comp")
+                                    ivar = mb[t].component(l_name +
+                                                           "_phase_comp")
                                     if ivar is not None:
-                                        for j in self.config.property_package.component_list:
+                                        for j in self.config.property_package \
+                                                .component_list:
                                             if split_map[j] == o:
                                                 return sum(
                                                     ivar[p, j] for p in
-                                                    self.config.property_package.phase_list)
+                                                    self.config
+                                                    .property_package
+                                                    .phase_list)
                                             else:
                                                 continue
                                     else:
@@ -1014,8 +1032,10 @@ linked the mixed state and all outlet states,
                                     SplittingType.phaseComponentFlow:
                                 ivar = mb[t].component(l_name+"_phase_comp")
                                 if ivar is not None:
-                                    for p in self.config.property_package.phase_list:
-                                        for j in self.config.property_package.component_list:
+                                    for p in self.config.property_package \
+                                            .phase_list:
+                                        for j in self.config.property_package \
+                                                .component_list:
                                             if split_map[p, j] == o:
                                                 return ivar[p, j]
                                             else:
@@ -1141,48 +1161,61 @@ linked the mixed state and all outlet states,
             # Get corresponding outlet StateBlock
             o_block = getattr(blk, o+"_state")
 
+            # Create dict to store fixed status of state variables
+            o_flags = {}
             for t in blk.flowsheet().config.time:
 
                 # Calculate values for state variables
                 s_vars = o_block[t].define_state_vars()
-
                 for v in s_vars:
-                    m_var = getattr(mblock[t], s_vars[v].local_name)
+                    for k in s_vars[v]:
+                        # Record whether variable was fixed or not
+                        o_flags[t, v, k] = s_vars[v][k].fixed
 
-                    if "flow" in v:
-                        # If a "flow" variable, is extensive
-                        # Apply split fraction
-                        try:
-                            for k in s_vars[v]:
-                                if (k is None or blk.config.split_basis ==
-                                        SplittingType.totalFlow):
-                                    s_vars[v][k].value = value(
-                                        m_var[k]*blk.split_fraction[(t, o)])
-                                else:
-                                    s_vars[v][k].value = value(
-                                            m_var[k]*blk.split_fraction[
-                                                    (t, o) + k])
-                        except KeyError:
-                            raise KeyError(
-                                    "{} state variable and split fraction "
-                                    "indexing sets do not match. The in-built"
-                                    " initialization routine for Separators "
-                                    "relies on the split fraction and state "
-                                    "variable indexing sets matching to "
-                                    "calculate initial guesses for extensive "
-                                    "variables. In other cases users will "
-                                    "need to provide their own initial "
-                                    "guesses".format(blk.name))
-                    else:
-                        # Otherwise intensive, equate to mixed stream
-                        for k in s_vars[v]:
-                            s_vars[v][k].value = m_var[k].value
+                        # If fixed, use current value
+                        # otherwise calculate guess from mixed state and fix
+                        if not s_vars[v][k].fixed:
+                            m_var = getattr(mblock[t], s_vars[v].local_name)
+                            if "flow" in v:
+                                # If a "flow" variable, is extensive
+                                # Apply split fraction
+                                try:
+                                    if (k is None or blk.config.split_basis ==
+                                            SplittingType.totalFlow):
+                                        s_vars[v][k].fix(value(
+                                            m_var[k] *
+                                            blk.split_fraction[(t, o)]))
+                                    else:
+                                        s_vars[v][k].fix(value(
+                                                m_var[k]*blk.split_fraction[
+                                                        (t, o) + k]))
+                                except KeyError:
+                                    raise KeyError(
+                                        "{} state variable and split fraction "
+                                        "indexing sets do not match. The "
+                                        "in-built  initialization routine for "
+                                        "Separators relies on the split "
+                                        "fraction and state variable indexing "
+                                        "sets matching to calculate initial "
+                                        "guesses for extensive variables. In "
+                                        "other cases users will need to "
+                                        "provide their own initial guesses"
+                                        .format(blk.name))
+                            else:
+                                # Otherwise intensive, equate to mixed stream
+                                s_vars[v][k].fix(m_var[k].value)
 
-                # Call initialization routine for outlet StateBlock
-                o_block.initialize(outlvl=outlvl-1,
-                                   optarg=optarg,
-                                   solver=solver,
-                                   hold_state=False)
+            # Call initialization routine for outlet StateBlock
+            o_block.initialize(outlvl=outlvl-1,
+                               optarg=optarg,
+                               solver=solver,
+                               hold_state=False)
+
+            # Revert fixed status of variables to what they were before
+            for t in blk.flowsheet().config.time:
+                for v in s_vars:
+                    for k in s_vars[v]:
+                        s_vars[v][k].fixed = o_flags[t, v, k]
 
         if blk.config.mixed_state_block is None:
             results = opt.solve(blk, tee=stee)

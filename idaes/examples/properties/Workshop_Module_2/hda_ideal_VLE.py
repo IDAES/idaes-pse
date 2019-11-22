@@ -58,8 +58,8 @@ from idaes.dmf.resource import Resource, TidyUnitData
 # Set up logger
 _log = logging.getLogger(__name__)
 
-# Set up DMF (assume in same directory as this file)
-_dmf = DMF(os.path.dirname(__file__))
+# Set up DMF (use working directory, wherever that is)
+_dmf = DMF(".")
 
 
 @declare_process_block_class("HDAParameterBlock")

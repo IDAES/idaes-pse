@@ -204,7 +204,7 @@ def plot_results(m):
              list(m.fs.Tank1.outlet.conc_mol_comp[:, "SodiumAcetate"].value),
              label='SodiumAcetate')
     plt.plot(m.fs.time,
-             list(m.fs.Tank1.outlet.conc_mol_comp[:, "NaOH"].value),
+             list(m.fs.Tank1.outlet.conc_mol_comp[:, "Ethanol"].value),
              label='Ethanol')
     plt.legend()
     plt.grid()
@@ -222,7 +222,7 @@ def plot_results(m):
              list(m.fs.Tank2.outlet.conc_mol_comp[:, "SodiumAcetate"].value),
              label='SodiumAcetate')
     plt.plot(m.fs.time,
-             list(m.fs.Tank2.outlet.conc_mol_comp[:, "NaOH"].value),
+             list(m.fs.Tank2.outlet.conc_mol_comp[:, "Ethanol"].value),
              label='Ethanol')
     plt.legend()
     plt.grid()

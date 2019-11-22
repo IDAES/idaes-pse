@@ -17,7 +17,7 @@ are two models included here.
 
 1) FWHCondensing0D: this is a regular 0D heat exchanger model with a constraint
    added to ensure all the steam fed to the feedwater heater is condensed at the
-   outlet. At the side_1 outlet the molar enthalpy is equal to the the staurated
+   outlet. At the shell outlet the molar enthalpy is equal to the the staurated
    liquid molar enthalpy.
 2) FWH0D is a feedwater heater model with three sections and a mixer for
    combining another feedwater heater's drain outlet with steam extracted from
@@ -104,27 +104,32 @@ def _set_prop_pack(hxcfg, fwhcfg):
         hxcfg: Heat exchanger subblock config block
         fwhcfg: Overall feedwater heater config block
     """
-    if hxcfg.side_1.property_package == useDefault:
-        hxcfg.side_1.property_package = fwhcfg.property_package
-        hxcfg.side_1.property_package_args = fwhcfg.property_package_args
-    if hxcfg.side_2.property_package == useDefault:
-        hxcfg.side_2.property_package = fwhcfg.property_package
-        hxcfg.side_2.property_package_args = fwhcfg.property_package_args
+    # this sets the property pack for the hot and cold side, but if the user
+    # provides a specific property package using the tube and shell names it
+    # will override this.  I think this behavior is fine, and what we'd want.
+    if hxcfg.hot_side_config.property_package == useDefault:
+        hxcfg.hot_side_config.property_package = fwhcfg.property_package
+        hxcfg.hot_side_config.property_package_args = fwhcfg.property_package_args
+    if hxcfg.cold_side_config.property_package == useDefault:
+        hxcfg.cold_side_config.property_package = fwhcfg.property_package
+        hxcfg.cold_side_config.property_package_args = fwhcfg.property_package_args
 
 
 @declare_process_block_class("FWHCondensing0D", doc=
 """Feedwater Heater Condensing Section
 The feedwater heater condensing section model is a normal 0D heat exchanger
 model with an added constraint to calculate the steam flow such that the outlet
-of side_1 is a saturated liquid.""")
+of shell is a saturated liquid.""")
 class FWHCondensing0DData(HeatExchangerData):
     def build(self):
         super().build()
+        self.enth_sub = Var(self.flowsheet().config.time, initialize=0)
+        self.enth_sub.fix()
         @self.Constraint(self.flowsheet().config.time,
             doc="Calculate steam extraction rate such that all steam condenses")
         def extraction_rate_constraint(b, t):
-            return b.side_1.properties_out[t].enth_mol_sat_phase["Liq"] == \
-                   b.side_1.properties_out[t].enth_mol
+            return  b.shell.properties_out[t].enth_mol - b.enth_sub[t] == \
+                   b.shell.properties_out[t].enth_mol_sat_phase["Liq"]
 
     def initialize(self, *args, **kwargs):
         """
@@ -267,7 +272,6 @@ class FWH0DData(UnitModelBlockData):
             # fix the steam and fwh inlet for init
             self.desuperheat.inlet_1.fix()
             self.desuperheat.inlet_1.flow_mol.unfix() #unfix for extract calc
-
         # initialize mixer if included
         if config.has_drain_mixer:
             self.drain_mix.steam.fix()
@@ -285,12 +289,14 @@ class FWH0DData(UnitModelBlockData):
             self.cooling.inlet_2.fix()
         else:
             self.condense.inlet_2.fix()
+        if not config.has_drain_mixer and not config.has_desuperheat:
+            self.condense.inlet_1.fix()
+            self.condense.inlet_1.flow_mol.unfix()
         self.condense.initialize(*args, **kwargs)
         # Initialize drain cooling if included
         if config.has_drain_cooling:
             _set_port(self.cooling.inlet_1, self.condense.outlet_1)
             self.cooling.initialize(*args, **kwargs)
-
         # Solve all together
         outlvl = kwargs.get("outlvl", 0)
         opt = SolverFactory(kwargs.get("solver", "ipopt"))

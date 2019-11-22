@@ -133,8 +133,7 @@ class _ReactionBlock(ReactionBlockBase):
             None
         '''
         if outlvl > 0:
-            if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
+            _log.info('{} Initialisation Complete.'.format(blk.name))
 
 
 @declare_process_block_class("ReactionBlock",
@@ -206,19 +205,4 @@ class ReactionBlockData(ReactionBlockDataBase):
         return MaterialFlowBasis.molar
 
     def model_check(blk):
-        """
-        Model checks for property block
-        """
-        # Check temperature bounds
-        if value(blk.temperature) < blk.temperature.lb:
-            _log.error('{} Temperature set below lower bound.'
-                       .format(blk.name))
-        if value(blk.temperature) > blk.temperature.ub:
-            _log.error('{} Temperature set above upper bound.'
-                       .format(blk.name))
-
-        # Check pressure bounds
-        if value(blk.pressure) < blk.pressure.lb:
-            _log.error('{} Pressure set below lower bound.'.format(blk.name))
-        if value(blk.pressure) > blk.pressure.ub:
-            _log.error('{} Pressure set above upper bound.'.format(blk.name))
+        pass

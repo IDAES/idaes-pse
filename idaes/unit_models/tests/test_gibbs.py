@@ -24,8 +24,10 @@ from pyomo.environ import (ConcreteModel,
 
 from idaes.core import FlowsheetBlock, EnergyBalanceType, MomentumBalanceType
 from idaes.unit_models.gibbs_reactor import GibbsReactor
-from idaes.property_models.examples.methane_combustion_ideal import (
-    MethaneCombustionParameterBlock)
+#from idaes.property_models.examples.methane_combustion_ideal import (
+#    MethaneCombustionParameterBlock)
+from idaes.property_models.activity_coeff_models.methane_combustion_ideal \
+    import MethaneParameterBlock as MethaneCombustionParameterBlock
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_variables,
                                               number_total_constraints,
@@ -83,14 +85,16 @@ class TestSaponification(object):
     @pytest.mark.build
     def test_build(self, methane):
         assert hasattr(methane.fs.unit, "inlet")
-        assert len(methane.fs.unit.inlet.vars) == 3
-        assert hasattr(methane.fs.unit.inlet, "flow_mol_comp")
+        assert len(methane.fs.unit.inlet.vars) == 4
+        assert hasattr(methane.fs.unit.inlet, "flow_mol")
+        assert hasattr(methane.fs.unit.inlet, "mole_frac_comp")
         assert hasattr(methane.fs.unit.inlet, "temperature")
         assert hasattr(methane.fs.unit.inlet, "pressure")
 
         assert hasattr(methane.fs.unit, "outlet")
-        assert len(methane.fs.unit.outlet.vars) == 3
-        assert hasattr(methane.fs.unit.outlet, "flow_mol_comp")
+        assert len(methane.fs.unit.outlet.vars) == 4
+        assert hasattr(methane.fs.unit.outlet, "flow_mol")
+        assert hasattr(methane.fs.unit.outlet, "mole_frac_comp")
         assert hasattr(methane.fs.unit.outlet, "temperature")
         assert hasattr(methane.fs.unit.outlet, "pressure")
 
@@ -98,19 +102,20 @@ class TestSaponification(object):
         assert hasattr(methane.fs.unit, "heat_duty")
         assert hasattr(methane.fs.unit, "deltaP")
 
-        assert number_variables(methane) == 78
-        assert number_total_constraints(methane) == 66
+        assert number_variables(methane) == 80
+        assert number_total_constraints(methane) == 67
         assert number_unused_variables(methane) == 0
 
     def test_dof(self, methane):
-        methane.fs.unit.inlet.flow_mol_comp[0, "H2"].fix(10.0)
-        methane.fs.unit.inlet.flow_mol_comp[0, "N2"].fix(150.0)
-        methane.fs.unit.inlet.flow_mol_comp[0, "O2"].fix(40.0)
-        methane.fs.unit.inlet.flow_mol_comp[0, "CO2"].fix(1e-5)
-        methane.fs.unit.inlet.flow_mol_comp[0, "CH4"].fix(30.0)
-        methane.fs.unit.inlet.flow_mol_comp[0, "CO"].fix(1e-5)
-        methane.fs.unit.inlet.flow_mol_comp[0, "H2O"].fix(1e-5)
-        methane.fs.unit.inlet.flow_mol_comp[0, "NH3"].fix(1e-5)
+        methane.fs.unit.inlet.flow_mol[0].fix(230.0)
+        methane.fs.unit.inlet.mole_frac_comp[0, "H2"].fix(0.0435)
+        methane.fs.unit.inlet.mole_frac_comp[0, "N2"].fix(0.6522)
+        methane.fs.unit.inlet.mole_frac_comp[0, "O2"].fix(0.1739)
+        methane.fs.unit.inlet.mole_frac_comp[0, "CO2"].fix(1e-5)
+        methane.fs.unit.inlet.mole_frac_comp[0, "CH4"].fix(0.1304)
+        methane.fs.unit.inlet.mole_frac_comp[0, "CO"].fix(1e-5)
+        methane.fs.unit.inlet.mole_frac_comp[0, "H2O"].fix(1e-5)
+        methane.fs.unit.inlet.mole_frac_comp[0, "NH3"].fix(1e-5)
         methane.fs.unit.inlet.temperature[0].fix(1500.0)
         methane.fs.unit.inlet.pressure[0].fix(101325.0)
 
@@ -130,14 +135,15 @@ class TestSaponification(object):
                           optarg={'tol': 1e-6},
                           state_args={'temperature': 2844.38,
                                       'pressure': 101325.0,
-                                      'flow_mol_comp': {'CH4': 1e-5,
-                                                        'CO': 23.0,
-                                                        'CO2': 7.05,
-                                                        'H2': 29.0,
-                                                        'H2O': 41.0,
-                                                        'N2': 150.0,
-                                                        'NH3': 1e-5,
-                                                        'O2': 1.0}})
+                                      'flow_mol': 251.05,
+                                      'mole_frac_comp': {'CH4': 1e-5,
+                                                         'CO': 0.0916,
+                                                         'CO2': 0.0281,
+                                                         'H2': 0.1155,
+                                                         'H2O': 0.1633,
+                                                         'N2': 0.5975,
+                                                         'NH3': 1e-5,
+                                                         'O2': 0.0067}})
 
         assert degrees_of_freedom(methane) == 0
 
@@ -166,23 +172,25 @@ class TestSaponification(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution_temperature(self, methane):
-        assert (pytest.approx(0.0, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "CH4"]))
-        assert (pytest.approx(22.614, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "CO"]))
-        assert (pytest.approx(7.386, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "CO2"]))
-        assert (pytest.approx(28.806, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "H2"]))
-        assert (pytest.approx(41.194, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "H2O"]))
-        assert (pytest.approx(150.0, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "N2"]))
-        assert (pytest.approx(0.0, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "NH3"]))
-        assert (pytest.approx(0.710, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "O2"]))
-        assert (pytest.approx(161882.3, abs=1e-2) ==
+        assert (pytest.approx(250.06, abs=1e-2) ==
+                value(methane.fs.unit.outlet.flow_mol[0]))
+        assert (pytest.approx(0.0, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "CH4"]))
+        assert (pytest.approx(0.0974, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "CO"]))
+        assert (pytest.approx(0.0226, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "CO2"]))
+        assert (pytest.approx(0.1030, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "H2"]))
+        assert (pytest.approx(0.1769, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "H2O"]))
+        assert (pytest.approx(0.5999, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "N2"]))
+        assert (pytest.approx(0.0, abs=1e-5) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "NH3"]))
+        assert (pytest.approx(0.0002, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "O2"]))
+        assert (pytest.approx(-7454077, abs=1e2) ==
                 value(methane.fs.unit.heat_duty[0]))
         assert (pytest.approx(101325.0, abs=1e-2) ==
                 value(methane.fs.unit.outlet.pressure[0]))
@@ -192,12 +200,12 @@ class TestSaponification(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_conservation_temperature(self, methane):
         assert abs(value(
-                sum(methane.fs.unit.inlet.flow_mol_comp[0, j]
-                    for j in methane.fs.properties.component_list) *
-                methane.fs.unit.control_volume.properties_in[0].enth_mol -
-                sum(methane.fs.unit.outlet.flow_mol_comp[0, j]
-                    for j in methane.fs.properties.component_list) *
-                methane.fs.unit.control_volume.properties_out[0].enth_mol +
+                methane.fs.unit.inlet.flow_mol[0] *
+                methane.fs.unit.control_volume.properties_in[0]
+                    .enth_mol_phase["Vap"] -
+                methane.fs.unit.outlet.flow_mol[0] *
+                methane.fs.unit.control_volume.properties_out[0]
+                    .enth_mol_phase["Vap"] +
                 methane.fs.unit.heat_duty[0])) <= 1e-6
 
     @pytest.mark.initialize
@@ -205,7 +213,7 @@ class TestSaponification(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize_duty(self, methane):
         methane.fs.unit.outlet.temperature[0].unfix()
-        methane.fs.unit.heat_duty.fix(161882.303661)
+        methane.fs.unit.heat_duty.fix(-7454077)
         assert degrees_of_freedom(methane) == 0
 
         orig_fixed_vars = fixed_variables_set(methane)
@@ -215,14 +223,15 @@ class TestSaponification(object):
                           optarg={'tol': 1e-6},
                           state_args={'temperature': 2844.38,
                                       'pressure': 101325.0,
-                                      'flow_mol_comp': {'CH4': 1e-5,
-                                                        'CO': 23.0,
-                                                        'CO2': 7.05,
-                                                        'H2': 29.0,
-                                                        'H2O': 41.0,
-                                                        'N2': 150.0,
-                                                        'NH3': 1e-5,
-                                                        'O2': 1.0}})
+                                      'flow_mol': 251.05,
+                                      'mole_frac_comp': {'CH4': 1e-5,
+                                                         'CO': 0.0916,
+                                                         'CO2': 0.0281,
+                                                         'H2': 0.1155,
+                                                         'H2O': 0.1633,
+                                                         'N2': 0.5975,
+                                                         'NH3': 1e-5,
+                                                         'O2': 0.0067}})
 
         assert degrees_of_freedom(methane) == 0
 
@@ -251,23 +260,25 @@ class TestSaponification(object):
     @pytest.mark.solver
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_solution_duty(self, methane):
-        assert (pytest.approx(0.0, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "CH4"]))
-        assert (pytest.approx(22.614, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "CO"]))
-        assert (pytest.approx(7.386, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "CO2"]))
-        assert (pytest.approx(28.806, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "H2"]))
-        assert (pytest.approx(41.194, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "H2O"]))
-        assert (pytest.approx(150.0, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "N2"]))
-        assert (pytest.approx(0.0, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "NH3"]))
-        assert (pytest.approx(0.710, abs=1e-2) ==
-                value(methane.fs.unit.outlet.flow_mol_comp[0, "O2"]))
-        assert (pytest.approx(161882.3, abs=1e-2) ==
+        assert (pytest.approx(250.06, abs=1e-2) ==
+                value(methane.fs.unit.outlet.flow_mol[0]))
+        assert (pytest.approx(0.0, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "CH4"]))
+        assert (pytest.approx(0.0974, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "CO"]))
+        assert (pytest.approx(0.0226, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "CO2"]))
+        assert (pytest.approx(0.1030, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "H2"]))
+        assert (pytest.approx(0.1769, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "H2O"]))
+        assert (pytest.approx(0.5999, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "N2"]))
+        assert (pytest.approx(0.0, abs=1e-5) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "NH3"]))
+        assert (pytest.approx(0.0002, abs=1e-4) ==
+                value(methane.fs.unit.outlet.mole_frac_comp[0, "O2"]))
+        assert (pytest.approx(-7454077, abs=1e2) ==
                 value(methane.fs.unit.heat_duty[0]))
         assert (pytest.approx(101325.0, abs=1e-2) ==
                 value(methane.fs.unit.outlet.pressure[0]))
@@ -277,12 +288,12 @@ class TestSaponification(object):
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_conservation_duty(self, methane):
         assert abs(value(
-                sum(methane.fs.unit.inlet.flow_mol_comp[0, j]
-                    for j in methane.fs.properties.component_list) *
-                methane.fs.unit.control_volume.properties_in[0].enth_mol -
-                sum(methane.fs.unit.outlet.flow_mol_comp[0, j]
-                    for j in methane.fs.properties.component_list) *
-                methane.fs.unit.control_volume.properties_out[0].enth_mol +
+                methane.fs.unit.inlet.flow_mol[0] *
+                methane.fs.unit.control_volume.properties_in[0]
+                    .enth_mol_phase["Vap"] -
+                methane.fs.unit.outlet.flow_mol[0] *
+                methane.fs.unit.control_volume.properties_out[0]
+                    .enth_mol_phase["Vap"] +
                 methane.fs.unit.heat_duty[0])) <= 1e-6
 
     @pytest.mark.ui

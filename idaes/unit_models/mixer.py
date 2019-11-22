@@ -722,39 +722,54 @@ linked to all inlet states and the mixed state,
         else:
             mblock = blk.config.mixed_state_block
 
+
+        o_flags = {}
         # Calculate initial guesses for mixed stream state
         for t in blk.flowsheet().config.time:
             # Iterate over state vars as defined by property package
             s_vars = mblock[t].define_state_vars()
             for s in s_vars:
                 i_vars = []
-                for i in range(len(i_block_list)):
-                    i_vars.append(getattr(i_block_list[i][t],
-                                          s_vars[s].local_name))
+                for k in s_vars[s]:
+                    # Record whether variable was fixed or not
+                    o_flags[t, s, k] = s_vars[s][k].fixed
 
-                if s == "pressure":
-                    # If pressure, use minimum as initial guess
-                    mblock[t].pressure.value = min(
-                            i_block_list[i][t].pressure.value
-                            for i in range(len(i_block_list)))
-                elif "flow" in s:
-                    # If a "flow" variable (i.e. extensive), sum inlets
-                    for k in s_vars[s]:
-                        s_vars[s][k].value = sum(i_vars[i][k].value
-                                                 for i in range(
-                                                         len(i_block_list)))
-                else:
-                    # Otherwise use average of inlets
-                    for k in s_vars[s]:
-                        s_vars[s][k].value = (sum(i_vars[i][k].value
-                                                  for i in range(
-                                                         len(i_block_list))) /
-                                              len(i_block_list))
+                    # If fixed, use current value
+                    # otherwise calculate guess from mixed state
+                    if not s_vars[s][k].fixed:
+                        for i in range(len(i_block_list)):
+                            i_vars.append(getattr(i_block_list[i][t],
+                                                  s_vars[s].local_name))
+
+                        if s == "pressure":
+                            # If pressure, use minimum as initial guess
+                            mblock[t].pressure.value = min(
+                                    i_block_list[i][t].pressure.value
+                                    for i in range(len(i_block_list)))
+                        elif "flow" in s:
+                            # If a "flow" variable (i.e. extensive), sum inlets
+                            for k in s_vars[s]:
+                                s_vars[s][k].value = sum(
+                                        i_vars[i][k].value
+                                        for i in range(len(i_block_list)))
+                        else:
+                            # Otherwise use average of inlets
+                            for k in s_vars[s]:
+                                s_vars[s][k].value = (
+                                    sum(i_vars[i][k].value for i in
+                                        range(len(i_block_list))) /
+                                    len(i_block_list))
 
         mblock.initialize(outlvl=outlvl-1,
                           optarg=optarg,
                           solver=solver,
                           hold_state=False)
+
+        # Revert fixed status of variables to what they were before
+        for t in blk.flowsheet().config.time:
+            for s in s_vars:
+                for k in s_vars[s]:
+                    s_vars[s][k].fixed = o_flags[t, s, k]
 
         if blk.config.mixed_state_block is None:
             if (hasattr(blk, "pressure_equality_constraints") and

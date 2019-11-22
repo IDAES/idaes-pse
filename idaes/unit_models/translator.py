@@ -190,13 +190,13 @@ see property package for documentation.}"""))
         flags = blk.properties_in.initialize(outlvl=outlvl-1,
                                              optarg=optarg,
                                              solver=solver,
-                                             **state_args_in,
+                                             state_args=state_args_in,
                                              hold_state=True)
 
         blk.properties_out.initialize(outlvl=outlvl-1,
                                       optarg=optarg,
                                       solver=solver,
-                                      **state_args_out)
+                                      state_args=state_args_out)
 
         blk.properties_in.release_state(flags)
 
