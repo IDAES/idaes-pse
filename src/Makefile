@@ -34,6 +34,11 @@ dist:
 	$(CP) cubic/*.so dist/
 	$(CP) functions/*.so dist/
 
+.PHONY: install
+install:
+	idaes lib-directory --create
+	$(CP) dist/* `idaes lib-directory`
+
 dist_clean:
 	$(RM) -rf dist
 

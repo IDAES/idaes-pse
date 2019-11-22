@@ -65,7 +65,7 @@ import idaes
 
 # Logger
 _log = logging.getLogger(__name__)
-_so = os.path.join(idaes.bin_directory, "iapws95_external.so")
+_so = os.path.join(idaes.lib_directory, "iapws95_external.so")
 
 
 def iapws95_available():
