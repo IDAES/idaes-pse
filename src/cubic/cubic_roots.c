@@ -1,9 +1,7 @@
 /*
   General root calculator for cubic equations of state.
-
   Author: John Eslick
   Date: November 22, 2016
-
   Notes:
 */
 
@@ -145,7 +143,6 @@ real ceos_z_liq(arglist *al){
    * same properties as the liquid. The exisitence of a liquid root doesn't
    * necessarily mean that liquid is present, so the non-existing liquid phase
    * would not always have the same properies as the vapor.
-
    * The arguments are:
    *     0) eos_index, specifies the specific eos (e.g. Peng-Robinson)
    *     1) A from the general cubic eos
