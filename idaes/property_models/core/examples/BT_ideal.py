@@ -40,14 +40,14 @@ import idaes.property_models.core.pure.RPP as RPP
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("TestParameterBlock")
-class TestParameterData(GenericParameterData):
+@declare_process_block_class("BTIdealParameterBlock")
+class BTIdealParameterData(GenericParameterData):
 
     def build(self):
         '''
         Callable method for Block construction.
         '''
-        super(TestParameterData, self).build()
+        super(BTIdealParameterData, self).build()
 
         # ---------------------------------------------------------------------
         # Set config arguments
@@ -125,7 +125,7 @@ class TestParameterData(GenericParameterData):
         self.gas_const = Param(within=NonNegativeReals,
                                mutable=False,
                                default=8.314,
-                               doc='Gas Constant [J/mol.K]')
+                               doc='Gas constant [J/mol.K]')
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -135,11 +135,11 @@ class TestParameterData(GenericParameterData):
         self.mw_comp = Param(self.component_list,
                              mutable=False,
                              initialize=mw_comp_data,
-                             doc="molecular weight kg/mol")
+                             doc="Molecular weight [kg/mol]")
 
         # Constants for ideal gas specific enthalpy
         # Source: The Properties of Gases and Liquids (1987)
-        #         4th edition, Chemical Engineering Series - Robert C. Reid
+        # 4th edition, Chemical Engineering Series - Robert C. Reid
         cp_ig_data = {('benzene', 'A'): -3.392E1,
                       ('benzene', 'B'): 4.739E-1,
                       ('benzene', 'C'): -3.017E-4,
@@ -220,7 +220,7 @@ class TestParameterData(GenericParameterData):
                 self.component_list,
                 mutable=False,
                 initialize=dh_vap_data,
-                doc="Molar heat of vaporization @ Tref (J/mol)")
+                doc="Molar heat of vaporization @ Tref [J/mol]")
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -231,4 +231,4 @@ class TestParameterData(GenericParameterData):
                 self.component_list,
                 mutable=False,
                 initialize=ds_vap_data,
-                doc="Molar entropy of vaporization @ Tref (J/mol.K)")
+                doc="Molar entropy of vaporization @ Tref [J/mol.K]")

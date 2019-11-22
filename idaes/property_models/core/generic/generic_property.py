@@ -50,8 +50,8 @@ class GenericPropertyPackageError(PropertyPackageError):
 
     def __str__(self):
         return f"Generic Property Package instance {self.block} called for " \
-               f"property {self.prop}, but was not provided with a method " \
-               f"for this property. Please add a method for this proeprty " \
+               f"{self.prop}, but was not provided with a method " \
+               f"for this property. Please add a method for this property " \
                f"in the property parameter configuration."
 
 

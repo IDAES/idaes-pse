@@ -19,7 +19,7 @@ from idaes.property_models.core.generic.generic_property import \
 
 
 def common(b):
-    # No common componets required for ideal property calculations
+    # No common components required for ideal property calculations
     pass
 
 
@@ -38,10 +38,7 @@ def dens_mol_phase(b, p):
                            b, b.temperature, j)
                    for j in b._params.component_list)
     else:
-        raise PropertyNotSupportedError(
-                "{} recieved unrecognised phase name {}. Ideal property "
-                "libray only supports Vap and Liq phases."
-                .format(b.name, p))
+        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
 def enth_mol_phase(b, p):
@@ -62,10 +59,7 @@ def enth_mol_phase_comp(b, p, j):
         return b._params.config.enth_mol_comp_liq.enth_mol_liq(
                 b, j, b.temperature)
     else:
-        raise PropertyNotSupportedError(
-                "{} recieved unrecognised phase name {}. Ideal property "
-                "libray only supports Vap and Liq phases."
-                .format(b.name, p))
+        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
 def entr_mol_phase(b, p):
@@ -86,10 +80,7 @@ def entr_mol_phase_comp(b, p, j):
         return b._params.config.entr_mol_comp_liq.entr_mol_liq(
                 b, j, b.temperature)
     else:
-        raise PropertyNotSupportedError(
-                "{} recieved unrecognised phase name {}. Ideal property "
-                "libray only supports Vap and Liq phases."
-                .format(b.name, p))
+        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
 def entr_mol_phase_comp_ref(b, p, j):
@@ -105,10 +96,7 @@ def entr_mol_phase_comp_ref(b, p, j):
         return b._params.config.entr_mol_comp_liq.entr_mol_liq(
                 b, j, b._params.temperature_ref)
     else:
-        raise PropertyNotSupportedError(
-                "{} recieved unrecognised phase name {}. Ideal property "
-                "libray only supports Vap and Liq phases."
-                .format(b.name, p))
+        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
 def fugacity(b, p, j):
@@ -121,10 +109,7 @@ def fugacity(b, p, j):
                b._params.config.pressure_sat_comp.pressure_sat(
                        b, b.temperature, j)
     else:
-        raise PropertyNotSupportedError(
-                "{} recieved unrecognised phase name {}. Ideal property "
-                "libray only supports Vap and Liq phases."
-                .format(b.name, p))
+        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
 def fug_coeff(b, p, j):
@@ -142,3 +127,9 @@ def gibbs_mol_phase_comp(b, p, j):
              b._params.config.equation_of_state[p]
              .entr_mol_phase_comp_ref(b, p, j)) *
             b.temperature)
+
+
+def _invalid_phase_msg(name, phase):
+    return ("{} recieved unrecognised phase name {}. Ideal property "
+            "libray only supports Vap and Liq phases."
+            .format(name, phase))

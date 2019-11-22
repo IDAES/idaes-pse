@@ -7,7 +7,7 @@ Created on Tue Jul 23 14:36:11 2019
 """
 
 from idaes.core import FlowsheetBlock
-from idaes.property_models.core.generic.test_params import TestParameterBlock
+from idaes.property_models.core.examples.BT_ideal import BTIdealParameterBlock
 from idaes.property_models.activity_coeff_models.BTX_activity_coeff_VLE \
     import BTXParameterBlock
 
@@ -20,7 +20,7 @@ def main():
     m.fs = FlowsheetBlock(default={'dynamic': False})
 
     # Geenric Method
-    m.fs.props = TestParameterBlock()
+    m.fs.props = BTIdealParameterBlock()
     m.fs.state = m.fs.props.state_block_class(default={'parameters': m.fs.props,
                                                        'defined_state': True})
 
@@ -49,8 +49,8 @@ def main():
                  "defined_state": True})
 
     m.fs.existing.flow_mol.fix(100)
-    m.fs.existing.mole_frac["benzene"].fix(0.5)
-    m.fs.existing.mole_frac["toluene"].fix(0.5)
+    m.fs.existing.mole_frac_comp["benzene"].fix(0.5)
+    m.fs.existing.mole_frac_comp["toluene"].fix(0.5)
     m.fs.existing.temperature.fix(368)
     m.fs.existing.pressure.fix(101325)
 
@@ -77,11 +77,11 @@ def main():
     m.fs.existing.enth_mol_phase.display()
 
     m.fs.state.mole_frac_phase_comp.display()
-    m.fs.existing.mole_frac_phase.display()
+    m.fs.existing.mole_frac_phase_comp.display()
 
     for k in m.fs.state.mole_frac_phase_comp.keys():
         err = m.fs.state.mole_frac_phase_comp[k] - \
-              m.fs.existing.mole_frac_phase[k]
+              m.fs.existing.mole_frac_phase_comp[k]
         print(k, value(err))
 
 #    m.fs.state.display()
