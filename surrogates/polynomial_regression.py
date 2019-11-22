@@ -427,6 +427,7 @@ class PolynomialRegression:
             raise Exception('The inputted of fraction_training is too high.')
         for i in range(1, self.number_of_crossvalidations + 1):
             if additional_features is None:
+                np.random.seed(i)
                 A = np.zeros((self.regression_data.shape[0], self.regression_data.shape[1]))
                 A[:, :] = self.regression_data
                 np.random.shuffle(A)  # Shuffles the rows of the regression data randomly
@@ -1114,3 +1115,19 @@ class PolynomialRegression:
             npe.walk_expression(term) for term in self.additional_term_expressions
         )
         return self.polynomial_regression_fitting(additional_data)
+
+    def pr_predict_output(self, results_vector, x_data):
+        nf = x_data.shape[1]
+        x_list = [i for i in range(0, nf)]
+        import pyomo.environ as aml
+        m = aml.ConcreteModel()
+        i = aml.Set(initialize=x_list)
+        m.xx = aml.Var(i)
+        m.o2 = aml.Objective(expr=results_vector.generate_expression([m.xx[i] for i in x_list]))
+        y_eq = np.zeros((x_data.shape[0], 1))
+        for j in range(0, x_data.shape[0]):
+            for i in x_list:
+                m.xx[i] = x_data[j, i]
+            y_eq[j, 0] = aml.value(m.o2([m.xx[i] for i in x_list]))
+        return y_eq
+
