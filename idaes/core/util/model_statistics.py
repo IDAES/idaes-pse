@@ -672,6 +672,58 @@ def number_unfixed_variables(block):
     return len(unfixed_variables_set(block))
 
 
+def variables_on_bounds_generator(block, tol=1e-4):
+    """
+    Generator which returns all Var components in a model which have a value
+    within tol (relative) of a bound.
+
+    Args:
+        block : model to be studied
+        tol : relative tolerance for inclusion in generator (default = 1e-4)
+
+    Returns:
+        A generator which returns all Var components block that are close to a
+        bound
+    """
+    for v in block.component_data_objects(
+            ctype=Var, active=True, descend_into=True):
+        if v.ub is not None and value(v.ub - v.value) <= tol*v.value:
+            yield v
+        elif v.lb is not None and value(v.value - v.lb) <= tol*v.value:
+            yield v
+
+
+def variables_on_bounds_set(block, tol=1e-4):
+    """
+    Method to return a ComponentSet of all Var components in a model which have
+    a value within tol (relative) of a bound.
+
+    Args:
+        block : model to be studied
+        tol : relative tolerance for inclusion in generator (default = 1e-4)
+
+    Returns:
+        A ComponentSet including all Var components block that are close to a
+        bound
+    """
+    return ComponentSet(variables_on_bounds_generator(block, tol))
+
+
+def number_variables_on_bounds(block, tol=1e-4):
+    """
+    Method to return the number of all Var components in a model which have
+    a value within tol (relative) of a bound.
+
+    Args:
+        block : model to be studied
+        tol : relative tolerance for inclusion in generator (default = 1e-4)
+
+    Returns:
+        Number of components block that are close to a bound
+    """
+    return len(variables_on_bounds_set(block, tol))
+
+
 # -------------------------------------------------------------------------
 # Variables in Constraints
 def variables_in_activated_constraints_set(block):

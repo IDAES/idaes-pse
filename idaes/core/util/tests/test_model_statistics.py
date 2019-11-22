@@ -37,7 +37,7 @@ def m():
     m.s = Set(initialize=["a", "b"])
     m.cs = ContinuousSet(bounds=(0, 1))
 
-    m.v = Var(m.cs, initialize=1)
+    m.v = Var(m.cs, initialize=1, bounds=(0, 10))
     m.dv = DerivativeVar(m.v)
 
     m.discretizer = TransformationFactory("dae.finite_difference")
@@ -70,8 +70,8 @@ def m():
 
     m.b2 = Block(m.s)
     for i in m.s:
-        m.b2[i].v1 = Var(initialize=1)
-        m.b2[i].v2 = Var(m.s, initialize=1)
+        m.b2[i].v1 = Var(initialize=1, bounds=(1, 10))
+        m.b2[i].v2 = Var(m.s, initialize=1, bounds=(0, 1))
         m.b2[i].v1.fix(1)
         m.b2[i].e1 = Expression(expr=m.b2[i].v1)
         m.b2[i].c1 = Constraint(expr=2 == m.b2[i].v1)
@@ -217,6 +217,19 @@ def test_unfixed_variables_set(m):
 
 def test_number_unfixed_variables(m):
     assert number_unfixed_variables(m) == 26
+
+
+def test_variables_on_bounds_set(m):
+    assert len(variables_on_bounds_set(m)) == 6
+    
+    m.b2["a"].v1.value = 1.001
+
+    assert len(variables_on_bounds_set(m)) == 5
+    assert len(variables_on_bounds_set(m, tol=1e-3)) == 6
+
+
+def test_number_variables_on_bounds(m):
+    assert number_variables_on_bounds(m) == 6
 
 
 # -------------------------------------------------------------------------
