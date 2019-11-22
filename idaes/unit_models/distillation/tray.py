@@ -126,7 +126,7 @@ see property package for documentation.}"""))
         else:
             inlet_list = ["liq", "vap"]
 
-        # Setup StateBlock argument dict
+        # Create a dict to set up the inlet state blocks
         state_block_args = dict(**self.config.property_package_args)
         state_block_args["has_phase_equilibrium"] = False
         state_block_args["parameters"] = self.config.property_package
@@ -261,11 +261,11 @@ see property package for documentation.}"""))
 
         # Add inlet ports
         if self.config.is_feed_tray:
-            self.feed = Port(noruleinit=True, doc="feed inlet to tray")
+            self.add_inlet_port(name="feed", block=self.properties_in_feed)
 
         # Add liquid and vapor inlet ports
-        self.liq_in = Port(noruleinit=True, doc="liq inlet to tray")
-        self.vap_in = Port(noruleinit=True, doc="vap inlet to tray")
+        self.add_inlet_port(name="liq_in", block=self.properties_in_liq)
+        self.add_inlet_port(name="vap_in", block=self.properties_in_vap)
 
         # Add liquid outlet port
         self.liq_out = Port(noruleinit=True, doc="liquid outlet from tray")
@@ -321,31 +321,6 @@ see property package for documentation.}"""))
                 port=self.vap_out,
                 phase="Vap",
                 side_sf=1)
-
-        # if self.config.is_top_tray and self.config.is_bottom_tray:
-        #     raise ConfigurationError(
-        #         "A tray cannot be both top and bottom "
-        #         "tray. Please check the config arguments.")
-        # elif self.config.is_top_tray:
-        #     self.vap_out = Port(noruleinit=True, doc="vapor from top tray.")
-        #     if hasattr(self, "vap_side_sf"):
-        #         side_sf = 1 - self.vap_side_sf
-        #     else:
-        #         side_sf = 1
-        #     self._make_phase_split(
-        #         phase="Vap",
-        #         is_top_tray=True,
-        #         side_sf=side_sf)
-        # elif self.config.is_bottom_tray:
-        #     self.liq_out = Port(noruleinit=True, doc="liquid from bottom tray")
-        #     if hasattr(self, "liq_side_sf"):
-        #         side_sf = 1 - self.liq_side_sf
-        #     else:
-        #         side_sf = 1
-        #     self._make_phase_split(
-        #         phase="Liq",
-        #         is_bottom_tray=True,
-        #         side_sf=side_sf)
 
     def _make_phase_split(self, port=None, phase=None,
                           has_liquid_side_draw=False,
@@ -507,9 +482,15 @@ see property package for documentation.}"""))
                         "Only total mixture enthalpy or enthalpy by "
                         "phase are supported.")
 
-    def initialize(self, solver=None, outlvl=None):
+    def initialize(self, state_args_feed=None, state_args_liq=None,
+                   state_args_vap=None, solver=None, outlvl=None):
+
+        # Use input values to initialize if values are passed from another
+        # initialized tray.
 
         # Initialize the inlet state blocks
+        if self.config.is_feed_tray:
+            self.properties_in_feed.initialize(outlvl=outlvl)
         self.properties_in_liq.initialize(outlvl=outlvl)
         self.properties_in_vap.initialize(outlvl=outlvl)
 
@@ -518,9 +499,14 @@ see property package for documentation.}"""))
 
         # Deactivate energy balance
         self.enthalpy_mixing_equations.deactivate()
-        average_temperature = \
-            0.5 * (self.properties_in_liq[0].temperature.value
-                   + self.properties_in_vap[0].temperature.value)
+
+        if self.config.is_feed_tray:
+            average_temperature = \
+                0.5 * (self.properties_in_liq[0].temperature.value
+                       + self.properties_in_vap[0].temperature.value)
+        else:
+            average_temperature = self.properties_in_feed[0].\
+                temperature.value
 
         self.properties_out[:].temperature.fix(average_temperature)
 

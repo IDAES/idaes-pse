@@ -43,30 +43,30 @@ m.fs.properties = BTXParameterBlock(default={"valid_phase":
 ###############################################################################
 
 m.fs.tray = Tray(default={"property_package": m.fs.properties,
-                          "is_feed_tray": False,
+                          "is_feed_tray": True,
                           "has_liquid_side_draw": False,
                           "has_vapor_side_draw": False,
                           "has_heat_transfer": False,
                           "has_pressure_change": True})
 
 # Set inputs
-# m.fs.tray.properties_in_feed[0].flow_mol.fix(1)
-# m.fs.tray.properties_in_feed[0].temperature.fix(369)
-# m.fs.tray.properties_in_feed[0].pressure.fix(101325)
-# m.fs.tray.properties_in_feed[0].mole_frac_comp["benzene"].fix(0.5)
-# m.fs.tray.properties_in_feed[0].mole_frac_comp["toluene"].fix(0.5)
+m.fs.tray.feed.flow_mol.fix(1)
+m.fs.tray.feed.temperature.fix(369)
+m.fs.tray.feed.pressure.fix(101325)
+m.fs.tray.feed.mole_frac_comp[0, "benzene"].fix(0.5)
+m.fs.tray.feed.mole_frac_comp[0, "toluene"].fix(0.5)
 
-m.fs.tray.properties_in_liq[0].flow_mol.fix(1)
-m.fs.tray.properties_in_liq[0].temperature.fix(369)
-m.fs.tray.properties_in_liq[0].pressure.fix(101325)
-m.fs.tray.properties_in_liq[0].mole_frac_comp["benzene"].fix(0.5)
-m.fs.tray.properties_in_liq[0].mole_frac_comp["toluene"].fix(0.5)
+m.fs.tray.liq_in.flow_mol.fix(1)
+m.fs.tray.liq_in.temperature.fix(369)
+m.fs.tray.liq_in.pressure.fix(101325)
+m.fs.tray.liq_in.mole_frac_comp[0, "benzene"].fix(0.5)
+m.fs.tray.liq_in.mole_frac_comp[0, "toluene"].fix(0.5)
 
-m.fs.tray.properties_in_vap[0].flow_mol.fix(1)
-m.fs.tray.properties_in_vap[0].temperature.fix(372)
-m.fs.tray.properties_in_vap[0].pressure.fix(101325)
-m.fs.tray.properties_in_vap[0].mole_frac_comp["benzene"].fix(0.5)
-m.fs.tray.properties_in_vap[0].mole_frac_comp["toluene"].fix(0.5)
+m.fs.tray.vap_in.flow_mol.fix(1)
+m.fs.tray.vap_in.temperature.fix(372)
+m.fs.tray.vap_in.pressure.fix(101325)
+m.fs.tray.vap_in.mole_frac_comp[0, "benzene"].fix(0.5)
+m.fs.tray.vap_in.mole_frac_comp[0, "toluene"].fix(0.5)
 
 m.fs.tray.deltaP.fix(0)
 # m.fs.tray.heat_duty.fix(0)
@@ -82,7 +82,8 @@ m.fs.tray.properties_out[0].mole_frac_comp.display()
 m.fs.tray.properties_out[0].mole_frac_phase_comp.display()
 m.fs.tray.properties_out[0].temperature.display()
 
-# m.fs.tray.liq_side_draw.display()
-# m.fs.tray.vap_side_draw.display()
+m.fs.tray.liq_in.display()
+m.fs.tray.vap_in.display()
+
 m.fs.tray.vap_out.display()
 m.fs.tray.liq_out.display()
