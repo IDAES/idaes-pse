@@ -95,10 +95,10 @@ balance type
 **MomentumBalanceType.momentumTotal** - single momentum balance for material,
 **MomentumBalanceType.momentumPhase** - momentum balances for each phase.}"""))
     CONFIG.declare("has_phase_equilibrium", ConfigValue(
-     default=False,
-     domain=In([True, False]),
-     description="Phase equilibrium construction flag",
-     doc="""Indicates whether terms for phase equilibrium should be
+        default=False,
+        domain=In([True, False]),
+        description="Phase equilibrium construction flag",
+        doc="""Indicates whether terms for phase equilibrium should be
 constructed, **default** = False.
 **Valid values:** {
 **True** - include phase equilibrium terms
@@ -151,10 +151,10 @@ see property package for documentation.}"""))
 
         # Add a control volume to the unit including setting up dynamics.
         self.control_volume = ControlVolume0DBlock(default={
-                "dynamic": self.config.dynamic,
-                "has_holdup": self.config.has_holdup,
-                "property_package": self.config.property_package,
-                "property_package_args": self.config.property_package_args})
+            "dynamic": self.config.dynamic,
+            "has_holdup": self.config.has_holdup,
+            "property_package": self.config.property_package,
+            "property_package_args": self.config.property_package_args})
 
         # Add geomerty variables to control volume
         if self.config.has_holdup:
@@ -162,19 +162,19 @@ see property package for documentation.}"""))
 
         # Add inlet and outlet state blocks to control volume
         self.control_volume.add_state_blocks(
-                has_phase_equilibrium=self.config.has_phase_equilibrium)
+            has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         # Add mass balance
         # Set has_equilibrium is False for now
         # TO DO; set has_equilibrium to True
         self.control_volume.add_material_balances(
-                    balance_type=self.config.material_balance_type,
-                    has_phase_equilibrium=self.config.has_phase_equilibrium)
+            balance_type=self.config.material_balance_type,
+            has_phase_equilibrium=self.config.has_phase_equilibrium)
 
         # Add energy balance
         self.control_volume.add_energy_balances(
-                    balance_type=self.config.energy_balance_type,
-                    has_work_transfer=True)
+            balance_type=self.config.energy_balance_type,
+            has_work_transfer=True)
 
         # add momentum balance
         self.control_volume.add_momentum_balances(
@@ -213,9 +213,9 @@ see property package for documentation.}"""))
         @self.Constraint(self.flowsheet().config.time,
                          doc="Pressure ratio constraint")
         def ratioP_calculation(b, t):
-            return (self.sfp*b.ratioP[t] *
+            return (self.sfp * b.ratioP[t] *
                     b.control_volume.properties_in[t].pressure ==
-                    self.sfp*b.control_volume.properties_out[t].pressure)
+                    self.sfp * b.control_volume.properties_out[t].pressure)
 
         # Construct equations for thermodynamic assumption
         if self.config.thermodynamic_assumption == \
@@ -243,32 +243,32 @@ see property package for documentation.}"""))
         """
 
         self.work_fluid = Var(
-                self.flowsheet().config.time,
-                initialize=1.0,
-                doc="Work required to increase the pressure of the liquid")
+            self.flowsheet().config.time,
+            initialize=1.0,
+            doc="Work required to increase the pressure of the liquid")
         self.efficiency_pump = Var(
-                self.flowsheet().config.time,
-                initialize=1.0,
-                doc="Pump efficiency")
+            self.flowsheet().config.time,
+            initialize=1.0,
+            doc="Pump efficiency")
 
         @self.Constraint(self.flowsheet().config.time,
                          doc="Pump fluid work constraint")
         def fluid_work_calculation(b, t):
             return b.work_fluid[t] == (
-                    (b.control_volume.properties_out[t].pressure -
-                     b.control_volume.properties_in[t].pressure) *
-                    b.control_volume.properties_out[t].flow_vol)
+                (b.control_volume.properties_out[t].pressure -
+                 b.control_volume.properties_in[t].pressure) *
+                b.control_volume.properties_out[t].flow_vol)
 
         # Actual work
         @self.Constraint(self.flowsheet().config.time,
                          doc="Actual mechanical work calculation")
         def actual_work(b, t):
             if b.config.compressor:
-                return b.sfe*b.work_fluid[t] == b.sfe*(
-                            b.work_mechanical[t]*b.efficiency_pump[t])
+                return b.sfe * b.work_fluid[t] == b.sfe * (
+                    b.work_mechanical[t] * b.efficiency_pump[t])
             else:
-                return b.sfe*b.work_mechanical[t] == b.sfe*(
-                            b.work_fluid[t]*b.efficiency_pump[t])
+                return b.sfe * b.work_mechanical[t] == b.sfe * (
+                    b.work_fluid[t] * b.efficiency_pump[t])
 
     def add_isothermal(self):
         """
@@ -286,7 +286,7 @@ see property package for documentation.}"""))
                          "outlet temperature")
         def isothermal(b, t):
             return b.control_volume.properties_in[t].temperature == \
-                       b.control_volume.properties_out[t].temperature
+                   b.control_volume.properties_out[t].temperature
 
     def add_adiabatic(self):
         """
@@ -304,7 +304,7 @@ see property package for documentation.}"""))
                          "outlet enthalpy")
         def adiabatic(b, t):
             return b.control_volume.properties_in[t].enth_mol == \
-                       b.control_volume.properties_out[t].enth_mol
+                   b.control_volume.properties_out[t].enth_mol
 
     def add_isentropic(self):
         """
@@ -334,17 +334,17 @@ see property package for documentation.}"""))
         tmp_dict["defined_state"] = False
 
         self.properties_isentropic = (
-                    self.config.property_package.state_block_class(
-                            self.flowsheet().config.time,
-                            doc="isentropic properties at outlet",
-                            default=tmp_dict))
+            self.config.property_package.state_block_class(
+                self.flowsheet().config.time,
+                doc="isentropic properties at outlet",
+                default=tmp_dict))
 
         # Connect isentropic state block properties
         @self.Constraint(self.flowsheet().config.time,
                          doc="Pressure for isentropic calculations")
         def isentropic_pressure(b, t):
-            return b.sfp*b.properties_isentropic[t].pressure == \
-                b.sfp*b.control_volume.properties_out[t].pressure
+            return b.sfp * b.properties_isentropic[t].pressure == \
+                b.sfp * b.control_volume.properties_out[t].pressure
 
         # This assumes isentropic composition is the same as outlet
         mb_type = self.config.material_balance_type
@@ -392,33 +392,33 @@ see property package for documentation.}"""))
         elif mb_type == \
                 MaterialBalanceType.elementTotal:
             raise BalanceTypeNotSupportedError(
-                    "{} PressureChanger does not support element balances."
-                    .format(self.name))
+                "{} PressureChanger does not support element balances."
+                .format(self.name))
         elif mb_type == \
                 MaterialBalanceType.none:
             raise BalanceTypeNotSupportedError(
-                    "{} PressureChanger does not support material_balance_type"
-                    " = none."
-                    .format(self.name))
+                "{} PressureChanger does not support material_balance_type"
+                " = none."
+                .format(self.name))
         else:
             raise BurntToast(
-                    "{} PressureChanger received an unexpected argument for "
-                    "material_balance_type. This should never happen. Please "
-                    "contact the IDAES developers with this bug."
-                    .format(self.name))
+                "{} PressureChanger received an unexpected argument for "
+                "material_balance_type. This should never happen. Please "
+                "contact the IDAES developers with this bug."
+                .format(self.name))
 
         # This assumes isentropic entropy is the same as inlet
         @self.Constraint(self.flowsheet().config.time,
                          doc="Isentropic assumption")
         def isentropic(b, t):
             return b.properties_isentropic[t].entr_mol == \
-                       b.control_volume.properties_in[t].entr_mol
+                   b.control_volume.properties_in[t].entr_mol
 
         # Isentropic work
         @self.Constraint(self.flowsheet().config.time,
                          doc="Calculate work of isentropic process")
         def isentropic_energy_balance(b, t):
-            return b.sfe*b.work_isentropic[t] == b.sfe*(
+            return b.sfe * b.work_isentropic[t] == b.sfe * (
                 sum(b.properties_isentropic[t].get_enthalpy_flow_terms(p)
                     for p in b.config.property_package.phase_list) -
                 sum(b.control_volume.properties_in[t]
@@ -430,11 +430,11 @@ see property package for documentation.}"""))
                          doc="Actual mechanical work calculation")
         def actual_work(b, t):
             if b.config.compressor:
-                return b.sfe*b.work_isentropic[t] == b.sfe*(
-                            b.work_mechanical[t]*b.efficiency_isentropic[t])
+                return b.sfe * b.work_isentropic[t] == b.sfe * (
+                    b.work_mechanical[t] * b.efficiency_isentropic[t])
             else:
-                return b.sfe*b.work_mechanical[t] == b.sfe*(
-                        b.work_isentropic[t]*b.efficiency_isentropic[t])
+                return b.sfe * b.work_mechanical[t] == b.sfe * (
+                    b.work_isentropic[t] * b.efficiency_isentropic[t])
 
     def model_check(blk):
         """
@@ -586,48 +586,44 @@ see property package for documentation.}"""))
         opt.options = optarg
 
         # ---------------------------------------------------------------------
-        # Initialize Isentropic block
-        blk.control_volume.properties_in.initialize(outlvl=outlvl-1,
-                                                    optarg=optarg,
-                                                    solver=solver,
-                                                    state_args=state_args)
+        # Initialize holdup block
+        flags = blk.control_volume.initialize(outlvl=outlvl - 1,
+                                              optarg=optarg,
+                                              solver=solver,
+                                              state_args=state_args)
 
         if outlvl > 0:
             logger.info('{} Initialisation Step 1 Complete.'.format(blk.name))
 
         # ---------------------------------------------------------------------
-        # Initialize holdup block
-        flags = blk.control_volume.initialize(outlvl=outlvl-1,
-                                              optarg=optarg,
-                                              solver=solver,
-                                              state_args=state_args)
+        # Initialize Isentropic block
+        blk.control_volume.properties_isentropic.initialize(
+            outlvl=outlvl - 1,
+            optarg=optarg,
+            solver=solver,
+            state_args=state_args)
 
         if outlvl > 0:
             logger.info('{} Initialisation Step 2 Complete.'.format(blk.name))
 
         # ---------------------------------------------------------------------
         # Solve for isothermal conditions
-        if isinstance(
-                blk.control_volume.properties_in[
-                        blk.flowsheet().config.time[1]].temperature,
-                Var):
-            for t in blk.flowsheet().config.time:
-                blk.control_volume.properties_in[t].temperature.fix()
-            blk.isentropic.deactivate()
-            results = opt.solve(blk, tee=stee)
-            if outlvl > 0:
-                if results.solver.termination_condition == \
-                        TerminationCondition.optimal:
-                    logger.info('{} Initialisation Step 3 Complete.'
-                                .format(blk.name))
-                else:
-                    logger.warning('{} Initialisation Step 3 Failed.'
-                                   .format(blk.name))
-            for t in blk.flowsheet().config.time:
-                blk.control_volume.properties_in[t].temperature.unfix()
-                blk.isentropic.activate()
-        elif outlvl > 0:
-            logger.info('{} Initialisation Step 3 Skipped.'.format(blk.name))
+        for t in blk.flowsheet().config.time:
+            blk.properties_isentropic[t].\
+                temperature.fix()
+        blk.isentropic.deactivate()
+        results = opt.solve(blk, tee=stee)
+        if outlvl > 0:
+            if results.solver.termination_condition == \
+                    TerminationCondition.optimal:
+                logger.info('{} Initialisation Step 3 Complete.'
+                            .format(blk.name))
+            else:
+                logger.warning('{} Initialisation Step 3 Failed.'
+                               .format(blk.name))
+        for t in blk.flowsheet().config.time:
+            blk.properties_isentropic[t].temperature.unfix()
+            blk.isentropic.activate()
 
         # ---------------------------------------------------------------------
         # Solve unit
@@ -644,7 +640,7 @@ see property package for documentation.}"""))
 
         # ---------------------------------------------------------------------
         # Release Inlet state
-        blk.control_volume.release_state(flags, outlvl-1)
+        blk.control_volume.release_state(flags, outlvl - 1)
 
         if outlvl > 0:
             logger.info('{} Initialisation Complete.'.format(blk.name))
@@ -660,6 +656,7 @@ see property package for documentation.}"""))
         if hasattr(self, "efficiency_pump"):
             var_dict["Efficiency"] = self.efficiency_pump[time_point]
         if hasattr(self, "efficiency_isentropic"):
-            var_dict["Isentropic Efficiency"] = self.efficiency_isentropic[time_point]
+            var_dict["Isentropic Efficiency"] = \
+                self.efficiency_isentropic[time_point]
 
         return {"vars": var_dict}
