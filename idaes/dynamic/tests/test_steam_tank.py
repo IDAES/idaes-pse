@@ -144,7 +144,7 @@ def create_model(steady_state=True, time_set=[0,3], nfe=5, calc_integ=True):
     # Initialize the model
     solver = pyo.SolverFactory("ipopt")
     solver.options = {'tol': 1e-6,
-                      'linear_solver': "mumps",
+                      'linear_solver': "ma27",
                       'max_iter': 100}
     for t in m.fs.time:
         m.fs.valve_1.inlet.flow_mol = 100 # initial guess on flow
