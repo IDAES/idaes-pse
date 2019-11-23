@@ -597,7 +597,7 @@ see property package for documentation.}"""))
 
         # ---------------------------------------------------------------------
         # Initialize Isentropic block
-        blk.control_volume.properties_isentropic.initialize(
+        blk.properties_isentropic.initialize(
             outlvl=outlvl - 1,
             optarg=optarg,
             solver=solver,
@@ -608,9 +608,7 @@ see property package for documentation.}"""))
 
         # ---------------------------------------------------------------------
         # Solve for isothermal conditions
-        for t in blk.flowsheet().config.time:
-            blk.properties_isentropic[t].\
-                temperature.fix()
+        blk.properties_isentropic[:].temperature.fix()
         blk.isentropic.deactivate()
         results = opt.solve(blk, tee=stee)
         if outlvl > 0:
@@ -621,9 +619,9 @@ see property package for documentation.}"""))
             else:
                 logger.warning('{} Initialisation Step 3 Failed.'
                                .format(blk.name))
-        for t in blk.flowsheet().config.time:
-            blk.properties_isentropic[t].temperature.unfix()
-            blk.isentropic.activate()
+
+        blk.properties_isentropic[:].temperature.unfix()
+        blk.isentropic.activate()
 
         # ---------------------------------------------------------------------
         # Solve unit
