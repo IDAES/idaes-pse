@@ -672,7 +672,7 @@ def number_unfixed_variables(block):
     return len(unfixed_variables_set(block))
 
 
-def variables_on_bounds_generator(block, tol=1e-4):
+def variables_near_bounds_generator(block, tol=1e-4):
     """
     Generator which returns all Var components in a model which have a value
     within tol (relative) of a bound.
@@ -687,13 +687,30 @@ def variables_on_bounds_generator(block, tol=1e-4):
     """
     for v in block.component_data_objects(
             ctype=Var, active=True, descend_into=True):
-        if v.ub is not None and value(v.ub - v.value) <= tol*v.value:
+        # To avoid errors, check that v has a value
+        if v.value is None:
+            continue
+
+        # First, determine absolute tolerance to apply to bounds
+        if v.ub is not None and v.lb is not None:
+            # Both upper and lower bounds, apply tol to (upper - lower)
+            atol = value((v.ub - v.lb)*tol)
+        elif v.ub is not None:
+            # Only upper bound, apply tol to bound value
+            atol = abs(value(v.ub*tol))
+        elif v.lb is not None:
+            # Only lower bound, apply tol to bound value
+            atol = abs(value(v.lb*tol))
+        else:
+            continue
+
+        if v.ub is not None and value(v.ub - v.value) <= atol:
             yield v
-        elif v.lb is not None and value(v.value - v.lb) <= tol*v.value:
+        elif v.lb is not None and value(v.value - v.lb) <= atol:
             yield v
 
 
-def variables_on_bounds_set(block, tol=1e-4):
+def variables_near_bounds_set(block, tol=1e-4):
     """
     Method to return a ComponentSet of all Var components in a model which have
     a value within tol (relative) of a bound.
@@ -706,10 +723,10 @@ def variables_on_bounds_set(block, tol=1e-4):
         A ComponentSet including all Var components block that are close to a
         bound
     """
-    return ComponentSet(variables_on_bounds_generator(block, tol))
+    return ComponentSet(variables_near_bounds_generator(block, tol))
 
 
-def number_variables_on_bounds(block, tol=1e-4):
+def number_variables_near_bounds(block, tol=1e-4):
     """
     Method to return the number of all Var components in a model which have
     a value within tol (relative) of a bound.
@@ -721,7 +738,7 @@ def number_variables_on_bounds(block, tol=1e-4):
     Returns:
         Number of components block that are close to a bound
     """
-    return len(variables_on_bounds_set(block, tol))
+    return len(variables_near_bounds_set(block, tol))
 
 
 # -------------------------------------------------------------------------
