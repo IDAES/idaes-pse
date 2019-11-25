@@ -107,10 +107,9 @@ an optional step.
 
     python setup.py develop
 
-5. Run the idaes command to install the compiled binaries.  In the command below replace
-   ``{release}`` with the release you are downloading::
+5. Run the idaes command to install the compiled binaries.
 
-    idaes get-extensions --url https://github.com/IDAES/idaes-pse/releases/download/{release}/
+    idaes get-extensions
 
 6. Run tests on unit models::
 
