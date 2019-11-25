@@ -597,6 +597,23 @@ see property package for documentation.}"""))
 
         # ---------------------------------------------------------------------
         # Initialize Isentropic block
+
+        # Set state_args from inlet state
+        if state_args is None:
+            state_args = {}
+            state_dict = (
+                blk.control_volume.properties_in[
+                    blk.flowsheet().config.time.first()]
+                .define_port_members())
+
+            for k in state_dict.keys():
+                if state_dict[k].is_indexed():
+                    state_args[k] = {}
+                    for m in state_dict[k].keys():
+                        state_args[k][m] = state_dict[k][m].value
+                else:
+                    state_args[k] = state_dict[k].value
+
         blk.properties_isentropic.initialize(
             outlvl=outlvl - 1,
             optarg=optarg,
@@ -608,7 +625,9 @@ see property package for documentation.}"""))
 
         # ---------------------------------------------------------------------
         # Solve for isothermal conditions
-        blk.properties_isentropic[:].temperature.fix()
+        if isinstance(blk.properties_isentropic[blk.
+                      flowsheet().config.time.first()].temperature, Var):
+            blk.properties_isentropic[:].temperature.fix()
         blk.isentropic.deactivate()
         results = opt.solve(blk, tee=stee)
         if outlvl > 0:
@@ -620,7 +639,9 @@ see property package for documentation.}"""))
                 logger.warning('{} Initialisation Step 3 Failed.'
                                .format(blk.name))
 
-        blk.properties_isentropic[:].temperature.unfix()
+        if isinstance(blk.properties_isentropic[blk.
+                      flowsheet().config.time.first()].temperature, Var):
+            blk.properties_isentropic[:].temperature.unfix()
         blk.isentropic.activate()
 
         # ---------------------------------------------------------------------
