@@ -20,7 +20,7 @@ use_idaes_solvers = true
     formatter = "f1"
     stream = "ext://sys.stdout"
   [logging.loggers.idaes]
-    level = "DEBUG"
+    level = "INFO"
     handlers = ["console"]
 """
 

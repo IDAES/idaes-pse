@@ -30,7 +30,7 @@ def test_1():
     m.c1 = pyo.Constraint(expr=m.z==m.x+m.y)
     m.e1 = pyo.Expression(expr=m.x**m.y)
 
-    assert(m.c1.body() == -5)
+    assert(m.c1.body() == -5) # hope constraint arrangment is deterministic
     assert(pyo.value(m.e1) == 8)
     rp.apply_to(m, substitute=[(m.y, m.x)])
     assert(m.c1.body() == -4)
@@ -46,7 +46,7 @@ def test_2():
     m.c1 = pyo.Constraint(expr=m.z==m.x["a"] + m.x["b"] + m.x["c"])
     m.e1 = pyo.Expression(expr=sum(m.x[i] for i in m.x))
 
-    assert(m.c1.body() == -6)
+    assert(m.c1.body() == -6) # hope constraint arrangment is deterministic
     assert(pyo.value(m.e1) == 6)
     rp.apply_to(m, substitute=[(m.x["c"], m.y)])
     assert(m.c1.body() == -7)
