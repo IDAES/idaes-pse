@@ -22,17 +22,17 @@ from pyomo.environ import (ConcreteModel,
                            Constraint,
                            Param,
                            Set,
-                           SolverFactory,
                            SolverStatus,
                            TerminationCondition,
                            value,
                            Var)
 
-from idaes.core import (FlowsheetBlock,
-                        MaterialBalanceType,
+from idaes.core import (MaterialBalanceType,
                         EnergyBalanceType,
                         MaterialFlowBasis)
-from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.model_statistics import (degrees_of_freedom,
+                                              fixed_variables_set,
+                                              activated_constraints_set)
 from idaes.core.util.testing import get_default_solver
 
 from idaes.property_models.core.state_definitions import FPTx
@@ -242,40 +242,60 @@ class TestStateBlock(object):
                          "temperature",
                          "pressure"]
 
+    def test_dof(self, model):
+        # Fix state
+        model.props[1].flow_mol.fix(1)
+        model.props[1].temperature.fix(368)
+        model.props[1].pressure.fix(101325)
+        model.props[1].mole_frac_comp["benzene"].fix(0.5)
+        model.props[1].mole_frac_comp["toluene"].fix(0.5)
+
+        assert degrees_of_freedom(model.props[1]) == 0
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
     def test_initialize(self, model):
-        assert not model.props[1].flow_mol.fixed
-        assert not model.props[1].temperature.fixed
-        assert not model.props[1].pressure.fixed
-        for i in model.props[1].mole_frac_comp:
-            assert not model.props[1].mole_frac_comp[i].fixed
+        orig_fixed_vars = fixed_variables_set(model)
+        orig_act_consts = activated_constraints_set(model)
 
-        model.props.initialize(hold_state=False, outlvl=1)
+        model.props.initialize(optarg={'tol': 1e-6})
 
-        assert not model.props[1].flow_mol.fixed
-        assert not model.props[1].temperature.fixed
-        assert not model.props[1].pressure.fixed
-        for i in model.props[1].mole_frac_comp:
-            assert not model.props[1].mole_frac_comp[i].fixed
+        assert degrees_of_freedom(model) == 0
 
-    def test_initialize_hold(self, model):
-        assert not model.props[1].flow_mol.fixed
-        assert not model.props[1].temperature.fixed
-        assert not model.props[1].pressure.fixed
-        for i in model.props[1].mole_frac_comp:
-            assert not model.props[1].mole_frac_comp[i].fixed
+        fin_fixed_vars = fixed_variables_set(model)
+        fin_act_consts = activated_constraints_set(model)
 
-        flags = model.props.initialize(hold_state=True)
+        assert len(fin_act_consts) == len(orig_act_consts)
+        assert len(fin_fixed_vars) == len(orig_fixed_vars)
 
-        assert model.props[1].flow_mol.fixed
-        assert model.props[1].temperature.fixed
-        assert model.props[1].pressure.fixed
-        for i in model.props[1].mole_frac_comp:
-            assert model.props[1].mole_frac_comp[i].fixed
+        for c in fin_act_consts:
+            assert c in orig_act_consts
+        for v in fin_fixed_vars:
+            assert v in orig_fixed_vars
 
-        model.props.release_state(flags, outlvl=1)
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solve(self, model):
+        results = solver.solve(model)
 
-        assert not model.props[1].flow_mol.fixed
-        assert not model.props[1].temperature.fixed
-        assert not model.props[1].pressure.fixed
-        for i in model.props[1].mole_frac_comp:
-            assert not model.props[1].mole_frac_comp[i].fixed
+        # Check for optimal solution
+        assert results.solver.termination_condition == \
+            TerminationCondition.optimal
+        assert results.solver.status == SolverStatus.ok
+
+    @pytest.mark.initialize
+    @pytest.mark.solver
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    def test_solution(self, model):
+        # Check phase equilibrium results
+        assert model.props[1].mole_frac_phase_comp["Liq", "benzene"].value == \
+            pytest.approx(0.4121, abs=1e-4)
+        assert model.props[1].mole_frac_phase_comp["Vap", "benzene"].value == \
+            pytest.approx(0.6339, abs=1e-4)
+        assert model.props[1].phase_frac["Vap"].value == \
+            pytest.approx(0.3961, abs=1e-4)
+
+    @pytest.mark.ui
+    def test_report(self, model):
+        model.props[1].report()

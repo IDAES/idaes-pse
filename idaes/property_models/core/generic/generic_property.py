@@ -35,7 +35,7 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_constraints)
-from idaes.core.util.exceptions import PropertyPackageError
+from idaes.core.util.exceptions import BurntToast, PropertyPackageError
 
 
 # Set up logger
@@ -254,6 +254,14 @@ class _GenericStateBlock(StateBlock):
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
             flag_dict = fix_state_vars(blk, state_args)
+            # Confirm DoF for sanity
+            for k in blk.keys():
+                if degrees_of_freedom(blk[k]) != 0:
+                    raise BurntToast("Degrees of freedom were not zero "
+                                     "after trying to fix state variables. "
+                                     "Something broke in the generic property "
+                                     "package code - please inform the IDAES "
+                                     "developers.")
         else:
             # When state vars are fixed, check that DoF is 0
             for k in blk.keys():
