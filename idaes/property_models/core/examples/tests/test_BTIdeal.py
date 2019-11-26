@@ -18,10 +18,20 @@ from VLE data to compute the activity coefficients.
 Author: Jaffer Ghouse
 """
 import pytest
-from pyomo.environ import ConcreteModel, Set, SolverFactory, TerminationCondition, \
-    SolverStatus, value
+from pyomo.environ import (ConcreteModel,
+                           Constraint,
+                           Param,
+                           Set,
+                           SolverFactory,
+                           SolverStatus,
+                           TerminationCondition,
+                           value,
+                           Var)
 
-from idaes.core import FlowsheetBlock
+from idaes.core import (FlowsheetBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType,
+                        MaterialFlowBasis)
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import get_default_solver
 
@@ -101,146 +111,171 @@ class TestParamBlock(object):
                 1: ["benzene", ("Vap", "Liq")],
                 2: ["toluene", ("Vap", "Liq")]}
 
-#        # Thermodynamic reference state
-#        self.pressure_ref = Param(mutable=True,
-#                                  default=101325,
-#                                  doc='Reference pressure [Pa]')
-#        self.temperature_ref = Param(mutable=True,
-#                                     default=298.15,
-#                                     doc='Reference temperature [K]')
-#
-#        # Source: The Properties of Gases and Liquids (1987)
-#        # 4th edition, Chemical Engineering Series - Robert C. Reid
-#        pressure_crit_data = {'benzene': 48.9e5,
-#                              'toluene': 41e5}
-#
-#        self.pressure_crit = Param(
-#            self.component_list,
-#            within=NonNegativeReals,
-#            mutable=False,
-#            initialize=pressure_crit_data,
-#            doc='Critical pressure [Pa]')
-#
-#        # Source: The Properties of Gases and Liquids (1987)
-#        # 4th edition, Chemical Engineering Series - Robert C. Reid
-#        temperature_crit_data = {'benzene': 562.2,
-#                                 'toluene': 591.8}
-#
-#        self.temperature_crit = Param(
-#            self.component_list,
-#            within=NonNegativeReals,
-#            mutable=False,
-#            initialize=temperature_crit_data,
-#            doc='Critical temperature [K]')
-#
-#        # Gas Constant
-#        self.gas_const = Param(within=NonNegativeReals,
-#                               mutable=False,
-#                               default=8.314,
-#                               doc='Gas constant [J/mol.K]')
-#
-#        # Source: The Properties of Gases and Liquids (1987)
-#        # 4th edition, Chemical Engineering Series - Robert C. Reid
-#        mw_comp_data = {'benzene': 78.1136E-3,
-#                        'toluene': 92.1405E-3}
-#
-#        self.mw_comp = Param(self.component_list,
-#                             mutable=False,
-#                             initialize=mw_comp_data,
-#                             doc="Molecular weight [kg/mol]")
-#
-#        # Constants for ideal gas specific enthalpy
-#        # Source: The Properties of Gases and Liquids (1987)
-#        # 4th edition, Chemical Engineering Series - Robert C. Reid
-#        cp_ig_data = {('benzene', 'A'): -3.392E1,
-#                      ('benzene', 'B'): 4.739E-1,
-#                      ('benzene', 'C'): -3.017E-4,
-#                      ('benzene', 'D'): 7.130E-8,
-#                      ('toluene', 'A'): -2.435E1,
-#                      ('toluene', 'B'): 5.125E-1,
-#                      ('toluene', 'C'): -2.765E-4,
-#                      ('toluene', 'D'): 4.911E-8}
-#
-#        self.cp_ig = Param(self.component_list,
-#                           ['A', 'B', 'C', 'D'],
-#                           mutable=False,
-#                           initialize=cp_ig_data,
-#                           doc="Parameters for ideal gas heat capacity")
-#
-#        # Constants for liquid phase specific enthalpy
-#        # Source: Perry's Chemical Engineers Handbook 7th Ed.
-#        # Units converted to J/mol.K
-#        cp_liq_data = {('benzene', '1'): 1.29E2,
-#                       ('benzene', '2'): -1.7E-1,
-#                       ('benzene', '3'): 6.48E-4,
-#                       ('benzene', '4'): 0,
-#                       ('benzene', '5'): 0,
-#                       ('toluene', '1'): 1.40E2,
-#                       ('toluene', '2'): -1.52E-1,
-#                       ('toluene', '3'): 6.95E-4,
-#                       ('toluene', '4'): 0,
-#                       ('toluene', '5'): 0}
-#
-#        self.cp_liq = Param(self.component_list,
-#                            ['1', '2', '3', '4', '5'],
-#                            mutable=False,
-#                            initialize=cp_liq_data,
-#                            doc="Parameters for liquid cp")
-#
-#        # Source: The Properties of Gases and Liquids (1987)
-#        # 4th edition, Chemical Engineering Series - Robert C. Reid
-#        pressure_sat_coeff_data = {('benzene', 'A'): -6.98273,
-#                                   ('benzene', 'B'): 1.33213,
-#                                   ('benzene', 'C'): -2.62863,
-#                                   ('benzene', 'D'): -3.33399,
-#                                   ('toluene', 'A'): -7.28607,
-#                                   ('toluene', 'B'): 1.38091,
-#                                   ('toluene', 'C'): -2.83433,
-#                                   ('toluene', 'D'): -2.79168}
-#
-#        self.pressure_sat_coeff = Param(
-#            self.component_list,
-#            ['A', 'B', 'C', 'D'],
-#            mutable=False,
-#            initialize=pressure_sat_coeff_data,
-#            doc="parameters to compute Cp_comp")
-#
-#        # Source: "Perry's Chemical Engineers Handbook by Robert H. Perry"
-#        # 7th Edition, pg. 2-98
-#        # Units converted to mol/m^3
-#        dens_mol_liq_coeff_data = {('benzene', '1'): 1.0162*1e3,
-#                                   ('benzene', '2'): 0.2655,
-#                                   ('benzene', '3'): 562.16,
-#                                   ('benzene', '4'): 0.28212,
-#                                   ('toluene', '1'): 0.8488*1e3,
-#                                   ('toluene', '2'): 0.26655,
-#                                   ('toluene', '3'): 591.8,
-#                                   ('toluene', '4'): 0.2878}
-#        self.dens_mol_liq_coeff = Param(
-#            self.component_list,
-#            ['1', '2', '3', '4'],
-#            mutable=False,
-#            initialize=dens_mol_liq_coeff_data,
-#            doc="Coefficients for calculating liquid molar densities")
-#
-#        # Source: The Properties of Gases and Liquids (1987)
-#        # 4th edition, Chemical Engineering Series - Robert C. Reid
-#        dh_vap_data = {'benzene': 3.377e4,
-#                       'toluene': 3.8262e4}
-#
-#        self.dh_vap_ref = Param(
-#                self.component_list,
-#                mutable=False,
-#                initialize=dh_vap_data,
-#                doc="Molar heat of vaporization @ Tref [J/mol]")
-#
-#        # Source: The Properties of Gases and Liquids (1987)
-#        # 4th edition, Chemical Engineering Series - Robert C. Reid
-#        ds_vap_data = {'benzene': 3.377e4/298.15,
-#                       'toluene': 3.8262e4/298.15}
-#
-#        self.ds_vap_ref = Param(
-#                self.component_list,
-#                mutable=False,
-#                initialize=ds_vap_data,
-#                doc="Molar entropy of vaporization @ Tref [J/mol.K]")
+        assert isinstance(model.params.pressure_ref, Param)
+        assert isinstance(model.params.temperature_ref, Param)
+
+
+class TestStateBlock(object):
+    @pytest.fixture(scope="class")
+    def model(self):
+        model = ConcreteModel()
+        model.params = BTIdealParameterBlock()
+
+        model.props = model.params.state_block_class(
+                [1],
+                default={"parameters": model.params,
+                         "defined_state": True})
+
+        return model
+
+    def test_build(self, model):
+        # Check state variable values and bounds
+        assert isinstance(model.props[1].flow_mol, Var)
+        assert value(model.props[1].flow_mol) == 500
+        assert model.props[1].flow_mol.ub == 1000
+        assert model.props[1].flow_mol.lb == 0
+
+        assert isinstance(model.props[1].pressure, Var)
+        assert value(model.props[1].pressure) == 5.25e5
+        assert model.props[1].pressure.ub == 1e6
+        assert model.props[1].pressure.lb == 5e4
+
+        assert isinstance(model.props[1].temperature, Var)
+        assert value(model.props[1].temperature) == 361.575
+        assert model.props[1].temperature.ub == 450
+        assert model.props[1].temperature.lb == 273.15
+
+        assert isinstance(model.props[1].mole_frac_comp, Var)
+        assert len(model.props[1].mole_frac_comp) == 2
+        for i in model.props[1].mole_frac_comp:
+            assert value(model.props[1].mole_frac_comp[i]) == 0.5
+
+        # Check supporting variables
+        assert isinstance(model.props[1].flow_mol_phase, Var)
+        assert len(model.props[1].flow_mol_phase) == 2
+
+        assert isinstance(model.props[1].mole_frac_phase_comp, Var)
+        assert len(model.props[1].mole_frac_phase_comp) == 4
+
+        assert isinstance(model.props[1].phase_frac, Var)
+        assert len(model.props[1].phase_frac) == 2
+
+        assert isinstance(model.props[1].total_flow_balance, Constraint)
+        assert len(model.props[1].total_flow_balance) == 1
+
+        assert isinstance(model.props[1].component_flow_balances, Constraint)
+        assert len(model.props[1].component_flow_balances) == 2
+
+        assert isinstance(model.props[1].sum_mole_frac, Constraint)
+        assert len(model.props[1].sum_mole_frac) == 1
+
+        assert not hasattr(model.props[1], "sum_mole_frac_out")
+
+        assert isinstance(model.props[1].phase_fraction_constraint, Constraint)
+        assert len(model.props[1].phase_fraction_constraint) == 2
+
+    def test_get_material_flow_terms(self, model):
+        for p in model.params.phase_list:
+            for j in model.params.component_list:
+                assert model.props[1].get_material_flow_terms(p, j) == (
+                    model.props[1].flow_mol_phase[p] *
+                    model.props[1].mole_frac_phase_comp[p, j])
+
+    def test_get_enthalpy_flow_terms(self, model):
+        for p in model.params.phase_list:
+            assert model.props[1].get_enthalpy_flow_terms(p) == (
+                model.props[1].flow_mol_phase[p] *
+                model.props[1].enth_mol_phase[p])
+
+    def test_get_material_density_terms(self, model):
+        for p in model.params.phase_list:
+            for j in model.params.component_list:
+                assert model.props[1].get_material_density_terms(p, j) == (
+                    model.props[1].dens_mol_phase[p] *
+                    model.props[1].mole_frac_phase_comp[p, j])
+
+    def test_get_energy_density_terms(self, model):
+        for p in model.params.phase_list:
+            assert model.props[1].get_energy_density_terms(p) == (
+                model.props[1].dens_mol_phase[p] *
+                model.props[1].enth_mol_phase[p])
+
+    def test_default_material_balance_type(self, model):
+        assert model.props[1].default_material_balance_type() == \
+            MaterialBalanceType.componentTotal
+
+    def test_default_energy_balance_type(self, model):
+        assert model.props[1].default_energy_balance_type() == \
+            EnergyBalanceType.enthalpyTotal
+
+    def test_get_material_flow_basis(self, model):
+        assert model.props[1].get_material_flow_basis() == \
+            MaterialFlowBasis.molar
+
+    def test_define_state_vars(self, model):
+        sv = model.props[1].define_state_vars()
+
+        assert len(sv) == 4
+        for i in sv:
+            assert i in ["flow_mol",
+                         "mole_frac_comp",
+                         "temperature",
+                         "pressure"]
+
+    def test_define_port_members(self, model):
+        sv = model.props[1].define_state_vars()
+
+        assert len(sv) == 4
+        for i in sv:
+            assert i in ["flow_mol",
+                         "mole_frac_comp",
+                         "temperature",
+                         "pressure"]
+
+    def test_define_display_vars(self, model):
+        sv = model.props[1].define_display_vars()
+
+        assert len(sv) == 4
+        for i in sv:
+            assert i in ["flow_mol",
+                         "mole_frac_comp",
+                         "temperature",
+                         "pressure"]
+
+    def test_initialize(self, model):
+        assert not model.props[1].flow_mol.fixed
+        assert not model.props[1].temperature.fixed
+        assert not model.props[1].pressure.fixed
+        for i in model.props[1].mole_frac_comp:
+            assert not model.props[1].mole_frac_comp[i].fixed
+
+        model.props.initialize(hold_state=False, outlvl=1)
+
+        assert not model.props[1].flow_mol.fixed
+        assert not model.props[1].temperature.fixed
+        assert not model.props[1].pressure.fixed
+        for i in model.props[1].mole_frac_comp:
+            assert not model.props[1].mole_frac_comp[i].fixed
+
+    def test_initialize_hold(self, model):
+        assert not model.props[1].flow_mol.fixed
+        assert not model.props[1].temperature.fixed
+        assert not model.props[1].pressure.fixed
+        for i in model.props[1].mole_frac_comp:
+            assert not model.props[1].mole_frac_comp[i].fixed
+
+        flags = model.props.initialize(hold_state=True)
+
+        assert model.props[1].flow_mol.fixed
+        assert model.props[1].temperature.fixed
+        assert model.props[1].pressure.fixed
+        for i in model.props[1].mole_frac_comp:
+            assert model.props[1].mole_frac_comp[i].fixed
+
+        model.props.release_state(flags, outlvl=1)
+
+        assert not model.props[1].flow_mol.fixed
+        assert not model.props[1].temperature.fixed
+        assert not model.props[1].pressure.fixed
+        for i in model.props[1].mole_frac_comp:
+            assert not model.props[1].mole_frac_comp[i].fixed

@@ -15,7 +15,9 @@ Methods for setting up state variables in generic property packages.
 """
 from pyomo.environ import Constraint, NonNegativeReals, Var
 
-from idaes.core import MaterialFlowBasis
+from idaes.core import (MaterialFlowBasis,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
 
 
 def define_state(b):
@@ -39,8 +41,48 @@ def define_state(b):
     except KeyError:
         p_bounds = (None, None)
 
+    # Set an initial value for each state var
+    if f_bounds == (None, None):
+        # No bounds, default to 1
+        f_init = 1
+    elif f_bounds[1] is None and f_bounds[0] is not None:
+        # Only lower bound, use lower bound + 10
+        f_init = f_bounds[0] + 10
+    elif f_bounds[1] is not None and f_bounds[0] is None:
+        # Only upper bound, use half upper bound
+        f_init = f_bounds[1]/2
+    else:
+        # Both bounds, use mid point
+        f_init = (f_bounds[0] + f_bounds[1])/2
+
+    if t_bounds == (None, None):
+        # No bounds, default to 298.15
+        t_init = 298.15
+    elif t_bounds[1] is None and t_bounds[0] is not None:
+        # Only lower bound, use lower bound + 10
+        t_init = t_bounds[0] + 10
+    elif t_bounds[1] is not None and t_bounds[0] is None:
+        # Only upper bound, use half upper bound
+        t_init = t_bounds[1]/2
+    else:
+        # Both bounds, use mid point
+        t_init = (t_bounds[0] + t_bounds[1])/2
+
+    if p_bounds == (None, None):
+        # No bounds, default to 101325
+        p_init = 101325
+    elif p_bounds[1] is None and p_bounds[0] is not None:
+        # Only lower bound, use lower bound + 10
+        p_init = p_bounds[0] + 10
+    elif p_bounds[1] is not None and p_bounds[0] is None:
+        # Only upper bound, use half upper bound
+        p_init = p_bounds[1]/2
+    else:
+        # Both bounds, use mid point
+        p_init = (p_bounds[0] + p_bounds[1])/2
+
     # Add state variables
-    b.flow_mol = Var(initialize=1.0,
+    b.flow_mol = Var(initialize=f_init,
                      domain=NonNegativeReals,
                      bounds=f_bounds,
                      doc='Component molar flowrate [mol/s]')
@@ -48,11 +90,11 @@ def define_state(b):
                            bounds=(0, None),
                            initialize=1 / len(b._params.component_list),
                            doc='Mixture mole fractions [-]')
-    b.pressure = Var(initialize=101325,
+    b.pressure = Var(initialize=p_init,
                      domain=NonNegativeReals,
                      bounds=p_bounds,
                      doc='State pressure [Pa]')
-    b.temperature = Var(initialize=298.15,
+    b.temperature = Var(initialize=t_init,
                         domain=NonNegativeReals,
                         bounds=t_bounds,
                         doc='State temperature [K]')
@@ -181,10 +223,18 @@ def define_state(b):
             return 0
     b.get_material_density_terms = get_material_density_terms_FPTx
 
-    def get_enthalpy_density_terms_FPTx(p):
-        """Create enthalpy density terms."""
+    def get_energy_density_terms_FPTx(p):
+        """Create energy density terms."""
         return b.dens_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_enthalpy_density_terms = get_enthalpy_density_terms_FPTx
+    b.get_energy_density_terms = get_energy_density_terms_FPTx
+
+    def default_material_balance_type_FPTx():
+        return MaterialBalanceType.componentTotal
+    b.default_material_balance_type = default_material_balance_type_FPTx
+
+    def default_energy_balance_type_FPTx():
+        return EnergyBalanceType.enthalpyTotal
+    b.default_energy_balance_type = default_energy_balance_type_FPTx
 
     def get_material_flow_basis_FPTx():
         return MaterialFlowBasis.molar

@@ -34,7 +34,7 @@ def dens_mol_phase(b, p):
         if b._params.config.dens_mol_comp_liq.dens_mol_liq is None:
             raise GenericPropertyPackageError(b, "dens_mol_comp_liq")
         return sum(b.mole_frac_phase_comp[p, j] *
-                   b._params.config.dens_mol_comp_liq.dens_mol_liq_comp(
+                   b._params.config.dens_mol_comp_liq.dens_mol_liq(
                            b, b.temperature, j)
                    for j in b._params.component_list)
     else:

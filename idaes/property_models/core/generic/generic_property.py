@@ -30,7 +30,9 @@ from idaes.core import (declare_process_block_class,
                         PhysicalParameterBlock,
                         StateBlockData,
                         StateBlock)
-from idaes.core.util.initialization import solve_indexed_blocks
+from idaes.core.util.initialization import (fix_state_vars,
+                                            revert_state_vars,
+                                            solve_indexed_blocks)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_constraints)
 from idaes.core.util.exceptions import PropertyPackageError
@@ -240,9 +242,6 @@ class _GenericStateBlock(StateBlock):
 
         _log.info('Starting {} initialisation'.format(blk.name))
 
-        # Create dict to hold information on what states needed to be fixed
-        flag_dict = {}
-
         for k in blk.keys():
             # Deactivate the constraints specific for outlet block i.e.
             # when defined state is False
@@ -252,37 +251,16 @@ class _GenericStateBlock(StateBlock):
                 except AttributeError:
                     pass
 
-            # Fix state variables if not already fixed
-            if state_vars_fixed is False:
-                for name, var in blk[k].define_state_vars().items():
-                    flag_dict[name] = {}
-
-                    if var.is_indexed:
-                        for idx in var:
-                            if var[idx].fixed:
-                                flag_dict[name][k, idx] = True
-                            else:
-                                flag_dict[name][k, idx] = False
-                                try:
-                                    var[idx].fix(state_args[name][idx])
-                                except KeyError:
-                                    var.fix()
-                    else:
-                        if var.fixed:
-                            flag_dict[name][k] = True
-                        else:
-                            flag_dict[name][k] = False
-                            try:
-                                var.fix(state_args[name])
-                            except KeyError:
-                                var.fix()
-            else:
-                # When state vars are fixed, check that DoF is 0
-                for k in blk.keys():
-                    if degrees_of_freedom(blk[k]) != 0:
-                        raise Exception("State vars fixed but degrees of "
-                                        "freedom for state block is not zero "
-                                        "during initialization.")
+        # Fix state variables if not already fixed
+        if state_vars_fixed is False:
+            flag_dict = fix_state_vars(blk, state_args)
+        else:
+            # When state vars are fixed, check that DoF is 0
+            for k in blk.keys():
+                if degrees_of_freedom(blk[k]) != 0:
+                    raise Exception("State vars fixed but degrees of "
+                                    "freedom for state block is not zero "
+                                    "during initialization.")
 
         # Set solver options
         if outlvl > 1:
@@ -445,7 +423,10 @@ class _GenericStateBlock(StateBlock):
 
         # If StateBlock has active constraints (i.e. has bubble and/or dew
         # point calculations), solve the block to converge these
-        if number_activated_constraints(blk) > 0:
+        n_cons = 0
+        for k in blk:
+            n_cons += number_activated_constraints(blk[k])
+        if n_cons > 0:
             results = solve_indexed_blocks(opt, [blk], tee=stee)
 
             if outlvl > 0:
@@ -517,7 +498,7 @@ class _GenericStateBlock(StateBlock):
                              "{} failed".format(blk.name))
 
         # ---------------------------------------------------------------------
-        # Return state to initial conditions
+        # Return constraints to initial state
         for k in blk.keys():
             for c in blk[k].component_objects(Constraint):
                 if c.local_name in (
@@ -544,19 +525,7 @@ class _GenericStateBlock(StateBlock):
                     hold_state=True.
             outlvl : sets output level of of logging
         '''
-        if flags is None:
-            return
-
-        # Unfix state variables
-        for k in blk.keys():
-            for name, var in blk[k].define_state_vars().items():
-                if var.is_indexed:
-                    for idx in var:
-                        if flags[name][k, idx] is False:
-                            var[idx].unfix()
-                else:
-                    if flags[name][k] is False:
-                        var[idx].unfix()
+        revert_state_vars(blk, flags)
 
         if outlvl > 0:
             if outlvl > 0:
