@@ -26,39 +26,47 @@ from pyomo.environ import log
 # Shomate Equation for heat capacities, enthalpy and entropy
 def cp_mol_ig(b, j, T):
     # Specific heat capacity (const. P)  via the Shomate equation
+    t = T/1000
     return(b._params.cp_ig_coeff[j, "A"] +
-           b._params.cp_ig_coeff[j, "B"]*T +
-           b._params.cp_ig_coeff[j, "C"]*T**2 +
-           b._params.cp_ig_coeff[j, "D"]*T**3 +
-           b._params.cp_ig_coeff[j, "E"]*T**-2)
+           b._params.cp_ig_coeff[j, "B"]*t +
+           b._params.cp_ig_coeff[j, "C"]*t**2 +
+           b._params.cp_ig_coeff[j, "D"]*t**3 +
+           b._params.cp_ig_coeff[j, "E"]*t**-2)
 
 
 def enth_mol_ig(b, j, T):
     # Specific enthalpy via the Shomate equation
-    return(b._params.cp_ig_coeff[j, "A"]*(T-b._params.temperature_ref) +
-           (b._params.cp_ig_coeff[j, "B"]/2) *
-           (T**2-b._params.temperature_ref**2) +
-           (b._params.cp_ig_coeff[j, "C"]/3) *
-           (T**3-b._params.temperature_ref**3) +
-           (b._params.cp_ig_coeff[j, "D"]/4) *
-           (T**4-b._params.temperature_ref**4) -
-           b._params.cp_ig_coeff[j, "E"]*(T-b._params.temperature_ref) +
-           b._params.cp_ig_coeff[j, "F"] - b._params.cp_ig_coeff[j, "H"])
+    t = T/1000
+    tr = b._params.temperature_ref/1000
+    return 1e3*(b._params.cp_ig_coeff[j, "A"]*(t-tr) +
+                (b._params.cp_ig_coeff[j, "B"]/2) *
+                (t**2-tr**2) +
+                (b._params.cp_ig_coeff[j, "C"]/3) *
+                (t**3-tr**3) +
+                (b._params.cp_ig_coeff[j, "D"]/4) *
+                (t**4-tr**4) -
+                b._params.cp_ig_coeff[j, "E"]*(1/t-1/tr))
 
 
 def entr_mol_ig(b, j, T):
     # Specific entropy via the Shomate equation
-    return(b._params.cp_ig_coeff[j, "A"]*log(T) +
-           b._params.cp_ig_coeff[j, "B"]*T +
-           (b._params.cp_ig_coeff[j, "C"]/2)*T**2 +
-           (b._params.cp_ig_coeff[j, "D"]/3)*T**3 -
-           (b._params.cp_ig_coeff[j, "E"]/2)*T**-2 +
+    t = T/1000
+    return(b._params.cp_ig_coeff[j, "A"]*log(t) +
+           b._params.cp_ig_coeff[j, "B"]*t +
+           (b._params.cp_ig_coeff[j, "C"]/2)*t**2 +
+           (b._params.cp_ig_coeff[j, "D"]/3)*t**3 -
+           (b._params.cp_ig_coeff[j, "E"]/2)*t**-2 +
            b._params.cp_ig_coeff[j, "G"])
 
 
 # -----------------------------------------------------------------------------
 # Antoine equation for saturation pressure
-def pressure_sat(b, j, Tz):
+def pressure_sat(b, j, T):
     return 10**(b._params.antoine_coeff[j, 'A'] -
                 b._params.antoine_coeff[j, 'B'] /
                 (T + b._params.antoine_coeff[j, 'C']))
+
+
+def pressure_sat_dT(b, j, T):
+    return (pressure_sat(b, j, T)*b._params.antoine_coeff[j, 'B']*log(10) /
+            (T + b._params.antoine_coeff[j, 'C'])**2)
