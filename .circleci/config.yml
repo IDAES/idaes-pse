@@ -8,7 +8,7 @@ shared-dev: &shared-dev
     - run: pip install pip==18.0.0
     - run: pip install -r requirements-dev.txt
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
-#    - run: pyomo --version
+#          - run: pyomo --version
 #    - run: cd docs && make all
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
     - run: coverage xml
@@ -32,11 +32,30 @@ jobs:
     docker:
       - image: idaes/jupyterhub:latest
     <<: *shared-dev
+  "python-3.6":
+    docker:
+      - image: idaes/jupyterhub:latest
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run: ./scripts/remove-idaes-from-path.sh
+      - run:
+          name: Create Python 3.6 Conda environment
+          command: |
+            conda create -yv -n idaes36 python=3.6
+      - run:
+          name: Install and run tests in Python 3.6 Conda environment
+          command: |
+            source activate idaes36
+            pip install pip==18.0.0
+            pip install -r requirements.txt
+            pytest -c pytest.ini idaes -m "not nocircleci"
 
 workflows:
   version: 2
   build:
     jobs:
+      - "python-3.6"
       - "python-3.7"
       - "python-3.7-dev"
 
