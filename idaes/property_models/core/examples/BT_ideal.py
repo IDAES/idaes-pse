@@ -140,40 +140,40 @@ class BTIdealParameterData(GenericParameterData):
         # Constants for ideal gas specific enthalpy
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
-        cp_ig_data = {('benzene', 'A'): -3.392E1,
-                      ('benzene', 'B'): 4.739E-1,
-                      ('benzene', 'C'): -3.017E-4,
-                      ('benzene', 'D'): 7.130E-8,
-                      ('toluene', 'A'): -2.435E1,
-                      ('toluene', 'B'): 5.125E-1,
-                      ('toluene', 'C'): -2.765E-4,
-                      ('toluene', 'D'): 4.911E-8}
+        cp_ig_coeff_data = {('benzene', 'A'): -3.392E1,
+                            ('benzene', 'B'): 4.739E-1,
+                            ('benzene', 'C'): -3.017E-4,
+                            ('benzene', 'D'): 7.130E-8,
+                            ('toluene', 'A'): -2.435E1,
+                            ('toluene', 'B'): 5.125E-1,
+                            ('toluene', 'C'): -2.765E-4,
+                            ('toluene', 'D'): 4.911E-8}
 
-        self.cp_ig = Param(self.component_list,
-                           ['A', 'B', 'C', 'D'],
-                           mutable=False,
-                           initialize=cp_ig_data,
-                           doc="Parameters for ideal gas heat capacity")
+        self.cp_ig_coeff = Param(self.component_list,
+                                 ['A', 'B', 'C', 'D'],
+                                 mutable=False,
+                                 initialize=cp_ig_coeff_data,
+                                 doc="Parameters for ideal gas heat capacity")
 
         # Constants for liquid phase specific enthalpy
         # Source: Perry's Chemical Engineers Handbook 7th Ed.
         # Units converted to J/mol.K
-        cp_liq_data = {('benzene', '1'): 1.29E2,
-                       ('benzene', '2'): -1.7E-1,
-                       ('benzene', '3'): 6.48E-4,
-                       ('benzene', '4'): 0,
-                       ('benzene', '5'): 0,
-                       ('toluene', '1'): 1.40E2,
-                       ('toluene', '2'): -1.52E-1,
-                       ('toluene', '3'): 6.95E-4,
-                       ('toluene', '4'): 0,
-                       ('toluene', '5'): 0}
+        cp_liq_coeff_data = {('benzene', '1'): 1.29E2,
+                             ('benzene', '2'): -1.7E-1,
+                             ('benzene', '3'): 6.48E-4,
+                             ('benzene', '4'): 0,
+                             ('benzene', '5'): 0,
+                             ('toluene', '1'): 1.40E2,
+                             ('toluene', '2'): -1.52E-1,
+                             ('toluene', '3'): 6.95E-4,
+                             ('toluene', '4'): 0,
+                             ('toluene', '5'): 0}
 
-        self.cp_liq = Param(self.component_list,
-                            ['1', '2', '3', '4', '5'],
-                            mutable=False,
-                            initialize=cp_liq_data,
-                            doc="Parameters for liquid cp")
+        self.cp_liq_coeff = Param(self.component_list,
+                                  ['1', '2', '3', '4', '5'],
+                                  mutable=False,
+                                  initialize=cp_liq_coeff_data,
+                                  doc="Parameters for liquid cp")
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid

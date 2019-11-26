@@ -17,7 +17,7 @@ from idaes.property_models.core.generic.generic_property import \
 
 
 # -----------------------------------------------------------------------------
-# Bubble temperture methods
+# Bubble temperature methods
 def bubble_temp_ideal(b):
     if b._params.config.pressure_sat_comp.pressure_sat is None:
         raise GenericPropertyPackageError(b, "pressure_sat_comp")
@@ -25,7 +25,7 @@ def bubble_temp_ideal(b):
     def rule_bubble_temp(b):
         return sum(b.mole_frac_comp[j] *
                    b._params.config.pressure_sat_comp.pressure_sat(
-                           b, b.temperature_bubble, j)
+                           b, j, b.temperature_bubble)
                    for j in b._params.component_list) - \
             b.pressure == 0
     b.eq_temperature_bubble = Constraint(rule=rule_bubble_temp)
@@ -34,8 +34,8 @@ def bubble_temp_ideal(b):
         return b._mole_frac_tbub[j]*b.pressure == b.mole_frac_comp[j] * \
                     b._params.config.pressure_sat_comp.pressure_sat(
                                                         b,
-                                                        b.temperature_bubble,
-                                                        j)
+                                                        j,
+                                                        b.temperature_bubble)
     b.eq_mole_frac_tbub = Constraint(b._params.component_list,
                                      rule=rule_mole_frac_bubble_temp)
 
@@ -52,7 +52,7 @@ def bubble_temp_ideal(b):
 
 
 # -----------------------------------------------------------------------------
-# Dew temperture methods
+# Dew temperature methods
 def dew_temp_ideal(b):
     if b._params.config.pressure_sat_comp.pressure_sat is None:
         raise GenericPropertyPackageError(b, "pressure_sat_comp")
@@ -61,7 +61,7 @@ def dew_temp_ideal(b):
         return (b.pressure*sum(
                     b.mole_frac_comp[j] /
                     b._params.config.pressure_sat_comp.pressure_sat(
-                            b, b.temperature_dew, j)
+                            b, j, b.temperature_dew)
                     for j in b._params.component_list) - 1 ==
                 0)
     b.eq_temperature_dew = Constraint(rule=rule_dew_temp)
@@ -69,7 +69,7 @@ def dew_temp_ideal(b):
     def rule_mole_frac_dew_temp(b, j):
         return (b._mole_frac_tdew[j] *
                 b._params.config.pressure_sat_comp.pressure_sat(
-                        b, b.temperature_dew, j) ==
+                        b, j, b.temperature_dew) ==
                 b.mole_frac_comp[j]*b.pressure)
     b.eq_mole_frac_tdew = Constraint(b._params.component_list,
                                      rule=rule_mole_frac_dew_temp)
@@ -85,7 +85,7 @@ def bubble_press_ideal(b):
         return b.pressure_bubble == sum(
                 b.mole_frac_comp[j] *
                 b._params.config.pressure_sat_comp.pressure_sat(
-                        b, b.temperature, j)
+                        b, j, b.temperature)
                 for j in b._params.component_list)
     b.eq_pressure_bubble = Constraint(rule=rule_bubble_press)
 
@@ -93,13 +93,13 @@ def bubble_press_ideal(b):
         return b._mole_frac_pbub[j]*b.pressure_bubble == (
             b.mole_frac_comp[j] *
             b._params.config.pressure_sat_comp.pressure_sat(
-                    b, b.temperature, j))
+                    b, j, b.temperature))
     b.eq_mole_frac_pbub = Constraint(b._params.component_list,
                                      rule=rule_mole_frac_bubble_press)
 
 
 # -----------------------------------------------------------------------------
-# Dew temperture methods
+# Dew pressure methods
 def dew_press_ideal(b):
     if b._params.config.pressure_sat_comp.pressure_sat is None:
         raise GenericPropertyPackageError(b, "pressure_sat_comp")
@@ -108,14 +108,14 @@ def dew_press_ideal(b):
         return 0 == 1 - b.pressure_dew*sum(
                 b.mole_frac_comp[j] /
                 b._params.config.pressure_sat_comp.pressure_sat(
-                        b, b.temperature, j)
+                        b, j, b.temperature)
                 for j in b._params.component_list)
     b.eq_pressure_dew = Constraint(rule=rule_dew_press)
 
     def rule_mole_frac_dew_press(b, j):
         return (b._mole_frac_pdew[j] *
                 b._params.config.pressure_sat_comp.pressure_sat(
-                        b, b.temperature, j) ==
+                        b, j, b.temperature) ==
                 b.mole_frac_comp[j]*b.pressure_dew)
     b.eq_mole_frac_pdew = Constraint(b._params.component_list,
                                      rule=rule_mole_frac_dew_press)

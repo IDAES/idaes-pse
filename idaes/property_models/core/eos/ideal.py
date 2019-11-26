@@ -35,7 +35,7 @@ def dens_mol_phase(b, p):
             raise GenericPropertyPackageError(b, "dens_mol_comp_liq")
         return sum(b.mole_frac_phase_comp[p, j] *
                    b._params.config.dens_mol_comp_liq.dens_mol_liq(
-                           b, b.temperature, j)
+                           b, j, b.temperature)
                    for j in b._params.component_list)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
@@ -107,7 +107,7 @@ def fugacity(b, p, j):
             raise GenericPropertyPackageError(b, "pressure_sat_comp")
         return b.mole_frac_phase_comp[p, j] * \
                b._params.config.pressure_sat_comp.pressure_sat(
-                       b, b.temperature, j)
+                       b, j, b.temperature)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 

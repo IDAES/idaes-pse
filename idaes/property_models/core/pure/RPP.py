@@ -25,36 +25,36 @@ from pyomo.environ import exp, log
 # Heat capacities, enthalpies and entropies
 def cp_mol_ig(b, j, T):
     # Specific enthalpy
-    return (b._params.cp_ig[j, "D"]*T**3 +
-            b._params.cp_ig[j, "C"]*T**2 +
-            b._params.cp_ig[j, "B"]*T +
-            b._params.cp_ig[j, "A"])
+    return (b._params.cp_ig_coeff[j, "D"]*T**3 +
+            b._params.cp_ig_coeff[j, "C"]*T**2 +
+            b._params.cp_ig_coeff[j, "B"]*T +
+            b._params.cp_ig_coeff[j, "A"])
 
 
 def enth_mol_ig(b, j, T):
     # Specific enthalpy
-    return ((b._params.cp_ig[j, "D"]/4) *
+    return ((b._params.cp_ig_coeff[j, "D"]/4) *
             (T**4-b._params.temperature_ref**4) +
-            (b._params.cp_ig[j, "C"]/3) *
+            (b._params.cp_ig_coeff[j, "C"]/3) *
             (T**3-b._params.temperature_ref**3) +
-            (b._params.cp_ig[j, "B"]/2) *
+            (b._params.cp_ig_coeff[j, "B"]/2) *
             (T**2-b._params.temperature_ref**2) +
-            b._params.cp_ig[j, "A"] *
+            b._params.cp_ig_coeff[j, "A"] *
             (T-b._params.temperature_ref))
 
 
 def entr_mol_ig(b, j, T):
     # Specific entropy
-    return ((b._params.cp_ig[j, 'D']/3)*T**3 +
-            (b._params.cp_ig[j, 'C']/2)*T**2 +
-            b._params.cp_ig[j, 'B']*T +
-            b._params.cp_ig[j, 'A']*log(T))
+    return ((b._params.cp_ig_coeff[j, 'D']/3)*T**3 +
+            (b._params.cp_ig_coeff[j, 'C']/2)*T**2 +
+            b._params.cp_ig_coeff[j, 'B']*T +
+            b._params.cp_ig_coeff[j, 'A']*log(T))
 
 
 # -----------------------------------------------------------------------------
 # Saturation pressure
 # Note that this equation in not valid beyond the critical temperature
-def pressure_sat(b, T, j):
+def pressure_sat(b, j, T):
     x = 1 - T/b._params.temperature_crit[j]
 
     return (exp((1-x)**-1 * (b._params.pressure_sat_coeff[j, 'A']*x +
@@ -64,10 +64,10 @@ def pressure_sat(b, T, j):
             b._params.pressure_crit[j])
 
 
-def pressure_sat_dT(b, T, j):
+def pressure_sat_dT(b, j, T):
     x = 1 - T/b._params.temperature_crit[j]
 
-    return (-pressure_sat(b, T, j) *
+    return (-pressure_sat(b, j, T) *
             ((b._params.pressure_sat_coeff[j, 'A'] +
               1.5*b._params.pressure_sat_coeff[j, 'B']*x**0.5 +
               3*b._params.pressure_sat_coeff[j, 'C']*x**2 +

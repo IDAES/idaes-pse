@@ -305,13 +305,13 @@ class _GenericStateBlock(StateBlock):
                 # Iteration limit of 30
                 while err > 1e-1 and counter < 30:
                     f = value(sum(blk[k]._params.config.pressure_sat_comp
-                                  .pressure_sat(blk[k], Tbub0, j) *
+                                  .pressure_sat(blk[k], j, Tbub0) *
                                   blk[k].mole_frac_comp[j]
                                   for j in blk[k]._params.component_list) -
                               blk[k].pressure)
                     df = value(sum(
                            blk[k].mole_frac_comp[j]*blk[k]._params.config
-                           .pressure_sat_comp.pressure_sat_dT(blk[k], Tbub0, j)
+                           .pressure_sat_comp.pressure_sat_dT(blk[k], j, Tbub0)
                            for j in blk[k]._params.component_list))
 
                     # Limit temperature step to avoid avoid excessive overshoot
@@ -331,7 +331,7 @@ class _GenericStateBlock(StateBlock):
                     blk[k]._mole_frac_tbub[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure /
                             blk[k]._params.config.pressure_sat_comp
-                                  .pressure_sat(blk[k], Tbub0, j))
+                                  .pressure_sat(blk[k], j, Tbub0))
 
             # Bubble temperature initialization
             if hasattr(blk[k], "_mole_frac_tdew"):
@@ -356,16 +356,16 @@ class _GenericStateBlock(StateBlock):
                     f = value(blk[k].pressure *
                               sum(blk[k].mole_frac_comp[j] /
                                   blk[k]._params.config.pressure_sat_comp
-                                  .pressure_sat(blk[k], Tdew0, j)
+                                  .pressure_sat(blk[k], j, Tdew0)
                                   for j in blk[k]._params.component_list) - 1)
                     df = -value(
                             blk[k].pressure *
                             sum(blk[k].mole_frac_comp[j] /
                                 blk[k]._params.config.pressure_sat_comp
-                                  .pressure_sat(blk[k], Tdew0, j)**2 *
+                                  .pressure_sat(blk[k], j, Tdew0)**2 *
                                 blk[k]._params.config
                                 .pressure_sat_comp.pressure_sat_dT(
-                                        blk[k], Tdew0, j)
+                                        blk[k], j, Tdew0)
                                 for j in blk[k]._params.component_list))
 
                     # Limit temperature step to avoid avoid excessive overshoot
@@ -384,21 +384,21 @@ class _GenericStateBlock(StateBlock):
                     blk[k]._mole_frac_tdew[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure /
                             blk[k]._params.config.pressure_sat_comp
-                                  .pressure_sat(blk[k], Tdew0, j))
+                                  .pressure_sat(blk[k], j, Tdew0))
 
             # Bubble pressure initialization
             if hasattr(blk[k], "_mole_frac_pbub"):
                 blk[k].pressure_bubble.value = value(
                         sum(blk[k].mole_frac_comp[j] *
                             blk[k]._params.config.pressure_sat_comp
-                                  .pressure_sat(blk[k], blk[k].temperature, j)
+                                  .pressure_sat(blk[k], j, blk[k].temperature)
                             for j in blk[k]._params.component_list))
 
                 for j in blk[k]._params.component_list:
                     blk[k]._mole_frac_pbub[j].value = value(
                         blk[k].mole_frac_comp[j] *
                         blk[k]._params.config.pressure_sat_comp
-                              .pressure_sat(blk[k], blk[k].temperature, j) /
+                              .pressure_sat(blk[k], j, blk[k].temperature) /
                         blk[k].pressure_bubble)
 
             # Dew pressure initialization
@@ -406,14 +406,14 @@ class _GenericStateBlock(StateBlock):
                 blk[k].pressure_dew.value = value(
                         sum(1/(blk[k].mole_frac_comp[j] /
                                blk[k]._params.config.pressure_sat_comp
-                               .pressure_sat(blk[k], blk[k].temperature, j))
+                               .pressure_sat(blk[k], j, blk[k].temperature))
                             for j in blk[k]._params.component_list))
 
                 for j in blk[k]._params.component_list:
                     blk[k]._mole_frac_pdew[j].value = value(
                             blk[k].mole_frac_comp[j]*blk[k].pressure_bubble /
                             blk[k]._params.config.pressure_sat_comp
-                                  .pressure_sat(blk[k], blk[k].temperature, j))
+                                  .pressure_sat(blk[k], j, blk[k].temperature))
 
             # Solve bubble and dew point constraints
             for c in blk[k].component_objects(Constraint):
