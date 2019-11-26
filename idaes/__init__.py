@@ -77,6 +77,7 @@ def _import_packages(packages, optional=True):
         pname = name + '.plugins'  # look in plugins sub-package
         try:
             pkg = importlib.import_module(pname)
+            _log.debug("Plugins importing {}".format(pname))
         except ImportError as e:
             _log.exception("failed to import plugin: {}".format(pname))
             if not optional:

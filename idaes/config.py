@@ -7,7 +7,7 @@ default_config = """
 default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
 use_idaes_solvers = true
 [plugins]
-  required = []
+  required = ["idaes"]
   optional = []
 [logging]
   version = 1
@@ -20,7 +20,7 @@ use_idaes_solvers = true
     formatter = "f1"
     stream = "ext://sys.stdout"
   [logging.loggers.idaes]
-    level = "INFO"
+    level = "DEBUG"
     handlers = ["console"]
 """
 
