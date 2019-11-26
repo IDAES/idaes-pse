@@ -37,8 +37,8 @@ class ReplaceVariables(NonIsomorphicTransformation):
         default=[],
         description="List-like of tuples where the first item in a tuple is a "
                     "Pyomo variable to be replaced and the second item in the "
-                    "tuple is a pyomo item to replace it with. This transform "
-                    "is not reversible."
+                    "tuple is a Pyomo variable to replace it with. This "
+                    "transformation is not reversible."
     ))
 
     __doc__ = add_docstring_list(__doc__, CONFIG)
