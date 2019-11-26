@@ -89,32 +89,20 @@ starting to install Python and/or Conda packages,
 If you are not familiar with these commands, don't worry, this is
 an optional step.
 
-**Download IDAES source code and install required packages**
-
-1. Go to the idaes-pse releases page, https://github.com/IDAES/idaes-pse/releases/, and
-   look at the most recent release. Under the section labeled "Assets" there will be a
-   "Source Code" zip file. Download that file and extract the contents in any location
-   of your choice.
-2. In the Linux terminal or Anaconda Powershell, navigate to the folder you created
-   in the previous step.
-3. Install the packages required for IDAES using the following command::
-
-    pip install -r requirements.txt
-
 **Install IDAES**
 
-4. In the folder where the idaes source code was downloaded, run the *setup.py* file::
+1. Install IDAES with pip::
 
-    python setup.py develop
+    pip install idaes-pse
 
-5. Run the idaes command to install the compiled binaries.
+2. Run the idaes command to install the compiled binaries::
 
     idaes get-extensions
 
-6. Run tests on unit models::
+3. Run tests on unit models::
 
     pytest idaes/unit_models
 
-7. You should see the tests run and all should pass to ensure the installation worked. You can
+4. You should see the tests run and all should pass to ensure the installation worked. You can
    report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
    (Please try to be specific about the command and the offending output.)
