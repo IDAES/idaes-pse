@@ -105,8 +105,10 @@ an optional step.
 
 3. Run tests on unit models::
 
-    pytest idaes/unit_models
+    pytest --pyargs idaes -W ignore
 
-4. You should see the tests run and all should pass to ensure the installation worked. You can
-   report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
+4. You should see the tests run and all should pass to ensure the installation worked. You
+   may see some "Error" level log messages, but they are okay, and produced by tests for
+   error handling. The number of failed and succeed test is reported at the end of the pytest
+   output. You can report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
    (Please try to be specific about the command and the offending output.)
