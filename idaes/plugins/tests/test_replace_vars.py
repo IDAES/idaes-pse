@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-This module contains miscalaneous utility functions for use in IDAES models.
+This module contains tests for the variable replace transformation.
 """
 
 import pytest
@@ -27,14 +27,17 @@ def test_1():
     m.x = pyo.Var(initialize=2)
     m.y = pyo.Var(initialize=3)
     m.z = pyo.Var(initialize=0)
-    m.c1 = pyo.Constraint(expr=m.z==m.x+m.y)
+    m.c1 = pyo.Constraint(expr=m.z==m.x + m.y)
     m.e1 = pyo.Expression(expr=m.x**m.y)
+    m.o1 = pyo.Objective(expr=m.y - m.x)
 
     assert(m.c1.body() == -5) # hope constraint arrangment is deterministic
     assert(pyo.value(m.e1) == 8)
+    assert(pyo.value(m.o1) == 1)
     rp.apply_to(m, substitute=[(m.y, m.x)])
     assert(m.c1.body() == -4)
     assert(pyo.value(m.e1) == 4)
+    assert(pyo.value(m.o1) == 0)
 
 def test_2():
     # Test vector variables and sums

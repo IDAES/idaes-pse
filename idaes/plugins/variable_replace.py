@@ -51,8 +51,10 @@ class ReplaceVariables(NonIsomorphicTransformation):
         vis = EXPR.ExpressionReplacementVisitor(substitute=d)
         for c in instance.component_data_objects(pyo.Constraint, descend_into=True):
             c.set_value(expr=vis.dfs_postorder_stack(c.expr))
-        for e in instance.component_data_objects(pyo.Expression, descend_into=True):
-            vis.dfs_postorder_stack(e)
+        for c in instance.component_data_objects((pyo.Expression, pyo.Objective),
+                                                 descend_into=True):
+            vis.dfs_postorder_stack(c)
+            
 
     def _apply_to(self, instance, **kwds):
         config = self.CONFIG(kwds)
