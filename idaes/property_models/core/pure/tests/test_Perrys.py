@@ -66,10 +66,10 @@ def frame():
 
 def test_cp_mol_liq(frame):
     expr = cp_mol_liq(frame.props[1], "H2O", frame.props[1].temperature)
-    assert value(expr) == pytest.approx(76150, rel=1e-3)
+    assert value(expr) == pytest.approx(76.150, rel=1e-3)
 
     frame.props[1].temperature.value = 533.15
-    assert value(expr) == pytest.approx(89390, rel=1e-3)
+    assert value(expr) == pytest.approx(89.390, rel=1e-3)
 
 
 def test_enth_mol_liq(frame):
@@ -77,15 +77,15 @@ def test_enth_mol_liq(frame):
     assert value(expr) == pytest.approx(0, abs=1e-6)
 
     frame.props[1].temperature.value = 533.15
-    assert value(expr) == pytest.approx(20407009, rel=1e-3)
+    assert value(expr) == pytest.approx(20407, rel=1e-3)
 
 
 def test_entr_mol_liq(frame):
     expr = entr_mol_liq(frame.props[1], "H2O", frame.props[1].temperature)
-    assert value(expr) == pytest.approx(206.5, rel=1e-3)
+    assert value(expr) == pytest.approx(1199, rel=1e-3)
 
     frame.props[1].temperature.value = 533.15
-    assert value(expr) == pytest.approx(213.1, rel=1e-3)
+    assert value(expr) == pytest.approx(1252, rel=1e-3)
 
 
 def test_dens_mol_liq(frame):

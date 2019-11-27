@@ -25,34 +25,34 @@ from pyomo.environ import log
 # Heat capacities, enthalpies and entropies
 def cp_mol_liq(b, j, T):
     # Specific enthalpy
-    return (b._params.cp_liq_coeff[j, "5"]*T**4 +
-            b._params.cp_liq_coeff[j, "4"]*T**3 +
-            b._params.cp_liq_coeff[j, "3"]*T**2 +
-            b._params.cp_liq_coeff[j, "2"]*T +
-            b._params.cp_liq_coeff[j, "1"])
+    return 1e-3*(b._params.cp_liq_coeff[j, "5"]*T**4 +
+                 b._params.cp_liq_coeff[j, "4"]*T**3 +
+                 b._params.cp_liq_coeff[j, "3"]*T**2 +
+                 b._params.cp_liq_coeff[j, "2"]*T +
+                 b._params.cp_liq_coeff[j, "1"])
 
 
 def enth_mol_liq(b, j, T):
     # Specific enthalpy
-    return ((b._params.cp_liq_coeff[j, "5"]/5) *
-            (T**5-b._params.temperature_ref**5) +
-            (b._params.cp_liq_coeff[j, "4"]/4) *
-            (T**4-b._params.temperature_ref**4) +
-            (b._params.cp_liq_coeff[j, "3"]/3) *
-            (T**3-b._params.temperature_ref**3) +
-            (b._params.cp_liq_coeff[j, "2"]/2) *
-            (T**2-b._params.temperature_ref**2) +
-            b._params.cp_liq_coeff[j, "1"] *
-            (T-b._params.temperature_ref))
+    return 1e-3*((b._params.cp_liq_coeff[j, "5"]/5) *
+                 (T**5-b._params.temperature_ref**5) +
+                 (b._params.cp_liq_coeff[j, "4"]/4) *
+                 (T**4-b._params.temperature_ref**4) +
+                 (b._params.cp_liq_coeff[j, "3"]/3) *
+                 (T**3-b._params.temperature_ref**3) +
+                 (b._params.cp_liq_coeff[j, "2"]/2) *
+                 (T**2-b._params.temperature_ref**2) +
+                 b._params.cp_liq_coeff[j, "1"] *
+                 (T-b._params.temperature_ref))
 
 
 def entr_mol_liq(b, j, T):
     # Specific entropy
-    return ((b._params.cp_liq_coeff[j, '5']/4)*T**4 +
-            (b._params.cp_liq_coeff[j, '4']/3)*T**3 +
-            (b._params.cp_liq_coeff[j, '3']/2)*T**2 +
-            b._params.cp_liq_coeff[j, '2']*T +
-            b._params.cp_liq_coeff[j, '1']*log(T))
+    return 1e-3*((b._params.cp_liq_coeff[j, '5']/4)*T**4 +
+                 (b._params.cp_liq_coeff[j, '4']/3)*T**3 +
+                 (b._params.cp_liq_coeff[j, '3']/2)*T**2 +
+                 b._params.cp_liq_coeff[j, '2']*T +
+                 b._params.cp_liq_coeff[j, '1']*log(T))
 
 
 # -----------------------------------------------------------------------------
