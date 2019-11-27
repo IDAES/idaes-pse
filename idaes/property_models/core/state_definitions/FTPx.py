@@ -101,7 +101,7 @@ def define_state(b):
 
     # Add supporting variables
     b.flow_mol_phase = Var(b._params.phase_list,
-                           initialize=0.5,
+                           initialize=f_init / len(b._params.phase_list),
                            domain=NonNegativeReals,
                            bounds=f_bounds,
                            doc='Phase molar flow rates [mol/s]')
@@ -143,7 +143,7 @@ def define_state(b):
                                                  rule=rule_phase_frac)
 
     elif len(b._params.phase_list) == 2:
-        # For two pahse, use Rachford-Rice formulation
+        # For two phase, use Rachford-Rice formulation
         def rule_total_mass_balance(b):
             return sum(b.flow_mol_phase[p] for p in b._params.phase_list) == \
                 b.flow_mol
@@ -202,51 +202,51 @@ def define_state(b):
 
     # -------------------------------------------------------------------------
     # General Methods
-    def get_material_flow_terms_FPTx(p, j):
+    def get_material_flow_terms_FTPx(p, j):
         """Create material flow terms for control volume."""
         if j in b._params.component_list:
             return b.flow_mol_phase[p] * b.mole_frac_phase_comp[p, j]
         else:
             return 0
-    b.get_material_flow_terms = get_material_flow_terms_FPTx
+    b.get_material_flow_terms = get_material_flow_terms_FTPx
 
-    def get_enthalpy_flow_terms_FPTx(p):
+    def get_enthalpy_flow_terms_FTPx(p):
         """Create enthalpy flow terms."""
         return b.flow_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FPTx
+    b.get_enthalpy_flow_terms = get_enthalpy_flow_terms_FTPx
 
-    def get_material_density_terms_FPTx(p, j):
+    def get_material_density_terms_FTPx(p, j):
         """Create material density terms."""
         if j in b._params.component_list:
             return b.dens_mol_phase[p] * b.mole_frac_phase_comp[p, j]
         else:
             return 0
-    b.get_material_density_terms = get_material_density_terms_FPTx
+    b.get_material_density_terms = get_material_density_terms_FTPx
 
-    def get_energy_density_terms_FPTx(p):
+    def get_energy_density_terms_FTPx(p):
         """Create energy density terms."""
         return b.dens_mol_phase[p] * b.enth_mol_phase[p]
-    b.get_energy_density_terms = get_energy_density_terms_FPTx
+    b.get_energy_density_terms = get_energy_density_terms_FTPx
 
-    def default_material_balance_type_FPTx():
+    def default_material_balance_type_FTPx():
         return MaterialBalanceType.componentTotal
-    b.default_material_balance_type = default_material_balance_type_FPTx
+    b.default_material_balance_type = default_material_balance_type_FTPx
 
-    def default_energy_balance_type_FPTx():
+    def default_energy_balance_type_FTPx():
         return EnergyBalanceType.enthalpyTotal
-    b.default_energy_balance_type = default_energy_balance_type_FPTx
+    b.default_energy_balance_type = default_energy_balance_type_FTPx
 
-    def get_material_flow_basis_FPTx():
+    def get_material_flow_basis_FTPx():
         return MaterialFlowBasis.molar
-    b.get_material_flow_basis = get_material_flow_basis_FPTx
+    b.get_material_flow_basis = get_material_flow_basis_FTPx
 
-    def define_state_vars_FPTx():
+    def define_state_vars_FTPx():
         """Define state vars."""
         return {"flow_mol": b.flow_mol,
                 "mole_frac_comp": b.mole_frac_comp,
                 "temperature": b.temperature,
                 "pressure": b.pressure}
-    b.define_state_vars = define_state_vars_FPTx
+    b.define_state_vars = define_state_vars_FTPx
 
 
 def state_initialization(b):

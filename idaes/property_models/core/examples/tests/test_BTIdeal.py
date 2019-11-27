@@ -35,7 +35,7 @@ from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               activated_constraints_set)
 from idaes.core.util.testing import get_default_solver
 
-from idaes.property_models.core.state_definitions import FPTx
+from idaes.property_models.core.state_definitions import FTPx
 import idaes.property_models.core.eos.ideal as ideal
 from idaes.property_models.core.phase_equil import smooth_VLE
 from idaes.property_models.core.generic.bubble_dew import (bubble_temp_ideal,
@@ -66,7 +66,7 @@ class TestParamBlock(object):
     def test_config(self, model):
         assert len(model.params.config) == 15
 
-        assert model.params.config.state_definition == FPTx
+        assert model.params.config.state_definition == FTPx
 
         assert model.params.config.state_bounds == {
                 "flow_mol": (0, 1000),
