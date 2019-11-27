@@ -37,7 +37,7 @@ def m():
     m.s = Set(initialize=["a", "b"])
     m.cs = ContinuousSet(bounds=(0, 1))
 
-    m.v = Var(m.cs, initialize=1)
+    m.v = Var(m.cs, initialize=1, bounds=(0, 10))
     m.dv = DerivativeVar(m.v)
 
     m.discretizer = TransformationFactory("dae.finite_difference")
@@ -70,8 +70,8 @@ def m():
 
     m.b2 = Block(m.s)
     for i in m.s:
-        m.b2[i].v1 = Var(initialize=1)
-        m.b2[i].v2 = Var(m.s, initialize=1)
+        m.b2[i].v1 = Var(initialize=1, bounds=(1, 10))
+        m.b2[i].v2 = Var(m.s, initialize=1, bounds=(0, 1))
         m.b2[i].v1.fix(1)
         m.b2[i].e1 = Expression(expr=m.b2[i].v1)
         m.b2[i].c1 = Constraint(expr=2 == m.b2[i].v1)
@@ -217,6 +217,51 @@ def test_unfixed_variables_set(m):
 
 def test_number_unfixed_variables(m):
     assert number_unfixed_variables(m) == 26
+
+
+def test_variables_near_bounds_set(m):
+    tset = variables_near_bounds_set(m)
+    assert len(tset) == 6
+    for i in tset:
+        assert i in [m.b2["a"].v1, m.b2["b"].v1, m.b2["a"].v2["a"],
+                     m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+
+    m.b2["a"].v1.value = 1.001
+    tset = variables_near_bounds_set(m)
+    assert len(tset) == 5
+    for i in tset:
+        assert i in [m.b2["b"].v1, m.b2["a"].v2["a"],
+                     m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+
+    tset = variables_near_bounds_set(m, tol=1e-3)
+    assert len(tset) == 6
+    for i in tset:
+        assert i in [m.b2["a"].v1, m.b2["b"].v1, m.b2["a"].v2["a"],
+                     m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+
+    m.b2["a"].v1.setlb(None)
+    tset = variables_near_bounds_set(m)
+    assert len(tset) == 5
+    for i in tset:
+        assert i in [m.b2["b"].v1, m.b2["a"].v2["a"],
+                     m.b2["a"].v2["b"], m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+
+    m.b2["a"].v2["a"].setub(None)
+    tset = variables_near_bounds_set(m)
+    assert len(tset) == 4
+    for i in tset:
+        assert i in [m.b2["b"].v1, m.b2["a"].v2["b"],
+                     m.b2["b"].v2["a"], m.b2["b"].v2["b"]]
+
+    m.b2["a"].v2["b"].value = None
+    tset = variables_near_bounds_set(m)
+    assert len(tset) == 3
+    for i in tset:
+        assert i in [m.b2["b"].v1, m.b2["a"].v2["b"], m.b2["b"].v2["b"]]
+
+
+def test_number_variables_near_bounds(m):
+    assert number_variables_near_bounds(m) == 6
 
 
 # -------------------------------------------------------------------------
