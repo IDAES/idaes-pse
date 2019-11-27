@@ -61,9 +61,16 @@ Linux
 4. Follow the :ref:`min_install_generic` instructions.
 5. The IPOPT solver depends on the GNU FORTRAN libraries, which are not bundled
    with it. Unless you know that these are already installed on your system,
-   you should manually install them using "conda" with this command:
+   you should manually install them using "apt-get", "yum" or other
+   appropriate package manager.
 
-        ``conda install -y -c anaconda gfortran_linux-64``
+   apt-get (Debian or Ubuntu based distributions)::
+
+      apt-get install libgfortran3
+
+   yum (RedHat based distributions)::
+
+      yum install libgfortran
 
 .. _min_install_osx:
 
@@ -89,7 +96,7 @@ Anaconda Powershell (Prompt) or a Linux terminal, are the same.
 If you are familiar with Python/Conda environments, you will probably
 want to create a new environment for your IDAES installation before
 starting to install Python and/or Conda packages,
-*e.g.*, ``conda create -n <env>`` then ``conda activate <env>``.
+*e.g.*, ``conda create -n <env> python=3.7`` then ``conda activate <env>``.
 If you are not familiar with these commands, don't worry, this is
 an optional step.
 
