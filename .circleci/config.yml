@@ -51,7 +51,7 @@ jobs:
             source activate idaes36
             pip install pip==18.0.0
             pip install -r requirements.txt
-            run: idaes get-extensions
+            idaes get-extensions
             pytest -c pytest.ini idaes -m "not nocircleci"
 
 workflows:
