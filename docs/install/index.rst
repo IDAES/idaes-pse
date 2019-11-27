@@ -61,20 +61,16 @@ Linux
 4. Follow the :ref:`min_install_generic` instructions.
 5. The IPOPT solver depends on the GNU FORTRAN libraries, which are not bundled
    with it. Unless you know that these are already installed on your system,
-   you should manually install them using "conda", "apt-get", "yum" or other
+   you should manually install them using "apt-get", "yum" or other
    appropriate package manager.
 
-   apt-get::
+   apt-get (Debian or Ubuntu based distributions)::
 
       apt-get install libgfortran3
 
-    yum::
+   yum (RedHat based distributions)::
 
-      yum install libgfortran3
-
-    conda::
-
-        conda install -y -c anaconda gfortran_linux-64
+      yum install libgfortran
 
 .. _min_install_osx:
 
