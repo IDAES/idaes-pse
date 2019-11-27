@@ -10,7 +10,6 @@ shared-dev: &shared-dev
     - run: pylint -E --ignore-patterns="test_.*" idaes || true
 #          - run: pyomo --version
 #    - run: cd docs && make all
-    - run: idaes get-extensions
     - run: pytest -c pytest-dev.ini idaes -m "not nocircleci"
     - run: coverage xml
     - run: coveralls
@@ -22,7 +21,6 @@ shared: &shared
     - run: ./scripts/remove-idaes-from-path.sh
     - run: pip install pip==18.0.0
     - run: pip install -r requirements.txt
-    - run: idaes get-extensions
     - run: pytest -c pytest.ini idaes -m "not nocircleci"
 
 jobs:
@@ -51,7 +49,6 @@ jobs:
             source activate idaes36
             pip install pip==18.0.0
             pip install -r requirements.txt
-            idaes get-extensions
             pytest -c pytest.ini idaes -m "not nocircleci"
 
 workflows:
