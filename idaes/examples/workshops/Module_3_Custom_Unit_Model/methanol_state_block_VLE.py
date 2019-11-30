@@ -29,7 +29,9 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         MaterialBalanceType,
                         EnergyBalanceType)
-from idaes.core.util.initialization import solve_indexed_blocks
+from idaes.core.util.initialization import (fix_state_vars,
+                                            revert_state_vars,
+                                            solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
 
 # Some more inforation about this module
@@ -92,49 +94,7 @@ class _IdealStateBlock(StateBlock):
             which states were fixed during initialization.
         """
         # Fix state variables if not already fixed
-        Fflag = {}
-        Xflag = {}
-        Pflag = {}
-        Tflag = {}
-
-        for k in blk.keys():
-            if blk[k].flow_mol.fixed is True:
-                Fflag[k] = True
-            else:
-                Fflag[k] = False
-                if state_args is None:
-                    blk[k].flow_mol.fix(1.0)
-                else:
-                    blk[k].flow_mol.fix(state_args["flow_mol"])
-
-            for j in blk[k]._params.component_list:
-                if blk[k].mole_frac_comp[j].fixed is True:
-                    Xflag[k, j] = True
-                else:
-                    Xflag[k, j] = False
-                    if state_args is None:
-                        blk[k].mole_frac_comp[j].fix(1 / len(blk[k].
-                                                _params.component_list))
-                    else:
-                        blk[k].mole_frac_comp[j].fix(state_args["mole_frac_comp"][j])
-
-            if blk[k].pressure.fixed is True:
-                Pflag[k] = True
-            else:
-                Pflag[k] = False
-                if state_args is None:
-                    blk[k].pressure.fix(0.101325)
-                else:
-                    blk[k].pressure.fix(state_args["pressure"])
-
-            if blk[k].temperature.fixed is True:
-                Tflag[k] = True
-            else:
-                Tflag[k] = False
-                if state_args is None:
-                    blk[k].temperature.fix(3.25)
-                else:
-                    blk[k].temperature.fix(state_args["temperature"])
+        flags = fix_state_vars(blk, state_args)
 
         # Set solver options
         if outlvl > 1:
@@ -213,11 +173,6 @@ class _IdealStateBlock(StateBlock):
                 blk[k].eq_mol_frac_out.activate()
         # ---------------------------------------------------------------------
         # If input block, return flags, else release state
-        flags = {"Fflag": Fflag,
-                 "Xflag": Xflag,
-                 "Pflag": Pflag,
-                 "Tflag": Tflag}
-
         if hold_state is True:
             return flags
         else:
@@ -239,16 +194,7 @@ class _IdealStateBlock(StateBlock):
             outlvl : sets output level of of logging
         '''
         # Unfix state variables
-        for k in blk.keys():
-            if flags['Fflag'][k] is False:
-                blk[k].flow_mol.unfix()
-            for j in blk[k]._params.component_list:
-                if flags['Xflag'][k, j] is False:
-                    blk[k].mole_frac_comp[j].unfix()
-            if flags['Pflag'][k] is False:
-                blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
-                blk[k].temperature.unfix()
+        revert_state_vars(blk, flags)
 
         if outlvl > 0:
             if outlvl > 0:
