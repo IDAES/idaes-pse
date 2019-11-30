@@ -58,7 +58,9 @@ from idaes.core import (declare_process_block_class,
                         StateBlock,
                         MaterialBalanceType,
                         EnergyBalanceType)
-from idaes.core.util.initialization import solve_indexed_blocks
+from idaes.core.util.initialization import (fix_state_vars,
+                                            revert_state_vars,
+                                            solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.model_statistics import degrees_of_freedom
 
@@ -162,6 +164,8 @@ conditions, and thus corresponding constraints  should be included,
                                      "units": "J/mol"},
              "entr_mol_phase": {"method": "_entr_mol_phase",
                                 "units": "J/mol"},
+             "gibbs_mol_phase_comp": {"method": "_gibbs_mol_phase_comp",
+                                      "units": "J/mol"},
              "temperature_bubble": {"method": "_temperature_bubble",
                                     "units": "K"},
              "temperature_dew": {"method": "_temperature_dew",
@@ -172,7 +176,7 @@ conditions, and thus corresponding constraints  should be included,
                               "units": "Pa"},
              "fug_vap": {"method": "_fug_vap", "units": "Pa"},
              "fug_liq": {"method": "_fug_liq", "units": "Pa"},
-             'ds_vap': {'method': '_ds_vap', 'units': 'J/mol.K'}})
+             'ds_form': {'method': '_ds_form', 'units': 'J/mol.K'}})
 
         obj.add_default_units({"time": "s",
                                "length": "m",
@@ -189,7 +193,7 @@ class _ActivityCoeffStateBlock(StateBlock):
     whole, rather than individual elements of indexed Property Blocks.
     """
 
-    def initialize(blk, state_args=None, hold_state=False,
+    def initialize(blk, state_args={}, hold_state=False,
                    state_vars_fixed=False, outlvl=1,
                    solver="ipopt", optarg={"tol": 1e-8}):
         """
@@ -198,7 +202,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             state_args : Dictionary with initial guesses for the state vars
                          chosen. Note that if this method is triggered
                          through the control volume, and if initial guesses
-                         were not provied at the unit model level, the
+                         were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.
 
@@ -240,138 +244,15 @@ class _ActivityCoeffStateBlock(StateBlock):
 
         # Fix state variables if not already fixed
         if state_vars_fixed is False:
-            if blk[k]._params.config.state_vars == "FTPz":
-                Fflag = {}
-                Xflag = {}
-                Pflag = {}
-                Tflag = {}
+            flags = fix_state_vars(blk, state_args)
+        else:
+            # Check when the state vars are fixed already result in dof 0
+            for k in blk.keys():
+                if degrees_of_freedom(blk[k]) != 0:
+                    raise Exception("State vars fixed but degrees of freedom "
+                                    "for state block is not zero during "
+                                    "initialization.")
 
-                for k in blk.keys():
-                    if blk[k].flow_mol.fixed is True:
-                        Fflag[k] = True
-                    else:
-                        Fflag[k] = False
-                        if state_args is None:
-                            blk[k].flow_mol.fix(1.0)
-                        else:
-                            try:
-                                blk[k].flow_mol.fix(state_args["flow_mol"])
-                            except KeyError:
-                                raise Exception("Please check the key values "
-                                                "provided for the initial "
-                                                "guess")
-
-                    for j in blk[k]._params.component_list:
-                        if blk[k].mole_frac_comp[j].fixed is True:
-                            Xflag[k, j] = True
-                        else:
-                            Xflag[k, j] = False
-                            if state_args is None:
-                                blk[k].mole_frac_comp[j].fix(
-                                        1/len(blk[k]._params.component_list))
-                            else:
-                                try:
-                                    blk[k].mole_frac_comp[j].\
-                                        fix(state_args["mole_frac_comp"][j])
-                                except KeyError:
-                                    raise Exception("Please check the key "
-                                                    "values provided for the "
-                                                    "initial guess")
-
-                    if blk[k].pressure.fixed is True:
-                        Pflag[k] = True
-                    else:
-                        Pflag[k] = False
-                        if state_args is None:
-                            blk[k].pressure.fix(101325.0)
-                        else:
-                            try:
-                                blk[k].pressure.fix(state_args["pressure"])
-                            except KeyError:
-                                raise Exception("Please check the key "
-                                                "values provided for the "
-                                                "initial guess")
-
-                    if blk[k].temperature.fixed is True:
-                        Tflag[k] = True
-                    else:
-                        Tflag[k] = False
-                        if state_args is None:
-                            blk[k].temperature.fix(300)
-                        else:
-                            try:
-                                blk[k].temperature.\
-                                    fix(state_args["temperature"])
-                            except KeyError:
-                                raise Exception("Please check the key "
-                                                "values provided for the "
-                                                "initial guess")
-                flags = {"Fflag": Fflag,
-                         "Xflag": Xflag,
-                         "Pflag": Pflag,
-                         "Tflag": Tflag}
-            elif blk[k]._params.config.state_vars == "FcTP":
-                Fcflag = {}
-                Pflag = {}
-                Tflag = {}
-
-                # Fix state variables if not already fixed
-                for k in blk.keys():
-                    for j in blk[k]._params.component_list:
-                        if blk[k].flow_mol_comp[j].fixed is True:
-                            Fcflag[k, j] = True
-                        else:
-                            Fcflag[k, j] = False
-                            if state_args is None:
-                                blk[k].flow_mol_comp[j].\
-                                    fix(1 / len(blk[k]._params.component_list))
-                            else:
-                                try:
-                                    blk[k].flow_mol_comp[j].\
-                                        fix(state_args["flow_mol_comp"][j])
-                                except KeyError:
-                                    raise Exception("Please check the key "
-                                                    "values provided for the "
-                                                    "initial guess")
-
-                    if blk[k].pressure.fixed is True:
-                        Pflag[k] = True
-                    else:
-                        Pflag[k] = False
-                        if state_args is None:
-                            blk[k].pressure.fix(101325.0)
-                        else:
-                            try:
-                                blk[k].pressure.fix(state_args["pressure"])
-                            except KeyError:
-                                raise Exception("Please check the key "
-                                                "values provided for the "
-                                                "initial guess")
-
-                    if blk[k].temperature.fixed is True:
-                        Tflag[k] = True
-                    else:
-                        Tflag[k] = False
-                        if state_args is None:
-                            blk[k].temperature.fix(300)
-                        else:
-                            try:
-                                blk[k].temperature.\
-                                    fix(state_args["temperature"])
-                            except KeyError:
-                                raise Exception("Please check the key "
-                                                "values provided for the "
-                                                "initial guess")
-
-                flags = {"Fcflag": Fcflag,
-                         "Pflag": Pflag,
-                         "Tflag": Tflag}
-            else:
-                for k in blk.keys():
-                    if degrees_of_freedom(blk[k]) != 0:
-                        raise Exception("State vars fixed but degrees of "
-                                        "freedom for state block is not "
-                                        "zero during initialization.")
         # Set solver options
         if outlvl > 1:
             stee = True
@@ -537,25 +418,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             return
 
         # Unfix state variables
-        for k in blk.keys():
-            if blk[k]._params.config.state_vars == "FTPz":
-                if flags["Fflag"][k] is False:
-                    blk[k].flow_mol.unfix()
-                for j in blk[k]._params.component_list:
-                    if flags["Xflag"][k, j] is False:
-                        blk[k].mole_frac_comp[j].unfix()
-                if flags["Pflag"][k] is False:
-                    blk[k].pressure.unfix()
-                if flags["Tflag"][k] is False:
-                    blk[k].temperature.unfix()
-            else:
-                for j in blk[k]._params.component_list:
-                    if flags["Fcflag"][k, j] is False:
-                        blk[k].flow_mol_comp[j].unfix()
-                if flags["Pflag"][k] is False:
-                    blk[k].pressure.unfix()
-                if flags["Tflag"][k] is False:
-                    blk[k].temperature.unfix()
+        revert_state_vars(blk, flags)
 
         if outlvl > 0:
             if outlvl > 0:
@@ -1113,6 +976,7 @@ class ActivityCoeffStateBlockData(StateBlockData):
         # Liquid phase comp enthalpy (J/mol)
         # 1E3 conversion factor to convert from J/kmol to J/mol
         return self.enth_mol_phase_comp["Liq", j] * 1E3 == \
+            1e3*self._params.dh_form["Liq", j] + \
             ((self._params.CpIG["Liq", j, "E"] / 5) *
                 (self.temperature**5 -
                  self._params.temperature_reference**5)
@@ -1131,7 +995,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def _enth_mol_comp_vap(self, j):
 
         # Vapor phase component enthalpy (J/mol)
-        return self.enth_mol_phase_comp["Vap", j] == self._params.dh_vap[j] + \
+        return self.enth_mol_phase_comp["Vap", j] == \
+            self._params.dh_form["Vap", j] + \
             ((self._params.CpIG["Vap", j, "E"] / 5) *
                 (self.temperature**5 -
                  self._params.temperature_reference**5)
@@ -1180,7 +1045,8 @@ class ActivityCoeffStateBlockData(StateBlockData):
     def _entr_mol_comp_liq(self, j):
         # Liquid phase comp entropy (J/mol.K)
         # 1E3 conversion factor to convert from J/kmol.K to J/mol.K
-        return self.entr_mol_phase_comp['Liq', j] * 1E3 == (
+        return self.entr_mol_phase_comp['Liq', j] * 1E3 == \
+            1E3*self._params.ds_form["Liq", j] + (
             ((self._params.CpIG['Liq', j, 'E'] / 4) *
                 (self.temperature**4 - self._params.temperature_reference**4)
                 + (self._params.CpIG['Liq', j, 'D'] / 3) *
@@ -1192,23 +1058,10 @@ class ActivityCoeffStateBlockData(StateBlockData):
                 + self._params.CpIG['Liq', j, 'A'] *
              log(self.temperature / self._params.temperature_reference)))
 
-    def _ds_vap(self):
-        # entropy of vaporization = dh_Vap/T_boil
-        # TODO : something more rigorous would be nice
-        self.ds_vap = Var(self._params.component_list,
-                          initialize=86,
-                          doc="Entropy of vaporization [J/mol.K]")
-
-        def rule_ds_vap(b, j):
-            return b._params.dh_vap[j] == (b.ds_vap[j] *
-                                           b._params.temperature_boil[j])
-        self.eq_ds_vap = Constraint(self._params.component_list,
-                                    rule=rule_ds_vap)
-
     def _entr_mol_comp_vap(self, j):
         # component molar entropy of vapor phase
         return self.entr_mol_phase_comp["Vap", j] == (
-            self.ds_vap[j] +
+            self._params.ds_form["Vap", j] +
             ((self._params.CpIG['Vap', j, 'E'] / 4) *
              (self.temperature**4 - self._params.temperature_reference**4)
              + (self._params.CpIG['Vap', j, 'D'] / 3) *
@@ -1219,9 +1072,24 @@ class ActivityCoeffStateBlockData(StateBlockData):
                (self.temperature - self._params.temperature_reference)
                 + self._params.CpIG['Vap', j, 'A'] *
                 log(self.temperature / self._params.temperature_reference)) -
-            self._params.gas_const * log(self.mole_frac_phase['Vap', j] *
+            self._params.gas_const * log(self.mole_frac_phase_comp['Vap', j] *
                                          self.pressure /
                                          self._params.pressure_reference))
+
+    def _gibbs_mol_phase_comp(self):
+        self.gibbs_mol_phase_comp = Var(
+            self._params.phase_list,
+            self._params.component_list,
+            doc="Phase-component molar specific Gibbs energies [J/mol]")
+
+        def rule_gibbs_mol_phase_comp(self, p, j):
+            return self.gibbs_mol_phase_comp[p, j] == \
+                    self.enth_mol_phase_comp[p, j] - \
+                    self.temperature*self.entr_mol_phase_comp[p, j]
+        self.eq_gibbs_mol_phase_comp = Constraint(
+            self._params.phase_list,
+            self._params.component_list,
+            rule=rule_gibbs_mol_phase_comp)
 
     def get_material_flow_terms(self, p, j):
         """Create material flow terms for control volume."""
