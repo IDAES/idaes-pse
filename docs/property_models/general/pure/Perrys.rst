@@ -39,4 +39,14 @@ The correlation for the ideal liquid molar entropy is derived from the correalti
 
 This correlation uses the same paramters as for the ideal liquid heat capacity, which should be provided as a single `Param` named `cp_liq_coeff` indexed by component and parameter number (e.g. `[component, 1]`).
 
+Liquid Molar Density
+--------------------
 
+Perry's Handbook uses the follwoing correlation for liquid molar density:
+
+.. math:: \rho_{liq, j} = \frac{C_1}{C_2^{1 + (1-\frac{T}{C_3})^{C_4}}}
+
+Parameters should be provided as a single `Param` named `dens_mol_liq_coeff` indexed by component and parameter number (e.g. `[component, 1]`).
+
+.. note::
+    Currently, only the most common correaltion form from Perry's Handbook is implemented. Some components use different forms which are not yet supported.
