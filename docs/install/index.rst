@@ -59,7 +59,18 @@ Linux
 2. Open a terminal window
 3. Run the script you downloaded in (1).
 4. Follow the :ref:`min_install_generic` instructions.
+5. The IPOPT solver depends on the GNU FORTRAN libraries, which are not bundled
+   with it. Unless you know that these are already installed on your system,
+   you should manually install them using "apt-get", "yum" or other
+   appropriate package manager.
 
+   apt-get (Debian or Ubuntu based distributions)::
+
+      apt-get install libgfortran3
+
+   yum (RedHat based distributions)::
+
+      yum install libgfortran
 
 .. _min_install_osx:
 
@@ -85,36 +96,28 @@ Anaconda Powershell (Prompt) or a Linux terminal, are the same.
 If you are familiar with Python/Conda environments, you will probably
 want to create a new environment for your IDAES installation before
 starting to install Python and/or Conda packages,
-*e.g.*, ``conda create -n <env>`` then ``conda activate <env>``.
+*e.g.*, ``conda create -n <env> python=3.7`` then ``conda activate <env>``.
 If you are not familiar with these commands, don't worry, this is
 an optional step.
 
-**Download IDAES source code and install required packages**
-
-1. Go to the idaes-pse releases page, https://github.com/IDAES/idaes-pse/releases/, and
-   look at the most recent release. Under the section labeled "Assets" there will be a
-   "Source Code" zip file. Download that file and extract the contents in any location
-   of your choice.
-2. In the Linux terminal or Anaconda Powershell, navigate to the folder you created
-   in the previous step.
-3. Install the packages required for IDAES using the following command::
-
-    pip install -r requirements.txt
-
 **Install IDAES**
 
-4. In the folder where the idaes source code was downloaded, run the *setup.py* file::
+1. Install IDAES with pip::
 
-    python setup.py develop
+    pip install idaes-pse
 
-5. Run the idaes command to install the compiled binaries.
+2. Run the idaes command to install the compiled binaries::
 
     idaes get-extensions
 
-6. Run tests on unit models::
+   .. note:: The IDAES binary extensions are not yet supported on Mac/OSX
 
-    pytest idaes/unit_models
+3. Run tests on unit models::
 
-7. You should see the tests run and all should pass to ensure the installation worked. You can
-   report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
+    pytest --pyargs idaes -W ignore
+
+4. You should see the tests run and all should pass to ensure the installation worked. You
+   may see some "Error" level log messages, but they are okay, and produced by tests for
+   error handling. The number of failed and succeed test is reported at the end of the pytest
+   output. You can report problems on the `Github issues page <https://github.com/IDAES/idaes-pse/issues>`_
    (Please try to be specific about the command and the offending output.)
