@@ -19,25 +19,49 @@ Properties of Gases and Liquids uses the following correlation for the ideal gas
 
 .. math:: c_{\text{p ig}, j} = A + B \times T + C \times T^2 + D \times T^3
 
-Parameters should be provided as a single `Param` named `cp_ig_coeff` indexed by component and parameter names (e.g. `[component, "A"]`).
+**Parameters**
+
+.. csv-table::
+   :header: "Symbol", "Parameter Name", "Indices", "Description"
+
+   ":math:`A, B, C, D`", "cp_ig_coeff", "component, `['A', 'B', 'C', 'D']`", ""
 
 Ideal Gas Molar Enthalpy
 ------------------------
 
 The correlation for the ideal gas molar enthalpy is derived from the correaltion for the molar heat capacity and is given below:
 
-.. math:: h_{\text{ig}, j} - h_{\text{ig ref}, j} = A \times (T-T_{ref}) + \frac{B}{2} \times (T^2 - T_{ref}^2) + \frac{C}{3} \times (T^3 - T_{ref}^3) + \frac{D}{4} \times (T^4 - T_{ref}^4)
+.. math:: h_{\text{ig}, j} - h_{\text{ig ref}, j} = A \times (T-T_{ref}) + \frac{B}{2} \times (T^2 - T_{ref}^2) + \frac{C}{3} \times (T^3 - T_{ref}^3) + \frac{D}{4} \times (T^4 - T_{ref}^4) + \Delta h_{\text{form, Vap}, j}
 
-This correlation uses the same paramters as for the ideal gas heat capacity, which should be provided as a single `Param` named `cp_ig_coeff` indexed by component and parameter names (e.g. `[component, "A"]`). Additionally, the ideal gas molar enthalpy requires a reference temperature (`temperature_ref`) which must also be defined in the parameter block.
+**Parameters**
+
+.. csv-table::
+   :header: "Symbol", "Parameter Name", "Indices", "Description"
+
+   ":math:`A, B, C, D`", "cp_ig_coeff", "component, `['A', 'B', 'C', 'D']`", ""
+   ":math:`\Delta h_{\text{form}}`", "enth_mol_form_ref", "phase, component", "Molar heat of formation at reference state"
+   ":math:`T_{ref}`", "temperature_ref", "None", "Temperature at reference state"
+
+.. note::
+    This correlation uses the same parameters as the ideal gas heat capacity correlation.
 
 Ideal Gas Molar Entrolpy
 ------------------------
 
 The correlation for the ideal gas molar entropy is derived from the correaltion for the molar heat capacity and is given below:
 
-.. math:: s_{\text{ig}, j} = A \times ln(T) + B \times T + \frac{C}{2} \times T^2 + \frac{D}{3} \times T^3
+.. math:: s_{\text{ig}, j} = A \times ln(T) + B \times T + \frac{C}{2} \times T^2 + \frac{D}{3} \times T^3 + s_{\text{ref, Vap}, j}
 
-This correlation uses the same paramters as for the ideal gas heat capacity, which should be provided as a single `Param` named `cp_ig_coeff` indexed by component and parameter names (e.g. `[component, "A"]`).
+**Parameters**
+
+.. csv-table::
+   :header: "Symbol", "Parameter Name", "Indices", "Description"
+
+   ":math:`A, B, C, D`", "cp_ig_coeff", "component, `['A', 'B', 'C', 'D']`", ""
+   ":math:`s_{\text{ref}}`", "entr_mol_ref", "phase, component", "Standard molar entropy at reference state"
+
+.. note::
+    This correlation uses the same parameters as the ideal gas heat capacity correlation .
 
 Saturation (Vapor) Pressure
 ---------------------------
@@ -47,6 +71,13 @@ Properties of Gases and Liquids uses the following correlation to calculate the 
 .. math:: ln(\frac{P_{sat, j}}{P_{crit}}) \times (1-x) = A \times x + B \times x^1.5 + C \times x^3 + D \times x^6
 
 where :math:`x = 1 - \frac{T}{T_{crit}}`. This correlation requires the critical pressure and temeprature of each component be defined (`pressure_crit` and `temperature_crit`) along with a single `Param` named `pressure_sat_coeff` indexed by component and parameter names (e.g. `[component, "A"]`).
+
+.. csv-table::
+   :header: "Symbol", "Parameter Name", "Indices", "Description"
+
+   ":math:`A, B, C, D`", "pressure_sat_coeff", "component, `['A', 'B', 'C', 'D']`", ""
+   ":math:`P_{crit}`", "temperature_crit", "None", "Critical pressure"
+   ":math:`T_{crit}`", "temperature_crit", "None", "Critical temperature"
 
 .. note::
     This correlation is only valid at temperatrues **below** the critical temperture. Above this point, there is no real solution to the equation.
