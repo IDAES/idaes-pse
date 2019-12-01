@@ -40,7 +40,8 @@ def enth_mol_ig(b, j, T):
             (b._params.cp_ig_coeff[j, "B"]/2) *
             (T**2-b._params.temperature_ref**2) +
             b._params.cp_ig_coeff[j, "A"] *
-            (T-b._params.temperature_ref))
+            (T-b._params.temperature_ref) +
+            b._params.enth_mol_form_ref["Vap", j])
 
 
 def entr_mol_ig(b, j, T):
@@ -48,7 +49,8 @@ def entr_mol_ig(b, j, T):
     return ((b._params.cp_ig_coeff[j, 'D']/3)*T**3 +
             (b._params.cp_ig_coeff[j, 'C']/2)*T**2 +
             b._params.cp_ig_coeff[j, 'B']*T +
-            b._params.cp_ig_coeff[j, 'A']*log(T))
+            b._params.cp_ig_coeff[j, 'A']*log(T) +
+            b._params.entr_mol_ref["Vap", j])
 
 
 # -----------------------------------------------------------------------------

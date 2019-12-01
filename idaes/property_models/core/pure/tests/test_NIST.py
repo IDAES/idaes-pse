@@ -78,10 +78,10 @@ def test_cp_mol_ig(frame):
 
 def test_enth_mol_ig(frame):
     expr = enth_mol_ig(frame.props[1], "H2O", frame.props[1].temperature)
-    assert value(expr) == pytest.approx(6.92e3, rel=1e-3)
+    assert value(expr) == pytest.approx(-2130.5, rel=1e-3)
 
     frame.props[1].temperature.value = 600
-    assert value(expr) == pytest.approx(10.5e3, rel=1e-3)
+    assert value(expr) == pytest.approx(1445, rel=1e-3)
 
 
 def test_entr_mol_ig(frame):

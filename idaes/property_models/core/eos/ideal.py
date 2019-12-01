@@ -51,13 +51,12 @@ def enth_mol_phase_comp(b, p, j):
         if b._params.config.enth_mol_comp_ig.enth_mol_ig is None:
             raise GenericPropertyPackageError(b, "enth_mol_comp_vap")
         return b._params.config.enth_mol_comp_ig.enth_mol_ig(
-                    b, j, b.temperature) + \
-               b._params.dh_vap_ref[j]
+                   b, j, b.temperature)
     elif p == "Liq":
         if b._params.config.enth_mol_comp_liq.enth_mol_liq is None:
             raise GenericPropertyPackageError(b, "enth_mol_comp_liq")
         return b._params.config.enth_mol_comp_liq.enth_mol_liq(
-                b, j, b.temperature)
+                   b, j, b.temperature)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -72,29 +71,12 @@ def entr_mol_phase_comp(b, p, j):
         if b._params.config.entr_mol_comp_ig.entr_mol_ig is None:
             raise GenericPropertyPackageError(b, "entr_mol_comp_ig")
         return b._params.config.entr_mol_comp_ig.entr_mol_ig(
-                b, j, b.temperature) + \
-               b._params.ds_vap_ref[j]
+                   b, j, b.temperature)
     elif p == "Liq":
         if b._params.config.entr_mol_comp_liq.entr_mol_liq is None:
             raise GenericPropertyPackageError(b, "entr_mol_comp_liq")
         return b._params.config.entr_mol_comp_liq.entr_mol_liq(
-                b, j, b.temperature)
-    else:
-        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-
-
-def entr_mol_phase_comp_ref(b, p, j):
-    if p == "Vap":
-        if b._params.config.entr_mol_comp_ig.entr_mol_ig is None:
-            raise GenericPropertyPackageError(b, "entr_mol_comp_ig")
-        return b._params.config.entr_mol_comp_ig.entr_mol_ig(
-                b, j, b._params.temperature_ref) +\
-               b._params.ds_vap_ref[j]
-    elif p == "Liq":
-        if b._params.config.entr_mol_comp_liq.entr_mol_liq is None:
-            raise GenericPropertyPackageError(b, "entr_mol_comp_liq")
-        return b._params.config.entr_mol_comp_liq.entr_mol_liq(
-                b, j, b._params.temperature_ref)
+                   b, j, b.temperature)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
@@ -123,9 +105,7 @@ def gibbs_mol_phase(b, p):
 
 def gibbs_mol_phase_comp(b, p, j):
     return (b.enth_mol_phase_comp[p, j] -
-            (b.entr_mol_phase_comp[p, j] -
-             b._params.config.equation_of_state[p]
-             .entr_mol_phase_comp_ref(b, p, j)) *
+            b.entr_mol_phase_comp[p, j] *
             b.temperature)
 
 

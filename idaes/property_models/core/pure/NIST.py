@@ -45,7 +45,9 @@ def enth_mol_ig(b, j, T):
                 (t**3-tr**3) +
                 (b._params.cp_ig_coeff[j, "D"]/4) *
                 (t**4-tr**4) -
-                b._params.cp_ig_coeff[j, "E"]*(1/t-1/tr))
+                b._params.cp_ig_coeff[j, "E"]*(1/t-1/tr) +
+                b._params.cp_ig_coeff[j, "F"] -
+                b._params.cp_ig_coeff[j, "H"])
 
 
 def entr_mol_ig(b, j, T):

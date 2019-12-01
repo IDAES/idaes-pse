@@ -211,24 +211,32 @@ class BTIdealParameterData(GenericParameterData):
             initialize=dens_mol_liq_coeff_data,
             doc="Coefficients for calculating liquid molar densities")
 
-        # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition, Chemical Engineering Series - Robert C. Reid
-        dh_vap_data = {'benzene': 3.377e4,
-                       'toluene': 3.8262e4}
+        # Standard heats of formation
+        # Source: NIST Webbook, https://webbook.nist.gov
+        # Retrieved 1st December 2019
+        enth_mol_form_ref_data = {('Liq', 'benzene'): 49.0e3,
+                                  ('Liq', 'toluene'): 12.0e3,
+                                  ('Vap', 'benzene'): 82.9e3,
+                                  ('Vap', 'toluene'): 50.1e3}
 
-        self.dh_vap_ref = Param(
+        self.enth_mol_form_ref = Param(
+                self.phase_list,
                 self.component_list,
                 mutable=False,
-                initialize=dh_vap_data,
-                doc="Molar heat of vaporization @ Tref [J/mol]")
+                initialize=enth_mol_form_ref_data,
+                doc="Molar heat of formation @ Tref [J/mol]")
 
-        # Source: The Properties of Gases and Liquids (1987)
-        # 4th edition, Chemical Engineering Series - Robert C. Reid
-        ds_vap_data = {'benzene': 3.377e4/298.15,
-                       'toluene': 3.8262e4/298.15}
+        # Standard entropy of formation
+        # Source: Engineering Toolbox, https://www.engineeringtoolbox.com
+        # Retrieved 1st December, 2019
+        entr_mol_form_ref_data = {('Liq', 'benzene'): -173,
+                                  ('Liq', 'toluene'): -220,
+                                  ('Vap', 'benzene'): -269,
+                                  ('Vap', 'toluene'): -321}
 
-        self.ds_vap_ref = Param(
+        self.entr_mol_form_ref = Param(
+                self.phase_list,
                 self.component_list,
                 mutable=False,
-                initialize=ds_vap_data,
-                doc="Molar entropy of vaporization @ Tref [J/mol.K]")
+                initialize=entr_mol_form_ref_data,
+                doc="Standard molar entropy @ Tref [J/mol.K]")
