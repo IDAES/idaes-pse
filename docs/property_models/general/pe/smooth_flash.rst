@@ -26,10 +26,10 @@ The approach used by the smooth VLE formulation is to define an "equilibrium tem
 
 where :math:`T` is the actual stream temperature, :math:`T_{1}` is an intermediate temperature variable and :math:`T_{bubble}` and :math:`T_{dew}` are the bubble and dew point temperature of mixture. In order to express the maximum and minimum operators in a tractable form, these equations are reformulated using the IDAES `smooth_max` and `smooth_min` operators which results in the following equations:
 
-.. math:: T_{1} = 0.5{[T + T_{bubble} + \sqrt{(T-T_{bubble})^2 + \epsilon_{1}^2}]}
-.. math:: T_{eq} = 0.5{[T_{1} + T_{dew} - \sqrt{(T-T_{dew})^2 + \epsilon_{2}^2}]}
+.. math:: T_{1} = 0.5{\left[T + T_{bubble} + \sqrt{(T-T_{bubble})^2 + \epsilon_{1}^2}\right]}
+.. math:: T_{eq} = 0.5{\left[T_{1} + T_{dew} - \sqrt{(T-T_{dew})^2 + \epsilon_{2}^2}\right]}
 
-where :math:`\epsilon_1` and :math:`\epsilon_2` are smoothing parameters(mutable). The default values are 0.01 and 0.0005 respectively, and tt is recommended that :math:`\epsilon_1` > :math:`\epsilon_2`. It can be seen that if the stream temperature is less than that of the bubble point temperature, the VLE calculations will be computed at the bubble point. Similarly, if the stream temperature is greater than the dew point temperature, then the VLE calculations are computed at the dew point temperature. For all other conditions, the equilibrium calculations will be computed at the actual temperature.
+where :math:`\epsilon_1` and :math:`\epsilon_2` are smoothing parameters(mutable `Params` named `eps_1` and `eps_2`). The default values are 0.01 and 0.0005 respectively, and it is recommended that :math:`\epsilon_1` > :math:`\epsilon_2`. It can be seen that if the stream temperature is less than that of the bubble point temperature, the VLE calculations will be computed at the bubble point. Similarly, if the stream temperature is greater than the dew point temperature, then the VLE calculations are computed at the dew point temperature. For all other conditions, the equilibrium calculations will be computed at the actual temperature.
 
 Finally, the phase equilibrium is expressed using the following equation:
 
