@@ -19,6 +19,7 @@ import logging
 # Import Pyomo libraries
 from pyomo.environ import (Constraint,
                            Expression,
+                           Set,
                            SolverFactory,
                            TerminationCondition,
                            value,
@@ -35,7 +36,9 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.model_statistics import (degrees_of_freedom,
                                               number_activated_constraints)
-from idaes.core.util.exceptions import BurntToast, PropertyPackageError
+from idaes.core.util.exceptions import (BurntToast,
+                                        ConfigurationError,
+                                        PropertyPackageError)
 
 
 # Set up logger
@@ -64,6 +67,20 @@ class GenericParameterData(PhysicalParameterBlock):
     CONFIG = PhysicalParameterBlock.CONFIG()
 
     # General options
+    CONFIG.declare("component_list", ConfigValue(
+        description="List of components in material",
+        doc="""A list of names for the components of interest in the mixture.
+        """))
+    CONFIG.declare("phase_list", ConfigValue(
+        description="List of phases of interestl",
+        doc="""A list of phases of interest in the mixture for the property
+        package."""))
+    CONFIG.declare("phase_component_list", ConfigValue(
+        description="List of components in each phase",
+        doc="""A dict of component_lists for each phase. Keys should correspond
+        to members of phase_list, and each value should be a list of component
+        names."""))
+
     CONFIG.declare("state_definition", ConfigValue(
         description="Choice of State Variable",
         doc="""Flag indicating the set of state variables to use for property
@@ -80,6 +97,13 @@ class GenericParameterData(PhysicalParameterBlock):
         doc="""Flag indicating what formulation to use for calcuating phase
         equilibrium. Value should be a valid Python method or None. Default =
         None, indicating no phase equilibrium will occur."""))
+    CONFIG.declare("phase_equilibrium_dict", ConfigValue(
+        default=None,
+        description="Phase equilibrium reactions to be modelled",
+        doc="""Dict describing what phase equilibrium reactions should be
+        included in the property package. Keys should be names from
+        component_list, and values should be a 2-tuple of phases from
+        phase_list which should be in equilibrium."""))
 
     CONFIG.declare("bubble_temperature", ConfigValue(
         description="Method to use to calculate bubble temperature",
@@ -138,9 +162,75 @@ class GenericParameterData(PhysicalParameterBlock):
         '''
         Callable method for Block construction.
         '''
+        # Call super.build() to initialize Block
         super(GenericParameterData, self).build()
 
+        # Call configure method to set construction arguments
+        self.configure()
+
+        # Build core components
         self.state_block_class = GenericStateBlock
+
+        if self.config.component_list is not None:
+            self.component_list = Set(initialize=self.config.component_list,
+                                      ordered=True)
+        else:
+            raise ConfigurationError(
+                    "{} Generic Property Package was not provided with a "
+                    "component_list.".format(self.name))
+
+        if self.config.phase_list is not None:
+            self.phase_list = Set(initialize=self.config.phase_list,
+                                  ordered=True)
+        else:
+            raise ConfigurationError(
+                    "{} Generic Property Package was not provided with a "
+                    "component_list.".format(self.name))
+
+        # If user provided phase_component_list, validate this now
+        if self.config.phase_component_list is not None:
+            for p in self.config.phase_component_list:
+                if p not in self.config.phase_list:
+                    raise ConfigurationError(
+                            "{} Generic Property Package provided with invalid"
+                            "phase_component_list. Phase {} is not a member "
+                            "of phase_list.".format(self.name, p))
+                for j in self.config.phase_component_list[p]:
+                    if p not in self.config.phase_list:
+                        raise ConfigurationError(
+                            "{} Generic Property Package provided with invalid"
+                            "phase_component_list. Component {} in phase {} "
+                            "is not a members of component_list."
+                            .format(self.name, p, j))
+
+        # Build phase-component list
+        self.phase_comp = {}
+        for p in self.phase_list:
+            if self.config.phase_component_list is not None and \
+                    p in self.config.phase_component_list:
+                self.phase_comp[p] = self.config.phase_component_list[p]
+            else:
+                self.phase_comp[p] = self.config.component_list
+
+        # Validate that user provided either both a phase equilibrium
+        # formulation and a dict of phase equilibria or neither
+        if ((self.config.phase_equilibrium_formulation is not None) ^
+                (self.config.phase_equilibrium_dict is not None)):
+            raise ConfigurationError(
+                    "{} Generic Property Package provided with only one of "
+                    "phase_equilibrium_formulation and phase_equilibrium_dict."
+                    " Either both of these arguments need to be provided or "
+                    "neither.".format(self.name))
+
+        # Build phase equilibrium list
+        if self.config.phase_equilibrium_dict is not None:
+            self.phase_equilibrium_list = self.config.phase_equilibrium_dict
+
+            pe_set = []
+            for k in self.config.phase_equilibrium_dict.keys():
+                pe_set.append(k)
+            self.phase_equilibrium_idx = Set(initialize=pe_set,
+                                             ordered=True)
 
     @classmethod
     def define_metadata(cls, obj):

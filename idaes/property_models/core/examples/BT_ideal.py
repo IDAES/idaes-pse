@@ -42,17 +42,16 @@ _log = logging.getLogger(__name__)
 
 @declare_process_block_class("BTIdealParameterBlock")
 class BTIdealParameterData(GenericParameterData):
-
-    def build(self):
+    def configure(self):
         '''
-        Callable method for Block construction.
+        Callable method to set construction arguments.
         '''
-        super(BTIdealParameterData, self).build()
-
         # ---------------------------------------------------------------------
         # Set config arguments
+        self.config.component_list = ['benzene', 'toluene']
+        self.config.phase_list = ['Liq', 'Vap']
+        
         self.config.state_definition = FTPx
-
         self.config.state_bounds = {"flow_mol": (0, 1000),
                                     "temperature": (273.15, 450),
                                     "pressure": (5e4, 1e6)}
@@ -61,6 +60,8 @@ class BTIdealParameterData(GenericParameterData):
                                          "Liq": ideal}
 
         self.config.phase_equilibrium_formulation = smooth_VLE
+        self.config.phase_equilibrium_dict = {1: ["benzene", ("Vap", "Liq")],
+                                              2: ["toluene", ("Vap", "Liq")]}
 
         self.config.bubble_temperature = bubble_temp_ideal
         self.config.dew_temperature = dew_temp_ideal
@@ -73,22 +74,14 @@ class BTIdealParameterData(GenericParameterData):
         self.config.entr_mol_comp_liq = Perrys
         self.config.entr_mol_comp_ig = RPP
         self.config.pressure_sat_comp = RPP
+
+    def build(self):
+        '''
+        Callable method for Block construction.
+        '''
+        super(BTIdealParameterData, self).build()
+
         # ---------------------------------------------------------------------
-        self.component_list = Set(initialize=['benzene', 'toluene'])
-
-        self.phase_list = Set(initialize=["Vap", "Liq"], ordered=True)
-
-        # List of components in each phase (optional)
-        self.phase_comp = {"Liq": self.component_list,
-                           "Vap": self.component_list}
-
-        # List of phase equilibrium index
-        self.phase_equilibrium_idx = Set(initialize=[1, 2])
-
-        self.phase_equilibrium_list = \
-            {1: ["benzene", ("Vap", "Liq")],
-             2: ["toluene", ("Vap", "Liq")]}
-
         # Thermodynamic reference state
         self.pressure_ref = Param(mutable=True,
                                   default=101325,

@@ -64,7 +64,18 @@ class TestParamBlock(object):
         return model
 
     def test_config(self, model):
-        assert len(model.params.config) == 15
+        assert len(model.params.config) == 19
+
+        assert len(model.params.config.phase_list) == 2
+        for i in model.params.config.phase_list:
+            assert i in ["Liq", "Vap"]
+
+        assert len(model.params.config.component_list) == 2
+        for i in model.params.config.component_list:
+            assert i in ['benzene',
+                         'toluene']
+
+        assert model.params.config.phase_component_list is None
 
         assert model.params.config.state_definition == FTPx
 
@@ -78,6 +89,10 @@ class TestParamBlock(object):
                 "Liq": ideal}
 
         assert model.params.config.phase_equilibrium_formulation == smooth_VLE
+        assert len(model.params.config.phase_equilibrium_dict) == 2
+        assert model.params.config.phase_equilibrium_dict == {
+                1: ["benzene", ("Vap", "Liq")],
+                2: ["toluene", ("Vap", "Liq")]}
 
         assert model.params.config.bubble_temperature == bubble_temp_ideal
         assert model.params.config.dew_temperature == dew_temp_ideal
