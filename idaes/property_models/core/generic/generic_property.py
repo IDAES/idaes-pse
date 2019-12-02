@@ -232,6 +232,12 @@ class GenericParameterData(PhysicalParameterBlock):
             self.phase_equilibrium_idx = Set(initialize=pe_set,
                                              ordered=True)
 
+    def configure(self):
+        return PropertyPackageError(
+                "{} User definied property package failed to define a "
+                "configure method. Please contact the developer of the "
+                "property package with this error.".format(self.name))
+
     @classmethod
     def define_metadata(cls, obj):
         """Define properties supported and units."""
