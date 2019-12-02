@@ -35,4 +35,4 @@ Finally, the phase equilibrium is expressed using the following equation:
 
 .. math:: \Phi_{\text{Vap}, j}(T_{eq}) = \Phi_{\text{Liq}, j}(T_{eq})
 
-where :math:`\Phi_{p, j}(T_{eq})` is the fugacity of component :math:`j` in the phase :math:`p` calculated at :math:`T_{eq}`. The fugacities are calculated using methods defined in by the equation of state chosen by the user for each phase.
+where :math:`\Phi_{p, j}(T_{eq})` is the fugacity of component :math:`j` in the phase :math:`p` calculated at :math:`T_{eq}`. The fugacities are calculated using methods defined by the equation of state chosen by the user for each phase.
