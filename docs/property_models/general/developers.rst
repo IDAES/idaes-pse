@@ -1,7 +1,7 @@
 Developing New Property Libraries
 =================================
 
-Under development
+Under development. This section will eventually describe how to build your own sub-models as part of the IDAES Generic Property Package Framework.
 
 .. contents:: Contents 
     :depth: 2
@@ -14,6 +14,8 @@ Equations of State
 
 Pure Component Properties
 -------------------------
+
+The following pure component properties are supported by IDAES equation of state packages.
 
 cp_mol_ig (j, T)
 enth_mol_ig (j, T)
