@@ -31,7 +31,7 @@ where :math:`t = \frac{T}{1000}`.
 Ideal Gas Molar Enthalpy
 ------------------------
 
-The correlation for the ideal gas molar enthalpy is derived from the correaltion for the molar heat capacity and is given below:
+The correlation for the ideal gas molar enthalpy is derived from the correlation for the molar heat capacity and is given below:
 
 .. math:: \frac{h_{\text{ig}, j} - h_{\text{ig ref}, j}}{1000} = A \times (t-t_{ref}) + \frac{B}{2} \times (t^2 - t_{ref}^2) + \frac{C}{3} \times (t^3 - t_{ref}^3) + \frac{D}{4} \times (t^4 - t_{ref}^4) + E \times (\frac{1}{t} - \frac{1}{t_{ref}}) + F - H
 
@@ -47,7 +47,7 @@ The correlation for the ideal gas molar enthalpy is derived from the correaltion
 Ideal Gas Molar Entrolpy
 ------------------------
 
-The correlation for the ideal gas molar entropy is derived from the correaltion for the molar heat capacity and is given below:
+The correlation for the ideal gas molar entropy is derived from the correlation for the molar heat capacity and is given below:
 
 .. math:: s_{\text{ig}, j} = A \times ln(t) + B \times t + \frac{C}{2} \times t^2 + \frac{D}{3} \times t^3 + \frac{E}{2 \times t^2} + G 
 
@@ -77,4 +77,3 @@ NIST uses the Antoine equation to calculate the vapor pressure of a component, w
 
 .. note::
     The Antoine equation is generally written with saturation pressure expressed in bars. The units of the correlation can be converted to Pascals by adding 5 to :math:`A`.
-

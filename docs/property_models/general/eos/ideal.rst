@@ -43,7 +43,7 @@ where :math:`x_{p, j}` is the mole fraction of component :math:`j` in the phase 
 Component Molar Enthalpy by Phase
 ---------------------------------
 
-Component molar enthalpies by phase are calcuated using the pure component method provided by the users in the property package configuration arguments.
+Component molar enthalpies by phase are calculated using the pure component method provided by the users in the property package configuration arguments.
 
 Molar Entropy by Phase
 -----------------------
@@ -57,7 +57,7 @@ where :math:`x_{p, j}` is the mole fraction of component :math:`j` in the phase 
 Component Molar Entropy by Phase
 ---------------------------------
 
-Component molar entropies by phase are calcuated using the pure component method provided by the users in the property package configuration arguments.
+Component molar entropies by phase are calculated using the pure component method provided by the users in the property package configuration arguments.
 
 Component Fugacity by Phase
 ---------------------------
@@ -78,7 +78,7 @@ Ideal behavior is assumed, so all :math:`\phi_{p, j} = 1` for all components and
 Molar Gibbs Energy by Phase
 ---------------------------
 
-For both liquid and vapor phases, the molar Gibbs eneergy is calculated as the weighted sum of the component molar Gibbs energies for the given phase:
+For both liquid and vapor phases, the molar Gibbs energy is calculated as the weighted sum of the component molar Gibbs energies for the given phase:
 
 .. math:: g_{mol, p} = \sum_j{x_{p, j} \times g_{mol, p, j}}
 
@@ -90,4 +90,3 @@ Component Gibbs Energy by Phase
 Component molar Gibbs energies are calculated using the definition of Gibbs energy:
 
 .. math:: g_{mol, p, j} = h_{mol, p, j} - s_{mol, p, j} \times T
-
