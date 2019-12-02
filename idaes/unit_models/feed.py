@@ -133,9 +133,9 @@ see property package for documentation.}"""))
             None
         '''
         # ---------------------------------------------------------------------
-        init_log = getInitLogger(self.name, outlvl)
+        init_log = getInitLogger(blk.name, outlvl)
 
-        # Initialize state block        
+        # Initialize state block
         blk.properties.initialize(outlvl=outlvl+1,
                                   optarg=optarg,
                                   solver=solver,
