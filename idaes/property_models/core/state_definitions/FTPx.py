@@ -120,6 +120,12 @@ def define_state(b):
         doc='Phase fractions [-]')
 
     # Add supporting constraints
+    if b.config.defined_state is False:
+        # applied at outlet only
+        b.sum_mole_frac_out = Constraint(
+            expr=1 == sum(b.mole_frac_comp[i]
+                          for i in b._params.component_list))
+
     if len(b._params.phase_list) == 1:
         def rule_total_mass_balance(b):
             return b.flow_mol_phase[b._params.phase_list[1]] == b.flow_mol
@@ -130,12 +136,6 @@ def define_state(b):
                 b.mole_frac_phase_comp[b._params.phase_list[1], i]
         b.component_flow_balances = Constraint(b._params.component_list,
                                                rule=rule_comp_mass_balance)
-
-        if b.config.defined_state is False:
-            # applied at outlet only
-            b.sum_mole_frac_out = Constraint(
-                expr=1 == sum(b.mole_frac_comp[i]
-                              for i in b._params.component_list))
 
         def rule_phase_frac(b, p):
             return b.phase_frac[p] == 1
@@ -163,12 +163,6 @@ def define_state(b):
                     for i in b._params.component_list) == 0
         b.sum_mole_frac = Constraint(rule=rule_mole_frac)
 
-        if b.config.defined_state is False:
-            # applied at outlet only
-            b.sum_mole_frac_out = \
-                Constraint(expr=1 == sum(b.mole_frac_comp[i]
-                           for i in b._params.component_list))
-
         def rule_phase_frac(b, p):
             return b.phase_frac[p]*b.flow_mol == b.flow_mol_phase[p]
         b.phase_fraction_constraint = Constraint(b._params.phase_list,
@@ -188,12 +182,6 @@ def define_state(b):
                        for i in b._params.component_list) == 1
         b.sum_mole_frac = Constraint(b._params.phase_list,
                                      rule=rule_mole_frac)
-
-        if b.config.defined_state is False:
-            # applied at outlet only
-            b.sum_mole_frac_out = \
-                Constraint(expr=1 == sum(b.mole_frac_comp[i]
-                           for i in b._params.component_list))
 
         def rule_phase_frac(b, p):
             return b.phase_frac[p]*b.flow_mol == b.flow_mol_phase[p]
