@@ -49,7 +49,7 @@ from idaes.core import (
     useDefault,
 )
 
-from idaes.logger import getIdaesLogger, getInitLogger, init_tee
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 from idaes.functions import functions_lib
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.unit_models.heater import (
@@ -455,20 +455,13 @@ class HeatExchangerData(UnitModelBlockData):
         # ---------------------------------------------------------------------
         # Solve unit
         results = opt.solve(self, tee=init_tee(init_log), symbolic_solver_labels=True)
-        init_log.log(
-            4, "Initialization Step 3 {}.".format(results.solver.termination_condition)
-        )
+        init_log.log(4, "Initialization Step 3 {}.".format(condition(results)))
         # ---------------------------------------------------------------------
         # Release Inlet state
         self.side_1.release_state(flags1, outlvl + 1)
         self.side_2.release_state(flags2, outlvl + 1)
 
-        init_log.log(
-            5,
-            "Initialization Completed, Condition {}".format(
-                results.solver.termination_condition
-            ),
-        )
+        init_log.log(5, "Initialization Completed, {}".format(condition(results)))
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {

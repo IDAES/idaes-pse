@@ -49,6 +49,18 @@ def init_tee(logger, tee_level=2):
     """
     return logger.getEffectiveLevel() <= tee_level
 
+def condition(res):
+    """Get the solver termination condition.  Since it seems to be common to
+    have an if block to check for None if the solver call raised a handeled
+    exception"""
+
+    if res is None:
+        return "Error, no result"
+    elif isinstance(res, str):
+        return res
+    else:
+        return res.solver.termination_condition
+
 def getInitLogger(name, level=None):
     """ Get a model initilization logger
 
