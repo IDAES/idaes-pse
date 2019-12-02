@@ -20,7 +20,21 @@ def getIdaesLogger(name, level=None):
         l.setLevel(level)
     return logging.getLogger(name)
 
-def solver_tee(logger, tee_level=2):
+def solver_tee(logger, tee_level=logging.DEBUG):
+    """Function to produce solver output based on the logging level of a sepcific
+    logger. This function just helps standadize the level for solver output to
+    appear and make code a bit cleaner.
+
+    Args:
+        logger: logger to get output level from
+        tee_level: Level at which to show solver output, usually use default
+
+    Returns
+        (bool)
+    """
+    return logger.getEffectiveLevel() <= tee_level
+
+def init_tee(logger, tee_level=2):
     """Function to use in initialization to determine at a given output level
     whether to use the sovler tee option to print solver output. This function
     just helps standadize the level for solver output to appear and make the
@@ -33,7 +47,7 @@ def solver_tee(logger, tee_level=2):
     Returns
         (bool)
     """
-    return logger. getEffectiveLevel() <= tee_level
+    return logger.getEffectiveLevel() <= tee_level
 
 def getInitLogger(name, level=None):
     """ Get a model initilization logger

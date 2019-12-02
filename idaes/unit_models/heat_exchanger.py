@@ -49,7 +49,7 @@ from idaes.core import (
     useDefault,
 )
 
-from idaes.logger import getIdaesLogger, getInitLogger, solver_tee
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee
 from idaes.functions import functions_lib
 from idaes.core.util.tables import create_stream_table_dataframe
 from idaes.unit_models.heater import (
@@ -446,7 +446,7 @@ class HeatExchangerData(UnitModelBlockData):
         # Solve unit without heat transfer equation
         self.heat_transfer_equation.deactivate()
         self.side_2.heat.fix(duty)
-        results = opt.solve(self, tee=solver_tee(init_log), symbolic_solver_labels=True)
+        results = opt.solve(self, tee=init_tee(init_log), symbolic_solver_labels=True)
         init_log.log(
             4, "Initialization Step 2 {}.".format(results.solver.termination_condition)
         )
@@ -454,7 +454,7 @@ class HeatExchangerData(UnitModelBlockData):
         self.heat_transfer_equation.activate()
         # ---------------------------------------------------------------------
         # Solve unit
-        results = opt.solve(self, tee=solver_tee(init_log), symbolic_solver_labels=True)
+        results = opt.solve(self, tee=init_tee(init_log), symbolic_solver_labels=True)
         init_log.log(
             4, "Initialization Step 3 {}.".format(results.solver.termination_condition)
         )
