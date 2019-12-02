@@ -22,9 +22,6 @@ McGraw-Hill, 1987
 # Chages the divide behavior to not do integer division
 from __future__ import division
 
-# Import Python libraries
-import logging
-
 # Import Pyomo libraries
 from pyomo.environ import Reals, Param, NonNegativeReals, Set
 
@@ -34,10 +31,11 @@ from idaes.core.util.misc import extract_data
 
 from idaes.property_models.cubic_eos.cubic_prop_pack import (
         CubicParameterData, CubicEoS)
+from idaes.logger import getIdaesLogger
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 @declare_process_block_class("BTParameterBlock")

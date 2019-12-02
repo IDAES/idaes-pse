@@ -526,12 +526,12 @@ Must be True if dynamic = True,
                                               solver=solver,
                                               state_args=state_args)
 
-        init_log.info(4, 'Initialisation Step 1 Complete.')
+        init_log.log(4, 'Initialisation Step 1 Complete.')
 
         # ---------------------------------------------------------------------
         # Solve unit
         try:
-            results = opt.solve(blk, tee=stee)
+            results = opt.solve(blk, tee=init_tee(init_log))
         except ValueError:
             results = "ValueError"
             # This is bad right?  Log it?
