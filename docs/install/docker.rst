@@ -42,26 +42,19 @@ Get the IDAES Docker image
 --------------------------
 You need to get the ready made Docker image containing the source
 code and solvers for the IDAES PSE framework. This image is available
-for download at a URL like "https://s3.amazonaws.com/idaes/idaes-pse/idaes-pse-docker-``VERSION``.tgz",
-where ``VERSION`` is the release version. See the Releases_ page on GitHub
+for download from DockerHub (an online portal where Docker images are stored). Images
+on DockerHub are versioned according to the release version.
+See the Releases_ page on GitHub
 for information about what is different about each version.
 
 If you want the latest version, simply use the tag "latest" as the version number.
-Thus, **clicking on this link will start a download of the latest version**:
-`https://s3.amazonaws.com/idaes/idaes-pse/idaes-pse-docker-latest.tgz
-<https://s3.amazonaws.com/idaes/idaes-pse/idaes-pse-docker-latest.tgz>`_.
+Thus, **running the following in a terminal will download the latest version**:
 
-.. _Releases: https://github.com/IDAES/idaes-pse/releases
+.. code-block:: shell
+    
+    docker pull idaes/jupyterhub:latest
 
-Load the IDAES Docker image
----------------------------
-The image you downloaded needs to be loaded into your local Docker Installation
-using the `Docker load`_ command, which from the command-line looks like
-this:
-
-    docker load < idaes-pse-docker-latest.tgz
-
-.. _Docker load: https://docs.docker.com/engine/reference/commandline/load/
+-.. _Releases: https://github.com/IDAES/idaes-pse/releases
 
 Run the IDAES Docker image
 --------------------------
@@ -74,7 +67,7 @@ to view and run the examples and tutorials, then run this command:
 
 .. code-block:: console
 
-      $ docker run -p 8888:8888 -it idaes/idaes_pse
+      $ docker run -p 8888:8888 -it idaes/jupyterhub
       ... <debugging output from Jupyter>
       ...
       Copy/paste this URL into your browser when you connect for the first time,
@@ -91,7 +84,7 @@ following command:
 
 .. code-block:: console
 
-      $ docker run -p 8888:8888 -it idaes/idaes_pse /bin/bash
+      $ docker run -p 8888:8888 -it idaes/jupyterhub /bin/bash
       jovyan@10c11ca29008:~$ cd /home/idaes
       ...
 

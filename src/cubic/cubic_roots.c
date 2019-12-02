@@ -1,9 +1,7 @@
 /*
   General root calculator for cubic equations of state.
-
   Author: John Eslick
   Date: November 22, 2016
-
   Notes:
 */
 
@@ -59,14 +57,14 @@ double cubic_root(int phase, eos_indx eos, double A, double B,
                   double *derivs, double *hes){
     /*
      * Find solution to the cubic equation:
-     * 0 = z^3 - (1+B-uB)z^2 + (A+wB-uB-uB^2)z - AB-wB^2 - wB^3
+     * 0 = z^3 - (1+B-uB)z^2 + (A+-uB-uB^2+wB^2)z - AB-wB^2 - wB^3
      *
      * Also using the definition below (no a, a = 1)
      *
      * 0 = z^3 + b*z2 + c*z + d
      * a = 1
      * b = -(1 + B - u*B)
-     * c =  (A + w*B - u*B - u*B^2)
+     * c =  (A - u*B - u*B^2 + w*B^2)
      * d = -(A*B + w*B^2 + w*B^3)
      *
      * Return either what should be the liquid root if phase == 0 or the
@@ -92,7 +90,7 @@ double cubic_root_ext(int phase, eos_indx eos, double A, double B,
 
   const double u = eos_u[eos];
   const double w = eos_w[eos];
-  double b, c, d, z, a;
+  double b, c, d, z, a, pm;
   double bext, cext, dext;
   double det;
 
@@ -100,10 +98,13 @@ double cubic_root_ext(int phase, eos_indx eos, double A, double B,
   c = A + w*B*B - u*B - u*B*B;
   d = -A*B - w*B*B - w*B*B*B;
 
+  if(phase == liquid) pm = -1.0; //liquid
+  else pm = 1.0;  //vapor
+
   det = b*b - 3*c;
   if(det > 0){
     // could need the extension on liquid side so check
-    a = -1.0/3.0*b - 1.0*sqrt(det)/3.0;
+    a = -1.0/3.0*b + pm*1.0*sqrt(det)/3.0;
     if( ((a*a*a + b*a*a + c*a + d < 0)&&(phase==liquid)) ||
         ((a*a*a + b*a*a + c*a + d > 0)&&(phase==vapor))){
       //use extension liquid
@@ -136,13 +137,12 @@ real ceos_z_liq(arglist *al){
   /* This finds the liquid root for a cubic EOS
    *
    * It also calculates first and second derivative.  Returns the vapor root
-   * if the liquid pahse doesn't exist, so it is discontinuous.  The extended
+   * if the liquid phase doesn't exist, so it is discontinuous.  The extended
    * version of this may be better, but this has the nice property that where
    * a vapor root doesn't exist any very small vapor component would have the
    * same properties as the liquid. The exisitence of a liquid root doesn't
-   * necessarily mean that liquid is present, so the non-existing liquid pahse
+   * necessarily mean that liquid is present, so the non-existing liquid phase
    * would not always have the same properies as the vapor.
-
    * The arguments are:
    *     0) eos_index, specifies the specific eos (e.g. Peng-Robinson)
    *     1) A from the general cubic eos
@@ -160,11 +160,11 @@ real ceos_z_vap(arglist *al){
     /* This finds the vapor root for a cubic EOS
      *
      * It also calculates first and second derivative.  Returns the liquid root
-     * if the vapor pahse doesn't exist, so it is discontinuous.  The extended
+     * if the vapor phase doesn't exist, so it is discontinuous.  The extended
      * version of this may be better, but this has the nice property that where
      * a vapor root doesn't exist any very small vapor component would have the
      * same properties as the liquid. The exisitence of a vapor root doesn't
-     * necessarily mean that vapor is present, so the non-existing vapor pahse
+     * necessarily mean that vapor is present, so the non-existing vapor phase
      * would not always have the same properies as the vapor.
      *
      * The arguments are:
