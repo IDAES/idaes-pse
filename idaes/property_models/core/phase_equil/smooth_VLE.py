@@ -10,6 +10,14 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+"""
+Implementation of the formulation proposed in:
+
+Burgard, A.P., Eason, J.P., Eslick, J.C., Ghouse, J.H., Lee, A., Biegler, L.T.,
+Miller, D.C., 2018, A Smooth, Square Flash Formulation for Equation-Oriented
+Flowsheet Optimization. Proceedings of the 13th International Symposium on
+Process Systems Engineering – PSE 2018, July 1-5, 2018, San Diego.
+"""
 from pyomo.environ import Constraint, Expression, Param, Var
 from idaes.core.util.math import smooth_max, smooth_min
 
