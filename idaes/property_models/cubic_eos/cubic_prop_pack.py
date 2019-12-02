@@ -59,11 +59,14 @@ from idaes.core import (declare_process_block_class,
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes import lib_directory
 
 
 # Set up logger
 _log = logging.getLogger(__name__)
-_so = os.path.join(os.path.dirname(__file__), "../cubic_eos/cubic_roots.so")
+
+# Set path to root finder .so file
+_so = os.path.join(lib_directory, "cubic_roots.so")
 
 
 def cubic_roots_available():
