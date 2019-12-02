@@ -110,6 +110,8 @@ an optional step.
 
     idaes get-extensions
 
+   .. note:: The IDAES binary extensions are not yet supported on Mac/OSX
+
 3. Run tests on unit models::
 
     pytest --pyargs idaes -W ignore
