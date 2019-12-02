@@ -515,7 +515,7 @@ Must be True if dynamic = True,
             None
         '''
         # Set solver options
-        init_log = getInitLogger(self.name, outlvl)
+        init_log = getInitLogger(blk.name, outlvl)
         opt = SolverFactory(solver)
         opt.options = optarg
 
