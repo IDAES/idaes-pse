@@ -63,7 +63,7 @@ Linux
    with it. Unless you know that these are already installed on your system,
    you should manually install them using "apt-get", "yum" or other
    appropriate package manager. Depending on how your system is set up you either
-   need to use "sudo" or install packages as the "root" user.
+   need to use the "sudo" command or install packages as the "root" user.
 
    apt-get (Debian or Ubuntu based distributions)::
 
