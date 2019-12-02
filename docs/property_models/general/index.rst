@@ -14,6 +14,7 @@ Contents
     bubble_dew
     phase_equilibrium
     developers
+    generic_options
     
 
 Introduction
