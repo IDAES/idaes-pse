@@ -19,7 +19,7 @@ import idaes
 import click
 from idaes.commands import cb
 
-@cb.command(help="Show the IDAES data directory path")
+@cb.command(name="data-directory", help="Show IDAES data directory")
 # the underscore get turned into a '-' so the command is data-directory
 @click.option("--exists", is_flag=True, help="Show if the directory exists")
 @click.option("--create", is_flag=True, help="Create the directory")
@@ -32,7 +32,7 @@ def data_directory(exists, create):
     else:
         click.echo(idaes.data_directory)
 
-@cb.command(help="Show the IDAES executable file directory path")
+@cb.command(name="bin-directory", help="Show IDAES executable file directory")
 # the underscore get turned into a '-' so the command is data-directory
 @click.option("--exists", is_flag=True, help="Show if the directory exists")
 @click.option("--create", is_flag=True, help="Create the directory")
@@ -45,7 +45,7 @@ def bin_directory(exists, create):
     else:
         click.echo(idaes.bin_directory)
 
-@cb.command(help="Show the IDAES library file directory path")
+@cb.command(name="lib-directory", help="Show IDAES library file directory")
 # the underscore get turned into a '-' so the command is data-directory
 @click.option("--exists", is_flag=True, help="Show if the directory exists")
 @click.option("--create", is_flag=True, help="Create the directory")
