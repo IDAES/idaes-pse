@@ -19,8 +19,11 @@ from pyomo.core.base.plugin import TransformationFactory
 from pyomo.core.plugins.transform.hierarchy import NonIsomorphicTransformation
 from pyomo.core.expr import current as EXPR
 from pyomo.common.config import ConfigBlock, ConfigValue, add_docstring_list
-from pyomo.core.beta.dict_objects import VarDict
+from pyomo.core.base.var import _GeneralVarData
 
+
+def _is_var(v):
+    return isinstance(v, (_GeneralVarData, pyo.Var))
 
 @TransformationFactory.register(
     'replace_variables',
@@ -45,16 +48,42 @@ class ReplaceVariables(NonIsomorphicTransformation):
 
     @staticmethod
     def replace(instance, substitute):
+        # Create the replacement dict. Do some argument validation and indexed
+        # var handeling
         d = {}
         for r in substitute:
-            d[id(r[0])] = r[1]
+            if not (_is_var(r[0]) and _is_var(r[1])):
+                raise TypeError(
+                    "Replace only allows variables to be replaced, {} is type {}"
+                    " and {} is type {}".format(r[0], type(r[0]), r[1], type(r[1]))
+                )
+            if r[0].is_indexed() != r[1].is_indexed():
+                raise TypeError(
+                    "IndexedVars must be replaced by IndexedVars, {} is type {}"
+                    " and {} is type {}".format(r[0], type(r[0]), r[1], type(r[1]))
+                )
+            if r[0].is_indexed() and r[1].is_indexed():
+                if not r[0].index_set().issubset(r[1].index_set()):
+                    raise ValueError(
+                        "The index set of {} must be a subset of"
+                        " {}.".format(r[0], r[1])
+                    )
+                for i in r[0]:
+                    d[id(r[0][i])] = r[1][i]
+            else:
+                #scalar replace
+                d[id(r[0])] = r[1]
+
+        # Replacment Visitor
         vis = EXPR.ExpressionReplacementVisitor(substitute=d)
+
+        # Do replacemnents in Expresions, Constraints, and Objectives
         for c in instance.component_data_objects(pyo.Constraint, descend_into=True):
             c.set_value(expr=vis.dfs_postorder_stack(c.expr))
         for c in instance.component_data_objects((pyo.Expression, pyo.Objective),
                                                  descend_into=True):
             vis.dfs_postorder_stack(c)
-            
+
 
     def _apply_to(self, instance, **kwds):
         config = self.CONFIG(kwds)
