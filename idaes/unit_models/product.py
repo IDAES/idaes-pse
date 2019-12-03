@@ -120,7 +120,7 @@ see property package for documentation.}"""))
                            package(s) to provide an initial state for
                            initialization (see documentation of the specific
                            property package) (default = {}).
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output
@@ -142,7 +142,7 @@ see property package for documentation.}"""))
                                   optarg=optarg,
                                   solver=solver,
                                   **state_args)
-        init_log.log(5, 'Initialisation Complete.')
+        init_log.log(5, 'Initialization Complete.')
 
 
     def _get_stream_table_contents(self, time_point=0):

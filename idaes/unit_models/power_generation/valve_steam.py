@@ -166,7 +166,7 @@ class SteamValveData(PressureChangerData):
 
         Args:
             state_args (dict): Initial state for property initialization
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output

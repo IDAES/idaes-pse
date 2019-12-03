@@ -481,14 +481,14 @@ thickness of the tube"""))
     def initialize(blk, shell_state_args=None, tube_state_args=None, outlvl=5,
                    solver='ipopt', optarg={'tol': 1e-6}):
         """
-        Initialisation routine for the unit (default solver ipopt).
+        Initialization routine for the unit (default solver ipopt).
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output
@@ -520,7 +520,7 @@ thickness of the tube"""))
                                          solver=solver,
                                          state_args=tube_state_args)
 
-        init_log.log(4, 'Initialisation Step 1 Complete.')
+        init_log.log(4, 'Initialization Step 1 Complete.')
 
         # ---------------------------------------------------------------------
         # Solve unit
@@ -556,7 +556,7 @@ thickness of the tube"""))
         blk.shell.release_state(flags_shell)
         blk.tube.release_state(flags_tube)
 
-        init_log.log(5, "Initialization Cmplete.")
+        init_log.log(5, "Initialization Complete.")
 
 
     def _get_performance_contents(self, time_point=0):

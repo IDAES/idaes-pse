@@ -1374,14 +1374,14 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
     def initialize(blk, state_args=None, outlvl=6, optarg=None,
                    solver='ipopt', hold_state=True):
         '''
-        Initialisation routine for 0D control volume (default solver ipopt)
+        Initialization routine for 0D control volume (default solver ipopt)
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output
@@ -1441,13 +1441,13 @@ class ControlVolume0DBlockData(ControlVolumeBlockData):
         except AttributeError:
             pass
 
-        init_log.log(5, 'Initialisation Complete')
+        init_log.log(5, 'Initialization Complete')
 
         return flags
 
     def release_state(blk, flags, outlvl=6):
         '''
-        Method to release state variables fixed during initialisation.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables

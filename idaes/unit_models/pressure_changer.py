@@ -511,7 +511,7 @@ see property package for documentation.}"""))
     def initialize(blk, state_args=None, routine=None, outlvl=6,
                    solver='ipopt', optarg={'tol': 1e-6}):
         '''
-        General wrapper for pressure changer initialisation routines
+        General wrapper for pressure changer initialization routines
 
         Keyword Arguments:
             routine : str stating which initialization routine to execute
@@ -522,7 +522,7 @@ see property package for documentation.}"""))
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output
@@ -541,7 +541,7 @@ see property package for documentation.}"""))
             # Use routine for specific type of unit
             routine = blk.config.thermodynamic_assumption
 
-        # Call initialisation routine
+        # Call initialization routine
         if routine is ThermodynamicAssumption.isentropic:
             blk.init_isentropic(state_args=state_args,
                                 outlvl=outlvl,
@@ -556,14 +556,14 @@ see property package for documentation.}"""))
 
     def init_isentropic(blk, state_args, outlvl, solver, optarg):
         '''
-        Initialisation routine for unit (default solver ipopt)
+        Initialization routine for unit (default solver ipopt)
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output

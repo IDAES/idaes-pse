@@ -671,10 +671,10 @@ linked to all inlet states and the mixed state,
     def initialize(blk, outlvl=6, optarg={},
                    solver='ipopt', hold_state=False):
         '''
-        Initialisation routine for mixer (default solver ipopt)
+        Initialization routine for mixer (default solver ipopt)
 
         Keyword Arguments:
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output
@@ -801,7 +801,7 @@ linked to all inlet states and the mixed state,
 
     def release_state(blk, flags, outlvl=6):
         '''
-        Method to release state variables fixed during initialisation.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables

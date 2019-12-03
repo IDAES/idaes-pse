@@ -135,7 +135,7 @@ countercurrent temperature difference.}""",
 
 def delta_temperature_lmtd_callback(b):
     """
-    This is a callback for a temperaure difference expression to calculate
+    This is a callback for a temperature difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using log-mean temperature
     difference (LMTD).  It can be supplied to "delta_temperature_callback"
     HeatExchanger configuration option.
@@ -150,7 +150,7 @@ def delta_temperature_lmtd_callback(b):
 
 def delta_temperature_amtd_callback(b):
     """
-    This is a callback for a temperaure difference expression to calculate
+    This is a callback for a temperature difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using arithmetic-mean
     temperature difference (AMTD).  It can be supplied to
     "delta_temperature_callback" HeatExchanger configuration option.
@@ -165,7 +165,7 @@ def delta_temperature_amtd_callback(b):
 
 def delta_temperature_underwood_callback(b):
     """
-    This is a callback for a temperaure difference expression to calculate
+    This is a callback for a temperature difference expression to calculate
     :math:`\Delta T` in the heat exchanger model using log-mean temperature
     difference (LMTD) approximation given by Underwood (1970).  It can be
     supplied to "delta_temperature_callback" HeatExchanger configuration option.
@@ -324,7 +324,7 @@ class HeatExchangerData(UnitModelBlockData):
         add_object_reference(self, config.hot_side_name + "_outlet", self.outlet_1)
         add_object_reference(self, config.cold_side_name + "_outlet", self.outlet_2)
         ########################################################################
-        # Add end temperaure differnece constraints                            #
+        # Add end temperature differnece constraints                            #
         ########################################################################
         @self.Constraint(self.flowsheet().config.time)
         def delta_temperature_in_equation(b, t):
@@ -409,7 +409,7 @@ class HeatExchangerData(UnitModelBlockData):
             state_args_2 : a dict of arguments to be passed to the property
                 initialization for side_2 (see documentation of the specific
                 property package) (default = {}).
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output

@@ -134,7 +134,7 @@ class FWHCondensing0DData(HeatExchangerData):
 
     def initialize(self, *args, **kwargs):
         """
-        Use the regular heat exchanger initilization, with the extraction rate
+        Use the regular heat exchanger initialization, with the extraction rate
         constraint deactivated; then it activates the constraint and calculates
         a steam inlet flow rate.
         """
@@ -249,7 +249,7 @@ class FWH0DData(UnitModelBlockData):
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        # the initilization here isn't straight forward since the heat exchanger
+        # the initialization here isn't straight forward since the heat exchanger
         # may have 3 stages and they are countercurrent.  For simplicity each
         # stage in initialized with the same cooling water inlet conditions then
         # the whole feedwater heater is solved together.  There are more robust

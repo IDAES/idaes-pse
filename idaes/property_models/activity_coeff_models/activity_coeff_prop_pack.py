@@ -195,7 +195,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                    state_vars_fixed=False, outlvl=5,
                    solver="ipopt", optarg={"tol": 1e-8}):
         """
-        Initialisation routine for property package.
+        Initialization routine for property package.
         Keyword Arguments:
             state_args : Dictionary with initial guesses for the state vars
                          chosen. Note that if this method is triggered
@@ -212,7 +212,7 @@ class _ActivityCoeffStateBlock(StateBlock):
                          the state_args dictionary are:
                          flow_mol_comp, temperature, pressure.
 
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output
@@ -296,7 +296,7 @@ class _ActivityCoeffStateBlock(StateBlock):
             results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
             init_log.log(4, "Initialization Step 1 {}.".format(condition(results)))
         else:
-            init_log.info(4, "Initialisation step 1 skipped")
+            init_log.info(4, "Initialization step 1 skipped")
 
         # Continue initialization sequence and activate select constraints
         for k in blk.keys():
@@ -362,7 +362,7 @@ class _ActivityCoeffStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=6):
         """
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be

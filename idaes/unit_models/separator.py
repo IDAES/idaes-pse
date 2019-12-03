@@ -1108,10 +1108,10 @@ linked the mixed state and all outlet states,
     def initialize(blk, outlvl=6, optarg={},
                    solver='ipopt', hold_state=False):
         '''
-        Initialisation routine for separator (default solver ipopt)
+        Initialization routine for separator (default solver ipopt)
 
         Keyword Arguments:
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output
@@ -1151,7 +1151,7 @@ linked the mixed state and all outlet states,
                                   hold_state=True)
 
         if blk.config.ideal_separation:
-            # If using ideal splitting, initialisation should be complete
+            # If using ideal splitting, initialization should be complete
             return flags
 
         # Initialize outlet StateBlocks
@@ -1230,7 +1230,7 @@ linked the mixed state and all outlet states,
 
     def release_state(blk, flags, outlvl=6):
         '''
-        Method to release state variables fixed during initialisation.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables
