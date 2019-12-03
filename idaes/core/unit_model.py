@@ -530,12 +530,7 @@ Must be True if dynamic = True,
 
         # ---------------------------------------------------------------------
         # Solve unit
-        try:
-            results = opt.solve(blk, tee=init_tee(init_log))
-        except ValueError:
-            results = "ValueError"
-            # This is bad right?  Log it?
-            init_log.log(5, "Initialization Error", exec_info=True)
+        results = opt.solve(blk, tee=init_tee(init_log))
 
         init_log.log(4, "Initialization Step 2 {}.".format(condition(results)))
 
