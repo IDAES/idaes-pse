@@ -103,9 +103,9 @@ class TurbineStageData(PressureChangerData):
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output
-                 * 3 = return solver state for each step in subroutines
-                 * 4 = return solver state for each step in routine
-                 * 5 = Indicate final initialization status
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
                  * 6 = No output
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary

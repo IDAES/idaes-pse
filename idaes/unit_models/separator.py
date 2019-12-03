@@ -1115,9 +1115,9 @@ linked the mixed state and all outlet states,
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output
-                 * 3 = return solver state for each step in subroutines
-                 * 4 = return solver state for each step in routine
-                 * 5 = Indicate final initialization status
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
                  * 6 = No output
             optarg : solver options dictionary object (default=None)
             solver : str indicating whcih solver to use during
