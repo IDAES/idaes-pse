@@ -45,7 +45,7 @@ def ripemodel(data, **kwargs):
         sharedata["addfamcons"] = False
     sharedata["sdep"] = [dep_small, dep_large, ncon, fam_dep, nfam]
 
-    # Construction of the activity term is handeled here
+    # Construction of the activity term is handled here
     # i.e. - rate = k exp(-E/RT) * Aterm
     aterm, fdata, pc, data, scales = ripe.atermconstruct.makeaterm(
         data, stoich, mechanisms, kwargs, ncons, mechlist, fixarray, sharedata
