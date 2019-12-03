@@ -503,9 +503,9 @@ Must be True if dynamic = True,
                  * 0 = Use default idaes.init logger setting
                  * 1 = Maximum output
                  * 2 = Include solver output
-                 * 3 = return solver state for each step in subroutines
-                 * 4 = return solver state for each step in routine
-                 * 5 = Indicate final initialization status
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
                  * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating which solver to use during
@@ -535,7 +535,7 @@ Must be True if dynamic = True,
         except ValueError:
             results = "ValueError"
             # This is bad right?  Log it?
-            _log.exception("Initialization Error")
+            init_log.log(5, "Initialization Error", exec_info=True)
 
         init_log.log(4, "Initialization Step 2 {}.".format(condition(results)))
 
