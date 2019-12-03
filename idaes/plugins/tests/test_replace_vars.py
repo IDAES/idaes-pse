@@ -167,3 +167,24 @@ def test_8():
 
     with pytest.raises(ValueError):
         rp.apply_to(m, substitute=[(x, m.y)])
+
+def test_9():
+    # test with refernces the way we handel time indexing a lot in IDAES
+    rp = pyo.TransformationFactory("replace_variables")
+    block_set = {1,2,3}
+    m = pyo.ConcreteModel()
+    m.b1 = pyo.Block(block_set)
+    for i in block_set:
+        m.b1[i].x = pyo.Var(initialize=2)
+    m.y = pyo.Var([1,2,3], initialize=3)
+    m.xx = pyo.Reference(m.b1[:].x)
+    m.display()
+
+    m.e1 = pyo.Expression(expr=sum(m.xx[i] for i in m.xx))
+    m.e2 = pyo.Expression(expr=sum(m.b1[i].x for i in m.b1))
+
+    assert(pyo.value(m.e1) == 6)
+    assert(pyo.value(m.e2) == 6)
+    rp.apply_to(m, substitute=[(m.xx, m.y)])
+    assert(pyo.value(m.e1) == 9)
+    assert(pyo.value(m.e2) == 9)
