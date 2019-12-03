@@ -172,7 +172,7 @@ class SteamValveData(PressureChangerData):
                  * 2 = Include solver output
                  * 3 = return solver state for each step in subroutines
                  * 4 = return solver state for each step in routine
-                 * 5 = Indicate finial initialization status
+                 * 5 = Indicate final initialization status
                  * 6 = No output
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
