@@ -13,7 +13,6 @@
 """
 General purpose mixer block for IDAES models
 """
-import logging
 from enum import Enum
 
 from pyomo.environ import (Constraint,
@@ -39,12 +38,13 @@ from idaes.core.util.exceptions import (BurntToast,
 from idaes.core.util.math import smooth_min
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
 __author__ = "Andrew Lee"
 
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 # Enumerate options for balances
@@ -668,16 +668,20 @@ linked to all inlet states and the mixed state,
         self.minimum_pressure_constraint.deactivate()
         self.pressure_equality_constraints.activate()
 
-    def initialize(blk, outlvl=0, optarg={},
+    def initialize(blk, outlvl=6, optarg={},
                    solver='ipopt', hold_state=False):
         '''
         Initialisation routine for mixer (default solver ipopt)
 
         Keyword Arguments:
-            outlvl : sets output level of initialisation routine. **Valid
-                     values:** **0** - no output (default), **1** - return
-                     solver state for each step in routine, **2** - include
-                     solver output infomation (tee=True)
+            outlvl : sets output level of initialisation routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = return solver state for each step in subroutines
+                 * 4 = return solver state for each step in routine
+                 * 5 = Indicate finial initialization status
+                 * 6 = No output
             optarg : solver options dictionary object (default={})
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -694,12 +698,8 @@ linked to all inlet states and the mixed state,
             If hold_states is True, returns a dict containing flags for which
             states were fixed during initialization.
         '''
+        init_log = getInitLogger(blk.name, outlvl)
         # Set solver options
-        if outlvl > 1:
-            stee = True
-        else:
-            stee = False
-
         opt = SolverFactory(solver)
         opt.options = optarg
 
@@ -711,7 +711,7 @@ linked to all inlet states and the mixed state,
             i_block = getattr(blk, i+"_state")
             i_block_list.append(i_block)
             flags[i] = {}
-            flags[i] = i_block.initialize(outlvl=outlvl-1,
+            flags[i] = i_block.initialize(outlvl=outlvl+1,
                                           optarg=optarg,
                                           solver=solver,
                                           hold_state=True)
@@ -760,7 +760,7 @@ linked to all inlet states and the mixed state,
                                         range(len(i_block_list))) /
                                     len(i_block_list))
 
-        mblock.initialize(outlvl=outlvl-1,
+        mblock.initialize(outlvl=outlvl+1,
                           optarg=optarg,
                           solver=solver,
                           hold_state=False)
@@ -781,30 +781,25 @@ linked to all inlet states and the mixed state,
                             blk.create_inlet_list()[0]+"_state")[t].pressure
                     blk.mixed_state[t].pressure.fix(sys_press.value)
 
-                results = opt.solve(blk, tee=stee)
+                results = opt.solve(blk, tee=init_tee(init_log))
 
                 blk.pressure_equality_constraints.activate()
                 for t in blk.flowsheet().config.time:
                     blk.mixed_state[t].pressure.unfix()
 
             else:
-                results = opt.solve(blk, tee=stee)
+                results = opt.solve(blk, tee=init_tee(init_log))
 
-            if outlvl > 0:
-                if results.solver.termination_condition == \
-                        TerminationCondition.optimal:
-                    _log.info('{} Initialisation Complete.'.format(blk.name))
-                else:
-                    _log.warning('{} Initialisation Failed.'.format(blk.name))
+            init_log.log(5, "Initialization Complete: {}".format(condition(results)))
         else:
-            _log.info('{} Initialisation Complete.'.format(blk.name))
+            init_log.log(5, "Initialization Complete.")
 
         if hold_state is True:
             return flags
         else:
-            blk.release_state(flags, outlvl=outlvl-1)
+            blk.release_state(flags, outlvl=outlvl+1)
 
-    def release_state(blk, flags, outlvl=0):
+    def release_state(blk, flags, outlvl=6):
         '''
         Method to release state variables fixed during initialisation.
 
@@ -821,7 +816,7 @@ linked to all inlet states and the mixed state,
         inlet_list = blk.create_inlet_list()
         for i in inlet_list:
             i_block = getattr(blk, i+"_state")
-            i_block.release_state(flags[i], outlvl=outlvl-1)
+            i_block.release_state(flags[i], outlvl=outlvl+1)
 
     def _get_stream_table_contents(self, time_point=0):
         io_dict = {}
