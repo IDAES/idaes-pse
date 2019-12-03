@@ -106,8 +106,7 @@ kwargs = dict(
         "": [
             "*.template",
             "*.json",
-            "*.dll",
-            "*.so",
+            "*.yaml",
             "*.svg",
             "*.png",
             "*.jpg",

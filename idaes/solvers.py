@@ -36,6 +36,8 @@ def download_binaries(url=None, verbose=False):
         libs_from = c.join([url, "idaes-lib-{}-{}.tar.gz".format(arch[0], arch[1])])
         _log.debug("URLs \n  {}\n  {}\n  {}".format(url, solvers_from, libs_from))
         _log.debug("Destinations \n  {}\n  {}".format(solvers_tar, libs_tar))
+        if arch[0] == 'darwin':
+            raise Exception('Mac OSX currently unsupported')
         fd.set_destination_filename(solvers_tar)
         fd.get_binary_file(solvers_from)
         fd.set_destination_filename(libs_tar)

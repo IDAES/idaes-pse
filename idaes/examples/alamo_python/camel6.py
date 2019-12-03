@@ -15,10 +15,10 @@
 #            https://www.sfu.ca/~ssurjano/camel6.html
 # This problem utilizes ALAMO's sampling features
 from idaes.surrogate import alamopy
+from idaes.examples.alamo_python import examples
 
 #Import additional python modules for creating the synthetic data
 import math
-import examples
 import numpy as np
 
 def main():
