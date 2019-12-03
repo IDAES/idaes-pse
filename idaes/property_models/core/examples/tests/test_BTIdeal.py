@@ -38,10 +38,11 @@ from idaes.core.util.testing import get_default_solver
 from idaes.property_models.core.state_definitions import FTPx
 import idaes.property_models.core.eos.ideal as ideal
 from idaes.property_models.core.phase_equil import smooth_VLE
-from idaes.property_models.core.generic.bubble_dew import (bubble_temp_ideal,
-                                                           dew_temp_ideal,
-                                                           bubble_press_ideal,
-                                                           dew_press_ideal)
+from idaes.property_models.core.phase_equil.bubble_dew import (
+        bubble_temp_ideal,
+        dew_temp_ideal,
+        bubble_press_ideal,
+        dew_press_ideal)
 
 import idaes.property_models.core.pure.Perrys as Perrys
 import idaes.property_models.core.pure.RPP as RPP

@@ -17,7 +17,7 @@
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Param, NonNegativeReals, Set
+from pyomo.environ import Param, NonNegativeReals
 
 # Import IDAES cores
 from idaes.core import declare_process_block_class
@@ -28,10 +28,11 @@ from idaes.property_models.core.generic.generic_property import (
 from idaes.property_models.core.state_definitions import FTPx
 import idaes.property_models.core.eos.ideal as ideal
 from idaes.property_models.core.phase_equil import smooth_VLE
-from idaes.property_models.core.generic.bubble_dew import (bubble_temp_ideal,
-                                                           dew_temp_ideal,
-                                                           bubble_press_ideal,
-                                                           dew_press_ideal)
+from idaes.property_models.core.phase_equil.bubble_dew import (
+        bubble_temp_ideal,
+        dew_temp_ideal,
+        bubble_press_ideal,
+        dew_press_ideal)
 
 import idaes.property_models.core.pure.Perrys as Perrys
 import idaes.property_models.core.pure.RPP as RPP
@@ -44,13 +45,13 @@ _log = logging.getLogger(__name__)
 class BTIdealParameterData(GenericParameterData):
     def configure(self):
         '''
-        Callable method to set construction arguments.
+        Method to set construction arguments.
         '''
         # ---------------------------------------------------------------------
         # Set config arguments
         self.config.component_list = ['benzene', 'toluene']
         self.config.phase_list = ['Liq', 'Vap']
-        
+
         self.config.state_definition = FTPx
         self.config.state_bounds = {"flow_mol": (0, 1000),
                                     "temperature": (273.15, 450),
@@ -75,12 +76,10 @@ class BTIdealParameterData(GenericParameterData):
         self.config.entr_mol_comp_ig = RPP
         self.config.pressure_sat_comp = RPP
 
-    def build(self):
+    def parameters(self):
         '''
-        Callable method for Block construction.
+        Method to create parameters.
         '''
-        super(BTIdealParameterData, self).build()
-
         # ---------------------------------------------------------------------
         # Thermodynamic reference state
         self.pressure_ref = Param(mutable=True,
