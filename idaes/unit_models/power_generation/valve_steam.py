@@ -157,7 +157,7 @@ class SteamValveData(PressureChangerData):
         self.pressure_flow_equation = Constraint(self.flowsheet().config.time,
                                                  rule=rule)
 
-    def initialize(self, state_args={}, outlvl=0, solver='ipopt',
+    def initialize(self, state_args={}, outlvl=6, solver='ipopt',
         optarg={'tol': 1e-6, 'max_iter':30}):
         """
         Initialize the turbine stage model.  This deactivates the
@@ -166,11 +166,17 @@ class SteamValveData(PressureChangerData):
 
         Args:
             state_args (dict): Initial state for property initialization
-            outlvl (int): Amount of output (0 to 3) 0 is lowest
+            outlvl : sets output level of initialisation routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = return solver state for each step in subroutines
+                 * 4 = return solver state for each step in routine
+                 * 5 = Indicate finial initialization status
+                 * 6 = No output
             solver (str): Solver to use for initialization
             optarg (dict): Solver arguments dictionary
         """
-        stee = True if outlvl >= 3 else False
         # sp is what to save to make sure state after init is same as the start
         #   saves value, fixed, and active state, doesn't load originally free
         #   values, this makes sure original problem spec is same but initializes
