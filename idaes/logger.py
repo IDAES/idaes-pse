@@ -59,7 +59,7 @@ def condition(res):
     elif isinstance(res, str):
         return res
     else:
-        return res.solver.termination_condition
+        return str(res.solver.termination_condition)
 
 def getInitLogger(name, level=None):
     """ Get a model initilization logger
