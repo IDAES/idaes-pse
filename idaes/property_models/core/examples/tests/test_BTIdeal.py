@@ -11,11 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Tests for Ideal + Ideal Liquid (i.e. no activity coefficient) state block;
-only tests for construction as parameters need to be provided or estimated
-from VLE data to compute the activity coefficients.
-
-Author: Jaffer Ghouse
+Author: Andrew Lee
 """
 import pytest
 from pyomo.environ import (ConcreteModel,
