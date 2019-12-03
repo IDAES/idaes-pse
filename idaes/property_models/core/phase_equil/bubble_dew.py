@@ -40,17 +40,6 @@ def bubble_temp_ideal(b):
                                      rule=rule_mole_frac_bubble_temp)
 
 
-#def bubble_temp_log(b):
-#    b._sum_mole_frac_tbub = Constraint(
-#            expr=1e3 == 1e3*sum(b._mole_frac_tbub[j]
-#                                for j in b._params.component_list))
-#
-#    def rule_bubble_temp(b, j):
-#        return b._params.config.log_fug_liq_tbub(j) == b._params.config.log_fug_vap_tbub(j)
-#    b.eq_temperature_bubble = Constraint(b._params.component_list,
-#                                         rule=rule_bubble_temp)
-
-
 # -----------------------------------------------------------------------------
 # Dew temperature methods
 def dew_temp_ideal(b):

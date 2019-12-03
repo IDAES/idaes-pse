@@ -98,48 +98,22 @@ def test_build(frame):
 def test_t1(frame):
     # Test that T1 is the max(T, T_bubble)
     # Can't check directly, but see that residual of constraint is correct
-    # T = 300, Tb = 200, T1 = 300
-    frame.props[1].temperature.value = 300
-    frame.props[1].temperature_bubble.value = 200
-    frame.props[1]._t1.value = 300
-    assert value(frame.props[1]._t1_constraint.body) == \
-        pytest.approx(0, abs=5e-3)
-
-    # T = 300, Tb = 300, T1 = 300
-    frame.props[1].temperature.value = 300
-    frame.props[1].temperature_bubble.value = 300
-    frame.props[1]._t1.value = 300
-    assert value(frame.props[1]._t1_constraint.body) == \
-        pytest.approx(0, abs=5e-3)
-
-    # T = 300, Tb = 400, T1 = 400
-    frame.props[1].temperature.value = 300
-    frame.props[1].temperature_bubble.value = 400
-    frame.props[1]._t1.value = 400
-    assert value(frame.props[1]._t1_constraint.body) == \
-        pytest.approx(0, abs=5e-3)
+    for t in [200, 300, 400, 500]:
+        for tb in [200, 300, 400, 500]:
+            frame.props[1].temperature.value = t
+            frame.props[1].temperature_bubble.value = tb
+            frame.props[1]._t1.value = max(t, tb)
+            assert value(frame.props[1]._t1_constraint.body) == \
+                pytest.approx(0, abs=5e-3)
 
 
 def test_t_eq(frame):
     # Test that Teq is the min(T1, T_dew)
     # Can't check directly, but see that residual of constraint is correct
-    # T1 = 300, Td = 200, Teq = 200
-    frame.props[1].temperature.value = 300
-    frame.props[1].temperature_dew.value = 200
-    frame.props[1]._teq.value = 200
-    assert value(frame.props[1]._teq_constraint.body) == \
-        pytest.approx(0, abs=5e-3)
-
-    # T1 = 300, Td = 300, Teq = 300
-    frame.props[1].temperature.value = 300
-    frame.props[1].temperature_dew.value = 300
-    frame.props[1]._teq.value = 300
-    assert value(frame.props[1]._teq_constraint.body) == \
-        pytest.approx(0, abs=5e-3)
-
-    # T1 = 300, Td = 400, Teq = 300
-    frame.props[1].temperature.value = 300
-    frame.props[1].temperature_dew.value = 400
-    frame.props[1]._teq.value = 300
-    assert value(frame.props[1]._teq_constraint.body) == \
-        pytest.approx(0, abs=5e-3)
+    for t1 in [200, 300, 400, 500]:
+        for td in [200, 300, 400, 500]:
+            frame.props[1]._t1.value = t1
+            frame.props[1].temperature_dew.value = td
+            frame.props[1]._teq.value = min(t1, td)
+            assert value(frame.props[1]._teq_constraint.body) == \
+                pytest.approx(0, abs=5e-3)
