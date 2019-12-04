@@ -13,6 +13,8 @@
 """
 Methods for ideal equations of state.
 """
+from pyomo.environ import Expression
+
 from idaes.core.util.exceptions import PropertyNotSupportedError
 from idaes.property_models.core.generic.generic_property import \
         GenericPropertyPackageError, get_method
@@ -36,6 +38,11 @@ def dens_mol_phase(b, p):
                    for j in b._params.component_list)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
+
+
+def _enth_mol(b):
+    return b.enth_mol == sum(b.enth_mol_phase[p]*b.phase_frac[p]
+                             for p in b._params.phase_list)
 
 
 def enth_mol_phase(b, p):
