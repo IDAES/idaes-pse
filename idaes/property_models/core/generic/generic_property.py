@@ -46,6 +46,21 @@ from idaes.core.util.exceptions import (BurntToast,
 _log = logging.getLogger(__name__)
 
 
+# TODO: Need clean-up methods for all methods to work with Pyomo DAE
+# Need way to dynamically determine units of measurement....
+class GenericPropertyPackageError(PropertyPackageError):
+    # Error message for when a property is called for but no option provided
+    def __init__(self, block, prop):
+        self.prop = prop
+        self.block = block
+
+    def __str__(self):
+        return f"Generic Property Package instance {self.block} called for " \
+               f"{self.prop}, but was not provided with a method " \
+               f"for this property. Please add a method for this property " \
+               f"in the property parameter configuration."
+
+
 def get_method(self, config_arg):
     """
     Method to inspect configuration argument and return the user-defined
@@ -65,6 +80,9 @@ def get_method(self, config_arg):
     """
     c_arg = getattr(self._params.config, config_arg)
 
+    if c_arg is None:
+        raise GenericPropertyPackageError(b, c_arg)
+
     if isinstance(c_arg, types.ModuleType):
         return getattr(c_arg, config_arg)
     elif callable(c_arg):
@@ -74,21 +92,6 @@ def get_method(self, config_arg):
                 "{} Generic Property Package recieved invalid value "
                 "for argumnet {}. Value must be either a module or a "
                 "method".format(self.name, config_arg))
-
-
-# TODO: Need clean-up methods for all methods to work with Pyomo DAE
-# Need way to dynamically determine units of measurement....
-class GenericPropertyPackageError(PropertyPackageError):
-    # Error message for when a property is called for but no option provided
-    def __init__(self, block, prop):
-        self.prop = prop
-        self.block = block
-
-    def __str__(self):
-        return f"Generic Property Package instance {self.block} called for " \
-               f"{self.prop}, but was not provided with a method " \
-               f"for this property. Please add a method for this property " \
-               f"in the property parameter configuration."
 
 
 class GenericParameterData(PhysicalParameterBlock):
