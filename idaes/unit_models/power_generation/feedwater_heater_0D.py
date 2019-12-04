@@ -27,7 +27,6 @@ are two models included here.
 
 __author__ = "John Eslick"
 
-import logging
 from pyomo.common.config import ConfigValue, In, ConfigBlock
 from pyomo.environ import SolverFactory, TransformationFactory, Var, value
 from pyomo.opt import TerminationCondition
@@ -41,8 +40,10 @@ from idaes.core.util import from_json, to_json, StoreSpec
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core import useDefault
 from idaes.core.util.config import is_physical_parameter_block
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
+
 
 def _define_feedwater_heater_0D_config(config):
     config.declare("has_drain_mixer", ConfigValue(
@@ -133,7 +134,7 @@ class FWHCondensing0DData(HeatExchangerData):
 
     def initialize(self, *args, **kwargs):
         """
-        Use the regular heat exchanger initilization, with the extraction rate
+        Use the regular heat exchanger initialization, with the extraction rate
         constraint deactivated; then it activates the constraint and calculates
         a steam inlet flow rate.
         """
@@ -143,11 +144,12 @@ class FWHCondensing0DData(HeatExchangerData):
 
         solver = kwargs.get("solver", "ipopt")
         optarg = kwargs.get("oparg", {})
-        outlvl = kwargs.get("outlvl", 0)
+        outlvl = kwargs.get("outlvl", 6)
+
+        init_log = getInitLogger(self.name, outlvl)
 
         opt = SolverFactory(solver)
         opt.options = optarg
-        tee = True if outlvl >= 3 else False
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
@@ -158,13 +160,9 @@ class FWHCondensing0DData(HeatExchangerData):
         self.outlet_1.unfix()
         self.outlet_2.unfix()
         self.inlet_1.flow_mol.unfix()
-        results = opt.solve(self, tee=tee)
+        results = opt.solve(self, tee=init_tee(init_log))
 
-        if results.solver.termination_condition == TerminationCondition.optimal:
-            if outlvl >= 2:
-                _log.info('{} Initialization Failed.'.format(self.name))
-        else:
-            _log.warning('{} Initialization Failed.'.format(self.name))
+        init_log.log(5, "Initialization Complete: {}".format(condition(results)))
 
         from_json(self, sd=istate, wts=sp)
 
@@ -251,7 +249,7 @@ class FWH0DData(UnitModelBlockData):
         sp = StoreSpec.value_isfixed_isactive(only_fixed=True)
         istate = to_json(self, return_dict=True, wts=sp)
 
-        # the initilization here isn't straight forward since the heat exchanger
+        # the initialization here isn't straight forward since the heat exchanger
         # may have 3 stages and they are countercurrent.  For simplicity each
         # stage in initialized with the same cooling water inlet conditions then
         # the whole feedwater heater is solved together.  There are more robust

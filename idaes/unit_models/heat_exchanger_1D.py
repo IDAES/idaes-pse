@@ -17,7 +17,6 @@ Basic IDAES 1D Heat Exchanger Model.
 """
 # Import Python libraries
 import math
-import logging
 from enum import Enum
 
 # Import Pyomo libraries
@@ -39,11 +38,13 @@ from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.misc import add_object_reference
 from idaes.core.util.exceptions import ConfigurationError
 from idaes.core.util.tables import create_stream_table_dataframe
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
+
 
 __author__ = "Jaffer Ghouse"
 
 # Set up logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 
 
 class WallConductionType(Enum):
@@ -477,23 +478,24 @@ thickness of the tube"""))
                                                      self.N_tubes *
                                                      self.d_tube_outer**2))
 
-    def initialize(blk, shell_state_args=None, tube_state_args=None, outlvl=1,
+    def initialize(blk, shell_state_args=None, tube_state_args=None, outlvl=5,
                    solver='ipopt', optarg={'tol': 1e-6}):
         """
-        Initialisation routine for the unit (default solver ipopt).
+        Initialization routine for the unit (default solver ipopt).
 
         Keyword Arguments:
             state_args : a dict of arguments to be passed to the property
                          package(s) to provide an initial state for
                          initialization (see documentation of the specific
                          property package) (default = {}).
-            outlvl : sets output level of initialisation routine
-
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = return solver state for each step in subroutines
-                     * 3 = include solver output infomation (tee=True)
-
+            outlvl : sets output level of initialization routine
+                 * 0 = Use default idaes.init logger setting
+                 * 1 = Maximum output
+                 * 2 = Include solver output
+                 * 3 = Return solver state for each step in subroutines
+                 * 4 = Return solver state for each step in routine
+                 * 5 = Final initialization status and exceptions
+                 * 6 = No output
             optarg : solver options dictionary object (default={'tol': 1e-6})
             solver : str indicating whcih solver to use during
                      initialization (default = 'ipopt')
@@ -501,29 +503,24 @@ thickness of the tube"""))
         Returns:
             None
         """
-        # Set solver options
-        if outlvl > 3:
-            stee = True
-        else:
-            stee = False
+        init_log = getInitLogger(blk.name, outlvl)
 
         opt = SolverFactory(solver)
         opt.options = optarg
 
         # ---------------------------------------------------------------------
         # Initialize shell block
-        flags_shell = blk.shell.initialize(outlvl=outlvl - 1,
+        flags_shell = blk.shell.initialize(outlvl=outlvl + 1,
                                            optarg=optarg,
                                            solver=solver,
                                            state_args=shell_state_args)
 
-        flags_tube = blk.tube.initialize(outlvl=outlvl - 1,
+        flags_tube = blk.tube.initialize(outlvl=outlvl + 1,
                                          optarg=optarg,
                                          solver=solver,
                                          state_args=tube_state_args)
 
-        if outlvl > 0:
-            _log.info('{} Initialisation Step 1 Complete.'.format(blk.name))
+        init_log.log(4, 'Initialization Step 1 Complete.')
 
         # ---------------------------------------------------------------------
         # Solve unit
@@ -540,47 +537,27 @@ thickness of the tube"""))
             blk.tube_heat_transfer_eq.deactivate()
             blk.wall_0D_model.deactivate()
 
-            results = opt.solve(blk, tee=stee)
-
-            if outlvl > 0:
-                if results.solver.termination_condition \
-                        == TerminationCondition.optimal:
-                    _log.info('{} Initialisation Step 2 Complete.'
-                              .format(blk.name))
-                else:
-                    _log.warning('{} Initialisation Step 2 Failed.'
-                                 .format(blk.name))
+            results = opt.solve(blk, tee=init_tee(init_log))
+            init_log.log(4, "Initialization Step 2 {}.".format(condition(results)))
 
             blk.tube.activate()
             blk.tube_heat_transfer_eq.activate()
 
-            results = opt.solve(blk, tee=stee)
-            if outlvl > 0:
-                if results.solver.termination_condition \
-                        == TerminationCondition.optimal:
-                    _log.info('{} Initialisation Step 3 Complete.'
-                              .format(blk.name))
-                else:
-                    _log.warning('{} Initialisation Step 3 Failed.'
-                                 .format(blk.name))
+            results = opt.solve(blk, tee=init_tee(init_log))
+            init_log.log(4, "Initialization Step 3 {}.".format(condition(results)))
+
             blk.wall_0D_model.activate()
             blk.temperature_wall.unfix()
 
-            results = opt.solve(blk, tee=stee)
-            if outlvl > 0:
-                if results.solver.termination_condition \
-                        == TerminationCondition.optimal:
-                    _log.info('{} Initialisation Step 4 Complete.'
-                              .format(blk.name))
-                else:
-                    _log.warning('{} Initialisation Step 4 Failed.'
-                                 .format(blk.name))
+            results = opt.solve(blk, tee=init_tee(init_log))
+            init_log.log(4, "Initialization Step 4 {}.".format(condition(results)))
+
 
         blk.shell.release_state(flags_shell)
         blk.tube.release_state(flags_tube)
 
-        if outlvl > 0:
-            _log.info('{} Initialisation Complete.'.format(blk.name))
+        init_log.log(5, "Initialization Complete.")
+
 
     def _get_performance_contents(self, time_point=0):
         var_dict = {}

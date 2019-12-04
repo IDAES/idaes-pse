@@ -53,7 +53,7 @@ class _IdealStateBlock(StateBlock):
                    hold_state=False, outlvl=0,
                    solver='ipopt', optarg={'tol': 1e-8}):
         """
-        Initialisation routine for property package.
+        Initialization routine for property package.
 
         Keyword Arguments:
             state_args : Dictionary with initial guesses for the state vars
@@ -69,7 +69,7 @@ class _IdealStateBlock(StateBlock):
                          temperature : value at which to initialize temperature
                          mole_frac_comp: value at which to initialize the component
                                     mixture mole fraction
-            outlvl : sets output level of initialisation routine
+            outlvl : sets output level of initialization routine
 
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
@@ -135,15 +135,15 @@ class _IdealStateBlock(StateBlock):
             if outlvl > 0:
                 if results.solver.termination_condition \
                         == TerminationCondition.optimal:
-                    _log.info("Initialisation step 1 for "
+                    _log.info("Initialization step 1 for "
                               "{} completed".format(blk.name))
                 else:
-                    _log.warning("Initialisation step 1 for "
+                    _log.warning("Initialization step 1 for "
                                  "{} failed".format(blk.name))
 
         else:
             if outlvl > 0:
-                _log.info("Initialisation step 1 for "
+                _log.info("Initialization step 1 for "
                           "{} skipped".format(blk.name))
 
         for k in blk.keys():
@@ -162,10 +162,10 @@ class _IdealStateBlock(StateBlock):
         if outlvl > 0:
             if results.solver.termination_condition \
                     == TerminationCondition.optimal:
-                _log.info("Initialisation step 2 for "
+                _log.info("Initialization step 2 for "
                           "{} completed".format(blk.name))
             else:
-                _log.warning("Initialisation step 2 for "
+                _log.warning("Initialization step 2 for "
                              "{} failed".format(blk.name))
 
         for k in blk.keys():
@@ -180,11 +180,11 @@ class _IdealStateBlock(StateBlock):
 
         if outlvl > 0:
             if outlvl > 0:
-                _log.info('{} Initialisation Complete.'.format(blk.name))
+                _log.info('{} Initialization Complete.'.format(blk.name))
 
     def release_state(blk, flags, outlvl=0):
         '''
-        Method to relase state variables fixed during initialisation.
+        Method to relase state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables

@@ -62,7 +62,8 @@ Linux
 5. The IPOPT solver depends on the GNU FORTRAN libraries, which are not bundled
    with it. Unless you know that these are already installed on your system,
    you should manually install them using "apt-get", "yum" or other
-   appropriate package manager.
+   appropriate package manager. Depending on how your system is set up you either
+   need to use the "sudo" command or install packages as the "root" user.
 
    apt-get (Debian or Ubuntu based distributions)::
 
@@ -112,7 +113,7 @@ an optional step.
 
    .. note:: The IDAES binary extensions are not yet supported on Mac/OSX
 
-3. Run tests on unit models::
+3. Run tests::
 
     pytest --pyargs idaes -W ignore
 

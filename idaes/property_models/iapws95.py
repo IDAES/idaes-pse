@@ -43,7 +43,6 @@ the critical point.
 __author__ = "John Eslick"
 
 # Import Python libraries
-import logging
 import os
 import enum
 
@@ -62,9 +61,10 @@ from idaes.core import declare_process_block_class, \
 from idaes.core.util.math import smooth_max
 from idaes.core.util.exceptions import ConfigurationError
 import idaes
+from idaes.logger import getIdaesLogger, getInitLogger, init_tee, condition
 
 # Logger
-_log = logging.getLogger(__name__)
+_log = getIdaesLogger(__name__)
 _so = os.path.join(idaes.lib_directory, "iapws95_external.so")
 
 

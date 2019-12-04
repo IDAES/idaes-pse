@@ -457,7 +457,7 @@ class TurbineMultistageData(UnitModelBlockData):
         """
         self.outlet_stage.flow_coeff.fix(value)
 
-    def initialize(self, outlvl=0, solver='ipopt',
+    def initialize(self, outlvl=6, solver='ipopt',
         optarg={'tol':1e-6, 'max_iter':35}):
         """
         Initialize
