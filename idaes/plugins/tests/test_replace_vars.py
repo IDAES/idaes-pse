@@ -188,3 +188,19 @@ def test_9():
     rp.apply_to(m, substitute=[(m.xx, m.y)])
     assert(pyo.value(m.e1) == 9)
     assert(pyo.value(m.e2) == 9)
+
+def test_10():
+    # test with more than one variable in the list
+    rp = pyo.TransformationFactory("replace_variables")
+    m = pyo.ConcreteModel()
+    m.x = pyo.Var(["a", "b", "c"], initialize=2)
+    m.a = pyo.Var(initialize=5)
+    m.b = pyo.Var(initialize=6)
+    m.c = pyo.Var(initialize=7)
+
+    m.e1 = pyo..Expression(expr=sum(m.x[i] for i in x))
+
+    assert(pyo.value(m.e1)==6)
+    rp.apply_to(m, substitute=[(m.x["a"], m.a), (m.x["b"], m.b), (m.x["c"], m.c)])
+    assert(pyo.value(m.e1)==18)
+    
