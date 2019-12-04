@@ -198,9 +198,8 @@ def test_10():
     m.b = pyo.Var(initialize=6)
     m.c = pyo.Var(initialize=7)
 
-    m.e1 = pyo..Expression(expr=sum(m.x[i] for i in x))
+    m.e1 = pyo.Expression(expr=sum(m.x[i] for i in m.x))
 
     assert(pyo.value(m.e1)==6)
     rp.apply_to(m, substitute=[(m.x["a"], m.a), (m.x["b"], m.b), (m.x["c"], m.c)])
     assert(pyo.value(m.e1)==18)
-    
