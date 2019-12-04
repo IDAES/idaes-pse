@@ -13,11 +13,8 @@
 """
 Methods for ideal equations of state.
 """
-from pyomo.environ import Expression
-
 from idaes.core.util.exceptions import PropertyNotSupportedError
-from idaes.property_models.core.generic.generic_property import \
-        GenericPropertyPackageError, get_method
+from idaes.property_models.core.generic.generic_property import get_method
 
 
 def common(b):

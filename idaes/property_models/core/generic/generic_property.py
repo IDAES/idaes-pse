@@ -784,9 +784,6 @@ class GenericStateBlockData(StateBlockData):
 
     # -------------------------------------------------------------------------
     # Property Methods
-
-    # TODO : Need to convert these all to calls to eos. The EoS should decide how to calcuate each of these to allow for flexibility
-    # Also need flexibility of component type, i.e. Var & Constraint or Expression
     def _dens_mass(self):
         def rule_dens_mass(b):
             return sum(b.dens_mass_phase[p]*b.phase_frac[p]
