@@ -29,10 +29,9 @@ def _is_var(v):
     'replace_variables',
     doc="Replace variables with other variables.")
 class ReplaceVariables(NonIsomorphicTransformation):
-    """Replace variables with other variables in a Block.
+    """Replace variables in a model or block with other variables.
 
-    Keyword arguments below are specified for the ``apply_to`` and
-    ``create_using`` functions.
+    Keyword arguments below are specified for the ``apply_to`` function.
 
     """
     CONFIG = ConfigBlock()
