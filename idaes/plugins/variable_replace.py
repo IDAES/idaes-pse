@@ -49,7 +49,7 @@ class ReplaceVariables(NonIsomorphicTransformation):
     @staticmethod
     def replace(instance, substitute):
         # Create the replacement dict. Do some argument validation and indexed
-        # var handeling
+        # var handling
         d = {}
         for r in substitute:
             if not (_is_var(r[0]) and _is_var(r[1])):
@@ -74,10 +74,10 @@ class ReplaceVariables(NonIsomorphicTransformation):
                 #scalar replace
                 d[id(r[0])] = r[1]
 
-        # Replacment Visitor
+        # Replacement Visitor
         vis = EXPR.ExpressionReplacementVisitor(substitute=d)
 
-        # Do replacemnents in Expresions, Constraints, and Objectives
+        # Do replacements in Expressions, Constraints, and Objectives
         for c in instance.component_data_objects(pyo.Constraint, descend_into=True):
             c.set_value(expr=vis.dfs_postorder_stack(c.expr))
         for c in instance.component_data_objects((pyo.Expression, pyo.Objective),

@@ -169,7 +169,7 @@ def test_8():
         rp.apply_to(m, substitute=[(x, m.y)])
 
 def test_9():
-    # test with refernces the way we handel time indexing a lot in IDAES
+    # test with references the way we handle time indexing a lot in IDAES
     rp = pyo.TransformationFactory("replace_variables")
     block_set = {1,2,3}
     m = pyo.ConcreteModel()
