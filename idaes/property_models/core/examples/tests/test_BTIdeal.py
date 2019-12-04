@@ -96,11 +96,11 @@ class TestParamBlock(object):
         assert model.params.config.bubble_pressure == bubble_press_ideal
         assert model.params.config.dew_pressure == dew_press_ideal
 
-        assert model.params.config.dens_mol_comp_liq == Perrys
-        assert model.params.config.enth_mol_comp_liq == Perrys
-        assert model.params.config.enth_mol_comp_ig == RPP
-        assert model.params.config.entr_mol_comp_liq == Perrys
-        assert model.params.config.entr_mol_comp_ig == RPP
+        assert model.params.config.dens_mol_liq_comp == Perrys
+        assert model.params.config.enth_mol_liq_comp == Perrys
+        assert model.params.config.enth_mol_ig_comp == RPP
+        assert model.params.config.entr_mol_liq_comp == Perrys
+        assert model.params.config.entr_mol_ig_comp == RPP
         assert model.params.config.pressure_sat_comp == RPP
 
     def test_build(self, model):

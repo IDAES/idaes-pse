@@ -31,10 +31,10 @@ def dens_mol_phase(b, p):
     if p == "Vap":
         return b.pressure/(b._params.gas_const*b.temperature)
     elif p == "Liq":
-        if b._params.config.dens_mol_comp_liq.dens_mol_liq is None:
-            raise GenericPropertyPackageError(b, "dens_mol_comp_liq")
+        if b._params.config.dens_mol_liq_comp.dens_mol_liq_comp is None:
+            raise GenericPropertyPackageError(b, "dens_mol_liq_comp")
         return sum(b.mole_frac_phase_comp[p, j] *
-                   b._params.config.dens_mol_comp_liq.dens_mol_liq(
+                   b._params.config.dens_mol_liq_comp.dens_mol_liq_comp(
                            b, j, b.temperature)
                    for j in b._params.component_list)
     else:
@@ -48,14 +48,14 @@ def enth_mol_phase(b, p):
 
 def enth_mol_phase_comp(b, p, j):
     if p == "Vap":
-        if b._params.config.enth_mol_comp_ig.enth_mol_ig is None:
-            raise GenericPropertyPackageError(b, "enth_mol_comp_vap")
-        return b._params.config.enth_mol_comp_ig.enth_mol_ig(
+        if b._params.config.enth_mol_ig_comp.enth_mol_ig_comp is None:
+            raise GenericPropertyPackageError(b, "enth_mol_ig_comp")
+        return b._params.config.enth_mol_ig_comp.enth_mol_ig_comp(
                    b, j, b.temperature)
     elif p == "Liq":
-        if b._params.config.enth_mol_comp_liq.enth_mol_liq is None:
-            raise GenericPropertyPackageError(b, "enth_mol_comp_liq")
-        return b._params.config.enth_mol_comp_liq.enth_mol_liq(
+        if b._params.config.enth_mol_liq_comp.enth_mol_liq_comp is None:
+            raise GenericPropertyPackageError(b, "enth_mol_liq_comp")
+        return b._params.config.enth_mol_liq_comp.enth_mol_liq_comp(
                    b, j, b.temperature)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
@@ -68,14 +68,14 @@ def entr_mol_phase(b, p):
 
 def entr_mol_phase_comp(b, p, j):
     if p == "Vap":
-        if b._params.config.entr_mol_comp_ig.entr_mol_ig is None:
-            raise GenericPropertyPackageError(b, "entr_mol_comp_ig")
-        return b._params.config.entr_mol_comp_ig.entr_mol_ig(
+        if b._params.config.entr_mol_ig_comp.entr_mol_ig_comp is None:
+            raise GenericPropertyPackageError(b, "entr_mol_ig_comp")
+        return b._params.config.entr_mol_ig_comp.entr_mol_ig_comp(
                    b, j, b.temperature)
     elif p == "Liq":
-        if b._params.config.entr_mol_comp_liq.entr_mol_liq is None:
-            raise GenericPropertyPackageError(b, "entr_mol_comp_liq")
-        return b._params.config.entr_mol_comp_liq.entr_mol_liq(
+        if b._params.config.entr_mol_liq_comp.entr_mol_liq_comp is None:
+            raise GenericPropertyPackageError(b, "entr_mol_comp_liq_comp")
+        return b._params.config.entr_mol_comp_liq.entr_mol_liq_comp(
                    b, j, b.temperature)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
@@ -85,10 +85,10 @@ def fugacity(b, p, j):
     if p == "Vap":
         return b.mole_frac_phase_comp[p, j]*b.pressure
     elif p == "Liq":
-        if b._params.config.pressure_sat_comp.pressure_sat is None:
+        if b._params.config.pressure_sat_comp.pressure_sat_comp is None:
             raise GenericPropertyPackageError(b, "pressure_sat_comp")
         return b.mole_frac_phase_comp[p, j] * \
-               b._params.config.pressure_sat_comp.pressure_sat(
+               b._params.config.pressure_sat_comp.pressure_sat_comp(
                        b, j, b.temperature)
     else:
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))

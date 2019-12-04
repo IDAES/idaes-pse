@@ -52,7 +52,7 @@ def phase_equil(b):
     b._teq_constraint = Constraint(rule=rule_teq)
 
     def rule_tr_eq(b, i):
-        return b._teq / b._params.temperature_crit[i]
+        return b._teq / b._params.temperature_crit_comp[i]
     b._tr_eq = Expression(b._params.component_list,
                           rule=rule_tr_eq,
                           doc='Component reduced temperatures [-]')

@@ -24,7 +24,7 @@ Perry's Handbook uses the following correlation for ideal liquid molar heat capa
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`C_1, C_2, C_3, C_4, C_5`", "cp_liq_coeff", "component, `[1, 2, 3, 4, 5]`", ""
+   ":math:`C_1, C_2, C_3, C_4, C_5`", "cp_mol_liq_comp_coeff", "component, `[1, 2, 3, 4, 5]`", ""
 
 Ideal Liquid Molar Enthalpy
 ---------------------------
@@ -38,8 +38,8 @@ The correlation for the ideal liquid molar enthalpy is derived from the correlat
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`C_1, C_2, C_3, C_4, C_5`", "cp_liq_coeff", "component, `[1, 2, 3, 4, 5]`", ""
-   ":math:`\Delta h_{\text{form}}`", "enth_mol_form_ref", "phase, component", "Molar heat of formation at reference state"
+   ":math:`C_1, C_2, C_3, C_4, C_5`", "cp_mol_liq_comp_coeff", "component, `[1, 2, 3, 4, 5]`", ""
+   ":math:`\Delta h_{\text{form}}`", "enth_mol_form_phase_comp_ref", "phase, component", "Molar heat of formation at reference state"
    ":math:`T_{ref}`", "temperature_ref", "None", "Temperature at reference state"
 
 .. note::
@@ -57,8 +57,8 @@ The correlation for the ideal liquid molar entropy is derived from the correlati
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`C_1, C_2, C_3, C_4, C_5`", "cp_liq_coeff", "component, `[1, 2, 3, 4, 5]`", ""
-   ":math:`s_{\text{ref}}`", "entr_mol_ref", "phase, component", "Standard molar entropy at reference state"
+   ":math:`C_1, C_2, C_3, C_4, C_5`", "cp_mol_liq_comp_coeff", "component, `[1, 2, 3, 4, 5]`", ""
+   ":math:`s_{\text{ref}}`", "entr_mol_phase_comp_ref", "phase, component", "Standard molar entropy at reference state"
 
 .. note::
     This correlation uses the same parameters as for the ideal gas heat capacity.
@@ -75,7 +75,7 @@ Perry's Handbook uses the following correlation for liquid molar density:
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`C_1, C_2, C_3, C_4`", "dens_mol_liq_coeff", "component, `[1, 2, 3, 4]`", ""
+   ":math:`C_1, C_2, C_3, C_4`", "dens_mol_comp_liq_coeff", "component, `[1, 2, 3, 4]`", ""
 
 .. note::
     Currently, only the most common correlation form from Perry's Handbook is implemented. Some components use different forms which are not yet supported.

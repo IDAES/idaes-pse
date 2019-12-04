@@ -51,7 +51,7 @@ def frame():
     m.params.component_list = Set(initialize=["H2O"])
     m.params.phase_list = Set(initialize=["Liq", "Vap"])
 
-    m.params.temperature_crit = Var(["H2O"], initialize=647.3)
+    m.params.temperature_crit_comp = Var(["H2O"], initialize=647.3)
 
     # Create a dummy state block
     m.props = Block([1])
@@ -92,7 +92,7 @@ def test_build(frame):
     assert isinstance(frame.props[1]._tr_eq, Expression)
     assert len(frame.props[1]._tr_eq) == 1
     assert value(frame.props[1]._tr_eq["H2O"]) == value(
-            frame.props[1]._teq/frame.params.temperature_crit["H2O"])
+            frame.props[1]._teq/frame.params.temperature_crit_comp["H2O"])
 
 
 def test_t1(frame):

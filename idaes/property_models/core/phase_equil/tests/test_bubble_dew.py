@@ -17,6 +17,7 @@ Authors: Andrew Lee
 """
 
 import pytest
+import types
 
 from pyomo.environ import (ConcreteModel,
                            Constraint,
@@ -34,9 +35,20 @@ from idaes.core.util.misc import add_object_reference
 Psat = {"H2O": 1e5, "EtOH": 5e4}
 
 
-class DummyPSatComp(object):
-    def pressure_sat(b, j, T):
-        return Psat[j]
+def pressure_sat_comp(b, j, T):
+    return Psat[j]
+
+
+# get_method function to mock-up StateBlock
+def get_method(b, config_arg):
+    c_arg = getattr(b._params.config, config_arg)
+
+    if isinstance(c_arg, types.ModuleType):
+        print("Here")
+        return getattr(c_arg, config_arg)
+    elif callable(c_arg):
+        print("There")
+        return c_arg
 
 
 @pytest.fixture(scope="class")
@@ -47,7 +59,7 @@ def frame():
     m.params = Block()
     m.params.config = ConfigBlock()
     m.params.config.declare("pressure_sat_comp", ConfigValue(
-            default=DummyPSatComp))
+            default=pressure_sat_comp))
 
     m.params.component_list = Set(initialize=["H2O", "EtOH"])
     m.params.phase_list = Set(initialize=["Liq", "Vap"])
@@ -55,6 +67,7 @@ def frame():
     # Create a dummy state block
     m.props = Block([1])
     add_object_reference(m.props[1], "_params", m.params)
+    m.props[1].get_method = types.MethodType(get_method, m.props[1])
 
     m.props[1].pressure = Var(initialize=101325)
     m.props[1].temperature = Var(initialize=300)

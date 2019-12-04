@@ -24,7 +24,7 @@ Properties of Gases and Liquids uses the following correlation for the ideal gas
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`A, B, C, D`", "cp_ig_coeff", "component, `['A', 'B', 'C', 'D']`", ""
+   ":math:`A, B, C, D`", "cp_mol_ig_comp_coeff", "component, `['A', 'B', 'C', 'D']`", ""
 
 Ideal Gas Molar Enthalpy
 ------------------------
@@ -38,8 +38,8 @@ The correlation for the ideal gas molar enthalpy is derived from the correlation
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`A, B, C, D`", "cp_ig_coeff", "component, `['A', 'B', 'C', 'D']`", ""
-   ":math:`\Delta h_{\text{form}}`", "enth_mol_form_ref", "phase, component", "Molar heat of formation at reference state"
+   ":math:`A, B, C, D`", "cp_mol_ig_comp_coeff", "component, `['A', 'B', 'C', 'D']`", ""
+   ":math:`\Delta h_{\text{form}}`", "enth_mol_form_phase_comp_ref", "phase, component", "Molar heat of formation at reference state"
    ":math:`T_{ref}`", "temperature_ref", "None", "Temperature at reference state"
 
 .. note::
@@ -57,8 +57,8 @@ The correlation for the ideal gas molar entropy is derived from the correlation 
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`A, B, C, D`", "cp_ig_coeff", "component, `['A', 'B', 'C', 'D']`", ""
-   ":math:`s_{\text{ref}}`", "entr_mol_ref", "phase, component", "Standard molar entropy at reference state"
+   ":math:`A, B, C, D`", "cp_mol_ig_comp_coeff", "component, `['A', 'B', 'C', 'D']`", ""
+   ":math:`s_{\text{ref}}`", "entr_mol_phase_comp_ref", "phase, component", "Standard molar entropy at reference state"
 
 .. note::
     This correlation uses the same parameters as the ideal gas heat capacity correlation .
@@ -75,9 +75,9 @@ where :math:`x = 1 - \frac{T}{T_{crit}}`.
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`A, B, C, D`", "pressure_sat_coeff", "component, `['A', 'B', 'C', 'D']`", ""
-   ":math:`P_{crit}`", "temperature_crit", "None", "Critical pressure"
-   ":math:`T_{crit}`", "temperature_crit", "None", "Critical temperature"
+   ":math:`A, B, C, D`", "pressure_sat_comp_coeff", "component, `['A', 'B', 'C', 'D']`", ""
+   ":math:`P_{crit}`", "pressure_crit_comp", "None", "Critical pressure"
+   ":math:`T_{crit}`", "temperature_crit_comp", "None", "Critical temperature"
 
 .. note::
     This correlation is only valid at temperatures **below** the critical temperature. Above this point, there is no real solution to the equation.

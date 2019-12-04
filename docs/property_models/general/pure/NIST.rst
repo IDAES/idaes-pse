@@ -25,7 +25,7 @@ where :math:`t = \frac{T}{1000}`.
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`A, B, C, D, E`", "cp_ig_coeff", "component, `['A', 'B', 'C', 'D', 'E']`", ""
+   ":math:`A, B, C, D, E`", "cp_mol_ig_comp_coeff", "component, `['A', 'B', 'C', 'D', 'E']`", ""
 
 
 Ideal Gas Molar Enthalpy
@@ -38,7 +38,7 @@ The correlation for the ideal gas molar enthalpy is derived from the correlation
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`A, B, C, D, E, F, H`", "cp_ig_coeff", "component, `['A', 'B', 'C', 'D', 'F', 'H']`", ""
+   ":math:`A, B, C, D, E, F, H`", "cp_mol_ig_comp_coeff", "component, `['A', 'B', 'C', 'D', 'F', 'H']`", ""
    ":math:`T_{ref}`", "temperature_ref", "None", "Temperature at reference state"
 
 .. note::
@@ -56,7 +56,7 @@ The correlation for the ideal gas molar entropy is derived from the correlation 
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`A, B, C, D, E, G`", "cp_ig_coeff", "component, `['A', 'B', 'C', 'D', 'E', 'G']`", ""
+   ":math:`A, B, C, D, E, G`", "cp_mol_ig_comp_coeff", "component, `['A', 'B', 'C', 'D', 'E', 'G']`", ""
 
 .. note::
     This correlation uses the same parameters as for the ideal gas heat capacity with additional parameter `G`, which accounts for the standard entropy at the reference state defined by NIST. User wanting to use a different reference state will need to update `G`. 
@@ -73,7 +73,7 @@ NIST uses the Antoine equation to calculate the vapor pressure of a component, w
 .. csv-table::
    :header: "Symbol", "Parameter Name", "Indices", "Description"
 
-   ":math:`A, B, C`", "antoine_coeff", "component, `['A', 'B', 'C']`", ""
+   ":math:`A, B, C`", "pressure_sat_comp_coeff", "component, `['A', 'B', 'C']`", ""
 
 .. note::
     The Antoine equation is generally written with saturation pressure expressed in bars. The units of the correlation can be converted to Pascals by adding 5 to :math:`A`.
