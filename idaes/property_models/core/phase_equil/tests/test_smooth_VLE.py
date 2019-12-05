@@ -85,9 +85,9 @@ def test_build(frame):
     assert isinstance(frame.props[1].equilibrium_constraint, Constraint)
     for k in frame.props[1].equilibrium_constraint:
         assert k in frame.params.component_list
-        assert frame.props[1].equilibrium_constraint[k].body == (
-                frame.props[1].fugacity["Liq", k] -
-                frame.props[1].fugacity["Vap", k])
+        assert str(frame.props[1].equilibrium_constraint[k].body) == str(
+                frame.props[1].fugacity["Vap", k] -
+                frame.props[1].fugacity["Liq", k])
 
     assert isinstance(frame.props[1]._tr_eq, Expression)
     assert len(frame.props[1]._tr_eq) == 1
