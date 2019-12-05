@@ -55,7 +55,7 @@ There are three basic steps to using the variable replacement transformation.
 
   1. Import anything from the ``idaes`` package; this will cause the IDAES
      plugins to be loaded.
-  2. Use Pyomo's transformation factory with to create a variable replacement
+  2. Use Pyomo's transformation factory to create a variable replacement
      transformation object (e.g.
      ``rp = TransformationFactory("replace_variables")``.
   3. Call the transformation object's ``apply_to()`` method to apply the
