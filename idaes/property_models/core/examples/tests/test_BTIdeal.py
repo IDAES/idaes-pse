@@ -113,9 +113,6 @@ class TestParamBlock(object):
             assert i in ['benzene',
                          'toluene']
 
-        for i in model.params.phase_comp.values():
-            assert i == model.params.component_list
-
         assert isinstance(model.params.phase_equilibrium_idx, Set)
         assert len(model.params.phase_equilibrium_idx) == 2
 

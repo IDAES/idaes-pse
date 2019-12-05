@@ -243,15 +243,6 @@ class GenericParameterData(PhysicalParameterBlock):
                             "is not a members of component_list."
                             .format(self.name, p, j))
 
-        # Build phase-component list
-        self.phase_comp = {}
-        for p in self.phase_list:
-            if self.config.phase_component_list is not None and \
-                    p in self.config.phase_component_list:
-                self.phase_comp[p] = self.config.phase_component_list[p]
-            else:
-                self.phase_comp[p] = self.config.component_list
-
         # Validate that user provided either both a phase equilibrium
         # formulation and a dict of phase equilibria or neither
         if ((self.config.phase_equilibrium_formulation is not None) ^
