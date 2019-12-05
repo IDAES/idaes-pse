@@ -78,10 +78,16 @@ def get_method(self, config_arg):
     Returns:
         A callable method or a ConfiguartionError
     """
-    c_arg = getattr(self._params.config, config_arg)
+    try:
+        c_arg = getattr(self._params.config, config_arg)
+    except AttributeError:
+        raise AttributeError("{} Generic Property Package called for invalid "
+                             "configuration option {}. Please contact the "
+                             "developer of the property package."
+                             .format(self.name, config_arg))
 
     if c_arg is None:
-        raise GenericPropertyPackageError(b, c_arg)
+        raise GenericPropertyPackageError(self, c_arg)
 
     if isinstance(c_arg, types.ModuleType):
         return getattr(c_arg, config_arg)
