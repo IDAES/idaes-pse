@@ -3,17 +3,18 @@ Variable Replacement
 
 .. module:: idaes.plugins.variable_replace
 
-There are a number of cases where it can be convenient to replace one variable for
-another. IDAES offers a convenient variable replacement transformation. This
+There are a number of cases where it can be convenient to replace one variable
+for another. IDAES offers a convenient variable replacement transformation. This
 transformation is not reversible and can significantly alter the model structure.
 
 An example use of this transformation, is a parameter estimation problem where
-a model contains several instances of a particular sub-model and each model contains
-a variable that is a parameter to be estimated. In many the cases the parameter value
-should be the same across all the sub-models. One approach to this problem would be
-to add equality constraints to equate all the parameters.  Another approach would be
-to use the variable replacement transformation to replace the parameter in all the
-sub-models by a single common variable.
+a model contains several instances of a particular sub-model and each model
+contains a variable (:math:`\beta`) for a model parameter to be estimated. In
+many cases :math:`\beta` should be the same across all sub-models. One approach
+to this problem would be to add equality constraints to equate all the
+:math:`\beta`'s.  Another approach would be to use the variable replacement
+transformation to replace the individual :math:`\beta`'s with a single global
+:math:`\beta` variable.
 
 Example
 -------
