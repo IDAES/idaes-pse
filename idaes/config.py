@@ -2,6 +2,8 @@ import pyomo.common.config
 import logging.config
 import toml
 import os
+import importlib
+
 
 _log = logging.getLogger(__name__)
 
@@ -9,7 +11,7 @@ default_config = """
 default_binary_url = "https://github.com/IDAES/idaes-ext/releases/download/1.0.1/"
 use_idaes_solvers = true
 [plugins]
-  required = []
+  required = ["idaes"]
   optional = []
 [logging]
   version = 1
@@ -136,3 +138,22 @@ def create_dir(d):
         return
     else:
         os.mkdir(d)
+
+def import_packages(packages, optional=True):
+    """Import plugin package, condensed from pyomo.environ.__init__.py
+    Args:
+        packages: list of packages in which to look for plugins
+        optional: true, log ImportError but continue; false, raise if ImportError
+    Returns:
+        None
+    """
+    for name in packages:
+        pname = name + '.plugins'  # look in plugins sub-package
+        try:
+            pkg = importlib.import_module(pname)
+        except ImportError as e:
+            _log.exception("failed to import plugin: {}".format(pname))
+            if not optional:
+                raise e
+        if hasattr(pkg, 'load'):  # run load function for a module if it exists
+            pkg.load()

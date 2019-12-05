@@ -7,7 +7,6 @@ import os
 import logging.config
 import pyomo.common.plugin
 import idaes.config
-import idaes.plugins
 import toml
 
 from .ver import __version__  # noqa
@@ -83,8 +82,8 @@ if _config.use_idaes_solvers:
 # This make "idaes" the current plugin environment while importing plugins here
 pyomo.common.plugin.push("idaes")  # Add idaes plugin environment at top of stack
 # Import plugins standard IDAES plugins, non-optional plugins
-plugins.import_packages(_config["plugins"]["required"], optional=False)
+config.import_packages(_config["plugins"]["required"], optional=False)
 # Import contrib plugins, failure to import these is non-fatal.
-plugins.import_packages(_config["plugins"]["optional"], optional=True)
+config.import_packages(_config["plugins"]["optional"], optional=True)
 # go back to the previous plugin environment (what it was before pushing "idaes")
 pyomo.common.plugin.pop()
