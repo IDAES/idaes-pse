@@ -9,7 +9,7 @@ transformation is not reversible and can significantly alter the model structure
 
 An example use of this transformation, is a parameter estimation problem where
 a model contains several instances of a particular sub-model and each model contains
-a variable that is a parameter to be estimated. It many the case the parameter value
+a variable that is a parameter to be estimated. In many the cases the parameter value
 should be the same across all the sub-models. One approach to this problem would be
 to add equality constraints to equate all the parameters.  Another approach would be
 to use the variable replacement transformation to replace the parameter in all the
@@ -51,11 +51,15 @@ Output:
 Usage
 -----
 
-There are three basic steps to using the variable replacement transformation. 1)
-import anything from the ``idaes`` package; this will cause the IDAES plugins to be
-loaded. 2) Use Pyomo's transformation factory with to create a variable replacement
-transformation object (e.g. ``rp = TransormationFactory("replace_variables")``. 3)
-Call the transformation object's ``apply_to()`` method to apply the transformation.
+There are three basic steps to using the variable replacement transformation.
+
+  1. Import anything from the ``idaes`` package; this will cause the IDAES
+     plugins to be loaded.
+  2. Use Pyomo's transformation factory with to create a variable replacement
+     transformation object (e.g.
+     ``rp = TransformationFactory("replace_variables")``.
+  3. Call the transformation object's ``apply_to()`` method to apply the
+     transformation.
 
 The ``apply_to(instance, substitute)`` method takes two arguments ``instance`` and
 ``substitute``. The instance argument is a model or block to apply the transformation

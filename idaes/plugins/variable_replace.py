@@ -31,7 +31,8 @@ def _is_var(v):
 class ReplaceVariables(NonIsomorphicTransformation):
     """Replace variables in a model or block with other variables.
 
-    Keyword arguments below are specified for the ``apply_to`` function.
+    Keyword arguments below are specified for the ``apply_to(instance, **kwargs)``
+    method.
 
     """
     CONFIG = ConfigBlock()
@@ -85,5 +86,20 @@ class ReplaceVariables(NonIsomorphicTransformation):
 
 
     def _apply_to(self, instance, **kwds):
+        """
+        Apply the transformation.  This is called by ``apply_to`` in the
+        superclass, and should not be called directly.  ``apply_to`` takes the
+        same arguments.
+
+        Args:
+            instance: A block or model to apply the transformation to
+            substitute: A list-like of two-element list-likes.  Each two element
+                list-like specifies a replacment of the first variable by the
+                second.  SimpleVar, IndexedVar, _GeneralVarData, and Reference are
+                all accepted types.
+
+        Returns:
+            None
+        """
         config = self.CONFIG(kwds)
         self.replace(instance, config.substitute)
