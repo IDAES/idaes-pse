@@ -18,14 +18,14 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import Block, ConcreteModel, Set, Var
+from pyomo.environ import Block, ConcreteModel, Expression, Set, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.property_models.core.generic.generic_property import (
         GenericPropertyPackageError,
         get_method,
-        GenericParameterData,
-        GenericStateBlock)
+        GenericParameterData)
+from idaes.property_models.core.generic.tests import dummy_eos
 
 from idaes.core import declare_process_block_class
 from idaes.core.util.exceptions import (ConfigurationError,
@@ -438,13 +438,6 @@ def define_state(b):
     b.state_defined = True
 
 
-def common(b):
-    if hasattr(b, "eos_common"):
-        b.eos_common += 1
-    else:
-        b.eos_common = 1
-
-
 def phase_equil(b):
     b.phase_equil_defined = True
 
@@ -461,8 +454,8 @@ class TestGenericStateBlock(object):
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
                 "state_definition": modules[__name__],
-                "equation_of_state": {1: modules[__name__],
-                                      2: modules[__name__]},
+                "equation_of_state": {1: dummy_eos,
+                                      2: dummy_eos},
                 "phase_equilibrium_formulation": modules[__name__],
                 "phase_equilibrium_dict": {1: ["a", (1, 2)]}})
 
@@ -485,12 +478,12 @@ class TestGenericStateBlock(object):
 
         # Check for expected behaviour for dummy methods
         assert frame.props[1].state_defined
+        assert isinstance(frame.props[1].dummy_var, Var)
         assert frame.props[1].eos_common == 2
         assert frame.props[1].phase_equil_defined
 
     def test_temperture_bubble(self, frame):
         frame.params.config.temperature_bubble = dummy_call
-        frame.props[1].temperature_bubble()
 
         assert isinstance(frame.props[1].temperature_bubble, Var)
         assert frame.props[1].temperature_bubble.ub == 200
@@ -506,3 +499,81 @@ class TestGenericStateBlock(object):
     def test_temperture_bubble_undefined(self, frame):
         with pytest.raises(GenericPropertyPackageError):
             frame.props[1].temperature_bubble()
+
+    def test_temperture_dew(self, frame):
+        frame.params.config.temperature_dew = dummy_call
+
+        assert isinstance(frame.props[1].temperature_dew, Var)
+        assert frame.props[1].temperature_dew.ub == 200
+        assert frame.props[1].temperature_dew.lb == 100
+
+        assert isinstance(frame.props[1]._mole_frac_tdew, Var)
+        assert len(frame.props[1]._mole_frac_tdew) == 3
+        for i in frame.props[1]._mole_frac_tdew:
+            assert i in frame.params.component_list
+
+        assert frame.props[1].dummy_call
+
+    def test_temperture_dew_undefined(self, frame):
+        with pytest.raises(GenericPropertyPackageError):
+            frame.props[1].temperature_dew()
+
+    def test_pressure_bubble(self, frame):
+        frame.params.config.pressure_bubble = dummy_call
+
+        assert isinstance(frame.props[1].pressure_bubble, Var)
+        assert frame.props[1].pressure_bubble.ub == 3000
+        assert frame.props[1].pressure_bubble.lb == 1000
+
+        assert isinstance(frame.props[1]._mole_frac_pbub, Var)
+        assert len(frame.props[1]._mole_frac_pbub) == 3
+        for i in frame.props[1]._mole_frac_pbub:
+            assert i in frame.params.component_list
+
+        assert frame.props[1].dummy_call
+
+    def test_pressure_bubble_undefined(self, frame):
+        with pytest.raises(GenericPropertyPackageError):
+            frame.props[1].pressure_bubble()
+
+    def test_pressure_dew(self, frame):
+        frame.params.config.pressure_dew = dummy_call
+
+        assert isinstance(frame.props[1].pressure_dew, Var)
+        assert frame.props[1].pressure_dew.ub == 3000
+        assert frame.props[1].pressure_dew.lb == 1000
+
+        assert isinstance(frame.props[1]._mole_frac_pdew, Var)
+        assert len(frame.props[1]._mole_frac_pdew) == 3
+        for i in frame.props[1]._mole_frac_pdew:
+            assert i in frame.params.component_list
+
+        assert frame.props[1].dummy_call
+
+    def test_pressure_dew_undefined(self, frame):
+        with pytest.raises(GenericPropertyPackageError):
+            frame.props[1].pressure_dew()
+
+    def test_dens_mass_phase(self, frame):
+        assert isinstance(frame.props[1].dens_mass_phase, Expression)
+        assert len(frame.props[1].dens_mass_phase) == 2
+        for p in frame.props[1].dens_mass_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].dens_mass_phase[p].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_dens_mass(self, frame):
+        assert isinstance(frame.props[1].dens_mass, Expression)
+        assert len(frame.props[1].dens_mass) == 1
+        assert str(frame.props[1].dens_mass.expr) == \
+            str(sum(frame.props[1].dens_mass_phase[p] *
+                    frame.props[1].phase_frac[p]
+                    for p in frame.props[1]._params.phase_list))
+
+        # Check that dependency variables also constructed properly
+        assert isinstance(frame.props[1].dens_mass_phase, Expression)
+        assert len(frame.props[1].dens_mass_phase) == 2
+        for p in frame.props[1].dens_mass_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].dens_mass_phase[p].expr) == \
+                str(frame.props[1].dummy_var)
