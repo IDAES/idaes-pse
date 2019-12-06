@@ -34,11 +34,9 @@ from idaes.core.util.misc import add_object_reference
 
 # -----------------------------------------------------------------------------
 supported_properties = ["phase_component_list",
-                        "state_definition",
                         "state_bounds",
                         "phase_equilibrium_formulation",
                         "phase_equilibrium_dict",
-                        "equation_of_state",
                         "bubble_temperature",
                         "dew_temperature",
                         "bubble_pressure",
@@ -130,13 +128,17 @@ class TestGenericParameterBlock(object):
         m = ConcreteModel()
         m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
-                "phase_list": [1, 2]})
+                "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"}})
 
         assert m.params.config.component_list == ["a", "b", "c"]
         assert m.params.config.phase_list == [1, 2]
+        assert m.params.config.state_definition == "foo"
+        assert m.params.config.equation_of_state == {1: "foo", 2: "bar"}
 
         # Tesrt number of config arguments. Note 1 inherited argument
-        assert len(m.params.config) == len(supported_properties) + 2 + 1
+        assert len(m.params.config) == len(supported_properties) + 4 + 1
 
         for i in supported_properties:
             assert m.params.config[i] is None
@@ -200,6 +202,8 @@ class TestGenericParameterBlock(object):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"},
                 "phase_equilibrium_formulation": "foo"})
 
     def test_configure_only_phase_equilibrium_dict(self):
@@ -213,6 +217,8 @@ class TestGenericParameterBlock(object):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"},
                 "phase_equilibrium_dict": {}})
 
     def test_configure_invalid_phase_equilibrium_dict_1(self):
@@ -227,6 +233,8 @@ class TestGenericParameterBlock(object):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"},
                 "phase_equilibrium_formulation": "foo",
                 "phase_equilibrium_dict": "foo"})
 
@@ -242,6 +250,8 @@ class TestGenericParameterBlock(object):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"},
                 "phase_equilibrium_formulation": "foo",
                 "phase_equilibrium_dict": {1: "foo"}})
 
@@ -254,6 +264,8 @@ class TestGenericParameterBlock(object):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"},
                 "phase_equilibrium_formulation": "foo",
                 "phase_equilibrium_dict": {1: [1, 2, 3]}})
 
@@ -269,6 +281,8 @@ class TestGenericParameterBlock(object):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"},
                 "phase_equilibrium_formulation": "foo",
                 "phase_equilibrium_dict": {1: ["foo", "bar"]}})
 
@@ -284,6 +298,8 @@ class TestGenericParameterBlock(object):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"},
                 "phase_equilibrium_formulation": "foo",
                 "phase_equilibrium_dict": {1: ["a", "bar"]}})
 
@@ -296,6 +312,8 @@ class TestGenericParameterBlock(object):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"},
                 "phase_equilibrium_formulation": "foo",
                 "phase_equilibrium_dict": {1: ["a", (1, 2, 3)]}})
 
@@ -308,6 +326,8 @@ class TestGenericParameterBlock(object):
             m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"},
                 "phase_equilibrium_formulation": "foo",
                 "phase_equilibrium_dict": {1: ["a", (1, 3)]}})
 
@@ -319,6 +339,8 @@ class TestGenericParameterBlock(object):
         m.params = DummyParameterBlock(default={
                 "component_list": ["a", "b", "c"],
                 "phase_list": [1, 2],
+                "state_definition": "foo",
+                "equation_of_state": {1: "foo", 2: "bar"},
                 "phase_equilibrium_formulation": "foo",
                 "phase_equilibrium_dict": {1: ["a", (1, 2)]}})
 

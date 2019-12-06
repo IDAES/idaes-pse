@@ -243,6 +243,33 @@ class GenericParameterData(PhysicalParameterBlock):
                             "is not a members of component_list."
                             .format(self.name, j, p))
 
+        # Validate state definition
+        if self.config.state_definition is None:
+            raise ConfigurationError(
+                    "{} Generic property package was not provided with a "
+                    "state_definition configuration argument. Please fix "
+                    "you property parameter defintion to include this "
+                    "configuration argument.".format(self.name))
+
+        # Validate equation of state
+        if self.config.equation_of_state is None:
+            raise ConfigurationError(
+                    "{} Generic property package was not provided with a "
+                    "equation_of_state configuration argument. Please fix "
+                    "you property parameter defintion to include this "
+                    "configuration argument.".format(self.name))
+        if not isinstance(self.config.equation_of_state, dict):
+            raise ConfigurationError(
+                    "{} Generic property package was provided with an invalid "
+                    "equation_of_state configuration argument. Argument must "
+                    "a dict with phases as keys.".format(self.name))
+        for p in self.config.equation_of_state:
+            if p not in self.phase_list:
+                raise ConfigurationError(
+                    "{} Generic property unrecognised phase {} in "
+                    "equation_of_state configuration argument. Keys must be "
+                    "valid phases.".format(self.name, p))
+
         # Validate that user provided either both a phase equilibrium
         # formulation and a dict of phase equilibria or neither
         if ((self.config.phase_equilibrium_formulation is not None) ^
@@ -721,22 +748,9 @@ class GenericStateBlockData(StateBlockData):
         super(GenericStateBlockData, self).build()
 
         # Add state vairables and assoicated methods
-        if self._params.config.state_definition is None:
-            raise PropertyPackageError(
-                    "{} Generic property package was not provided with a "
-                    "state_definition configuration argument. Please fix "
-                    "you property parameter defintion to include this "
-                    "configuration argument.")
         self._params.config.state_definition.define_state(self)
 
         # Create common components for each property package
-        if self._params.config.equation_of_state is None:
-            raise PropertyPackageError(
-                    "{} Generic property package was not provided with a "
-                    "equation_of_state configuration argument. Please fix "
-                    "you property parameter defintion to include this "
-                    "configuration argument.")
-
         for p in self._params.phase_list:
             self._params.config.equation_of_state[p].common(self)
 
