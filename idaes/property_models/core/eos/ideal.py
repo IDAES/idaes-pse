@@ -76,6 +76,8 @@ def fug_phase_comp(b, p, j):
 
 
 def fug_coeff_phase_comp(b, p, j):
+    if p not in ["Liq", "Vap"]:
+        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
     return 1
 
 
