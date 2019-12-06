@@ -225,7 +225,7 @@ class GenericParameterData(PhysicalParameterBlock):
         else:
             raise ConfigurationError(
                     "{} Generic Property Package was not provided with a "
-                    "component_list.".format(self.name))
+                    "phase_list.".format(self.name))
 
         # If user provided phase_component_list, validate this now
         if self.config.phase_component_list is not None:
@@ -233,15 +233,15 @@ class GenericParameterData(PhysicalParameterBlock):
                 if p not in self.config.phase_list:
                     raise ConfigurationError(
                             "{} Generic Property Package provided with invalid"
-                            "phase_component_list. Phase {} is not a member "
+                            " phase_component_list. Phase {} is not a member "
                             "of phase_list.".format(self.name, p))
                 for j in self.config.phase_component_list[p]:
-                    if p not in self.config.phase_list:
+                    if j not in self.config.component_list:
                         raise ConfigurationError(
                             "{} Generic Property Package provided with invalid"
-                            "phase_component_list. Component {} in phase {} "
+                            " phase_component_list. Component {} in phase {} "
                             "is not a members of component_list."
-                            .format(self.name, p, j))
+                            .format(self.name, j, p))
 
         # Validate that user provided either both a phase equilibrium
         # formulation and a dict of phase equilibria or neither
@@ -253,8 +253,40 @@ class GenericParameterData(PhysicalParameterBlock):
                     " Either both of these arguments need to be provided or "
                     "neither.".format(self.name))
 
-        # Build phase equilibrium list
+        # Validate and build phase equilibrium list
         if self.config.phase_equilibrium_dict is not None:
+            if not isinstance(self.config.phase_equilibrium_dict, dict):
+                raise ConfigurationError(
+                    "{} Generic Property Package provided with invalid "
+                    "phase_equilibrium_dict - value must be a dict. "
+                    "Please see the documentation for the correct form."
+                    .format(self.name))
+            # Validate phase_equilibrium_dict
+            for v in self.config.phase_equilibrium_dict.values():
+                if not (isinstance(v, list) and len(v) == 2):
+                    raise ConfigurationError(
+                        "{} Generic Property Package provided with invalid "
+                        "phase_equilibrium_dict, {}. Values in dict must be "
+                        "lists containing 2 values.".format(self.name, v))
+                if v[0] not in self.component_list:
+                    raise ConfigurationError(
+                        "{} Generic Property Package provided with invalid "
+                        "phase_equilibrium_dict. First value in each list "
+                        "must be a valid component, recieved {}."
+                        .format(self.name, v[0]))
+                if not (isinstance(v[1], tuple) and len(v[1]) == 2):
+                    raise ConfigurationError(
+                        "{} Generic Property Package provided with invalid "
+                        "phase_equilibrium_dict. Second value in each list "
+                        "must be a 2-tuple containing 2 valid phases, "
+                        "recieved {}.".format(self.name, v[1]))
+                for p in v[1]:
+                    if p not in self.phase_list:
+                        raise ConfigurationError(
+                            "{} Generic Property Package provided with invalid"
+                            " phase_equilibrium_dict. Unrecognised phase {} "
+                            "in tuple {}".format(self.name, p, v[1]))
+
             self.phase_equilibrium_list = self.config.phase_equilibrium_dict
 
             pe_set = []
