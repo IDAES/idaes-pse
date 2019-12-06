@@ -91,10 +91,10 @@ class TestParamBlock(object):
                 1: ["benzene", ("Vap", "Liq")],
                 2: ["toluene", ("Vap", "Liq")]}
 
-        assert model.params.config.bubble_temperature == bubble_temp_ideal
-        assert model.params.config.dew_temperature == dew_temp_ideal
-        assert model.params.config.bubble_pressure == bubble_press_ideal
-        assert model.params.config.dew_pressure == dew_press_ideal
+        assert model.params.config.temperature_bubble == bubble_temp_ideal
+        assert model.params.config.temperature_dew == dew_temp_ideal
+        assert model.params.config.pressure_bubble == bubble_press_ideal
+        assert model.params.config.pressure_dew == dew_press_ideal
 
         assert model.params.config.dens_mol_liq_comp == Perrys
         assert model.params.config.enth_mol_liq_comp == Perrys

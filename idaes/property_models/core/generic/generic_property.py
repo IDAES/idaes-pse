@@ -145,26 +145,25 @@ class GenericParameterData(PhysicalParameterBlock):
         component_list, and values should be a 2-tuple of phases from
         phase_list which should be in equilibrium."""))
 
-    CONFIG.declare("bubble_temperature", ConfigValue(
+    CONFIG.declare("temperature_bubble", ConfigValue(
         description="Method to use to calculate bubble temperature",
         doc="""Flag indicating what formulation to use for calculating bubble
         temperature. Value should be a valid Python method."""))
-    CONFIG.declare("dew_temperature", ConfigValue(
+    CONFIG.declare("temperature_dew", ConfigValue(
         description="Method to use to calculate dew temperature",
         doc="""Flag indicating what formulation to use for calculating dew
         temperature. Value should be a valid Python method."""))
-    CONFIG.declare("bubble_pressure", ConfigValue(
+    CONFIG.declare("pressure_bubble", ConfigValue(
         description="Method to use to calculate bubble pressure",
         doc="""Flag indicating what formulation to use for calculating bubble
         pressure. Value should be a valid Python method."""))
-    CONFIG.declare("dew_pressure", ConfigValue(
+    CONFIG.declare("pressure_dew", ConfigValue(
         description="Method to use to calculate dew pressure",
         doc="""Flag indicating what formulation to use for calculating dew
         pressure. Value should be a valid Python method."""))
 
     # Equation of state options
     CONFIG.declare("equation_of_state", ConfigValue(
-        domain=dict,
         description="Equation of state for each phase",
         doc="""Flag containing a dict indicating the equation of state for
         each phase. Value should be a dict with keys for each valid phase and
@@ -263,6 +262,11 @@ class GenericParameterData(PhysicalParameterBlock):
                     "{} Generic property package was provided with an invalid "
                     "equation_of_state configuration argument. Argument must "
                     "a dict with phases as keys.".format(self.name))
+        if len(self.config.equation_of_state) != len(self.phase_list):
+            raise ConfigurationError(
+                    "{} Generic property package was provided with an invalid "
+                    "equation_of_state configuration argument. A value must "
+                    "be present for each phase.".format(self.name))
         for p in self.config.equation_of_state:
             if p not in self.phase_list:
                 raise ConfigurationError(
@@ -762,8 +766,8 @@ class GenericStateBlockData(StateBlockData):
     # -------------------------------------------------------------------------
     # Bubble and Dew Points
     def _temperature_bubble(b):
-        if b._params.config.bubble_temperature is None:
-            raise GenericPropertyPackageError(b, "bubble_temperature")
+        if b._params.config.temperature_bubble is None:
+            raise GenericPropertyPackageError(b, "temperature_bubble")
 
         b.temperature_bubble = Var(
                 doc="Bubble point temperature",
@@ -775,11 +779,11 @@ class GenericStateBlockData(StateBlockData):
                 bounds=(0, None),
                 doc="Vapor mole fractions at bubble temperature")
 
-        b._params.config.bubble_temperature(b)
+        b._params.config.temperature_bubble(b)
 
     def _temperature_dew(b):
-        if b._params.config.dew_temperature is None:
-            raise GenericPropertyPackageError(b, "dew_temperature")
+        if b._params.config.temperature_dew is None:
+            raise GenericPropertyPackageError(b, "temperature_dew")
 
         b.temperature_dew = Var(
                 doc="Dew point temperature",
@@ -791,11 +795,11 @@ class GenericStateBlockData(StateBlockData):
                 bounds=(0, None),
                 doc="Liquid mole fractions at dew temperature")
 
-        b._params.config.dew_temperature(b)
+        b._params.config.temperature_dew(b)
 
     def _pressure_bubble(b):
-        if b._params.config.bubble_pressure is None:
-            raise GenericPropertyPackageError(b, "bubble_pressure")
+        if b._params.config.pressure_bubble is None:
+            raise GenericPropertyPackageError(b, "pressure_bubble")
 
         b.pressure_bubble = Var(
                 doc="Bubble point pressure",
@@ -807,11 +811,11 @@ class GenericStateBlockData(StateBlockData):
                 bounds=(0, None),
                 doc="Vapor mole fractions at bubble pressure")
 
-        b._params.config.bubble_pressure(b)
+        b._params.config.pressure_bubble(b)
 
     def _pressure_dew(b):
-        if b._params.config.dew_pressure is None:
-            raise GenericPropertyPackageError(b, "dew_pressure")
+        if b._params.config.pressure_dew is None:
+            raise GenericPropertyPackageError(b, "pressure_dew")
 
         b.pressure_dew = Var(
                 doc="Dew point pressure",
@@ -823,7 +827,7 @@ class GenericStateBlockData(StateBlockData):
                 bounds=(0, None),
                 doc="Liquid mole fractions at dew pressure")
 
-        b._params.config.dew_pressure(b)
+        b._params.config.pressure_dew(b)
 
     # -------------------------------------------------------------------------
     # Property Methods

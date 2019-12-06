@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import Block, ConcreteModel, Set
+from pyomo.environ import Block, ConcreteModel, Set, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.property_models.core.generic.generic_property import (
@@ -28,7 +28,8 @@ from idaes.property_models.core.generic.generic_property import (
         GenericStateBlock)
 
 from idaes.core import declare_process_block_class
-from idaes.core.util.exceptions import ConfigurationError, PropertyPackageError
+from idaes.core.util.exceptions import (ConfigurationError,
+                                        PropertyPackageError)
 from idaes.core.util.misc import add_object_reference
 
 
@@ -37,10 +38,10 @@ supported_properties = ["phase_component_list",
                         "state_bounds",
                         "phase_equilibrium_formulation",
                         "phase_equilibrium_dict",
-                        "bubble_temperature",
-                        "dew_temperature",
-                        "bubble_pressure",
-                        "dew_pressure",
+                        "temperature_bubble",
+                        "temperature_dew",
+                        "pressure_bubble",
+                        "pressure_dew",
                         "dens_mol_liq_comp",
                         "enth_mol_liq_comp",
                         "enth_mol_ig_comp",
@@ -190,6 +191,84 @@ class TestGenericParameterBlock(object):
                 "phase_list": [1, 2],
                 "phase_component_list": {1: ["a", "b", "c", "d"],
                                          2: ["a", "b", "c", "d"]}})
+
+    def test_configure_no_state_definition(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params Generic property package was not "
+                           "provided with a state_definition configuration "
+                           "argument. Please fix you property parameter "
+                           "defintion to include this configuration "
+                           "argument."):
+            m.params = DummyParameterBlock(default={
+                "component_list": ["a", "b", "c"],
+                "phase_list": [1, 2],
+                "phase_component_list": {1: ["a", "b", "c"],
+                                         2: ["a", "b", "c"]}})
+
+    def test_configure_no_eos(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params Generic property package was not "
+                           "provided with a equation_of_state configuration "
+                           "argument. Please fix you property parameter "
+                           "defintion to include this configuration "
+                           "argument."):
+            m.params = DummyParameterBlock(default={
+                "component_list": ["a", "b", "c"],
+                "phase_list": [1, 2],
+                "phase_component_list": {1: ["a", "b", "c"],
+                                         2: ["a", "b", "c"]},
+                "state_definition": "foo"})
+
+    def test_configure_eos_not_dict(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params Generic property package was provided"
+                           " with an invalid equation_of_state configuration "
+                           "argument. Argument must a dict with phases as "
+                           "keys."):
+            m.params = DummyParameterBlock(default={
+                "component_list": ["a", "b", "c"],
+                "phase_list": [1, 2],
+                "phase_component_list": {1: ["a", "b", "c"],
+                                         2: ["a", "b", "c"]},
+                "state_definition": "foo",
+                "equation_of_state": "bar"})
+
+    def test_configure_eos_wrong_length(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params Generic property package was provided"
+                           " with an invalid equation_of_state configuration "
+                           "argument. A value must be present for each "
+                           "phase."):
+            m.params = DummyParameterBlock(default={
+                "component_list": ["a", "b", "c"],
+                "phase_list": [1, 2],
+                "phase_component_list": {1: ["a", "b", "c"],
+                                         2: ["a", "b", "c"]},
+                "state_definition": "foo",
+                "equation_of_state": {1: "bar"}})
+
+    def test_configure_eos_invalid_phase(self):
+        m = ConcreteModel()
+
+        with pytest.raises(ConfigurationError,
+                           match="params Generic property unrecognised phase "
+                           "3 in equation_of_state configuration argument. "
+                           "Keys must be valid phases."):
+            m.params = DummyParameterBlock(default={
+                "component_list": ["a", "b", "c"],
+                "phase_list": [1, 2],
+                "phase_component_list": {1: ["a", "b", "c"],
+                                         2: ["a", "b", "c"]},
+                "state_definition": "foo",
+                "equation_of_state": {1: "bar", 3: "baz"}})
 
     def test_configure_only_phase_equilibrium_formulation(self):
         m = ConcreteModel()
@@ -351,3 +430,79 @@ class TestGenericParameterBlock(object):
             len(m.params.config.phase_equilibrium_dict)
         for k in m.params.phase_equilibrium_idx:
             assert k in m.params.config.phase_equilibrium_dict.keys()
+
+
+# -----------------------------------------------------------------------------
+# Dummy methods for testing build calls to sub-modules
+def define_state(b):
+    b.state_defined = True
+
+
+def common(b):
+    if hasattr(b, "eos_common"):
+        b.eos_common += 1
+    else:
+        b.eos_common = 1
+
+
+def phase_equil(b):
+    b.phase_equil_defined = True
+
+
+def dummy_call(b):
+    b.dummy_call = True
+
+
+class TestGenericStateBlock(object):
+    @pytest.fixture()
+    def frame(self):
+        m = ConcreteModel()
+        m.params = DummyParameterBlock(default={
+                "component_list": ["a", "b", "c"],
+                "phase_list": [1, 2],
+                "state_definition": modules[__name__],
+                "equation_of_state": {1: modules[__name__],
+                                      2: modules[__name__]},
+                "phase_equilibrium_formulation": modules[__name__],
+                "phase_equilibrium_dict": {1: ["a", (1, 2)]}})
+
+        m.props = m.params.state_block_class([1],
+                                             default={"defined_state": False,
+                                                      "parameters": m.params})
+
+        # Add necessary variables to state block
+        m.props[1].pressure = Var(bounds=(1000, 3000))
+        m.props[1].temperature = Var(bounds=(100, 200))
+        m.props[1].mole_frac_phase_comp = Var(m.params.phase_list,
+                                              m.params.component_list)
+        m.props[1].phase_frac = Var(m.params.phase_list)
+
+        return m
+
+    def test_build(self, frame):
+        assert isinstance(frame.props, Block)
+        assert len(frame.props) == 1
+
+        # Check for expected behaviour for dummy methods
+        assert frame.props[1].state_defined
+        assert frame.props[1].eos_common == 2
+        assert frame.props[1].phase_equil_defined
+
+    def test_temperture_bubble(self, frame):
+        frame.params.config.temperature_bubble = dummy_call
+        frame.props[1].temperature_bubble()
+
+        assert isinstance(frame.props[1].temperature_bubble, Var)
+        assert frame.props[1].temperature_bubble.ub == 200
+        assert frame.props[1].temperature_bubble.lb == 100
+
+        assert isinstance(frame.props[1]._mole_frac_tbub, Var)
+        assert len(frame.props[1]._mole_frac_tbub) == 3
+        for i in frame.props[1]._mole_frac_tbub:
+            assert i in frame.params.component_list
+
+        assert frame.props[1].dummy_call
+
+    def test_temperture_bubble_undefined(self, frame):
+        with pytest.raises(GenericPropertyPackageError):
+            frame.props[1].temperature_bubble()

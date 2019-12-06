@@ -64,10 +64,10 @@ class BTIdealParameterData(GenericParameterData):
         self.config.phase_equilibrium_dict = {1: ["benzene", ("Vap", "Liq")],
                                               2: ["toluene", ("Vap", "Liq")]}
 
-        self.config.bubble_temperature = bubble_temp_ideal
-        self.config.dew_temperature = dew_temp_ideal
-        self.config.bubble_pressure = bubble_press_ideal
-        self.config.dew_pressure = dew_press_ideal
+        self.config.temperature_bubble = bubble_temp_ideal
+        self.config.temperature_dew = dew_temp_ideal
+        self.config.pressure_bubble = bubble_press_ideal
+        self.config.pressure_dew = dew_press_ideal
 
         self.config.dens_mol_liq_comp = Perrys
         self.config.enth_mol_liq_comp = Perrys
