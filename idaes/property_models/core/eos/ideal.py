@@ -37,11 +37,6 @@ def dens_mol_phase(b, p):
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
-def _enth_mol(b):
-    return b.enth_mol == sum(b.enth_mol_phase[p]*b.phase_frac[p]
-                             for p in b._params.phase_list)
-
-
 def enth_mol_phase(b, p):
     return sum(b.mole_frac_phase_comp[p, j]*b.enth_mol_phase_comp[p, j]
                for j in b._params.component_list)
@@ -70,7 +65,7 @@ def entr_mol_phase_comp(b, p, j):
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
-def fugacity(b, p, j):
+def fug_phase_comp(b, p, j):
     if p == "Vap":
         return b.mole_frac_phase_comp[p, j]*b.pressure
     elif p == "Liq":
@@ -80,7 +75,7 @@ def fugacity(b, p, j):
         raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
 
 
-def fug_coeff(b, p, j):
+def fug_coeff_phase_comp(b, p, j):
     return 1
 
 

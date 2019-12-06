@@ -34,8 +34,8 @@ from idaes.core.util.misc import add_object_reference
 
 # Dummy EoS to use for fugacity calls
 class DummyEoS(object):
-    def fugacity(b, p, j):
-        return b.fugacity[p, j]
+    def fug_phase_comp(b, p, j):
+        return b.fug_phase_comp[p, j]
 
 
 @pytest.fixture()
@@ -61,9 +61,9 @@ def frame():
     m.props[1].temperature_bubble = Var(initialize=300)
     m.props[1].temperature_dew = Var(initialize=300)
 
-    m.props[1].fugacity = Var(m.params.phase_list,
-                              m.params.component_list,
-                              initialize=10)
+    m.props[1].fug_phase_comp = Var(m.params.phase_list,
+                                    m.params.component_list,
+                                    initialize=10)
 
     smooth_VLE.phase_equil(m.props[1])
 
@@ -86,8 +86,8 @@ def test_build(frame):
     for k in frame.props[1].equilibrium_constraint:
         assert k in frame.params.component_list
         assert str(frame.props[1].equilibrium_constraint[k].body) == str(
-                frame.props[1].fugacity["Vap", k] -
-                frame.props[1].fugacity["Liq", k])
+                frame.props[1].fug_phase_comp["Vap", k] -
+                frame.props[1].fug_phase_comp["Liq", k])
 
     assert isinstance(frame.props[1]._tr_eq, Expression)
     assert len(frame.props[1]._tr_eq) == 1

@@ -367,8 +367,9 @@ class GenericParameterData(PhysicalParameterBlock):
                                 'units': 'J/mol.K'},
              'entr_mol_phase_comp': {'method': '_entr_mol_phase_comp',
                                      'units': 'J/mol.K'},
-             'fug': {'method': '_fug', 'units': 'Pa'},
-             'fug_coeff': {'method': '_fug_coeff', 'units': '-'},
+             'fug_phase_comp': {'method': '_fug_phase_comp', 'units': 'Pa'},
+             'fug_coeff_phase_comp': {'method': '_fug_coeff_phase_comp',
+                                      'units': '-'},
              'gibbs_mol': {'method': '_gibbs_mol', 'units': 'J/mol'},
              'gibbs_mol_phase': {'method': '_gibbs_mol_phase',
                                  'units': 'J/mol'},
@@ -864,13 +865,11 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_dens_mol_phase)
 
     def _enth_mol(self):
-        self.enth_mol = Var(doc="Mixture molar enthalpy")
-
         def rule_enth_mol(b):
-            return b.enth_mol == sum(b.enth_mol_phase[p] *
-                                     b.phase_frac[p]
-                                     for p in b._params.phase_list)
-        self.eq_enth_mol_phase = Constraint(rule=rule_enth_mol)
+            return sum(b.enth_mol_phase[p]*b.phase_frac[p]
+                       for p in b._params.phase_list)
+        self.enth_mol = Expression(rule=rule_enth_mol,
+                                   doc="Mixture molar enthalpy")
 
     def _enth_mol_phase(self):
         def rule_enth_mol_phase(b, p):
@@ -888,13 +887,11 @@ class GenericStateBlockData(StateBlockData):
             rule=rule_enth_mol_phase_comp)
 
     def _entr_mol(self):
-        self.entr_mol = Var(doc="Mixture molar entropy")
-
         def rule_entr_mol(b):
-            return b.entr_mol == sum(b.entr_mol_phase[p] *
-                                     b.phase_frac[p]
-                                     for p in b._params.phase_list)
-        self.eq_entr_mol_phase = Constraint(rule=rule_entr_mol)
+            return sum(b.entr_mol_phase[p]*b.phase_frac[p]
+                       for p in b._params.phase_list)
+        self.entr_mol = Expression(rule=rule_entr_mol,
+                                   doc="Mixture molar entropy")
 
     def _entr_mol_phase(self):
         def rule_entr_mol_phase(b, p):
@@ -911,28 +908,29 @@ class GenericStateBlockData(StateBlockData):
             self._params.component_list,
             rule=rule_entr_mol_phase_comp)
 
-    def _fug(self):
-        def rule_fug(b, p, j):
-            return b._params.config.equation_of_state[p].fugacity(b, p, j)
-        self.fug = Expression(self._params.phase_list,
-                              self._params.component_list,
-                              rule=rule_fug)
+    def _fug_phase_comp(self):
+        def rule_fug_phase_comp(b, p, j):
+            return b._params.config.equation_of_state[p] \
+                .fug_phase_comp(b, p, j)
+        self.fug_phase_comp = Expression(self._params.phase_list,
+                                         self._params.component_list,
+                                         rule=rule_fug_phase_comp)
 
-    def _fug_coeff(self):
-        def rule_fug_coeff(b, p, j):
-            return b._params.config.equation_of_state[p].fug_coeff(b, p, j)
-        self.fug_coeff = Expression(self._params.phase_list,
-                                    self._params.component_list,
-                                    rule=rule_fug_coeff)
+    def _fug_coeff_phase_comp(self):
+        def rule_fug_coeff_phase_comp(b, p, j):
+            return b._params.config.equation_of_state[p] \
+                .fug_coeff_phase_comp(b, p, j)
+        self.fug_coeff_phase_comp = Expression(
+                self._params.phase_list,
+                self._params.component_list,
+                rule=rule_fug_coeff_phase_comp)
 
     def _gibbs_mol(self):
-        self.gibbs_mol = Var(doc="Mixture molar Gibbs energy")
-
         def rule_gibbs_mol(b):
-            return b.gibbs_mol == sum(b.gibbs_mol_phase[p] *
-                                      b.phase_frac[p]
-                                      for p in b._params.phase_list)
-        self.eq_gibbs_mol_phase = Constraint(rule=rule_gibbs_mol)
+            return sum(b.gibbs_mol_phase[p]*b.phase_frac[p]
+                       for p in b._params.phase_list)
+        self.gibbs_mol = Expression(rule=rule_gibbs_mol,
+                                    doc="Mixture molar Gibbs energy")
 
     def _gibbs_mol_phase(self):
         def rule_gibbs_mol_phase(b, p):

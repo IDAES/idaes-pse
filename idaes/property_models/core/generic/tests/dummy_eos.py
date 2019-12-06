@@ -32,70 +32,37 @@ def dens_mass_phase(b, p):
     return b.dummy_var
 
 
-#def dens_mol_phase(b, p):
-#    if p == "Vap":
-#        return b.pressure/(b._params.gas_const*b.temperature)
-#    elif p == "Liq":
-#        return sum(b.mole_frac_phase_comp[p, j] *
-#                   get_method(b, "dens_mol_liq_comp")(b, j, b.temperature)
-#                   for j in b._params.component_list)
-#    else:
-#        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-#
-#
-#def _enth_mol(b):
-#    return b.enth_mol == sum(b.enth_mol_phase[p]*b.phase_frac[p]
-#                             for p in b._params.phase_list)
-#
-#
-#def enth_mol_phase(b, p):
-#    return sum(b.mole_frac_phase_comp[p, j]*b.enth_mol_phase_comp[p, j]
-#               for j in b._params.component_list)
-#
-#
-#def enth_mol_phase_comp(b, p, j):
-#    if p == "Vap":
-#        return get_method(b, "enth_mol_ig_comp")(b, j, b.temperature)
-#    elif p == "Liq":
-#        return get_method(b, "enth_mol_liq_comp")(b, j, b.temperature)
-#    else:
-#        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-#
-#
-#def entr_mol_phase(b, p):
-#    return sum(b.mole_frac_phase_comp[p, j]*b.entr_mol_phase_comp[p, j]
-#               for j in b._params.component_list)
-#
-#
-#def entr_mol_phase_comp(b, p, j):
-#    if p == "Vap":
-#        return get_method(b, "entr_mol_ig_comp")(b, j, b.temperature)
-#    elif p == "Liq":
-#        return get_method(b, "entr_mol_liq_comp")(b, j, b.temperature)
-#    else:
-#        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-#
-#
-#def fugacity(b, p, j):
-#    if p == "Vap":
-#        return b.mole_frac_phase_comp[p, j]*b.pressure
-#    elif p == "Liq":
-#        return b.mole_frac_phase_comp[p, j] * \
-#               get_method(b, "pressure_sat_comp")(b, j, b.temperature)
-#    else:
-#        raise PropertyNotSupportedError(_invalid_phase_msg(b.name, p))
-#
-#
-#def fug_coeff(b, p, j):
-#    return 1
-#
-#
-#def gibbs_mol_phase(b, p):
-#    return sum(b.mole_frac_phase_comp[p, j]*b.gibbs_mol_phase_comp[p, j]
-#               for j in b._params.component_list)
-#
-#
-#def gibbs_mol_phase_comp(b, p, j):
-#    return (b.enth_mol_phase_comp[p, j] -
-#            b.entr_mol_phase_comp[p, j] *
-#            b.temperature)
+def dens_mol_phase(b, p):
+    return b.dummy_var
+
+
+def enth_mol_phase(b, p):
+    return b.dummy_var
+
+
+def enth_mol_phase_comp(b, p, j):
+    return b.dummy_var
+
+
+def entr_mol_phase(b, p):
+    return b.dummy_var
+
+
+def entr_mol_phase_comp(b, p, j):
+    return b.dummy_var
+
+
+def fug_phase_comp(b, p, j):
+    return b.dummy_var
+
+
+def fug_coeff_phase_comp(b, p, j):
+    return b.dummy_var
+
+
+def gibbs_mol_phase(b, p):
+    return b.dummy_var
+
+
+def gibbs_mol_phase_comp(b, p, j):
+    return b.dummy_var

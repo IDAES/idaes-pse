@@ -577,3 +577,144 @@ class TestGenericStateBlock(object):
             assert p in frame.params.phase_list
             assert str(frame.props[1].dens_mass_phase[p].expr) == \
                 str(frame.props[1].dummy_var)
+
+    def test_dens_mol_phase(self, frame):
+        assert isinstance(frame.props[1].dens_mol_phase, Expression)
+        assert len(frame.props[1].dens_mol_phase) == 2
+        for p in frame.props[1].dens_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].dens_mol_phase[p].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_dens_mol(self, frame):
+        assert isinstance(frame.props[1].dens_mol, Expression)
+        assert len(frame.props[1].dens_mol) == 1
+        assert str(frame.props[1].dens_mol.expr) == \
+            str(sum(frame.props[1].dens_mol_phase[p] *
+                    frame.props[1].phase_frac[p]
+                    for p in frame.props[1]._params.phase_list))
+
+        # Check that dependency variables also constructed properly
+        assert isinstance(frame.props[1].dens_mol_phase, Expression)
+        assert len(frame.props[1].dens_mol_phase) == 2
+        for p in frame.props[1].dens_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].dens_mol_phase[p].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_enth_mol_phase_comp(self, frame):
+        assert isinstance(frame.props[1].enth_mol_phase_comp, Expression)
+        assert len(frame.props[1].enth_mol_phase_comp) == 6
+        for k in frame.props[1].enth_mol_phase_comp:
+            assert k[0] in frame.params.phase_list
+            assert k[1] in frame.params.component_list
+            assert str(frame.props[1].enth_mol_phase_comp[k].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_enth_mol_phase(self, frame):
+        assert isinstance(frame.props[1].enth_mol_phase, Expression)
+        assert len(frame.props[1].enth_mol_phase) == 2
+        for k in frame.props[1].enth_mol_phase:
+            assert k in frame.params.phase_list
+            assert str(frame.props[1].enth_mol_phase[k].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_enth_mol(self, frame):
+        assert isinstance(frame.props[1].enth_mol, Expression)
+        assert len(frame.props[1].enth_mol) == 1
+        assert str(frame.props[1].enth_mol.expr) == \
+            str(sum(frame.props[1].enth_mol_phase[p] *
+                    frame.props[1].phase_frac[p]
+                    for p in frame.props[1]._params.phase_list))
+
+        # Check that dependency variables also constructed properly
+        assert isinstance(frame.props[1].enth_mol_phase, Expression)
+        assert len(frame.props[1].enth_mol_phase) == 2
+        for p in frame.props[1].enth_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].enth_mol_phase[p].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_entr_mol_phase_comp(self, frame):
+        assert isinstance(frame.props[1].entr_mol_phase_comp, Expression)
+        assert len(frame.props[1].entr_mol_phase_comp) == 6
+        for k in frame.props[1].entr_mol_phase_comp:
+            assert k[0] in frame.params.phase_list
+            assert k[1] in frame.params.component_list
+            assert str(frame.props[1].entr_mol_phase_comp[k].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_entr_mol_phase(self, frame):
+        assert isinstance(frame.props[1].entr_mol_phase, Expression)
+        assert len(frame.props[1].entr_mol_phase) == 2
+        for k in frame.props[1].entr_mol_phase:
+            assert k in frame.params.phase_list
+            assert str(frame.props[1].entr_mol_phase[k].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_entr_mol(self, frame):
+        assert isinstance(frame.props[1].entr_mol, Expression)
+        assert len(frame.props[1].entr_mol) == 1
+        assert str(frame.props[1].entr_mol.expr) == \
+            str(sum(frame.props[1].entr_mol_phase[p] *
+                    frame.props[1].phase_frac[p]
+                    for p in frame.props[1]._params.phase_list))
+
+        # Check that dependency variables also constructed properly
+        assert isinstance(frame.props[1].entr_mol_phase, Expression)
+        assert len(frame.props[1].entr_mol_phase) == 2
+        for p in frame.props[1].entr_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].entr_mol_phase[p].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_fug_phase_comp(self, frame):
+        assert isinstance(frame.props[1].fug_phase_comp, Expression)
+        assert len(frame.props[1].fug_phase_comp) == 6
+        for k in frame.props[1].fug_phase_comp:
+            assert k[0] in frame.params.phase_list
+            assert k[1] in frame.params.component_list
+            assert str(frame.props[1].fug_phase_comp[k].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_fug_coeff_phase_comp(self, frame):
+        assert isinstance(frame.props[1].fug_coeff_phase_comp, Expression)
+        assert len(frame.props[1].fug_coeff_phase_comp) == 6
+        for k in frame.props[1].fug_coeff_phase_comp:
+            assert k[0] in frame.params.phase_list
+            assert k[1] in frame.params.component_list
+            assert str(frame.props[1].fug_coeff_phase_comp[k].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_gibbs_mol_phase_comp(self, frame):
+        assert isinstance(frame.props[1].gibbs_mol_phase_comp, Expression)
+        assert len(frame.props[1].gibbs_mol_phase_comp) == 6
+        for k in frame.props[1].gibbs_mol_phase_comp:
+            assert k[0] in frame.params.phase_list
+            assert k[1] in frame.params.component_list
+            assert str(frame.props[1].gibbs_mol_phase_comp[k].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_gibbs_mol_phase(self, frame):
+        assert isinstance(frame.props[1].gibbs_mol_phase, Expression)
+        assert len(frame.props[1].gibbs_mol_phase) == 2
+        for k in frame.props[1].gibbs_mol_phase:
+            assert k in frame.params.phase_list
+            assert str(frame.props[1].gibbs_mol_phase[k].expr) == \
+                str(frame.props[1].dummy_var)
+
+    def test_gibbs_mol(self, frame):
+        assert isinstance(frame.props[1].gibbs_mol, Expression)
+        assert len(frame.props[1].gibbs_mol) == 1
+        assert str(frame.props[1].gibbs_mol.expr) == \
+            str(sum(frame.props[1].gibbs_mol_phase[p] *
+                    frame.props[1].phase_frac[p]
+                    for p in frame.props[1]._params.phase_list))
+
+        # Check that dependency variables also constructed properly
+        assert isinstance(frame.props[1].gibbs_mol_phase, Expression)
+        assert len(frame.props[1].gibbs_mol_phase) == 2
+        for p in frame.props[1].gibbs_mol_phase:
+            assert p in frame.params.phase_list
+            assert str(frame.props[1].gibbs_mol_phase[p].expr) == \
+                str(frame.props[1].dummy_var)

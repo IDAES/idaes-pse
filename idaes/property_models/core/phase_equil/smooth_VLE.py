@@ -58,9 +58,9 @@ def phase_equil(b):
                           doc='Component reduced temperatures [-]')
 
     def rule_equilibrium(b, j):
-        return (b._params.config.equation_of_state["Vap"].fugacity(
+        return (b._params.config.equation_of_state["Vap"].fug_phase_comp(
                     b, "Vap", j) ==
-                b._params.config.equation_of_state["Liq"].fugacity(
+                b._params.config.equation_of_state["Liq"].fug_phase_comp(
                     b, "Liq", j))
     b.equilibrium_constraint = \
         Constraint(b._params.component_list, rule=rule_equilibrium)
