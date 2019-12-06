@@ -18,7 +18,7 @@ Author: Andrew Lee
 import pytest
 from sys import modules
 
-from pyomo.environ import Block, ConcreteModel, Expression, Set, Var
+from pyomo.environ import Block, ConcreteModel, Expression, Param, Set, Var
 from pyomo.common.config import ConfigBlock, ConfigValue
 
 from idaes.property_models.core.generic.generic_property import (
@@ -446,6 +446,10 @@ def dummy_call(b):
     b.dummy_call = True
 
 
+def pressure_sat_comp(b, j, T):
+    return b.pressure
+
+
 class TestGenericStateBlock(object):
     @pytest.fixture()
     def frame(self):
@@ -718,3 +722,39 @@ class TestGenericStateBlock(object):
             assert p in frame.params.phase_list
             assert str(frame.props[1].gibbs_mol_phase[p].expr) == \
                 str(frame.props[1].dummy_var)
+
+    def test_mw_phase(self, frame):
+        frame.params.mw_comp = Param(frame.params.component_list,
+                                     initialize={"a": 1, "b": 2, "c": 3})
+
+        assert isinstance(frame.props[1].mw_phase, Expression)
+        assert len(frame.props[1].mw_phase) == 2
+        for k in frame.props[1].mw_phase:
+            assert k in frame.params.phase_list
+            assert str(frame.props[1].mw_phase[k].expr) == \
+                str(sum(frame.props[1].mole_frac_phase_comp[k, j] *
+                        frame.params.mw_comp[j]
+                        for j in frame.params.component_list))
+
+    def test_mw(self, frame):
+        frame.params.mw_comp = Param(frame.params.component_list,
+                                     initialize={"a": 1, "b": 2, "c": 3})
+
+        assert isinstance(frame.props[1].mw, Expression)
+        assert len(frame.props[1].mw) == 1
+        assert str(frame.props[1].mw.expr) == \
+            str(sum(frame.props[1].phase_frac[p] *
+                    sum(frame.props[1].mole_frac_phase_comp[p, j] *
+                        frame.params.mw_comp[j]
+                        for j in frame.params.component_list)
+                    for p in frame.params.phase_list))
+
+    def test_pressure_sat_comp(self, frame):
+        frame.params.config.pressure_sat_comp = modules[__name__]
+
+        assert isinstance(frame.props[1].pressure_sat_comp, Expression)
+        assert len(frame.props[1].pressure_sat_comp) == 3
+        for j in frame.props[1].pressure_sat_comp:
+            assert j in frame.params.component_list
+            assert str(frame.props[1].pressure_sat_comp[j].expr) == \
+                str(frame.props[1].pressure)

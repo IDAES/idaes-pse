@@ -966,9 +966,8 @@ class GenericStateBlockData(StateBlockData):
                 rule=rule_mw_phase)
 
     def _pressure_sat_comp(self):
-        def rule_pressure_sat_comp(b, p, j):
-            return b._params.config.pressure_sat_comp \
-                    .pressure_sat_comp(b, j, b.temperature)
+        def rule_pressure_sat_comp(b, j):
+            return get_method(b, "pressure_sat_comp")(b, j, b.temperature)
         self.pressure_sat_comp = Expression(
             self._params.component_list,
             rule=rule_pressure_sat_comp)
