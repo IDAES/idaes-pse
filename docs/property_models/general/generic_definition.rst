@@ -53,14 +53,14 @@ Param
 
 .. code-block:: python
 
-    self.parameter = Param([idices], initialize=value(s), mutable=True/False)
+    self.parameter = Param([indices], initialize=value(s), mutable=True/False)
 
 Var
 ^^^
 
 .. code-block:: python
 
-    self.parameter = Var([idices], initialize=value(s))
+    self.parameter = Var([indices], initialize=value(s))
     self.parameter.fix()
 
 Examples

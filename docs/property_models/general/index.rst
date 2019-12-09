@@ -30,10 +30,10 @@ The Generic Property Package Framework breaks down property packages into a numb
 
 1. :ref:`Definition<property_models/general/generic_definition:Defining Property Packages>` of the component list and phases of interest, along with any phase equilibrium the user wishes to include.
 2. A definition of the :ref:`variables<property_models/general/state_definition:Defining State Variables>` the user wishes to use to define the state of their material (state variables), along with any bounds on these.
-3. An :ref:`equation of state<property_models/general/eos:Equations of State>` to describe each phase within the users property package.
-4. :ref:`Correlations<property_models/general/pure:Defining Pure Component Properties>` for the pure component properties of each component in the users system. Correlations are only required for those properties the user will user within their model.
+3. An :ref:`equation of state<property_models/general/eos:Equations of State>` to describe each phase within the user's property package.
+4. :ref:`Correlations<property_models/general/pure:Defining Pure Component Properties>` for the pure component properties of each component in the users system. Correlations are only required for those properties the user will use within their model.
 5. :ref:`Methods<property_models/general/bubble_dew:Bubble and Dew Point Methods>` to calculate the bubble and dew points of mixtures.
-6. A :ref:`formulation<property_models/general/phase_equilibrium:Phase Equilibrium Formulations>` to use for defining any phase equilibrium within the users system.
+6. A :ref:`formulation<property_models/general/phase_equilibrium:Phase Equilibrium Formulations>` to use for defining any phase equilibrium within the user's system.
 
 The following section will describe how to define a property package using the Generic Property Package Framework along with the libraries of sub-models currently available. Finally, the :ref:`developers<property_models/general/developers:Developing New Property Libraries>` section describes how to go about defining your own custom components to use when creating custom property packages.
 

@@ -42,9 +42,9 @@ The correlation for the ideal gas molar enthalpy is derived from the correlation
    ":math:`T_{ref}`", "temperature_ref", "None", "Temperature at reference state"
 
 .. note::
-    This correlation uses the same parameters as for the ideal gas heat capacity with additional parameters `F` and `H`. These parameters account for the enthalpy at the reference state defined by NIST. User wanting to use a different reference state will need to update `H`.
+    This correlation uses the same parameters as for the ideal gas heat capacity with additional parameters `F` and `H`. These parameters account for the enthalpy at the reference state defined by NIST. Users wanting to use a different reference state will need to update `H`.
 
-Ideal Gas Molar Entrolpy
+Ideal Gas Molar Entrorpy
 ------------------------
 
 The correlation for the ideal gas molar entropy is derived from the correlation for the molar heat capacity and is given below:
@@ -59,7 +59,7 @@ The correlation for the ideal gas molar entropy is derived from the correlation 
    ":math:`A, B, C, D, E, G`", "cp_mol_ig_comp_coeff", "component, `['A', 'B', 'C', 'D', 'E', 'G']`", ""
 
 .. note::
-    This correlation uses the same parameters as for the ideal gas heat capacity with additional parameter `G`, which accounts for the standard entropy at the reference state defined by NIST. User wanting to use a different reference state will need to update `G`. 
+    This correlation uses the same parameters as for the ideal gas heat capacity with additional parameter `G`, which accounts for the standard entropy at the reference state defined by NIST. Users wanting to use a different reference state will need to update `G`. 
 
 Saturation (Vapor) Pressure
 ---------------------------

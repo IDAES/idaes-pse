@@ -7,12 +7,12 @@ FTPx
 State Definition
 ----------------
 
-This approach describe the material state in terms of total flow (:math:`F`: `flow_mol`), overall (mixture) mole fractions (:math:`x_j`: `mole_frac_comp`), temperature (:math:`T`: `temperature`) and pressure (:math:`P`: `pressure`). As such, there are :math:`3 + N_{components}` state variables, however only :math:`2 + N_{components}` are independent as the mole fraction must sum to 1.
+This approach describes the material state in terms of total flow (:math:`F`: `flow_mol`), overall (mixture) mole fractions (:math:`x_j`: `mole_frac_comp`), temperature (:math:`T`: `temperature`) and pressure (:math:`P`: `pressure`). As such, there are :math:`3 + N_{components}` state variables, however only :math:`2 + N_{components}` are independent as the mole fraction must sum to 1.
 
 Application
 -----------
 
-This is the simplest approach to fully defining the state of a material, and one of the most easily accessible ot the user as it is defined in terms of variables that are easily measured and understood. However, this approach has a number of limitations which the user should be aware of:
+This is the simplest approach to fully defining the state of a material, and one of the most easily accessible to the user as it is defined in terms of variables that are easily measured and understood. However, this approach has a number of limitations which the user should be aware of:
 
 * If the property package is set up for multiphase flow, an equilibrium calculation is required at the inlet of each unit, as the state definition does not contain information on multiphase flow. This increases the number of complex equilibrium calculations that must be performed, which could be avoided by using a different state definition. 
 * State becomes ill-defined when only one component is present and multiphase behavior can occur, as temperature and pressure are insufficient to fully define the thermodynamic state under these conditions.
