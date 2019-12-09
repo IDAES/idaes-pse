@@ -29,7 +29,7 @@ Users should populate the `configure` and `build` methods as discussed below.
 Configure
 ---------
 
-The 'configure` method is used to select the sub-modles and methods to be used when constructing the `StateBlocks` assoicated with this property package within a process model. These options define the behavior of the property package, and allow users to customise the property package to their needs.
+The 'configure` method is used to select the sub-models and methods to be used when constructing the `StateBlocks` associated with this property package within a process model. These options define the behavior of the property package, and allow users to customize the property package to their needs.
 
 Configuration options are set by assigning an appropriate method to `self.configure.option_name` within the `configure` method. A full list of the available property options is given :ref:`here<property_models/general/generic_options:Configuration Options>`.
 
@@ -44,7 +44,7 @@ Property parameters can be defined as either Pyomo `Params` or `Vars` depending 
 
    If using `Params`, users should consider whether these should be `mutable` or not - `Params` that are not mutable have their value defined upon creation and this cannot be changed later.
 
-   If using `Vars`, remember that you will need to fix the value unless you are trying to estimat the value of that parameter.
+   If using `Vars`, remember that you will need to fix the value unless you are trying to estimate the value of that parameter.
 
 Property parameters need to have the correct set of indices and follow the naming convention laid out in the :ref:`standard naming conventions<standards:Standard Variable Names>` and described in the documentation for each property method. Property parameters are created using Pyomo code as shown below:
 
@@ -67,4 +67,3 @@ Examples
 --------
 
 Examples of using the IDAES Generic Property Package Framework can be found in the `idaes/property_models/core/examples` folder.
-

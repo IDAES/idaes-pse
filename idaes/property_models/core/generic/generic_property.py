@@ -75,7 +75,7 @@ def get_method(self, config_arg):
         config_arg : the configuration argument to look up
 
     Returns:
-        A callable method or a ConfiguartionError
+        A callable method or a ConfigurationError
     """
     try:
         c_arg = getattr(self._params.config, config_arg)

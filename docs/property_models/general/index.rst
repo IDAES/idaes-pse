@@ -8,14 +8,13 @@ Contents
     :maxdepth: 1
 
     generic_definition
+    generic_options
     state_definition
     eos
     pure
     bubble_dew
     phase_equilibrium
     developers
-    generic_options
-    
 
 Introduction
 ------------

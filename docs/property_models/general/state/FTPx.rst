@@ -17,6 +17,17 @@ This is the simplest approach to fully defining the state of a material, and one
 * If the property package is set up for multiphase flow, an equilibrium calculation is required at the inlet of each unit, as the state definition does not contain information on multiphase flow. This increases the number of complex equilibrium calculations that must be performed, which could be avoided by using a different state definition. 
 * State becomes ill-defined when only one component is present and multiphase behavior can occur, as temperature and pressure are insufficient to fully define the thermodynamic state under these conditions.
 
+Bounds
+------
+
+The FTPx module supports bounding of the following variables through the `state_bounds` configuration argument:
+
+* `flow_mol`
+* `temperature`
+* `pressure`
+
+Note that mole fractions are automatically assigned a lower bound of 0, but the upper bound is left free as this is implicitly defined by the sum of mole fractions constraint. 
+
 Supporting Variables and Constraints
 ------------------------------------
 
