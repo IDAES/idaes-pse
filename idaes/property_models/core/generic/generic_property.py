@@ -14,7 +14,6 @@
 Framework for generic property packages
 """
 # Import Python libraries
-import logging
 import types
 
 # Import Pyomo libraries
@@ -22,7 +21,6 @@ from pyomo.environ import (Constraint,
                            Expression,
                            Set,
                            SolverFactory,
-                           TerminationCondition,
                            value,
                            Var)
 from pyomo.common.config import ConfigValue
