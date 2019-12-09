@@ -92,7 +92,7 @@ class BTIdealParameterData(GenericParameterData):
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
         pressure_crit_comp_data = {'benzene': 48.9e5,
-                              'toluene': 41e5}
+                                   'toluene': 41e5}
 
         self.pressure_crit_comp = Param(
             self.component_list,
@@ -146,7 +146,7 @@ class BTIdealParameterData(GenericParameterData):
                 ['A', 'B', 'C', 'D'],
                 mutable=False,
                 initialize=cp_mol_ig_comp_coeff_data,
-                doc="Parameters for ideal gas heat capacity")
+                doc="Parameters for ideal gas heat capacity [J/mol.K]")
 
         # Constants for liquid phase specific enthalpy
         # Source: Perry's Chemical Engineers Handbook 7th Ed.
@@ -167,7 +167,7 @@ class BTIdealParameterData(GenericParameterData):
                 ['1', '2', '3', '4', '5'],
                 mutable=False,
                 initialize=cp_mol_liq_comp_coeff_data,
-                doc="Parameters for liquid cp")
+                doc="Parameters for liquid cp [J/mol.K]")
 
         # Source: The Properties of Gases and Liquids (1987)
         # 4th edition, Chemical Engineering Series - Robert C. Reid
@@ -185,7 +185,7 @@ class BTIdealParameterData(GenericParameterData):
             ['A', 'B', 'C', 'D'],
             mutable=False,
             initialize=pressure_sat_comp_coeff_data,
-            doc="parameters to compute cp_comp")
+            doc="Parameters for saturation pressure [Pa]")
 
         # Source: "Perry's Chemical Engineers Handbook by Robert H. Perry"
         # 7th Edition, pg. 2-98
@@ -203,7 +203,7 @@ class BTIdealParameterData(GenericParameterData):
             ['1', '2', '3', '4'],
             mutable=False,
             initialize=dens_mol_liq_comp_coeff_data,
-            doc="Coefficients for calculating liquid molar densities")
+            doc="Coefficients for liquid molar densities [mol/m^3]")
 
         # Standard heats of formation
         # Source: NIST Webbook, https://webbook.nist.gov
