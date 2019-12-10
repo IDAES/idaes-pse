@@ -42,7 +42,6 @@ from pyomo.environ import (Constraint,
                            Set,
                            SolverFactory,
                            sqrt,
-                           TerminationCondition,
                            Param,
                            PositiveReals,
                            value,
@@ -54,7 +53,9 @@ from idaes.core import (declare_process_block_class,
                         MaterialFlowBasis,
                         PhysicalParameterBlock,
                         StateBlockData,
-                        StateBlock)
+                        StateBlock,
+                        MaterialBalanceType,
+                        EnergyBalanceType)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.exceptions import BurntToast
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -88,6 +89,7 @@ EoS_param = {
         }
 
 
+@declare_process_block_class("CubicParameterBlock")
 class CubicParameterData(PhysicalParameterBlock):
     """
     General Property Parameter Block Class
@@ -453,7 +455,9 @@ class _CubicStateBlock(StateBlock):
                     c.deactivate()
 
         results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-        init_log.log(4, "Dew and bubble point init: {}.".format(condition(results)))
+        init_log.log(4,
+                     "Dew and bubble point init: {}."
+                     .format(condition(results)))
 
         # ---------------------------------------------------------------------
         # If flash, initialize T1 and Teq
@@ -539,8 +543,8 @@ class _CubicStateBlock(StateBlock):
                     c.activate()
 
         results = solve_indexed_blocks(opt, [blk], tee=init_tee(init_log))
-        init_log.log(4, "Phase equilibrium init: {}.".format(condition(results)))
-
+        init_log.log(4,
+                     "Phase equilibrium init: {}.".format(condition(results)))
 
         # ---------------------------------------------------------------------
         # Initialize other properties
@@ -566,7 +570,6 @@ class _CubicStateBlock(StateBlock):
                 blk.release_state(flags)
 
         init_log.log(5, "Initialization complete.")
-
 
     def release_state(blk, flags, outlvl=6):
         '''
@@ -900,6 +903,12 @@ class CubicStateBlockData(StateBlockData):
         """Create enthalpy density terms."""
         return self.dens_mol_phase[p] * self.enth_mol_phase[p]
 
+    def default_material_balance_type(self):
+        return MaterialBalanceType.componentTotal
+
+    def default_energy_balance_type(self):
+        return EnergyBalanceType.enthalpyTotal
+
     def get_material_flow_basis(b):
         return MaterialFlowBasis.molar
 
@@ -909,6 +918,12 @@ class CubicStateBlockData(StateBlockData):
                 "mole_frac_comp": self.mole_frac_comp,
                 "temperature": self.temperature,
                 "pressure": self.pressure}
+
+    def define_display_vars(b):
+        return {"Molar Flowrate": b.flow_mol,
+                "Mole Fractions": b.cmole_frac_comp,
+                "Temperature": b.temperature,
+                "Pressure": b.pressure}
 
     def model_check(blk):
         """Model checks for property block."""
